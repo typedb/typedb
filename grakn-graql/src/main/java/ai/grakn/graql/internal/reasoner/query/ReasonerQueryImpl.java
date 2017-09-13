@@ -33,6 +33,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.ConceptBuilder;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -87,6 +88,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknTx tx;
     private final ImmutableSet<Atomic> atomSet;
+    private Answer substitution = null;
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
         this.tx = tx;
@@ -351,22 +353,29 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return orderedSelection;
     }
 
+    public static long subTime;
+
     /**
      * @return substitution obtained from all id predicates (including internal) in the query
      */
     public Answer getSubstitution(){
-        Set<IdPredicate> predicates = getAtoms(TypeAtom.class)
-                .map(TypeAtom::getTypePredicate)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        getAtoms(IdPredicate.class).forEach(predicates::add);
+        long startTime = System.currentTimeMillis();
+        if (substitution == null) {
+            Set<IdPredicate> predicates = getAtoms(TypeAtom.class)
+                    .map(TypeAtom::getTypePredicate)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            getAtoms(IdPredicate.class).forEach(predicates::add);
 
-        // the mapping function is declared separately to please the Eclipse compiler
-        Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
+            // the mapping function is declared separately to please the Eclipse compiler
+            Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
 
-        return new QueryAnswer(predicates.stream()
-                .collect(Collectors.toMap(IdPredicate::getVarName, f))
-        );
+            substitution = new QueryAnswer(predicates.stream()
+                    .collect(Collectors.toMap(IdPredicate::getVarName, f))
+            );
+            subTime += System.currentTimeMillis() - startTime;
+        }
+        return substitution;
     }
 
     /**

@@ -85,6 +85,17 @@ public class MatchBase extends AbstractMatch {
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
         LOG.trace("Created query plan");
         LOG.trace(graqlTraversal.toString());
+        return streamWithTraversal(this.getPattern(), graph, graqlTraversal);
+    }
+
+    /**
+     *
+     * @param pattern
+     * @param graph
+     * @param graqlTraversal
+     * @return
+     */
+    public static Stream<Answer> streamWithTraversal(Conjunction<PatternAdmin> pattern, GraknTx graph, GraqlTraversal graqlTraversal) {
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph);
 
         String[] selectedNames = pattern.commonVars().stream().map(Var::getValue).toArray(String[]::new);
@@ -96,10 +107,31 @@ public class MatchBase extends AbstractMatch {
         }
 
         return traversal.toStream()
-                .map(elements -> makeResults(graph, elements))
+                .map(elements -> makeResults(pattern, graph, elements))
                 .distinct()
                 .sequential()
                 .map(QueryAnswer::new);
+    }
+
+    /**
+     * @param pattern
+     * @param graph the graph to get results from
+     * @param elements a map of vertices and edges where the key is the variable name
+     * @return a map of concepts where the key is the variable name
+     */
+    private static Map<Var, Concept> makeResults(Conjunction<PatternAdmin> pattern, GraknTx graph, Map<String, Element> elements) {
+        return pattern.commonVars().stream().collect(Collectors.<Var, Var, Concept>toMap(
+                Function.identity(),
+                name -> buildConcept(graph.admin(), elements.get(name.getValue()))
+        ));
+    }
+
+    private static Concept buildConcept(GraknAdmin graph, Element element) {
+        if (element instanceof Vertex) {
+            return graph.buildConcept((Vertex) element);
+        } else {
+            return graph.buildConcept((Edge) element);
+        }
     }
 
     @Override
@@ -139,26 +171,6 @@ public class MatchBase extends AbstractMatch {
 
     public final Match infer(boolean materialise) {
         return new MatchInfer(this, materialise);
-    }
-
-    /**
-     * @param graph the graph to get results from
-     * @param elements a map of vertices and edges where the key is the variable name
-     * @return a map of concepts where the key is the variable name
-     */
-    private Map<Var, Concept> makeResults(GraknTx graph, Map<String, Element> elements) {
-        return pattern.commonVars().stream().collect(Collectors.<Var, Var, Concept>toMap(
-                Function.identity(),
-                name -> buildConcept(graph.admin(), elements.get(name.getValue()))
-        ));
-    }
-
-    private Concept buildConcept(GraknAdmin graph, Element element) {
-        if (element instanceof Vertex) {
-            return graph.buildConcept((Vertex) element);
-        } else {
-            return graph.buildConcept((Edge) element);
-        }
     }
 
     @Override

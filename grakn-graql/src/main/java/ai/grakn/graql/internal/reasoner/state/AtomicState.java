@@ -71,7 +71,7 @@ public class AtomicState extends QueryState{
                 || (query.isGround() && dbIterator.hasNext() ) ){
             this.ruleIterator = Collections.emptyIterator();
         } else {
-            this.ruleIterator = query.getRuleIterator(cache.structuralCache());
+            this.ruleIterator = query.getRuleIterator();
         }
 
         //mark as visited and hence not admissible

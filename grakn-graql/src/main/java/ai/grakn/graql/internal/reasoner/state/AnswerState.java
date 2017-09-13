@@ -53,7 +53,6 @@ class AnswerState extends ResolutionState {
         return getParentState().propagateAnswer(this);
     }
 
-
     Answer getAtomicAnswer(ReasonerAtomicQuery query, InferenceRule rule, Unifier cacheUnifier, QueryCache<ReasonerAtomicQuery> cache){
         Answer answer;
         if (rule == null){

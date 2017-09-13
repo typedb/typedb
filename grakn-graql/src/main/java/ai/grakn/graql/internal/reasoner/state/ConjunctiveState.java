@@ -54,6 +54,9 @@ public class ConjunctiveState extends QueryState {
     private boolean visited = false;
     private static final Logger LOG = LoggerFactory.getLogger(ConjunctiveState.class);
 
+    public static long generateTime = 0;
+    public static long initTime = 0;
+
     public ConjunctiveState(ReasonerQueryImpl q,
                             Answer sub,
                             Unifier u,
@@ -61,6 +64,8 @@ public class ConjunctiveState extends QueryState {
                             Set<ReasonerAtomicQuery> subGoals,
                             QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
+
+        long startTime = System.currentTimeMillis();
         this.query = ReasonerQueries.create(q, sub);
 
         if (!query.isRuleResolvable()){
@@ -78,6 +83,8 @@ public class ConjunctiveState extends QueryState {
             );
         }
 
+        initTime += System.currentTimeMillis() - startTime;
+
     }
 
     @Override
@@ -85,16 +92,21 @@ public class ConjunctiveState extends QueryState {
         return new AnswerState(state.getSubstitution(), getUnifier(), getParentState());
     }
 
+
+
     @Override
     public ResolutionState generateSubGoal(){
+        long startTime = System.currentTimeMillis();
+        ResolutionState state = null;
         if (dbIterator.hasNext()){
-            return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
+            state = new AnswerState(dbIterator.next(), getUnifier(), getParentState());
         }
 
         if (!subQueries.isEmpty() && !visited) {
             visited = true;
-            return new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
+            state = new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
         }
-        return null;
+        generateTime += System.currentTimeMillis() - startTime;
+        return state;
     }
 }

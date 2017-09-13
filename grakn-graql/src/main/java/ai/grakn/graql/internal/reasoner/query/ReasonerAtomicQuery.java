@@ -278,7 +278,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, cache.getAnswerStream(this));
         if(queryAdmissible) {
 
-            Iterator<RuleTuple> ruleIterator = getRuleIterator(cache.structuralCache());
+            Iterator<RuleTuple> ruleIterator = getRuleIterator();
             while(ruleIterator.hasNext()) {
                 RuleTuple ruleContext = ruleIterator.next();
                 Unifier u = ruleContext.getRuleUnifier();
@@ -333,8 +333,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
-    public Iterator<RuleTuple> getRuleIterator(StructuralCache<ReasonerAtomicQuery> sCache){
-        return sCache.getApplicableRules(this).stream()
+    public Iterator<RuleTuple> getRuleIterator(){
+        return getAtom().getApplicableRules()
                 .flatMap(r -> {
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     Unifier ruleUnifierInv = ruleUnifier.inverse();

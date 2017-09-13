@@ -36,15 +36,12 @@ public class StructuralCacheEntry<Q extends ReasonerQueryImpl> {
 
     private final Q query;
     private final GraqlTraversal traversal;
-    private final Set<InferenceRule> applicableRules;
 
-    StructuralCacheEntry(Q query, GraqlTraversal traversal, Set<InferenceRule> rules){
+    StructuralCacheEntry(Q query, GraqlTraversal traversal){
         this.query = query;
         this.traversal = traversal;
-        this.applicableRules = rules;
     }
 
     public Q query(){ return query;}
     public GraqlTraversal traversal(){ return traversal;}
-    public Set<InferenceRule> rules(){ return applicableRules;}
 }

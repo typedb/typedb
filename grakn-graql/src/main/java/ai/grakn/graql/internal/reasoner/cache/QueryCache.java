@@ -22,6 +22,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
@@ -162,15 +163,11 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         Unifier unifier = cacheEntry.getValue().getKey();
         Map<ConceptId, ConceptId> conceptMap = cacheEntry.getValue().getValue();
         ReasonerQueryImpl cacheQuery = cacheEntry.getKey().query().transformIds(conceptMap);
-        Stream<Answer> answerStream = cacheQuery.getQuery().stream()
+
+        Stream<Answer> answerStream = MatchBase.streamWithTraversal(cacheQuery.getPattern(), cacheQuery.tx(), cacheEntry.getKey().traversal())
                 .map(ans -> ans.unify(unifier))
                 .map(a -> a.explain(new LookupExplanation(query)));
-
-        return new Pair<>(
-                answerStream,
-                //query.getQuery().stream().map(a -> a.explain(new LookupExplanation(query))),
-                new UnifierImpl()
-        );
+        return new Pair<>(answerStream, new UnifierImpl());
     }
 
     @Override

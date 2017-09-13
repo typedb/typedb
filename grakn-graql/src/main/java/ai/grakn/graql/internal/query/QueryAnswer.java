@@ -155,8 +155,8 @@ public class QueryAnswer implements Answer {
         if(this.isEmpty()) return a2;
 
         AnswerExplanation exp = this.getExplanation();
-        Answer merged = new QueryAnswer(a2);
-        merged.putAll(this);
+        Answer merged = new QueryAnswer(this);
+        merged.putAll(a2);
 
         if(mergeExplanation) {
             exp = exp.merge(a2.getExplanation());
@@ -180,35 +180,32 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Answer filterVars(Set<Var> vars) {
-        QueryAnswer filteredAnswer = new QueryAnswer(this);
+        QueryAnswer filteredAnswer = new QueryAnswer(this).setExplanation(this.getExplanation());
         Set<Var> varsToRemove = Sets.difference(vars(), vars);
         varsToRemove.forEach(filteredAnswer::remove);
-
-        return filteredAnswer.setExplanation(this.getExplanation());
+        return filteredAnswer;
     }
 
     @Override
     public Answer unify(Unifier unifier){
         if (unifier.isEmpty()) return this;
-        Answer unified = new QueryAnswer();
-        Multimap<Var, Concept> answerMultimap = HashMultimap.create();
+        Answer unified = new QueryAnswer().setExplanation(this.getExplanation());
 
-        this.entrySet()
-                .forEach(e -> {
+        for(Map.Entry<Var, Concept> e : this.entrySet()){
                     Var var = e.getKey();
+                    Concept con = e.getValue();
                     Collection<Var> uvars = unifier.get(var);
                     if (uvars.isEmpty() && !unifier.values().contains(var)) {
-                        answerMultimap.put(var, e.getValue());
+                        Concept put = unified.put(var, con);
+                        if (put != null && !put.equals(con)) return new QueryAnswer();
                     } else {
-                        uvars.forEach(uv -> answerMultimap.put(uv, e.getValue()));
+                        for(Var uv : uvars){
+                            Concept put = unified.put(uv, con);
+                            if (put != null && !put.equals(con)) return new QueryAnswer();
+                        }
                     }
-                });
-        //non-ambiguous mapping
-        if ( answerMultimap.keySet().size() == answerMultimap.values().size()) {
-            answerMultimap.entries().forEach(e -> unified.put(e.getKey(), e.getValue()));
         }
-
-        return unified.setExplanation(this.getExplanation());
+        return unified;
     }
 
     @Override

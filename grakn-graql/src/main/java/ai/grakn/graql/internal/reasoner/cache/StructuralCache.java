@@ -32,7 +32,6 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import com.google.common.collect.Iterators;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -75,37 +74,16 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
                         }
                     });
             return new Pair<>(
-                    new StructuralCacheEntry<>(equivalentQuery, traversal.transform(conceptMap), match.getValue().rules()),
+                    new StructuralCacheEntry<>(equivalentQuery, traversal.transform(conceptMap)),
                     new Pair<>(unifier, conceptMap)
             );
         }
 
         StructuralCacheEntry<Q> newEntry = new StructuralCacheEntry<>(
                 query,
-                GreedyTraversalPlan.createTraversal(query.getPattern(), query.tx()),
-                query.getAtoms(Atom.class).flatMap(Atom::getApplicableRules).collect(Collectors.toSet())
+                GreedyTraversalPlan.createTraversal(query.getPattern(), query.tx())
         );
         structCache.put(structQuery, new Pair<>(structQuery, newEntry));
         return new Pair<>(newEntry, new Pair<>(new UnifierImpl(), new HashMap<>()));
     }
-
-    public Set<InferenceRule> getApplicableRules(Q query){
-        ReasonerStructuralQuery<Q> structQuery = new ReasonerStructuralQuery<>(query);
-
-        Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry<Q>> match = structCache.get(structQuery);
-        if (match != null) return match.getValue().rules();
-
-        return query.getAtoms(Atom.class).flatMap(Atom::getApplicableRules).collect(Collectors.toSet());
-    }
-
-    public boolean isRuleResolvable(Q q){
-        return !getApplicableRules(q).isEmpty();
-    }
-
-
-    //public boolean isRuleResolvable(Atom atom) {
-    //ReasonerQueries.create(Collections.singletonList(atom)
-    //    return isRuleResolvable(, atom.getParentQuery().tx()));
-    //}
-
 }
