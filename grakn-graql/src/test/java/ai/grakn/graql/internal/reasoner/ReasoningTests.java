@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner;
 
+import ai.grakn.GraknTx;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
@@ -27,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import com.google.common.collect.Sets;
+import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -148,6 +150,9 @@ public class ReasoningTests {
 
     @ClassRule
     public static final SampleKBContext testSet29 = SampleKBContext.preLoad("testSet29.gql").assumeTrue(GraknTestSetup.usingTinker());
+
+    @ClassRule
+    public static final SampleKBContext testSet30 = SampleKBContext.preLoad("testSet30.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Before
     public void onStartup() throws Exception {
@@ -315,11 +320,14 @@ public class ReasoningTests {
         QueryBuilder qb = testSet14.tx().graql().infer(true);
         String queryString = "match $x isa entity1, has res1 $y;";
         List<Answer> answers = qb.<MatchQuery>parse(queryString).execute();
+
+        //this will find 3 identical answers: 1 from db and two resulting from applying the rule
         String queryString2 = "match $x isa res1;";
-        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        List<Answer> answers2 = qb.<MatchQuery>parse(queryString2).execute();
 
         assertEquals(answers.size(), 2);
-        assertEquals(answers2.size(), 1);
+        assertEquals(answers2.size(), 3);
+        assertEquals(Sets.newHashSet(answers2).size(), 1);
     }
 
     @Test
@@ -830,7 +838,12 @@ public class ReasoningTests {
         });
     }
 
-    private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().stream().collect(toSet()));
+    @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation
+    public void mutuallyRecursiveRelationAndResource_queryForAttributedType(){
+        QueryBuilder qb = testSet30.tx().graql().infer(true);
+
+        String queryString = "match $p isa pair, has name 'ff';";
+        List<Answer> answers = qb.<MatchQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 16);
     }
 }

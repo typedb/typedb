@@ -58,9 +58,7 @@ public class AtomicState extends QueryState{
                        QueryCache<ReasonerAtomicQuery> cache) {
 
         super(sub, u, parent, subGoals, cache);
-
-        this.query = ReasonerQueries.atomic(q);
-        query.addSubstitution(sub);
+        this.query = ReasonerQueries.atomic(q).addSubstitution(sub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.dbIterator = streamUnifierPair.getKey()

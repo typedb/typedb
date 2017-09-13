@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Set;
 
@@ -81,22 +82,24 @@ class AnswerState extends ResolutionState {
     private Answer getMaterialisedAnswer(ReasonerAtomicQuery query, InferenceRule rule, QueryCache<ReasonerAtomicQuery> cache){
         Answer ans = getSubstitution();
         Unifier unifier = getUnifier();
-        ReasonerAtomicQuery ruleHead = rule.getHead();
+        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query).addSubstitution(ans);
+        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead()).addSubstitution(ans);
+
         Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()?
                 unifier.keySet() :
                 ruleHead.getVarNames();
 
-        boolean queryEquivalentToHead = query.isEquivalent(ruleHead);
+        boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
 
         //check if the specific answer to ruleHead already in cache/db
         Answer headAnswer = ruleHead
-                            .lookupAnswer(cache, ans)
-                            .filterVars(queryVars)
-                            .unify(unifier);
+                .lookupAnswer(cache, ans)
+                .filterVars(queryVars)
+                .unify(unifier);
 
         //if not and query different than rule head do the same with the query
         Answer queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
-                query.lookupAnswer(cache, ans) :
+                subbedQuery.lookupAnswer(cache, ans) :
                 new QueryAnswer();
 
         //ensure no duplicates created - only materialise answer if it doesn't exist in the db
