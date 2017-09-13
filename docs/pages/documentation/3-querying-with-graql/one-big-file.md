@@ -15,6 +15,13 @@ A [query](#query) is an action, in some cases preceded by a [match](#match). Exa
 [define](#define-query), [undefine](#undefine-query), [get](#get-query), [insert](#insert-query) and
 [delete](#delete-query).
 
+## Answer
+
+Several [queries](#query) return [answers](#answer). An [answer](#answer) is a map from [variables](#variable) to
+concepts. In general, [answers](#answer) will contain all [variables](#variable) mentioned in the [patterns](#pattern)
+of the [query](#query).
+
+
 # Variable pattern
 
 A [variable pattern](#variable-pattern) is a [variable](#variable) (the _subject_ of the pattern) followed by zero or
@@ -47,10 +54,23 @@ match $x isa movie; get;
 
 A [define query](#define-query) is the keyword `define` followed by one or more [variable patterns](#variable-pattern).
 
+The [define query](#define-query) will add the given [variable patterns](#variable-pattern) to the schema.
+
+After execution, it will return a single [answer](#answer) containing bindings for all [variables](#variable) mentioned
+in the [variable patterns](#variable-pattern).
+
 ## Undefine Query
 
 An [undefine query](#undefine-query) is the keyword `undefine` followed by one or more
 [variable patterns](#variable-pattern).
+
+The [define query](#define-query) will remove the given [variable patterns](#variable-patterns) from the schema.
+
+In order to remove a schema concept entirely, it is sufficient to undefine its [direct super-concept](#sub):
+
+```
+undefine person sub entity;
+```
 
 ## Supported Properties
 
@@ -141,8 +161,9 @@ role exactly once).
 A [match](#match) is the keyword `match` followed by one or more [patterns](#pattern) and zero or more
 [modifiers](#modifier).
 
-A [match](#match) will find all _answers_ in the knowledge base that _satisfy_ all of the given [patterns](#patterns).
-These _answers_ can be used with either [get](#get-query), [insert](#insert-query) or [delete](#delete-query).
+A [match](#match) will find all [answers](#answer) in the knowledge base that _satisfy_ all of the given
+[patterns](#patterns). These [answers](#answer) can be used with either [get](#get-query), [insert](#insert-query) or
+[delete](#delete-query).
 <!-- TODO aggregate -->
 
 ### Pattern
@@ -150,12 +171,12 @@ These _answers_ can be used with either [get](#get-query), [insert](#insert-quer
 A [pattern](#pattern) is either a [variable pattern](#variable-pattern), a conjunction or a disjunction:
 
 - A conjunction is one or more [patterns](#pattern) surrounded by curly braces `{ }` and ending in a semicolon `;`. An
-  _answer_ _satisfies_ a conjunction if it _satisfies_ all [patterns](#pattern) within the conjunction.
+  [answer](#answer) _satisfies_ a conjunction if it _satisfies_ all [patterns](#pattern) within the conjunction.
 
-- A disjunction is two [patterns](#pattern) joined with the keyword `or` and ending in a semicolon `;`. An _answer_
-  _satisfies_ a disjunction if it _satisfies_ either [pattern](#pattern) within the disjunction.
+- A disjunction is two [patterns](#pattern) joined with the keyword `or` and ending in a semicolon `;`. An
+  [answer](#answer) _satisfies_ a disjunction if it _satisfies_ either [pattern](#pattern) within the disjunction.
 
-- An _answer_ _satisfies_ a [variable pattern](#variable-pattern) if the concept bound to the subject of the
+- An [answer](#answer) _satisfies_ a [variable pattern](#variable-pattern) if the concept bound to the subject of the
   [variable pattern](#variable-pattern) _satisfies_ all [properties](#property) in the
   [variable pattern](#variable-pattern).
 
@@ -286,8 +307,8 @@ $_O != $_V;
 A [get query](#get-query) is a [match](#match) followed by the keyword `get` and zero or more [variables](#variable),
 ending in a semicolon `;`.
 
-The [get query](#get-query) will project each _answer_ over the provided [variables](#variable). If no
-[variables](#variable) are provided, then the _answers_ are projected over all [variables](#variable) mentioned in the
+The [get query](#get-query) will project each [answer](#answer) over the provided [variables](#variable). If no
+[variables](#variable) are provided, then the [answers](#answer) are projected over all [variables](#variable) mentioned in the
 [pattern](#pattern).
 
 ## Insert Query
@@ -296,10 +317,10 @@ An [insert query](#insert-query) is an optional [match](#match) followed by the 
 [variable patterns](#variable-pattern).
 
 The [insert query](#insert-query) will insert the given [variable patterns](#variable-pattern) into the knowledge base
-and return an _answer_ with variables bound to concepts mentioned in the [variable patterns](#variable pattern).
+and return an [answer](#answer) with variables bound to concepts mentioned in the [variable patterns](#variable pattern).
 
-If a [match](#match) is provided, then the [insert query](#insert-query) will operate for every _answer_ of the
-[match](#match) and return one _answer_ for each [match](#match).
+If a [match](#match) is provided, then the [insert query](#insert-query) will operate for every [answer](#answer) of the
+[match](#match) and return one [answer](#answer) for each [match](#match).
 
 Within the [variable patterns](#variable-pattern), the following [properties](#property) are supported:
 
