@@ -20,6 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -50,7 +51,7 @@ import static javax.annotation.meta.When.NEVER;
  */
 abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> implements TxFactory<G> {
 
-    protected final String keyspace;
+    protected final Keyspace keyspace;
     protected final String engineUrl;
     protected final Properties properties;
 
@@ -60,10 +61,10 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     G tx = null;
     private G txBatchLoading = null;
 
-    TxFactoryAbstract(String keyspace, String engineUrl, Properties properties){
+    TxFactoryAbstract(Keyspace keyspace, String engineUrl, Properties properties){
         Objects.requireNonNull(keyspace);
 
-        this.keyspace = keyspace.toLowerCase(Locale.getDefault());
+        this.keyspace = keyspace;
         this.engineUrl = engineUrl;
         this.properties = properties;
     }

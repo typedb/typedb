@@ -20,6 +20,7 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
@@ -67,12 +68,12 @@ public class SystemKeyspace {
     // This will eventually be configurable and obtained the same way the factory is obtained
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
-    public static final String SYSTEM_KB_NAME = "graknSystem";
+    public static final Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
     public static final Label KEYSPACE_ENTITY = Label.of("keyspace");
     public static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
 
     private static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
-    private final ConcurrentHashMap<String, Boolean> openSpaces;
+    private final ConcurrentHashMap<Keyspace, Boolean> openSpaces;
     private final EngineGraknTxFactory factory;
 
     public SystemKeyspace(EngineGraknTxFactory factory){
@@ -90,17 +91,17 @@ public class SystemKeyspace {
     /**
      * Notify that we just opened a keyspace with the same engineUrl & config.
      */
-     public boolean ensureKeyspaceInitialised(String keyspace) {
+     public boolean ensureKeyspaceInitialised(Keyspace keyspace) {
          if(openSpaces.containsKey(keyspace)){
              return true;
          }
 
-        try (GraknTx graph = factory.tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
             }
-            Attribute<String> attribute = keyspaceName.putAttribute(keyspace);
+            Attribute<String> attribute = keyspaceName.putAttribute(keyspace.getValue());
             if (attribute.owner() == null) {
                 graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
             }
@@ -116,11 +117,11 @@ public class SystemKeyspace {
      * Checks if the keyspace exists in the system. The persisted graph is checked each time because the graph
      * may have been deleted in another JVM.
      *
-     * @param keyspace The keyspace which might be in the system
+     * @param keyspace The {@link Keyspace} which might be in the system
      * @return true if the keyspace is in the system
      */
-    public boolean containsKeyspace(String keyspace){
-        try (GraknTx graph = factory.tx(SYSTEM_KB_NAME, GraknTxType.READ)) {
+    public boolean containsKeyspace(Keyspace keyspace){
+        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)) {
             return graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null;
         }
     }
@@ -129,16 +130,16 @@ public class SystemKeyspace {
      * This is called when a graph is deleted via {@link GraknAdmin#delete()}.
      * This removes the keyspace of the deleted graph from the system graph
      *
-     * @param keyspace the keyspace to be removed from the system graph
+     * @param keyspace the {@link Keyspace} to be removed from the system graph
      */
-    public boolean deleteKeyspace(String keyspace){
-        if(keyspace.equals(SYSTEM_KB_NAME)){
+    public boolean deleteKeyspace(Keyspace keyspace){
+        if(keyspace.equals(SYSTEM_KB_KEYSPACE)){
            return false;
         }
 
-        try (GraknTx graph = factory.tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
-            Attribute<String> attribute = keyspaceName.getAttribute(keyspace);
+            Attribute<String> attribute = keyspaceName.getAttribute(keyspace.getValue());
 
             if(attribute == null) return false;
             Thing thing = attribute.owner();
@@ -160,7 +161,7 @@ public class SystemKeyspace {
      */
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (GraknTx tx = factory.tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 return;
             }

@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine;
 
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.data.RedisWrapper;
@@ -111,9 +112,9 @@ public class GraknEngineServerTest {
 
             // init a random keyspace
             String keyspaceName = "thisisarandomwhalekeyspace";
-            server.factory().systemKeyspace().ensureKeyspaceInitialised(keyspaceName);
+            server.factory().systemKeyspace().ensureKeyspaceInitialised(Keyspace.of(keyspaceName));
 
-            assertTrue(server.factory().systemKeyspace().containsKeyspace(keyspaceName));
+            assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
         }
     }
 

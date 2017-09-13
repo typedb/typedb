@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.util.REST;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -37,13 +38,13 @@ abstract class HALExploreConcept {
 
     final RepresentationFactory factory;
     final Representation halResource;
-    private final String keyspace;
+    private final Keyspace keyspace;
     private final int limit;
     private final int offset;
     final String resourceLinkPrefix;
 
 
-    HALExploreConcept(Concept concept, String keyspace, int offset, int limit) {
+    HALExploreConcept(Concept concept, Keyspace keyspace, int offset, int limit) {
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = CONCEPT;

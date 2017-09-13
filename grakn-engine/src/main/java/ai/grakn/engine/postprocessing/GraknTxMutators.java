@@ -20,6 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.util.ErrorMessage;
@@ -46,31 +47,31 @@ public abstract class GraknTxMutators {
     /**
      *
      *
-     * @param keyspace keyspace of the graph to mutate
+     * @param keyspace {@link Keyspace} of the database to mutate
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     public static void runBatchMutationWithRetry(
-            EngineGraknTxFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
+            EngineGraknTxFactory factory, Keyspace keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
         runMutationWithRetry(factory, keyspace, GraknTxType.BATCH, maxRetry, mutatingFunction);
     }
 
     /**
      *
-     * @param keyspace keyspace of the graph to mutate
+     * @param keyspace {@link Keyspace} of the database to mutate
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     static void runMutationWithRetry(
-            EngineGraknTxFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
+            EngineGraknTxFactory factory, Keyspace keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
         runMutationWithRetry(factory, keyspace, GraknTxType.WRITE, maxRetry, mutatingFunction);
     }
 
     /**
      *
-     * @param keyspace keyspace of the graph to mutate
+     * @param keyspace {@link Keyspace} of the database to mutate
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     private static void runMutationWithRetry(
-            EngineGraknTxFactory factory , String keyspace, GraknTxType txType, int maxRetry,
+            EngineGraknTxFactory factory , Keyspace keyspace, GraknTxType txType, int maxRetry,
             Consumer<GraknTx> mutatingFunction
     ){
         if(!factory.systemKeyspace().containsKeyspace(keyspace)){ //This may be slow.
