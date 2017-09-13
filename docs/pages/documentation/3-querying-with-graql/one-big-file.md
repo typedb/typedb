@@ -40,11 +40,11 @@ subset.
 
 When a [property](#property) takes a [variable](#variable) representing a schema concept, it is possible to substitute
 a label. For example,
-```
+```graql
 match $x isa $A; $A label movie; get;
 ```
 should be written more succinctly as
-```
+```graql
 match $x isa movie; get;
 ```
 
@@ -68,7 +68,7 @@ The [define query](#define-query) will remove the given [variable patterns](#var
 
 In order to remove a schema concept entirely, it is sufficient to undefine its [direct super-concept](#sub):
 
-```
+```graql
 undefine person sub entity;
 ```
 
@@ -106,7 +106,7 @@ one will be created.
 `$A has <identifier>` defines the type `$A` to have attributes of type `<identifier>`.
 
 This is done using the following relationship structure:
-```
+```graql
 has-<identifier>-owner sub has-<sup>-owner;
 has-<identifier>-value sub has-<sup>-value;
 has-<identifier> sub has-<sup>, relates has-<identifier>-owner, relates has-<identifier>-value;
@@ -121,7 +121,7 @@ Where `<sup>` is the direct super-concept of `<identifier>`.
 `$A key <identifier>` defines the type `$A` to have a key of attribute type `<identifier>`.
 
 This is done using the following relationship structure:
-```
+```graql
 key-<identifier>-owner sub key-<sup>-owner;
 key-<identifier>-value sub key-<sup>-value;
 key-<identifier> sub key-<sup>, relates key-<identifier>-owner, relates key-<identifier>-value;
@@ -200,22 +200,22 @@ The [variable](#variable) representing the role can optionally be omitted. If it
 #### has (data)
 
 <!-- TODO: Describe without referring to relationships? -->
-```
+```graql
 $x has <identifier> $y as $r;
 ```
 is equivalent to
-```
+```graql
 $r ($x, $y);
 $y isa <identifier>;
 ```
 
 The `as $r` is optional. Additionally, a predicate can be used instead of a [variable](#variable):
 
-```
+```graql
 $x has <identifier> <predicate>;
 ```
 which is equivalent to:
-```
+```graql
 $x has <identifier> $_;
 $_ val <predicate>;
 ```
@@ -252,11 +252,11 @@ $_ val <predicate>;
 #### has (type)
 
 <!-- TODO: Describe without referring to relationships? -->
-```
+```graql
 $A has <identifier>
 ```
 is equivalent to
-```
+```graql
 $_R sub relationship, relates $_O, relates $_V;
 $_O sub role;
 $_V sub role;
@@ -271,11 +271,11 @@ $_O != $_V;
 
 <!-- TODO: Describe without referring to relationships? -->
 <!-- TODO: handle required part properly -->
-```
+```graql
 $A key <identifier>
 ```
 is equivalent to
-```
+```graql
 $_R sub relationship, relates $_O, relates $_V;
 $_O sub role;
 $_V sub role;
@@ -337,33 +337,33 @@ Within the [variable patterns](#variable-pattern), the following [properties](#p
 ### has (data)
 
 <!-- TODO: Describe without referring to relationships? -->
-```
+```graql
 $x has <identifier> $y as $r;
 ```
 
 If `<identifier>` is not a key for the direct type of `$x`, this is equivalent to:
 
-```
+```graql
 $r (has-<identifier>-owner: $x, has-<identifier>-value: $y) isa has-<identifier>;
 $y isa <identifier>;
 ```
 
 Otherwise, it is equivalent to:
 
-```
+```graql
 $r (key-<identifier>-owner: $x, key-<identifier>-value: $y) isa key-<identifier>;
 $y isa <identifier>;
 ```
 
 The `as $r` is optional. Additionally, a literal value can be used instead of a [variable](#variable):
 
-```
+```graql
 $x has <identifier> <value>;
 ```
 
 which is equivalent to:
 
-```
+```graql
 $x has <identifier> $_;
 $_ val <value>;
 ```
