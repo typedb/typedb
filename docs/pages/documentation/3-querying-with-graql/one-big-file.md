@@ -35,8 +35,8 @@ more alphanumeric characters, dashes and underscores.
 ## Property
 
 There are several different [properties](#property). Which ones are supported and what they do depends on the part of
-the query. For example, [match](#match) supports most properties, whereas [insert](#insert) only supports a small
-subset.
+the [query](#query). For example, [match](#match) supports most [properties](#property), whereas [insert](#insert) only
+supports a small subset.
 
 When a [property](#property) takes a [variable](#variable) representing a schema concept, it is possible to substitute
 a label. For example,
@@ -126,12 +126,12 @@ key-<identifier>-owner sub key-<sup>-owner;
 key-<identifier>-value sub key-<sup>-value;
 key-<identifier> sub key-<sup>, relates key-<identifier>-owner, relates key-<identifier>-value;
 
-$A plays{{required}} has-<identifier>-owner;
+$A plays<<required>> has-<identifier>-owner;
 <identifier> plays has-<identifier>-value;
 ```
 Where `<sup>` is the direct super-concept of `<identifier>`.
 <!-- TODO: This is pretty bad -->
-(note that `plays{{required}}` is not valid syntax, but indicates that instances of the type _must_ play the required
+(note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
 role exactly once).
 
 ### datatype
@@ -199,11 +199,11 @@ The [variable](#variable) representing the role can optionally be omitted. If it
 
 #### has (data)
 
+`$x has <identifier> $y as $r` is _satisfied_ if `$x` is related to an attribute `$y` of type `<identifier>`, where
+`$r` represents the relationship between them.
+
+This is equivalent to the following:
 <!-- TODO: Describe without referring to relationships? -->
-```graql
-$x has <identifier> $y as $r;
-```
-is equivalent to
 ```graql
 $r ($x, $y);
 $y isa <identifier>;
@@ -251,11 +251,10 @@ $_ val <predicate>;
 
 #### has (type)
 
+`$A has <identifier>` is _satisfied_ if `$A` is a type who have attribute type `<identifier>`.
+
 <!-- TODO: Describe without referring to relationships? -->
-```graql
-$A has <identifier>
-```
-is equivalent to
+This is equivalent to the following:
 ```graql
 $_R sub relationship, relates $_O, relates $_V;
 $_O sub role;
@@ -269,22 +268,24 @@ $_O != $_V;
 
 #### key
 
+`$A has <identifier>` is _satisfied_ if `$A` is a type who have attribute type `<identifier>` as a key.
+
 <!-- TODO: Describe without referring to relationships? -->
 <!-- TODO: handle required part properly -->
-```graql
-$A key <identifier>
-```
-is equivalent to
+This is equivalent to the following:
 ```graql
 $_R sub relationship, relates $_O, relates $_V;
 $_O sub role;
 $_V sub role;
 
-$A plays <required thingy I GUESS> $_O;
+$A plays<<required>> $_O;
 <identifier> plays $_V;
 
 $_O != $_V;
 ```
+<!-- TODO: This is pretty bad -->
+(note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
+role exactly once).
 
 #### datatype
 
@@ -308,8 +309,8 @@ A [get query](#get-query) is a [match](#match) followed by the keyword `get` and
 ending in a semicolon `;`.
 
 The [get query](#get-query) will project each [answer](#answer) over the provided [variables](#variable). If no
-[variables](#variable) are provided, then the [answers](#answer) are projected over all [variables](#variable) mentioned in the
-[pattern](#pattern).
+[variables](#variable) are provided, then the [answers](#answer) are projected over all [variables](#variable) mentioned
+in the [pattern](#pattern).
 
 ## Insert Query
 
@@ -320,7 +321,7 @@ The [insert query](#insert-query) will insert the given [variable patterns](#var
 and return an [answer](#answer) with variables bound to concepts mentioned in the [variable patterns](#variable pattern).
 
 If a [match](#match) is provided, then the [insert query](#insert-query) will operate for every [answer](#answer) of the
-[match](#match) and return one [answer](#answer) for each [match](#match).
+[match](#match) and return one [answer](#answer) for each [match](#match) [answer](#answer).
 
 Within the [variable patterns](#variable-pattern), the following [properties](#property) are supported:
 
@@ -336,11 +337,12 @@ Within the [variable patterns](#variable-pattern), the following [properties](#p
 
 ### has (data)
 
-<!-- TODO: Describe without referring to relationships? -->
-```graql
-$x has <identifier> $y as $r;
-```
+`$x has <identifier> $y as $r` will relate the attribute `$y` of type `<identifier>` to `$x`, binding the relationship
+to `$r`.
 
+If `<identifier>` is a key for the direct type of `$x`, then the resulting relationship will be a key relationship.
+
+<!-- TODO: Describe without referring to relationships? -->
 If `<identifier>` is not a key for the direct type of `$x`, this is equivalent to:
 
 ```graql
@@ -384,7 +386,13 @@ schema concept exists.
 
 ## Delete Query
 
-A [delete query](#delete-query) is a [match](#match) followed by the keyword `delete` and one or more
+A [delete query](#delete-query) is a [match](#match) followed by the keyword `delete` and zero or more
 [variables](#variable).
 
+For every [answer](#answer) from the [match](#match), the [delete query](#delete-query) will delete the concept bound
+to every [variable](#variable) listed. If no [variables](#variable) are provided, then every variable mentioned in
+the [match](#match) is deleted.
+
 <!-- TODO  Aggregate + compute -->
+
+<!-- TODO datatype, values, predicates -->
