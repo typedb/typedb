@@ -67,7 +67,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>browserify</id>
+                        <id>build-production</id>
                         <goals>
                             <goal>exec</goal>
                         </goals>
