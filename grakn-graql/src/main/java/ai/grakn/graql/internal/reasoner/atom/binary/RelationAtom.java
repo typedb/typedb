@@ -382,18 +382,9 @@ public class RelationAtom extends IsaAtom {
         return roles;
     }
 
-    /**
-     * @param type to be added to this relation
-     * @return new relation with specified type
-     */
     public RelationAtom addType(SchemaConcept type) {
-        ConceptId typeId = type.getId();
-        Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
-
-        VarPatternAdmin newPattern = getPattern().asVarPattern().isa(typeVariable).admin();
-        IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
-
-        return new RelationAtom(newPattern, typeVariable, newPredicate, this.getParentQuery());
+        Pair<VarPatternAdmin, IdPredicate> typedPair = getTypedPair(type);
+        return new RelationAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
     }
 
     /**
@@ -475,7 +466,7 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public Atom inferTypes() {
+    public RelationAtom inferTypes() {
         return this
                 .inferRelationType(new QueryAnswer())
                 .inferRoleTypes();
