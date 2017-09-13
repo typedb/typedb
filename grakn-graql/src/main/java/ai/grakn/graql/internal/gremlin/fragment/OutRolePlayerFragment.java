@@ -36,14 +36,14 @@ import java.util.Collection;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_DIRECTION;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_EDGE;
-import static ai.grakn.util.Schema.EdgeLabel.ROLE_PLAYER;
+import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
- * A fragment representing traversing a {@link ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edge from the relation to the
+ * A fragment representing traversing a {@link ai.grakn.util.Schema.EdgeLabel#SHORTCUT} edge from the relation to the
  * role-player.
  * <p>
  * Part of a {@link ai.grakn.graql.internal.gremlin.EquivalentFragmentSet}, along with {@link InRolePlayerFragment}.
@@ -67,7 +67,7 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     private GraphTraversal<Element, Vertex> reifiedRelationTraversal(GraknTx graph, Collection<Var> vars) {
         GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
 
-        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().getValue());
+        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge().getValue());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);

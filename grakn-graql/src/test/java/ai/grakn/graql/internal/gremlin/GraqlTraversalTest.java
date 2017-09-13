@@ -92,7 +92,7 @@ public class GraqlTraversalTest {
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
     private static GraknTx tx;
-    private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
+    private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.SHORTCUT.getLabel();
 
     @BeforeClass
     public static void setUp() {

@@ -142,8 +142,8 @@ public class RelationshipTest extends TxTestBase {
     }
     private Set<Concept> followRolePlayerEdgesToNeighbours(GraknTx graph, Thing thing) {
         List<Vertex> vertices = graph.admin().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
-                in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
+                in(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
 
         return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).get().asThing()).collect(Collectors.toSet());
     }

@@ -36,14 +36,14 @@ import java.util.Collection;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_DIRECTION;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_EDGE;
-import static ai.grakn.util.Schema.EdgeLabel.ROLE_PLAYER;
+import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
- * A fragment representing traversing a {@link ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edge from the role-player to
+ * A fragment representing traversing a {@link ai.grakn.util.Schema.EdgeLabel#SHORTCUT} edge from the role-player to
  * the relation.
  * <p>
  * Part of a {@link ai.grakn.graql.internal.gremlin.EquivalentFragmentSet}, along with {@link OutRolePlayerFragment}.
@@ -65,7 +65,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(GraknTx graph, Collection<Var> vars) {
-        GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(ROLE_PLAYER.getLabel()).as(edge().getValue());
+        GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(SHORTCUT.getLabel()).as(edge().getValue());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
@@ -79,7 +79,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
             GraknTx graph, Direction direction, Schema.EdgeProperty roleProperty, Collection<Var> vars) {
 
-        GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.RESOURCE.getLabel());
+        GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.ATTRIBUTE.getLabel());
 
         // Identify the relation - role-player pair by combining the relationship edge and direction into a map
         edgeTraversal.as(RELATION_EDGE).constant(direction).as(RELATION_DIRECTION);

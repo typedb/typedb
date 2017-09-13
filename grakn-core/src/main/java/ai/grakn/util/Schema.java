@@ -59,8 +59,8 @@ public final class Schema {
         PLAYS("plays"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
-        ROLE_PLAYER("role-player"),
-        RESOURCE("resource"),
+        SHORTCUT("shortcut"),
+        ATTRIBUTE("attribute"),
         SHARD("shard");
 
         private final String label;
