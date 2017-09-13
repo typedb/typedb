@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.shaded.minlog.Log;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Properties;
