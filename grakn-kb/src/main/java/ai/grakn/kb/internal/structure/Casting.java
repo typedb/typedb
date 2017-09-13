@@ -53,7 +53,7 @@ public class Casting {
 
     private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> edge().source().
             flatMap(vertexElement -> edge().tx().factory().<Relationship>buildConcept(vertexElement)).
-            orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
+            orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()))
     );
 
     public Casting(EdgeElement edgeElement){

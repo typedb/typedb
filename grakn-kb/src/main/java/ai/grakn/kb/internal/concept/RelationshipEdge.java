@@ -63,15 +63,15 @@ public class RelationshipEdge implements RelationshipStructure {
     private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> {
-        VertexElement vertexElement = edge().source().orElseThrow(() -> GraknTxOperationException.missingOwner(getId()));
-        return edge().tx().factory().<Thing>buildConcept(vertexElement).orElseThrow(() -> GraknTxOperationException.missingOwner(getId()));
-    });
+    private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().source().
+            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingOwner(getId()))
+    );
 
-    private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> {
-        VertexElement vertexElement = edge().target().orElseThrow(() -> GraknTxOperationException.missingValue(getId()));
-        return edge().tx().factory().<Thing>buildConcept(vertexElement).orElseThrow(() -> GraknTxOperationException.missingValue(getId()));
-    });
+    private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().target().
+            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingValue(getId()))
+    );
 
     RelationshipEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
