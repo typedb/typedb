@@ -5,6 +5,10 @@ GRAKN_DIST_TARGET=$BASEDIR/../../../target/
 GRAKN_DIST_TMP=$GRAKN_DIST_TARGET/grakn-bash-test/
 REDIS_DATA_DIR=./db/redis
 
+STORAGE_PID=/tmp/grakn-storage.pid
+GRAKN_PID=/tmp/grakn.pid
+QUEUE_PID=/tmp/grakn-queue.pid
+
 must_properly_start() {
   "${GRAKN_DIST_TMP}"/grakn server start
   local count_running_cassandra_process=`ps -ef | grep 'CassandraDaemon' | grep -v grep | awk '{ print $2}' | wc -l`
@@ -28,15 +32,15 @@ must_properly_start() {
 }
 
 pid_files_must_exist() {
-  if [[ ! -s /tmp/grakn-cassandra.pid ]]; then
+  if [[ ! -s "${STORAGE_PID}" ]]; then
     echo "Either Cassandra PID file is missing, or it is an empty file"
     return 1
   fi
-  if [[ ! -s /tmp/grakn-redis.pid ]]; then
+  if [[ ! -s "${QUEUE_PID}" ]]; then
     echo "Either Redis PID file is missing, or it is an empty file"
     return 1
   fi
-  if [[ ! -s /tmp/grakn-engine.pid ]]; then
+  if [[ ! -s "${GRAKN_PID}" ]]; then
     echo "Either Grakn PID file is missing, or it is an empty file"
     return 1
   fi
@@ -76,15 +80,15 @@ count_marriage_equal_to_1()
 }
 
 pid_files_must_not_exist() {
-  if [[ -e /tmp/grakn-cassandra.pid ]]; then
+  if [[ -e "${STORAGE_PID}" ]]; then
     echo "Cassandra PID file is not deleted"
     return 1
   fi
-  if [[ -e /tmp/grakn-redis.pid ]]; then
+  if [[ -e "${QUEUE_PID}" ]]; then
     echo "Redis PID file is not deleted"
     return 1
   fi
-  if [[ -e /tmp/grakn-engine.pid ]]; then
+  if [[ -e "${GRAKN_PID}" ]]; then
     echo "Grakn PID file is not deleted"
     return 1
   fi
@@ -121,6 +125,12 @@ wipe_out_keyspaces() {
   rm -rf "$GRAKN_DIST_TMP"
 }
 
+wipe_out_files() {
+  rm "${QUEUE_PID}"
+  rm "${GRAKN_PID}"
+  rm "${STORAGE_PID}"
+}
+
 force_kill_and_halt_test() {
   echo "Force kill initiated - attempting to clean up any running processes..."
   local cassandra_pid=`ps -ef | grep 'CassandraDaemon' | grep -v grep | awk '{ print $2}'`
@@ -144,6 +154,9 @@ force_kill_and_halt_test() {
 
   echo "Wiping out keyspaces..."
   wipe_out_keyspaces
+
+  echo "Wiping out PID files..."
+  wipe_out_files
 
   echo "Force kill finished."
   return 0
