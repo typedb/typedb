@@ -101,6 +101,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
+    public ReasonerAtomicQuery addSubstitution(Answer sub){
+        super.addSubstitution(sub);
+        return this;
+    }
+
+    @Override
     public boolean equals(Object obj) {
         return !(obj == null || this.getClass() != obj.getClass()) && super.equals(obj);
     }
@@ -223,9 +229,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     public Stream<Answer> materialise(Answer answer) {
-        ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
-        queryToMaterialise.addSubstitution(answer);
-        return queryToMaterialise.insert()
+        return new ReasonerAtomicQuery(this)
+                .addSubstitution(answer)
+                .insert()
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
