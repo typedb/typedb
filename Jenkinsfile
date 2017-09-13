@@ -42,7 +42,7 @@ authored by - """ + user
 	       'CSV_DATA=' + workspace + '/generate-SNB/social_network',
 	       'KEYSPACE=snb',
 	       'ENGINE=localhost:4567',
-	       'ACTIVE_TASKS=1000',
+	       'ACTIVE_TASKS=16',
 	       'PATH+EXTRA=' + workspace + '/grakn-package/bin',
 	       'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
 	       'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
