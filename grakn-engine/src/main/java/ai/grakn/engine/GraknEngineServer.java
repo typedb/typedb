@@ -131,13 +131,17 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public static void main(String[] args) {
-        GraknEngineConfig prop = GraknEngineConfig.create();
-        // Start Engine
-        GraknEngineServer graknEngineServer = create(prop);
-        graknEngineServer.start();
-        // close GraknEngineServer on SIGTERM
-        Thread closeThread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
-        Runtime.getRuntime().addShutdownHook(closeThread);
+        try {
+            GraknEngineConfig prop = GraknEngineConfig.create();
+            // Start Engine
+            GraknEngineServer graknEngineServer = create(prop);
+            graknEngineServer.start();
+            // close GraknEngineServer on SIGTERM
+            Thread closeThread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
+            Runtime.getRuntime().addShutdownHook(closeThread);
+        } catch (Exception e) {
+            LOG.error("An exception has occurred", e);
+        }
     }
 
     public void start() {
