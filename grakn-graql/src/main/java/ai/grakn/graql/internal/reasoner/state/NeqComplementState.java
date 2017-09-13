@@ -62,7 +62,7 @@ public class NeqComplementState extends AtomicState {
 
         ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(q);
         this.predicates = complementQuery.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        this.predicateSub = sub.filterVars(predicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
+        this.predicateSub = sub.project(predicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
         predicates.forEach(complementQuery::removeAtomic);
         complementQuery.addSubstitution(sub);

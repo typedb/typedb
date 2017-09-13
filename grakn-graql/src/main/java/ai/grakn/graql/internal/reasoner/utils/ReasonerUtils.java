@@ -145,16 +145,21 @@ public class ReasonerUtils {
      * @param permutations different permutations on the variables
      * @return set of unifiers
      */
-    public static Set<Unifier> getUnifiersFromPermutations(List<Var> originalVars, List<List<Var>> permutations){
+    public static Set<Unifier> getUnifiersFromPermutations(List<Pair<Var, Var>> originalVars, List<List<Pair<Var, Var>>> permutations){
         Set<Unifier> unifierSet = new HashSet<>();
         permutations.forEach(perm -> {
             Unifier unifier = new UnifierImpl();
-            Iterator<Var> pIt = originalVars.iterator();
-            Iterator<Var> cIt = perm.iterator();
+            Iterator<Pair<Var, Var>> pIt = originalVars.iterator();
+            Iterator<Pair<Var, Var>> cIt = perm.iterator();
             while(pIt.hasNext() && cIt.hasNext()){
-                Var pVar = pIt.next();
-                Var chVar = cIt.next();
-                if (!pVar.equals(chVar)) unifier.addMapping(pVar, chVar);
+                Pair<Var, Var> pPair = pIt.next();
+                Pair<Var, Var> chPair = cIt.next();
+                Var parentPlayer = pPair.getKey();
+                Var childPlayer = chPair.getKey();
+                Var parentRole = pPair.getValue();
+                Var childRole = chPair.getValue();
+                if (!parentPlayer.equals(childPlayer)) unifier.addMapping(parentPlayer, childPlayer);
+                if (parentRole != null && childRole != null && !parentRole.equals(childRole)) unifier.addMapping(parentRole, childRole);
             }
             unifierSet.add(unifier);
         });
@@ -199,6 +204,20 @@ public class ReasonerUtils {
             superType = superType.sup();
         }
         return superTypes;
+    }
+
+    /**
+     * @param concept which hierarchy should be considered
+     * @return set of {@link SchemaConcept}s: provided concept and all its supers including meta
+     */
+    public static Set<SchemaConcept> getUpstreamHierarchy(SchemaConcept concept){
+        Set<SchemaConcept> concepts = new HashSet<>();
+        SchemaConcept superType = concept;
+        while(superType != null) {
+            concepts.add(superType);
+            superType = superType.sup();
+        }
+        return concepts;
     }
 
     /**
