@@ -26,7 +26,6 @@ import ai.grakn.kb.internal.GraknTxAbstract;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
 
