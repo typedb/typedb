@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -40,7 +41,7 @@ import java.util.Properties;
  */
 public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGraph> {
 
-    TxFactoryTinker(String keyspace, String engineUrl, Properties properties){
+    TxFactoryTinker(Keyspace keyspace, String engineUrl, Properties properties){
         super(keyspace, engineUrl, properties);
     }
 

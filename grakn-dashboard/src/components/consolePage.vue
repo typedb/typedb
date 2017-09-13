@@ -118,7 +118,7 @@ export default {
       this.queryEngine(query);
     },
     onLoadSchema(type) {
-      const querySub = `match $x sub ${type};`;
+      const querySub = `match $x sub ${type}; get;`;
       EngineClient.graqlShell(querySub).then(this.shellResponse, (err) => {
         this.state.eventHub.$emit('error-message', err.message);
       });

@@ -324,12 +324,12 @@ public interface GraknTx extends AutoCloseable{
 
     // TODO: what does this do when the graph is closed?
     /**
-     * Utility function to get the name of the keyspace where the graph is persisted.
+     * Utility function to get {@link Keyspace} of the knowledge base.
      *
-     * @return The name of the keyspace where the graph is persisted
+     * @return The {@link Keyspace} of the knowledge base.
      */
     @CheckReturnValue
-    String getKeyspace();
+    Keyspace getKeyspace();
 
     /**
      * Utility function to determine whether the graph has been closed.

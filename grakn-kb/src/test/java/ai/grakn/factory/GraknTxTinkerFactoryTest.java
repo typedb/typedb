@@ -21,6 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
@@ -61,7 +62,7 @@ public class GraknTxTinkerFactoryTest {
 
     @Before
     public void setupTinkerGraphFactory(){
-        tinkerGraphFactory = new TxFactoryTinker("test", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        tinkerGraphFactory = new TxFactoryTinker(Keyspace.of("test"), Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 
     @Test
@@ -104,7 +105,7 @@ public class GraknTxTinkerFactoryTest {
 
     @Test
     public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw(){
-        TxFactoryTinker factory = new TxFactoryTinker("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryTinker factory = new TxFactoryTinker(Keyspace.of("mytest"), Grakn.IN_MEMORY, TEST_PROPERTIES);
         factory.open(GraknTxType.WRITE);
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("mytest"));
@@ -113,7 +114,7 @@ public class GraknTxTinkerFactoryTest {
 
     @Test
     public void whenGettingGraphFromFactoryClosingItAndGettingItAgain_ReturnGraph(){
-        TxFactoryTinker factory = new TxFactoryTinker("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryTinker factory = new TxFactoryTinker(Keyspace.of("mytest"), Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTx graph1 = factory.open(GraknTxType.WRITE);
         graph1.close();
         GraknTxTinker graph2 = factory.open(GraknTxType.WRITE);

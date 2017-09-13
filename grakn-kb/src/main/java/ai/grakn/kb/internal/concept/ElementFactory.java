@@ -33,6 +33,7 @@ import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -40,7 +41,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -149,23 +149,21 @@ public final class ElementFactory {
      * Constructors are called directly because this is only called when reading a known vertex or concept.
      * Thus tracking the concept can be skipped.
      *
-     * @param v A vertex of an unknown type
+     * @param vertex A vertex of an unknown type
      * @return A concept built to the correct type
      */
-    @Nullable
-    public <X extends Concept> X buildConcept(Vertex v){
-        return buildConcept(buildVertexElement(v));
+    public <X extends Concept> Optional<X> buildConcept(Vertex vertex){
+        return buildVertexElement(vertex).flatMap(this::buildConcept);
     }
 
-    @Nullable
-    public <X extends Concept> X buildConcept(VertexElement vertexElement){
+    public <X extends Concept> Optional<X> buildConcept(VertexElement vertexElement){
         Schema.BaseType type;
 
         try {
             type = getBaseType(vertexElement);
         } catch (IllegalStateException e){
             LOG.warn("Invalid vertex [" + vertexElement + "] due to " + e.getMessage(), e);
-            return null;
+            return Optional.empty();
         }
 
         ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
@@ -204,7 +202,7 @@ public final class ElementFactory {
             }
             tx.txCache().cacheConcept(concept);
         }
-        return tx.txCache().getCachedConcept(conceptId);
+        return Optional.of(tx.txCache().getCachedConcept(conceptId));
     }
 
     /**
@@ -214,20 +212,18 @@ public final class ElementFactory {
      * @param edge A {@link Edge} of an unknown type
      * @return A concept built to the correct type
      */
-    @Nullable
-    public <X extends Concept> X buildConcept(Edge edge){
+    public <X extends Concept> Optional<X> buildConcept(Edge edge){
         return buildConcept(buildEdgeElement(edge));
     }
 
-    @Nullable
-    public <X extends Concept> X buildConcept(EdgeElement edgeElement){
+    public <X extends Concept> Optional<X> buildConcept(EdgeElement edgeElement){
         Schema.EdgeLabel label;
 
         try {
             label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase());
         } catch (IllegalStateException e){
             LOG.warn("Invalid edge [" + edgeElement + "] due to " + e.getMessage(), e);
-            return null;
+            return Optional.empty();
         }
 
 
@@ -243,7 +239,7 @@ public final class ElementFactory {
             }
             tx.txCache().cacheConcept(concept);
         }
-        return tx.txCache().getCachedConcept(conceptId);
+        return Optional.of(tx.txCache().getCachedConcept(conceptId));
     }
 
     /**
@@ -259,10 +255,13 @@ public final class ElementFactory {
             return Schema.BaseType.valueOf(vertex.label());
         } catch (IllegalArgumentException e){
             //Base type appears to be invalid. Let's try getting the type via the shard edge
-            Optional<EdgeElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).findAny();
+            Optional<VertexElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).
+                    map(EdgeElement::target).
+                    flatMap(CommonUtil::optionalToStream).
+                    findAny();
 
             if(type.isPresent()){
-                String label = type.get().target().label();
+                String label = type.get().label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
                 if(label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
                 if(label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
@@ -292,17 +291,42 @@ public final class ElementFactory {
         return new Shard(vertexElement);
     }
 
-    Shard buildShard(Vertex vertex){
-        return new Shard(buildVertexElement(vertex));
+    Optional<Shard> buildShard(Vertex vertex){
+        return buildVertexElement(vertex).map(Shard::new);
     }
 
-    @Nullable
-    public VertexElement buildVertexElement(Vertex vertex){
-        if (!tx.validElement(vertex)) {
+    /**
+     * Builds a {@link VertexElement} from an already existing Vertex. An empty optional is returned if the passed in
+     * vertex is not valid. A vertex is not valid if it is null or has been deleted
+     *
+     * @param vertex A vertex which can possibly be turned into a {@link VertexElement}
+     * @return A {@link VertexElement} of
+     */
+    public Optional<VertexElement> buildVertexElement(Vertex vertex){
+        if(tx.validElement(vertex)) {
+            return Optional.of(new VertexElement(tx, vertex));
+        } else{
             LOG.warn("Invalid vertex [" + vertex + "]");
-            return null;
+            return Optional.empty();
         }
+    }
 
+    /**
+     * Creates a new {@link VertexElement} with a {@link ConceptId} which can optionally be set.
+     *
+     * @param baseType The {@link Schema.BaseType}
+     * @param conceptIds the optional {@link ConceptId} to set as the new {@link ConceptId}
+     * @return a new {@link VertexElement}
+     */
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId ... conceptIds) {
+        Vertex vertex = tx.getTinkerPopGraph().addVertex(baseType.name());
+        String newConceptId = Schema.PREFIX_VERTEX + vertex.id().toString();
+        if(conceptIds.length > 1){
+            throw new IllegalArgumentException("Cannot provide more than one concept id when creating a new concept");
+        } else if (conceptIds.length == 1){
+            newConceptId = conceptIds[0].getValue();
+        }
+        vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
         return new VertexElement(tx, vertex);
     }
 }

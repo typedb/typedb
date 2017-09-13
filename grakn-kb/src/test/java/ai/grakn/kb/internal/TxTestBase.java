@@ -32,7 +32,8 @@ public class TxTestBase {
     protected GraknSession session;
     protected GraknTxAbstract<?> tx;
     private GraknTxAbstract<?> txBatch;
-    private String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
+    //haha is here because the keyspace has to start with a letter
+    private String keyspace = "haha" + UUID.randomUUID().toString().replaceAll("-", "a");
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

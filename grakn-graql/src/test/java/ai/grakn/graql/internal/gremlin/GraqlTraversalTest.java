@@ -125,7 +125,6 @@ public class GraqlTraversalTest {
         assertFaster(indexTraversal, fastIsaTraversal);
     }
 
-    @Ignore //TODO: No longer applicable. Think of a new test to replace this.
     @Test
     public void testComplexityFastIsaVsSlowIsa() {
         GraqlTraversal slowIsaTraversal = traversal(xIsaY, yId);
@@ -153,7 +152,6 @@ public class GraqlTraversalTest {
         assertFaster(relatesFromRoleType, relatesFromRelationType);
     }
 
-    @Ignore //TODO: No longer applicable. Think of a new test to replace this.
     @Test
     public void testResourceWithTypeFasterFromType() {
         GraqlTraversal fromInstance =
@@ -358,12 +356,11 @@ public class GraqlTraversalTest {
         double globalComplexity = globalOptimum.getComplexity();
         double complexity = traversal.getComplexity();
 
-        // We use logarithms because we are only concerned with orders of magnitude of complexity
         assertTrue(
                 "Expected\n " +
                         complexity + ":\t" + traversal + "\nto be similar speed to\n " +
                         globalComplexity + ":\t" + globalOptimum,
-                Math.log(complexity) < Math.log(globalComplexity) * 2
+                complexity - globalComplexity <= 0.01
         );
     }
 
