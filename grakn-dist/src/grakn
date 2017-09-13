@@ -567,7 +567,8 @@ handle_ctrl_c() {
 
 update_classpath
 
-trap handle_ctrl_c INT # run handle_ctrl_c when receiving CTRL+C
+# temporarily disabling trap as it's probably not needed
+# trap handle_ctrl_c INT # run handle_ctrl_c when receiving CTRL+C
 
 echo "Grakn: Database For AI"
 echo ""
