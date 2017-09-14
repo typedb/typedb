@@ -323,11 +323,11 @@ class ValidateGlobalRules {
      * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
      */
     private static Optional<String> setRelationUnique(GraknTxAbstract<?> graph, RelationshipReified relationReified, String hash){
-        RelationshipImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
+        Optional<RelationshipImpl> foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
 
-        if(foundRelation == null){
+        if(!foundRelation.isPresent()){
             relationReified.setHash(hash);
-        } else if(foundRelation.reified().isPresent() && !foundRelation.reified().get().equals(relationReified)){
+        } else if(foundRelation.get().reified().isPresent() && !foundRelation.get().reified().get().equals(relationReified)){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }
         return Optional.empty();

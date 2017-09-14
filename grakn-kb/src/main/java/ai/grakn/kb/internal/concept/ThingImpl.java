@@ -35,6 +35,7 @@ import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -71,19 +72,22 @@ import java.util.stream.Stream;
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private final Cache<Label> cachedInternalType = new Cache<>(Cacheable.label(), () -> {
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
-        Type type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
-        return type.getLabel();
+        Optional<Type> type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
+        return type.orElseThrow(() -> GraknTxOperationException.missingType(getId())).getLabel();
     });
 
     private final Cache<V> cachedType = new Cache<>(Cacheable.concept(), () -> {
-        Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
-                flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
+        Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
+                map(EdgeElement::target).
+                flatMap(CommonUtil::optionalToStream).
+                flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
+                map(EdgeElement::target).
+                flatMap(CommonUtil::optionalToStream).
+                map(concept -> vertex().tx().factory().<V>buildConcept(concept)).
+                flatMap(CommonUtil::optionalToStream).
+                findAny();
 
-        if(!typeEdge.isPresent()) {
-            throw GraknTxOperationException.noType(this);
-        }
-
-        return vertex().tx().factory().buildConcept(typeEdge.get().target());
+        return type.orElseThrow(() -> GraknTxOperationException.noType(this));
     });
 
     ThingImpl(VertexElement vertexElement) {
@@ -183,7 +187,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 union(rolePlayerTraversal, resourceEdgeTraversal).toStream().
-                map(vertex -> vertex().tx().buildConcept(vertex));
+                map(vertex -> vertex().tx().<X>buildConcept(vertex)).
+                flatMap(CommonUtil::optionalToStream);
     }
 
     /**
@@ -208,7 +213,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                     has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }
 
-        return traversal.toStream().map(vertex -> vertex().tx().buildConcept(vertex));
+        return traversal.toStream().map(vertex -> vertex().tx().<Relationship>buildConcept(vertex)).
+                flatMap(CommonUtil::optionalToStream);
     }
 
     private Stream<Relationship> edgeRelations(Role... roles){

@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Match;
-import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
@@ -33,6 +32,8 @@ import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.util.CommonUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -40,12 +41,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -97,6 +97,7 @@ public class MatchBase extends AbstractMatch {
 
         return traversal.toStream()
                 .map(elements -> makeResults(graph, elements))
+                .flatMap(CommonUtil::optionalToStream)
                 .distinct()
                 .sequential()
                 .map(QueryAnswer::new);
@@ -146,14 +147,19 @@ public class MatchBase extends AbstractMatch {
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<Var, Concept> makeResults(GraknTx graph, Map<String, Element> elements) {
-        return pattern.commonVars().stream().collect(Collectors.<Var, Var, Concept>toMap(
-                Function.identity(),
-                name -> buildConcept(graph.admin(), elements.get(name.getValue()))
-        ));
+    private Optional<Map<Var, Concept>> makeResults(GraknTx graph, Map<String, Element> elements) {
+        Map<Var, Concept> map = new HashMap<>();
+        for (Var var : pattern.commonVars()) {
+            Optional<Concept> concept = buildConcept(graph.admin(), elements.get(var.getValue()));
+
+            if(!concept.isPresent()) return Optional.empty();
+            map.put(var, concept.get());
+        }
+
+        return Optional.of(map);
     }
 
-    private Concept buildConcept(GraknAdmin graph, Element element) {
+    private Optional<Concept> buildConcept(GraknAdmin graph, Element element) {
         if (element instanceof Vertex) {
             return graph.buildConcept((Vertex) element);
         } else {
