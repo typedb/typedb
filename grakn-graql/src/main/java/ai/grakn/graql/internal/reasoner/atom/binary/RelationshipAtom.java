@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
@@ -82,7 +82,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Atom implementation defining a relation atom corresponding to a combined {@link RelationProperty}
+ * Atom implementation defining a relation atom corresponding to a combined {@link RelationshipProperty}
  * and (optional) {@link IsaProperty}. The relation atom is a {@link TypeAtom} with relationship players.
  * </p>
  *
@@ -118,7 +118,7 @@ public class RelationshipAtom extends IsaAtom {
     private List<RelationPlayer> getRelationPlayers() {
         List<RelationPlayer> rps = new ArrayList<>();
         getPattern().asVarPattern()
-                .getProperty(RelationProperty.class)
+                .getProperty(RelationshipProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().forEach(rps::add));
         return rps;
     }

@@ -67,10 +67,10 @@ import static java.util.stream.Collectors.toSet;
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class RelationProperty extends AbstractVarProperty implements UniqueVarProperty {
+public abstract class RelationshipProperty extends AbstractVarProperty implements UniqueVarProperty {
 
-    public static RelationProperty of(ImmutableMultiset<RelationPlayer> relationPlayers) {
-        return new AutoValue_RelationProperty(relationPlayers);
+    public static RelationshipProperty of(ImmutableMultiset<RelationPlayer> relationPlayers) {
+        return new AutoValue_RelationshipProperty(relationPlayers);
     }
 
     public abstract ImmutableMultiset<RelationPlayer> relationPlayers();
@@ -221,9 +221,9 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //set varName as user defined if reified
-        //reified if contains more properties than the RelationProperty itself and potential IsaProperty
+        //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
-                .filter(prop -> !RelationProperty.class.isInstance(prop))
+                .filter(prop -> !RelationshipProperty.class.isInstance(prop))
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
                 .findFirst().isPresent();
         VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
