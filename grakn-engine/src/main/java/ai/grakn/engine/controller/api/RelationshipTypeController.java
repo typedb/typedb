@@ -58,7 +58,7 @@ public class RelationshipTypeController {
 
         spark.get(RELATIONSHIP_TYPE + "/" + RELATIONSHIP_TYPE_LABEL_PARAMETER, this::getRelationshipType);
         spark.post(RELATIONSHIP_TYPE, this::postRelationshipType);
-//        spark.post("/api/relationshipType/:relationshipTypeLabel/relates/:roleLabel", null); // TODO
+//        spark.post("/api/relationshipType/:relationshipTypeLabel/relates/:roleLabel", null); // TODO 
     }
 
     private Json getRelationshipType(Request request, Response response) {
