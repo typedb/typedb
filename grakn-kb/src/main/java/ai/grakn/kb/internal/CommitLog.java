@@ -18,10 +18,13 @@
 
 package ai.grakn.kb.internal;
 
+import ai.grakn.Grakn;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Thing;
 import ai.grakn.kb.internal.concept.ThingImpl;
+import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -46,11 +49,11 @@ public class CommitLog {
     private final Set<Attribute> newAttributes = new HashSet<>();
 
 
-    public void addNewAttributes(Set<Attribute> attributes){
+    void addNewAttributes(Set<Attribute> attributes){
         newAttributes.addAll(attributes);
     }
 
-    public void addNewInstances(Map<ConceptId, Long> instances){
+    void addNewInstances(Map<ConceptId, Long> instances){
         instances.forEach((key, value) -> newInstanceCount.merge(key, value, (v1, v2) -> v1 + v2));
     }
 
@@ -59,15 +62,27 @@ public class CommitLog {
         newAttributes.clear();
     }
 
-    public Json getFormattedLog(){
-        return formatLog(newInstanceCount, newAttributes);
+    /**
+     * Submits the commit logs to the provided server address and under the provided {@link Keyspace}
+     */
+    public String submit(String engineUri, Keyspace keyspace){
+        String endPoint = getCommitLogEndPoint(engineUri, keyspace);
+        Json formattedLogs = formatLog(newInstanceCount, newAttributes);
+        return "Response from engine [" + EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, formattedLogs.toString()) + "]";
+    }
+
+    private static String getCommitLogEndPoint(String engineUri, Keyspace keyspace) {
+        if (Grakn.IN_MEMORY.equals(engineUri)) {
+            return Grakn.IN_MEMORY;
+        }
+        return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
     /**
      * Returns the Formatted Log which is uploaded to the server.
      * @return a formatted Json log
      */
-    public static Json formatLog(Map<ConceptId, Long> instances, Set<Attribute> attributes){
+    static Json formatLog(Map<ConceptId, Long> instances, Set<Attribute> attributes){
         //Concepts In Need of Inspection
         Json conceptsForInspection = Json.object();
         conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), loadConceptsForFixing(attributes));

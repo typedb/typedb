@@ -724,10 +724,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             if (commitRequired) {
                 closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
                 logs = commitWithLogs(trackLogs);
-                //if (logs.isPresent() && submitLogs) {
-                //    String logsToUpload = logs.get();
-                //    new Thread(() -> LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logsToUpload) + "]")).start();
-                //}
                 txCache().writeToGraphCache(true);
             } else {
                 txCache().writeToGraphCache(isReadOnly());
@@ -788,13 +784,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             List<String> errors = validator.getErrorsFound();
             if (!errors.isEmpty()) throw InvalidKBException.validationErrors(errors);
         }
-    }
-
-    private String getCommitLogEndPoint() {
-        if (Grakn.IN_MEMORY.equals(engineUri)) {
-            return Grakn.IN_MEMORY;
-        }
-        return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
     private String getDeleteKeyspaceEndpoint() {
