@@ -43,6 +43,8 @@ import java.util.Set;
  *     Stores the commit log of a {@link ai.grakn.GraknTx} which is uploaded to the server when the {@link ai.grakn.GraknSession} is closed.
  *     The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
  * </p>
+ *
+ * @author Filipe Peliz Pinto Teixeira
  */
 public class CommitLog {
     private final Map<ConceptId, Long> newInstanceCount = new HashMap<>();
