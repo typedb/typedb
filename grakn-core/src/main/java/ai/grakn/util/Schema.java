@@ -60,7 +60,7 @@ public final class Schema {
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
         ROLE_PLAYER("role-player"),
-        RESOURCE("resource"),
+        ATTRIBUTE("attribute"),
         SHARD("shard");
 
         private final String label;

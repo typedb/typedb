@@ -353,6 +353,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return substitution;
     }
 
+    public Answer getRoleSubstitution(){
+        Answer answer = new QueryAnswer();
+        getAtoms(RelationAtom.class)
+                .flatMap(RelationAtom::getRolePredicates)
+                .forEach(p -> answer.put(p.getVarName(), tx().getConcept(p.getPredicate())));
+        return answer;
+    }
+
     /**
      * @return true if this query is a ground query
      */
@@ -458,7 +466,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Var> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, neqPredicates))
-                .map(a -> a.filterVars(vars));
+                .map(a -> a.project(vars));
     }
 
     /**
