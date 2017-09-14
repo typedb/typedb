@@ -757,11 +757,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         boolean logsExist = !newInstances.isEmpty() || !modifiedAttributes.isEmpty();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
-        try {
-            getTinkerPopGraph().tx().commit();
-        } catch (UnsupportedOperationException e) {
-            //IGNORED
-        }
+        commitTransactionInternal();
 
         LOG.trace("Graph committed.");
 
@@ -776,6 +772,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
 
         return Optional.empty();
+    }
+
+    void commitTransactionInternal() {
+        try {
+            getTinkerPopGraph().tx().commit();
+        } catch (UnsupportedOperationException e) {
+            //IGNORED
+        }
     }
 
     private void validateGraph() throws InvalidKBException {

@@ -35,6 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static ai.grakn.util.REST.Request.CONFIG_PARAM;
@@ -59,6 +62,8 @@ import static mjson.Json.read;
  */
 public class GraknSessionImpl implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
+    private static final ScheduledExecutorService commitLogSubmitter = Executors.newSingleThreadScheduledExecutor();
+    private static final int LOG_SUBMISSION_PERIOD = 1;
     private final String engineUri;
     private final Keyspace keyspace;
 
@@ -70,6 +75,11 @@ public class GraknSessionImpl implements GraknSession {
     public GraknSessionImpl(Keyspace keyspace, String engineUri){
         this.engineUri = engineUri;
         this.keyspace = keyspace;
+
+        commitLogSubmitter.scheduleAtFixedRate(() -> {
+            submitLogs(tx);
+            submitLogs(txBatch);
+        }, 0, LOG_SUBMISSION_PERIOD, TimeUnit.SECONDS);
     }
 
     @Override
@@ -109,6 +119,9 @@ public class GraknSessionImpl implements GraknSession {
             LOG.warn(ErrorMessage.TXS_OPEN.getMessage(this.keyspace, openTransactions));
         }
 
+        //Stop submitting commit logs automatically
+        commitLogSubmitter.shutdown();
+
         //Close the main tx connections
         close(tx);
         close(txBatch);
@@ -117,8 +130,12 @@ public class GraknSessionImpl implements GraknSession {
     private void close(GraknTxAbstract tx){
         if(tx != null){
             tx.closeSession();
-            LOG.debug(tx.commitLog().submit(engineUri, keyspace));
+            submitLogs(tx);
         }
+    }
+
+    private void submitLogs(GraknTxAbstract tx){
+        if(tx != null) LOG.debug(tx.commitLog().submit(engineUri, keyspace));
     }
 
     private int openTransactions(GraknTxAbstract<?> graph){

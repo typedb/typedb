@@ -62,6 +62,10 @@ public class CommitLog {
         newAttributes.clear();
     }
 
+    public Json getFormattedLog(){
+        return formatLog(newInstanceCount, newAttributes);
+    }
+
     /**
      * Submits the commit logs to the provided server address and under the provided {@link Keyspace}
      */
@@ -70,8 +74,7 @@ public class CommitLog {
             return "Commit logs empty. No submission made";
         }
         String endPoint = getCommitLogEndPoint(engineUri, keyspace);
-        Json formattedLogs = formatLog(newInstanceCount, newAttributes);
-        String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, formattedLogs.toString());
+        String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, getFormattedLog().toString());
         clear();
         return "Response from engine [" + response + "]";
     }
