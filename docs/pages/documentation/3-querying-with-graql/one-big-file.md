@@ -24,6 +24,8 @@ of the [query](#query).
 
 # Variable pattern
 
+[`<variable>`](#variable) [`<property>, ...`](#property) `;`
+
 A [variable pattern](#variable-pattern) is a [variable](#variable) (the _subject_ of the pattern) followed by zero or
 more [properties](#property) (optionally separated by commas `,`) and ending in a semicolon `;`.
 
@@ -62,7 +64,7 @@ An attribute's [value](#value) is constrained by the datatype of its type:
 
 ## Define Query
 
-A [define query](#define-query) is the keyword `define` followed by one or more [variable patterns](#variable-pattern).
+`define` [`<variable patterns>`](#variable-pattern)
 
 The [define query](#define-query) will add the given [variable patterns](#variable-pattern) to the schema.
 
@@ -71,10 +73,9 @@ in the [variable patterns](#variable-pattern).
 
 ## Undefine Query
 
-An [undefine query](#undefine-query) is the keyword `undefine` followed by one or more
-[variable patterns](#variable-pattern).
+`undefine` [`<variable patterns>`](#variable-pattern)
 
-The [define query](#define-query) will remove the given [variable patterns](#variable-patterns) from the schema.
+The [undefine query](#undefine-query) will remove the given [variable patterns](#variable-pattern) from the schema.
 
 In order to remove a schema concept entirely, it is sufficient to undefine its [direct super-concept](#sub):
 
@@ -169,23 +170,22 @@ role exactly once).
 
 ## Match
 
-A [match](#match) is the keyword `match` followed by one or more [patterns](#pattern) and zero or more
-[modifiers](#modifier).
+`match` [`<pattern> ...`](#pattern) [`(<modifier> ...)`](#modifier)
 
 A [match](#match) will find all [answers](#answer) in the knowledge base that _satisfy_ all of the given
-[patterns](#patterns). These [answers](#answer) can be used with either [get](#get-query), [insert](#insert-query) or
-[delete](#delete-query).
+[patterns](#patterns). These [answers](#answer) can be used with either [get](#get-query), [insert](#insert-query),
+[delete](#delete-query) or [aggregate](#aggregate-query).
 <!-- TODO aggregate -->
 
 ### Pattern
 
 A [pattern](#pattern) is either a [variable pattern](#variable-pattern), a conjunction or a disjunction:
 
-- A conjunction is one or more [patterns](#pattern) surrounded by curly braces `{ }` and ending in a semicolon `;`. An
-  [answer](#answer) _satisfies_ a conjunction if it _satisfies_ all [patterns](#pattern) within the conjunction.
+- `{ <pattern> ... <pattern> };` - An [answer](#answer) _satisfies_ a conjunction if it _satisfies_ all
+  [patterns](#pattern) within the conjunction.
 
-- A disjunction is two [patterns](#pattern) joined with the keyword `or` and ending in a semicolon `;`. An
-  [answer](#answer) _satisfies_ a disjunction if it _satisfies_ either [pattern](#pattern) within the disjunction.
+- `<pattern> or <pattern>;` - An [answer](#answer) _satisfies_ a disjunction if it _satisfies_ either
+  [pattern](#pattern) within the disjunction.
 
 - An [answer](#answer) _satisfies_ a [variable pattern](#variable-pattern) if the concept bound to the subject of the
   [variable pattern](#variable-pattern) _satisfies_ all [properties](#property) in the
@@ -326,8 +326,7 @@ The following predicates can be applied to attributes:
 
 ## Get Query
 
-A [get query](#get-query) is a [match](#match) followed by the keyword `get` and zero or more [variables](#variable),
-ending in a semicolon `;`.
+[`<match>`](#match) `get` [`(<variable>, ...)`](#variable) `;`
 
 The [get query](#get-query) will project each [answer](#answer) over the provided [variables](#variable). If no
 [variables](#variable) are provided, then the [answers](#answer) are projected over all [variables](#variable) mentioned
@@ -335,8 +334,7 @@ in the [pattern](#pattern).
 
 ## Insert Query
 
-An [insert query](#insert-query) is an optional [match](#match) followed by the keyword `insert` and one or more
-[variable patterns](#variable-pattern).
+[`(<match>)`](#match) `insert` [`<variable pattern> ...`](#variable-pattern)
 
 The [insert query](#insert-query) will insert the given [variable patterns](#variable-pattern) into the knowledge base
 and return an [answer](#answer) with variables bound to concepts mentioned in the
@@ -408,8 +406,7 @@ schema concept exists.
 
 ## Delete Query
 
-A [delete query](#delete-query) is a [match](#match) followed by the keyword `delete` and zero or more
-[variables](#variable).
+[`<match>`](#match) `delete` [`(<variable>, ...)`](#variable) `;`
 
 For every [answer](#answer) from the [match](#match), the [delete query](#delete-query) will delete the concept bound
 to every [variable](#variable) listed. If no [variables](#variable) are provided, then every variable mentioned in
@@ -417,10 +414,17 @@ the [match](#match) is deleted.
 
 ## Aggregate Query
 
-An [aggregate query](#aggregate-query) is a [match](#match) followed by the keyword `aggregate` and an
-[aggregate](#aggregate).
+[`<match>`](#match) `aggregate` [`<aggregate>`](#aggregate) `;`
+
+An [aggregate query](#aggregate-query) applies the given [aggregate](#aggregate) to the [answers](#answer) of the
+[match](#match).
 
 ### Aggregate
+
+`<identifier>` `(<` [`variable`](#variable) `or` [`aggregate`](#aggregate) `> ...)`
+
+An [aggregate query](#aggregate-query) is a [match](#match) followed by the keyword `aggregate` and an
+[aggregate](#aggregate).
 
 An aggregate begins with an aggregate name followed by zero or more arguments. An argument may be either a
 [variable](#variable) or another [aggregate](#aggregate).
