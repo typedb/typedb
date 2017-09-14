@@ -26,6 +26,8 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.LazyBarrierStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -129,6 +131,8 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         if (!strategiesApplied.getAndSet(true)) {
             TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraph.class);
             strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());
+            //TODO: find out why Tinkerpop added these strategies. They result in many NoOpBarrier steps which slowed down our queries so we had to remove them.
+            strategies.removeStrategies(PathRetractionStrategy.class, LazyBarrierStrategy.class);
             TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, strategies);
             TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, strategies);
         }

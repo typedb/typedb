@@ -347,9 +347,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         // the mapping function is declared separately to please the Eclipse compiler
         Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
 
-        return new QueryAnswer(predicates.stream()
-                .collect(Collectors.toMap(IdPredicate::getVarName, f))
-        );
+        return new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
+    }
+
+    public Answer getRoleSubstitution(){
+        Answer answer = new QueryAnswer();
+        getAtoms(RelationAtom.class)
+                .flatMap(RelationAtom::getRolePredicates)
+                .forEach(p -> answer.put(p.getVarName(), tx().getConcept(p.getPredicate())));
+        return answer;
     }
 
     /**
@@ -457,7 +463,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Var> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, neqPredicates))
-                .map(a -> a.filterVars(vars));
+                .map(a -> a.project(vars));
     }
 
     /**

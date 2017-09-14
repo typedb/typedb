@@ -104,9 +104,8 @@ public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
         });
     }
 
-    @Override
     public VertexElement addVertex(Schema.BaseType baseType){
-        return executeLockingMethod(() -> super.addVertex(baseType));
+        return executeLockingMethod(() -> factory().addVertexElement(baseType));
     }
 
     /**

@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -66,9 +67,7 @@ import static java.util.stream.Collectors.toList;
  * @author alexandraorth
  */
 public class BatchMutatorClient {
-    // Change in behaviour in v0.14 Previously infinite, now limited
-    private static final int MAX_RETRIES = 100;
-
+    private final int maxRetries;
     private final Set<Future<Void>> futures;
     private final Collection<Query> queries;
     private final Keyspace keyspace;
@@ -82,24 +81,24 @@ public class BatchMutatorClient {
     private Consumer<TaskResult> onCompletionOfTask;
     private AtomicInteger batchNumber;
     private int batchSize;
-    private boolean retry = false;
     private ExecutorService threadPool;
 
-    public BatchMutatorClient(Keyspace keyspace, String uri, boolean debugOn) {
-        this(keyspace, uri, (TaskResult t) -> {}, true, debugOn);
+    public BatchMutatorClient(Keyspace keyspace, String uri, boolean debugOn, int maxRetries) {
+        this(keyspace, uri, (TaskResult t) -> {}, true, debugOn, maxRetries);
     }
 
-    public BatchMutatorClient(Keyspace keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean debugOn) {
-        this(keyspace, uri, onCompletionOfTask, false, debugOn);
+    public BatchMutatorClient(Keyspace keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean debugOn, int maxRetries) {
+        this(keyspace, uri, onCompletionOfTask, false, debugOn, maxRetries);
     }
 
-    public BatchMutatorClient(Keyspace keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean reportStats, boolean debugOn) {
+    public BatchMutatorClient(Keyspace keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean reportStats, boolean debugOn, int maxRetries) {
         this.keyspace = keyspace;
         this.queries = new ArrayList<>();
         this.futures = new HashSet<>();
         this.onCompletionOfTask = onCompletionOfTask;
         this.batchNumber = new AtomicInteger(0);
         this.debugOn = debugOn;
+        this.maxRetries = maxRetries;
         // Some extra logic here since we don't provide a well formed URI by default
         if (uri.startsWith("http")) {
             try {
@@ -134,17 +133,6 @@ public class BatchMutatorClient {
                     .build();
             reporter.start(1, TimeUnit.MINUTES);
         }
-    }
-
-    /**
-     * Tell the {@link BatchMutatorClient} if it should retry sending tasks when the Engine
-     * server is not available
-     *
-     * @param retry boolean representing if engine should retry
-     */
-    public BatchMutatorClient setRetryPolicy(boolean retry){
-        this.retry = retry;
-        return this;
     }
 
     /**
@@ -226,13 +214,15 @@ public class BatchMutatorClient {
      */
     public void waitToFinish(){
         flush();
-        futures.forEach(f -> {
+        Iterator<Future<Void>> it = futures.iterator();
+        while(it.hasNext()){
+            Future<Void> future = it.next();
             try {
-                f.get();
+                future.get();
             } catch (InterruptedException|ExecutionException e) {
                 printError("Error while waiting for termination", e);
             }
-        });
+        }
         futures.clear();
         System.out.println("All tasks completed");
     }
@@ -273,7 +263,7 @@ public class BatchMutatorClient {
         Retryer<TaskResult> sendQueryRetry = RetryerBuilder.<TaskResult>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
-                .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetries))
                 .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
                 .build();
 
@@ -296,6 +286,11 @@ public class BatchMutatorClient {
             if(error != null){
                 System.err.println("Caused by: ");
                 error.printStackTrace();
+
+                //Cancel and clear the futures
+                futures.forEach(f -> f.cancel(true));
+                futures.clear();
+
                 throw new RuntimeException(error);
             }
         }

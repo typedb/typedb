@@ -43,6 +43,7 @@ usage: migration.sh export -data -schema [-help] [-no] [-batch <arg>] [-uri <arg
  -k,--keyspace <arg>   keyspace to use
  -n,--no               dry run- write to standard out
  -u,--uri <arg>        uri to engine endpoint
+ -r, --retry           Number of times to retry sending tasks if engine is not available
  -d,--debug            Migration immediatly stops if any transaction fails
 ```
 

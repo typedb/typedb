@@ -97,7 +97,7 @@ public class SchemaMutationTest extends TxTestBase {
     @Test
     public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidKBException {
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(person, car, driver).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(person, car, husband).getMessage());
 
         man.sup(car);
     }

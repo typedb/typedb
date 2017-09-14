@@ -81,6 +81,7 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
      * @return found answer if any, otherwise empty answer
      */
     public Answer getAnswer(Q query, Answer answer){
+        if(answer.isEmpty()) return answer;
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
             Q equivalentQuery = match.getKey();
@@ -101,6 +102,7 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
      * @return recorded answer
      */
     public Answer recordAnswer(Q query, Answer answer){
+        if(answer.isEmpty()) return answer;
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
             Q equivalentQuery = match.getKey();
@@ -121,6 +123,7 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
      * @return recorded answer
      */
     public Answer recordAnswerWithUnifier(Q query, Answer answer, Unifier unifier){
+        if(answer.isEmpty()) return answer;
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
             QueryAnswers answers = match.getValue();

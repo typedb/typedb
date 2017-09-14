@@ -37,7 +37,7 @@ import static java.lang.Integer.parseInt;
  * @author alexandraorth
  */
 public class MigrationOptions {
-
+    private static final String retry = Integer.toString(Migrator.DEFAULT_MAX_RETRY);
     private static final String batch = Integer.toString(Migrator.BATCH_SIZE);
     private static final String active = Integer.toString(Migrator.ACTIVE_TASKS);
     private int numberOptions;
@@ -52,7 +52,7 @@ public class MigrationOptions {
         options.addOption("u", "uri", true, "Location of Grakn Engine.");
         options.addOption("n", "no", false, "Write to standard out.");
         options.addOption("c", "config", true, "Configuration file.");
-        options.addOption("r", "retry", true, "Retry sending tasks if engine is not available");
+        options.addOption("r", "retry", true, "Number of times to retry sending tasks if engine is not available");
         options.addOption("d", "debug", false, "Immediately stop and fail migration if an error occurs");
     }
 
@@ -117,8 +117,8 @@ public class MigrationOptions {
         return resolvePath(command.getOptionValue("t"));
     }
 
-    public boolean getRetry(){
-        return command.hasOption("r") && Boolean.getBoolean(command.getOptionValue("r"));
+    public int getRetry(){
+        return parseInt(command.getOptionValue("r", retry));
     }
 
     public int getBatch() {
