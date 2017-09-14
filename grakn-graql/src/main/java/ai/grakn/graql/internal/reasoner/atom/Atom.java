@@ -269,6 +269,15 @@ public abstract class Atom extends AtomicBase {
         return Collections.singleton(new UnifierImpl());
     }
 
+    @Override
+    public Atom inferTypes(){ return this; }
+
+    /**
+     * @param type to be added to this {@link Atom}
+     * @return new {@link Atom} with specified type
+     */
+    public Atom addType(SchemaConcept type){ return this;}
+
     /**
      * rewrites the atom to one with user defined name
      * @param parentAtom parent atom that triggers rewrite

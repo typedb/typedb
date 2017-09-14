@@ -176,7 +176,7 @@ Make the concept a relationship that relates the given role players, playing the
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell7">
 <pre>
-match $p1 has identifier "Titus Groan"; $p2 has identifier "Fuchsia Groan"; insert (spouse1: $p1, spouse2: $p2) isa marriage;
+match $p1 has identifier "Titus Groan"; $p2 has identifier "Fuchsia Groan"; insert (spouse: $p1, spouse: $p2) isa marriage;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java7">
@@ -186,8 +186,8 @@ qb.match(
   var("p2").has("name", "Fuchsia Groan")
 ).insert(
   var()
-    .rel("spouse1", "p1")
-    .rel("spouse2", "p2")
+    .rel("spouse", "p1")
+    .rel("spouse", "p2")
     .isa("marriage")
 ).execute();
 

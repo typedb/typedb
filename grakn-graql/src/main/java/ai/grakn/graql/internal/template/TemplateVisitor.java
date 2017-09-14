@@ -32,6 +32,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -325,7 +326,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public Object visitMacroExpression(GraqlTemplateParser.MacroExpressionContext ctx){
-        String macro = ctx.ID_MACRO().getText().substring(1).toLowerCase();
+        String macro = ctx.ID_MACRO().getText().substring(1).toLowerCase(Locale.getDefault());
         List<Object> values = ctx.expression().stream().map(this::visit).collect(toList());
 
         return macros.get(macro).apply(values);

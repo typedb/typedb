@@ -106,8 +106,8 @@ qb.match(
   var("alice").has("firstname", "Alice")
 ).insert(
   var().isa("marriage")
-    .rel("spouse1", "someone")
-    .rel("spouse2", "alice")
+    .rel("spouse", "someone")
+    .rel("spouse", "alice")
 ).execute();
 ```
 

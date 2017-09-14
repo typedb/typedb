@@ -26,6 +26,7 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Streamable;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.kb.internal.structure.Shard;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.hamcrest.Description;
@@ -161,8 +162,7 @@ public class GraknMatchers {
         return new TypeSafeMatcher<MatchableConcept>() {
             @Override
             public boolean matchesSafely(MatchableConcept concept) {
-                // TODO: Fix fairly dodgy way to recognise shards
-                return concept.get().isType() && concept.get().asType().getLabel().getValue().startsWith("SHARDED TYPE-");
+                return concept.get() instanceof Shard;
             }
 
             @Override
