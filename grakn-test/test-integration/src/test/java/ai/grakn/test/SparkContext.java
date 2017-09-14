@@ -75,7 +75,7 @@ public class SparkContext extends ExternalResource {
 
     public void start() {
         LOG.info("Starting spark on port " + config.uri());
-        Service spark = Service.ignite();
+        spark = Service.ignite();
         configureSpark(spark, config, JWTHandler.create(config.getProperty(JWT_SECRET_PROPERTY)));
         RestAssured.baseURI = "http://" + config.uri();
 

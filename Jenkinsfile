@@ -88,6 +88,7 @@ authored by - """ + user
       stage('Tear Down Grakn') {
         sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
         archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+        archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
         sh 'grakn-package/bin/grakn.sh stop'
         sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
       }
