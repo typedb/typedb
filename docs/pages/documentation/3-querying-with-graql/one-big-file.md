@@ -48,6 +48,16 @@ should be written more succinctly as
 match $x isa movie; get;
 ```
 
+## Value
+
+An attribute's [value](#value) is constrained by the datatype of its type:
+
+- `long` - a 64-bit signed integer
+- `double` - a double-precision floating point number, including a decimal point.
+- `string` - enclosed in double `" "` or single `' '` quotes
+- `boolean` - `true` or `false`
+- `date` - a date or a date-time, in ISO 8601 format
+
 # Data Definition Language
 
 ## Define Query
@@ -136,7 +146,8 @@ role exactly once).
 
 ### datatype
 
-`$A datatype <datatype>` defines the attribute type `$A` to have the specified datatype.
+`$A datatype <datatype>` defines the attribute type `$A` to have the specified
+[datatype](#value).
 
 ### regex
 
@@ -209,7 +220,7 @@ $r ($x, $y);
 $y isa <identifier>;
 ```
 
-The `as $r` is optional. Additionally, a predicate can be used instead of a [variable](#variable):
+The `as $r` is optional. Additionally, a [predicate](#predicate) can be used instead of a [variable](#variable):
 
 ```graql
 $x has <identifier> <predicate>;
@@ -222,8 +233,8 @@ $_ val <predicate>;
 
 #### val
 
-`$x val <predicate>` is _satisfied_ if `$x` is an attribute with a value _satisfying_ the `<predicate>`.
-<!-- TODO: predicates -->
+`$x val <predicate>` is _satisfied_ if `$x` is an attribute with a [value](#value) _satisfying_ the
+[`<predicate>`](#predicate).
 
 #### id
 
@@ -289,7 +300,8 @@ role exactly once).
 
 #### datatype
 
-`$A dataype <datatype>` is _satisfied_ if `$A` is an attribute type with the given datatype.
+`$A dataype <datatype>` is _satisfied_ if `$A` is an attribute type with the given
+[datatype](#value).
 
 #### regex
 
@@ -298,6 +310,15 @@ role exactly once).
 #### is-abstract
 
 `$A is-abstract;` is _satisfied_ if `$A` is an abstract type.
+
+### Predicate
+
+The following predicates can be applied to attributes:
+
+- `=`, `!=`, `>`, `>=`, `<`, `<=` - _satisfied_ if the attribute's [values](#value) satisfy the comparison. These
+  operators can also take a literal [value](#value).
+- `contains <string>` - _satisfied_ if `<string>` is a substring of the attribute's [value](#value).
+- `/<regex>/` - _satisfied_ if the attribute's [value](#value) matches the `<regex>`.
 
 ### Modifier
 
@@ -318,7 +339,8 @@ An [insert query](#insert-query) is an optional [match](#match) followed by the 
 [variable patterns](#variable-pattern).
 
 The [insert query](#insert-query) will insert the given [variable patterns](#variable-pattern) into the knowledge base
-and return an [answer](#answer) with variables bound to concepts mentioned in the [variable patterns](#variable pattern).
+and return an [answer](#answer) with variables bound to concepts mentioned in the
+[variable patterns](#variable pattern).
 
 If a [match](#match) is provided, then the [insert query](#insert-query) will operate for every [answer](#answer) of the
 [match](#match) and return one [answer](#answer) for each [match](#match) [answer](#answer).
@@ -357,7 +379,7 @@ $r (key-<identifier>-owner: $x, key-<identifier>-value: $y) isa key-<identifier>
 $y isa <identifier>;
 ```
 
-The `as $r` is optional. Additionally, a literal value can be used instead of a [variable](#variable):
+The `as $r` is optional. Additionally, a literal [value](#value) can be used instead of a [variable](#variable):
 
 ```graql
 $x has <identifier> <value>;
@@ -372,7 +394,7 @@ $_ val <value>;
 
 ### val
 
-`$x val <value>;` specifies that the attribute `$x` should have value `<value>`.
+`$x val <value>;` specifies that the attribute `$x` should have [value](#value) `<value>`.
 
 ### id
 
@@ -393,6 +415,33 @@ For every [answer](#answer) from the [match](#match), the [delete query](#delete
 to every [variable](#variable) listed. If no [variables](#variable) are provided, then every variable mentioned in
 the [match](#match) is deleted.
 
-<!-- TODO  Aggregate + compute -->
+## Aggregate Query
 
-<!-- TODO datatype, values, predicates -->
+An [aggregate query](#aggregate-query) is a [match](#match) followed by the keyword `aggregate` and an
+[aggregate](#aggregate).
+
+### Aggregate
+
+An aggregate begins with an aggregate name followed by zero or more arguments. An argument may be either a
+[variable](#variable) or another [aggregate](#aggregate).
+
+Examples of [aggregates](#aggregates) are:
+
+- `ask`
+  - Return whether there are any [answers](#answer).
+- `count`
+- `group <variable> (<aggregate>)`
+  - Group the [answers](#answer) by a [variable](#variable) and optionally apply an [aggregate](#aggregate) to each
+    group.
+- `max <variable>`
+- `median <variable>`
+- `mean <variable>`
+- `min <variable>`
+- `std <variable>`
+- `sum <variable>`
+- `(<aggregate> as <identifier> , ...)`
+  - The product [aggregate](#aggregate) has a special syntax: a comma-separated sequence of named
+    aggregates surrounded by brackets `( )`. This [aggregate](#aggregate) will execute all comprising
+    [aggregates](#aggregates) and put the results in a map, keyed by the given identifiers.
+
+<!-- TODO  compute -->
