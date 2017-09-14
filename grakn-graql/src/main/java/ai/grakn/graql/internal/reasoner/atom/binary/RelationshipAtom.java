@@ -801,6 +801,7 @@ public class RelationshipAtom extends IsaAtom {
 
         Unifier unifier = super.getUnifier(pAtom);
         if (pAtom.isRelation()) {
+            assert(pAtom instanceof RelationshipAtom); // This is safe due to the check above
             RelationshipAtom parentAtom = (RelationshipAtom) pAtom;
 
             boolean unifyRoleVariables = parentAtom.getRelationPlayers().stream()
