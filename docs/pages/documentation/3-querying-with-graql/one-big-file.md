@@ -322,7 +322,16 @@ The following predicates can be applied to attributes:
 
 ### Modifier
 
-<!-- TODO -->
+There are several modifiers to change the [answers](#answer) of the [match](#match):
+
+- `limit <n>` - limit to only the first `<n>` [answers](#answer).
+- `offset <n>` - skip the first `<n>` [answers](#answer).
+- `order by <variable> (asc | desc)` - order the [answers](#answer) by the values of the concepts bound to the
+  [variable](#variable) in ascending or descending order (ascending by default).
+
+Modifiers are applied in order from left to right. For example, this means that `order by $n; limit 100;` will find the
+100 [answers](#answer) with globally minimal `$n`, whereas `limit 100; order by $n;` will locally order the first 100
+[answers](#answer) to the query.
 
 ## Get Query
 
