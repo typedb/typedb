@@ -59,7 +59,7 @@ import static mjson.Json.read;
  */
 public class GraknSessionImpl implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
-    private final String location;
+    private final String engineUri;
     private final Keyspace keyspace;
 
     //References so we don't have to open a tx just to check the count of the transactions
@@ -67,8 +67,8 @@ public class GraknSessionImpl implements GraknSession {
     private GraknTxAbstract<?> txBatch = null;
 
     //This constructor must remain public because it is accessed via reflection
-    public GraknSessionImpl(Keyspace keyspace, String location){
-        this.location = location;
+    public GraknSessionImpl(Keyspace keyspace, String engineUri){
+        this.engineUri = engineUri;
         this.keyspace = keyspace;
     }
 
@@ -89,7 +89,7 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     private TxFactory<?> getConfiguredFactory(){
-        return configureGraphFactory(keyspace, location, REST.KBConfig.DEFAULT);
+        return configureGraphFactory(keyspace, engineUri, REST.KBConfig.DEFAULT);
     }
 
     /**
@@ -97,7 +97,7 @@ public class GraknSessionImpl implements GraknSession {
      */
     @Override
     public GraknComputer getGraphComputer() {
-        TxFactory<?> configuredFactory = configureGraphFactory(keyspace, location, REST.KBConfig.COMPUTER);
+        TxFactory<?> configuredFactory = configureGraphFactory(keyspace, engineUri, REST.KBConfig.COMPUTER);
         Graph graph = configuredFactory.getTinkerPopGraph(false);
         return new GraknComputerImpl(graph);
     }
@@ -110,8 +110,15 @@ public class GraknSessionImpl implements GraknSession {
         }
 
         //Close the main tx connections
-        if(tx != null) tx.admin().closeSession();
-        if(txBatch != null) txBatch.admin().closeSession();
+        close(tx);
+        close(txBatch);
+    }
+
+    private void close(GraknTxAbstract tx){
+        if(tx != null){
+            tx.closeSession();
+            LOG.debug(tx.commitLog().submit(engineUri, keyspace));
+        }
     }
 
     private int openTransactions(GraknTxAbstract<?> graph){
