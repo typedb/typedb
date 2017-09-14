@@ -62,8 +62,8 @@ import static mjson.Json.read;
  */
 public class GraknSessionImpl implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
-    private static final ScheduledExecutorService commitLogSubmitter = Executors.newSingleThreadScheduledExecutor();
     private static final int LOG_SUBMISSION_PERIOD = 1;
+    private final ScheduledExecutorService commitLogSubmitter;
     private final String engineUri;
     private final Keyspace keyspace;
 
@@ -76,6 +76,7 @@ public class GraknSessionImpl implements GraknSession {
         this.engineUri = engineUri;
         this.keyspace = keyspace;
 
+        commitLogSubmitter = Executors.newSingleThreadScheduledExecutor();
         commitLogSubmitter.scheduleAtFixedRate(() -> {
             submitLogs(tx);
             submitLogs(txBatch);
