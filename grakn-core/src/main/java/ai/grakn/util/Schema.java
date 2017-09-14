@@ -59,7 +59,7 @@ public final class Schema {
         PLAYS("plays"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
-        SHORTCUT("shortcut"),
+        ROLE_PLAYER("role-player"),
         ATTRIBUTE("attribute"),
         SHARD("shard");
 

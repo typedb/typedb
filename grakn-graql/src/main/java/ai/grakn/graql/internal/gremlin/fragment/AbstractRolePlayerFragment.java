@@ -43,7 +43,7 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptional
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Abstract class for the fragments that traverse {@link Schema.EdgeLabel#SHORTCUT} edges: {@link InRolePlayerFragment} and
+ * Abstract class for the fragments that traverse {@link Schema.EdgeLabel#ROLE_PLAYER} edges: {@link InRolePlayerFragment} and
  * {@link OutRolePlayerFragment}.
  *
  * @author Felix Chapman
@@ -66,7 +66,7 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
         String roleString = role != null ? " role:" + role.shortName() : "";
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
         String roles = displayOptionalTypeLabels("roles", roleLabels());
-        return "[" + Schema.EdgeLabel.SHORTCUT.getLabel() + ":" + edge().shortName() + roleString + rels + roles + "]";
+        return "[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":" + edge().shortName() + roleString + rels + roles + "]";
     }
 
     @Override
@@ -95,9 +95,9 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     }
 
     /**
-     * Optionally traverse from a {@link Schema.EdgeLabel#SHORTCUT} edge to the {@link Role} it mentions, plus any super-types.
+     * Optionally traverse from a {@link Schema.EdgeLabel#ROLE_PLAYER} edge to the {@link Role} it mentions, plus any super-types.
      *
-     * @param traversal the traversal, starting from the {@link Schema.EdgeLabel#SHORTCUT}  edge
+     * @param traversal the traversal, starting from the {@link Schema.EdgeLabel#ROLE_PLAYER}  edge
      * @param role the variable to assign to the role. If not present, do nothing
      * @param edgeProperty the edge property to look up the role label ID
      */

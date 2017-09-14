@@ -154,7 +154,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
      */
     public Stream<Casting> castingsRelation(Role... roles){
         if(roles.length == 0){
-            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
+            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
                     map(edge -> vertex().tx().factory().buildCasting(edge));
         }
 
@@ -162,7 +162,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
         return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
                 toStream().map(edge -> vertex().tx().factory().buildCasting(edge));
