@@ -60,7 +60,7 @@ public class ShortestPathTest {
 
     @Before
     public void setUp() {
-        factory = context.factoryWithNewKeyspace();
+        factory = context.sessionWithNewKeyspace();
     }
 
     @Test(expected = GraqlQueryException.class)

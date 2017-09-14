@@ -81,7 +81,7 @@ public class GraqlTest {
 
     @Before
     public void setUp() {
-        factory = context.factoryWithNewKeyspace();
+        factory = context.sessionWithNewKeyspace();
     }
 
     @Test

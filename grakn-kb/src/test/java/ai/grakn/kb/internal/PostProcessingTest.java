@@ -137,7 +137,7 @@ public class PostProcessingTest extends TxTestBase {
         assertEquals(2, r11.relationships().count());
         assertEquals(1, r1.relationships().count());
         assertEquals(4, tx.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATIONSHIP.name()).toList().size());
-        assertEquals(2, tx.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
+        assertEquals(2, tx.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.ATTRIBUTE.getLabel()).toList().size());
 
         r1.relationships().forEach(rel -> assertTrue(rel.rolePlayers().anyMatch(thing -> thing.equals(e1))));
 

@@ -98,8 +98,7 @@ public class EngineContext extends ExternalResource {
         return config.uri();
     }
 
-    //TODO Rename this method to "sessionWithNewKeyspace"
-    public GraknSession factoryWithNewKeyspace() {
+    public GraknSession sessionWithNewKeyspace() {
         return Grakn.session(uri(), randomKeyspace());
     }
 

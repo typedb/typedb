@@ -156,9 +156,7 @@ public class Migrator {
     protected Stream<Query> template(String template, Map<String, Object> data){
         try {
             return queryBuilder.parseTemplate(template, data);
-
-            //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
-        } catch (GraqlSyntaxException | IllegalArgumentException e){
+        } catch (GraqlSyntaxException e){
             LOG.warn("Query not sent to server: " + e.getMessage());
         }
 

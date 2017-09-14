@@ -69,7 +69,7 @@ public abstract class GetQueryImpl implements GetQuery {
 
     @Override
     public Stream<Answer> stream() {
-        return match().stream().map(result -> result.filterVars(vars())).distinct();
+        return match().stream().map(result -> result.project(vars())).distinct();
     }
 
     @Nullable

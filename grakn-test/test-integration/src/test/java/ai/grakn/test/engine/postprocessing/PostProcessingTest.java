@@ -66,7 +66,7 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
-        session = engine.factoryWithNewKeyspace();
+        session = engine.sessionWithNewKeyspace();
     }
 
     @After

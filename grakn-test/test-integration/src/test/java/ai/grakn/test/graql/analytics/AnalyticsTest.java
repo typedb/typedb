@@ -66,7 +66,7 @@ public class AnalyticsTest {
 
     @Before
     public void setUp() {
-        factory = context.factoryWithNewKeyspace();
+        factory = context.sessionWithNewKeyspace();
     }
 
     @Ignore

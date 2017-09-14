@@ -60,7 +60,7 @@ public class DegreeTest {
 
     @Before
     public void setUp() {
-        factory = context.factoryWithNewKeyspace();
+        factory = context.sessionWithNewKeyspace();
         tx = factory.open(GraknTxType.WRITE);
     }
 
