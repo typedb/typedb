@@ -30,6 +30,8 @@ import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,6 +54,7 @@ import java.util.stream.Stream;
  *
  */
 public class RelationshipEdge implements RelationshipStructure {
+    private final Logger LOG = LoggerFactory.getLogger(RelationshipEdge.class);
     private final EdgeElement edgeElement;
 
     private final Cache<RelationshipType> relationType = new Cache<>(Cacheable.concept(), () ->
@@ -100,6 +103,7 @@ public class RelationshipEdge implements RelationshipStructure {
 
     @Override
     public RelationshipReified reify() {
+        LOG.debug("Reifying concept [" + getId() + "]");
         //Build the Relationship Vertex
         VertexElement relationVertex = edge().tx().factory().addVertexElement(Schema.BaseType.RELATIONSHIP, getId());
         RelationshipReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());

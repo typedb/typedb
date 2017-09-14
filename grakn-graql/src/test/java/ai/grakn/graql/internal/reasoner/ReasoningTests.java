@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import com.google.common.collect.Sets;
+import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -149,6 +150,9 @@ public class ReasoningTests {
 
     @ClassRule
     public static final SampleKBContext testSet29 = SampleKBContext.preLoad("testSet29.gql").assumeTrue(GraknTestSetup.usingTinker());
+
+    @ClassRule
+    public static final SampleKBContext testSet30 = SampleKBContext.preLoad("testSet30.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Before
     public void onStartup() throws Exception {
@@ -323,10 +327,11 @@ public class ReasoningTests {
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources() {
         QueryBuilder qb = testSet14.tx().graql().infer(true);
+
         String queryString = "match $x isa entity1, has res1 $y; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         String queryString2 = "match $x isa res1; get;";
-        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
         assertEquals(answers.size(), 2);
         assertEquals(answers2.size(), 1);
@@ -850,7 +855,12 @@ public class ReasoningTests {
         });
     }
 
-    private QueryAnswers queryAnswers(GetQuery query) {
-        return new QueryAnswers(query.stream().collect(toSet()));
+    @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation
+    public void mutuallyRecursiveRelationAndResource_queryForAttributedType(){
+        QueryBuilder qb = testSet30.tx().graql().infer(true);
+
+        String queryString = "match $p isa pair, has name 'ff'; get;";
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 16);
     }
 }

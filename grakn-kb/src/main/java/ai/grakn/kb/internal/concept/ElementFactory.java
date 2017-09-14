@@ -232,7 +232,7 @@ public final class ElementFactory {
         if(!tx.txCache().isConceptCached(conceptId)){
             Concept concept;
             switch (label) {
-                case RESOURCE:
+                case ATTRIBUTE:
                     concept = new RelationshipImpl(new RelationshipEdge(edgeElement));
                     break;
                 default:
