@@ -7,7 +7,7 @@ SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
 
 GRAQL=${SCRIPTPATH}/../graql
 
-ACTIVE_TASKS=1000
+ACTIVE_TASKS=16
 VALIDATION_DATA=${WORKSPACE}/readwrite_neo4j--validation_set.tar.gz
 
 # validate the number of arguments
