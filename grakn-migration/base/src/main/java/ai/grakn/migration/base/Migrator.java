@@ -53,7 +53,7 @@ public class Migrator {
     private final static Logger LOG = LoggerFactory.getLogger(Migrator.class);
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
-    public static final int ACTIVE_TASKS = 25;
+    public static final int ACTIVE_TASKS = 16;
     public static final int DEFAULT_MAX_RETRY = 1;
 
     private final String uri;

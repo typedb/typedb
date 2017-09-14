@@ -113,12 +113,11 @@ do
         echo "Loading ${DATA_FILE} with ${TEMPLATE_FILE}"
 
         NUM_SPLIT=$(head -1 ${CSV_DATA}/${DATA_FILE} | tr -cd \| | wc -c)
-        BATCH_SIZE=$(awk "BEGIN {print int(1000/${NUM_SPLIT})}")
 
-        echo "Dynamic batch size: $BATCH_SIZE"
+        echo "Parallelism: $ACTIVE_TASKS"
 
         tail -n +2 $CSV_DATA/${DATA_FILE} | wc -l
-        time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -d -r 5 -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b ${BATCH_SIZE}
+        time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -d -r 5 -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b 32
 done < $SCRIPTPATH/migrationsToRun.txt
 
 # confirm there were no errors
