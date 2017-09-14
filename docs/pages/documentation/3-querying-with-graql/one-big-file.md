@@ -39,12 +39,14 @@ more alphanumeric characters, dashes and underscores.
 
 ## Property
 
-There are several different [properties](#property). Which ones are supported and what they do depends on the part of
-the [query](#query). For example, [match](#match) supports most [properties](#property), whereas [insert](#insert) only
-supports a small subset.
+A [property](#property) is part of a [variable pattern](#variable-pattern). The [property](#property) describes
+something about the _subject_ of the [variable pattern](#variable-pattern).
 
-When a [property](#property) takes a [variable](#variable) representing a schema concept, it is possible to substitute
-a label. For example,
+As well as the _subject_, [properties](#property) sometimes take other arguments, which can include things such as
+[variables](#variable), [values](#value) and labels depending on the kind of [property](#property).
+
+When a [property](#property) takes a [variable](#variable) argument representing a schema concept, it is possible to
+substitute a label. For example,
 ```graql
 match $x isa $A; $A label movie; get;
 ```
@@ -52,6 +54,10 @@ should be written more succinctly as
 ```graql
 match $x isa movie; get;
 ```
+
+There are several different [properties](#property). Which ones are supported and what they do depends on the context.
+For example, [match](#match) supports most [properties](#property), whereas [insert](#insert) only supports a small
+subset.
 
 ## Value
 
