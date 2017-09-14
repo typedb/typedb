@@ -36,7 +36,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.QueryOperationExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
@@ -255,6 +255,6 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
             }
         }
         relVar = relVar.isa(typeVariable);
-        return new RelationAtom(relVar.admin(), typeVariable, predicate, parent);
+        return new RelationshipAtom(relVar.admin(), typeVariable, predicate, parent);
     }
 }

@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
@@ -368,10 +368,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
         if (atom.isRelation() && atom.getSchemaConcept() == null){
-            List<RelationshipType> relationshipTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
+            List<RelationshipType> relationshipTypes = ((RelationshipAtom) atom).inferPossibleRelationTypes(sub);
             LOG.trace("AQ: " + this + ": inferred rel types for: " + relationshipTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
             return relationshipTypes.stream()
-                    .map(((RelationAtom) atom)::addType)
+                    .map(((RelationshipAtom) atom)::addType)
                     .sorted(Comparator.comparing(Atom::isRuleResolvable))
                     .map(ReasonerAtomicQuery::new);
         }

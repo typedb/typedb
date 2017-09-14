@@ -30,7 +30,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.util.CommonUtil;
@@ -165,7 +165,7 @@ public class HALUtils {
     }
 
     private static boolean bothRolePlayersAreSelected(Atom atom, GetQuery getQuery) {
-        RelationAtom reasonerRel = ((RelationAtom) atom);
+        RelationshipAtom reasonerRel = ((RelationshipAtom) atom);
         Set<Var> rolePlayersInAtom = reasonerRel.getRolePlayers().stream().collect(Collectors.toSet());
         Set<Var> selectedVars = getQuery.vars();
         //If all the role players contained in the current relationship are also selected in the user query
@@ -205,7 +205,7 @@ public class HALUtils {
     }
 
     private static Pair<Map<Var, String>, String> pairVarNamesRelationshipType(Atom atom) {
-        RelationAtom reasonerRel = ((RelationAtom) atom);
+        RelationshipAtom reasonerRel = ((RelationshipAtom) atom);
         Map<Var, String> varNamesToRole = new HashMap<>();
         // Put all the varNames in the map with EMPTY-ROLE role
         reasonerRel.getRolePlayers().forEach(varName -> varNamesToRole.put(varName, HAS_EMPTY_ROLE_EDGE));

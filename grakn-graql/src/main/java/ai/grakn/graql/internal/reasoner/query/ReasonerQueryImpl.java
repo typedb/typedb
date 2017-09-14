@@ -36,7 +36,7 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -493,7 +493,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         List<Set<Atom>> atomOptions = getAtoms(Atom.class)
                 .map(at -> {
                     if (at.isRelation() && at.getSchemaConcept() == null) {
-                        RelationAtom rel = (RelationAtom) at;
+                        RelationshipAtom rel = (RelationshipAtom) at;
                         Set<Atom> possibleRels = new HashSet<>();
                         rel.inferPossibleRelationTypes(sub).stream()
                                 .map(rel::addType)

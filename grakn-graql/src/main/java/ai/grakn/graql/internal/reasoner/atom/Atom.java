@@ -262,8 +262,8 @@ public abstract class Atom extends AtomicBase {
     public Atom inferTypes(){ return this; }
 
     /**
-     * @param type to be added to this relation
-     * @return new relation with specified type
+     * @param type to be added to this {@link Atom}
+     * @return new {@link Atom} with specified type
      */
     public Atom addType(SchemaConcept type){ return this;}
 
