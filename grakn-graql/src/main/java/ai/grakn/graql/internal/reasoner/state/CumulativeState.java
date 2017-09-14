@@ -23,6 +23,8 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
 
@@ -38,7 +40,7 @@ import java.util.Set;
 class CumulativeState extends QueryState{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
-    private final LinkedList<QueryState> feederGoals;
+    private final Iterator<QueryState> feederStateIterator;
 
     CumulativeState(LinkedList<ReasonerQueryImpl> qs,
                     Answer sub,
@@ -48,10 +50,15 @@ class CumulativeState extends QueryState{
                     QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
-        this.feederGoals = !subQueries.isEmpty()?
-               subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache) :
-               new LinkedList<>();
+        this.feederStateIterator = !subQueries.isEmpty()?
+               subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() : Collections.emptyIterator();
     }
+
+    @Override
+    ReasonerQueryImpl getQuery() { return getParentState().getQuery();}
+
+    @Override
+    Unifier getCacheUnifier() { return getParentState().getCacheUnifier();}
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
@@ -64,6 +71,6 @@ class CumulativeState extends QueryState{
 
     @Override
     public ResolutionState generateSubGoal(){
-        return !feederGoals.isEmpty()? feederGoals.removeFirst() : null;
+        return feederStateIterator.hasNext()? feederStateIterator.next() : null;
     }
 }

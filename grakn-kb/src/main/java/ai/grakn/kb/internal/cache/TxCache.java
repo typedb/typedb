@@ -31,7 +31,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.kb.internal.concept.RelationshipReified;
-import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.structure.Casting;
 
 import java.util.HashMap;
@@ -216,7 +215,7 @@ public class TxCache {
 
         conceptCache.remove(concept.getId());
         if (concept.isSchemaConcept()) {
-            Label label = ((SchemaConceptImpl) concept).getLabel();
+            Label label = concept.asSchemaConcept().getLabel();
             schemaConceptCache.remove(label);
             labelCache.remove(label);
         }
@@ -239,7 +238,7 @@ public class TxCache {
     public void cacheConcept(Concept concept){
         conceptCache.put(concept.getId(), concept);
         if(concept.isSchemaConcept()){
-            SchemaConceptImpl schemaConcept = (SchemaConceptImpl) concept;
+            SchemaConcept schemaConcept = concept.asSchemaConcept();
             schemaConceptCache.put(schemaConcept.getLabel(), schemaConcept);
             labelCache.put(schemaConcept.getLabel(), schemaConcept.getLabelId());
         }
