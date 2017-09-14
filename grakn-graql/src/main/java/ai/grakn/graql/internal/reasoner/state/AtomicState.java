@@ -52,12 +52,12 @@ public class AtomicState extends QueryState{
 
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
-                       Unifier u,
+                       Set<Unifier> mu,
                        QueryState parent,
                        Set<ReasonerAtomicQuery> subGoals,
                        QueryCache<ReasonerAtomicQuery> cache) {
 
-        super(sub, u, parent, subGoals, cache);
+        super(sub, mu, parent, subGoals, cache);
         this.query = ReasonerQueries.atomic(q).addSubstitution(sub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
@@ -88,15 +88,17 @@ public class AtomicState extends QueryState{
         Answer answer = state.getAnswer();
         if (answer.isEmpty()) return null;
 
+        /*
         if (currentRule != null && query.getAtom().requiresRoleExpansion()){
-            return new RoleExpansionState(answer, getUnifier(), query.getAtom().getRoleExpansionVariables(), getParentState());
+            return new RoleExpansionState(answer, getMultiUnifier(), query.getAtom().getRoleExpansionVariables(), getParentState());
         }
-        return new AnswerState(answer, getUnifier(), getParentState());
+        */
+        return new AnswerState(answer, state.getUnifier(), getParentState());
     }
 
     @Override
     public ResolutionState generateSubGoal() {
-        if (dbIterator.hasNext()) return new AnswerState(dbIterator.next(), getUnifier(), this);
+        if (dbIterator.hasNext()) AnswerStateFactory.create(dbIterator.next(), getMultiUnifier(), this);
         if (ruleIterator.hasNext()) return generateSubGoalFromRule(ruleIterator.next());
         return null;
     }

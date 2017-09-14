@@ -125,29 +125,32 @@ public class GeoKB extends TestKB {
     @Override
     public void buildRelations(GraknTx tx) {
 
+        /*
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Poland)
                 .addRolePlayer(entityLocation, Europe);
-
+        */
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Masovia)
-                .addRolePlayer(entityLocation, Poland);
-
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Silesia)
                 .addRolePlayer(entityLocation, Poland);
 
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Warsaw)
                 .addRolePlayer(entityLocation, Masovia);
 
+        /*
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Wroclaw)
                 .addRolePlayer(entityLocation, Silesia);
 
         isLocatedIn.addRelationship()
+                .addRolePlayer(geoEntity, Silesia)
+                .addRolePlayer(entityLocation, Poland);
+
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, PW)
                 .addRolePlayer(entityLocation, Warsaw);
+                */
 
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, UW)

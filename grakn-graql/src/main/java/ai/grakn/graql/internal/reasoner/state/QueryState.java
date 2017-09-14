@@ -36,11 +36,13 @@ import java.util.Set;
  */
 public abstract class QueryState extends ResolutionState {
 
+    private final Set<Unifier> multiUnifier;
     private final Set<ReasonerAtomicQuery> subGoals;
     private final QueryCache<ReasonerAtomicQuery> cache;
 
-    QueryState(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
-        super(sub, u, parent);
+    QueryState(Answer sub, Set<Unifier> mu, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+        super(sub, parent);
+        this.multiUnifier = mu;
         this.subGoals = subGoals;
         this.cache = cache;
     }
@@ -69,6 +71,8 @@ public abstract class QueryState extends ResolutionState {
      * @return cache unifier if any
      */
     abstract Unifier getCacheUnifier();
+
+    Set<Unifier> getMultiUnifier(){ return multiUnifier;}
 
     /**
      * propagates the answer state up the tree and acknowledges (caches) its substitution

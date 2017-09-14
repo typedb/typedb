@@ -140,7 +140,7 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom) {
+    protected Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof Binary)) {
             throw GraqlQueryException.unificationAtomIncompatibility();
         }

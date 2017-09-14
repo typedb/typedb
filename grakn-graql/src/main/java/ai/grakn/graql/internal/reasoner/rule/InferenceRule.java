@@ -247,17 +247,17 @@ public class InferenceRule {
      * @param parentAtom atom to unify the rule with
      * @return corresponding unifier
      */
-    public Unifier getUnifier(Atom parentAtom) {
+    public Set<Unifier> getMultiUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         if (parentAtom.getSchemaConcept() != null){
-            return childAtom.getUnifier(parentAtom);
+            return childAtom.getMultiUnifier(parentAtom);
         }
         //case of match all relation atom
         else{
             Atom extendedParent = ((RelationAtom) parentAtom)
                     .addType(childAtom.getSchemaConcept())
                     .inferTypes();
-            return childAtom.getUnifier(extendedParent);
+            return childAtom.getMultiUnifier(extendedParent);
         }
     }
 }

@@ -57,11 +57,11 @@ public class ConjunctiveState extends QueryState {
 
     public ConjunctiveState(ReasonerQueryImpl q,
                             Answer sub,
-                            Unifier u,
+                            Set<Unifier> mu,
                             QueryState parent,
                             Set<ReasonerAtomicQuery> subGoals,
                             QueryCache<ReasonerAtomicQuery> cache) {
-        super(sub, u, parent, subGoals, cache);
+        super(sub, mu, parent, subGoals, cache);
 
         this.query = ReasonerQueries
                     .create(q)
@@ -94,18 +94,20 @@ public class ConjunctiveState extends QueryState {
 
     ResolutionState propagateAnswer(AnswerState state){
         Answer answer = state.getAnswer();
-        return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
+        return AnswerStateFactory.create(answer, getMultiUnifier(), getParentState());
+        //return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
     }
 
     @Override
     public ResolutionState generateSubGoal(){
         if (dbIterator.hasNext()){
-            return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
+            return AnswerStateFactory.create(dbIterator.next(), getMultiUnifier(), getParentState());
+            //return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
         }
 
         if (!subQueries.isEmpty() && !visited) {
             visited = true;
-            return new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
+            return new CumulativeState(subQueries, new QueryAnswer(), getMultiUnifier(), this, getSubGoals(), getCache());
         }
         return null;
     }

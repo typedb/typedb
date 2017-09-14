@@ -39,6 +39,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
+import com.google.common.collect.Sets;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;

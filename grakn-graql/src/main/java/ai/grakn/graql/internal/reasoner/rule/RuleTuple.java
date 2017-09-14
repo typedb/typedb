@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.graql.admin.Unifier;
+import java.util.Set;
 
 /**
  *
@@ -32,16 +33,16 @@ import ai.grakn.graql.admin.Unifier;
 public class RuleTuple {
 
     private final InferenceRule rule;
-    private final Unifier ruleUnifier;
+    private final Set<Unifier> ruleUnifier;
     private final Unifier permutationUnifier;
 
-    public RuleTuple(InferenceRule rule, Unifier u, Unifier pu){
+    public RuleTuple(InferenceRule rule, Set<Unifier> mu, Unifier pu){
         this.rule = rule;
-        this.ruleUnifier = u;
+        this.ruleUnifier = mu;
         this.permutationUnifier = pu;
     }
 
     public InferenceRule getRule(){ return rule;}
-    public Unifier getRuleUnifier(){ return ruleUnifier;}
+    public Set<Unifier> getRuleMultiUnifier(){ return ruleUnifier;}
     public Unifier getPermutationUnifier(){ return permutationUnifier;}
 }

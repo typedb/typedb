@@ -283,9 +283,15 @@ public abstract class Atom extends AtomicBase {
     public Atom rewriteToUserDefined(Atom parentAtom){ return this;}
 
     /**
+     *
+     * @param parentAtom
+     * @return
+     */
+    protected abstract Unifier getUnifier(Atom parentAtom);
+    /**
      * find unifier with parent atom
      * @param parentAtom atom to be unified with
      * @return unifier
      */
-    public abstract Unifier getUnifier(Atom parentAtom);
+    public Set<Unifier> getMultiUnifier(Atom parentAtom){ return Sets.newHashSet(getUnifier(parentAtom));}
 }
