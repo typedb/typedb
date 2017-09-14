@@ -39,6 +39,8 @@ import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.RELATIONSHIP_TYPE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 
 /**
  * <p>
@@ -54,9 +56,9 @@ public class RelationshipTypeController {
     public RelationshipTypeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.get("/api/relationshipType/:relationshipTypeLabel", this::getRelationshipType);
-        spark.post("/api/relationshipType", this::postRelationshipType);
-        spark.post("/api/relationshipType/:relationshipTypeLabel/relates/:roleLabel", null);
+        spark.get(RELATIONSHIP_TYPE + "/" + RELATIONSHIP_TYPE_LABEL_PARAMETER, this::getRelationshipType);
+        spark.post(RELATIONSHIP_TYPE, this::postRelationshipType);
+//        spark.post("/api/relationshipType/:relationshipTypeLabel/relates/:roleLabel", null); // TODO
     }
 
     private Json getRelationshipType(Request request, Response response) {

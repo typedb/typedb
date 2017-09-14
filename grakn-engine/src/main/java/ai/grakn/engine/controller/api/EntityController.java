@@ -38,7 +38,10 @@ import java.util.Optional;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.ENTITY_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.WebPath.Api.ENTITY_ATTRIBUTE_ASSIGNMENT;
+import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 
 /**
  * <p>
@@ -55,8 +58,8 @@ public class EntityController {
     public EntityController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.post("/api/entityType/:entityTypeLabel", this::postEntity);
-        spark.put("/api/entity/:entityConceptId/attribute/:attributeConceptId", this::assignAttributeToEntity);
+        spark.post(ENTITY_TYPE + "/" + ENTITY_TYPE_LABEL_PARAMETER, this::postEntity);
+        spark.put(ENTITY_ATTRIBUTE_ASSIGNMENT, this::assignAttributeToEntity);
 
         // TODO: implement it after operation has been supported in the Graph API
 //        spark.delete("/api/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment);

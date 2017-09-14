@@ -38,7 +38,11 @@ import java.util.Optional;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.ENTITY_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
+import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT;
+import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE_ROLE_ASSIGNMENT;
 
 /**
  * <p>
@@ -55,14 +59,14 @@ public class EntityTypeController {
     public EntityTypeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.get("/api/entityType/:entityTypeLabel", this::getEntityType);
-        spark.post("/api/entityType", this::postEntityType);
+        spark.get(ENTITY_TYPE + "/" + ENTITY_TYPE_LABEL_PARAMETER, this::getEntityType);
+        spark.post(ENTITY_TYPE, this::postEntityType);
         // TODO: implement it after operation has been supported in the Graph API
 //        spark.delete("/api/entityType/:entityTypeLabel", this::deleteEntityType);
-        spark.put("/api/entityType/:entityTypeLabel/attribute/:attributeTypeLabel", this::assignAttributeTypeToEntityType);
+        spark.put(ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT, this::assignAttributeTypeToEntityType);
         // TODO: implement it after operation has been supported in the Graph API
 //        spark.delete("/api/entityType/:entityTypeId/attribute/:attributeTypeId", this::deleteAttributeTypeToEntitiyTypeAssignment);
-        spark.put("/api/entityType/:entityTypeId/plays/:roleTypeId", this::assignRoleToEntityType);
+        spark.put(ENTITY_TYPE_ROLE_ASSIGNMENT, this::assignRoleToEntityType);
         // TODO: implement it after operation has been supported in the Graph API
 //        spark.delete("/api/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment);
     }

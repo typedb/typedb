@@ -40,6 +40,8 @@ import java.util.Optional;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP;
+import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT;
 
 /**
  * <p>
@@ -56,8 +58,8 @@ public class RelationshipController {
     public RelationshipController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.post("/api/relationshipType/:relationshipTypeLabel", this::postRelationship);
-        spark.put("/api/relationship/:relationshipConceptId/role/:roleConceptId", this::assignEntityAndRoleToRelationship);
+        spark.post(RELATIONSHIP, this::postRelationship);
+        spark.put(RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT, this::assignEntityAndRoleToRelationship);
         // TODO: implement it after operation has been supported in the Graph API
 //        spark.delete("/api/relationship/:relationshipConceptId/role/:roleConceptId/entity/:entityConceptId", this::deleteEntityAndRoleToRelationshipAssignment);
     }

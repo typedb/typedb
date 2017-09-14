@@ -37,7 +37,9 @@ import java.util.Optional;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 
 /**
  * <p>
@@ -54,7 +56,7 @@ public class AttributeController {
     public AttributeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.post("/api/attributeType/:attributeTypeLabel", this::postAttribute);
+        spark.post(ATTRIBUTE_TYPE + "/" + ATTRIBUTE_TYPE_LABEL_PARAMETER, this::postAttribute);
     }
 
     private Json postAttribute(Request request, Response response) {

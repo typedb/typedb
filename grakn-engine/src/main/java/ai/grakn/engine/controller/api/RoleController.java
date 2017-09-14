@@ -36,6 +36,8 @@ import java.util.Optional;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.ROLE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.WebPath.Api.ROLE;
 
 /**
  * <p>
@@ -52,7 +54,7 @@ public class RoleController {
     public RoleController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.get("/api/role/:roleLabel", this::getRole);
+        spark.get(ROLE + "/" + ROLE_LABEL_PARAMETER, this::getRole);
     }
 
     private Json getRole(Request request, Response response) {

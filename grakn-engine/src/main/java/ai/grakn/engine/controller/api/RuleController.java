@@ -36,6 +36,8 @@ import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.RULE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.WebPath.Api.RULE;
 
 /**
  * <p>
@@ -51,8 +53,8 @@ public class RuleController {
 
     public RuleController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
-        spark.get("/api/rule/:ruleLabel", this::getRule);
-        spark.post("/api/rule", this::postRule);
+        spark.get(RULE + "/" + RULE_LABEL_PARAMETER, this::getRule);
+        spark.post(RULE, this::postRule);
     }
 
     private Json getRule(Request request, Response response) {

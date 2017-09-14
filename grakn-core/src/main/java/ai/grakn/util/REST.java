@@ -73,6 +73,29 @@ public class REST {
         }
 
         /**
+         * URIs to api endpoints
+         */
+        public static class Api {
+            public static final String API_PREFIX = "/api";
+
+            public static final String ATTRIBUTE_TYPE = API_PREFIX + "/attributeType";
+            public static final String ATTRIBUTE = API_PREFIX + "/entity";
+
+            public static final String ENTITY_TYPE = API_PREFIX + "/entityType";
+            public static final String ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT = API_PREFIX + "/entityType/:entityTypeLabel/attribute/:attributeTypeLabel";
+            public static final String ENTITY_TYPE_ROLE_ASSIGNMENT = API_PREFIX + "/entityType/:entityTypeId/plays/:roleTypeId";
+            public static final String ENTITY_ATTRIBUTE_ASSIGNMENT = API_PREFIX + "/entity/:entityConceptId/attribute/:attributeConceptId";
+
+            public static final String RELATIONSHIP_TYPE = API_PREFIX + "/relationshipType";
+            public static final String RELATIONSHIP = API_PREFIX + "/relationshipType/:relationshipTypeLabel";
+            public static final String RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT = API_PREFIX + "/relationship/:relationshipConceptId/role/:roleConceptId";
+
+            public static final String ROLE = API_PREFIX + "/role";
+            public static final String RULE = API_PREFIX + "/rule";
+
+        }
+
+        /**
          * URIs to dashboard controller endpoints
          */
         public static class Dashboard {
@@ -115,6 +138,11 @@ public class REST {
         public static final String KEYSPACE = "keyspace";
         public static final String FORMAT = "format";
         public static final String UUID_PARAMETER = "uuid";
+        public static final String ATTRIBUTE_TYPE_LABEL_PARAMETER = ":attributeTypeLabel";
+        public static final String ENTITY_TYPE_LABEL_PARAMETER = ":entityTypeLabel";
+        public static final String RELATIONSHIP_TYPE_LABEL_PARAMETER = ":relationshipTypeLabel";
+        public static final String ROLE_LABEL_PARAMETER = ":roleLabel";
+        public static final String RULE_LABEL_PARAMETER = ":ruleLabel";
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
