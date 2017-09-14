@@ -96,10 +96,13 @@ public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
         JanusGraphCleanup.clear(getTinkerPopGraph());
     }
 
-    @Override
     public void commitTransactionInternal(){
         executeLockingMethod(() -> {
-            super.commitTransactionInternal();
+            try {
+                getTinkerPopGraph().tx().commit();
+            } catch (UnsupportedOperationException e) {
+                //IGNORED
+            }
             return null;
         });
     }
