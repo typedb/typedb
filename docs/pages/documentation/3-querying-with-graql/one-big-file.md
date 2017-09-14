@@ -11,9 +11,12 @@ folder: documentation
 
 # Query
 
-A [query](#query) is an action, in some cases preceded by a [match](#match). Examples of actions are
-[define](#define-query), [undefine](#undefine-query), [get](#get-query), [insert](#insert-query) and
-[delete](#delete-query).
+[Queries](#query) are requests made to the knowledge base. They may modify the schema, such as [define](#define-query),
+or the data, such as [insert](#insert-query) or be read-only, such as [get](#get-query).
+
+A [query](#query) is comprised of an action (such as `get` or `delete`) with arguments, in some cases preceded by a
+[match](#match). Examples of [queries](#query) are [define](#define-query), [undefine](#undefine-query),
+[get](#get-query), [insert](#insert-query) and [delete](#delete-query).
 
 ## Answer
 
@@ -173,18 +176,19 @@ role exactly once).
 `match` [`<pattern> ...`](#pattern) [`(<modifier> ...)`](#modifier)
 
 A [match](#match) will find all [answers](#answer) in the knowledge base that _satisfy_ all of the given
-[patterns](#patterns). These [answers](#answer) can be used with either [get](#get-query), [insert](#insert-query),
+[patterns](#patterns). Any optional [modifiers](#modifier) are applied to the [answers](#answer) to the [match](#match).
+
+The [answers](#answer) to a [match](#match) can be used with either a [get](#get-query), [insert](#insert-query),
 [delete](#delete-query) or [aggregate](#aggregate-query).
-<!-- TODO aggregate -->
 
 ### Pattern
 
 A [pattern](#pattern) is either a [variable pattern](#variable-pattern), a conjunction or a disjunction:
 
-- `{ <pattern> ... <pattern> };` - An [answer](#answer) _satisfies_ a conjunction if it _satisfies_ all
+- Conjunction: `{ <pattern> ... };` - An [answer](#answer) _satisfies_ a conjunction if it _satisfies_ all
   [patterns](#pattern) within the conjunction.
 
-- `<pattern> or <pattern>;` - An [answer](#answer) _satisfies_ a disjunction if it _satisfies_ either
+- Disjunction: `<pattern> or <pattern>;` - An [answer](#answer) _satisfies_ a disjunction if it _satisfies_ either
   [pattern](#pattern) within the disjunction.
 
 - An [answer](#answer) _satisfies_ a [variable pattern](#variable-pattern) if the concept bound to the subject of the
@@ -354,7 +358,6 @@ If a [match](#match) is provided, then the [insert query](#insert-query) will op
 
 Within the [variable patterns](#variable-pattern), the following [properties](#property) are supported:
 
-<!-- TODO -->
 ### isa
 
 `$x isa $A` creates a new direct instance of `$A` and binds it to `$x`.
@@ -453,7 +456,7 @@ Examples of [aggregates](#aggregates) are:
 - `std <variable>`
 - `sum <variable>`
 - `(<aggregate> as <identifier> , ...)`
-  - The product [aggregate](#aggregate) has a special syntax: a comma-separated sequence of named
+  - The "product" [aggregate](#aggregate) has a special syntax: a comma-separated sequence of named
     aggregates surrounded by brackets `( )`. This [aggregate](#aggregate) will execute all comprising
     [aggregates](#aggregates) and put the results in a map, keyed by the given identifiers.
 
