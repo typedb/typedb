@@ -28,10 +28,12 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,10 +69,8 @@ public abstract class Fragment {
     // TODO: Find a better way to represent these values (either abstractly, or better estimates)
 
     private static final long NUM_INSTANCES_PER_TYPE = 100;
-    private static final long NUM_INSTANCES_PER_SCOPE = 100;
     private static final long NUM_SUBTYPES_PER_TYPE = 3;
     private static final long NUM_RELATIONS_PER_INSTANCE = 30;
-    private static final long NUM_SCOPES_PER_INSTANCE = 3;
     private static final long NUM_TYPES_PER_ROLE = 3;
     private static final long NUM_ROLES_PER_TYPE = 3;
     private static final long NUM_ROLE_PLAYERS_PER_RELATION = 2;
@@ -78,27 +78,30 @@ public abstract class Fragment {
     private static final long NUM_RESOURCES_PER_VALUE = 2;
 
     static final double COST_INSTANCES_PER_TYPE = Math.log1p(NUM_INSTANCES_PER_TYPE);
-    static final double COST_INSTANCES_PER_SCOPE = Math.log1p(NUM_INSTANCES_PER_SCOPE);
     static final double COST_SUBTYPES_PER_TYPE = Math.log1p(NUM_SUBTYPES_PER_TYPE);
     static final double COST_RELATIONS_PER_INSTANCE = Math.log1p(NUM_RELATIONS_PER_INSTANCE);
-    static final double COST_SCOPES_PER_INSTANCE = Math.log1p(NUM_SCOPES_PER_INSTANCE);
     static final double COST_TYPES_PER_ROLE = Math.log1p(NUM_TYPES_PER_ROLE);
     static final double COST_ROLES_PER_TYPE = Math.log1p(NUM_ROLES_PER_TYPE);
     static final double COST_ROLE_PLAYERS_PER_RELATION = Math.log1p(NUM_ROLE_PLAYERS_PER_RELATION);
     static final double COST_ROLE_PLAYERS_PER_ROLE = Math.log1p(NUM_ROLE_PLAYERS_PER_ROLE);
 
-    static final double COST_INDEX = 0.05D; // arbitrary small number
-    static final double COST_RESOURCES_PER_VALUE = Math.log1p(COST_INDEX * NUM_RESOURCES_PER_VALUE);
-
     static final double COST_SAME_AS_PREVIOUS = Math.log1p(1);
-    static final double COST_NEQ = Math.log1p(0.5);
-    static final double COST_DATA_TYPE = Math.log1p(2D / AttributeType.DataType.SUPPORTED_TYPES.size());
-    static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
+
+    static final double COST_NODE_INDEX = -Math.log(NUM_INSTANCES_PER_TYPE);
+    static final double COST_NODE_INDEX_VALUE = -Math.log(NUM_INSTANCES_PER_TYPE / NUM_RESOURCES_PER_VALUE);
+
+    static final double COST_NODE_NEQ = -Math.log(2D);
+    static final double COST_NODE_DATA_TYPE = -Math.log(AttributeType.DataType.SUPPORTED_TYPES.size() / 2D);
+    static final double COST_NODE_UNSPECIFIC_PREDICATE = -Math.log(2D);
+    static final double COST_NODE_REGEX = -Math.log(2D);
+    static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
+    static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
     /**
      * Get the corresponding property
      */
-    public abstract @Nullable VarProperty varProperty();
+    public abstract @Nullable
+    VarProperty varProperty();
 
     /**
      * @return the variable name that this fragment starts from in the query
@@ -108,7 +111,8 @@ public abstract class Fragment {
     /**
      * @return the variable name that this fragment ends at in the query, if this query has an end variable
      */
-    public @Nullable Var end() {
+    public @Nullable
+    Var end() {
         return null;
     }
 
@@ -139,8 +143,56 @@ public abstract class Fragment {
      * @param traversal the traversal to extend with this Fragment
      * @param graph     the graph to execute the traversal on
      */
-    public abstract GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph);
+    public final GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph,
+            Collection<Var> vars, @Nullable Var currentVar
+    ) {
+        if (currentVar != null) {
+            if (!currentVar.equals(start())) {
+                if (vars.contains(start())) {
+                    // If the variable name has been visited but the traversal is not at that variable name, select it
+                    traversal.select(start().getValue());
+                } else {
+                    // Restart traversal when fragments are disconnected
+                    traversal.V().as(start().getValue());
+                }
+            }
+        } else {
+            // If the variable name has not been visited yet, remember it and use the 'as' step
+            traversal.as(start().getValue());
+        }
+
+        vars.add(start());
+
+        traversal = applyTraversalInner(traversal, graph, vars);
+
+        Var end = end();
+        if (end != null) {
+            assignVar(traversal, end, vars);
+        }
+
+        vars.addAll(vars());
+
+        return traversal;
+    }
+
+    static <T, U> GraphTraversal<T, U> assignVar(GraphTraversal<T, U> traversal, Var var, Collection<Var> vars) {
+        if (!vars.contains(var)) {
+            // This variable name has not been encountered before, remember it and use the 'as' step
+            return traversal.as(var.getValue());
+        } else {
+            // This variable name has been encountered before, confirm it is the same
+            return traversal.where(P.eq(var.getValue()));
+        }
+    }
+
+    /**
+     * @param traversal the traversal to extend with this Fragment
+     * @param graph     the graph to execute the traversal on
+     * @param vars
+     */
+    abstract GraphTraversal<Element, ? extends Element> applyTraversalInner(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars);
 
     /**
      * The name of the fragment

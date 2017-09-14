@@ -50,7 +50,7 @@ public class GraqlControllerTest {
                                boolean materialise,
                                int limitEmbedded) {
         return RestAssured.with()
-            .queryParam(KEYSPACE, sampleKB.tx().getKeyspace())
+            .queryParam(KEYSPACE, sampleKB.tx().getKeyspace().getValue())
             .body(query)
             .queryParam(INFER, reasonser)
             .queryParam(MATERIALISE, materialise)

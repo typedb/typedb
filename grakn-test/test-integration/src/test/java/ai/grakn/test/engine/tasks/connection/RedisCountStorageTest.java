@@ -18,10 +18,12 @@
 
 package ai.grakn.test.engine.tasks.connection;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -59,7 +61,7 @@ public class RedisCountStorageTest {
 
     @Test
     public void whenIncreasingCountOnRedisConcurrently_EnsureAllThreadCountsArePersisted() throws ExecutionException, InterruptedException {
-        String keyspace = "k";
+        Keyspace keyspace = SampleKBLoader.randomKeyspace();
         ConceptId conceptId = ConceptId.of("Roach");
         int[] counts = {5, 5, 10, 10, -8, -2, 5, 5, -7};
         ExecutorService pool = Executors.newCachedThreadPool();
@@ -81,8 +83,8 @@ public class RedisCountStorageTest {
 
     @Test
     public void whenChangingCountsOnRedis_EnsureValueIsChanges(){
-        String keyspace1 = "k1";
-        String keyspace2 = "k2";
+        Keyspace keyspace1 = SampleKBLoader.randomKeyspace();
+        Keyspace keyspace2 = SampleKBLoader.randomKeyspace();
         ConceptId roach = ConceptId.of("Roach");
         ConceptId ciri = ConceptId.of("Ciri");
 

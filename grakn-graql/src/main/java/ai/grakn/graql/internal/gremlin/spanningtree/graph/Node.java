@@ -34,6 +34,7 @@ public class Node {
 
     private final NodeId nodeId;
     private boolean isValidStartingPoint = true;
+    private double fixedFragmentCost = 0;
 
     private Set<Fragment> fragmentsWithoutDependency = new HashSet<>();
     private Set<Fragment> fragmentsWithDependency = new HashSet<>();
@@ -82,6 +83,16 @@ public class Node {
 
     public void setInvalidStartingPoint() {
         isValidStartingPoint = false;
+    }
+
+    public double getFixedFragmentCost() {
+        return fixedFragmentCost;
+    }
+
+    public void setFixedFragmentCost(double fixedFragmentCost) {
+        if (this.fixedFragmentCost < fixedFragmentCost) {
+            this.fixedFragmentCost = fixedFragmentCost;
+        }
     }
 
     @Override

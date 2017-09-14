@@ -24,7 +24,7 @@ public class PhilosophersExampleIT {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        GraknTx tx = Grakn.session("in-memory", "my-graph").open(GraknTxType.WRITE);
+        GraknTx tx = Grakn.session("in-memory", "mygraph").open(GraknTxType.WRITE);
         qb = tx.graql();
         runQueries("src/examples/philosophers.gql");
     }

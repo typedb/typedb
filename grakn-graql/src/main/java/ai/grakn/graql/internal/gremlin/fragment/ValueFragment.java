@@ -26,6 +26,7 @@ import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
+import java.util.Collection;
 import java.util.Set;
 
 import static ai.grakn.util.CommonUtil.optionalToStream;
@@ -37,8 +38,8 @@ abstract class ValueFragment extends Fragment {
     abstract ValuePredicate predicate();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
         return predicate().applyPredicate(traversal);
     }
@@ -51,10 +52,10 @@ abstract class ValueFragment extends Fragment {
     @Override
     public double fragmentCost() {
         if (predicate().isSpecific()) {
-            return COST_RESOURCES_PER_VALUE;
+            return COST_NODE_INDEX_VALUE;
         } else {
             // Assume approximately half of values will satisfy a filter
-            return COST_UNSPECIFIC_PREDICATE;
+            return COST_NODE_UNSPECIFIC_PREDICATE;
         }
     }
 

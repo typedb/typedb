@@ -33,6 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,7 +42,7 @@ import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
-import static ai.grakn.util.Schema.EdgeLabel.RESOURCE;
+import static ai.grakn.util.Schema.EdgeLabel.ATTRIBUTE;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.VertexProperty.IS_IMPLICIT;
@@ -54,8 +55,8 @@ abstract class InIsaFragment extends Fragment {
     public abstract Var end();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
         GraphTraversal<Element, Vertex> vertexTraversal = Fragments.inSubs(Fragments.isVertex(traversal));
 
         GraphTraversal<Vertex, Vertex> isImplicitRelationType =
@@ -109,7 +110,7 @@ abstract class InIsaFragment extends Fragment {
         traversal = toVertexInstances(traversal);
 
         // Finally, navigate to all relation edges with the correct type attached to these instances
-        return traversal.outE(RESOURCE.getLabel())
+        return traversal.outE(ATTRIBUTE.getLabel())
                 .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 

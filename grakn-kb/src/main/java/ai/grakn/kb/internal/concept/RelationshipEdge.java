@@ -24,11 +24,14 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,6 +54,7 @@ import java.util.stream.Stream;
  *
  */
 public class RelationshipEdge implements RelationshipStructure {
+    private final Logger LOG = LoggerFactory.getLogger(RelationshipEdge.class);
     private final EdgeElement edgeElement;
 
     private final Cache<RelationshipType> relationType = new Cache<>(Cacheable.concept(), () ->
@@ -62,8 +66,15 @@ public class RelationshipEdge implements RelationshipStructure {
     private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().source()));
-    private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().target()));
+    private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().source().
+            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingOwner(getId()))
+    );
+
+    private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().target().
+            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingValue(getId()))
+    );
 
     RelationshipEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
@@ -92,8 +103,9 @@ public class RelationshipEdge implements RelationshipStructure {
 
     @Override
     public RelationshipReified reify() {
+        LOG.debug("Reifying concept [" + getId() + "]");
         //Build the Relationship Vertex
-        VertexElement relationVertex = edge().tx().addVertex(Schema.BaseType.RELATIONSHIP, getId());
+        VertexElement relationVertex = edge().tx().factory().addVertexElement(Schema.BaseType.RELATIONSHIP, getId());
         RelationshipReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge
