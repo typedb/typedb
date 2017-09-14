@@ -140,27 +140,27 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      * @return All the {@link Attribute} that this Thing is linked with
      */
     public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        Set<ConceptId> resourceTypesIds = Arrays.stream(attributeTypes).map(Concept::getId).collect(Collectors.toSet());
-        return resources(getRolePlayerNeighbours(), resourceTypesIds);
+        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::getId).collect(Collectors.toSet());
+        return attributes(getShortcutNeighbours(), attributeTypesIds);
     }
 
     /**
      * Helper class which filters a {@link Stream} of {@link Attribute} to those of a specific set of {@link AttributeType}.
      *
      * @param conceptStream The {@link Stream} to filter
-     * @param resourceTypesIds The {@link AttributeType} {@link ConceptId}s to filter to.
+     * @param attributeTypesIds The {@link AttributeType} {@link ConceptId}s to filter to.
      * @return the filtered stream
      */
-    private <X extends Concept> Stream<Attribute<?>> resources(Stream<X> conceptStream, Set<ConceptId> resourceTypesIds){
-        Stream<Attribute<?>> resourceStream = conceptStream.
+    private <X extends Concept> Stream<Attribute<?>> attributes(Stream<X> conceptStream, Set<ConceptId> attributeTypesIds){
+        Stream<Attribute<?>> attributeStream = conceptStream.
                 filter(concept -> concept.isAttribute() && !this.equals(concept)).
                 map(Concept::asAttribute);
 
-        if(!resourceTypesIds.isEmpty()){
-            resourceStream = resourceStream.filter(resource -> resourceTypesIds.contains(resource.type().getId()));
+        if(!attributeTypesIds.isEmpty()){
+            attributeStream = attributeStream.filter(attribute -> attributeTypesIds.contains(attribute.type().getId()));
         }
 
-        return resourceStream;
+        return attributeStream;
     }
 
     /**
@@ -173,20 +173,20 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 map(edge -> vertex().tx().factory().buildCasting(edge));
     }
 
-    <X extends Thing> Stream<X> getRolePlayerNeighbours(){
-        GraphTraversal<Object, Vertex> rolePlayerTraversal = __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+    <X extends Thing> Stream<X> getShortcutNeighbours(){
+        GraphTraversal<Object, Vertex> shortcutTraversal = __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 as("edge").
                 outV().
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 where(P.neq("edge")).
                 inV();
 
-        GraphTraversal<Object, Vertex> resourceEdgeTraversal = __.outE(Schema.EdgeLabel.RESOURCE.getLabel()).inV();
+        GraphTraversal<Object, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
 
         //noinspection unchecked
         return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                union(rolePlayerTraversal, resourceEdgeTraversal).toStream().
+                union(shortcutTraversal, attributeEdgeTraversal).toStream().
                 map(vertex -> vertex().tx().<X>buildConcept(vertex)).
                 flatMap(CommonUtil::optionalToStream);
     }
@@ -219,7 +219,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     private Stream<Relationship> edgeRelations(Role... roles){
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
-        Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.RESOURCE);
+        Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE);
 
         if(!roleSet.isEmpty()){
             stream = stream.filter(edge -> {
@@ -257,16 +257,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
 
         Label label = attribute.type().getLabel();
-        RelationshipType hasResource = vertex().tx().getSchemaConcept(has.getLabel(label));
-        Role hasResourceOwner = vertex().tx().getSchemaConcept(hasOwner.getLabel(label));
-        Role hasResourceValue = vertex().tx().getSchemaConcept(hasValue.getLabel(label));
+        RelationshipType hasAttribute = vertex().tx().getSchemaConcept(has.getLabel(label));
+        Role hasAttributeOwner = vertex().tx().getSchemaConcept(hasOwner.getLabel(label));
+        Role hasAttributeValue = vertex().tx().getSchemaConcept(hasValue.getLabel(label));
 
-        if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || type().plays().noneMatch(play -> play.equals(hasResourceOwner))){
+        if(hasAttribute == null || hasAttributeOwner == null || hasAttributeValue == null || type().plays().noneMatch(play -> play.equals(hasAttributeOwner))){
             throw GraknTxOperationException.hasNotAllowed(this, attribute);
         }
 
-        EdgeElement resourceEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.RESOURCE);
-        return vertex().tx().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
+        EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
+        return vertex().tx().factory().buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
     }
 
     @Override
@@ -279,9 +279,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         Stream<Relationship> relationships = relationships(filterNulls(roleHasOwner, roleKeyOwner));
         relationships.filter(relationship -> {
-                    Stream<Thing> rolePlayers = relationship.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
-                    return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
-                }).forEach(Concept::delete);
+            Stream<Thing> rolePlayers = relationship.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
+            return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
+        }).forEach(Concept::delete);
 
         return getThis();
     }
