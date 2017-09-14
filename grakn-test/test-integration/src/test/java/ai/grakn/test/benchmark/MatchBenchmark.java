@@ -25,31 +25,32 @@ public class MatchBenchmark extends BenchmarkTest {
 
     private EngineContext engine;
     private GraknSession session;
+    private GraknTx graph;
 
     @Setup
     public void setup() throws Throwable {
         engine = EngineContext.inMemoryServer();
         engine.before();
         session = Grakn.session(engine.uri(), KEYSPACE);
-        GraknTx graph = session.open(GraknTxType.WRITE);
-        EntityType entityType = graph.putEntityType("benchmarkEntitytype");
+        GraknTx graphEntity = session.open(GraknTxType.WRITE);
+        EntityType entityType = graphEntity.putEntityType("benchmarkEntitytype");
         entityType.addEntity();
-        graph.commit();
+        graphEntity.commit();
+        graph = session.open(GraknTxType.WRITE);
     }
 
     @TearDown
     public void tearDown() {
+        graph.close();
         session.close();
         engine.after();
     }
 
     @Benchmark
     public void match() {
-        GraknTx graph = session.open(GraknTxType.WRITE);
         Match match = graph.graql().match(var("x").isa(BENCHMARK_ENTITYTYPE));
         GetQuery answers = match.get();
         Optional<Answer> first = answers.stream().findFirst();
         first.get();
-        graph.close();
     }
 }
