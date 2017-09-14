@@ -25,6 +25,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -168,17 +169,18 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     private Stream<Relationship> relationEdges(){
         //Unfortunately this is a slow process
         return relates().
-                flatMap(role -> role.playedByTypes()).
+                flatMap(Role::playedByTypes).
                 flatMap(type ->{
                     //Traversal is used here to take advantage of vertex centric index
                     return  vertex().tx().getTinkerTraversal().V().
                             has(Schema.VertexProperty.ID.name(), type.getId().getValue()).
                             in(Schema.EdgeLabel.SHARD.getLabel()).
                             in(Schema.EdgeLabel.ISA.getLabel()).
-                            outE(Schema.EdgeLabel.RESOURCE.getLabel()).
+                            outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
                             has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), getLabelId().getValue()).
                             toStream().
-                            map(edge -> vertex().tx().factory().buildConcept(edge).asRelationship());
+                            map(edge -> vertex().tx().factory().<Relationship>buildConcept(edge)).
+                            flatMap(CommonUtil::optionalToStream);
                 });
     }
 }

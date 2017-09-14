@@ -79,7 +79,7 @@ public class GraknTxTinkerTest extends TxTestBase {
 
     @Test
     public void whenMutatingClosedGraph_Throw() throws InvalidKBException {
-        GraknTxAbstract graph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, "new graph").open(GraknTxType.WRITE);
+        GraknTxAbstract graph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, "newgraph").open(GraknTxType.WRITE);
         graph.close();
 
         expectedException.expect(GraknTxOperationException.class);

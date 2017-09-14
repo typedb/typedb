@@ -18,6 +18,7 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Query;
 
@@ -139,14 +140,14 @@ public class GraknServerException extends GraknBackendException {
     /**
      * Thrown when engine cannot delete a keyspace as expected
      */
-    public static GraknServerException couldNotDelete(String keyspace){
+    public static GraknServerException couldNotDelete(Keyspace keyspace){
         return new GraknServerException(CANNOT_DELETE_KEYSPACE.getMessage(keyspace), 500);
     }
 
     /**
      * Thrown when requested concept is not found in the graph
      */
-    public static GraknServerException noConceptFound(ConceptId conceptId, String keyspace){
+    public static GraknServerException noConceptFound(ConceptId conceptId, Keyspace keyspace){
         return new GraknServerException(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, keyspace), 404);
     }
 

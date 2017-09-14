@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.AttributeType;
@@ -140,7 +141,7 @@ public class SystemController {
     @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private String initialiseSession(Request request, Response response){
-        String keyspace = request.queryParams(KEYSPACE_PARAM);
+        Keyspace keyspace = Keyspace.of(request.queryParams(KEYSPACE_PARAM));
         boolean keyspaceInitialised = factory.systemKeyspace().ensureKeyspaceInitialised(keyspace);
 
         if(keyspaceInitialised) {
@@ -155,7 +156,7 @@ public class SystemController {
     @ApiOperation(value = "Delete a keyspace from the system graph.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private boolean deleteKeyspace(Request request, Response response){
-        String keyspace = request.queryParams(KEYSPACE_PARAM);
+        Keyspace keyspace = Keyspace.of(request.queryParams(KEYSPACE_PARAM));
         boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
         if(deletionComplete){
             LOG.info("Keyspace {} deleted", keyspace);
@@ -210,7 +211,7 @@ public class SystemController {
     @Path("/keyspaces")
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
 
             AttributeType<String> keyspaceName = graph.getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();

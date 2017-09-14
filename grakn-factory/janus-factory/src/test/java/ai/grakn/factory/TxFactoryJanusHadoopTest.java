@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.junit.Before;
@@ -47,7 +48,7 @@ public class TxFactoryJanusHadoopTest {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
         }
 
-        factory = new TxFactoryJanusHadoop("rubbish", "rubbish", TEST_PROPERTIES);
+        factory = new TxFactoryJanusHadoop(Keyspace.of("rubbish"), "rubbish", TEST_PROPERTIES);
     }
 
     @Test(expected=UnsupportedOperationException.class)

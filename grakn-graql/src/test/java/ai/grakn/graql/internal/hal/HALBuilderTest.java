@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.GetQuery;
@@ -48,12 +49,12 @@ public class HALBuilderTest {
     @Test
     public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {
         Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5; get;");
-        String keyspace = academyKB.tx().getKeyspace();
+        Keyspace keyspace = academyKB.tx().getKeyspace();
         assertEquals(5, response.asList().size());
 
         response.asJsonList().forEach(halObj -> {
             assertEquals(halObj.at("_baseType").asString(), "ENTITY");
-            assertTrue(halObj.at("_links").at("self").at("href").asString().contains(keyspace));
+            assertTrue(halObj.at("_links").at("self").at("href").asString().contains(keyspace.getValue()));
             assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
             assertTrue(halObj.has("_type"));
             assertTrue(halObj.has("_id"));

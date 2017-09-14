@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -61,7 +62,7 @@ public class JsonMigratorTest {
 
     @Before
     public void setup(){
-        String keyspace = SampleKBLoader.randomKeyspace();
+        Keyspace keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
         migrator = Migrator.to(engine.uri(), keyspace);
     }

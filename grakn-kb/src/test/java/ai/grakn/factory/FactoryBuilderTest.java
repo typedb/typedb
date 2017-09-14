@@ -20,6 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertThat;
 
 public class FactoryBuilderTest {
     private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
-    private final static String KEYSPACE = "keyspace";
+    private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
     private final static String ENGINE_URL = Grakn.IN_MEMORY;
     private final static Properties TEST_PROPERTIES = new Properties();
 
@@ -63,8 +64,8 @@ public class FactoryBuilderTest {
     public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs(){
         TxFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
         TxFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf3 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf4 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf3 = FactoryBuilder.getFactory(Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf4 = FactoryBuilder.getFactory(Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);

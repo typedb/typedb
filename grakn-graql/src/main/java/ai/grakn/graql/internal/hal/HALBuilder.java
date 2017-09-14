@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
@@ -77,7 +78,7 @@ public class HALBuilder {
     }
 
     public static Json renderHALArrayData(GetQuery getQuery, Collection<Answer> results, int offset, int limit, boolean filterInstances) {
-        String keyspace = getQuery.tx().get().getKeyspace();
+        Keyspace keyspace = getQuery.tx().get().getKeyspace();
 
         //For each VarPatterAdmin containing a relationship we store a map containing varNames associated to RoleTypes
         Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
@@ -91,12 +92,12 @@ public class HALBuilder {
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }
 
-    public static String renderHALConceptData(Concept concept, int separationDegree, String keyspace, int offset, int limit) {
+    public static String renderHALConceptData(Concept concept, int separationDegree, Keyspace keyspace, int offset, int limit) {
         return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset, limit).render();
     }
 
     @Nullable
-    public static String HALExploreConcept(Concept concept, String keyspace, int offset, int limit) {
+    public static String HALExploreConcept(Concept concept, Keyspace keyspace, int offset, int limit) {
         String renderedHAL = null;
 
         if (concept.isThing()) {
@@ -127,7 +128,7 @@ public class HALBuilder {
         return conceptsArray;
     }
 
-    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<Label> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, String keyspace, int offset, int limit, boolean filterInstances) {
+    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<Label> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Keyspace keyspace, int offset, int limit, boolean filterInstances) {
         final Json lines = Json.array();
         graqlResultsList.forEach(answer -> {
             Map<VarPatternAdmin, Boolean> inferredRelationships = buildInferredRelationshipsMap(answer);
@@ -164,7 +165,7 @@ public class HALBuilder {
         return lines;
     }
 
-    private static String computeHrefInferred(Concept currentConcept, String keyspace, int limit){
+    private static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit){
         Set<Thing> thingSet = new HashSet<>();
         currentConcept.asRelationship().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
         String isaString =  "isa " + currentConcept.asRelationship().type().getLabel();
@@ -178,7 +179,7 @@ public class HALBuilder {
         String varsWithIds = stringBuilderVarsWithIds.toString();
         String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
 
-        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, "", parenthesis, isaString, "", limit);
+        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, "", parenthesis, isaString, "get;", limit);
 
         String URL = REST.WebPath.Dashboard.EXPLAIN;
 
@@ -186,7 +187,7 @@ public class HALBuilder {
 
     }
 
-    private static Collection<Representation> loopThroughRelationships(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Map<Var, Representation> mapFromVarNameToHALObject, Map<Var, Concept> resultLine, String keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelationships) {
+    private static Collection<Representation> loopThroughRelationships(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Map<Var, Representation> mapFromVarNameToHALObject, Map<Var, Concept> resultLine, Keyspace keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelationships) {
 
         final Collection<Representation> generatedRelationships = new ArrayList<>();
         // For each relation (VarPatternAdmin key in roleTypes) we fetch all the role-players representations and embed them in the generated-relationship's HAL representation.
@@ -211,7 +212,7 @@ public class HALBuilder {
         return generatedRelationships;
     }
 
-    private static String computeRelationshipHref(String relationshipType, Collection<Var> varNamesInCurrentRelationship, Map<Var, Concept> resultLine, Map<Var, String> varNameToRole, String keyspace, int limit, boolean isInferred) {
+    private static String computeRelationshipHref(String relationshipType, Collection<Var> varNamesInCurrentRelationship, Map<Var, Concept> resultLine, Map<Var, String> varNameToRole, Keyspace keyspace, int limit, boolean isInferred) {
         String isaString = (!relationshipType.equals("")) ? "isa " + relationshipType : "";
         StringBuilder stringBuilderVarsWithIds = new StringBuilder();
         StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
@@ -226,9 +227,9 @@ public class HALBuilder {
         String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
 
         String dollarR = (isInferred) ? "" : "$r";
-        String selectR = (isInferred) ? "" : "select $r;";
+        String getR = (isInferred) ? "get;" : "get $r;";
 
-        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, dollarR, parenthesis, isaString, selectR, limit);
+        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, dollarR, parenthesis, isaString, getR, limit);
 
         String URL = (isInferred) ? REST.WebPath.Dashboard.EXPLAIN : REST.WebPath.KB.GRAQL;
 

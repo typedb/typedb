@@ -108,7 +108,7 @@ public class LazyTest {
         Stream<Answer> stream2 = cache.getAnswerStream(query2);
         Stream<Answer> joinedStream = QueryAnswerStream.join(stream, stream2);
 
-        joinedStream = cache.record(query3, joinedStream.map(a -> a.filterVars(query3.getVarNames())));
+        joinedStream = cache.record(query3, joinedStream.map(a -> a.project(query3.getVarNames())));
 
         Set<Answer> collect = joinedStream.collect(toSet());
         Set<Answer> collect2 = cache.getAnswerStream(query3).collect(toSet());
@@ -141,7 +141,7 @@ public class LazyTest {
                 query2.getQuery().stream(),
                 ImmutableSet.copyOf(joinVars)
                 )
-                .map(a -> a.filterVars(rule.getHead().getVarNames()))
+                .map(a -> a.project(rule.getHead().getVarNames()))
                 .distinct()
                 .map(ans -> ans.explain(new RuleExplanation(query, rule)));
 

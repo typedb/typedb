@@ -20,7 +20,6 @@
 import HALParser from '../../../js/HAL/HALParser';
 import * as Utils from '../../../js/HAL/APIUtils';
 import EngineClient from '../../../js/EngineClient';
-import User from '../../../js/User';
 import * as API from '../../../js/util/HALTerms';
 import { EventHub } from '../../../js/state/graphPageState';
 import CanvasEvents from './CanvasEvents';
@@ -50,19 +49,14 @@ function onClickSubmit(query:string) {
       });
     }
   } else {
-    let queryToExecute = query.trim();
-
-    if (!(query.includes('offset')) && !(query.includes('delete'))) { queryToExecute = `${queryToExecute} offset 0;`; }
-    if (!(query.includes('limit')) && !(query.includes('delete'))) { queryToExecute = `${queryToExecute} limit ${User.getQueryLimit()};`; }
-    EventHub.$emit('inject-query', queryToExecute);
-    EngineClient.graqlHAL(queryToExecute).then((resp, nodeId) => onGraphResponse(resp, false, false, nodeId), (err) => {
+    EngineClient.graqlHAL(query).then((resp, nodeId) => onGraphResponse(resp, false, false, nodeId), (err) => {
       EventHub.$emit('error-message', err.message);
     });
   }
 }
 
 function onLoadSchema(type:string) {
-  const querySub = `match $x sub ${type};`;
+  const querySub = `match $x sub ${type}; get;`;
   EngineClient.graqlHAL(querySub).then(resp => onGraphResponse(resp, false, false), (err) => {
     EventHub.$emit('error-message', err.message);
   });
@@ -85,7 +79,7 @@ function filterNodesToRender(responseObject:Object|Object[], parsedResponse:Obje
     //    if it's contained in firstLevelNodes it means it MUST be drawn and so all the edges pointing to it.
 
   return parsedResponse.nodes
-          .filter(node=> !node.properties.implicit)
+          .filter(node => !node.properties.implicit)
           .filter(node => (((node.properties.baseType !== API.ATTRIBUTE_TYPE)
           && (node.properties.baseType !== API.ATTRIBUTE)
           || showAttributes)
