@@ -15,7 +15,7 @@ cache:
   - grakn-engine/npm
 
 env:
-  # Split tests into grakn-test and everything else 
+  # Split tests into grakn-test and everything else
   - TESTS=**/*Test* MODULE=grakn-test/test-integration
   - TESTS=**/*IT*   MODULE=grakn-test/test-integration
   - TESTS=**/*Test* MODULE=!grakn-test/test-integration
