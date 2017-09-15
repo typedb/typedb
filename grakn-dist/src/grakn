@@ -368,8 +368,8 @@ grakn_server_stop_grakn() {
 }
 
 grakn_clean_grakn() {
-  # redirect to /dev/null to silence 'No such file' error, when the directory is already empty
-  rm "${GRAKN_HOME}"/logs/*.log > /dev/null 2>&1
+  rm -r "${GRAKN_HOME}"/logs
+  mkdir "${GRAKN_HOME}"/logs
 }
 
 # ================================================
