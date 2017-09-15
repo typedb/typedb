@@ -47,11 +47,13 @@ task :test do
           # The favicon is not in the repo
           '/favicon.ico',
           # This is the address of engine by default
-          'localhost:4567',
+          /.*:\/\/localhost:4567.*/,
           # We generate links to the pages within our repo which may not exist yet
-          /.*github\.com\/graknlabs\/grakn\/tree\/.*/
+          /.*github\.com\/graknlabs\/grakn\/tree\/.*/,
+          # TODO: fix links to non-existent sample projects/datasets
+          /.*github\.com\/graknlabs\/sample-(projects|datasets).*/
       ],
-      # TODO: Maybe we shouldn't ignore missing alt attributes
+      # TODO: fix missing alt attributes
       :alt_ignore => [/.*/]
   }
   HTMLProofer.check_directory("./_jekyll/_site", options).run
