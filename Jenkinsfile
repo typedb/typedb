@@ -3,7 +3,7 @@
 // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
 // `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
 // `validate.sh` will be passed the branch name (e.g. "master") as the first argument
-def integrationTests = ["test-snb"]
+def integrationTests = ["test-snb", "test-biomed"]
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([pipelineTriggers([cron('H H/8 * * *')])])
