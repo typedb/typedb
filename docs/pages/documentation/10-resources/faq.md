@@ -32,7 +32,7 @@ There are lots of ways you can get involved! Please take a look at our [contribu
 I am running `grakn server start` but it hangs on `Starting ...`. Why?
 
 This may be because you have cloned the Grakn repo into a directory which has a space in its name (e.g. `/grakn test`). 
-You can build our code successfully, but when you when you run `./grakn server start`, it hangs because the database needs you to have single word pathnames. 
+You can build our code successfully, but when you run `./grakn server start`, it hangs because the database needs you to have single word pathnames. 
 Remove the spaces (e.g. `/grakn_test`) and try again.
 
 ### Why am I getting ghost vertices?
