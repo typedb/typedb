@@ -41,7 +41,7 @@ import static ai.grakn.util.REST.WebPath.Api.ROLE;
 
 /**
  * <p>
- *     Role endpoints
+ *     A class which implements API endpoints for manipulating {@link Role}
  * </p>
  *
  * @author Ganeshwara Herawan Hananda

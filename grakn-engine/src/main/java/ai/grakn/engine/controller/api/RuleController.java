@@ -41,7 +41,7 @@ import static ai.grakn.util.REST.WebPath.Api.RULE;
 
 /**
  * <p>
- *     Rule endpoints
+ *     A class which implements API endpoints for manipulating {@link Rule}
  * </p>
  *
  * @author Ganeshwara Herawan Hananda

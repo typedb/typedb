@@ -45,7 +45,7 @@ import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 
 /**
  * <p>
- *     Entity endpoints
+ *     A class which implements API endpoints for manipulating {@link Entity}
  * </p>
  *
  * @author Ganeshwara Herawan Hananda

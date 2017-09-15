@@ -46,7 +46,7 @@ import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE_ROLE_ASSIGNMENT;
 
 /**
  * <p>
- *     EntityType endpoints
+ *     A class which implements API endpoints for manipulating {@link EntityType}
  * </p>
  *
  * @author Ganeshwara Herawan Hananda

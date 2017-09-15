@@ -44,7 +44,7 @@ import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 
 /**
  * <p>
- *     RelationshipType endpoints
+ *     A class which implements API endpoints for manipulating {@link RelationshipType}
  * </p>
  *
  * @author Ganeshwara Herawan Hananda

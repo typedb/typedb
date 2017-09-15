@@ -43,7 +43,7 @@ import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 
 /**
  * <p>
- *     Attribute endpoints
+ *     A class which implements API endpoints for manipulating {@link Attribute}
  * </p>
  *
  * @author Ganeshwara Herawan Hananda

@@ -45,7 +45,7 @@ import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT
 
 /**
  * <p>
- *     Relationship endpoints
+ *     A class which implements API endpoints for manipulating {@link Relationship}
  * </p>
  *
  * @author Ganeshwara Herawan Hananda
