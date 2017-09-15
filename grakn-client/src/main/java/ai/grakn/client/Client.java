@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
@@ -109,8 +110,9 @@ public class Client {
      */
     public static boolean serverIsRunning(String uri) {
         try {
-            HttpURLConnection connection = (HttpURLConnection)
-                    new URL("http://" + uri + REST.WebPath.System.CONFIGURATION).openConnection();
+            URL url = new URL("http://" + uri + REST.WebPath.System.CONFIGURATION);
+
+            HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
 
@@ -124,6 +126,21 @@ public class Client {
             return false;
         }
         return true;
+    }
+
+    private static URL mapQuadZeroRouteToLocalhost(URL originalUrl) throws MalformedURLException {
+        final String QUAD_ZERO_ROUTE = "http://0.0.0.0";
+
+        URL mappedUrl;
+        if ((originalUrl.getProtocol() + originalUrl.getHost()).equals(QUAD_ZERO_ROUTE)) {
+            mappedUrl = new URL(originalUrl.getProtocol() + "://" +
+                "localhost" + ":" + originalUrl.getPort() +
+                REST.WebPath.System.CONFIGURATION);
+        } else {
+            mappedUrl = originalUrl;
+        }
+
+        return mappedUrl;
     }
 
     protected String convert(String uri, TaskId id){
