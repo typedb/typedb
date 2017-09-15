@@ -18,26 +18,29 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-/**
- * <p>
- * Convert the given value into an integer. Only accepts one argument.
- *
- * Usage:
- *      {@literal @}int(<value>)
- * </p>
- *
- * @author alexandraorth
- */
-public class IntMacro extends AbstractNumericMacro<Integer> {
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.macro.Macro;
+
+import java.util.List;
+
+public abstract class AbstractNumericMacro<T extends Number> implements Macro<Number>{
+    private static final int numberArguments = 1;
 
     @Override
-    Integer convertNumeric(String value) {
-        return Integer.parseInt(value);
+    public Number apply(List<Object> values) {
+        if(values.size() != numberArguments){
+            throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
+        }
+
+        String value = values.get(0).toString();
+        try {
+            return convertNumeric(value);
+        }  catch (NumberFormatException e){
+            throw GraqlQueryException.wrongMacroArgumentType(this, value);
+        }
     }
 
-    @Override
-    public String name(){
-        return "int";
-    }
+    abstract T convertNumeric(String value);
+
+
 }
-

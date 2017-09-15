@@ -48,7 +48,7 @@ public class BooleanMacro implements Macro<Boolean> {
 
         String booleanValue = values.get(0).toString().toLowerCase(Locale.getDefault());
         if(!allowedBooleanValues.contains(booleanValue)){
-            throw GraqlQueryException.wrongMacroArgumentType(this, "a boolean", booleanValue);
+            throw GraqlQueryException.wrongMacroArgumentType(this, booleanValue);
         }
 
         return Boolean.parseBoolean(booleanValue);
