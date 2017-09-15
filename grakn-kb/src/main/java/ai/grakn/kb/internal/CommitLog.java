@@ -32,8 +32,10 @@ import mjson.Json;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * <p>
@@ -48,16 +50,29 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class CommitLog {
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Map<ConceptId, Long> newInstanceCount = new ConcurrentHashMap<>();
     private final Set<Attribute> newAttributes = ConcurrentHashMap.newKeySet();
 
 
     void addNewAttributes(Set<Attribute> attributes){
-        newAttributes.addAll(attributes);
+        lockDataAddition(() -> newAttributes.addAll(attributes));
     }
 
     void addNewInstances(Map<ConceptId, Long> instances){
-        instances.forEach((key, value) -> newInstanceCount.merge(key, value, (v1, v2) -> v1 + v2));
+        lockDataAddition(() -> instances.forEach((key, value) -> newInstanceCount.merge(key, value, (v1, v2) -> v1 + v2)));
+    }
+
+    /**
+     * Read locks are used when acquiring the data.
+     * This is to ensure we are not busy clearing the data during a commit log submission.
+     *
+     * @param dataAdder the data addition
+     */
+    private void lockDataAddition(Runnable dataAdder) {
+        lock.readLock().lock();
+        dataAdder.run();
+        lock.readLock().unlock();
     }
 
     private void clear(){
@@ -72,14 +87,16 @@ public class CommitLog {
     /**
      * Submits the commit logs to the provided server address and under the provided {@link Keyspace}
      */
-    public String submit(String engineUri, Keyspace keyspace){
+    public Optional<String> submit(String engineUri, Keyspace keyspace){
         if(newInstanceCount.isEmpty() && newAttributes.isEmpty()){
-            return "Commit logs empty. No submission made";
+            return Optional.empty();
         }
         String endPoint = getCommitLogEndPoint(engineUri, keyspace);
+        lock.writeLock().lock();
         String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, getFormattedLog().toString());
         clear();
-        return "Response from engine [" + response + "]";
+        lock.writeLock().unlock();
+        return Optional.of("Response from engine [" + response + "]");
     }
 
     private static String getCommitLogEndPoint(String engineUri, Keyspace keyspace) {

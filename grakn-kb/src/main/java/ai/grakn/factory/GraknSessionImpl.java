@@ -136,7 +136,7 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     private void submitLogs(GraknTxAbstract tx){
-        if(tx != null) LOG.debug(tx.commitLog().submit(engineUri, keyspace));
+        if(tx != null) tx.commitLog().submit(engineUri, keyspace).ifPresent(LOG::debug);
     }
 
     private int openTransactions(GraknTxAbstract<?> graph){
