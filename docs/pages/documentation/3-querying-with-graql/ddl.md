@@ -9,9 +9,7 @@ permalink: /documentation/graql/ddl.html
 folder: graql
 ---
 
-# Data Definition Language
-
-## Define Query
+# Define Query
 
 `define` [`<variable patterns>`](./query.html#variable-pattern)
 
@@ -20,7 +18,7 @@ The [define query](#define-query) will add the given [variable patterns](./query
 After execution, it will return a single [answer](./query.html#answer) containing bindings for all
 [variables](./query.html#variable) mentioned in the [variable patterns](./query.html#variable-pattern).
 
-## Undefine Query
+# Undefine Query
 
 `undefine` [`<variable patterns>`](./query.html#variable-pattern)
 
@@ -33,34 +31,34 @@ In order to remove a schema concept entirely, it is sufficient to undefine its [
 undefine person sub entity;
 ```
 
-## Supported Properties
+# Supported Properties
 
 Within the [variable patterns](./query.html#variable-pattern) of both [define](#define-query) and
 [undefine](#undefine-query) queries, the following [properties](./query.html#property) are supported:
 
-### id
+## id
 
 `$x id <identifier>` will assign `$x` to an existing concept with the given ID. It is an error if no such concept
 exists.
 
-### label
+## label
 
 `$A label <identifier>` will assign `$A` to a schema concept with the given label. If no such schema concept exists,
 one will be created.
 
-### sub
+## sub
 
 `$A sub $B` defines `$A` as the direct sub-concept of `$B`.
 
-### relates
+## relates
 
 `$A relates $B` define the relationship type `$A` to directly relate the role `$B`.
 
-### plays
+## plays
 
 `$A plays $B` defines the type `$A` to directly play the role `$B`.
 
-### has (type)
+## has (type)
 
 `$A has <identifier>` defines the type `$A` to have attributes of type `<identifier>`.
 
@@ -75,7 +73,7 @@ $A plays has-<identifier>-owner;
 ```
 Where `<sup>` is the direct super-concept of `<identifier>`.
 
-### key (type)
+## key (type)
 
 `$A key <identifier>` defines the type `$A` to have a key of attribute type `<identifier>`.
 
@@ -93,24 +91,24 @@ Where `<sup>` is the direct super-concept of `<identifier>`.
 (note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
 role exactly once).
 
-### datatype
+## datatype
 
 `$A datatype <datatype>` defines the attribute type `$A` to have the specified
 [datatype](./query.html#value).
 
-### regex
+## regex
 
 `$A regex <regex>` defines the attribute type `$A` to have the specified regex constraint.
 
-### is-abstract
+## is-abstract
 
 `$A is-abstract` defines the type `$A` to be abstract.
 
-### when
+## when
 
 `$A when <pattern>` defines the rule `$A` to have the specified `when` [pattern](./dml.html#pattern).
 
-### then
+## then
 
 `$A then <pattern>` defines the rule `$A` to have the specified `then` [pattern](./dml.html#pattern).
 

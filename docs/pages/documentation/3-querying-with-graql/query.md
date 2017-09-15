@@ -20,7 +20,7 @@ A [query](#query) is comprised of an action (such as `get` or `delete`) with arg
 [undefine](./ddl.html#undefine-query), [get](./dml.html#get-query), [insert](./dml.html#insert-query) and
 [delete](./dml.html#delete-query).
 
-## Answer
+# Answer
 
 Several [queries](#query) return [answers](#answer). An [answer](#answer) is a map from [variables](#variable) to
 concepts. In general, [answers](#answer) will contain all [variables](#variable) mentioned in the [patterns](#pattern)

@@ -9,9 +9,7 @@ permalink: /documentation/graql/dml.html
 folder: graql
 ---
 
-# Data Manipulation Language
-
-## Match
+# Match
 
 `match` [`<pattern> ...`](./query.html#pattern) [`(<modifier> ...)`](#modifier)
 
@@ -22,7 +20,7 @@ A [match](#match) will find all [answers](./query.html#answer) in the knowledge 
 The [answers](./query.html#answer) to a [match](#match) can be used with either a [get](#get-query),
 [insert](#insert-query), [delete](#delete-query) or [aggregate](#aggregate-query).
 
-### Pattern
+## Pattern
 
 A [pattern](#pattern) is either a [variable pattern](./query.html#variable-pattern), a conjunction or a disjunction:
 
@@ -39,11 +37,11 @@ A [pattern](#pattern) is either a [variable pattern](./query.html#variable-patte
 
 Within the [patterns](#pattern), the following [properties](./query.html#property) are supported:
 
-#### isa
+### isa
 
 `$x isa $A` is _satisfied_ if `$x` is indirectly an instance of `$A`.
 
-#### relationship
+### relationship
 
 `$r ($A1: $x1, ..., $An: $xn)` is _satisfied_ if `$r` is a relation where for each `$Ai: $xi`, `$xi` is a role-player
 in `$r` indirectly playing the role `$Ai`.
@@ -54,7 +52,7 @@ playing different roles in the relationship `$r`.
 The [variable](./query.html#variable) representing the role can optionally be omitted. If it is omitted, then the first
 [variable](./query.html#variable) is implicitly bound to the label `role`.
 
-#### has (data)
+### has (data)
 
 `$x has <identifier> $y as $r` is _satisfied_ if `$x` is related to an attribute `$y` of type `<identifier>`, where
 `$r` represents the relationship between them.
@@ -78,36 +76,36 @@ $x has <identifier> $_;
 $_ val <predicate>;
 ```
 
-#### val
+### val
 
 `$x val <predicate>` is _satisfied_ if `$x` is an attribute with a [value](./query.html#value) _satisfying_ the
 [`<predicate>`](#predicate).
 
-#### id
+### id
 
 `$x id <identifier>` is _satisfied_ if `$x` has the ID `<identifier>`.
 
-#### !=
+### !=
 
 `$x != $y` is _satisfied_ if `$x` is not the same concept as `$y`.
 
-#### label
+### label
 
 `$A label <identifier>` is _satisfied_ if `$A` is a schema concept with the label `<identifier>`.
 
-#### sub
+### sub
 
 `$A sub $B` is _satisfied_ if `$A` is indirectly a sub-concept of `$B`.
 
-#### relates
+### relates
 
 `$A relates $B` is _satisfied_ if `$A` is a relationship type that directly relates a role `$B`.
 
-#### plays
+### plays
 
 `$A plays $B` is _satisfied_ if `$A` is a type that indirectly plays a role `$B`.
 
-#### has (type)
+### has (type)
 
 `$A has <identifier>` is _satisfied_ if `$A` is a type who have attribute type `<identifier>`.
 
@@ -124,7 +122,7 @@ $A plays $_O;
 $_O != $_V;
 ```
 
-#### key
+### key
 
 `$A has <identifier>` is _satisfied_ if `$A` is a type who have attribute type `<identifier>` as a key.
 
@@ -144,20 +142,20 @@ $_O != $_V;
 (note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
 role exactly once).
 
-#### datatype
+### datatype
 
 `$A dataype <datatype>` is _satisfied_ if `$A` is an attribute type with the given
 [datatype](./query.html#value).
 
-#### regex
+### regex
 
 `$A regex <regex>` is _satisfied_ if `$A` is an attribute type with the given regex constraint.
 
-#### is-abstract
+### is-abstract
 
 `$A is-abstract;` is _satisfied_ if `$A` is an abstract type.
 
-### Predicate
+## Predicate
 
 The following predicates can be applied to attributes:
 
@@ -166,7 +164,7 @@ The following predicates can be applied to attributes:
 - `contains <string>` - _satisfied_ if `<string>` is a substring of the attribute's [value](./query.html#value).
 - `/<regex>/` - _satisfied_ if the attribute's [value](./query.html#value) matches the `<regex>`.
 
-### Modifier
+## Modifier
 
 There are several modifiers to change the [answers](./query.html#answer) of the [match](#match):
 
@@ -179,7 +177,7 @@ Modifiers are applied in order from left to right. For example, this means that 
 100 [answers](./query.html#answer) with globally minimal `$n`, whereas `limit 100; order by $n;` will locally order the
 first 100 [answers](./query.html#answer) to the query.
 
-## Get Query
+# Get Query
 
 [`<match>`](#match) `get` [`(<variable>, ...)`](./query.html#variable) `;`
 
@@ -188,7 +186,7 @@ The [get query](#get-query) will project each [answer](./query.html#answer) over
 [answers](./query.html#answer) are projected over all [variables](./query.html#variable) mentioned in the
 [pattern](#pattern).
 
-## Insert Query
+# Insert Query
 
 [`(<match>)`](#match) `insert` [`<variable pattern> ...`](./query.html#variable-pattern)
 
@@ -203,16 +201,16 @@ If a [match](#match) is provided, then the [insert query](#insert-query) will op
 Within the [variable patterns](./query.html#variable-pattern), the following [properties](./query.html#property) are
 supported:
 
-### isa
+## isa
 
 `$x isa $A` creates a new direct instance of `$A` and binds it to `$x`.
 
-### relationship
+## relationship
 
 `$r ($A1: $x1, ..., $An, $xn)` will, for each `$Ai: $xi`, add a new role-player `$xi` to `$r` directly playing the role
 `$Ai`.
 
-### has (data)
+## has (data)
 
 `$x has <identifier> $y as $r` will relate the attribute `$y` of type `<identifier>` to `$x`, binding the relationship
 to `$r`.
@@ -248,21 +246,21 @@ $x has <identifier> $_;
 $_ val <value>;
 ```
 
-### val
+## val
 
 `$x val <value>;` specifies that the attribute `$x` should have [value](./query.html#value) `<value>`.
 
-### id
+## id
 
 `$x id <identifier>` will assign `$x` to an existing concept with the given ID. It is an error if no such concept
 exists.
 
-### label
+## label
 
 `$A label <identifier>` will assign `$A` to an existing schema concept with the given label. It is an error if no such
 schema concept exists.
 
-## Delete Query
+# Delete Query
 
 [`<match>`](#match) `delete` [`(<variable>, ...)`](./query.html#variable) `;`
 
@@ -270,14 +268,14 @@ For every [answer](./query.html#answer) from the [match](#match), the [delete qu
 concept bound to every [variable](./query.html#variable) listed. If no [variables](./query.html#variable) are provided,
 then every variable mentioned in the [match](#match) is deleted.
 
-## Aggregate Query
+# Aggregate Query
 
 [`<match>`](#match) `aggregate` [`<aggregate>`](#aggregate) `;`
 
 An [aggregate query](#aggregate-query) applies the given [aggregate](#aggregate) to the [answers](./query.html#answer)
 of the [match](#match).
 
-### Aggregate
+## Aggregate
 
 `<identifier>` `(<` [`variable`](./query.html#variable) `or` [`aggregate`](#aggregate) `> ...)`
 
