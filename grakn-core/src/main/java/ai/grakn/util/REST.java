@@ -86,7 +86,6 @@ public class REST {
 
             public static final String ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT = API_PREFIX + "/entityType/" + Request.ENTITY_TYPE_LABEL_PARAMETER +
                 "/attributeType/" + Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
-            public static final String ENTITY_TYPE_ROLE_ASSIGNMENT = API_PREFIX + "/entityType/:entityTypeId/plays/:roleTypeId";
 
             public static final String ENTITY_ATTRIBUTE_ASSIGNMENT = API_PREFIX + "/entity/" + Request.ENTITY_CONCEPT_ID_PARAMETER +
                 "/attribute/" + Request.ATTRIBUTE_CONCEPT_ID_PARAMETER;

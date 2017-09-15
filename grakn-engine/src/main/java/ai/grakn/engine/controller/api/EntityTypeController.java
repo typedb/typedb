@@ -44,10 +44,8 @@ import static ai.grakn.util.REST.Request.ENTITY_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.ENTITY_TYPE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
-import static ai.grakn.util.REST.Request.ROLE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT;
-import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE_ROLE_ASSIGNMENT;
 
 /**
  * <p>
@@ -71,7 +69,6 @@ public class EntityTypeController {
         spark.put(ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT, this::assignAttributeTypeToEntityType);
         // TODO: implement it after operation has been supported in the Graph API
 //        spark.delete("/api/entityType/:entityTypeId/attribute/:attributeTypeId", this::deleteAttributeTypeToEntitiyTypeAssignment);
-        spark.put(ENTITY_TYPE_ROLE_ASSIGNMENT, this::assignRoleToEntityType);
         // TODO: implement it after operation has been supported in the Graph API
 //        spark.delete("/api/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment);
     }
@@ -150,31 +147,6 @@ public class EntityTypeController {
 //        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/attribute/:attributeTypeId");
 //    }
 
-    private Json assignRoleToEntityType(Request request, Response response) {
-        LOG.debug("assignAttributeTypeToEntityType - request received.");
-        String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
-        String roleLabel = mandatoryPathParameter(request, ROLE_LABEL_PARAMETER);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.debug("assignAttributeTypeToEntityType - attempting to assign roleLabel " + roleLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
-            Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
-            Optional<Role> roleOptional = Optional.ofNullable(tx.getRole(roleLabel));
-
-            if (entityTypeOptional.isPresent() && roleOptional.isPresent()) {
-                EntityType entityType = entityTypeOptional.get();
-                Role role = roleOptional.get();
-                entityType.plays(role);
-                tx.commit();
-
-                response.status(HttpStatus.SC_OK);
-                return Json.nil();
-            } else {
-                LOG.debug("assignAttributeTypeToEntityType - either entityType or role not found. request processed.");
-                response.status(HttpStatus.SC_BAD_REQUEST);
-                return Json.nil();
-            }
-        }
-    }
 
 //    private Json deleteRoleToEntitiyTypeAssignment(Request request, Response response) {
 //        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/attribute/:attributeTypeId");

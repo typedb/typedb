@@ -140,11 +140,6 @@ public class EntityTypeControllerTest {
 //
 //    }
 
-//    @Test // TODO
-//    public void assignRoleToEntityTypeShouldExecuteSuccessfully() {
-//
-//    }
-
 //    @Test // TODO: create a test once an implementation is made
 //    public void deleteRoleToEntityTypeShouldExecuteSuccessfully() {
 //
