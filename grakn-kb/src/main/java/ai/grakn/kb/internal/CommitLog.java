@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
@@ -47,8 +48,8 @@ import java.util.Set;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class CommitLog {
-    private final Map<ConceptId, Long> newInstanceCount = new HashMap<>();
-    private final Set<Attribute> newAttributes = new HashSet<>();
+    private final Map<ConceptId, Long> newInstanceCount = new ConcurrentHashMap<>();
+    private final Set<Attribute> newAttributes = ConcurrentHashMap.newKeySet();
 
 
     void addNewAttributes(Set<Attribute> attributes){
