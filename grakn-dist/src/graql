@@ -52,12 +52,16 @@ graql_console() {
   java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell "${@:1}"
 }
 
+grakn_version() {
+  java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell --version
+}
 graql_help() {
   echo "Usage: graql COMMAND
 
 COMMAND:
 console  Start a REPL console for running Graql queries. Defaults to connecting to http://localhost
 migrate  Run migration from a file
+version  Print Grakn version
 help     Print this message"
 }
 
@@ -90,6 +94,9 @@ case "$1" in
     else
       java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.xml.XmlMigrator -h
     fi
+  ;;
+  version)
+    grakn_version
   ;;
   *|help)
     graql_help

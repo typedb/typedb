@@ -22,7 +22,6 @@
 # ================================================
 
 # globals
-GRAKN_VERSION="1.0"
 WAIT_INTERVAL_S=2
 
 # Grakn globals
@@ -519,7 +518,7 @@ grakn_server_clean() {
 }
 
 grakn_version() {
-  echo "${GRAKN_VERSION}"
+  java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell --version
 }
 
 grakn_help() {
