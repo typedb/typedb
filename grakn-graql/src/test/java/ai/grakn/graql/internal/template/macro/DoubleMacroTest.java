@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.template.macro;
 
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Graql;
 import com.google.common.collect.ImmutableList;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +27,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.junit.Assert.assertEquals;
@@ -93,6 +95,16 @@ public class DoubleMacroTest {
 
         assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
+    }
+
+    @Test
+    public void whenUsingDoubleMacroToParseString_Throw(){
+        String template = "insert $x val @double(<value>);";
+
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.wrongMacroArgumentType(new DoubleMacro(), "a double", "-").getMessage());
+
+        Graql.parseTemplate(template, Collections.singletonMap("value", "-")).collect(Collectors.toList());
     }
 
     @Test

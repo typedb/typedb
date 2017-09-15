@@ -38,10 +38,6 @@ public interface Macro<T> {
     @CheckReturnValue
     T apply(List<Object> values);
 
-    /**
-     * The name of the macro
-     * @return the name of the macro
-     */
     @CheckReturnValue
     String name();
 }

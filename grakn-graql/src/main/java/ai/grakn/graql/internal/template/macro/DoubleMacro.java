@@ -43,7 +43,13 @@ public class DoubleMacro implements Macro<Double> {
         if(values.size() != numberArguments){
             throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
-        return Double.parseDouble(values.get(0).toString());
+
+        String doubleValue = values.get(0).toString();
+        try {
+            return Double.parseDouble(doubleValue);
+        } catch (NumberFormatException e){
+            throw GraqlQueryException.wrongMacroArgumentType(this, "a double", doubleValue);
+        }
     }
 
     @Override
