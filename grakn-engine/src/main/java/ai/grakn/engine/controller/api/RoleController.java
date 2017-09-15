@@ -35,8 +35,11 @@ import java.util.Optional;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ROLE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.ROLE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.ROLE;
 
 /**
@@ -59,7 +62,7 @@ public class RoleController {
 
     private Json getRole(Request request, Response response) {
         LOG.info("getRole - request received.");
-        String roleLabel = mandatoryPathParameter(request, "roleLabel");
+        String roleLabel = mandatoryPathParameter(request, ROLE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRole - attempting to find role " + roleLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
@@ -68,7 +71,7 @@ public class RoleController {
                 String jsonConceptId = role.get().getId().getValue();
                 String jsonRoleLabel = role.get().getLabel().getValue();
                 response.status(HttpStatus.SC_OK);
-                Json responseBody = Json.object("conceptId", jsonConceptId, "roleLabel", jsonRoleLabel);
+                Json responseBody = roleJson(jsonConceptId, jsonRoleLabel);
                 LOG.info("getRole - role found - " + jsonConceptId + ", " + jsonRoleLabel + ". request processed.");
                 return responseBody;
             } else {
@@ -77,5 +80,11 @@ public class RoleController {
                 return Json.nil();
             }
         }
+    }
+
+    private Json roleJson(String conceptId, String roleLabel) {
+        return Json.object(ROLE_OBJECT_JSON_FIELD, Json.object(
+            CONCEPT_ID_JSON_FIELD, conceptId, LABEL_JSON_FIELD, roleLabel)
+        );
     }
 }

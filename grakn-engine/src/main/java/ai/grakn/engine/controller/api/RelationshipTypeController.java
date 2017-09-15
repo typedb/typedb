@@ -38,8 +38,12 @@ import java.util.stream.Stream;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_TYPE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.RELATIONSHIP_TYPE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.ROLE_ARRAY_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 
 /**
@@ -63,7 +67,7 @@ public class RelationshipTypeController {
 
     private Json getRelationshipType(Request request, Response response) {
         LOG.info("getRelationshipType - request received.");
-        String relationshipTypeLabel = mandatoryPathParameter(request, "relationshipTypeLabel");
+        String relationshipTypeLabel = mandatoryPathParameter(request, RELATIONSHIP_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRelationshipType - attempting to find role " + relationshipTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
@@ -86,8 +90,8 @@ public class RelationshipTypeController {
     private Json postRelationshipType(Request request, Response response) {
         LOG.info("postRelationshipType - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
-        String relationshipTypeLabel = requestBody.at("relationshipType").at("label").asString();
-        Stream<String> roleLabels = requestBody.at("relationshipType").at("roles").asList().stream().map(e -> (String) e);
+        String relationshipTypeLabel = requestBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
+        Stream<String> roleLabels = requestBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(ROLE_ARRAY_JSON_FIELD).asList().stream().map(e -> (String) e);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
         LOG.info("postRelationshipType - attempting to add a new relationshipType " + relationshipTypeLabel + " on keyspace " + keyspace);
@@ -111,8 +115,8 @@ public class RelationshipTypeController {
     }
 
     private Json relationshipTypeJson(String conceptId, String label) {
-        return Json.object("relationshipType", Json.object(
-            "conceptId", conceptId, "label", label
+        return Json.object(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD, Json.object(
+            CONCEPT_ID_JSON_FIELD, conceptId, LABEL_JSON_FIELD, label
             )
         );
     }

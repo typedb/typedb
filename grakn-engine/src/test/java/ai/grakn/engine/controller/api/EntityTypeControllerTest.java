@@ -34,7 +34,12 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
+import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.ENTITY_TYPE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -83,31 +88,34 @@ public class EntityTypeControllerTest {
 
     @Test
     public void getEntityTypeFromMovieGraphShouldExecuteSuccessfully() {
+        String production = "production";
+
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get("/api/entityType/production");
+            .get(ENTITY_TYPE + "/" + production);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("entityType").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("entityType").at("label").asString(), equalTo("production"));
+        assertThat(responseBody.at(ENTITY_TYPE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(ENTITY_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(production));
     }
 
     @Test
     public void postEntityTypeShouldExecuteSuccessfully() {
-        Json body = Json.object("entityType", Json.object("label", "newEntityType"));
+        String entityType = "newEntityType";
+        Json body = Json.object(ENTITY_TYPE_OBJECT_JSON_FIELD, Json.object(LABEL_JSON_FIELD, entityType));
 
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
-            .post("/api/entityType");
+            .post(ENTITY_TYPE);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("entityType").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("entityType").at("label").asString(), equalTo("newEntityType"));
+        assertThat(responseBody.at(ENTITY_TYPE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(ENTITY_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(entityType));
     }
 
 //    @Test // TODO: create a test once an implementation is made
@@ -117,14 +125,12 @@ public class EntityTypeControllerTest {
 
     @Test
     public void assignAttributeToEntityTypeShouldExecuteSuccessfully() {
-        Json body = Json.object(
-            "entityTypeLabel", "production",
-            "attributeTypeLabel", "runtime"
-            );
+        String production = "production";
+        String runtime = "runtime";
 
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .put("/api/entityType/production/attribute/runtime");
+            .put("/api/entityType/" + production + "/attributeType/" + runtime);
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }

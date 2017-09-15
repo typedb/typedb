@@ -37,7 +37,10 @@ import java.util.Optional;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.ATTRIBUTE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
+import static ai.grakn.util.REST.Request.VALUE_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 
@@ -61,9 +64,9 @@ public class AttributeController {
 
     private Json postAttribute(Request request, Response response) {
         LOG.info("postAttribute - request received.");
-        String attributeTypeLabel = mandatoryPathParameter(request, "attributeTypeLabel");
+        String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         Json requestBody = Json.read(mandatoryBody(request));
-        String attributeValue = requestBody.at("value").asString();
+        String attributeValue = requestBody.at(VALUE_JSON_FIELD).asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postAttribute - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
         try (GraknTx graph = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
@@ -88,8 +91,8 @@ public class AttributeController {
     }
 
     private Json attributeJson(String conceptId, Object value) {
-        return Json.object("attribute", Json.object(
-                "conceptId", conceptId, "value", value
+        return Json.object(ATTRIBUTE_OBJECT_JSON_FIELD, Json.object(
+                CONCEPT_ID_JSON_FIELD, conceptId, VALUE_JSON_FIELD, value
             )
         );
     }

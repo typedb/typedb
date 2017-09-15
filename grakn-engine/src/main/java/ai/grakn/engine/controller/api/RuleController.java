@@ -35,8 +35,13 @@ import java.util.Optional;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.RULE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.RULE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.THEN_JSON_FIELD;
+import static ai.grakn.util.REST.Request.WHEN_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.RULE;
 
 /**
@@ -59,7 +64,7 @@ public class RuleController {
 
     private Json getRule(Request request, Response response) {
         LOG.info("getRule - request received.");
-        String ruleLabel = mandatoryPathParameter(request, "ruleLabel");
+        String ruleLabel = mandatoryPathParameter(request, RULE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRule - attempting to find rule " + ruleLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
@@ -84,9 +89,9 @@ public class RuleController {
     private Json postRule(Request request, Response response) {
         LOG.info("postRule - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
-        String ruleLabel = requestBody.at("rule").at("label").asString();
-        String when = requestBody.at("rule").at("when").asString();
-        String then = requestBody.at("rule").at("then").asString();
+        String ruleLabel = requestBody.at(RULE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
+        String when = requestBody.at(RULE_OBJECT_JSON_FIELD).at(WHEN_JSON_FIELD).asString();
+        String then = requestBody.at(RULE_OBJECT_JSON_FIELD).at(THEN_JSON_FIELD).asString();
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postRule - attempting to add a new rule " + ruleLabel + " on keyspace " + keyspace);
@@ -112,11 +117,11 @@ public class RuleController {
 
     private Json ruleJson(String conceptId, String label, String when, String then) {
         return Json.object(
-            "rule", Json.object(
-                "conceptId", conceptId,
-                "label", label,
-                "when", when,
-                "then", then
+            RULE_OBJECT_JSON_FIELD, Json.object(
+                CONCEPT_ID_JSON_FIELD, conceptId,
+                LABEL_JSON_FIELD, label,
+                WHEN_JSON_FIELD, when,
+                THEN_JSON_FIELD, then
             )
         );
     }

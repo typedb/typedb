@@ -39,9 +39,15 @@ import java.util.Optional;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
+import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP;
+import static ai.grakn.util.REST.Request.RELATIONSHIP_CONCEPT_ID_PARAMETER;
+import static ai.grakn.util.REST.Request.RELATIONSHIP_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.RELATIONSHIP_TYPE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.ROLE_CONCEPT_ID_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT;
+import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 
 /**
  * <p>
@@ -58,7 +64,7 @@ public class RelationshipController {
     public RelationshipController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.post(RELATIONSHIP, this::postRelationship);
+        spark.post(RELATIONSHIP_TYPE + "/" + RELATIONSHIP_TYPE_LABEL_PARAMETER, this::postRelationship);
         spark.put(RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT, this::assignEntityAndRoleToRelationship);
         // TODO: implement it after operation has been supported in the Graph API
 //        spark.delete("/api/relationship/:relationshipConceptId/role/:roleConceptId/entity/:entityConceptId", this::deleteEntityAndRoleToRelationshipAssignment);
@@ -66,7 +72,7 @@ public class RelationshipController {
 
     private Json postRelationship(Request request, Response response) {
         LOG.info("postRelationship - request received.");
-        String relationshipTypeLabel = mandatoryPathParameter(request, "relationshipTypeLabel");
+        String relationshipTypeLabel = mandatoryPathParameter(request, RELATIONSHIP_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postRelationship - attempting to find entityType " + relationshipTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
@@ -89,9 +95,9 @@ public class RelationshipController {
 
     private Json assignEntityAndRoleToRelationship(Request request, Response response) {
         LOG.info("assignEntityAndRoleToRelationship - request received.");
-        String relationshipConceptId = mandatoryPathParameter(request, "relationshipConceptId");
-        String roleConceptId = mandatoryPathParameter(request, "roleConceptId");
-        String entityConceptId = mandatoryPathParameter(request, "entityConceptId");
+        String relationshipConceptId = mandatoryPathParameter(request, RELATIONSHIP_CONCEPT_ID_PARAMETER);
+        String roleConceptId = mandatoryPathParameter(request, ROLE_CONCEPT_ID_PARAMETER);
+        String entityConceptId = mandatoryPathParameter(request, ENTITY_CONCEPT_ID_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             LOG.info("assignEntityAndRoleToRelationship - attempting to find roleConceptId " + roleConceptId + " and relationshipConceptId " + relationshipConceptId + ", in keyspace " + keyspace);
@@ -123,6 +129,6 @@ public class RelationshipController {
 //    }
 
     private Json relationshipJson(String conceptId) {
-        return Json.object("relationship", Json.object("conceptId", conceptId));
+        return Json.object(RELATIONSHIP_OBJECT_JSON_FIELD, Json.object(CONCEPT_ID_JSON_FIELD, conceptId));
     }
 }

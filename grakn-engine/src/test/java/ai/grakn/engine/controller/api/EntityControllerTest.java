@@ -34,7 +34,13 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static ai.grakn.util.REST.Request.ATTRIBUTE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
+import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.VALUE_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
+import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -85,33 +91,38 @@ public class EntityControllerTest {
 
     @Test
     public void postEntityShouldExecuteSuccessfully() {
+        String entityType = "production";
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post("/api/entityType/production");
+            .post(ENTITY_TYPE + "/" + entityType);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("entity").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at(ENTITY_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
     }
 
     @Test
     @Ignore("There is a problem in Janus with adding attribute and accessig it from different endpoint for some reason. This error does not happen to the in-memory test")
     public void assignAttributeToEntityShouldExecuteSuccessfully() {
         // add an entity
+        String person = "person";
+        String realName = "real-name";
+        String attributeValue = "attributeValue";
+
         Response addEntityResponse = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post("/api/entityType/person");
+            .post(ENTITY_TYPE + "/" + person);
 
         // add an attribute
         Response addAttributeResponse = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .body(Json.object("value", "attributeValue").toString())
-            .post("/api/attributeType/real-name");
+            .body(Json.object(VALUE_JSON_FIELD, attributeValue).toString())
+            .post(ATTRIBUTE_TYPE + "/" + realName);
 
         // get their ids
-        String entityConceptId = Json.read(addEntityResponse.body().asString()).at("entity").at("conceptId").asString();
-        String attributeConceptId = Json.read(addAttributeResponse.body().asString()).at("attribute").at("conceptId").asString();
+        String entityConceptId = Json.read(addEntityResponse.body().asString()).at(ENTITY_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
+        String attributeConceptId = Json.read(addAttributeResponse.body().asString()).at(ATTRIBUTE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
 
         // assign the attribute to the entity
         Response response = with()

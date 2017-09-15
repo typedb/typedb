@@ -16,7 +16,10 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.RELATIONSHIP_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -53,13 +56,15 @@ public class RelationshipControllerTest {
 
     @Test
     public void postRelationshipShouldExecuteSuccessfully() {
+        String directedBy = "directed-by";
+
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post("/api/relationshipType/directed-by");
+            .post(RELATIONSHIP_TYPE + "/" + directedBy);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("relationship").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at(RELATIONSHIP_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
     }
 }

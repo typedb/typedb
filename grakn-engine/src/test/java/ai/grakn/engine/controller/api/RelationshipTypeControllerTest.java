@@ -34,7 +34,12 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
+import static ai.grakn.util.REST.Request.RELATIONSHIP_TYPE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.ROLE_ARRAY_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -87,35 +92,40 @@ public class RelationshipTypeControllerTest {
 
     @Test
     public void postRelationshipTypeShouldExecuteSuccessfully() {
+        String relationshipType = "newRelationshipType";
+        Json roles = Json.array("role1", "role2");
+
         Json body = Json.object(
-            "relationshipType", Json.object(
-                "label", "newRelationshipType",
-                "roles", Json.array("role1", "role2")
+            RELATIONSHIP_TYPE_OBJECT_JSON_FIELD, Json.object(
+                LABEL_JSON_FIELD, relationshipType,
+                ROLE_ARRAY_JSON_FIELD, roles
             )
         );
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
-            .post("/api/relationshipType");
+            .post(RELATIONSHIP_TYPE);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("relationshipType").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("relationshipType").at("label").asString(), equalTo("newRelationshipType"));
+        assertThat(responseBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(relationshipType));
 
     }
 
     @Test
     public void getRelationshipTypeFromMovieGraphShouldExecuteSuccessfully() {
+        String hasGenre = "has-genre";
+
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get("/api/relationshipType/has-genre");
+            .get(RELATIONSHIP_TYPE + "/" + hasGenre);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("relationshipType").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("relationshipType").at("label").asString(), equalTo("has-genre"));
+        assertThat(responseBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(hasGenre));
     }
 }

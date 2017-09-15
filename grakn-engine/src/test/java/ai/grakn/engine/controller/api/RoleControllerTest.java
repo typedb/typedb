@@ -29,13 +29,18 @@ import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Map;
 
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
+import static ai.grakn.util.REST.Request.ROLE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Api.ROLE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -82,14 +87,16 @@ public class RoleControllerTest {
 
     @Test
     public void getRoleFromMovieGraphShouldExecuteSuccessfully() {
+        String productionWithCluster = "production-with-cluster";
+
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get("/api/role/production-with-cluster");
+            .get(ROLE + "/" + productionWithCluster);
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("roleLabel"), equalTo("production-with-cluster"));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at(ROLE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(ROLE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(productionWithCluster));
     }
 }

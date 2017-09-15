@@ -38,8 +38,13 @@ import java.util.Optional;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_TYPE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.ENTITY_TYPE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
+import static ai.grakn.util.REST.Request.ROLE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE_ROLE_ASSIGNMENT;
@@ -73,7 +78,7 @@ public class EntityTypeController {
 
     private Json getEntityType(Request request, Response response) {
         LOG.info("getEntityType - request received.");
-        String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
+        String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getEntityType - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
@@ -96,7 +101,7 @@ public class EntityTypeController {
     private Json postEntityType(Request request, Response response) {
         LOG.info("postEntityType - request received");
         Json requestBody = Json.read(mandatoryBody(request));
-        String entityTypeLabel = requestBody.at("entityType").at("label").asString();
+        String entityTypeLabel = requestBody.at(ENTITY_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
@@ -117,8 +122,8 @@ public class EntityTypeController {
 
     private Json assignAttributeTypeToEntityType(Request request, Response response) {
         LOG.info("assignAttributeTypeToEntityType - request received.");
-        String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
-        String attributeTypeLabel = mandatoryPathParameter(request, "attributeTypeLabel");
+        String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
+        String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("assignAttributeTypeToEntityType - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
@@ -147,8 +152,8 @@ public class EntityTypeController {
 
     private Json assignRoleToEntityType(Request request, Response response) {
         LOG.info("assignAttributeTypeToEntityType - request received.");
-        String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
-        String roleLabel = mandatoryPathParameter(request, "roleLabel");
+        String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
+        String roleLabel = mandatoryPathParameter(request, ROLE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("assignAttributeTypeToEntityType - attempting to assign roleLabel " + roleLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
@@ -177,6 +182,6 @@ public class EntityTypeController {
 
 
     private Json entityTypeJson(String conceptId, String label) {
-        return Json.object("entityType", Json.object("conceptId", conceptId, "label", label));
+        return Json.object(ENTITY_TYPE_OBJECT_JSON_FIELD, Json.object(CONCEPT_ID_JSON_FIELD, conceptId, LABEL_JSON_FIELD, label));
     }
 }

@@ -25,6 +25,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
@@ -34,7 +35,11 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.util.REST.Request.ATTRIBUTE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.VALUE_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -79,17 +84,20 @@ public class AttributeControllerTest {
 
     @Test
     public void postAttributeShouldExecuteSuccessfully() {
-        Json requestBody = Json.object("value", "attributeValue");
+        String attributeType = "real-name";
+        String attributeValue = "attributeValue";
+
+        Json requestBody = Json.object(VALUE_JSON_FIELD, attributeValue);
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(requestBody.toString())
-            .post("/api/attributeType/real-name");
+            .post(ATTRIBUTE_TYPE + "/" + attributeType);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("attribute").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("attribute").at("value").asString(), equalTo("attributeValue"));
+        assertThat(responseBody.at(ATTRIBUTE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(ATTRIBUTE_OBJECT_JSON_FIELD).at(VALUE_JSON_FIELD).asString(), equalTo(attributeValue));
     }
 
 }

@@ -38,7 +38,11 @@ import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
+import static ai.grakn.util.REST.Request.TYPE_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 
 /**
@@ -62,8 +66,8 @@ public class AttributeTypeController {
     private Json postAttributeType(Request request, Response response) {
         LOG.info("postAttributeType - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
-        String attributeTypeLabel = requestBody.at("attributeType").at("label").asString();
-        String attributeTypeDataTypeRaw = requestBody.at("attributeType").at("type").asString();
+        String attributeTypeLabel = requestBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
+        String attributeTypeDataTypeRaw = requestBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(TYPE_JSON_FIELD).asString();
         AttributeType.DataType<?> attributeTypeDataType = fromString(attributeTypeDataTypeRaw);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);
@@ -83,7 +87,7 @@ public class AttributeTypeController {
 
     private Json getAttributeType(Request request, Response response) {
         LOG.info("getAttributeType - request received.");
-        String attributeTypeLabel = mandatoryPathParameter(request, "attributeTypeLabel");
+        String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getAttributeType - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
@@ -134,10 +138,10 @@ public class AttributeTypeController {
     }
 
     private Json attributeTypeJson(String conceptId, String label, String dataType) {
-        return Json.object("attributeType", Json.object(
-                "conceptId", conceptId,
-                "label", label,
-                "type", dataType
+        return Json.object(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD, Json.object(
+                CONCEPT_ID_JSON_FIELD, conceptId,
+                LABEL_JSON_FIELD, label,
+                TYPE_JSON_FIELD, dataType
             )
         );
     }

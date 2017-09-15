@@ -33,7 +33,13 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
+import static ai.grakn.util.REST.Request.RULE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.THEN_JSON_FIELD;
+import static ai.grakn.util.REST.Request.WHEN_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Api.RULE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -80,35 +86,40 @@ public class RuleControllerTest {
 
     @Test
     public void getRuleFromMovieGraphShouldExecuteSuccessfully() {
+        String expectationRule = "expectation-rule";
+
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get("/api/rule/expectation-rule");
+            .get(RULE + "/" + expectationRule);
 
         Json responseBody = Json.read(response.body().asString());
-        
+
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("rule").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("rule").at("label").asString(), equalTo("expectation-rule"));
+        assertThat(responseBody.at(RULE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(RULE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(expectationRule));
     }
 
     @Test
     public void postRuleShouldExecuteSuccessfully() {
-        Json body = Json.object("rule", Json.object(
-            "label", "newRule",
-            "when", "$x has name \"newRule-when\"",
-            "then", "$x has name \"newRule-then\""
+        String rule = "newRule";
+        String when = "$x has name \"newRule-when\"";
+        String then = "$x has name \"newRule-then\"";
+        Json body = Json.object(RULE_OBJECT_JSON_FIELD, Json.object(
+            LABEL_JSON_FIELD, rule,
+            WHEN_JSON_FIELD, when,
+            THEN_JSON_FIELD, then
         ));
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
-            .post("/api/rule");
+            .post(RULE);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("rule").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("rule").at("label").asString(), equalTo("newRule"));
-        assertThat(responseBody.at("rule").at("when").asString(), equalTo("$x has name \"newRule-when\""));
-        assertThat(responseBody.at("rule").at("then").asString(), equalTo("$x has name \"newRule-then\""));
+        assertThat(responseBody.at(RULE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(RULE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(rule));
+        assertThat(responseBody.at(RULE_OBJECT_JSON_FIELD).at(WHEN_JSON_FIELD).asString(), equalTo(when));
+        assertThat(responseBody.at(RULE_OBJECT_JSON_FIELD).at(THEN_JSON_FIELD).asString(), equalTo(then));
     }
 }

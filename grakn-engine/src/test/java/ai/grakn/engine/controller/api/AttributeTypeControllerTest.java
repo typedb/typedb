@@ -35,7 +35,12 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
+import static ai.grakn.util.REST.Request.TYPE_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -86,35 +91,39 @@ public class AttributeTypeControllerTest {
 
     @Test
     public void postAttributeTypeShouldExecuteSuccessfully() {
+        String attributeTypeLabel = "newAttributeType";
+        String attributeTypeDataType = "string";
         Json body = Json.object(
-            "attributeType", Json.object(
-                "label", "newAttributeType",
-                "type", "string"
+            ATTRIBUTE_TYPE_OBJECT_JSON_FIELD, Json.object(
+                LABEL_JSON_FIELD, attributeTypeLabel,
+                TYPE_JSON_FIELD, attributeTypeDataType
             )
         );
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
-            .post("/api/attributeType");
+            .post(ATTRIBUTE_TYPE);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("attributeType").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("attributeType").at("label").asString(), equalTo("newAttributeType"));
+        assertThat(responseBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(attributeTypeLabel));
     }
 
     @Test
     public void getAttributeTypeFromMovieGraphShouldExecuteSuccessfully() {
+        String attributeTypeLabel = "tmdb-vote-count";
+        String attributeTypeDataType = "long";
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get("/api/attributeType/tmdb-vote-count");
+            .get(ATTRIBUTE_TYPE + "/" + attributeTypeLabel);
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("attributeType").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("attributeType").at("label").asString(), equalTo("tmdb-vote-count"));
-        assertThat(responseBody.at("attributeType").at("type").asString(), equalTo("long"));
+        assertThat(responseBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString(), notNullValue());
+        assertThat(responseBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(attributeTypeLabel));
+        assertThat(responseBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(TYPE_JSON_FIELD).asString(), equalTo(attributeTypeDataType));
     }
 }

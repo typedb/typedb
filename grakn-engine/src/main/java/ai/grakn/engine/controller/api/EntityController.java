@@ -38,6 +38,10 @@ import java.util.Optional;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.util.REST.Request.ATTRIBUTE_CONCEPT_ID_PARAMETER;
+import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
+import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
+import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_ATTRIBUTE_ASSIGNMENT;
@@ -67,7 +71,7 @@ public class EntityController {
 
     private Json postEntity(Request request, Response response) {
         LOG.info("postEntity - request received.");
-        String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
+        String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postEntity - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
@@ -91,8 +95,8 @@ public class EntityController {
 
     private Json assignAttributeToEntity(Request request, Response response) {
         LOG.info("assignAttributeToEntity - request received.");
-        String entityConceptId = mandatoryPathParameter(request, "entityConceptId");
-        String attributeConceptId = mandatoryPathParameter(request, "attributeConceptId");
+        String entityConceptId = mandatoryPathParameter(request, ENTITY_CONCEPT_ID_PARAMETER);
+        String attributeConceptId = mandatoryPathParameter(request, ATTRIBUTE_CONCEPT_ID_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             LOG.info("assignAttributeToEntity - attempting to find attributeConceptId " + attributeConceptId + " and entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
@@ -126,6 +130,6 @@ public class EntityController {
 //    }
 
     private Json entityJson(String conceptId) {
-        return Json.object("entity", Json.object("conceptId", conceptId));
+        return Json.object(ENTITY_OBJECT_JSON_FIELD, Json.object(CONCEPT_ID_JSON_FIELD, conceptId));
     }
 }
