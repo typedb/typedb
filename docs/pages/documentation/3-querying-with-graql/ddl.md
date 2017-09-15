@@ -1,0 +1,116 @@
+---
+title: Data Definition Language
+keywords: graql, query, data definition language
+last_updated: April 2017
+tags: [graql]
+summary: "TODO"
+sidebar: documentation_sidebar
+permalink: /documentation/graql/ddl.html
+folder: graql
+---
+
+# Data Definition Language
+
+## Define Query
+
+`define` [`<variable patterns>`](./query.html#variable-pattern)
+
+The [define query](#define-query) will add the given [variable patterns](./query.html#variable-pattern) to the schema.
+
+After execution, it will return a single [answer](./query.html#answer) containing bindings for all
+[variables](./query.html#variable) mentioned in the [variable patterns](./query.html#variable-pattern).
+
+## Undefine Query
+
+`undefine` [`<variable patterns>`](./query.html#variable-pattern)
+
+The [undefine query](#undefine-query) will remove the given [variable patterns](./query.html#variable-pattern) from the
+schema.
+
+In order to remove a schema concept entirely, it is sufficient to undefine its [direct super-concept](#sub):
+
+```graql
+undefine person sub entity;
+```
+
+## Supported Properties
+
+Within the [variable patterns](./query.html#variable-pattern) of both [define](#define-query) and
+[undefine](#undefine-queries) queries, the following [properties](./query.html#property) are supported:
+
+### id
+
+`$x id <identifier>` will assign `$x` to an existing concept with the given ID. It is an error if no such concept
+exists.
+
+### label
+
+`$A label <identifier>` will assign `$A` to a schema concept with the given label. If no such schema concept exists,
+one will be created.
+
+### sub
+
+`$A sub $B` defines `$A` as the direct sub-concept of `$B`.
+
+### relates
+
+`$A relates $B` define the relationship type `$A` to directly relate the role `$B`.
+
+### plays
+
+`$A plays $B` defines the type `$A` to directly play the role `$B`.
+
+### has (type)
+
+`$A has <identifier>` defines the type `$A` to have attributes of type `<identifier>`.
+
+This is done using the following relationship structure:
+```graql
+has-<identifier>-owner sub has-<sup>-owner;
+has-<identifier>-value sub has-<sup>-value;
+has-<identifier> sub has-<sup>, relates has-<identifier>-owner, relates has-<identifier>-value;
+
+$A plays has-<identifier>-owner;
+<identifier> plays has-<identifier>-value;
+```
+Where `<sup>` is the direct super-concept of `<identifier>`.
+
+### key (type)
+
+`$A key <identifier>` defines the type `$A` to have a key of attribute type `<identifier>`.
+
+This is done using the following relationship structure:
+```graql
+key-<identifier>-owner sub key-<sup>-owner;
+key-<identifier>-value sub key-<sup>-value;
+key-<identifier> sub key-<sup>, relates key-<identifier>-owner, relates key-<identifier>-value;
+
+$A plays<<required>> has-<identifier>-owner;
+<identifier> plays has-<identifier>-value;
+```
+Where `<sup>` is the direct super-concept of `<identifier>`.
+<!-- TODO: This is pretty bad -->
+(note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
+role exactly once).
+
+### datatype
+
+`$A datatype <datatype>` defines the attribute type `$A` to have the specified
+[datatype](./query.html#value).
+
+### regex
+
+`$A regex <regex>` defines the attribute type `$A` to have the specified regex constraint.
+
+### is-abstract
+
+`$A is-abstract` defines the type `$A` to be abstract.
+
+### when
+
+`$A when <pattern>` defines the rule `$A` to have the specified `when` [pattern](./query.html#pattern).
+
+### then
+
+`$A then <pattern>` defines the rule `$A` to have the specified `then` [pattern](./query.html#pattern).
+

@@ -76,7 +76,13 @@ entries:
         url: /documentation/graql/graql-cheatsheet.html
       - title: CONGRATULATIONS YOU ARE OUR 1,000,000th VISITOR! CLICK HERE FOR $$$$
         output: web
-        url: /documentation/graql/one-big-file.html
+        url: /documentation/graql/query.html
+      - title: Data Definition Language
+        output: web
+        url: /documentation/graql/ddl.html
+      - title: Data Manipulation Language
+        output: web
+        url: /documentation/graql/dml.html
   - title: Graql Analytics
     output: web
     folderitems:
