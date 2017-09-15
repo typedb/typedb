@@ -63,27 +63,27 @@ public class AttributeController {
     }
 
     private Json postAttribute(Request request, Response response) {
-        LOG.info("postAttribute - request received.");
+        LOG.debug("postAttribute - request received.");
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         Json requestBody = Json.read(mandatoryBody(request));
         String attributeValue = requestBody.at(VALUE_JSON_FIELD).asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postAttribute - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
+        LOG.debug("postAttribute - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
         try (GraknTx graph = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(graph.getAttributeType(attributeTypeLabel));
             if (attributeTypeOptional.isPresent()) {
-                LOG.info("postAttribute - attributeType " + attributeTypeLabel + " found.");
+                LOG.debug("postAttribute - attributeType " + attributeTypeLabel + " found.");
                 AttributeType attributeType = attributeTypeOptional.get();
                 Attribute attribute = attributeType.putAttribute(attributeValue);
                 graph.commit();
 
                 String jsonConceptId = attribute.getId().getValue();
                 Object jsonAttributeValue = attribute.getValue();
-                LOG.info("postAttribute - attribute " + jsonConceptId + " of attributeType " + attributeTypeLabel + " added. request processed");
+                LOG.debug("postAttribute - attribute " + jsonConceptId + " of attributeType " + attributeTypeLabel + " added. request processed");
                 response.status(HttpStatus.SC_OK);
                 return attributeJson(jsonConceptId, jsonAttributeValue);
             } else {
-                LOG.info("postAttribute - attributeType " + attributeTypeLabel + " NOT found.");
+                LOG.debug("postAttribute - attributeType " + attributeTypeLabel + " NOT found.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }

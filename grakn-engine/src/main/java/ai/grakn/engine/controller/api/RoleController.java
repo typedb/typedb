@@ -61,10 +61,10 @@ public class RoleController {
     }
 
     private Json getRole(Request request, Response response) {
-        LOG.info("getRole - request received.");
+        LOG.debug("getRole - request received.");
         String roleLabel = mandatoryPathParameter(request, ROLE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("getRole - attempting to find role " + roleLabel + " in keyspace " + keyspace);
+        LOG.debug("getRole - attempting to find role " + roleLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<Role> role = Optional.ofNullable(tx.getRole(roleLabel));
             if (role.isPresent()) {
@@ -72,11 +72,11 @@ public class RoleController {
                 String jsonRoleLabel = role.get().getLabel().getValue();
                 response.status(HttpStatus.SC_OK);
                 Json responseBody = roleJson(jsonConceptId, jsonRoleLabel);
-                LOG.info("getRole - role found - " + jsonConceptId + ", " + jsonRoleLabel + ". request processed.");
+                LOG.debug("getRole - role found - " + jsonConceptId + ", " + jsonRoleLabel + ". request processed.");
                 return responseBody;
             } else {
                 response.status(HttpStatus.SC_BAD_REQUEST);
-                LOG.info("getRole - role NOT found. request processed.");
+                LOG.debug("getRole - role NOT found. request processed.");
                 return Json.nil();
             }
         }

@@ -71,22 +71,22 @@ public class RelationshipController {
     }
 
     private Json postRelationship(Request request, Response response) {
-        LOG.info("postRelationship - request received.");
+        LOG.debug("postRelationship - request received.");
         String relationshipTypeLabel = mandatoryPathParameter(request, RELATIONSHIP_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postRelationship - attempting to find entityType " + relationshipTypeLabel + " in keyspace " + keyspace);
+        LOG.debug("postRelationship - attempting to find entityType " + relationshipTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<RelationshipType> relationshipTypeOptional = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
             if (relationshipTypeOptional.isPresent()) {
-                LOG.info("postRelationship - relationshipType " + relationshipTypeLabel + " found.");
+                LOG.debug("postRelationship - relationshipType " + relationshipTypeLabel + " found.");
                 RelationshipType relationshipType = relationshipTypeOptional.get();
                 Relationship relationship = relationshipType.addRelationship();
                 String jsonConceptId = relationship.getId().getValue();
-                LOG.info("postRelationship - relationship " + jsonConceptId + " of relationshipType " + relationshipTypeLabel + " added. request processed");
+                LOG.debug("postRelationship - relationship " + jsonConceptId + " of relationshipType " + relationshipTypeLabel + " added. request processed");
                 response.status(HttpStatus.SC_OK);
                 return relationshipJson(jsonConceptId);
             } else {
-                LOG.info("postRelationship - relationshipType " + relationshipTypeLabel + " NOT found.");
+                LOG.debug("postRelationship - relationshipType " + relationshipTypeLabel + " NOT found.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
@@ -94,30 +94,30 @@ public class RelationshipController {
     }
 
     private Json assignEntityAndRoleToRelationship(Request request, Response response) {
-        LOG.info("assignEntityAndRoleToRelationship - request received.");
+        LOG.debug("assignEntityAndRoleToRelationship - request received.");
         String relationshipConceptId = mandatoryPathParameter(request, RELATIONSHIP_CONCEPT_ID_PARAMETER);
         String roleConceptId = mandatoryPathParameter(request, ROLE_CONCEPT_ID_PARAMETER);
         String entityConceptId = mandatoryPathParameter(request, ENTITY_CONCEPT_ID_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
-            LOG.info("assignEntityAndRoleToRelationship - attempting to find roleConceptId " + roleConceptId + " and relationshipConceptId " + relationshipConceptId + ", in keyspace " + keyspace);
+            LOG.debug("assignEntityAndRoleToRelationship - attempting to find roleConceptId " + roleConceptId + " and relationshipConceptId " + relationshipConceptId + ", in keyspace " + keyspace);
             Optional<Relationship> relationshipOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(relationshipConceptId)));
             Optional<Role> roleOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(roleConceptId)));
             Optional<Entity> entityOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(entityConceptId)));
 
             if (relationshipOptional.isPresent() && roleOptional.isPresent() && entityOptional.isPresent()) {
-                LOG.info("assignEntityAndRoleToRelationship - relationship, role and entity found. attempting to assign entity " + entityConceptId + " and role  " + roleConceptId + " to relationship " + relationshipConceptId);
+                LOG.debug("assignEntityAndRoleToRelationship - relationship, role and entity found. attempting to assign entity " + entityConceptId + " and role  " + roleConceptId + " to relationship " + relationshipConceptId);
                 Relationship relationship = relationshipOptional.get();
                 Role role = roleOptional.get();
                 Entity entity = entityOptional.get();
                 relationship.addRolePlayer(role, entity);
                 tx.commit();
-                LOG.info("assignEntityAndRoleToRelationship - assignment succeeded. request processed.");
+                LOG.debug("assignEntityAndRoleToRelationship - assignment succeeded. request processed.");
                 Json responseBody = Json.object();
                 response.status(HttpStatus.SC_OK);
                 return responseBody;
             } else {
-                LOG.info("assignEntityAndRoleToRelationship - either entity, role or relationship not found. request processed.");
+                LOG.debug("assignEntityAndRoleToRelationship - either entity, role or relationship not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }

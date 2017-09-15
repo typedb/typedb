@@ -64,20 +64,20 @@ public class AttributeTypeController {
     }
 
     private Json postAttributeType(Request request, Response response) {
-        LOG.info("postAttributeType - request received.");
+        LOG.debug("postAttributeType - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
         String attributeTypeLabel = requestBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
         String attributeTypeDataTypeRaw = requestBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(TYPE_JSON_FIELD).asString();
         AttributeType.DataType<?> attributeTypeDataType = fromString(attributeTypeDataTypeRaw);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);
+        LOG.debug("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             AttributeType attributeType = tx.putAttributeType(attributeTypeLabel, attributeTypeDataType);
             tx.commit();
             String jsonConceptId = attributeType.getId().getValue();
             String jsonAttributeTypeLabel = attributeType.getLabel().getValue();
             String jsonAttributeTypeDataType = toString(attributeType.getDataType());
-            LOG.info("postAttributeType - attribute type " + jsonAttributeTypeLabel +
+            LOG.debug("postAttributeType - attribute type " + jsonAttributeTypeLabel +
                 " of type " + jsonAttributeTypeDataType + " with id " + jsonConceptId + " added successfully. request processed.");
             response.status(HttpStatus.SC_OK);
             Json responseBody = attributeTypeJson(jsonConceptId, jsonAttributeTypeLabel, jsonAttributeTypeDataType);
@@ -86,10 +86,10 @@ public class AttributeTypeController {
     }
 
     private Json getAttributeType(Request request, Response response) {
-        LOG.info("getAttributeType - request received.");
+        LOG.debug("getAttributeType - request received.");
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("getAttributeType - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
+        LOG.debug("getAttributeType - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<AttributeType> attributeType = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
             if (attributeType.isPresent()) {
@@ -98,12 +98,12 @@ public class AttributeTypeController {
                 String jsonAttributeTypeDataType = toString(attributeType.get().getDataType());
                 response.status(HttpStatus.SC_OK);
                 Json responseBody = attributeTypeJson(jsonConceptId, jsonAttributeTypeLabel, jsonAttributeTypeDataType);
-                LOG.info("getAttributeType - attributeType found - " + jsonConceptId + ", " +
+                LOG.debug("getAttributeType - attributeType found - " + jsonConceptId + ", " +
                     jsonAttributeTypeLabel + ", " + jsonAttributeTypeDataType + ". request processed.");
                 return responseBody;
             } else {
                 response.status(HttpStatus.SC_BAD_REQUEST);
-                LOG.info("getAttributeType - attributeType NOT found. request processed.");
+                LOG.debug("getAttributeType - attributeType NOT found. request processed.");
                 return Json.nil();
             }
         }

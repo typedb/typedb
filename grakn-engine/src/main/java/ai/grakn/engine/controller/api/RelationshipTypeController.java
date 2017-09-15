@@ -66,10 +66,10 @@ public class RelationshipTypeController {
     }
 
     private Json getRelationshipType(Request request, Response response) {
-        LOG.info("getRelationshipType - request received.");
+        LOG.debug("getRelationshipType - request received.");
         String relationshipTypeLabel = mandatoryPathParameter(request, RELATIONSHIP_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("getRelationshipType - attempting to find role " + relationshipTypeLabel + " in keyspace " + keyspace);
+        LOG.debug("getRelationshipType - attempting to find role " + relationshipTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<RelationshipType> relationshipType = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
             if (relationshipType.isPresent()) {
@@ -77,24 +77,24 @@ public class RelationshipTypeController {
                 String jsonRelationshipTypeLabel = relationshipType.get().getLabel().getValue();
                 response.status(HttpStatus.SC_OK);
                 Json responseBody = relationshipTypeJson(jsonConceptId, jsonRelationshipTypeLabel);
-                LOG.info("getRelationshipType - relationshipType found - " + jsonConceptId + ", " + jsonRelationshipTypeLabel + ". request processed.");
+                LOG.debug("getRelationshipType - relationshipType found - " + jsonConceptId + ", " + jsonRelationshipTypeLabel + ". request processed.");
                 return responseBody;
             } else {
                 response.status(HttpStatus.SC_BAD_REQUEST);
-                LOG.info("getRelationshipType - relationshipType NOT found. request processed.");
+                LOG.debug("getRelationshipType - relationshipType NOT found. request processed.");
                 return Json.nil();
             }
         }
     }
 
     private Json postRelationshipType(Request request, Response response) {
-        LOG.info("postRelationshipType - request received.");
+        LOG.debug("postRelationshipType - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
         String relationshipTypeLabel = requestBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
         Stream<String> roleLabels = requestBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(ROLE_ARRAY_JSON_FIELD).asList().stream().map(e -> (String) e);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
-        LOG.info("postRelationshipType - attempting to add a new relationshipType " + relationshipTypeLabel + " on keyspace " + keyspace);
+        LOG.debug("postRelationshipType - attempting to add a new relationshipType " + relationshipTypeLabel + " on keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             RelationshipType relationshipType = tx.putRelationshipType(relationshipTypeLabel);
 
@@ -106,7 +106,7 @@ public class RelationshipTypeController {
             tx.commit();
             String jsonConceptId = relationshipType.getId().getValue();
             String jsonRelationshipTypeLabel = relationshipType.getLabel().getValue();
-            LOG.info("postRelationshipType - relationshipType " + jsonRelationshipTypeLabel + " with id " + jsonConceptId + " added. request processed.");
+            LOG.debug("postRelationshipType - relationshipType " + jsonRelationshipTypeLabel + " with id " + jsonConceptId + " added. request processed.");
             response.status(HttpStatus.SC_OK);
             Json responseBody = relationshipTypeJson(jsonConceptId, jsonRelationshipTypeLabel);
 

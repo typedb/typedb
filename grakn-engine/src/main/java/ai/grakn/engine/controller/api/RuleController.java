@@ -63,10 +63,10 @@ public class RuleController {
     }
 
     private Json getRule(Request request, Response response) {
-        LOG.info("getRule - request received.");
+        LOG.debug("getRule - request received.");
         String ruleLabel = mandatoryPathParameter(request, RULE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("getRule - attempting to find rule " + ruleLabel + " in keyspace " + keyspace);
+        LOG.debug("getRule - attempting to find rule " + ruleLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<Rule> rule = Optional.ofNullable(tx.getRule(ruleLabel));
             if (rule.isPresent()) {
@@ -76,25 +76,25 @@ public class RuleController {
                 String jsonRuleThen = rule.get().getThen().toString();
                 response.status(HttpStatus.SC_OK);
                 Json responseBody = ruleJson(jsonConceptId, jsonRuleLabel, jsonRuleWhen, jsonRuleThen);
-                LOG.info("getRule - rule found - " + jsonConceptId + ", " + jsonRuleLabel + ". request processed.");
+                LOG.debug("getRule - rule found - " + jsonConceptId + ", " + jsonRuleLabel + ". request processed.");
                 return responseBody;
             } else {
                 response.status(HttpStatus.SC_BAD_REQUEST);
-                LOG.info("getRule - rule NOT found. request processed.");
+                LOG.debug("getRule - rule NOT found. request processed.");
                 return Json.nil();
             }
         }
     }
 
     private Json postRule(Request request, Response response) {
-        LOG.info("postRule - request received.");
+        LOG.debug("postRule - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
         String ruleLabel = requestBody.at(RULE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
         String when = requestBody.at(RULE_OBJECT_JSON_FIELD).at(WHEN_JSON_FIELD).asString();
         String then = requestBody.at(RULE_OBJECT_JSON_FIELD).at(THEN_JSON_FIELD).asString();
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postRule - attempting to add a new rule " + ruleLabel + " on keyspace " + keyspace);
+        LOG.debug("postRule - attempting to add a new rule " + ruleLabel + " on keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Rule rule = tx.putRule(
                 ruleLabel,
@@ -107,7 +107,7 @@ public class RuleController {
             String jsonRuleLabel = rule.getLabel().getValue();
             String jsonRuleWhen = rule.getWhen().toString();
             String jsonRuleThen = rule.getThen().toString();
-            LOG.info("postRule - rule " + jsonRuleLabel + " with id " + jsonConceptId + " added. request processed.");
+            LOG.debug("postRule - rule " + jsonRuleLabel + " with id " + jsonConceptId + " added. request processed.");
             response.status(HttpStatus.SC_OK);
             Json responseBody = ruleJson(jsonConceptId, jsonRuleLabel, jsonRuleWhen, jsonRuleThen);
 

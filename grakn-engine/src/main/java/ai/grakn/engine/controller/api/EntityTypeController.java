@@ -77,10 +77,10 @@ public class EntityTypeController {
     }
 
     private Json getEntityType(Request request, Response response) {
-        LOG.info("getEntityType - request received.");
+        LOG.debug("getEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("getEntityType - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
+        LOG.debug("getEntityType - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<EntityType> entityType = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             if (entityType.isPresent()) {
@@ -88,22 +88,22 @@ public class EntityTypeController {
                 String jsonEntityTypeLabel = entityType.get().getLabel().getValue();
                 response.status(HttpStatus.SC_OK);
                 Json responseBody = entityTypeJson(jsonConceptId, jsonEntityTypeLabel);
-                LOG.info("getEntityType - entityType found - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
+                LOG.debug("getEntityType - entityType found - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
                 return responseBody;
             } else {
                 response.status(HttpStatus.SC_BAD_REQUEST);
-                LOG.info("getEntityType - entityType NOT found. request processed.");
+                LOG.debug("getEntityType - entityType NOT found. request processed.");
                 return Json.nil();
             }
         }
     }
 
     private Json postEntityType(Request request, Response response) {
-        LOG.info("postEntityType - request received");
+        LOG.debug("postEntityType - request received");
         Json requestBody = Json.read(mandatoryBody(request));
         String entityTypeLabel = requestBody.at(ENTITY_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
+        LOG.debug("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             EntityType entityType = tx.putEntityType(entityTypeLabel);
             tx.commit();
@@ -111,7 +111,7 @@ public class EntityTypeController {
             String jsonConceptId = entityType.getId().getValue();
             String jsonEntityTypeLabel = entityType.getLabel().getValue();
             Json responseBody = entityTypeJson(jsonConceptId, jsonEntityTypeLabel);
-            LOG.info("postEntityType - entityType added - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
+            LOG.debug("postEntityType - entityType added - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
             return responseBody;
         }
     }
@@ -121,11 +121,11 @@ public class EntityTypeController {
 //    }
 
     private Json assignAttributeTypeToEntityType(Request request, Response response) {
-        LOG.info("assignAttributeTypeToEntityType - request received.");
+        LOG.debug("assignAttributeTypeToEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("assignAttributeTypeToEntityType - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
+        LOG.debug("assignAttributeTypeToEntityType - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
@@ -135,11 +135,11 @@ public class EntityTypeController {
                 AttributeType attributeType = attributeTypeOptional.get();
                 entityType.attribute(attributeType);
                 tx.commit();
-                LOG.info("assignAttributeTypeToEntityType - attributeType " + attributeTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
+                LOG.debug("assignAttributeTypeToEntityType - attributeType " + attributeTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
                 response.status(HttpStatus.SC_OK);
                 return Json.nil();
             } else {
-                LOG.info("assignAttributeTypeToEntityType - either entityType or attributeType not found. request processed.");
+                LOG.debug("assignAttributeTypeToEntityType - either entityType or attributeType not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
@@ -151,11 +151,11 @@ public class EntityTypeController {
 //    }
 
     private Json assignRoleToEntityType(Request request, Response response) {
-        LOG.info("assignAttributeTypeToEntityType - request received.");
+        LOG.debug("assignAttributeTypeToEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
         String roleLabel = mandatoryPathParameter(request, ROLE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("assignAttributeTypeToEntityType - attempting to assign roleLabel " + roleLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
+        LOG.debug("assignAttributeTypeToEntityType - attempting to assign roleLabel " + roleLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             Optional<Role> roleOptional = Optional.ofNullable(tx.getRole(roleLabel));
@@ -169,7 +169,7 @@ public class EntityTypeController {
                 response.status(HttpStatus.SC_OK);
                 return Json.nil();
             } else {
-                LOG.info("assignAttributeTypeToEntityType - either entityType or role not found. request processed.");
+                LOG.debug("assignAttributeTypeToEntityType - either entityType or role not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
