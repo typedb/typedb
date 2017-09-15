@@ -263,6 +263,7 @@ public class BatchMutatorClient {
         Retryer<TaskResult> sendQueryRetry = RetryerBuilder.<TaskResult>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
+                .retryIfResult(r -> r != null && r.getCode().startsWith("5"))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetries))
                 .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
                 .build();
