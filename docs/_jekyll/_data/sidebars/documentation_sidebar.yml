@@ -74,7 +74,7 @@ entries:
       - title: Graql Cheatsheet
         output: web
         url: /documentation/graql/graql-cheatsheet.html
-      - title: CONGRATULATIONS YOU ARE OUR 1,000,000th VISITOR! CLICK HERE FOR $$$$
+      - title: Graql Queries
         output: web
         url: /documentation/graql/query.html
       - title: Data Definition Language

@@ -3,7 +3,7 @@ title: Graql Queries
 keywords: graql, query
 last_updated: April 2017
 tags: [graql]
-summary: "TODO"
+summary: "Graql Queries"
 sidebar: documentation_sidebar
 permalink: /documentation/graql/query.html
 folder: graql

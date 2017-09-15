@@ -3,7 +3,7 @@ title: Data Definition Language
 keywords: graql, query, data definition language
 last_updated: April 2017
 tags: [graql]
-summary: "TODO"
+summary: "Data Definition Language"
 sidebar: documentation_sidebar
 permalink: /documentation/graql/ddl.html
 folder: graql

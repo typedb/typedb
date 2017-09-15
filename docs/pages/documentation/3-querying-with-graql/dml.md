@@ -3,7 +3,7 @@ title: Data Manipulation Language
 keywords: graql, query, data manipulation language
 last_updated: April 2017
 tags: [graql]
-summary: "TODO"
+summary: "Data Manipulation Language"
 sidebar: documentation_sidebar
 permalink: /documentation/graql/dml.html
 folder: graql
