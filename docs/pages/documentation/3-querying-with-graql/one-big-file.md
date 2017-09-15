@@ -6,7 +6,7 @@ tags: [graql]
 summary: "TODO"
 sidebar: documentation_sidebar
 permalink: /documentation/graql/one-big-file.html
-folder: documentation
+folder: graql
 ---
 
 # Query
@@ -96,8 +96,6 @@ undefine person sub entity;
 
 Within the [variable patterns](#variable-pattern) of both [define](#define-query) and [undefine](#undefine-queries)
 queries, the following [properties](#property) are supported:
-
-<!-- TODO -->
 
 ### id
 
@@ -292,7 +290,6 @@ $_O != $_V;
 `$A has <identifier>` is _satisfied_ if `$A` is a type who have attribute type `<identifier>` as a key.
 
 <!-- TODO: Describe without referring to relationships? -->
-<!-- TODO: handle required part properly -->
 This is equivalent to the following:
 ```graql
 $_R sub relationship, relates $_O, relates $_V;
@@ -466,4 +463,55 @@ Examples of [aggregates](#aggregates) are:
     aggregates surrounded by brackets `( )`. This [aggregate](#aggregate) will execute all comprising
     [aggregates](#aggregates) and put the results in a map, keyed by the given identifiers.
 
-<!-- TODO  compute -->
+# Compute Query
+
+`compute` [`<compute algorithm>`](#compute-algorithm) `(<argument>, ...) (in <type>, ...); (<modifier>; ...;)`
+
+A [compute query](#compute-query) applies a [compute algorithm](#compute-algorithm) in parallel against the knowledge
+base.
+
+Depending on the [compute algorithm(#compute-algorithm), different arguments and modifiers are supported. All
+[compute algorithms](#compute-algorithm) may take a set of types that describes the sub-graph that the
+[compute algorithm](#compute-algorithm) will operate on. If the set of types is not provided, it is considered to be
+all types in the schema.
+
+## Compute Algorithm
+
+### Count
+
+`count (in <type>, ...);`
+
+Returns the number of instances in the sub-graph.
+
+### Statistics
+
+`(min|max|median|mean|std|sum) of <attribute type>, ... (in <type>, ...);`
+
+Return the result of a statistical operation (such as `min` or `sum`) against all instances of the given attribute types
+that are owned by members of the sub-graph.
+
+### Degree
+
+`degrees (of <target type>, ...) (in <type>, ...);`
+
+Count the degree of every instance of the target types. The degree is considered to be the number of relationships the
+instance is in, plus the number of role-players if the instance is also a relationship. Only instances in the sub-graph
+count towards the degree.
+
+Go [here](../graql-analytics/analytics-degrees.html) for more information about the
+[degree](#degree) algorithm.
+
+### Cluster
+
+`cluster (in <type>, ...); (members) (size <integer>);`
+
+Go [here](../graql-analytics/analytics-connected-components.html) for more information about the
+[cluster](#cluster) algorithm.
+
+### Path
+
+`path from <id> to <id> (in <type>, ...);`
+
+Go [here](../graql-analytics/analytics-shortest-path.html) for more information about the
+[path](#path) algorithm.
+
