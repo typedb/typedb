@@ -70,9 +70,12 @@ public class CommitLog {
      * @param dataAdder the data addition
      */
     private void lockDataAddition(Runnable dataAdder) {
-        lock.readLock().lock();
-        dataAdder.run();
-        lock.readLock().unlock();
+        try{
+            lock.readLock().lock();
+            dataAdder.run();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     private void clear(){
@@ -91,12 +94,16 @@ public class CommitLog {
         if(newInstanceCount.isEmpty() && newAttributes.isEmpty()){
             return Optional.empty();
         }
+
         String endPoint = getCommitLogEndPoint(engineUri, keyspace);
-        lock.writeLock().lock();
-        String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, getFormattedLog().toString());
-        clear();
-        lock.writeLock().unlock();
-        return Optional.of("Response from engine [" + response + "]");
+        try{
+            lock.writeLock().lock();
+            String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, getFormattedLog().toString());
+            clear();
+            return Optional.of("Response from engine [" + response + "]");
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     private static String getCommitLogEndPoint(String engineUri, Keyspace keyspace) {
