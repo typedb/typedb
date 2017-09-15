@@ -19,7 +19,6 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -36,7 +35,7 @@ import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
@@ -83,30 +82,30 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Atom implementation defining a relation atom corresponding to a combined {@link RelationProperty}
+ * Atom implementation defining a relation atom corresponding to a combined {@link RelationshipProperty}
  * and (optional) {@link IsaProperty}. The relation atom is a {@link TypeAtom} with relationship players.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class RelationAtom extends IsaAtom {
+public class RelationshipAtom extends IsaAtom {
 
     private int hashCode = 0;
     private Multimap<Role, Var> roleVarMap = null;
     private Multimap<Role, String> roleConceptIdMap = null;
     private final ImmutableList<RelationPlayer> relationPlayers;
 
-    public RelationAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate predicate, ReasonerQuery par) {
+    public RelationshipAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicateVar, predicate, par);
         List<RelationPlayer> rps = new ArrayList<>();
         getPattern().asVarPattern()
-                .getProperty(RelationProperty.class)
+                .getProperty(RelationshipProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().forEach(rps::add));
         this.relationPlayers = ImmutableList.copyOf(rps);
     }
 
-    private RelationAtom(RelationAtom a) {
+    private RelationshipAtom(RelationshipAtom a) {
         super(a);
         this.relationPlayers = a.relationPlayers;
         this.roleVarMap = a.roleVarMap;
@@ -149,7 +148,7 @@ public class RelationAtom extends IsaAtom {
 
     @Override
     public Atomic copy() {
-        return new RelationAtom(this);
+        return new RelationshipAtom(this);
     }
 
     /**
@@ -185,7 +184,7 @@ public class RelationAtom extends IsaAtom {
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        RelationAtom a2 = (RelationAtom) obj;
+        RelationshipAtom a2 = (RelationshipAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarNames().equals(a2.getVarNames())
                 && getRelationPlayers().equals(a2.getRelationPlayers());
@@ -195,7 +194,7 @@ public class RelationAtom extends IsaAtom {
     public boolean isEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        RelationAtom a2 = (RelationAtom) obj;
+        RelationshipAtom a2 = (RelationshipAtom) obj;
         return (isUserDefined() == a2.isUserDefined())
                 && Objects.equals(this.getTypeId(), a2.getTypeId())
                 //check relation players equivalent
@@ -337,7 +336,7 @@ public class RelationAtom extends IsaAtom {
     }
 
     //rule head atom is applicable if it is unifiable
-    private boolean isRuleApplicableViaAtom(RelationAtom headAtom) {
+    private boolean isRuleApplicableViaAtom(RelationshipAtom headAtom) {
         return headAtom.getRelationPlayers().size() >= this.getRelationPlayers().size()
                 && headAtom.getRelationPlayerMappings(this).size() == this.getRelationPlayers().size();
     }
@@ -347,8 +346,8 @@ public class RelationAtom extends IsaAtom {
         Atom ruleAtom = child.getRuleConclusionAtom();
         if (!(ruleAtom.isRelation())) return false;
 
-        RelationAtom headAtom = (RelationAtom) ruleAtom;
-        RelationAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoleTypes();
+        RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;
+        RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles();
         return atomWithType.isRuleApplicableViaAtom(headAtom);
     }
 
@@ -391,18 +390,9 @@ public class RelationAtom extends IsaAtom {
         return roles;
     }
 
-    /**
-     * @param type to be added to this relation
-     * @return new relation with specified type
-     */
-    public RelationAtom addType(SchemaConcept type) {
-        ConceptId typeId = type.getId();
-        Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
-
-        VarPatternAdmin newPattern = getPattern().asVarPattern().isa(typeVariable).admin();
-        IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
-
-        return new RelationAtom(newPattern, typeVariable, newPredicate, this.getParentQuery());
+    public RelationshipAtom addType(SchemaConcept type) {
+        Pair<VarPatternAdmin, IdPredicate> typedPair = getTypedPair(type);
+        return new RelationshipAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
     }
 
     /**
@@ -472,7 +462,7 @@ public class RelationAtom extends IsaAtom {
      * @param sub extra instance information to aid entity type inference
      * @return either this if relation type can't be inferred or a fresh relationship with inferred relationship type
      */
-    private RelationAtom inferRelationType(Answer sub){
+    private RelationshipAtom inferRelationshipType(Answer sub){
         if (getTypePredicate() != null) return this;
 
         List<RelationshipType> relationshipTypes = inferPossibleRelationTypes(sub);
@@ -484,10 +474,10 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public Atom inferTypes() {
+    public RelationshipAtom inferTypes() {
         return this
-                .inferRelationType(new QueryAnswer())
-                .inferRoleTypes();
+                .inferRelationshipType(new QueryAnswer())
+                .inferRoles();
     }
 
     @Override
@@ -555,7 +545,7 @@ public class RelationAtom extends IsaAtom {
         if (!headAtom.isRelation()) return Collections.singleton(new UnifierImpl());
 
         //if this atom is a match all atom, add type from rule head and find unmapped roles
-        RelationAtom relAtom = getPredicateVariable().getValue().isEmpty() ? this.addType(headAtom.getSchemaConcept()) : this;
+        RelationshipAtom relAtom = getPredicateVariable().getValue().isEmpty() ? this.addType(headAtom.getSchemaConcept()) : this;
         List<Pair<Var, Var>> permuteVars = new ArrayList<>(relAtom.getNonSpecificRelationPlayers());
         if (permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
 
@@ -570,7 +560,7 @@ public class RelationAtom extends IsaAtom {
      * attempt to infer role types of this relation and return a fresh relationship with inferred role types
      * @return either this if nothing/no roles can be inferred or fresh relation with inferred role types
      */
-    private RelationAtom inferRoleTypes(){
+    private RelationshipAtom inferRoles(){
         //return if all roles known or no type present
         if (getExplicitRoleTypes().size() == getRelationPlayers().size() || getSchemaConcept() == null) return this;
 
@@ -645,7 +635,7 @@ public class RelationAtom extends IsaAtom {
                 });
 
         PatternAdmin newPattern = constructRelationVarPattern(getVarName(), getPredicateVariable(), rolePlayerMappings);
-        return new RelationAtom(newPattern.asVarPattern(), getPredicateVariable(), getTypePredicate(), getParentQuery());
+        return new RelationshipAtom(newPattern.asVarPattern(), getPredicateVariable(), getTypePredicate(), getParentQuery());
     }
 
     /**
@@ -702,7 +692,7 @@ public class RelationAtom extends IsaAtom {
         return roleRelationPlayerMap;
     }
 
-    private List<Pair<RelationPlayer, RelationPlayer>> getRelationPlayerMappings(RelationAtom parentAtom) {
+    private List<Pair<RelationPlayer, RelationPlayer>> getRelationPlayerMappings(RelationshipAtom parentAtom) {
         List<Pair<RelationPlayer, RelationPlayer>> rolePlayerMappings = new ArrayList<>();
 
         //establish compatible castings for each parent casting
@@ -811,7 +801,8 @@ public class RelationAtom extends IsaAtom {
 
         Unifier unifier = super.getUnifier(pAtom);
         if (pAtom.isRelation()) {
-            RelationAtom parentAtom = (RelationAtom) pAtom;
+            assert(pAtom instanceof RelationshipAtom); // This is safe due to the check above
+            RelationshipAtom parentAtom = (RelationshipAtom) pAtom;
 
             boolean unifyRoleVariables = parentAtom.getRelationPlayers().stream()
                     .map(RelationPlayer::getRole)
@@ -840,7 +831,7 @@ public class RelationAtom extends IsaAtom {
      * @param parentAtom parent atom that triggers rewrite
      * @return new relation atom with user defined {@link Role} variables if necessary or this
      */
-    private RelationAtom rewriteWithVariableRoles(Atom parentAtom){
+    private RelationshipAtom rewriteWithVariableRoles(Atom parentAtom){
         if (!parentAtom.requiresRoleExpansion()) return this;
 
         VarPattern relVar = getPattern().asVarPattern().getProperty(IsaProperty.class)
@@ -856,14 +847,14 @@ public class RelationAtom extends IsaAtom {
                 relVar = relVar.rel(rp.getRolePlayer());
             }
         }
-        return new RelationAtom(relVar.admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
+        return new RelationshipAtom(relVar.admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
     }
 
     /**
      * @param parentAtom parent atom that triggers rewrite
      * @return new relation atom with user defined name if necessary or this
      */
-    private RelationAtom rewriteWithRelationVariable(Atom parentAtom){
+    private RelationshipAtom rewriteWithRelationVariable(Atom parentAtom){
         if (!parentAtom.getVarName().isUserDefinedName()) return this;
 
         VarPattern newVar = Graql.var().asUserDefined();
@@ -879,7 +870,7 @@ public class RelationAtom extends IsaAtom {
                 relVar = relVar.rel(c.getRolePlayer());
             }
         }
-        return new RelationAtom(relVar.admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
+        return new RelationshipAtom(relVar.admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
     }
 
     @Override

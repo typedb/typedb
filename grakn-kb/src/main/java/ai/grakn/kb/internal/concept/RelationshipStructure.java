@@ -37,7 +37,8 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     This wraps up the structure of a {@link Relationship} as either a {@link RelationshipReified} or a TODO
+ *     This wraps up the structure of a {@link Relationship} as either a {@link RelationshipReified} or a
+ *     {@link RelationshipEdge}.
  *     It contains methods which can be accessed regardless of the {@link Relationship} being a represented by a
  *     {@link VertexElement} or an {@link EdgeElement}
  * </p>

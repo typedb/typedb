@@ -29,17 +29,12 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.util.CommonUtil;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import static ai.grakn.graql.internal.gremlin.sets.LabelFragmentSet.applyRedundantLabelEliminationOptimisation;
-import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
-import static ai.grakn.graql.internal.gremlin.sets.RolePlayerFragmentSet.applyRolePlayerRelationTypeOptimisation;
-import static ai.grakn.graql.internal.gremlin.sets.RolePlayerFragmentSet.applyRolePlayerRoleOptimisation;
 
 /**
  * Factory class for producing instances of {@link EquivalentFragmentSet}.
@@ -47,6 +42,13 @@ import static ai.grakn.graql.internal.gremlin.sets.RolePlayerFragmentSet.applyRo
  * @author Felix Chapman
  */
 public class EquivalentFragmentSets {
+
+    private static final ImmutableCollection<FragmentSetOptimisation> OPTIMISATIONS = ImmutableSet.of(
+            RolePlayerFragmentSet.ROLE_OPTIMISATION,
+            ResourceIndexFragmentSet.RESOURCE_INDEX_OPTIMISATION,
+            RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
+            LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION
+    );
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a type whose instances play a role.
@@ -143,8 +145,6 @@ public class EquivalentFragmentSets {
         return new RegexFragmentSet(varProperty, resourceType, regex);
     }
 
-    // TODO: Move role-player edge optimisation here
-
     /**
      * Modify the given collection of {@link EquivalentFragmentSet} to introduce certain optimisations, such as the
      * {@link ResourceIndexFragmentSet}.
@@ -154,21 +154,13 @@ public class EquivalentFragmentSets {
     public static void optimiseFragmentSets(
             Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
 
-        // TODO: Create a real interface for these when there are more of them
-        ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
-                () -> applyResourceIndexOptimisation(fragmentSets, graph),
-                () -> applyRolePlayerRoleOptimisation(fragmentSets, graph),
-                () -> applyRolePlayerRelationTypeOptimisation(fragmentSets, graph),
-                () -> applyRedundantLabelEliminationOptimisation(fragmentSets, graph)
-        );
-
         // Repeatedly apply optimisations until they don't alter the query
         boolean changed = true;
 
         while (changed) {
             changed = false;
-            for (Supplier<Boolean> optimisation : optimisations) {
-                changed |= optimisation.get();
+            for (FragmentSetOptimisation optimisation : OPTIMISATIONS) {
+                changed |= optimisation.apply(fragmentSets, graph);
             }
         }
     }
