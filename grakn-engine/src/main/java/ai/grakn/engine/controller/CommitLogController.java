@@ -99,7 +99,7 @@ public class CommitLogController {
         return Json.object(
                 "postProcessingTaskId", postProcessingTaskState.getId().getValue(),
                 "countingTaskId", countingTaskState.getId().getValue(),
-                "keyspace", keyspace
+                "keyspace", keyspace.getValue()
         );
     }
 }
