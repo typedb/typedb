@@ -302,7 +302,11 @@ For simplicity, the */raw-data/* directory of the example project contains a scr
  ./loader.sh <relative-path-to-Grakn>/bin
 ```
 
-The migration will take a minute or two, and the terminal will report which file it is migrating at each step. When it is complete, it will report that it is "Done migrating data". To check that it has been successful, open the [Grakn visualiser](../grakn-dashboard/visualiser.html) and select Types, then Entities, and choose one of those presented to you (the entities should be those described [above](./CSV-migration.html#entities)]. The visualiser will display the entities it has imported. The screenshot below illustrates the result from selecting to see all `person` entities.
+The migration will take a minute or two, and the terminal will report which file it is migrating at each step. When it
+is complete, it will report that it is "Done migrating data". To check that it has been successful, open the
+[Grakn visualiser](../grakn-dashboard/visualiser.html) and select Types, then Entities, and choose one of those
+presented to you (the entities should be those described above. The visualiser will display the entities it has
+imported. The screenshot below illustrates the result from selecting to see all `person` entities.
 
 ![Person query](/images/match-$x-isa-person.png)
 
@@ -318,7 +322,8 @@ There should be 60 people in the dataset.
 
 In this example, we have imported a dataset stored in three separate CSV files into Grakn to build a simple knowledge base. We have discussed the schema and migration templates, and shown how to apply the templates to the CSV data using the shell migrator, using a script file *loader.sh* to automate calling the migrator on each file It is possible to export the data from Grakn, in *.gql* format, so that it can easily be loaded to a knowledge base again without the need to migrate from CSV.  
 
-To export the data, we use the Grakn *migration.sh* shell script again, as described in the [migration documentation](../migration/migration-overview.html#export-from-grakn):
+To export the data, we use the Grakn *migration.sh* shell script again, as described in the
+[migration documentation](../migration/migration-overview.html#exporting-data-from-grakn):
 
 ```bash
 # Export the schema
