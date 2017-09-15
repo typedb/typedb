@@ -23,6 +23,18 @@ import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
 
+/**
+ * <p>
+ *     {@link Number} parsing {@link Macro}
+ * </p>
+ *
+ * <p>
+ *     Represents the base {@link Macro} exclusively used for {@link Number}s, such as {@link LongMacro} and
+ *     {@link IntMacro}
+ * </p>
+ *
+ * @author Filipe Peliz Pinto Teixeira
+ */
 public abstract class AbstractNumericMacro<T extends Number> implements Macro<Number>{
     private static final int numberArguments = 1;
 
