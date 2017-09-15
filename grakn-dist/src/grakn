@@ -460,9 +460,9 @@ Tips:
 grakn_server_status() {
   storage_is_storage_running
   if [ $? -eq 0 ] ; then
-    echo "Casssandra: RUNNING"
+    echo "Storage: RUNNING"
   else
-    echo "Casssandra: NOT RUNNING"
+    echo "Storage: NOT RUNNING"
   fi
 
   queue_is_queue_running
