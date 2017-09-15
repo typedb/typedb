@@ -24,6 +24,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
+import ai.grakn.graql.internal.parser.QueryParser;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -110,31 +111,21 @@ public class AttributeTypeController {
     }
 
     private AttributeType.DataType<?> fromString(String dataType) {
-        if (dataType.equals("string")) {
-            return AttributeType.DataType.STRING;
-        } else if (dataType.equals("double")) {
-            return AttributeType.DataType.DOUBLE;
-        } else if (dataType.equals("long")) {
-            return AttributeType.DataType.LONG;
-        } else if (dataType.equals("boolean")) {
-            return AttributeType.DataType.BOOLEAN;
-        } else {
-            throw GraknServerException.invalidQueryExplaination("invalid datatype supplied: '" + dataType + "'");
-        }
+        Optional<AttributeType.DataType> fromStringOpt =
+            Optional.ofNullable(QueryParser.DATA_TYPES.get(dataType));
+
+        return fromStringOpt.orElseThrow(() ->
+            GraknServerException.invalidQueryExplaination("invalid data type supplied: '" + dataType + "'")
+        );
     }
 
     private String toString(AttributeType.DataType<?> dataType) {
-        if (dataType.equals(AttributeType.DataType.STRING)) {
-            return "string";
-        } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-            return "double";
-        } else if (dataType.equals(AttributeType.DataType.LONG)) {
-            return "long";
-        } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-            return "boolean";
-        } else {
-            throw GraknServerException.invalidQueryExplaination("invalid datatype supplied: '" + dataType + "'");
-        }
+        Optional<String> toStringOpt =
+            Optional.ofNullable(QueryParser.DATA_TYPES.inverse().get(dataType));
+
+        return toStringOpt.orElseThrow(() ->
+            GraknServerException.invalidQueryExplaination("invalid data type supplied: '" + dataType + "'")
+        );
     }
 
     private Json attributeTypeJson(String conceptId, String label, String dataType) {
