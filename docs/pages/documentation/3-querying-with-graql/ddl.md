@@ -36,7 +36,7 @@ undefine person sub entity;
 ## Supported Properties
 
 Within the [variable patterns](./query.html#variable-pattern) of both [define](#define-query) and
-[undefine](#undefine-queries) queries, the following [properties](./query.html#property) are supported:
+[undefine](#undefine-query) queries, the following [properties](./query.html#property) are supported:
 
 ### id
 
@@ -108,9 +108,9 @@ role exactly once).
 
 ### when
 
-`$A when <pattern>` defines the rule `$A` to have the specified `when` [pattern](./query.html#pattern).
+`$A when <pattern>` defines the rule `$A` to have the specified `when` [pattern](./dml.html#pattern).
 
 ### then
 
-`$A then <pattern>` defines the rule `$A` to have the specified `then` [pattern](./query.html#pattern).
+`$A then <pattern>` defines the rule `$A` to have the specified `then` [pattern](./dml.html#pattern).
 
