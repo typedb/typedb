@@ -62,7 +62,7 @@ authored by - """ + user
                 }
                 timeout(360) {
                     stage('Run the benchmarks') {
-                        sh 'mvn clean test -P janus -Dmaven.repo.local=' + workspace + '/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
+                        sh 'mvn clean test -P janus -Dtest=*Benchmark -Dmaven.repo.local=' + workspace + '/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
                     }
                     dir('grakn-test/test-snb/') {
                         stage('Build the SNB connectors') {
