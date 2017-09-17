@@ -31,7 +31,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -293,9 +292,9 @@ public class InferenceRule {
         if (parentAtom.getSchemaConcept() != null){
             return childAtom.getUnifier(parentAtom);
         }
-        //case of match all relation atom
+        //case of match all atom (atom without type)
         else{
-            Atom extendedParent = ((RelationAtom) parentAtom)
+            Atom extendedParent = parentAtom
                     .addType(childAtom.getSchemaConcept())
                     .inferTypes();
             return childAtom.getUnifier(extendedParent);

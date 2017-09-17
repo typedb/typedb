@@ -45,7 +45,7 @@ import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelatesProperty;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ThenProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
@@ -357,16 +357,16 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     private VarPattern addCasting(RelationPlayer relationPlayer) {
-        Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
+        Optional<RelationshipProperty> relationProperty = getProperty(RelationshipProperty.class);
 
         ImmutableMultiset<RelationPlayer> oldCastings = relationProperty
-                .map(RelationProperty::relationPlayers)
+                .map(RelationshipProperty::relationPlayers)
                 .orElse(ImmutableMultiset.of());
 
         ImmutableMultiset<RelationPlayer> relationPlayers =
                 Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
-        RelationProperty newProperty = RelationProperty.of(relationPlayers);
+        RelationshipProperty newProperty = RelationshipProperty.of(relationPlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }

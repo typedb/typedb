@@ -59,7 +59,6 @@ import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import mjson.Json;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -112,6 +111,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public static final String NORMAL_CACHE_TIMEOUT_MS = "knowledge-base.schema-cache-timeout-ms";
 
     //----------------------------- Shared Variables
+    private final CommitLog commitLog;
     private final Keyspace keyspace;
     private final String engineUri;
     private final Properties properties;
@@ -137,7 +137,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         this.keyspace = keyspace;
         this.engineUri = engineUri;
         this.properties = properties;
-        elementFactory = new ElementFactory(this);
+        this.elementFactory = new ElementFactory(this);
+        this.commitLog = new CommitLog();
 
         //Initialise Graph Caches
         globalCache = new GlobalCache(properties);
@@ -197,6 +198,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      */
     public void openTransaction(GraknTxType txType) {
         txCache().openTx(txType);
+    }
+
+    public CommitLog commitLog(){
+        return commitLog;
     }
 
     @Override
@@ -708,7 +713,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         close(true, true);
     }
 
-    private Optional<String> close(boolean commitRequired, boolean submitLogs) {
+    private Optional<String> close(boolean commitRequired, boolean trackLogs) {
         Optional<String> logs = Optional.empty();
         if (isClosed()) {
             return logs;
@@ -718,11 +723,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         try {
             if (commitRequired) {
                 closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
-                logs = commitWithLogs();
-                if (logs.isPresent() && submitLogs) {
-                    String logsToUpload = logs.get();
-                    new Thread(() -> LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logsToUpload) + "]")).start();
-                }
+                logs = commitWithLogs(trackLogs);
                 txCache().writeToGraphCache(true);
             } else {
                 txCache().writeToGraphCache(isReadOnly());
@@ -743,31 +744,33 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
     }
 
-    /**
-     * Commits to the graph without submitting any commit logs.
-     *
-     * @throws InvalidKBException when the graph does not conform to the object concept
-     */
     @Override
     public Optional<String> commitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
 
-    private Optional<String> commitWithLogs() throws InvalidKBException {
+    private Optional<String> commitWithLogs(boolean trackingNeeded) throws InvalidKBException {
         validateGraph();
 
-        boolean submissionNeeded = !txCache().getShardingCount().isEmpty() ||
-                !txCache().getModifiedAttributes().isEmpty();
-        Json conceptLog = txCache().getFormattedLog();
+        Map<ConceptId, Long> newInstances = txCache().getShardingCount();
+        Set<Attribute> modifiedAttributes = txCache().getModifiedAttributes();
+        boolean logsExist = !newInstances.isEmpty() || !modifiedAttributes.isEmpty();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
 
         LOG.trace("Graph committed.");
 
-        if (submissionNeeded) {
-            return Optional.of(conceptLog.toString());
+        //If we have logs to commit get them and add them
+        if (logsExist) {
+            if(trackingNeeded) {
+                commitLog().addNewInstances(newInstances);
+                commitLog().addNewAttributes(modifiedAttributes);
+            } else {
+                return Optional.of(CommitLog.formatLog(newInstances, modifiedAttributes).toString());
+            }
         }
+
         return Optional.empty();
     }
 
@@ -785,13 +788,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             List<String> errors = validator.getErrorsFound();
             if (!errors.isEmpty()) throw InvalidKBException.validationErrors(errors);
         }
-    }
-
-    private String getCommitLogEndPoint() {
-        if (Grakn.IN_MEMORY.equals(engineUri)) {
-            return Grakn.IN_MEMORY;
-        }
-        return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
     private String getDeleteKeyspaceEndpoint() {

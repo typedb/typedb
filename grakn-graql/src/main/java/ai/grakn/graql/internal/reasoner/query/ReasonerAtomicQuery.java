@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
@@ -48,8 +48,9 @@ import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.graql.internal.reasoner.state.AtomicState;
 import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
-import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,10 +150,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return selectedAtoms;
     }
 
+    /**
+     * @throws IllegalArgumentException if passed a {@link ReasonerQuery} that is not a {@link ReasonerAtomicQuery}.
+     */
     @Override
     public Unifier getUnifier(ReasonerQuery p){
         if (p == this) return new UnifierImpl();
+
+        Preconditions.checkArgument(p instanceof ReasonerAtomicQuery);
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
+
         Unifier unifier = getAtom().getUnifier(parent.getAtom());
         //get type unifiers
         Set<Atom> unified = new HashSet<>();
@@ -321,10 +328,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
         if (atom.isRelation() && atom.getSchemaConcept() == null){
-            List<RelationshipType> relationshipTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
+            List<RelationshipType> relationshipTypes = ((RelationshipAtom) atom).inferPossibleRelationTypes(sub);
             LOG.trace("AQ: " + this + ": inferred rel types for: " + relationshipTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
             return relationshipTypes.stream()
-                    .map(((RelationAtom) atom)::addType)
+                    .map(((RelationshipAtom) atom)::addType)
                     .sorted(Comparator.comparing(Atom::isRuleResolvable))
                     .map(ReasonerAtomicQuery::new);
         }

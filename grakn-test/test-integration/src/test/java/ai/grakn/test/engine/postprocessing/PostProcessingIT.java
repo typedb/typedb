@@ -62,7 +62,7 @@ public class PostProcessingIT {
     public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws InvalidKBException, ExecutionException, InterruptedException {
         assumeFalse(GraknTestSetup.usingTinker());
 
-        GraknSession session = engine.factoryWithNewKeyspace();
+        GraknSession session = engine.sessionWithNewKeyspace();
 
         int transactionSize = 50;
         int numAttempts = 200;

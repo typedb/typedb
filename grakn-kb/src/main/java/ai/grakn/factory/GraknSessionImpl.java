@@ -35,6 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static ai.grakn.util.REST.Request.CONFIG_PARAM;
@@ -59,7 +62,9 @@ import static mjson.Json.read;
  */
 public class GraknSessionImpl implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
-    private final String location;
+    private static final int LOG_SUBMISSION_PERIOD = 1;
+    private final ScheduledExecutorService commitLogSubmitter;
+    private final String engineUri;
     private final Keyspace keyspace;
 
     //References so we don't have to open a tx just to check the count of the transactions
@@ -67,9 +72,15 @@ public class GraknSessionImpl implements GraknSession {
     private GraknTxAbstract<?> txBatch = null;
 
     //This constructor must remain public because it is accessed via reflection
-    public GraknSessionImpl(Keyspace keyspace, String location){
-        this.location = location;
+    public GraknSessionImpl(Keyspace keyspace, String engineUri){
+        this.engineUri = engineUri;
         this.keyspace = keyspace;
+
+        commitLogSubmitter = Executors.newSingleThreadScheduledExecutor();
+        commitLogSubmitter.scheduleAtFixedRate(() -> {
+            submitLogs(tx);
+            submitLogs(txBatch);
+        }, 0, LOG_SUBMISSION_PERIOD, TimeUnit.SECONDS);
     }
 
     @Override
@@ -89,7 +100,7 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     private TxFactory<?> getConfiguredFactory(){
-        return configureGraphFactory(keyspace, location, REST.KBConfig.DEFAULT);
+        return configureGraphFactory(keyspace, engineUri, REST.KBConfig.DEFAULT);
     }
 
     /**
@@ -97,7 +108,7 @@ public class GraknSessionImpl implements GraknSession {
      */
     @Override
     public GraknComputer getGraphComputer() {
-        TxFactory<?> configuredFactory = configureGraphFactory(keyspace, location, REST.KBConfig.COMPUTER);
+        TxFactory<?> configuredFactory = configureGraphFactory(keyspace, engineUri, REST.KBConfig.COMPUTER);
         Graph graph = configuredFactory.getTinkerPopGraph(false);
         return new GraknComputerImpl(graph);
     }
@@ -109,9 +120,23 @@ public class GraknSessionImpl implements GraknSession {
             LOG.warn(ErrorMessage.TXS_OPEN.getMessage(this.keyspace, openTransactions));
         }
 
+        //Stop submitting commit logs automatically
+        commitLogSubmitter.shutdown();
+
         //Close the main tx connections
-        if(tx != null) tx.admin().closeSession();
-        if(txBatch != null) txBatch.admin().closeSession();
+        close(tx);
+        close(txBatch);
+    }
+
+    private void close(GraknTxAbstract tx){
+        if(tx != null){
+            tx.closeSession();
+            submitLogs(tx);
+        }
+    }
+
+    private void submitLogs(GraknTxAbstract tx){
+        if(tx != null) tx.commitLog().submit(engineUri, keyspace).ifPresent(LOG::debug);
     }
 
     private int openTransactions(GraknTxAbstract<?> graph){

@@ -41,6 +41,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -220,7 +221,7 @@ public final class ElementFactory {
         Schema.EdgeLabel label;
 
         try {
-            label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase());
+            label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
         } catch (IllegalStateException e){
             LOG.warn("Invalid edge [" + edgeElement + "] due to " + e.getMessage(), e);
             return Optional.empty();
