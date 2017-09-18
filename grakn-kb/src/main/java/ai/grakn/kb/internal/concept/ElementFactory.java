@@ -76,15 +76,7 @@ public final class ElementFactory {
             X newConcept = conceptBuilder.apply(element);
             tx.txCache().cacheConcept(newConcept);
         }
-
-        X concept = tx.txCache().getCachedConcept(conceptId);
-
-        //Only track concepts which have been modified.
-        if(tx.isConceptModified(concept)) {
-            tx.txCache().trackForValidation(concept);
-        }
-
-        return concept;
+        return tx.txCache().getCachedConcept(conceptId);
     }
 
     private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder){
