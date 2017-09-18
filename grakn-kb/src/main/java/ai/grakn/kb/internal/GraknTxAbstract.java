@@ -386,6 +386,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return vertex;
     }
 
+
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId ... conceptIds){
+        return factory().addVertexElement(baseType, conceptIds);
+    }
+
     /**
      * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
      * incremented.
@@ -395,7 +400,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      * @return The new type vertex
      */
     private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
-        VertexElement vertexElement = factory().addVertexElement(baseType);
+        VertexElement vertexElement = addVertexElement(baseType);
         vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;
