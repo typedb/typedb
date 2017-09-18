@@ -150,7 +150,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
 
-        VertexElement instanceVertex = vertex().tx().factory().addVertexElement(instanceBaseType);
+        VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             vertex().tx().txCache().addedInstance(getId());
         }
