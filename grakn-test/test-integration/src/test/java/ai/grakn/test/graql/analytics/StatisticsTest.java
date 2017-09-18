@@ -80,7 +80,7 @@ public class StatisticsTest {
 
     @Before
     public void setUp() {
-        factory = context.factoryWithNewKeyspace();
+        factory = context.sessionWithNewKeyspace();
     }
 
     @Test

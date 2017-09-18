@@ -114,7 +114,7 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //IsaProperty is unique within a var, so skip if this is a relation
-        if (var.hasProperty(RelationProperty.class)) return null;
+        if (var.hasProperty(RelationshipProperty.class)) return null;
 
         Var varName = var.var().asUserDefined();
         VarPatternAdmin typeVar = this.type();

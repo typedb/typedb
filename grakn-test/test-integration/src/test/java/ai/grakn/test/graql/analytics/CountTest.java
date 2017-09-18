@@ -53,7 +53,7 @@ public class CountTest {
 
     @Before
     public void setUp() {
-        factory = rule.factoryWithNewKeyspace();
+        factory = rule.sessionWithNewKeyspace();
     }
 
     @Test

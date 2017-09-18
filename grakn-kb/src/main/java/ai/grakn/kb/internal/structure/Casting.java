@@ -23,6 +23,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.util.Schema;
@@ -44,8 +45,16 @@ public class Casting {
     private final EdgeElement edgeElement;
     private final Cache<Role> cachedRoleType = new Cache<>(Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
     private final Cache<RelationshipType> cachedRelationType = new Cache<>(Cacheable.concept(), () -> (RelationshipType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
-    private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().target()));
-    private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().source()));
+
+    private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> edge().target().
+            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
+    );
+
+    private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> edge().source().
+            flatMap(vertexElement -> edge().tx().factory().<Relationship>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()))
+    );
 
     public Casting(EdgeElement edgeElement){
         this.edgeElement = edgeElement;

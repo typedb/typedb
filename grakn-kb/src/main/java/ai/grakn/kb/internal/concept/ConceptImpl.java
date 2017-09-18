@@ -27,10 +27,12 @@ import ai.grakn.kb.internal.cache.ContainsTxCache;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 
@@ -52,7 +54,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     private final Cache<Shard> currentShard = new Cache<>(Cacheable.shard(), () -> {
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
         Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
-        return vertex().tx().factory().buildShard(shardVertex);
+        Optional<Shard> shard = vertex().tx().factory().buildShard(shardVertex);
+        return shard.orElseThrow(() -> GraknTxOperationException.missingShard(getId()));
     });
     private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
@@ -103,18 +106,20 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         switch (direction){
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
-                        flatMap(edge -> Stream.of(
-                                vertex().tx().factory().buildConcept(edge.source()),
-                                vertex().tx().factory().buildConcept(edge.target())
-                        ));
+                        flatMap(edge -> Stream.<Optional<X>>of(
+                                edge.source().flatMap(source -> vertex().tx().factory().buildConcept(source)),
+                                edge.target().flatMap(target -> vertex().tx().factory().buildConcept(target))
+                        )).flatMap(CommonUtil::optionalToStream);
             case IN:
-                return vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().tx().factory().buildConcept(edge.source())
-                );
+                return vertex().getEdgesOfType(direction, label).flatMap(edge -> {
+                    Optional<X> optional = edge.source().flatMap(source -> vertex().tx().factory().buildConcept(source));
+                    return CommonUtil.optionalToStream(optional);
+                });
             case OUT:
-                return  vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().tx().factory().buildConcept(edge.target())
-                );
+                return  vertex().getEdgesOfType(direction, label).flatMap(edge -> {
+                    Optional<X> optional = edge.target().flatMap(target -> vertex().tx().factory().buildConcept(target));
+                    return CommonUtil.optionalToStream(optional);
+                });
             default:
                 throw GraknTxOperationException.invalidDirection(direction);
         }
@@ -199,15 +204,17 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
 
     //----------------------------------- Sharding Functionality
     public void createShard(){
-        VertexElement shardVertex = vertex().tx().addVertex(Schema.BaseType.SHARD);
+        VertexElement shardVertex = vertex().tx().addVertexElement(Schema.BaseType.SHARD);
         Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
     }
 
     public Stream<Shard> shards(){
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).map(edge ->
-                vertex().tx().factory().buildShard(edge.source()));
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
+                map(EdgeElement::source).
+                flatMap(CommonUtil::optionalToStream).
+                map(edge -> vertex().tx().factory().buildShard(edge));
     }
 
     public Shard currentShard(){

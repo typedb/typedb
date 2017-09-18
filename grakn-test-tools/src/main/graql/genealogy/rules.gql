@@ -101,7 +101,7 @@ $rel2 has event-role "spouse";
 $s1 != $s2;
 }
 then
-{(spouse1: $s1, spouse2: $s2) isa marriage;};
+{(spouse: $s1, spouse: $s2) isa marriage;};
 
 
 #############################################################################
@@ -239,7 +239,7 @@ $f has gender "male";
 $x != $y;
 }
 then
-{(sibling1: $x, sibling2: $y) isa siblings;};
+{(sibling: $x, sibling: $y) isa siblings;};
 
 peopleWithSiblingsParentsAreCousins sub rule
 when
@@ -250,28 +250,12 @@ when
 $c1 != $c2;
 }
 then
-{(cousin1: $c1, cousin2: $c2) isa cousins;};
+{(cousin: $c1, cousin: $c2) isa cousins;};
 
 parentsOfSpousesAreInLaws sub rule
 when
-{(spouse1: $x, spouse2: $y) isa marriage;
+{(spouse: $x, spouse: $y) isa marriage;
 (parent: $il, child: $y) isa parentship;}
 then
 {(parent-in-law: $il, child-in-law: $x) isa in-laws;};
 
-parentsOfSpousesAreInLaws2 sub rule
-when
-{(spouse1: $x, spouse2: $y) isa marriage;
-(parent: $il, child: $x) isa parentship;}
-then
-{(parent-in-law: $il, child-in-law: $y) isa in-laws;};
-
-#TODO: THIS IS HOW THE RULE SHOULD LOOK LIKE. FOR THE MOMENT I WILL USE TWO RULES INSTEAD
-#parentsOfSpousesAreInLaws sub rule
-#when
-#{($r1: $x, $r2: $y) isa marriage;
-#$r1 isa generic-spouse;
-#$r2 isa generic-spouse;
-#(parent: $il, child: $y) isa parentship;}
-#then
-#{(parent-in-law: $il, child-in-law: $x) isa in-laws;};

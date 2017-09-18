@@ -32,6 +32,7 @@ import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -72,9 +74,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            Role role = vertex().tx().factory().buildConcept(edge.target());
-            Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
-            roleTypes.put(role, required);
+
+            Optional<Role> role = edge.target().flatMap(roleVertex ->
+                    vertex().tx().factory().<Role>buildConcept(roleVertex));
+
+            if (role.isPresent()) {
+                Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
+                roleTypes.put(role.get(), required);
+            }
         });
 
         return roleTypes;
@@ -143,7 +150,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
 
-        VertexElement instanceVertex = vertex().tx().addVertex(instanceBaseType);
+        VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             vertex().tx().txCache().addedInstance(getId());
         }
@@ -241,7 +248,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     Stream<V> instancesDirect(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
-                map(edge -> vertex().tx().factory().buildShard(edge.source())).
+                map(EdgeElement::source).
+                flatMap(CommonUtil::optionalToStream).
+                map(source -> vertex().tx().factory().buildShard(source)).
                 flatMap(Shard::<V>links);
     }
 
