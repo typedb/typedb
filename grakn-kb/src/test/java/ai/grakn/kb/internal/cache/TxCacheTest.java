@@ -71,8 +71,8 @@ public class TxCacheTest extends TxTestBase {
         tx.putAttributeType("4", AttributeType.DataType.STRING);
 
         // verify the concepts that we expected are returned in the set
-        assertThat(tx.txCache().getModifiedRoles(), containsInAnyOrder(t3));
-        assertThat(tx.txCache().getModifiedRelationshipTypes(), containsInAnyOrder(t2));
+        assertThat(tx.txCache().getConceptCache().values(), hasItem(t3));
+        assertThat(tx.txCache().getConceptCache().values(), hasItem(t2));
     }
 
     @Test
@@ -233,7 +233,6 @@ public class TxCacheTest extends TxTestBase {
         assertThat(cache.getSchemaConceptCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
         assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
-        assertThat(cache.getModifiedAttributes(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
         assertThat(cache.getModifiedCastings(), not(empty()));
 
