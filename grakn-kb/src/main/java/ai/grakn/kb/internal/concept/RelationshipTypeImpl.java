@@ -62,7 +62,9 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     }
 
     public static RelationshipTypeImpl create(VertexElement vertexElement, RelationshipType type, Boolean isImplicit){
-        return new RelationshipTypeImpl(vertexElement, type, isImplicit);
+        RelationshipTypeImpl relationType = new RelationshipTypeImpl(vertexElement, type, isImplicit);
+        vertexElement.tx().txCache().trackForValidation(relationType);
+        return relationType;
     }
 
     @Override

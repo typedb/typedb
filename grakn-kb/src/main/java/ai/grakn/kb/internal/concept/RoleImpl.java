@@ -35,15 +35,14 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An ontological element which defines a role which can be played in a relation type.
+ *     An {@link ai.grakn.concept.SchemaConcept} which defines a {@link Role} which can be played in a {@link RelationshipType}.
  * </p>
  *
  * <p>
- *     This ontological element defines the roles which make up a {@link RelationshipType}.
- *     It behaves similarly to {@link Type} when relating to other types.
+ *     This {@link ai.grakn.concept.SchemaConcept} defines the roles which make up a {@link RelationshipType}.
  *     It has some additional functionality:
- *     1. It cannot play a role to itself.
- *     2. It is special in that it is unique to relation types.
+ *     1. It cannot play a {@link Role} to itself.
+ *     2. It is special in that it is unique to {@link RelationshipType}s.
  * </p>
  *
  * @author fppt
