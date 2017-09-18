@@ -45,7 +45,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_CONCEPT_ID_PARAMETER;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_TYPE_LABEL_PARAMETER;
-import static ai.grakn.util.REST.Request.ROLE_CONCEPT_ID_PARAMETER;
+import static ai.grakn.util.REST.Request.ROLE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT;
 import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 
@@ -96,17 +96,17 @@ public class RelationshipController {
     private Json assignEntityAndRoleToRelationship(Request request, Response response) {
         LOG.debug("assignEntityAndRoleToRelationship - request received.");
         String relationshipConceptId = mandatoryPathParameter(request, RELATIONSHIP_CONCEPT_ID_PARAMETER);
-        String roleConceptId = mandatoryPathParameter(request, ROLE_CONCEPT_ID_PARAMETER);
+        String roleLabel = mandatoryPathParameter(request, ROLE_LABEL_PARAMETER);
         String entityConceptId = mandatoryPathParameter(request, ENTITY_CONCEPT_ID_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
-            LOG.debug("assignEntityAndRoleToRelationship - attempting to find roleConceptId " + roleConceptId + " and relationshipConceptId " + relationshipConceptId + ", in keyspace " + keyspace);
+            LOG.debug("assignEntityAndRoleToRelationship - attempting to find roleLabel " + roleLabel + " and relationshipConceptId " + relationshipConceptId + ", in keyspace " + keyspace);
             Optional<Relationship> relationshipOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(relationshipConceptId)));
-            Optional<Role> roleOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(roleConceptId)));
+            Optional<Role> roleOptional = Optional.ofNullable(tx.getRole(roleLabel));
             Optional<Entity> entityOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(entityConceptId)));
 
             if (relationshipOptional.isPresent() && roleOptional.isPresent() && entityOptional.isPresent()) {
-                LOG.debug("assignEntityAndRoleToRelationship - relationship, role and entity found. attempting to assign entity " + entityConceptId + " and role  " + roleConceptId + " to relationship " + relationshipConceptId);
+                LOG.debug("assignEntityAndRoleToRelationship - relationship, role and entity found. attempting to assign entity " + entityConceptId + " and role  " + roleLabel + " to relationship " + relationshipConceptId);
                 Relationship relationship = relationshipOptional.get();
                 Role role = roleOptional.get();
                 Entity entity = entityOptional.get();

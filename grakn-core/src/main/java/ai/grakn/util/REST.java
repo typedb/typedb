@@ -76,7 +76,7 @@ public class REST {
          * URIs to api endpoints
          */
         public static class Api {
-            private static final String API_PREFIX = "/api";
+            public static final String API_PREFIX = "/api";
 
             public static final String ATTRIBUTE_TYPE = API_PREFIX + "/attributeType";
             public static final String ENTITY_TYPE = API_PREFIX + "/entityType";
@@ -89,8 +89,10 @@ public class REST {
 
             public static final String ENTITY_ATTRIBUTE_ASSIGNMENT = API_PREFIX + "/entity/" + Request.ENTITY_CONCEPT_ID_PARAMETER +
                 "/attribute/" + Request.ATTRIBUTE_CONCEPT_ID_PARAMETER;
+
             public static final String RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT = API_PREFIX + "/relationship/" + Request.RELATIONSHIP_CONCEPT_ID_PARAMETER +
-                "/role/" + Request.ROLE_CONCEPT_ID_PARAMETER;
+                "/entity/" + Request.ENTITY_CONCEPT_ID_PARAMETER +
+                "/role/" + Request.ROLE_LABEL_PARAMETER;
 
         }
 

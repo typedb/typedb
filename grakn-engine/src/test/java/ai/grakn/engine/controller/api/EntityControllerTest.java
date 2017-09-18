@@ -103,13 +103,13 @@ public class EntityControllerTest {
     }
 
     @Test
-    @Ignore("There is a problem in Janus with adding attribute and accessig it from different endpoint for some reason. This error does not happen to the in-memory test")
+    @Ignore("Disabling test. There's a problem with executing it with 'janus' profile where it forgets about an entity or relationship which is POSTed")
     public void assignAttributeToEntityShouldExecuteSuccessfully() {
-        // add an entity
         String person = "person";
         String realName = "real-name";
         String attributeValue = "attributeValue";
 
+        // add an entity
         Response addEntityResponse = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .post(ENTITY_TYPE + "/" + person);
