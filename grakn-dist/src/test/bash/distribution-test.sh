@@ -126,9 +126,9 @@ wipe_out_keyspaces() {
 }
 
 wipe_out_files() {
-  rm "${QUEUE_PID}"
-  rm "${GRAKN_PID}"
-  rm "${STORAGE_PID}"
+  rm -f "${QUEUE_PID}"
+  rm -f "${GRAKN_PID}"
+  rm -f "${STORAGE_PID}"
 }
 
 force_kill_and_halt_test() {
