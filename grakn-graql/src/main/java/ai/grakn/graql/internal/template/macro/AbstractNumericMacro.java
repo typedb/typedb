@@ -33,6 +33,8 @@ import java.util.List;
  *     {@link IntMacro}
  * </p>
  *
+ * @param <T> A number which inherits from the {@link Number} class
+ *
  * @author Filipe Peliz Pinto Teixeira
  */
 public abstract class AbstractNumericMacro<T extends Number> implements Macro<Number>{
