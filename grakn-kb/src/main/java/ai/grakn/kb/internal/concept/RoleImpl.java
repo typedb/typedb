@@ -53,13 +53,22 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private final Cache<Set<RelationshipType>> cachedRelationTypes = new Cache<>(Cacheable.set(), () -> this.<RelationshipType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RoleImpl(VertexElement vertexElement) {
+    private RoleImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RoleImpl(VertexElement vertexElement, Role type, Boolean isImplicit) {
+    private RoleImpl(VertexElement vertexElement, Role type, Boolean isImplicit) {
         super(vertexElement, type, isImplicit);
     }
+
+    public static RoleImpl get(VertexElement vertexElement){
+        return new RoleImpl(vertexElement);
+    }
+
+    public static RoleImpl create(VertexElement vertexElement, Role type, Boolean isImplicit) {
+        return new RoleImpl(vertexElement, type, isImplicit);
+    }
+
 
     @Override
     public void txCacheFlush(){

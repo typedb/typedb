@@ -51,8 +51,12 @@ import java.util.stream.Stream;
 public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTxCache {
     private RelationshipStructure relationshipStructure;
 
-    RelationshipImpl(RelationshipStructure relationshipStructure) {
+    private RelationshipImpl(RelationshipStructure relationshipStructure) {
         this.relationshipStructure = relationshipStructure;
+    }
+
+    public static RelationshipImpl create(RelationshipStructure relationshipStructure) {
+        return new RelationshipImpl(relationshipStructure);
     }
 
     /**

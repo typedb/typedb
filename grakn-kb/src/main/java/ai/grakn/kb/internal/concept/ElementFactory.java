@@ -99,51 +99,51 @@ public final class ElementFactory {
 
     // ---------------------------------------- Building Attribute Types  -----------------------------------------------
     public <V> AttributeTypeImpl<V> buildResourceType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType){
-        return getOrBuildConcept(vertex, (v) -> new AttributeTypeImpl<>(v, type, dataType));
+        return getOrBuildConcept(vertex, (v) -> AttributeTypeImpl.create(v, type, dataType));
     }
 
     // ------------------------------------------ Building Resources
     <V> AttributeImpl<V> buildResource(VertexElement vertex, AttributeType<V> type, Object persitedValue){
-        return getOrBuildConcept(vertex, (v) -> new AttributeImpl<>(v, type, persitedValue));
+        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persitedValue));
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------
     public RelationshipTypeImpl buildRelationType(VertexElement vertex, RelationshipType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> new RelationshipTypeImpl(v, type, isImplicit));
+        return getOrBuildConcept(vertex, (v) -> RelationshipTypeImpl.create(v, type, isImplicit));
     }
 
     // -------------------------------------------- Building Relations
     RelationshipImpl buildRelation(VertexElement vertex, RelationshipType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationshipImpl(buildRelationReified(v, type)));
+        return getOrBuildConcept(vertex, (v) -> RelationshipImpl.create(buildRelationReified(v, type)));
     }
     public RelationshipImpl buildRelation(EdgeElement edge, RelationshipType type, Role owner, Role value){
-        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(type, owner, value, edge)));
+        return getOrBuildConcept(edge, (e) -> RelationshipImpl.create(RelationshipEdge.create(type, owner, value, edge)));
     }
     RelationshipImpl buildRelation(EdgeElement edge){
-        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(edge)));
+        return getOrBuildConcept(edge, (e) -> RelationshipImpl.create(RelationshipEdge.get(edge)));
     }
     RelationshipReified buildRelationReified(VertexElement vertex, RelationshipType type){
-        return new RelationshipReified(vertex, type);
+        return RelationshipReified.create(vertex, type);
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
     public EntityTypeImpl buildEntityType(VertexElement vertex, EntityType type){
-        return getOrBuildConcept(vertex, (v) -> new EntityTypeImpl(v, type));
+        return getOrBuildConcept(vertex, (v) -> EntityTypeImpl.create(v, type));
     }
 
     // ------------------------------------------- Building Entities
     EntityImpl buildEntity(VertexElement vertex, EntityType type){
-        return getOrBuildConcept(vertex, (v) -> new EntityImpl(v, type));
+        return getOrBuildConcept(vertex, (v) -> EntityImpl.create(v, type));
     }
 
     // ----------------------------------------- Building Rules --------------------------------------------------
     public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then){
-        return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, when, then));
+        return getOrBuildConcept(vertex, (v) -> RuleImpl.create(v, type, when, then));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
     public RoleImpl buildRole(VertexElement vertex, Role type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> new RoleImpl(v, type, isImplicit));
+        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type, isImplicit));
     }
 
     /**
@@ -172,31 +172,31 @@ public final class ElementFactory {
             Concept concept;
             switch (type) {
                 case RELATIONSHIP:
-                    concept = new RelationshipImpl(new RelationshipReified(vertexElement));
+                    concept = RelationshipImpl.create(RelationshipReified.get(vertexElement));
                     break;
                 case TYPE:
-                    concept = new TypeImpl<>(vertexElement);
+                    concept = new TypeImpl(vertexElement);
                     break;
                 case ROLE:
-                    concept = new RoleImpl(vertexElement);
+                    concept = RoleImpl.get(vertexElement);
                     break;
                 case RELATIONSHIP_TYPE:
-                    concept = new RelationshipTypeImpl(vertexElement);
+                    concept = RelationshipTypeImpl.get(vertexElement);
                     break;
                 case ENTITY:
-                    concept = new EntityImpl(vertexElement);
+                    concept = EntityImpl.get(vertexElement);
                     break;
                 case ENTITY_TYPE:
-                    concept = new EntityTypeImpl(vertexElement);
+                    concept = EntityTypeImpl.get(vertexElement);
                     break;
                 case ATTRIBUTE_TYPE:
-                    concept = new AttributeTypeImpl<>(vertexElement);
+                    concept = AttributeTypeImpl.get(vertexElement);
                     break;
                 case ATTRIBUTE:
-                    concept = new AttributeImpl<>(vertexElement);
+                    concept = AttributeImpl.get(vertexElement);
                     break;
                 case RULE:
-                    concept = new RuleImpl(vertexElement);
+                    concept = RuleImpl.get(vertexElement);
                     break;
                 default:
                     throw GraknTxOperationException.unknownConcept(type.name());
@@ -233,7 +233,7 @@ public final class ElementFactory {
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
-                    concept = new RelationshipImpl(new RelationshipEdge(edgeElement));
+                    concept = RelationshipImpl.create(RelationshipEdge.get(edgeElement));
                     break;
                 default:
                     throw GraknTxOperationException.unknownConcept(label.name());

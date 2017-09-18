@@ -60,11 +60,6 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
-    @SuppressWarnings("unchecked")
-    <X extends  Concept> X getThis(){
-        return (X) this;
-    }
-
     ConceptImpl(VertexElement vertexElement){
         this.vertexElement = vertexElement;
     }
@@ -72,6 +67,11 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     @Override
     public VertexElement vertex() {
         return vertexElement;
+    }
+
+    @SuppressWarnings("unchecked")
+    <X extends  Concept> X getThis(){
+        return (X) this;
     }
 
     /**

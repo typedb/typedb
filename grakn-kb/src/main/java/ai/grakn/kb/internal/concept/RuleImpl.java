@@ -40,15 +40,23 @@ import java.util.stream.Stream;
  * @author fppt
  */
 public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
-    RuleImpl(VertexElement vertexElement) {
+    private RuleImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
+    private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
         super(vertexElement, type);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
         vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(sup(), when, then));
+    }
+
+    public static RuleImpl get(VertexElement vertexElement){
+        return new RuleImpl(vertexElement);
+    }
+
+    public static RuleImpl create(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
+        return new RuleImpl(vertexElement, type, when, then);
     }
 
     @Override
