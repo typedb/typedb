@@ -56,7 +56,9 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     }
 
     public static RuleImpl create(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
-        return new RuleImpl(vertexElement, type, when, then);
+        RuleImpl rule = new RuleImpl(vertexElement, type, when, then);
+        vertexElement.tx().txCache().trackForValidation(rule);
+        return rule;
     }
 
     @Override
