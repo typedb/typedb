@@ -44,7 +44,7 @@ QUEUE_STARTUP_TIMEOUT_S=10
 # ================================================
 # common helper functions
 # ================================================
-update_classpath() {
+update_classpath_global_var() {
   # Define CLASSPATH, exclude slf4j as we use logback
   for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
       if [[ $jar != *slf4j-log4j12* ]] ; then
@@ -60,12 +60,12 @@ update_classpath() {
 # ================================================
 # storage helper functions
 # ================================================
-storage_start_storage() {
+start_storage() {
   "${GRAKN_HOME}"/services/cassandra/cassandra -p $STORAGE_PID > /dev/null 2>&1
   return $?
 }
 
-storage_is_storage_running() {
+check_if_storage_is_running() {
   local status=
   if [ -e $STORAGE_PID ] && ps -p `cat $STORAGE_PID` > /dev/null ; then
     status=0 # storage running
@@ -94,8 +94,8 @@ storage_wait_until_ready() {
   return 1
 }
 
-storage_start_and_wait_until_ready() {
-  storage_is_storage_running
+start_storage_and_wait_until_ready() {
+  check_if_storage_is_running
   is_storage_running=$?
 
   if [ $is_storage_running -eq 0 ]; then
@@ -104,7 +104,7 @@ storage_start_and_wait_until_ready() {
   else
     # otherwise attempt to start
     echo -n "Starting Storage..."
-    storage_start_storage
+    start_storage
     local exec_storage_bin=$?
 
     # check storage status and wait until ready
@@ -126,7 +126,7 @@ storage_start_and_wait_until_ready() {
 
 grakn_server_stop_storage() {
   echo -n "Stopping Storage..."
-  storage_is_storage_running
+  check_if_storage_is_running
   local is_storage_running=$?
   if [[ $is_storage_running -eq 0 ]]; then
     if [[ -e $STORAGE_PID ]]; then
@@ -413,7 +413,7 @@ grakn_server_start_queue() {
 }
 
 grakn_server_start_storage() {
-  storage_start_and_wait_until_ready
+  start_storage_and_wait_until_ready
   storage=$?
   # log
   if [ $storage -ne 0 ] ; then
@@ -457,7 +457,7 @@ Tips:
 "
 }
 grakn_server_status() {
-  storage_is_storage_running
+  check_if_storage_is_running
   if [ $? -eq 0 ] ; then
     echo "Storage: RUNNING"
   else
@@ -483,7 +483,7 @@ grakn_server_status() {
 # better to remove this functionality in production.
 # Having a very accessible full deletion functionality like this is dangerous
 grakn_server_clean() {
-  storage_is_storage_running
+  check_if_storage_is_running
   local is_storage_running=$?
 
   queue_is_queue_running
@@ -624,7 +624,7 @@ handle_ctrl_c() {
 # main routine
 # =============================================
 
-update_classpath
+update_classpath_global_var
 
 # temporarily disabling trap as it's probably not needed
 # trap handle_ctrl_c INT # run handle_ctrl_c when receiving CTRL+C
