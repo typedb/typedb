@@ -372,20 +372,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         if (isReadOnly()) throw GraknTxOperationException.transactionReadOnly(this);
     }
 
-    private VertexElement putVertex(Label label, Schema.BaseType baseType) {
-        VertexElement vertex;
-        ConceptImpl concept = getSchemaConcept(convertToId(label));
-        if (concept == null) {
-            vertex = addTypeVertex(getNextId(), label, baseType);
-        } else {
-            if (!baseType.equals(concept.baseType())) {
-                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.SCHEMA_LABEL, label);
-            }
-            vertex = concept.vertex();
-        }
-        return vertex;
-    }
-
 
     public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId ... conceptIds){
         return factory().addVertexElement(baseType, conceptIds);
@@ -429,13 +415,42 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory) {
+    /**
+     * This is a helper method which will either find or create a {@link SchemaConcept}.
+     * When a new {@link SchemaConcept} is created it is added for validation through it's own creation method for
+     * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role, Boolean)}.
+     *
+     * When an existing {@link SchemaConcept} is found it is build via it's get method such as
+     * {@link ai.grakn.kb.internal.concept.RoleImpl#get(VertexElement)} and skips validation.
+     *
+     * Once the {@link SchemaConcept} is found or created a few checks for uniqueness and correct
+     * {@link ai.grakn.util.Schema.BaseType} are performed.
+     *
+     * @param label The {@link Label} of the {@link SchemaConcept} to find or create
+     * @param baseType The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
+     * @param newConceptFactory the factory to be using when creating a new {@link SchemaConcept}
+     * @param <T> The type of {@link SchemaConcept} to return
+     * @return a new or existing {@link SchemaConcept}
+     */
+    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, Function<VertexElement, T> newConceptFactory) {
         checkSchemaMutationAllowed();
-        SchemaConcept schemaConcept = buildSchemaConcept(label, () -> factory.apply(putVertex(label, baseType)));
 
-        T finalType = validateSchemaConcept(schemaConcept, baseType, () -> {
-            if (Schema.MetaSchema.isMetaLabel(label)) throw GraknTxOperationException.reservedLabel(label);
+        //Make sure the label is not reserved
+        if (Schema.MetaSchema.isMetaLabel(label)) throw GraknTxOperationException.reservedLabel(label);
+
+        //Get the type if it already exists otherwise build a new one
+        SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
+        if (schemaConcept == null) {
+            VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
+            schemaConcept = SchemaConceptImpl.from(buildSchemaConcept(label, () -> newConceptFactory.apply(vertexElement)));
+        } else if (!baseType.equals(schemaConcept.baseType())) {
             throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, label);
+        }
+
+        //Check if the type we got is correct
+        SchemaConceptImpl finalSchemaConcept = schemaConcept;
+        T finalType = validateSchemaConcept(schemaConcept, baseType, () -> {
+            throw PropertyNotUniqueException.cannotCreateProperty(finalSchemaConcept, Schema.VertexProperty.SCHEMA_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
