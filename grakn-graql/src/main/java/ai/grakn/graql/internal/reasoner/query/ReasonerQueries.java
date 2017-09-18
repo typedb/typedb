@@ -60,7 +60,7 @@ public class ReasonerQueries {
      * @return reasoner query defined by the provided set of atomics
      */
     public static ReasonerQueryImpl create(Set<Atomic> as, GraknTx tx){
-        boolean isAtomic = as.stream().filter(Atomic::isAtom).map(at -> (Atom) at).count() == 1;
+        boolean isAtomic = as.stream().filter(Atomic::isSelectable).count() == 1;
         return isAtomic?
                 new ReasonerAtomicQuery(as, tx).inferTypes() :
                 new ReasonerQueryImpl(as, tx).inferTypes();
@@ -136,6 +136,6 @@ public class ReasonerQueries {
      * @return atomic query with the substitution contained in the query
      */
     public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, Answer sub){
-        return new ReasonerAtomicQuery(Sets.union(q.getAtoms(), sub.toPredicates(q)), q.tx());
+        return new ReasonerAtomicQuery(Sets.union(q.getAtoms(), sub.toPredicates(q)), q.tx()).inferTypes();
     }
 }

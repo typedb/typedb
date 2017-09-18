@@ -496,26 +496,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
      */
     Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
-        List<Set<Atom>> atomOptions = getAtoms(Atom.class)
-                .map(at -> {
-                    if (at.isRelation() && at.getSchemaConcept() == null) {
-                        RelationshipAtom rel = (RelationshipAtom) at;
-                        Set<Atom> possibleRels = new HashSet<>();
-                        rel.inferPossibleRelationTypes(sub).stream()
-                                .map(rel::addType)
-                                .forEach(possibleRels::add);
-                        return possibleRels;
-                    } else {
-                        return Collections.singleton(at);
-                    }
-                })
+        List<List<? extends Atom>> atomOptions = getAtoms(Atom.class)
+                .map(at -> at.atomOptions(sub))
                 .collect(Collectors.toList());
 
-        if (atomOptions.stream().mapToInt(Set::size).sum() == atomOptions.size()) {
+        if (atomOptions.stream().mapToInt(List::size).sum() == atomOptions.size()) {
             return Stream.of(this);
         }
 
-        return Sets.cartesianProduct(atomOptions).stream()
+        return Lists.cartesianProduct(atomOptions).stream()
                 .map(atomList -> ReasonerQueries.create(atomList, tx()));
     }
 

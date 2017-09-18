@@ -24,6 +24,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -481,6 +482,16 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
+    public List<Atom> atomOptions(Answer sub) {
+        return this.inferPossibleRelationTypes(sub).stream()
+                .map(this::addType)
+                .map(RelationshipAtom::inferRoles)
+                //order by number of distinct roles
+                .sorted(Comparator.comparing(at -> -at.getRoleLabels().size()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = super.getVarNames();
         vars.addAll(getRolePlayers());
@@ -693,66 +704,63 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     private List<Pair<RelationPlayer, RelationPlayer>> getRelationPlayerMappings(RelationshipAtom parentAtom) {
-        List<Pair<RelationPlayer, RelationPlayer>> rolePlayerMappings = new ArrayList<>();
-
-        //establish compatible castings for each parent casting
-        List<Pair<RelationPlayer, List<RelationPlayer>>> compatibleMappings = new ArrayList<>();
-        parentAtom.getRoleRelationPlayerMap();
         Multimap<Role, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
         Map<Var, SchemaConcept> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarSchemaConceptMap();
         Map<Var, SchemaConcept> childVarSchemaConceptMap = this.getParentQuery().getVarSchemaConceptMap();
 
-        Set<Role> childRoles = new HashSet<>(childRoleRPMap.keySet());
-
+        //establish compatible castings for each parent casting
+        Set<Role> childRoles = childRoleRPMap.keySet();
+        List<Pair<RelationPlayer, List<RelationPlayer>>> compatibleMappings = new ArrayList<>();
         parentAtom.getRelationPlayers().stream()
                 .filter(prp -> prp.getRole().isPresent())
                 .forEach(prp -> {
                     VarPatternAdmin parentRolePattern = prp.getRole().orElse(null);
-                    Label parentRoleLabel = parentRolePattern != null? parentRolePattern.getTypeLabel().orElse(null) : null;
+                    if (parentRolePattern == null){
+                        throw GraqlQueryException.rolePatternAbsent(this);
+                    }
+                    Label parentRoleLabel = parentRolePattern.getTypeLabel().orElse(null);
 
                     if (parentRoleLabel != null) {
                         Role parentRole = tx().getSchemaConcept(parentRoleLabel);
-                        boolean isMetaRole = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());
+                        boolean isParentRoleMeta = Schema.MetaSchema.isMetaLabel(parentRoleLabel);
                         Var parentRolePlayer = prp.getRolePlayer().var();
-                        SchemaConcept parent = parentVarSchemaConceptMap.get(parentRolePlayer);
+                        SchemaConcept parentType = parentVarSchemaConceptMap.get(parentRolePlayer);
 
-                        Set<Role> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles);
+                        Set<Role> compatibleChildRoles = isParentRoleMeta? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles);
 
-                        if (parent != null && parent.isType()){
-                            boolean isMetaType = Schema.MetaSchema.isMetaLabel(parent.getLabel());
-                            Set<Role> typeRoles = isMetaType? childRoles : parent.asType().plays().collect(toSet());
+                        //if parent role player has a type, constrain the allowed roles
+                        if (parentType != null && parentType.isType()){
+                            boolean isParentTypeMeta = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
+                            Set<Role> parentTypeRoles = isParentTypeMeta? childRoles : parentType.asType().plays().collect(toSet());
 
-                            //incompatible type
-                            if (Sets.intersection(getSchemaConcept().asRelationshipType().relates().collect(toSet()), typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
-                            else {
-                                compatibleChildRoles = compatibleChildRoles.stream()
-                                        .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))
-                                        .collect(toSet());
-                            }
+                            compatibleChildRoles = compatibleChildRoles.stream()
+                                    .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || parentTypeRoles.contains(rc))
+                                    .collect(toSet());
                         }
 
                         List<RelationPlayer> compatibleRelationPlayers = new ArrayList<>();
                         compatibleChildRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
                                 .forEach(r -> {
-                                    Collection<RelationPlayer> childRPs = parent != null ?
-                                            childRoleRPMap.get(r).stream()
-                                                    .filter(rp -> {
-                                                        Var childRolePlayer = rp.getRolePlayer().var();
-                                                        SchemaConcept childType = childVarSchemaConceptMap.get(childRolePlayer);
-                                                        return childType == null || !checkDisjoint(parent, childType);
-                                                    }).collect(Collectors.toList()) :
-                                            childRoleRPMap.get(r);
-
-                                    childRPs.forEach(compatibleRelationPlayers::add);
+                                    childRoleRPMap.get(r).stream()
+                                            .filter(crp -> {
+                                                if (parentType == null) return true;
+                                                Var childRolePlayer = crp.getRolePlayer().var();
+                                                SchemaConcept childType = childVarSchemaConceptMap.get(childRolePlayer);
+                                                return childType == null || !checkDisjoint(parentType, childType);
+                                            })
+                                            .forEach(compatibleRelationPlayers::add);
                                 });
-                        compatibleMappings.add(new Pair<>(prp, compatibleRelationPlayers));
+                        if (!compatibleRelationPlayers.isEmpty()){
+                            compatibleMappings.add(new Pair<>(prp, compatibleRelationPlayers));
+                        }
                     } else {
                         compatibleMappings.add(new Pair<>(prp, new ArrayList<>(getRelationPlayers())));
                     }
                 });
 
         //self-consistent procedure until no non-empty mappings present
+        List<Pair<RelationPlayer, RelationPlayer>> rolePlayerMappings = new ArrayList<>();
         while( compatibleMappings.stream().map(Pair::getValue).filter(s -> !s.isEmpty()).count() > 0) {
             //find optimal parent-child RP pair
             Pair<RelationPlayer, RelationPlayer> rpPair = compatibleMappings.stream()
@@ -764,7 +772,7 @@ public class RelationshipAtom extends IsaAtom {
                                     .sorted(Comparator.comparing(e -> {
                                         SchemaConcept parentType = parentVarSchemaConceptMap.get(e.getKey().getRolePlayer().var());
                                         SchemaConcept childType = childVarSchemaConceptMap.get(e.getValue().getRolePlayer().var());
-                                        return !(parentType != null && childType != null && parentType.equals(childType));
+                                        return !(parentType != null && parentType.equals(childType));
                                     }))
                                     //prioritise mappings with sam var substitution (idpredicates)
                                     .sorted(Comparator.comparing(e -> {
@@ -774,7 +782,7 @@ public class RelationshipAtom extends IsaAtom {
                                         IdPredicate childId = getPredicates(IdPredicate.class)
                                                 .filter(p -> p.getVarName().equals(e.getValue().getRolePlayer().var()))
                                                 .findFirst().orElse(null);
-                                        return !(parentId != null && childId != null && parentId.getPredicate().equals(childId.getPredicate()));
+                                        return !(parentId != null && parentId.isEquivalent(childId));
                                     }))
                                     .findFirst().orElse(null)
                     );
