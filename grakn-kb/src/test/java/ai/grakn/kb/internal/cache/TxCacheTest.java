@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -121,10 +122,8 @@ public class TxCacheTest extends TxTestBase {
         tx.commit();
         tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(tx.txCache().getModifiedEntities(), is(empty()));
-
         Entity i1 = t1.addEntity();
-        assertThat(tx.txCache().getModifiedEntities(), containsInAnyOrder(i1));
+        assertThat(tx.txCache().getConceptCache().values(), hasItem(i1));
     }
 
     @Test
