@@ -66,7 +66,9 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     }
 
     public static RoleImpl create(VertexElement vertexElement, Role type, Boolean isImplicit) {
-        return new RoleImpl(vertexElement, type, isImplicit);
+        RoleImpl role = new RoleImpl(vertexElement, type, isImplicit);
+        vertexElement.tx().txCache().trackForValidation(role);
+        return role;
     }
 
 
