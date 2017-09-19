@@ -18,8 +18,8 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 public class ClusteringTest {
     private static final String thing = "thingy";
@@ -108,7 +109,7 @@ public class ClusteringTest {
 
         addResourceRelations();
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             sizeMap = graph.graql().compute().cluster().clusterSize(1L).execute();
             assertEquals(5, sizeMap.size());
 
@@ -144,7 +145,7 @@ public class ClusteringTest {
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<String, Set<String>> result = graph.graql().compute()
                     .cluster().in(thing, anotherThing, aResourceTypeLabel).members().execute();
             assertEquals(1, result.size());
@@ -163,7 +164,7 @@ public class ClusteringTest {
         // add something, test again
         addSchemaAndEntities();
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             sizeMap = Graql.compute().withTx(graph).cluster().execute();
             assertEquals(1, sizeMap.size());
             assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
@@ -176,7 +177,7 @@ public class ClusteringTest {
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             sizeMap = graph.graql().compute().cluster().execute();
             Map<Long, Integer> populationCount00 = new HashMap<>();
             sizeMap.values().forEach(value -> populationCount00.put(value,
@@ -199,7 +200,9 @@ public class ClusteringTest {
             assertEquals(7, sizeMap.size());
             memberMap = graph.graql().compute().cluster().members().in(subTypes).execute();
             assertEquals(7, memberMap.size());
+        }
 
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             String id;
             id = graph.getAttributeType(resourceType1).putAttribute(2.8).getId().getValue();
             assertEquals(1L, sizeMap.get(id).longValue());
@@ -216,11 +219,12 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentConcurrency() throws Exception {
+        assumeFalse(GraknTestSetup.usingTinker());
+
         addSchemaAndEntities();
 
         List<Long> list = new ArrayList<>(4);
         long workerNumber = 4L;
-        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
