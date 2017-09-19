@@ -125,10 +125,11 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular label.
+     * An {@link EquivalentFragmentSet} that indicates a variable representing a schema concept with one of the
+     * specified labels.
      */
-    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, Label label) {
-        return new LabelFragmentSet(varProperty, type, label);
+    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, ImmutableSet<Label> labels) {
+        return new LabelFragmentSet(varProperty, type, labels);
     }
 
     /**

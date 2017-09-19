@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * @author Felix Chapman
@@ -32,26 +33,26 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 class LabelFragmentSet extends EquivalentFragmentSet {
 
     private final Var type;
-    private Label label;
+    private ImmutableSet<Label> labels;
 
-    LabelFragmentSet(VarProperty varProperty, Var type, Label label) {
-        super(Fragments.label(varProperty, type, label));
+    LabelFragmentSet(VarProperty varProperty, Var type, ImmutableSet<Label> labels) {
+        super(Fragments.label(varProperty, type, labels));
         this.type = type;
-        this.label = label;
+        this.labels = labels;
     }
 
     Var type() {
         return type;
     }
 
-    Label label() {
-        return label;
+    ImmutableSet<Label> labels() {
+        return labels;
     }
 
     /**
      * Optimise away any redundant {@link LabelFragmentSet}s. A {@link LabelFragmentSet} is considered redundant if:
      * <ol>
-     *   <li>It refers to a type that exists in the graph
+     *   <li>It refers to a schema concept that exists in the knowledge base
      *   <li>It is not associated with a user-defined variable
      *   <li>The variable it is associated with is not referred to in any other fragment
      *   <li>The fragment set is not the only remaining fragment set</li>
@@ -69,7 +70,7 @@ class LabelFragmentSet extends EquivalentFragmentSet {
             boolean hasUserDefinedVar = labelSet.type().isUserDefinedName();
             if (hasUserDefinedVar) continue;
 
-            boolean existsInGraph = graph.getSchemaConcept(labelSet.label()) != null;
+            boolean existsInGraph = labelSet.labels().stream().anyMatch(label -> graph.getSchemaConcept(label) != null);
             if (!existsInGraph) continue;
 
             boolean varReferredToInOtherFragment = fragmentSets.stream()

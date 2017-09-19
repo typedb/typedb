@@ -21,30 +21,38 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.util.StringConverter;
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 import java.util.Collection;
+import java.util.Set;
 
-import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 
 @AutoValue
 abstract class LabelFragment extends Fragment {
 
-    abstract Label label();
+    abstract ImmutableSet<Label> labels();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversalInner(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
-        return traversal.has(LABEL_ID.name(), graph.admin().convertToId(label()).getValue());
+        Set<Integer> labelIds =
+                labels().stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
+
+        return traversal.has(LABEL_ID.name(), P.within(labelIds));
     }
 
     @Override
     public String name() {
-        return "[label:" + typeLabelToString(label()) + "]";
+        return "[label:" + labels().stream().map(StringConverter::typeLabelToString).collect(joining(",")) + "]";
     }
 
     @Override
