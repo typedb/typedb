@@ -38,27 +38,27 @@
 
                 <executions>
                     <execution>
-                        <id>npm install retry</id>
+                        <id>yarn install</id>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <executable>./npm-install-retry/bin/npm-install-retry</executable>
+                            <executable>yarn</executable>
                             <arguments>
-                                <argument>--</argument>
+                                <argument>install</argument>
                                 <argument>--no-optional</argument>
                             </arguments>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>npm test</id>
+                        <id>yarn test</id>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <phase>test</phase>
                         <configuration>
-                            <executable>npm</executable>
+                            <executable>yarn</executable>
                             <arguments>
                                 <argument>run</argument>
                                 <argument>test-coverage</argument>
@@ -73,7 +73,7 @@
                         </goals>
                         <phase>compile</phase>
                         <configuration>
-                            <executable>npm</executable>
+                            <executable>yarn</executable>
                             <commandlineArgs>run build:prod</commandlineArgs>
                         </configuration>
                     </execution>
