@@ -23,12 +23,10 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
@@ -90,7 +88,7 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is an instance of a type.
+     * An {@link EquivalentFragmentSet} that indicates a variable is a direct instance of a type.
      */
     public static EquivalentFragmentSet isa(VarProperty varProperty, Var instance, Var type) {
         return new IsaFragmentSet(varProperty, instance, type);
@@ -171,12 +169,7 @@ public class EquivalentFragmentSets {
         return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 
-    static boolean hasDirectSubTypes(GraknTx graph, Label label) {
-        Type type = graph.getSchemaConcept(label);
-        return type != null && !CommonUtil.containsOnly(type.subs(), 1);
-    }
-
-    static @Nullable LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
+    static @Nullable LabelFragmentSet labelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
                 .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
                 .findAny()

@@ -25,7 +25,6 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -101,7 +100,7 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
             if (roleVar == null) continue;
 
-            @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar, fragmentSets);
+            @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.labelOf(roleVar, fragmentSets);
 
             if (roleLabel == null) continue;
 
@@ -139,7 +138,7 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
      *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo,bar]}
      * </ol>
      *
-     * When these criteria are met, the {@link RolePlayerFragmentSet} can be filtered to the indirect sub-types of
+     * When these criteria are met, the {@link RolePlayerFragmentSet} can be filtered to the types
      * {@code foo} and {@code bar}.
      * <p>
      * {@code $r-[role-player:$e rels:foo]->$p}
@@ -164,19 +163,16 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
             if (isa == null) continue;
 
-            @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.typeLabelOf(isa.type(), fragmentSets);
+            @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.labelOf(isa.type(), fragmentSets);
 
             if (relationLabel == null) continue;
 
-            Set<SchemaConcept> concepts = relationLabel.labels().stream()
-                    .map(graph::<SchemaConcept>getSchemaConcept)
-                    .collect(toSet());
+            Stream<SchemaConcept> concepts =
+                    relationLabel.labels().stream().map(graph::<SchemaConcept>getSchemaConcept);
 
-            if (concepts.stream().allMatch(schemaConcept -> schemaConcept != null && schemaConcept.isRelationshipType())) {
-                Stream<RelationshipType> relTypes = concepts.stream().map(Concept::asRelationshipType);
-
+            if (concepts.allMatch(schemaConcept -> schemaConcept != null && schemaConcept.isRelationshipType())) {
                 fragmentSets.remove(rolePlayer);
-                fragmentSets.add(rolePlayer.addRelationshipTypeLabels(relTypes));
+                fragmentSets.add(rolePlayer.addRelationshipTypeLabels(relationLabel.labels()));
 
                 return true;
             }
@@ -204,18 +200,12 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
     /**
      * Apply an optimisation where we check the {@link RelationshipType} property.
-     * @param relTypes the role-player fragment must link to any of these (or their sub-types)
+     * @param relTypeLabels the role-player fragment must link to any of these (not including sub-types)
      * @return a new {@link RolePlayerFragmentSet} with the same properties excepting relation-type labels
      */
-    private RolePlayerFragmentSet addRelationshipTypeLabels(Stream<RelationshipType> relTypes) {
+    private RolePlayerFragmentSet addRelationshipTypeLabels(ImmutableSet<Label> relTypeLabels) {
         Preconditions.checkState(relationTypeLabels == null);
-
-        ImmutableSet<Label> newRelationLabels =
-                relTypes.flatMap(RelationshipType::subs).map(Type::getLabel).collect(toImmutableSet());
-
-        return new RolePlayerFragmentSet(varProperty,
-                relation, edge, rolePlayer, role, roleTypeLabels, newRelationLabels
-        );
+        return new RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, roleTypeLabels, relTypeLabels);
     }
 
     /**
