@@ -20,13 +20,11 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.SampleKBLoader;
-import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
@@ -34,10 +32,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_TYPE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
@@ -142,14 +138,4 @@ public class EntityTypeControllerTest {
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }
-
-//    @Test // TODO: create a test once an implementation is made
-//    public void deleteAttributeTypeToEntityTypeAssignmentShouldExecuteSuccessfully() {
-//
-//    }
-
-//    @Test // TODO: create a test once an implementation is made
-//    public void deleteRoleToEntityTypeShouldExecuteSuccessfully() {
-//
-//    }
 }

@@ -20,7 +20,6 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
@@ -31,17 +30,13 @@ import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static ai.grakn.util.REST.Request.ATTRIBUTE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Request.VALUE_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.API_PREFIX;
-import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
