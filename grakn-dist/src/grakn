@@ -18,6 +18,17 @@
 # <http://www.gnu.org/licenses/gpl.txt>.
 
 # ================================================
+# grakn
+# this script is divided into several major parts
+# global variables
+# common helper functions
+# storage component helper functions - storage_*
+# queue component helper functions - queue_*
+# grakn helper functions - grakn_*
+# command line helpers - cli_*
+# ================================================
+
+# ================================================
 # global variables
 # ================================================
 
@@ -60,12 +71,12 @@ update_classpath_global_var() {
 # ================================================
 # storage helper functions
 # ================================================
-start_storage() {
+storage_start_process() {
   "${GRAKN_HOME}"/services/cassandra/cassandra -p $STORAGE_PID > /dev/null 2>&1
   return $?
 }
 
-check_if_storage_is_running() {
+storage_check_if_running() {
   local status=
   if [ -e $STORAGE_PID ] && ps -p `cat $STORAGE_PID` > /dev/null ; then
     status=0 # storage running
@@ -94,8 +105,8 @@ storage_wait_until_ready() {
   return 1
 }
 
-start_storage_and_wait_until_ready() {
-  check_if_storage_is_running
+storage_start_and_wait_until_ready() {
+  storage_check_if_running
   is_storage_running=$?
 
   if [ $is_storage_running -eq 0 ]; then
@@ -104,7 +115,7 @@ start_storage_and_wait_until_ready() {
   else
     # otherwise attempt to start
     echo -n "Starting Storage..."
-    start_storage
+    storage_start_process
     local exec_storage_bin=$?
 
     # check storage status and wait until ready
@@ -124,9 +135,9 @@ start_storage_and_wait_until_ready() {
   fi
 }
 
-grakn_server_stop_storage() {
+storage_stop_process() {
   echo -n "Stopping Storage..."
-  check_if_storage_is_running
+  storage_check_if_running
   local is_storage_running=$?
   if [[ $is_storage_running -eq 0 ]]; then
     if [[ -e $STORAGE_PID ]]; then
@@ -146,7 +157,7 @@ grakn_server_stop_storage() {
   fi
 }
 
-storage_clean_storage() {
+storage_wipe_all_data() {
   rm -rf db/cassandra
   mkdir -p db/cassandra/data db/cassandra/commitlog db/cassandra/saved_caches
 }
@@ -154,7 +165,7 @@ storage_clean_storage() {
 # ================================================
 # queue helper functions
 # ================================================
-queue_start_queue() {
+queue_start_process() {
   local queue_bin=""
   if [ "$(uname)" == "Darwin" ]; then
       queue_bin="redis-server-osx"
@@ -173,7 +184,7 @@ queue_start_queue() {
   return $status
 }
 
-queue_is_queue_running() {
+queue_check_if_running() {
   local status=
   local count_running_queue_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
   if [ $count_running_queue_process -gt 0 ] ; then
@@ -190,7 +201,7 @@ queue_wait_until_ready() {
 
   while [ $now_s -le $stop_s ]; do
       echo -n "." # output some sort of "progress bar"
-      queue_is_queue_running
+      queue_check_if_running
       local is_queue_running=$?
       if [ $is_queue_running -eq 0 ] ; then
           return 0
@@ -203,7 +214,7 @@ queue_wait_until_ready() {
 }
 
 queue_start_and_wait_until_ready() {
-  queue_is_queue_running
+  queue_check_if_running
   is_queue_running=$?
 
   if [ $is_queue_running -eq 0 ]; then
@@ -212,7 +223,7 @@ queue_start_and_wait_until_ready() {
   else
     # otherwise attempt to start
     echo -n "Starting Queue..."
-    queue_start_queue
+    queue_start_process
     local exec_queue_bin=$?
 
     # check queue status and wait until ready
@@ -232,9 +243,9 @@ queue_start_and_wait_until_ready() {
   fi
 }
 
-grakn_server_stop_queue() {
+queue_stop_process() {
   echo -n "Stopping Queue..."
-  queue_is_queue_running
+  queue_check_if_running
   local is_queue_running=$?
   if [[ $is_queue_running -eq 0 ]]; then
     local queue_bin=
@@ -257,7 +268,7 @@ grakn_server_stop_queue() {
   return $status
 }
 
-queue_clean_queue() {
+queue_wipe_all_data() {
   local queue_bin=
   if [ "$(uname)" == "Darwin" ]; then
       queue_bin="redis-cli-osx"
@@ -271,7 +282,7 @@ queue_clean_queue() {
 # ================================================
 # grakn helper functions
 # ================================================
-grakn_start_grakn() {
+grakn_start_process() {
   local status=
   java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" \
     ai.grakn.engine.GraknEngineServer > /dev/null 2>&1 &
@@ -281,7 +292,7 @@ grakn_start_grakn() {
   return $status
 }
 
-grakn_is_grakn_initiated() {
+grakn_check_if_running() {
   if [ -e "$GRAKN_PID" ] && ps -p `cat $GRAKN_PID` > /dev/null ; then
     return 0
   else
@@ -289,7 +300,7 @@ grakn_is_grakn_initiated() {
   fi
 }
 
-grakn_is_grakn_ready() {
+grakn_check_if_ready() {
   java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.client.Client > /dev/null 2>&1
   return $?
 }
@@ -300,7 +311,7 @@ grakn_wait_until_ready() {
 
   while [ $now_s -le $stop_s ]; do
       echo -n "." # output some sort of "progress bar"
-      grakn_is_grakn_ready
+      grakn_check_if_ready
       local is_grakn_running=$?
       if [ $is_grakn_running -eq 0 ] ; then
           return 0
@@ -313,7 +324,7 @@ grakn_wait_until_ready() {
 }
 
 grakn_start_and_wait_until_ready() {
-  grakn_is_grakn_initiated
+  grakn_check_if_running
   is_grakn_running=$?
 
   if [ $is_grakn_running -eq 0 ]; then
@@ -322,7 +333,7 @@ grakn_start_and_wait_until_ready() {
   else
     # otherwise attempt to start
     echo -n "Starting Grakn..."
-    grakn_start_grakn
+    grakn_start_process
     local exec_grakn_bin=$?
 
     # check grakn status and wait until ready
@@ -342,9 +353,9 @@ grakn_start_and_wait_until_ready() {
   fi
 }
 
-grakn_server_stop_grakn() {
+grakn_stop_process() {
   echo -n "Stopping Grakn..."
-  grakn_is_grakn_initiated
+  grakn_check_if_running
   local is_grakn_running=$?
   if [[ $is_grakn_running -eq 0 ]]; then
     if [[ -e "$GRAKN_PID" ]]; then
@@ -366,22 +377,22 @@ grakn_server_stop_grakn() {
   fi
 }
 
-grakn_clean_grakn() {
+grakn_wipe_all_data() {
   rm -r "${GRAKN_HOME}"/logs
   mkdir "${GRAKN_HOME}"/logs
 }
 
 # ================================================
-# command line helpers
+# command line case statement helpers
 # ================================================
-grakn_server_stop() {
-  grakn_server_stop_grakn
+cli_case_grakn_server_stop_all() {
+  grakn_stop_process
   status_grakn=$?
 
-  grakn_server_stop_queue
+  queue_stop_process
   status_queue=$?
 
-  grakn_server_stop_storage
+  storage_stop_process
   status_storage=$?
 
   if [ $status_grakn -eq 0 ] && [ $status_queue -eq 0 ] && [ $status_storage -eq 0 ] ; then
@@ -392,7 +403,7 @@ grakn_server_stop() {
 }
 
 # attempt to start grakn components. if one of them fails, abort everthing
-grakn_server_start_grakn() {
+cli_case_grakn_server_start_grakn() {
   grakn_start_and_wait_until_ready
   grakn=$?
   # log
@@ -402,7 +413,7 @@ grakn_server_start_grakn() {
   return $grakn
 }
 
-grakn_server_start_queue() {
+cli_case_grakn_server_start_queue() {
   queue_start_and_wait_until_ready
   queue=$?
   # log
@@ -412,8 +423,8 @@ grakn_server_start_queue() {
   return $queue
 }
 
-grakn_server_start_storage() {
-  start_storage_and_wait_until_ready
+cli_case_grakn_server_start_storage() {
+  storage_start_and_wait_until_ready
   storage=$?
   # log
   if [ $storage -ne 0 ] ; then
@@ -422,14 +433,14 @@ grakn_server_start_storage() {
   return $storage
 }
 
-grakn_server_start() {
-  grakn_server_start_storage
+cli_case_grakn_server_start_all() {
+  cli_case_grakn_server_start_storage
   local storage=$?
 
-  grakn_server_start_queue
+  cli_case_grakn_server_start_queue
   local queue=$?
 
-  grakn_server_start_grakn
+  cli_case_grakn_server_start_grakn
   local grakn=$?
 
   local status=
@@ -442,7 +453,7 @@ grakn_server_start() {
   return $status
 }
 
-grakn_server_help() {
+cli_case_grakn_server_help() {
   echo "Usage: grakn server COMMAND
 
 COMMAND:
@@ -456,22 +467,22 @@ Tips:
 - Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively
 "
 }
-grakn_server_status() {
-  check_if_storage_is_running
+cli_case_grakn_server_status() {
+  storage_check_if_running
   if [ $? -eq 0 ] ; then
     echo "Storage: RUNNING"
   else
     echo "Storage: NOT RUNNING"
   fi
 
-  queue_is_queue_running
+  queue_check_if_running
   if [ $? -eq 0 ] ; then
     echo "Queue: RUNNING"
   else
     echo "Queue: NOT RUNNING"
   fi
 
-  grakn_is_grakn_ready
+  grakn_check_if_ready
   if [ $? -eq 0 ] ; then
     echo "Grakn: RUNNING"
   else
@@ -479,17 +490,14 @@ grakn_server_status() {
   fi
 }
 
-# TODO
-# better to remove this functionality in production.
-# Having a very accessible full deletion functionality like this is dangerous
-grakn_server_clean() {
-  check_if_storage_is_running
+cli_case_grakn_server_clean() {
+  storage_check_if_running
   local is_storage_running=$?
 
-  queue_is_queue_running
+  queue_check_if_running
   local is_queue_running=$?
 
-  grakn_is_grakn_ready
+  grakn_check_if_ready
   local is_grakn_running=$?
 
   if [ $is_storage_running -eq 0 ] || [ $is_queue_running -eq 0 ] || [ $is_grakn_running -eq 0 ] ; then
@@ -503,25 +511,25 @@ grakn_server_clean() {
     fi
 
     echo -n "Cleaning Storage..."
-    storage_clean_storage
+    storage_wipe_all_data
     echo "SUCCESS"
 
     queue_start_and_wait_until_ready
-    queue_clean_queue
-    grakn_server_stop_queue
+    queue_wipe_all_data
+    queue_stop_process
     echo "Cleaning Queue...SUCCESS"
 
     echo -n "Cleaning Grakn..."
-    grakn_clean_grakn
+    grakn_wipe_all_data
     echo "SUCCESS"
   fi
 }
 
-grakn_version() {
+cli_case_grakn_version() {
   java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell --version
 }
 
-grakn_help() {
+cli_case_grakn_help() {
   echo "Usage: grakn COMMAND
 
 COMMAND:
@@ -534,16 +542,13 @@ Tips:
 - You can then perform queries by opening a console with 'graql console'"
 }
 
-# ================================================
-# case statement helpers for branches that are too big
-# ================================================
-case_grakn_server_start() {
+cli_case_grakn_server_start() {
   # attempt to start. check if there's any failure
   # abort and terminate if so
   status=
   case "$1" in
     grakn)
-      grakn_server_start_grakn
+      cli_case_grakn_server_start_grakn
       status=$?
       if [ $status -eq 0 ] ; then
         # do nothing
@@ -555,7 +560,7 @@ case_grakn_server_start() {
       fi
     ;;
     queue)
-      grakn_server_start_queue
+      cli_case_grakn_server_start_queue
       status=$?
       if [ $status -eq 0 ] ; then
         # do nothing
@@ -567,7 +572,7 @@ case_grakn_server_start() {
       fi
     ;;
     storage)
-      grakn_server_start_storage
+      cli_case_grakn_server_start_storage
       status=$?
       if [ $status -eq 0 ] ; then
         # do nothing
@@ -579,7 +584,7 @@ case_grakn_server_start() {
       fi
     ;;
     *)
-      grakn_server_start
+      cli_case_grakn_server_start_all
       status=$?
       if [ $status -eq 0 ] ; then
         # do nothing
@@ -593,20 +598,20 @@ case_grakn_server_start() {
   esac
 }
 
-case_grakn_server_stop() {
+cli_case_grakn_server_stop() {
   # TODO: handle if graceful termination failed and log failures
   case $1 in
     grakn)
-      grakn_server_stop_grakn
+      grakn_stop_process
     ;;
     queue)
-      grakn_server_stop_queue
+      queue_stop_process
     ;;
     storage)
-      grakn_server_stop_storage
+      storage_stop_process
     ;;
     *)
-      grakn_server_stop
+      cli_case_grakn_server_stop_all
     ;;
   esac
 }
@@ -617,9 +622,10 @@ case_grakn_server_stop() {
 handle_ctrl_c() {
   echo
   echo "*** Receiving SIGINT. Halting ***"
-  grakn_server_stop
+  cli_case_grakn_server_stop
   exit 1
 }
+
 # =============================================
 # main routine
 # =============================================
@@ -636,26 +642,26 @@ case "$1" in
   server)
     case "$2" in
       start)
-        case_grakn_server_start $3
+        cli_case_grakn_server_start $3
       ;;
       stop)
-        case_grakn_server_stop $3
+        cli_case_grakn_server_stop $3
       ;;
       status)
-        grakn_server_status
+        cli_case_grakn_server_status
       ;;
       clean)
-        grakn_server_clean
+        cli_case_grakn_server_clean
       ;;
       help|*)
-        grakn_server_help
+        cli_case_grakn_server_help
       ;;
     esac
   ;;
   version)
-    grakn_version
+    cli_case_grakn_version
   ;;
   *|help)
-    grakn_help
+    cli_case_grakn_help
   ;;
 esac
