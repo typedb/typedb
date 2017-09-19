@@ -441,13 +441,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
             schemaConcept = SchemaConceptImpl.from(buildSchemaConcept(label, () -> newConceptFactory.apply(vertexElement)));
         } else if (!baseType.equals(schemaConcept.baseType())) {
-            throw LabelTaken(schemaConcept);
+            throw labelTaken(schemaConcept);
         }
 
         //Check if the type we got is correct
         SchemaConceptImpl finalSchemaConcept = schemaConcept;
         T finalType = validateSchemaConcept(schemaConcept, baseType, () -> {
-            throw LabelTaken(finalSchemaConcept);
+            throw labelTaken(finalSchemaConcept);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
@@ -461,7 +461,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     /**
      * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
      */
-    private GraknTxOperationException LabelTaken(SchemaConcept schemaConcept){
+    private GraknTxOperationException labelTaken(SchemaConcept schemaConcept){
         if (Schema.MetaSchema.isMetaLabel(schemaConcept.getLabel())) return GraknTxOperationException.reservedLabel(schemaConcept.getLabel());
         return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.getLabel());
     }
