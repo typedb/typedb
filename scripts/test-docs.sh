@@ -2,4 +2,5 @@
 
 cd docs
 
+rake dependencies
 rake test
