@@ -23,7 +23,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;

@@ -25,7 +25,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
