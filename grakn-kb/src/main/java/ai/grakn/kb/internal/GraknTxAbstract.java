@@ -435,22 +435,19 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, Function<VertexElement, T> newConceptFactory) {
         checkSchemaMutationAllowed();
 
-        //Make sure the label is not reserved
-        if (Schema.MetaSchema.isMetaLabel(label)) throw GraknTxOperationException.reservedLabel(label);
-
         //Get the type if it already exists otherwise build a new one
         SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
         if (schemaConcept == null) {
             VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
             schemaConcept = SchemaConceptImpl.from(buildSchemaConcept(label, () -> newConceptFactory.apply(vertexElement)));
         } else if (!baseType.equals(schemaConcept.baseType())) {
-            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, label);
+            throw LabelTaken(schemaConcept);
         }
 
         //Check if the type we got is correct
         SchemaConceptImpl finalSchemaConcept = schemaConcept;
         T finalType = validateSchemaConcept(schemaConcept, baseType, () -> {
-            throw PropertyNotUniqueException.cannotCreateProperty(finalSchemaConcept, Schema.VertexProperty.SCHEMA_LABEL, label);
+            throw LabelTaken(finalSchemaConcept);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
@@ -459,6 +456,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
 
         return finalType;
+    }
+
+    /**
+     * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
+     */
+    private GraknTxOperationException LabelTaken(SchemaConcept schemaConcept){
+        if (Schema.MetaSchema.isMetaLabel(schemaConcept.getLabel())) return GraknTxOperationException.reservedLabel(schemaConcept.getLabel());
+        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.getLabel());
     }
 
     private <T extends Concept> T validateSchemaConcept(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler) {
