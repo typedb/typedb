@@ -131,7 +131,7 @@ wipe_out_files() {
   rm -f "${STORAGE_PID}"
 }
 
-force_kill_and_halt_test() {
+force_kill() {
   echo "Force kill initiated - attempting to clean up any running processes..."
   local cassandra_pid=`ps -ef | grep 'CassandraDaemon' | grep -v grep | awk '{ print $2}'`
   local redis_pid=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}'`
@@ -163,12 +163,21 @@ force_kill_and_halt_test() {
 }
 
 main() {
+  echo "Checking if there's any dangling Redis process..."
+  local redis_pid=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}'`
+  if [[ ! -z $redis_pid ]]; then
+    echo "Force killing Redis (pid=$redis_pid)"
+    kill -9 $redis_pid
+  else
+    echo "no dangling Redis process found."
+  fi
+
   echo "Unarchiving distribution tarball..."
   untar_grakn_dist
   local untar_status=$?
   if [[ $untar_status -ne 0 ]]; then
     echo "Unable to unarchive distribution tarball. Halting test."
-    force_kill_and_halt_test
+    force_kill
     exit 1
   fi
 
@@ -177,7 +186,7 @@ main() {
   local startup_status=$?
   if [[ $startup_status -ne 0 ]]; then
     echo "Unable to start Grakn. Halting test."
-    force_kill_and_halt_test
+    force_kill
     exit 1
   fi
 
@@ -185,7 +194,7 @@ main() {
   local check_pid_exist_status=$?
   if [[ $check_pid_exist_status -ne 0 ]]; then
     echo "Some PID files are missing. Halting test."
-    force_kill_and_halt_test
+    force_kill
     exit 1
   fi
 
@@ -194,7 +203,7 @@ main() {
   local load_data_status=$?
   if [[ $load_data_status -ne 0 ]]; then
     echo "Data could not be properly loaded. Halting test."
-    force_kill_and_halt_test
+    force_kill
     exit 1
   fi
 
@@ -203,7 +212,7 @@ main() {
   local count_person_status=$?
   if [[ $count_person_status -ne 0 ]]; then
     echo "Person count != 4. Halting test."
-    force_kill_and_halt_test
+    force_kill
     exit 1
   fi
 
@@ -212,7 +221,7 @@ main() {
   local count_marriage_status=$?
   if [[ $count_marriage_status -ne 0 ]]; then
     echo "Marriage count != 1. Halting test."
-    force_kill_and_halt_test
+    force_kill
     exit 1
   fi
 
@@ -222,7 +231,7 @@ main() {
 
   if [[ $stop_status -ne 0 ]]; then
     echo "Unable to start Grakn. Halting test."
-    force_kill_and_halt_test
+    force_kill
     exit 1
   fi
 
@@ -230,7 +239,7 @@ main() {
   local check_pid_not_exist_status=$?
   if [[ $check_pid_not_exist_status -ne 0 ]]; then
     echo "Some PID files are still present after cleanup. Halting test."
-    force_kill_and_halt_test
+    force_kill
     exit 1
   fi
 
