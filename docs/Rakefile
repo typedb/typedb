@@ -1,5 +1,3 @@
-require 'html-proofer'
-
 # Documentation content to copy into _jekyll for conversion into HTML
 $user_files = [
     'images',
@@ -39,6 +37,8 @@ task :serve => ['clean', 'build'] do
 end
 
 task :test do
+  require 'html-proofer'
+
   jekyll('build')
   options = {
       :assume_extension => true,
