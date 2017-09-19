@@ -18,6 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary.type;
 
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -27,6 +30,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -69,6 +73,21 @@ public class IsaAtom extends TypeAtom {
     @Override
     public Atomic copy(){
         return new IsaAtom(this);
+    }
+
+    protected Pair<VarPatternAdmin, IdPredicate> getTypedPair(SchemaConcept type){
+        ConceptId typeId = type.getId();
+        Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
+
+        VarPatternAdmin newPattern = getPattern().asVarPattern().isa(typeVariable).admin();
+        IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
+        return new Pair<>(newPattern, newPredicate);
+    }
+
+    @Override
+    public IsaAtom addType(SchemaConcept type) {
+        Pair<VarPatternAdmin, IdPredicate> typedPair = getTypedPair(type);
+        return new IsaAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
     }
 
     @Override

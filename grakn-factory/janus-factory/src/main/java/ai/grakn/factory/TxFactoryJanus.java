@@ -19,12 +19,15 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.LazyBarrierStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -96,7 +99,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     //This maps the storage backend to the needed value
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
-    TxFactoryJanus(String keyspace, String engineUrl, Properties properties) {
+    TxFactoryJanus(Keyspace keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
     }
 
@@ -120,14 +123,16 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         return newJanusGraph(super.keyspace, super.engineUrl, super.properties, batchLoading);
     }
 
-    private synchronized JanusGraph newJanusGraph(String name, String address, Properties properties, boolean batchLoading){
-        JanusGraph JanusGraph = configureGraph(name, address, properties, batchLoading);
+    private synchronized JanusGraph newJanusGraph(Keyspace keyspace, String address, Properties properties, boolean batchLoading){
+        JanusGraph JanusGraph = configureGraph(keyspace, address, properties, batchLoading);
         buildJanusIndexes(JanusGraph);
         JanusGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
 
         if (!strategiesApplied.getAndSet(true)) {
             TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraph.class);
             strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());
+            //TODO: find out why Tinkerpop added these strategies. They result in many NoOpBarrier steps which slowed down our queries so we had to remove them.
+            strategies.removeStrategies(PathRetractionStrategy.class, LazyBarrierStrategy.class);
             TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, strategies);
             TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, strategies);
         }
@@ -135,10 +140,10 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         return JanusGraph;
     }
 
-    private JanusGraph configureGraph(String name, String address, Properties properties, boolean batchLoading){
+    private JanusGraph configureGraph(Keyspace keyspace, String address, Properties properties, boolean batchLoading){
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().
                 set("storage.hostname", address).
-                set("storage.cassandra.keyspace", name).
+                set("storage.cassandra.keyspace", keyspace.getValue()).
                 set("storage.batch-loading", batchLoading);
 
         String storageBackend = "storage.backend";

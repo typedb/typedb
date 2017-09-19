@@ -19,15 +19,12 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-
-import java.util.Collection;
 
 /**
  * @author Felix Chapman
@@ -60,8 +57,7 @@ class LabelFragmentSet extends EquivalentFragmentSet {
      *   <li>The fragment set is not the only remaining fragment set</li>
      * </ol>
      */
-    static boolean applyRedundantLabelEliminationOptimisation(
-            Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
+    static final FragmentSetOptimisation REDUNDANT_LABEL_ELIMINATION_OPTIMISATION = (fragmentSets, graph) -> {
 
         if (fragmentSets.size() <= 1) return false;
 
@@ -89,5 +85,6 @@ class LabelFragmentSet extends EquivalentFragmentSet {
         }
 
         return false;
-    }
+    };
+
 }

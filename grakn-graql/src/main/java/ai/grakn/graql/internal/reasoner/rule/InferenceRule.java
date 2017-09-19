@@ -31,7 +31,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -258,15 +257,15 @@ public class InferenceRule {
         );
     }
 
-    private InferenceRule rewrite(){
-        ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined());
+    private InferenceRule rewrite(Atom parentAtom){
+        ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
         List<Atom> bodyRewrites = new ArrayList<>();
         body.getAtoms(Atom.class)
                 .map(at -> {
                     if (at.isRelation()
                             && !at.isUserDefined()
                             && Objects.equals(at.getSchemaConcept(), head.getAtom().getSchemaConcept())){
-                        return at.rewriteToUserDefined();
+                        return at.rewriteToUserDefined(parentAtom);
                     } else {
                         return at;
                     }
@@ -276,13 +275,17 @@ public class InferenceRule {
         return new InferenceRule(rewrittenHead, rewrittenBody, ruleId, tx);
     }
 
+    private boolean requiresRewrite(Atom parentAtom){
+        return parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion();
+    }
+
     /**
      * rewrite the rule to a form with user defined variables
      * @param parentAtom reference parent atom
      * @return rewritten rule
      */
     public InferenceRule rewriteToUserDefined(Atom parentAtom){
-        return parentAtom.isUserDefined()? rewrite() : this;
+        return requiresRewrite(parentAtom)? rewrite(parentAtom) : this;
     }
 
     /**
@@ -294,9 +297,9 @@ public class InferenceRule {
         if (parentAtom.getSchemaConcept() != null){
             return childAtom.getUnifier(parentAtom);
         }
-        //case of match all relation atom
+        //case of match all atom (atom without type)
         else{
-            Atom extendedParent = ((RelationAtom) parentAtom)
+            Atom extendedParent = parentAtom
                     .addType(childAtom.getSchemaConcept())
                     .inferTypes();
             return childAtom.getUnifier(extendedParent);

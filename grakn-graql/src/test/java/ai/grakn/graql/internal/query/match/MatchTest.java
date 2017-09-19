@@ -154,6 +154,7 @@ import static org.junit.Assert.assertThat;
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchTest {
 
+    private static final Var w = var("w");
     private static final Var x = var("x");
     private static final Var y = var("y");
     public static final Var z = var("z");
@@ -1017,6 +1018,11 @@ public class MatchTest {
         expectedException.expect(GraqlQueryException.class);
         expectedException.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(x));
         movieKB.tx().graql().match(var()).get(ImmutableSet.of(x)).execute();
+    }
+
+    @Test
+    public void whenExecutingQueryWithManyRoleVars_DontThrow() {
+        qb.match(var().rel(w, x).rel(y, z), var().rel(w, z)).iterator().next();
     }
 
     @Test(expected = Exception.class)

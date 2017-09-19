@@ -161,6 +161,7 @@ public class GreedyTraversalPlan {
                     // fragments that should be done right away
                     plan.add(fragment);
                     nodesWithFixedCost.add(start);
+                    start.setFixedFragmentCost(fragment.fragmentCost());
 
                 } else if (fragment.dependencies().isEmpty()) {
                     //fragments that should be done when a node has been visited
@@ -244,7 +245,7 @@ public class GreedyTraversalPlan {
         Set<Node> reachableNodes = Sets.newHashSet(root);
         while (!reachableNodes.isEmpty()) {
             Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
-                    getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent))).get();
+                    branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).get();
 
             // add edge fragment first, then node fragments
             getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent).ifPresent(plan::add);
@@ -255,6 +256,27 @@ public class GreedyTraversalPlan {
                 reachableNodes.addAll(edgesParentToChild.get(nodeWithMinCost));
             }
         }
+    }
+
+    private static double branchWeight(Node node, Arborescence<Node> arborescence,
+                                       Map<Node, Set<Node>> edgesParentToChild,
+                                       Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
+        final double[] weight = {getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent)};
+        weight[0] += nodeFragmentWeight(node);
+        if (edgesParentToChild.containsKey(node)) {
+            edgesParentToChild.get(node).forEach(child -> {
+                weight[0] += branchWeight(child, arborescence, edgesParentToChild, edgeFragmentChildToParent);
+            });
+        }
+        return weight[0];
+    }
+
+    private static double nodeFragmentWeight(Node node) {
+        double costFragmentsWithoutDependency = node.getFragmentsWithoutDependency().stream()
+                .mapToDouble(Fragment::fragmentCost).sum();
+        double costFragmentsWithDependencyVisited = node.getFragmentsWithDependencyVisited().stream()
+                .mapToDouble(Fragment::fragmentCost).sum();
+        return costFragmentsWithoutDependency + costFragmentsWithDependencyVisited + node.getFixedFragmentCost();
     }
 
     private static void addNodeFragmentToPlan(Node node, List<Fragment> plan, Map<NodeId, Node> nodes,

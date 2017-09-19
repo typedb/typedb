@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Set;
 
@@ -52,46 +53,52 @@ class AnswerState extends ResolutionState {
         return getParentState().propagateAnswer(this);
     }
 
-
-    Answer getAtomicAnswer(ReasonerAtomicQuery query, InferenceRule rule, Unifier cacheUnifier, QueryCache<ReasonerAtomicQuery> cache){
-        Answer answer;
-        if (rule == null){
-            answer = getSubstitution();
-        } else {
-            answer = rule.requiresMaterialisation(query.getAtom()) ?
-                    getMaterialisedAnswer(query, rule, cache) :
-                    getRuleAnswer(query, rule);
+    Answer getAnswer(){
+        if (!getParentState().isAtomicState()) return getSubstitution();
+        else{
+            Answer answer;
+            AtomicState parent = (AtomicState) getParentState();
+            ReasonerAtomicQuery query = parent.getQuery();
+            InferenceRule rule = parent.getCurrentRule();
+            QueryCache<ReasonerAtomicQuery> cache = parent.getCache();
+            if (rule == null) answer = getSubstitution();
+            else{
+                answer = rule.requiresMaterialisation(query.getAtom()) ?
+                        getMaterialisedAnswer(query, rule, cache) :
+                        getRuleAnswer(query, rule);
+            }
+            return cache.recordAnswerWithUnifier(query, answer, parent.getCacheUnifier());
         }
-
-        if (answer.isEmpty()) return answer;
-        return cache.recordAnswerWithUnifier(query, answer, cacheUnifier);
     }
 
     private Answer getRuleAnswer(ReasonerAtomicQuery query, InferenceRule rule){
         Answer answer = getSubstitution()
+                .merge(rule.getHead().getRoleSubstitution())
                 .unify(getUnifier());
         if (answer.isEmpty()) return answer;
 
         return answer
                 .merge(query.getSubstitution())
-                .filterVars(query.getVarNames())
+                .project(query.getVarNames())
                 .explain(new RuleExplanation(query, rule));
     }
 
     private Answer getMaterialisedAnswer(ReasonerAtomicQuery query, InferenceRule rule, QueryCache<ReasonerAtomicQuery> cache){
         Answer ans = getSubstitution();
         Unifier unifier = getUnifier();
-        ReasonerAtomicQuery ruleHead = rule.getHead();
+        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, ans);
+        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), ans);
+
         Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()?
                 unifier.keySet() :
                 ruleHead.getVarNames();
 
-        boolean queryEquivalentToHead = query.isEquivalent(ruleHead);
+        boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
 
         //check if the specific answer to ruleHead already in cache/db
         Answer headAnswer = cache
                 .getAnswer(ruleHead, ans)
-                .filterVars(queryVars)
+                .project(queryVars)
                 .unify(unifier);
 
         //if not and query different than rule head do the same with the query
@@ -105,7 +112,7 @@ class AnswerState extends ResolutionState {
             Answer materialisedSub = ruleHead.materialise(ans).findFirst().orElse(null);
             if (!queryEquivalentToHead) cache.recordAnswer(ruleHead, materialisedSub);
             ans = materialisedSub
-                    .filterVars(queryVars)
+                    .project(queryVars)
                     .unify(unifier);
         } else {
             ans = headAnswer.isEmpty()? queryAnswer : headAnswer;

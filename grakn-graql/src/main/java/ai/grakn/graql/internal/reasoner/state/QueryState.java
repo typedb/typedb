@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Set;
 
 /**
@@ -45,6 +46,16 @@ public abstract class QueryState extends ResolutionState {
     }
 
     /**
+     * @return true if this state corresponds to an atomic state
+     */
+    boolean isAtomicState(){ return false; }
+
+    /**
+     * @return query corresponding to this query state
+     */
+    abstract ReasonerQueryImpl getQuery();
+
+    /**
      * @return set of already visited subGoals (atomic queries)
      */
     Set<ReasonerAtomicQuery> getSubGoals(){ return subGoals;}
@@ -53,6 +64,11 @@ public abstract class QueryState extends ResolutionState {
      * @return query cache
      */
     QueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
+
+    /**
+     * @return cache unifier if any
+     */
+    abstract Unifier getCacheUnifier();
 
     /**
      * propagates the answer state up the tree and acknowledges (caches) its substitution

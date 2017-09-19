@@ -19,15 +19,16 @@
 package ai.grakn.util;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.TxFactory;
-import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.graql.Query;
+import ai.grakn.kb.internal.GraknTxTinker;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.Files;
 
@@ -166,9 +167,9 @@ public class SampleKBLoader {
         return GraknSystemProperty.CURRENT_DIRECTORY.value() + "/";
     }
 
-    public static String randomKeyspace(){
+    public static Keyspace randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
-        return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
+        return Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
     }
 
     public static void loadFromFile(GraknTx graph, String file) {
