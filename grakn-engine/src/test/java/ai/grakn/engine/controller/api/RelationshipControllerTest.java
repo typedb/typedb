@@ -16,13 +16,12 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.API_PREFIX;
-import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -61,6 +60,8 @@ public class RelationshipControllerTest {
             sampleKB.tx().getConcept(invocation.getArgument(0)));
         when(mockTx.getRole(anyString())).thenAnswer(invocation ->
             sampleKB.tx().getRole(invocation.getArgument(0)));
+        Mockito.doAnswer(e -> { sampleKB.tx().commit(); return null; } ).when(mockTx).commit();
+
         when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
         when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
@@ -80,24 +81,19 @@ public class RelationshipControllerTest {
     }
 
     @Test
-    @Ignore("Disabling test. There's a problem with executing it with 'janus' profile where it forgets about an entity or relationship which is POSTed")
     public void assignEntityAndRoleToRelationshipShouldExecuteSuccessfully() {
         // directed-by (relT) -- production-being-directed (role) -- director (role)
         String relationshipTypeLabel = "directed-by";
         String roleLabel = "director";
         String entityTypeLabel = "person";
 
-        Response addRelationshipResponse = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post(RELATIONSHIP_TYPE + "/" + relationshipTypeLabel);
-
-        // add an entity
-        Response addEntityResponse = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post(ENTITY_TYPE + "/" + entityTypeLabel);
-
-        String relationshipConceptId = Json.read(addRelationshipResponse.body().asString()).at(RELATIONSHIP_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
-        String entityConceptId = Json.read(addEntityResponse.body().asString()).at(ENTITY_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
+        String entityConceptId;
+        String relationshipConceptId;
+        try (GraknTx tx = mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)) {
+            entityConceptId = tx.getEntityType(entityTypeLabel).addEntity().getId().getValue();
+            relationshipConceptId = tx.getRelationshipType(relationshipTypeLabel).addRelationship().getId().getValue();
+            tx.commit();
+        }
 
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
