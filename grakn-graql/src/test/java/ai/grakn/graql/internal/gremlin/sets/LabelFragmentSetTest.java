@@ -69,7 +69,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.applyRedundantLabelEliminationOptimisation(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
 
         assertEquals(Sets.difference(originalFragmentSets, ImmutableSet.of(labelFragment)), fragmentSets);
     }
@@ -82,7 +82,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.applyRedundantLabelEliminationOptimisation(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
@@ -95,7 +95,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.applyRedundantLabelEliminationOptimisation(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
@@ -109,7 +109,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.applyRedundantLabelEliminationOptimisation(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
@@ -122,7 +122,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.applyRedundantLabelEliminationOptimisation(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
 
         assertEquals(originalFragmentSets, fragmentSets);
     }

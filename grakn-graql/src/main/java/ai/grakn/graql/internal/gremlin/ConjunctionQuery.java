@@ -54,7 +54,7 @@ import static java.util.stream.Collectors.toSet;
  * <p>
  * A gremlin traversal is created by concatenating the traversals within each fragment.
  */
-public class ConjunctionQuery {
+class ConjunctionQuery {
 
     private final Set<VarPatternAdmin> vars;
 
@@ -63,7 +63,7 @@ public class ConjunctionQuery {
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    public ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, GraknTx graph) {
+    ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, GraknTx graph) {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
@@ -101,7 +101,7 @@ public class ConjunctionQuery {
         this.equivalentFragmentSets = ImmutableSet.copyOf(initialEquivalentFragmentSets);
     }
 
-    public ImmutableSet<EquivalentFragmentSet> getEquivalentFragmentSets() {
+    ImmutableSet<EquivalentFragmentSet> getEquivalentFragmentSets() {
         return equivalentFragmentSets;
     }
 

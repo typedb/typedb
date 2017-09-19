@@ -510,42 +510,30 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testTransitiveChain(){
-        final int N = 100;
-        int answers = (N+1)*N/2;
+        final int N = 10;
         emptyKB.load(TransitivityChainKB.get(N));
         QueryBuilder qb = emptyKB.tx().graql().infer(false);
         QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
-        String queryString = "match (Q-from: $x, Q-to: $y) isa Q; limit " + answers + "; get;";
-        //String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        long startTime = System.currentTimeMillis();
-        List<Answer> execute = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        System.out.println("answers: " + execute.size());
-        System.out.println("time: " + (System.currentTimeMillis() - startTime));
-        //assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testTransitiveMatrix(){
-        final int N = 10;
+        final int N = 5;
         emptyKB.load(TransitivityMatrixKB.get(N, N));
         QueryBuilder qb = emptyKB.tx().graql().infer(false);
         QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
-        String queryString = "match (Q-from: $x, Q-to: $y) isa Q; limit 14400; get;";
-        //String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        long startTime = System.currentTimeMillis();
-        List<Answer> execute = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        System.out.println("answers: " + execute.size());
-        System.out.println("time: " + (System.currentTimeMillis() - startTime));
-
-        //assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test

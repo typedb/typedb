@@ -245,12 +245,8 @@ public class SNBInferenceTest {
                 "{$x has name 'Charlie';{$y has name 'Cacophony';} or {$y has name 'Black Sabbath';};} or " +
                 "{$x has name 'Gary';$y has name 'Pink Floyd';}; get $x, $y;";
 
-        long startTime = System.currentTimeMillis();
-        iqb.materialise(false).parse(queryString).execute();
-        System.out.println("time: " + (System.currentTimeMillis() - startTime));
-
-        //assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     /**

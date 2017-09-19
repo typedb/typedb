@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -54,9 +55,6 @@ public class ConjunctiveState extends QueryState {
     private boolean visited = false;
     private static final Logger LOG = LoggerFactory.getLogger(ConjunctiveState.class);
 
-    public static long generateTime = 0;
-    public static long initTime = 0;
-
     public ConjunctiveState(ReasonerQueryImpl q,
                             Answer sub,
                             Unifier u,
@@ -64,8 +62,6 @@ public class ConjunctiveState extends QueryState {
                             Set<ReasonerAtomicQuery> subGoals,
                             QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
-
-        long startTime = System.currentTimeMillis();
         this.query = ReasonerQueries.create(q, sub);
 
         if (!query.isRuleResolvable()){
@@ -82,31 +78,31 @@ public class ConjunctiveState extends QueryState {
                     .collect(Collectors.joining("\n"))
             );
         }
-
-        initTime += System.currentTimeMillis() - startTime;
-
     }
 
     @Override
-    public ResolutionState propagateAnswer(AnswerState state) {
-        return new AnswerState(state.getSubstitution(), getUnifier(), getParentState());
+    ReasonerQueryImpl getQuery(){return query;}
+
+    @Override
+    Unifier getCacheUnifier() {
+        return new UnifierImpl();
     }
 
-
+    ResolutionState propagateAnswer(AnswerState state){
+        Answer answer = state.getAnswer();
+        return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
+    }
 
     @Override
     public ResolutionState generateSubGoal(){
-        long startTime = System.currentTimeMillis();
-        ResolutionState state = null;
         if (dbIterator.hasNext()){
-            state = new AnswerState(dbIterator.next(), getUnifier(), getParentState());
+            return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
         }
 
         if (!subQueries.isEmpty() && !visited) {
             visited = true;
-            state = new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
+            return new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
         }
-        generateTime += System.currentTimeMillis() - startTime;
-        return state;
+        return null;
     }
 }

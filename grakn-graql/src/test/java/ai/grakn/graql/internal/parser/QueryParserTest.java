@@ -900,6 +900,31 @@ public class QueryParserTest {
         parse("match $x isa name; aggregate hello $x;");
     }
 
+    @Test
+    public void regexPredicateParsesCharacterClassesCorrectly() {
+        assertEquals(match(var("x").val(regex("\\d"))).get(), parse("match $x val /\\d/; get;"));
+    }
+
+    @Test
+    public void regexPredicateParsesQuotesCorrectly() {
+        assertEquals(match(var("x").val(regex("\""))).get(), parse("match $x val /\"/; get;"));
+    }
+
+    @Test
+    public void regexPredicateParsesBackslashesCorrectly() {
+        assertEquals(match(var("x").val(regex("\\\\"))).get(), parse("match $x val /\\\\/; get;"));
+    }
+
+    @Test
+    public void regexPredicateParsesNewlineCorrectly() {
+        assertEquals(match(var("x").val(regex("\\n"))).get(), parse("match $x val /\\n/; get;"));
+    }
+
+    @Test
+    public void regexPredicateParsesForwardSlashesCorrectly() {
+        assertEquals(match(var("x").val(regex("/"))).get(), parse("match $x val /\\//; get;"));
+    }
+
     private static void assertParseEquivalence(String query) {
         assertEquals(query, parse(query).toString());
     }

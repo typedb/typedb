@@ -48,8 +48,8 @@ import java.util.stream.StreamSupport;
  */
 public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
 
-    public VertexElement(GraknTxAbstract graknGraph, Vertex element) {
-        super(graknGraph, element, Schema.PREFIX_VERTEX);
+    public VertexElement(GraknTxAbstract graknTx, Vertex element) {
+        super(graknTx, element, Schema.PREFIX_VERTEX);
     }
 
     /**

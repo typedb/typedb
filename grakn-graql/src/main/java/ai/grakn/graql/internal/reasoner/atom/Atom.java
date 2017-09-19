@@ -116,6 +116,8 @@ public abstract class Atom extends AtomicBase {
      */
     protected Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
 
+    public Set<Var> getRoleExpansionVariables(){ return Collections.emptySet();}
+
     /**
      * compute base resolution priority of this atom
      * @return priority value
@@ -163,6 +165,11 @@ public abstract class Atom extends AtomicBase {
      * @return true if the atom requires materialisation in order to be referenced
      */
     public boolean requiresMaterialisation(){ return false; }
+
+    /**
+     * @return true if the atom requires role expansion
+     */
+    public boolean requiresRoleExpansion(){ return false; }
 
     /**
      * @return corresponding type if any
@@ -246,16 +253,30 @@ public abstract class Atom extends AtomicBase {
     public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
 
     /**
+     * computes a set of permutation unifiers that define swapping operation between role players
+     * NB: returns an identity unifier by default
      * @param headAtom unification reference atom
      * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
      */
-    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return Collections.singleton(new UnifierImpl());}
+    public Set<Unifier> getPermutationUnifiers(Atom headAtom){
+        return Collections.singleton(new UnifierImpl());
+    }
+
+    @Override
+    public Atom inferTypes(){ return this; }
+
+    /**
+     * @param type to be added to this {@link Atom}
+     * @return new {@link Atom} with specified type
+     */
+    public Atom addType(SchemaConcept type){ return this;}
 
     /**
      * rewrites the atom to one with user defined name
+     * @param parentAtom parent atom that triggers rewrite
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Atom rewriteToUserDefined(){ return this;}
+    public Atom rewriteToUserDefined(Atom parentAtom){ return this;}
 
     /**
      * find unifier with parent atom

@@ -21,21 +21,13 @@ package ai.grakn.test;
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import ai.grakn.engine.util.SimpleURI;
-import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.startRedis;
-import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
@@ -43,6 +35,15 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 import javax.annotation.Nullable;
+
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static ai.grakn.test.GraknTestEngineSetup.startEngine;
+import static ai.grakn.test.GraknTestEngineSetup.startRedis;
+import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
+import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
+import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 
 
 /**
@@ -113,8 +114,7 @@ public class EngineContext extends ExternalResource {
         return config.uri();
     }
 
-    //TODO Rename this method to "sessionWithNewKeyspace"
-    public GraknSession factoryWithNewKeyspace() {
+    public GraknSession sessionWithNewKeyspace() {
         return Grakn.session(uri(), randomKeyspace());
     }
 

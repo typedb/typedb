@@ -163,20 +163,27 @@ public class TxCacheTest extends TxTestBase {
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
                 "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
                 REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
-        assertEquals("Unexpected graph logs", expected, tx.txCache().getFormattedLog());
+        assertEquals("Unexpected graph logs", expected, tx.commitLog().getFormattedLog());
     }
 
     @Test
-    public void whenAddedEntities_EnsureLogNotEmpty() {
+    public void whenAddingEntities_EnsureLogIsFilledAfterCommit() {
         EntityType entityType = tx.putEntityType("My Type");
         entityType.addEntity();
         entityType.addEntity();
-        Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
+        Json emptyLog = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
+                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
+                REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
+        assertEquals("Logs are not empty", emptyLog, tx.commitLog().getFormattedLog());
+
+        tx.commit();
+
+        Json filledLog = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
                 "\":{\"" + Schema.BaseType.ATTRIBUTE.name() +
                 "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
                 "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
                 "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
-        assertEquals("Unexpected graph logs", expected, tx.txCache().getFormattedLog());
+        assertEquals("Logs are empty", filledLog, tx.commitLog().getFormattedLog());
     }
 
     @Test

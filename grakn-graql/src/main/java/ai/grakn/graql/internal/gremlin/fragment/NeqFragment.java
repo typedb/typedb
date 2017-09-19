@@ -26,14 +26,16 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
+import java.util.Collection;
+
 @AutoValue
 abstract class NeqFragment extends Fragment {
 
     abstract Var other();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
         return traversal.where(P.neq(other().getValue()));
     }
 
@@ -45,7 +47,7 @@ abstract class NeqFragment extends Fragment {
     @Override
     public double fragmentCost() {
         // This is arbitrary - we imagine about half the results are filtered out
-        return COST_NEQ;
+        return COST_NODE_NEQ;
     }
 
     @Override

@@ -220,8 +220,8 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException("Wrong number of arguments [" + values.size() + "] to macro " + macro.name());
     }
 
-    public static GraqlQueryException wrongMacroArgumentType(Macro macro, String expectedType, String value) {
-        return new GraqlQueryException("Value [" + value + "] is not " + expectedType + " in macro " + macro.name());
+    public static GraqlQueryException wrongMacroArgumentType(Macro macro, String value) {
+        return new GraqlQueryException("Value [" + value + "] is not a " + macro.name() + " needed for this macro");
     }
 
     public static GraqlQueryException unknownAggregate(String name) {

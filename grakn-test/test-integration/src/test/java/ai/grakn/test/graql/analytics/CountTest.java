@@ -18,15 +18,15 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
@@ -53,7 +53,7 @@ public class CountTest {
 
     @Before
     public void setUp() {
-        factory = rule.factoryWithNewKeyspace();
+        factory = rule.sessionWithNewKeyspace();
     }
 
     @Test
@@ -132,16 +132,19 @@ public class CountTest {
         long count;
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
-            assertEquals(count, 3L);
+            assertEquals(3L, count);
 
             count = graph.graql().compute().count().in("name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name", "name").execute();
-            assertEquals(count, 2L);
+            assertEquals(2L, count);
+
+            count = graph.graql().compute().count().in("relationship").execute();
+            assertEquals(1L, count);
         }
 
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
@@ -167,16 +170,19 @@ public class CountTest {
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
-            assertEquals(count, 5L);
+            assertEquals(5L, count);
 
             count = graph.graql().compute().count().in("name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name").execute();
-            assertEquals(count, 2L);
+            assertEquals(2L, count);
 
             count = graph.graql().compute().count().in("has-name", "name").execute();
-            assertEquals(count, 3L);
+            assertEquals(3L, count);
+
+            count = graph.graql().compute().count().in("relationship").execute();
+            assertEquals(2L, count);
         }
     }
 
@@ -209,16 +215,19 @@ public class CountTest {
         long count;
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
-            assertEquals(count, 3L);
+            assertEquals(3L, count);
 
             count = graph.graql().compute().count().in("name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name", "name").execute();
-            assertEquals(count, 2L);
+            assertEquals(2L, count);
+
+            count = graph.graql().compute().count().in("relationship").execute();
+            assertEquals(1L, count);
         }
 
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
@@ -231,16 +240,19 @@ public class CountTest {
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
-            assertEquals(count, 5L);
+            assertEquals(5L, count);
 
             count = graph.graql().compute().count().in("name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name").execute();
-            assertEquals(count, 2L);
+            assertEquals(2L, count);
 
             count = graph.graql().compute().count().in("has-name", "name").execute();
-            assertEquals(count, 3L);
+            assertEquals(3L, count);
+
+            count = graph.graql().compute().count().in("relationship").execute();
+            assertEquals(2L, count);
         }
     }
 

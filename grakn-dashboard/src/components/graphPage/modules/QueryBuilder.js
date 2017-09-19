@@ -30,7 +30,7 @@ export default {
     for (let i = 0; i < arrayLength; i++) {
       queryString += `($${alphabet[i]},$x);`;
     }
-    queryString += '\nselect $x;';
+    queryString += '\nget $x;';
     return queryString;
   },
 
@@ -39,7 +39,7 @@ export default {
   },
 
   exploreRelationshipsBuilder(nodeIds) {
-    return `match $x id "${nodeIds[0]}"; $y id "${nodeIds[1]}"; $r ($x, $y);`;
+    return `match $x id "${nodeIds[0]}"; $y id "${nodeIds[1]}"; $r ($x, $y); get;`;
   },
 
 };

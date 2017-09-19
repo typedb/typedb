@@ -45,7 +45,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Implementation for binary atoms with single id predicate for a schema concept. Binary atoms take the form:
+ * Implementation for binary atoms with single id typePredicate for a schema concept. Binary atoms take the form:
  *
  * <>($varName, $predicateVariable), type($predicateVariable)
  *
@@ -55,7 +55,7 @@ import java.util.Set;
  *
  */
 public abstract class Binary extends Atom {
-    private final @Nullable  IdPredicate typePredicate;
+    private final IdPredicate typePredicate;
     private final Var predicateVariable;
     private Type type = null;
 
@@ -73,6 +73,8 @@ public abstract class Binary extends Atom {
     }
 
     public Var getPredicateVariable() { return predicateVariable;}
+
+    @Nullable
     public IdPredicate getTypePredicate() { return typePredicate;}
 
     @Nullable

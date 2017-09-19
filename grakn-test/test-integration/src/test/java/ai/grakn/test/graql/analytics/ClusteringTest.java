@@ -74,7 +74,7 @@ public class ClusteringTest {
 
     @Before
     public void setUp() {
-        factory = context.factoryWithNewKeyspace();
+        factory = context.sessionWithNewKeyspace();
     }
 
     @Test

@@ -336,7 +336,7 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public Atom rewriteToUserDefined(){
+    public Atom rewriteToUserDefined(Atom parentAtom){
         Var attributeVariable = getPredicateVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
         VarPattern newVar = getVarName()

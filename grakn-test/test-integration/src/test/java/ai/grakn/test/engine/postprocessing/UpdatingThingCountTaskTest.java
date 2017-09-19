@@ -3,6 +3,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -13,12 +14,11 @@ import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.UUID;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
@@ -40,7 +40,7 @@ public class UpdatingThingCountTaskTest {
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
         RedisCountStorage redis = engine.redis();
-        String keyspace = UUID.randomUUID().toString();
+        Keyspace keyspace = SampleKBLoader.randomKeyspace();
         String entityType1 = "e1";
         String entityType2 = "e2";
 
@@ -59,11 +59,11 @@ public class UpdatingThingCountTaskTest {
         assertEquals(2L, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, ConceptId.of(entityType2))));
     }
 
-    private void createAndExecuteCountTask(String keyspace, ConceptId conceptId, long count){
+    private void createAndExecuteCountTask(Keyspace keyspace, ConceptId conceptId, long count){
         Json instanceCounts = Json.array();
         instanceCounts.add(Json.object(COMMIT_LOG_CONCEPT_ID, conceptId.getValue(), COMMIT_LOG_SHARDING_COUNT, count));
         Json configuration = Json.object(
-                KEYSPACE, keyspace,
+                KEYSPACE, keyspace.getValue(),
                 COMMIT_LOG_COUNTING, instanceCounts
         );
 
@@ -81,7 +81,7 @@ public class UpdatingThingCountTaskTest {
 
     @Test
     public void whenShardingThresholdIsBreached_ShardTypes(){
-        String keyspace = "anotherwonderfulkeyspace";
+        Keyspace keyspace = SampleKBLoader.randomKeyspace();
         EntityType et1;
         EntityType et2;
 
@@ -109,7 +109,7 @@ public class UpdatingThingCountTaskTest {
         checkShardCount(keyspace, et1, 2);
         checkShardCount(keyspace, et2, 1);
     }
-    private void checkShardCount(String keyspace, Concept concept, int expectedValue){
+    private void checkShardCount(Keyspace keyspace, Concept concept, int expectedValue){
         try(GraknTx graknTx = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             int shards = graknTx.admin().getTinkerTraversal().V().
                     has(Schema.VertexProperty.ID.name(), concept.getId().getValue()).

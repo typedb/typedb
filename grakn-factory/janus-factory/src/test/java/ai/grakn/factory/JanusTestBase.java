@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.Keyspace;
 import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.ErrorMessage;
 import org.junit.BeforeClass;
@@ -33,7 +34,7 @@ import java.util.UUID;
 
 public abstract class JanusTestBase {
     private final static String CONFIG_LOCATION = "../../conf/main/grakn.properties";
-    private final static String TEST_SHARED = "shared";
+    private final static Keyspace TEST_SHARED = Keyspace.of("shared");
     static TxFactoryJanus janusGraphFactory;
     final static Properties TEST_PROPERTIES = new Properties();
 
@@ -54,6 +55,6 @@ public abstract class JanusTestBase {
     }
 
     TxFactoryJanus newFactory(){
-        return new TxFactoryJanus(UUID.randomUUID().toString().replace("-", ""), Grakn.IN_MEMORY, TEST_PROPERTIES);
+        return new TxFactoryJanus(Keyspace.of("hoho" + UUID.randomUUID().toString().replace("-", "")), Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 }

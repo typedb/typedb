@@ -32,13 +32,18 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -179,8 +184,8 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public Answer filterVars(Set<Var> vars) {
-        QueryAnswer filteredAnswer = new QueryAnswer(this).setExplanation(this.getExplanation());
+    public Answer project(Set<Var> vars) {
+        QueryAnswer filteredAnswer = new QueryAnswer(this);
         Set<Var> varsToRemove = Sets.difference(vars(), vars);
         varsToRemove.forEach(filteredAnswer::remove);
         return filteredAnswer;
@@ -212,6 +217,36 @@ public class QueryAnswer implements Answer {
     public Stream<Answer> permute(Set<Unifier> unifierSet){
         if (unifierSet.isEmpty()) return Stream.of(this);
         return unifierSet.stream().map(this::unify);
+    }
+
+    @Override
+    public Stream<Answer> expandHierarchies(Set<Var> toExpand){
+        if (toExpand.isEmpty()) return Stream.of(this);
+        Map<Var, Set<Concept>> conceptHierarchies = new HashMap<>();
+        toExpand.stream()
+                .filter(this::containsKey)
+                .forEach(v -> {
+                    Concept c = get(v);
+                    if (c.isSchemaConcept()) {
+                        Set<Concept> concepts = new HashSet<>();
+                        ReasonerUtils.getUpstreamHierarchy(c.asSchemaConcept()).forEach(concepts::add);
+                        conceptHierarchies.put(v, concepts);
+                    }
+        });
+        List<Set<Pair<Var, Concept>>> entryOptions = entrySet().stream()
+                .map(e -> {
+                    Var var = e.getKey();
+                    if (conceptHierarchies.keySet().contains(var)){
+                        return conceptHierarchies.get(var).stream()
+                                .map(r -> new Pair<>(var, r))
+                                .collect(Collectors.toSet());
+                    } else {
+                        return Collections.singleton(new Pair<>(var, get(var)));
+                    }
+                }).collect(Collectors.toList());
+
+        return Sets.cartesianProduct(entryOptions).stream()
+                .map(mappingList -> new QueryAnswer(mappingList.stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue))).explain(getExplanation()));
     }
 
     @Override

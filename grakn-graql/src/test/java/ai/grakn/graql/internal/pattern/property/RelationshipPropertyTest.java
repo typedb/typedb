@@ -35,7 +35,7 @@ import static ai.grakn.graql.Graql.var;
 /**
  * @author Felix Chapman
  */
-public class RelationPropertyTest {
+public class RelationshipPropertyTest {
 
     @ClassRule
     public static SampleKBContext sampleKB = SampleKBContext.empty();
@@ -45,7 +45,7 @@ public class RelationPropertyTest {
 
     @Test
     public void whenCheckingRoleIsAValidRelationType_Throw() {
-        RelationProperty property = RelationProperty.of(ImmutableMultiset.of());
+        RelationshipProperty property = RelationshipProperty.of(ImmutableMultiset.of());
         Label role = Schema.MetaSchema.ROLE.getLabel();
 
         exception.expect(GraqlQueryException.class);

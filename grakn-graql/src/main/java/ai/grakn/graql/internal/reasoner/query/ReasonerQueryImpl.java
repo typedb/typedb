@@ -33,12 +33,11 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.ConceptBuilder;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -53,6 +52,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,7 +69,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
@@ -353,13 +352,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return orderedSelection;
     }
 
-    public static long subTime;
-
     /**
      * @return substitution obtained from all id predicates (including internal) in the query
      */
     public Answer getSubstitution(){
-        long startTime = System.currentTimeMillis();
         if (substitution == null) {
             Set<IdPredicate> predicates = getAtoms(TypeAtom.class)
                     .map(TypeAtom::getTypePredicate)
@@ -373,9 +369,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             substitution = new QueryAnswer(predicates.stream()
                     .collect(Collectors.toMap(IdPredicate::getVarName, f))
             );
-            subTime += System.currentTimeMillis() - startTime;
         }
         return substitution;
+    }
+
+    public Answer getRoleSubstitution(){
+        Answer answer = new QueryAnswer();
+        getAtoms(RelationshipAtom.class)
+                .flatMap(RelationshipAtom::getRolePredicates)
+                .forEach(p -> answer.put(p.getVarName(), tx().getConcept(p.getPredicate())));
+        return answer;
     }
 
     /**
@@ -483,7 +486,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Var> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, neqPredicates))
-                .map(a -> a.filterVars(vars));
+                .map(a -> a.project(vars));
     }
 
     /**
@@ -519,7 +522,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         List<Set<Atom>> atomOptions = getAtoms(Atom.class)
                 .map(at -> {
                     if (at.isRelation() && at.getSchemaConcept() == null) {
-                        RelationAtom rel = (RelationAtom) at;
+                        RelationshipAtom rel = (RelationshipAtom) at;
                         Set<Atom> possibleRels = new HashSet<>();
                         rel.inferPossibleRelationTypes(sub).stream()
                                 .map(rel::addType)

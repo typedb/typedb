@@ -66,7 +66,7 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
-        session = engine.factoryWithNewKeyspace();
+        session = engine.sessionWithNewKeyspace();
     }
 
     @After
@@ -116,7 +116,7 @@ public class PostProcessingTest {
         PostProcessingTask task = new PostProcessingTask();
         TaskConfiguration configuration = TaskConfiguration.of(
                 Json.object(
-                        KEYSPACE, graph.getKeyspace(),
+                        KEYSPACE, graph.getKeyspace().getValue(),
                         REST.Request.COMMIT_LOG_FIXING, Json.object(
                                 Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))

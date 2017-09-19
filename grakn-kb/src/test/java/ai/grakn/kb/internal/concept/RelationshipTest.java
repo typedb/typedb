@@ -145,7 +145,7 @@ public class RelationshipTest extends TxTestBase {
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
 
-        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asThing()).collect(Collectors.toSet());
+        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).get().asThing()).collect(Collectors.toSet());
     }
 
     @Test
