@@ -90,6 +90,7 @@ public class EntityControllerTest {
     }
 
     @Test
+    @Ignore
     public void postEntityShouldExecuteSuccessfully() {
         String entityType = "production";
         Response response = with()
@@ -128,6 +129,35 @@ public class EntityControllerTest {
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .put("/api/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
+
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+    }
+
+    @Test
+    public void deleteAttributeToEntityAssignmentShouldExecuteSuccessfully() {
+        String person = "person";
+        String realName = "real-name";
+        String attributeValue = "attributeValue";
+
+        // add an entity
+        Response addEntityResponse = with()
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
+            .post(ENTITY_TYPE + "/" + person);
+
+        // add an attribute
+        Response addAttributeResponse = with()
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
+            .body(Json.object(VALUE_JSON_FIELD, attributeValue).toString())
+            .post(ATTRIBUTE_TYPE + "/" + realName);
+
+        // get their ids
+        String entityConceptId = Json.read(addEntityResponse.body().asString()).at(ENTITY_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
+        String attributeConceptId = Json.read(addAttributeResponse.body().asString()).at(ATTRIBUTE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
+
+        // assign the attribute to the entity
+        Response response = with()
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
+            .delete("/api/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }

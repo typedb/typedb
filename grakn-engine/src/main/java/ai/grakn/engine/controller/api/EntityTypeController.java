@@ -64,13 +64,10 @@ public class EntityTypeController {
 
         spark.get(ENTITY_TYPE + "/" + ENTITY_TYPE_LABEL_PARAMETER, this::getEntityType);
         spark.post(ENTITY_TYPE, this::postEntityType);
-        // TODO: implement it after operation has been supported in the Graph API
-//        spark.delete("/api/entityType/:entityTypeLabel", this::deleteEntityType);
+        spark.delete(ENTITY_TYPE + "/" + ENTITY_TYPE_LABEL_PARAMETER, this::deleteEntityType);
+
         spark.put(ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT, this::assignAttributeTypeToEntityType);
-        // TODO: implement it after operation has been supported in the Graph API
-//        spark.delete("/api/entityType/:entityTypeId/attribute/:attributeTypeId", this::deleteAttributeTypeToEntitiyTypeAssignment);
-        // TODO: implement it after operation has been supported in the Graph API
-//        spark.delete("/api/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment);
+        spark.delete(ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT, this::deleteAttributeTypeToEntityTypeAssignment);
     }
 
     private Json getEntityType(Request request, Response response) {
@@ -113,9 +110,27 @@ public class EntityTypeController {
         }
     }
 
-//    private String deleteEntityType(Request request, Response response) {
-//        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId");
-//    }
+    public Json deleteEntityType(Request request, Response response) {
+        LOG.debug("deleteEntityType - request received.");
+        String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        LOG.debug("deleteEntityType - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
+            Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
+            if (entityTypeOptional.isPresent()) {
+                EntityType entityType = entityTypeOptional.get();
+                entityType.delete();
+                response.status(HttpStatus.SC_OK);
+                Json responseBody = Json.object();
+                LOG.debug("deleteEntityType - entityType " + entityTypeLabel + " deleted.");
+                return responseBody;
+            } else {
+                response.status(HttpStatus.SC_BAD_REQUEST);
+                LOG.debug("deleteEntityType - entityType " + entityTypeLabel + " NOT found. request processed.");
+                return Json.nil();
+            }
+        }
+    }
 
     private Json assignAttributeTypeToEntityType(Request request, Response response) {
         LOG.debug("assignAttributeTypeToEntityType - request received.");
@@ -136,22 +151,42 @@ public class EntityTypeController {
                 response.status(HttpStatus.SC_OK);
                 return Json.nil();
             } else {
-                LOG.debug("assignAttributeTypeToEntityType - either entityType or attributeType not found. request processed.");
+                String entityInfo = entityTypeOptional.map(e -> e.toString()).orElse("<empty>");
+                String attributeInfo = attributeTypeOptional.map(e -> e.toString()).orElse("<empty>");
+                LOG.debug("assignAttributeTypeToEntityType - either entityType '" + entityInfo + "' or attributeType '" + attributeInfo + "' not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
         }
     }
 
-//    private Json deleteAttributeTypeToEntitiyTypeAssignment(Request request, Response response) {
-//        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/attribute/:attributeTypeId");
-//    }
+    private Json deleteAttributeTypeToEntityTypeAssignment(Request request, Response response) {
+        LOG.debug("deleteAttributeTypeToEntityTypeAssignment - request received.");
+        String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
+        String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        LOG.debug("deleteAttributeTypeToEntityTypeAssignment - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
+            Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
+            Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
+            if (entityTypeOptional.isPresent() && attributeTypeOptional.isPresent()) {
 
-
-//    private Json deleteRoleToEntitiyTypeAssignment(Request request, Response response) {
-//        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/attribute/:attributeTypeId");
-//    }
-
+                EntityType entityType = entityTypeOptional.get();
+                AttributeType attributeType = attributeTypeOptional.get();
+                entityType.deleteAttribute(attributeType);
+                tx.commit();
+                LOG.debug("deleteAttributeTypeToEntityTypeAssignment - attributeType " + attributeTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
+                response.status(HttpStatus.SC_OK);
+                return Json.nil();
+            } else {
+                String entityInfo = entityTypeOptional.map(e -> e.toString()).orElse("<empty>");
+                String attributeInfo = attributeTypeOptional.map(e -> e.toString()).orElse("<empty>");
+                LOG.debug("deleteAttributeTypeToEntityTypeAssignment - either entityType '" + entityInfo + "' or attributeType '" + attributeInfo + "' not found. request processed.");
+                response.status(HttpStatus.SC_BAD_REQUEST);
+                return Json.nil();
+            }
+        }
+    }
 
     private Json entityTypeJson(String conceptId, String label) {
         return Json.object(ENTITY_TYPE_OBJECT_JSON_FIELD, Json.object(CONCEPT_ID_JSON_FIELD, conceptId, LABEL_JSON_FIELD, label));

@@ -18,6 +18,9 @@
 
 package ai.grakn.util;
 
+import static ai.grakn.util.REST.Request.ATTRIBUTE_CONCEPT_ID_PARAMETER;
+import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
+
 /**
  * Class containing strings describing the REST API, including URIs and fields.
  *
@@ -87,11 +90,11 @@ public class REST {
             public static final String ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT = API_PREFIX + "/entityType/" + Request.ENTITY_TYPE_LABEL_PARAMETER +
                 "/attributeType/" + Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
 
-            public static final String ENTITY_ATTRIBUTE_ASSIGNMENT = API_PREFIX + "/entity/" + Request.ENTITY_CONCEPT_ID_PARAMETER +
+            public static final String ENTITY_ATTRIBUTE_ASSIGNMENT = API_PREFIX + "/entity/" + ENTITY_CONCEPT_ID_PARAMETER +
                 "/attribute/" + Request.ATTRIBUTE_CONCEPT_ID_PARAMETER;
 
             public static final String RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT = API_PREFIX + "/relationship/" + Request.RELATIONSHIP_CONCEPT_ID_PARAMETER +
-                "/entity/" + Request.ENTITY_CONCEPT_ID_PARAMETER +
+                "/entity/" + ENTITY_CONCEPT_ID_PARAMETER +
                 "/role/" + Request.ROLE_LABEL_PARAMETER;
 
         }
@@ -149,7 +152,6 @@ public class REST {
         public static final String CONCEPT_ID_JSON_FIELD = "conceptId";
         public static final String ENTITY_CONCEPT_ID_PARAMETER = ":entityConceptId";
         public static final String ATTRIBUTE_CONCEPT_ID_PARAMETER = ":attributeConceptId";
-        public static final String ROLE_CONCEPT_ID_PARAMETER = ":roleConceptId";
         public static final String RELATIONSHIP_CONCEPT_ID_PARAMETER = ":relationshipConceptId";
 
         // json fields for API endpoints

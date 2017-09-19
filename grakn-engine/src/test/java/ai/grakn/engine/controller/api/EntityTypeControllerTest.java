@@ -32,7 +32,9 @@ import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
@@ -118,10 +120,16 @@ public class EntityTypeControllerTest {
         assertThat(responseBody.at(ENTITY_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString(), equalTo(entityType));
     }
 
-//    @Test // TODO: create a test once an implementation is made
-//    public void deleteEntityTypeShouldExecuteSuccessfully() {
-//
-//    }
+    @Test
+    @Ignore("find an entityType which can be deleted for testing")
+    public void deleteEntityTypeShouldExecuteSuccessfully() throws Exception {
+        String toBeDeleted = "production";
+        Response response = with()
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
+            .delete(ENTITY_TYPE + "/" + toBeDeleted);
+
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+    }
 
     @Test
     public void assignAttributeToEntityTypeShouldExecuteSuccessfully() {

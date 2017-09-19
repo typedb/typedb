@@ -25,6 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
@@ -64,9 +65,7 @@ public class EntityController {
 
         spark.post(ENTITY_TYPE + "/" + ENTITY_TYPE_LABEL_PARAMETER, this::postEntity);
         spark.put(ENTITY_ATTRIBUTE_ASSIGNMENT, this::assignAttributeToEntity);
-
-        // TODO: implement it after operation has been supported in the Graph API
-//        spark.delete("/api/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment);
+        spark.delete(ENTITY_ATTRIBUTE_ASSIGNMENT, this::deleteAttributeToEntityAssignment);
     }
 
     private Json postEntity(Request request, Response response) {
@@ -124,10 +123,38 @@ public class EntityController {
         }
     }
 
-    // TODO: implement it after operation has been supported in the Graph API
-//    private Json deleteAttributeToEntityAssignment(Request request, Response response) {
-//        throw new UnsupportedOperationException("Unsupported operation: DELETE /api/entity/:conceptId/attribute/:conceptId");
-//    }
+    private Json deleteAttributeToEntityAssignment(Request request, Response response) {
+        LOG.debug("deleteAttributeToEntityAssignment - request received.");
+        String entityConceptId = mandatoryPathParameter(request, ENTITY_CONCEPT_ID_PARAMETER);
+        String attributeConceptId = mandatoryPathParameter(request, ATTRIBUTE_CONCEPT_ID_PARAMETER);
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
+            LOG.debug("deleteAttributeToEntityAssignment - attempting to find attributeConceptId " + attributeConceptId + " and entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
+            Optional<Entity> entityOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(entityConceptId)));
+            Optional<Attribute> attributeOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(attributeConceptId)));
+
+            if (entityOptional.isPresent() && attributeOptional.isPresent()) {
+                LOG.debug("deleteAttributeToEntityAssignment - entity and attribute found. attempting to assign attributeConceptId " + attributeConceptId + " to entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
+                Entity entity = entityOptional.get();
+                Attribute attribute = attributeOptional.get();
+                entity.deleteAttribute(attribute);
+                tx.commit();
+                LOG.debug("deleteAttributeToEntityAssignment - deletion succeeded. request processed.");
+                Json responseBody = Json.object();
+                response.status(HttpStatus.SC_OK);
+                return responseBody;
+            } else {
+                String entityInfo = entityOptional.map(e -> e.toString()).orElse("<empty>");
+                String attributeInfo = attributeOptional.map(e -> e.toString()).orElse("<empty>");
+                LOG.debug("deleteAttributeToEntityAssignment - either entity (" + entityInfo + ") or" +
+                    "attribute (" + attributeInfo + ") not found. request processed.");
+                response.status(HttpStatus.SC_BAD_REQUEST);
+                return Json.nil();
+            }
+        }
+
+    }
 
     private Json entityJson(String conceptId) {
         return Json.object(ENTITY_OBJECT_JSON_FIELD, Json.object(CONCEPT_ID_JSON_FIELD, conceptId));
