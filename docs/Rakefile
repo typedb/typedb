@@ -55,6 +55,11 @@ task :test do
       ],
       # TODO: fix missing alt attributes
       :alt_ignore => [/.*/]
+      # avoid SSL errors: https://github.com/gjtorikian/html-proofer/issues/376
+      :typhoeus => {
+        :ssl_verifypeer => false,
+        :ssl_verifyhost => 0
+      }
   }
   HTMLProofer.check_directory("./_jekyll/_site", options).run
 end
