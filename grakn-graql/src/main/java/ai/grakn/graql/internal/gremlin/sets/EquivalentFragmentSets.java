@@ -45,7 +45,8 @@ public class EquivalentFragmentSets {
             RolePlayerFragmentSet.ROLE_OPTIMISATION,
             ResourceIndexFragmentSet.RESOURCE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
-            LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION
+            LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
+            SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION
     );
 
     /**

@@ -19,7 +19,9 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -27,16 +29,23 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
+
 /**
  * @author Felix Chapman
  */
 class LabelFragmentSet extends EquivalentFragmentSet {
 
+    private final VarProperty varProperty;
     private final Var type;
     private ImmutableSet<Label> labels;
 
     LabelFragmentSet(VarProperty varProperty, Var type, ImmutableSet<Label> labels) {
         super(Fragments.label(varProperty, type, labels));
+        this.varProperty = varProperty;
         this.type = type;
         this.labels = labels;
     }
@@ -47,6 +56,25 @@ class LabelFragmentSet extends EquivalentFragmentSet {
 
     ImmutableSet<Label> labels() {
         return labels;
+    }
+
+    /**
+     * Expand a {@link LabelFragmentSet} to match all sub-concepts of the single existing {@link Label}.
+     *
+     * Returns null if there is not exactly one label any of the {@link Label}s mentioned are not in the knowledge base.
+     */
+    @Nullable
+    LabelFragmentSet tryExpandSubs(Var typeVar, GraknTx tx) {
+        if (labels.size() != 1) return null;
+
+        Label oldLabel = labels.iterator().next();
+
+        SchemaConcept concept = tx.getSchemaConcept(oldLabel);
+        if (concept == null) return null;
+
+        Set<Label> newLabels = concept.subs().map(SchemaConcept::getLabel).collect(toSet());
+
+        return new LabelFragmentSet(varProperty, typeVar, ImmutableSet.copyOf(newLabels));
     }
 
     /**
