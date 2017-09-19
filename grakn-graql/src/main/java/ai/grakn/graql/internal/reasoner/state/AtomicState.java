@@ -52,12 +52,12 @@ public class AtomicState extends QueryState{
 
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
-                       Set<Unifier> mu,
+                       Unifier u,
                        QueryState parent,
                        Set<ReasonerAtomicQuery> subGoals,
                        QueryCache<ReasonerAtomicQuery> cache) {
 
-        super(sub, mu, parent, subGoals, cache);
+        super(sub, u, parent, subGoals, cache);
         this.query = ReasonerQueries.atomic(q).addSubstitution(sub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
@@ -88,17 +88,20 @@ public class AtomicState extends QueryState{
         Answer answer = state.getAnswer();
         if (answer.isEmpty()) return null;
 
-        /*
+
         if (currentRule != null && query.getAtom().requiresRoleExpansion()){
-            return new RoleExpansionState(answer, getMultiUnifier(), query.getAtom().getRoleExpansionVariables(), getParentState());
+            return new RoleExpansionState(answer, getUnifier(), query.getAtom().getRoleExpansionVariables(), getParentState());
         }
-        */
+
         return new AnswerState(answer, state.getUnifier(), getParentState());
     }
 
     @Override
     public ResolutionState generateSubGoal() {
-        if (dbIterator.hasNext()) AnswerStateFactory.create(dbIterator.next(), getMultiUnifier(), this);
+        if (dbIterator.hasNext()){
+            //return AnswerStateFactory.create(dbIterator.next(), getMultiUnifier(), this);
+            return new AnswerState(dbIterator.next(), getUnifier(), this);
+        }
         if (ruleIterator.hasNext()) return generateSubGoalFromRule(ruleIterator.next());
         return null;
     }
@@ -113,6 +116,7 @@ public class AtomicState extends QueryState{
 
     private ResolutionState generateSubGoalFromRule(RuleTuple ruleTuple){
         currentRule = ruleTuple.getRule();
+        //TODO
         Unifier ruleUnifier = ruleTuple.getRuleUnifier();
         Unifier permutationUnifier = ruleTuple.getPermutationUnifier();
 

@@ -33,16 +33,16 @@ import java.util.Set;
 public class RuleTuple {
 
     private final InferenceRule rule;
-    private final Set<Unifier> ruleUnifier;
+    private final Unifier ruleUnifier;
     private final Unifier permutationUnifier;
 
-    public RuleTuple(InferenceRule rule, Set<Unifier> mu, Unifier pu){
+    public RuleTuple(InferenceRule rule, Unifier u, Unifier pu){
         this.rule = rule;
-        this.ruleUnifier = mu;
+        this.ruleUnifier = u;
         this.permutationUnifier = pu;
     }
 
     public InferenceRule getRule(){ return rule;}
-    public Set<Unifier> getRuleMultiUnifier(){ return ruleUnifier;}
+    public Unifier getRuleUnifier(){ return ruleUnifier;}
     public Unifier getPermutationUnifier(){ return permutationUnifier;}
 }

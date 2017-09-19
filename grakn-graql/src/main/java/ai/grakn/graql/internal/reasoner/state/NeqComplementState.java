@@ -57,8 +57,8 @@ public class NeqComplementState extends AtomicState {
 
     private final Set<NeqPredicate> predicates;
 
-    public NeqComplementState(ReasonerAtomicQuery q, Answer sub, Set<Unifier> mu, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
-        super(q, sub, mu, parent, subGoals, cache);
+    public NeqComplementState(ReasonerAtomicQuery q, Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+        super(q, sub, u, parent, subGoals, cache);
 
         ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(q);
         this.predicates = complementQuery.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
@@ -66,7 +66,7 @@ public class NeqComplementState extends AtomicState {
 
         predicates.forEach(complementQuery::removeAtomic);
         complementQuery.addSubstitution(sub);
-        complementState = complementQuery.subGoal(sub, mu, this, subGoals, cache);
+        complementState = complementQuery.subGoal(sub, u, this, subGoals, cache);
     }
 
     @Override
@@ -77,8 +77,8 @@ public class NeqComplementState extends AtomicState {
                 .filter(p -> !p.isSatisfied(fullAnswer))
                 .findFirst().isPresent();
         return isNeqSatisfied?
-                AnswerStateFactory.create(state.getSubstitution(), getMultiUnifier(), getParentState()) :
-                //new AnswerState(state.getSubstitution(), getUnifier(), getParentState()) :
+                //AnswerStateFactory.create(state.getSubstitution(), getMultiUnifier(), getParentState()) :
+                new AnswerState(state.getSubstitution(), getUnifier(), getParentState()) :
                 null;
     }
 

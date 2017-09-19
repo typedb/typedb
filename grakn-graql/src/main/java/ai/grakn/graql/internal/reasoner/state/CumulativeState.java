@@ -44,14 +44,14 @@ class CumulativeState extends QueryState{
 
     CumulativeState(LinkedList<ReasonerQueryImpl> qs,
                     Answer sub,
-                    Set<Unifier> mu,
+                    Unifier u,
                     QueryState parent,
                     Set<ReasonerAtomicQuery> subGoals,
                     QueryCache<ReasonerAtomicQuery> cache) {
-        super(sub, mu, parent, subGoals, cache);
+        super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
         this.feederStateIterator = !subQueries.isEmpty()?
-                subQueries.removeFirst().subGoals(sub, mu, this, subGoals, cache).iterator() :
+                subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() :
                 Collections.emptyIterator();
     }
 
@@ -65,10 +65,10 @@ class CumulativeState extends QueryState{
     public ResolutionState propagateAnswer(AnswerState state) {
         Answer answer = getSubstitution().merge(state.getSubstitution(), true);
         if (subQueries.isEmpty()){
-            return AnswerStateFactory.create(answer, getMultiUnifier(), getParentState());
-            //return new AnswerState(answer, getUnifier(), getParentState());
+            //return AnswerStateFactory.create(answer, getMultiUnifier(), getParentState());
+            return new AnswerState(answer, getUnifier(), getParentState());
         }
-        return new CumulativeState(subQueries, answer, getMultiUnifier(), getParentState(), getSubGoals(), getCache());
+        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getSubGoals(), getCache());
     }
 
     @Override

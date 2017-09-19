@@ -39,7 +39,6 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
-import com.google.common.collect.Sets;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -50,7 +49,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 
 /**
  *
@@ -180,7 +179,7 @@ public class ResourceAtom extends Binary {
 
         SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
         SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
-        if (parentType != null && childType != null && checkDisjoint(parentType, childType)) return false;
+        if (parentType != null && childType != null && areDisjointTypes(parentType, childType)) return false;
 
         //check predicates
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;

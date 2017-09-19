@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatible;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
 
 /**
  *
@@ -82,7 +82,7 @@ public abstract class Atom extends AtomicBase {
         return getApplicableRules()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
                         .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                        .filter(at -> checkCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
+                        .filter(at -> typesCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
     }
@@ -283,15 +283,14 @@ public abstract class Atom extends AtomicBase {
     public Atom rewriteToUserDefined(Atom parentAtom){ return this;}
 
     /**
-     *
-     * @param parentAtom
-     * @return
-     */
-    protected abstract Unifier getUnifier(Atom parentAtom);
-    /**
-     * find unifier with parent atom
      * @param parentAtom atom to be unified with
-     * @return unifier
+     * @return corresponding unifier
+     */
+    public abstract Unifier getUnifier(Atom parentAtom);
+    /**
+     * find the (multi) unifier with parent atom
+     * @param parentAtom atom to be unified with
+     * @return multiunifier
      */
     public Set<Unifier> getMultiUnifier(Atom parentAtom){ return Sets.newHashSet(getUnifier(parentAtom));}
 }

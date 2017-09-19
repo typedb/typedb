@@ -329,6 +329,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             while(ruleIterator.hasNext()) {
                 RuleTuple ruleContext = ruleIterator.next();
                 InferenceRule rule = ruleContext.getRule();
+                //TODO
                 Unifier unifier = ruleContext.getRuleUnifier();
                 Unifier permutationUnifier = ruleContext.getPermutationUnifier();
 
@@ -356,10 +357,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public AtomicState subGoal(Answer sub, Set<Unifier> mu, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public AtomicState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return getAtoms(NeqPredicate.class).findFirst().isPresent()?
-                new NeqComplementState(this, sub, mu, parent, subGoals, cache) :
-                new AtomicState(this, sub, mu, parent, subGoals, cache);
+                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
+                new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
@@ -387,7 +388,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules()
                 .flatMap(r -> {
-                    Set<Unifier> ruleMultiUnifier = r.getMultiUnifier(getAtom());
+                    //TODO
+                    Unifier ruleUnifier = r.getUnifier(getAtom());
                     Unifier ruleUnifierInv = ruleUnifier.inverse();
                     return getAtom().getPermutationUnifiers(r.getHead().getAtom()).stream()
                             .map(permutationUnifier ->

@@ -485,27 +485,27 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     /**
      * @param sub partial substitution
-     * @param mu multi unifier with parent state
+     * @param u unifier with parent state
      * @param parent parent state
      * @param subGoals set of visited sub goals
      * @param cache query cache
      * @return resolution subGoal formed from this query
      */
-    public QueryState subGoal(Answer sub, Set<Unifier> mu, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return new ConjunctiveState(this, sub, mu, parent, subGoals, cache);
+    public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
      * @param sub partial substitution
-     * @param mu multi unifier with parent state
+     * @param u unifier with parent state
      * @param parent parent state
      * @param subGoals set of visited sub goals
      * @param cache query cache
      * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
-    public LinkedList<QueryState> subGoals(Answer sub, Set<Unifier> mu, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public LinkedList<QueryState> subGoals(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return getQueryStream(sub)
-                .map(q -> q.subGoal(sub, mu, parent, subGoals, cache))
+                .map(q -> q.subGoal(sub, u, parent, subGoals, cache))
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
