@@ -93,8 +93,10 @@ public class RelationshipAtom extends IsaAtom {
 
     private int hashCode = 0;
     private Multimap<Role, Var> roleVarMap = null;
+    private Multimap<Role, SchemaConcept> roleTypeMap = null;
     private Multimap<Role, String> roleConceptIdMap = null;
     private final ImmutableList<RelationPlayer> relationPlayers;
+    private final Set<Label> roleLabels;
 
     public RelationshipAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicateVar, predicate, par);
@@ -103,11 +105,18 @@ public class RelationshipAtom extends IsaAtom {
                 .getProperty(RelationshipProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().forEach(rps::add));
         this.relationPlayers = ImmutableList.copyOf(rps);
+        this.roleLabels = relationPlayers.stream()
+                .map(RelationPlayer::getRole)
+                .flatMap(CommonUtil::optionalToStream)
+                .map(VarPatternAdmin::getTypeLabel)
+                .flatMap(CommonUtil::optionalToStream)
+                .collect(toSet());
     }
 
     private RelationshipAtom(RelationshipAtom a) {
         super(a);
         this.relationPlayers = a.relationPlayers;
+        this.roleLabels = a.roleLabels;
         this.roleVarMap = a.roleVarMap;
     }
 
@@ -119,16 +128,8 @@ public class RelationshipAtom extends IsaAtom {
         return relationString + getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
+    private Set<Label> getRoleLabels() { return roleLabels;}
     private ImmutableList<RelationPlayer> getRelationPlayers() { return relationPlayers;}
-
-    private Set<Label> getRoleLabels() {
-        return getRelationPlayers().stream()
-                .map(RelationPlayer::getRole)
-                .flatMap(CommonUtil::optionalToStream)
-                .map(VarPatternAdmin::getTypeLabel)
-                .flatMap(CommonUtil::optionalToStream)
-                .collect(toSet());
-    }
 
     /**
      * @return set constituting the role player var names
@@ -324,14 +325,16 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     private Multimap<Role, SchemaConcept> getRoleTypeMap() {
-        Multimap<Role, SchemaConcept> roleTypeMap = ArrayListMultimap.create();
-        Multimap<Role, Var> roleMap = getRoleVarMap();
-        Map<Var, SchemaConcept> varTypeMap = getParentQuery().getVarSchemaConceptMap();
+        if (roleTypeMap == null) {
+            roleTypeMap = ArrayListMultimap.create();
+            Multimap<Role, Var> roleMap = getRoleVarMap();
+            Map<Var, SchemaConcept> varTypeMap = getParentQuery().getVarSchemaConceptMap();
 
-        roleMap.entries().stream()
-                .filter(e -> varTypeMap.containsKey(e.getValue()))
-                .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).getLabel()))
-                .forEach(e -> roleTypeMap.put(e.getKey(), varTypeMap.get(e.getValue())));
+            roleMap.entries().stream()
+                    .filter(e -> varTypeMap.containsKey(e.getValue()))
+                    .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).getLabel()))
+                    .forEach(e -> roleTypeMap.put(e.getKey(), varTypeMap.get(e.getValue())));
+        }
         return roleTypeMap;
     }
 
