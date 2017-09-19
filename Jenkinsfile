@@ -94,3 +94,58 @@ authored by - """ + user
     }
   }
 }
+
+node {
+  try {
+    def workspace = pwd()
+    //Always wrap each test block in a timeout
+    //This first block sets up engine within 15 minutes
+    withEnv([
+            'PATH+EXTRA=' + workspace + '/grakn-package/bin'
+            ]) {
+      timeout(15) {
+        stage('Checkout Grakn') {//Stages allow you to organise and group things within Jenkins
+          sh 'npm config set registry http://registry.npmjs.org/'
+          checkout scm
+            def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+          slackSend channel: "#github", message: """
+Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - """ + user
+          sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
+          sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
+          sh 'mvn clean install -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
+        }
+      }
+    }
+    //Only run validation master/stable
+//    if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
+      //Sets up environmental variables which can be shared between multiple tests
+      withEnv(['BIGTABLE_EMULATOR_HOST=localhost:8086']) {
+	timeout(90) {
+	  stage('Bigtable tests with emulator') {
+	    sh 'gcloud beta emulators bigtable start &'
+	    sh 'mvn test -P bigtable'
+	  }
+	}
+      }
+//    }
+    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 0").trim()
+    slackSend channel: "#github", message: """
+  Bigtable tests success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+  authored by - """ + user
+  } catch (error) {
+    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+    slackSend channel: "#github", message: """
+  Bigtable tests failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+  authored by - """ + user
+    throw error
+  } finally { // Tears down test environment
+    timeout(5) {
+      stage('Tear Down Grakn') {
+      sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
+      // junit
+      sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
+      }
+    }
+  }
+}
