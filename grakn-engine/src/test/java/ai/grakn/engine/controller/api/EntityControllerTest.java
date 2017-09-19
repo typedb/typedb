@@ -33,12 +33,14 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static ai.grakn.util.REST.Request.ATTRIBUTE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.VALUE_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Api.API_PREFIX;
 import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 import static com.jayway.restassured.RestAssured.with;
@@ -85,6 +87,8 @@ public class EntityControllerTest {
         when(mockTx.getConcept(any())).thenAnswer(invocation ->
             sampleKB.tx().getConcept(invocation.getArgument(0)));
 
+        Mockito.doAnswer(e -> { sampleKB.tx().commit(); return null; } ).when(mockTx).commit();
+
         when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
         when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
@@ -103,61 +107,47 @@ public class EntityControllerTest {
     }
 
     @Test
-    @Ignore("Disabling test. There's a problem with executing it with 'janus' profile where it forgets about an entity or relationship which is POSTed")
     public void assignAttributeToEntityShouldExecuteSuccessfully() {
         String person = "person";
         String realName = "real-name";
         String attributeValue = "attributeValue";
 
-        // add an entity
-        Response addEntityResponse = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post(ENTITY_TYPE + "/" + person);
-
-        // add an attribute
-        Response addAttributeResponse = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .body(Json.object(VALUE_JSON_FIELD, attributeValue).toString())
-            .post(ATTRIBUTE_TYPE + "/" + realName);
-
         // get their ids
-        String entityConceptId = Json.read(addEntityResponse.body().asString()).at(ENTITY_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
-        String attributeConceptId = Json.read(addAttributeResponse.body().asString()).at(ATTRIBUTE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
+        String entityConceptId;
+        String attributeConceptId;
+        try (GraknTx tx = mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)) {
+            entityConceptId = tx.getEntityType(person).addEntity().getId().getValue();
+            attributeConceptId = tx.getAttributeType(realName).putAttribute(attributeValue).getId().getValue();
+            tx.commit();
+        }
 
         // assign the attribute to the entity
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .put("/api/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
+            .put(API_PREFIX + "/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }
 
     @Test
-    @Ignore("Disabling test. There's a problem with executing it with 'janus' profile where it forgets about an entity or relationship which is POSTed")
     public void deleteAttributeToEntityAssignmentShouldExecuteSuccessfully() {
         String person = "person";
         String realName = "real-name";
         String attributeValue = "attributeValue";
 
-        // add an entity
-        Response addEntityResponse = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post(ENTITY_TYPE + "/" + person);
-
-        // add an attribute
-        Response addAttributeResponse = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .body(Json.object(VALUE_JSON_FIELD, attributeValue).toString())
-            .post(ATTRIBUTE_TYPE + "/" + realName);
-
         // get their ids
-        String entityConceptId = Json.read(addEntityResponse.body().asString()).at(ENTITY_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
-        String attributeConceptId = Json.read(addAttributeResponse.body().asString()).at(ATTRIBUTE_OBJECT_JSON_FIELD).at(CONCEPT_ID_JSON_FIELD).asString();
+        String entityConceptId;
+        String attributeConceptId;
+        try (GraknTx tx = mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)) {
+            entityConceptId = tx.getEntityType(person).addEntity().getId().getValue();
+            attributeConceptId = tx.getAttributeType(realName).putAttribute(attributeValue).getId().getValue();
+            tx.commit();
+        }
 
         // assign the attribute to the entity
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .delete("/api/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
+            .delete(API_PREFIX + "/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }
