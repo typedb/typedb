@@ -26,6 +26,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -33,6 +34,7 @@ import spark.Response;
 import spark.Service;
 
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
@@ -137,26 +139,24 @@ public class EntityTypeController {
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("assignAttributeTypeToEntityType - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
-            Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
-            Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
-            if (entityTypeOptional.isPresent() && attributeTypeOptional.isPresent()) {
+        BiConsumer<EntityType, AttributeType> whenFound = (entity, attribute) -> {
+            entity.attribute(attribute);
+            LOG.debug("assignAttributeTypeToEntityType - attributeType " + attributeTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
+        };
 
-                EntityType entityType = entityTypeOptional.get();
-                AttributeType attributeType = attributeTypeOptional.get();
-                entityType.attribute(attributeType);
-                tx.commit();
-                LOG.debug("assignAttributeTypeToEntityType - attributeType " + attributeTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
-                response.status(HttpStatus.SC_OK);
-                return Json.nil();
-            } else {
+        BiConsumer<Optional<EntityType>, Optional<AttributeType>> whenNotFound =
+            (entityTypeOptional, attributeTypeOptional) -> {
                 String entityInfo = entityTypeOptional.map(e -> e.toString()).orElse("<empty>");
                 String attributeInfo = attributeTypeOptional.map(e -> e.toString()).orElse("<empty>");
-                LOG.debug("assignAttributeTypeToEntityType - either entityType '" + entityInfo + "' or attributeType '" + attributeInfo + "' not found. request processed.");
-                response.status(HttpStatus.SC_BAD_REQUEST);
-                return Json.nil();
-            }
-        }
+                LOG.debug("assignAttributeTypeToEntityType - either entityType '" + entityInfo +
+                    "' or attributeType '" + attributeInfo + "' not found. request processed.");
+            };
+
+        Pair<Integer, Json> assignAttribute = withEntityAndAttribute(keyspace, entityTypeLabel,
+            attributeTypeLabel, whenFound, whenNotFound);
+
+        response.status(assignAttribute.getLeft());
+        return assignAttribute.getRight();
     }
 
     private Json deleteAttributeTypeToEntityTypeAssignment(Request request, Response response) {
@@ -165,6 +165,34 @@ public class EntityTypeController {
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("deleteAttributeTypeToEntityTypeAssignment - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
+
+        BiConsumer<EntityType, AttributeType> whenFound = (entity, attribute) -> {
+            entity.deleteAttribute(attribute);
+            LOG.debug("deleteAttributeTypeToEntityTypeAssignment - attributeType " + attributeTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
+        };
+
+        BiConsumer<Optional<EntityType>, Optional<AttributeType>> whenNotFound =
+            (entityTypeOptional, attributeTypeOptional) -> {
+                String entityInfo = entityTypeOptional.map(e -> e.toString()).orElse("<empty>");
+                String attributeInfo = attributeTypeOptional.map(e -> e.toString()).orElse("<empty>");
+                LOG.debug("deleteAttributeTypeToEntityTypeAssignment - either entityType '" + entityInfo +
+                    "' or attributeType '" + attributeInfo + "' not found. request processed.");
+        };
+
+        Pair<Integer, Json> deleteAttributeAssignment = withEntityAndAttribute(keyspace, entityTypeLabel,
+            attributeTypeLabel, whenFound, whenNotFound);
+
+        response.status(deleteAttributeAssignment.getLeft());
+        return deleteAttributeAssignment.getRight();
+    }
+
+    private Json entityTypeJson(String conceptId, String label) {
+        return Json.object(ENTITY_TYPE_OBJECT_JSON_FIELD, Json.object(CONCEPT_ID_JSON_FIELD, conceptId, LABEL_JSON_FIELD, label));
+    }
+
+    private Pair<Integer, Json> withEntityAndAttribute(String keyspace, String entityTypeLabel, String attributeTypeLabel,
+                                                       BiConsumer<EntityType, AttributeType> whenFound,
+                                                       BiConsumer<Optional<EntityType>, Optional<AttributeType>> whenNotFound) {
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
@@ -172,22 +200,14 @@ public class EntityTypeController {
 
                 EntityType entityType = entityTypeOptional.get();
                 AttributeType attributeType = attributeTypeOptional.get();
-                entityType.deleteAttribute(attributeType);
+                whenFound.accept(entityType, attributeType);
                 tx.commit();
-                LOG.debug("deleteAttributeTypeToEntityTypeAssignment - attributeType " + attributeTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
-                response.status(HttpStatus.SC_OK);
-                return Json.nil();
+
+                return Pair.of(HttpStatus.SC_OK, Json.object());
             } else {
-                String entityInfo = entityTypeOptional.map(e -> e.toString()).orElse("<empty>");
-                String attributeInfo = attributeTypeOptional.map(e -> e.toString()).orElse("<empty>");
-                LOG.debug("deleteAttributeTypeToEntityTypeAssignment - either entityType '" + entityInfo + "' or attributeType '" + attributeInfo + "' not found. request processed.");
-                response.status(HttpStatus.SC_BAD_REQUEST);
-                return Json.nil();
+                whenNotFound.accept(entityTypeOptional, attributeTypeOptional);
+                return Pair.of(HttpStatus.SC_BAD_REQUEST, Json.nil());
             }
         }
-    }
-
-    private Json entityTypeJson(String conceptId, String label) {
-        return Json.object(ENTITY_TYPE_OBJECT_JSON_FIELD, Json.object(CONCEPT_ID_JSON_FIELD, conceptId, LABEL_JSON_FIELD, label));
     }
 }
