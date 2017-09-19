@@ -21,11 +21,12 @@ package ai.grakn.graql.internal.reasoner.cache;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -45,12 +46,65 @@ import java.util.stream.Stream;
  * @author Kasper Piskorski
  *
  */
-public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>{
+public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answer>>{
 
-    protected final Map<Q, Pair<Q, T>> cache = new HashMap<>();
+    private final Map<Q, Pair<Q, T>> cache = new HashMap<>();
 
+    /**
+     * @param query for which the entry is to be retrieved
+     * @return corresponding cache entry if any or null
+     */
+    public Pair<Q, T> get(Q query){ return cache.get(query);}
+
+    /**
+     * Associates the specified answers with the specified query in this cache adding an (query) -> (answers) entry
+     * @param query of the association
+     * @param answers of the association
+     * @return previous value if any or null
+     */
+    public Pair<Q, T> put(Q query, T answers){ return cache.put(query, new Pair<>(query, answers));}
+
+    /**
+     * Copies all of the mappings from the specified map to this cache
+     * @param map with mappings to be copied
+     */
+    public void putAll(Map<Q, Pair<Q, T>> map){ cache.putAll(map);}
+
+    /**
+     * Perform cache union
+     * @param c2 union right operand
+     */
+    public void add(Cache<Q, T> c2){
+        c2.cache.keySet().forEach( q -> this.record(q, c2.getAnswers(q)));
+    }
+
+    /**
+     * Query cache containment check
+     * @param query to be checked for containment
+     * @return true if cache contains the query
+     */
     public boolean contains(Q query){ return cache.containsKey(query);}
+
+    /**
+     * @return all queries constituting this cache
+     */
     public Set<Q> getQueries(){ return cache.keySet();}
+
+    /**
+     * @return all (query) -> (answers) mappings
+     */
+    public Collection<Pair<Q, T>> entries(){ return cache.values();}
+
+    /**
+     * Perform cache difference
+     * @param c2 cache which mappings should be removed from this cache
+     */
+    public void remove(Cache<Q, T> c2){ remove(c2, getQueries());}
+
+    /**
+     * Clear the cache
+     */
+    public void clear(){ cache.clear();}
 
     /**
      * record answer iterable for a specific query and retrieve the updated answers
@@ -76,6 +130,11 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
      */
     public abstract LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers);
 
+    /**
+     * retrieve cached answers for provided query
+     * @param query for which to retrieve answers
+     * @return unified cached answers
+     */
     public abstract T getAnswers(Q query);
     public abstract Pair<T, Unifier> getAnswersWithUnifier(Q query);
     public abstract Stream<Answer> getAnswerStream(Q query);
@@ -118,22 +177,15 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
     }
 
     /**
-     * cache union
-     * @param c2 union right operand
-     */
-    public void add(Cache<Q, T> c2){
-        c2.cache.keySet().forEach( q -> this.record(q, c2.getAnswers(q)));
-    }
-
-    /**
      * cache subtraction of specified queries
      * @param c2 subtraction right operand
      * @param queries to which answers shall be subtracted
      */
     public abstract void remove(Cache<Q, T> c2, Set<Q> queries);
-    public void remove(Cache<Q, T> c2){ remove(c2, getQueries());}
 
-    public void clear(){ cache.clear();}
-
+    /**
+     * @param queries to be checked
+     * @return number of answers for the specified query set
+     */
     public abstract long answerSize(Set<Q> queries);
 }
