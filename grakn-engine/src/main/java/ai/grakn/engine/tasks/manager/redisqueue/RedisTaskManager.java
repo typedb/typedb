@@ -36,10 +36,12 @@ import ai.grakn.redisq.exceptions.StateFutureInitializationException;
 import ai.grakn.redisq.exceptions.WaitException;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -77,12 +79,14 @@ public class RedisTaskManager implements TaskManager {
                 RedisCountStorage.create(jedisPool, metricRegistry), metricRegistry, factory,
                 distributedLockClient);
         LOG.info("Running queue consumer with {} execution threads", threads);
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("redisq-task-manager-%d").build();
         this.redisq = new RedisqBuilder<Task>()
                 .setJedisPool(jedisPool)
                 .setName(QUEUE_NAME)
                 .setConsumer(consumer)
                 .setMetricRegistry(metricRegistry)
-                .setThreadPool(Executors.newFixedThreadPool(threads))
+                .setThreadPool(Executors.newFixedThreadPool(threads, namedThreadFactory))
                 .setDocumentClass(Task.class)
                 .createRedisq();
         this.taskStorage = RedisTaskStorage.create(redisq, metricRegistry);
