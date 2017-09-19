@@ -18,7 +18,6 @@
 
 package ai.grakn.util;
 
-import static ai.grakn.util.REST.Request.ATTRIBUTE_CONCEPT_ID_PARAMETER;
 import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
 
 /**
