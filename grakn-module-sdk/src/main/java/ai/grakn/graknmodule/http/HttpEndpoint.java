@@ -4,5 +4,5 @@ public interface HttpEndpoint {
     HttpMethods.HTTP_METHOD getHttpMethod();
     String getEndpoint();
 
-    Response getRequestHandler(Request request);
+    HttpResponse getRequestHandler(HttpRequest request);
 }

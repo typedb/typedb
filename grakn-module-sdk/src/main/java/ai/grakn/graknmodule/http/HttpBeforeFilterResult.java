@@ -22,30 +22,30 @@ package ai.grakn.graknmodule.http;
 import java.util.Optional;
 
 /**
- * Before class
+ * BeforeFilterResult class
  *
  * @author Ganeshwara Herawan Hananda
  */
-public class Before {
-    public static Before allow() {
-        return new Before();
+public class HttpBeforeFilterResult {
+    public static HttpBeforeFilterResult allowRequest() {
+        return new HttpBeforeFilterResult();
     }
 
-    public static Before deny(Response response) {
-        return new Before(response);
+    public static HttpBeforeFilterResult denyRequest(HttpResponse response) {
+        return new HttpBeforeFilterResult(response);
     }
 
-    private Before(Response responseIfDenied) {
+    private HttpBeforeFilterResult(HttpResponse responseIfDenied) {
         this.responseIfDenied = Optional.of(responseIfDenied);
     }
 
-    public Optional<Response> getResponseIfDenied() {
+    public Optional<HttpResponse> getResponseIfDenied() {
         return responseIfDenied;
     }
 
-    private Before() {
+    private HttpBeforeFilterResult() {
         this.responseIfDenied = Optional.empty();
     }
 
-    private final Optional<Response> responseIfDenied;
+    private final Optional<HttpResponse> responseIfDenied;
 }

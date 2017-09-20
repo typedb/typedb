@@ -3,12 +3,12 @@ package ai.grakn.graknmodule.http;
 import java.util.Map;
 import java.util.Set;
 
-public class Request {
+public class HttpRequest {
     private final Map<String, String> headers;
     private final Map<String, String> queryParameters;
     private final String requestBody;
 
-    public Request(Map<String, String> headers, Map<String, String> queryParameters, String requestBody) {
+    public HttpRequest(Map<String, String> headers, Map<String, String> queryParameters, String requestBody) {
         this.headers = headers;
         this.queryParameters = queryParameters;
         this.requestBody = requestBody;

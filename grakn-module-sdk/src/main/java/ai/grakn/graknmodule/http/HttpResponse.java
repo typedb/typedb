@@ -1,7 +1,7 @@
 package ai.grakn.graknmodule.http;
 
-public class Response {
-    public Response(int statusCode, String body) {
+public class HttpResponse {
+    public HttpResponse(int statusCode, String body) {
         this.statusCode = statusCode;
         this.body = body;
     }

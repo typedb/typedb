@@ -20,7 +20,7 @@ package ai.grakn.graknmodule;
  */
 
 import ai.grakn.graknmodule.http.HttpEndpoint;
-import ai.grakn.graknmodule.http.BeforeHttpEndpoint;
+import ai.grakn.graknmodule.http.HttpBeforeFilter;
 
 import java.util.List;
 
@@ -32,6 +32,6 @@ import java.util.List;
 public interface GraknModule {
     String getGraknModuleName();
 
-    List<BeforeHttpEndpoint> getBeforeHttpEndpoints();
+    List<HttpBeforeFilter> getHttpBeforeFilters();
     List<HttpEndpoint> getHttpEndpoints();
 }
