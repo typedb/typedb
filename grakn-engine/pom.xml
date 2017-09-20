@@ -32,6 +32,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-module-sdk</artifactId>
+            <version>0.1</version>
+        </dependency>
+        <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
             <version>${java-jwt.version}</version>
