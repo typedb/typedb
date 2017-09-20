@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 /**
- * A helper class for grakn module.
+ * A helper class for {@link GraknModuleManager}.
  * Provides helper methods such as for accessing file systems
  *
  * @author Ganeshwara Herawan Hananda
