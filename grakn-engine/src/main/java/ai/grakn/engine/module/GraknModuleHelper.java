@@ -49,63 +49,6 @@ import static spark.Spark.halt;
  * @author Ganeshwara Herawan Hananda
  */
 public class GraknModuleHelper {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknModuleHelper.class);
-
-    public static Function<HttpEndpoint, Route> convertEndpointToSparkRoute = (graknModule ->
-        ((request, response) -> {
-            ai.grakn.graknmodule.http.Request graknModuleRequest =
-                new ai.grakn.graknmodule.http.Request(getHeaders(request), request.params(), request.body());
-
-            ai.grakn.graknmodule.http.Response graknModuleResponse = graknModule.getRequestHandler(graknModuleRequest);
-
-            response.status(graknModuleResponse.getStatusCode());
-            return graknModuleResponse.getBody();
-        })
-    );
-
-    public static Function<BeforeHttpEndpoint, Filter> convertBeforeToSparkFilter = (graknModule ->
-        ((request, response) -> {
-            ai.grakn.graknmodule.http.Request graknModuleRequest =
-                new ai.grakn.graknmodule.http.Request(getHeaders(request), request.params(), request.body());
-
-            Before before = graknModule.getBeforeHttpEndpoint(graknModuleRequest);
-
-            if (before.getResponseIfDenied().isPresent()) {
-                Response graknModuleResponse = before.getResponseIfDenied().get();
-                halt(graknModuleResponse.getStatusCode(), graknModuleResponse.getBody());
-            }
-
-            // else let the request pass
-        })
-    );
-
-    public static void registerGraknModuleBeforeHttpEndpoints(Service spark, List<GraknModule> graknModules) {
-        for (GraknModule module : graknModules) {
-            for (BeforeHttpEndpoint endpoint: module.getBeforeHttpEndpoints())
-                spark.before(endpoint.getUrlPattern(), convertBeforeToSparkFilter.apply(endpoint));
-        }
-    }
-
-    public static void registerGraknModuleHttpEndpoints(Service spark, List<GraknModule> graknModules) {
-        for (GraknModule module : graknModules) {
-            for (HttpEndpoint endpoint: module.getHttpEndpoints())
-                switch (endpoint.getHttpMethod()) {
-                    case GET:
-                        spark.get(endpoint.getEndpoint(), convertEndpointToSparkRoute.apply(endpoint));
-                        break;
-                    case POST:
-                        spark.post(endpoint.getEndpoint(), convertEndpointToSparkRoute.apply(endpoint));
-                        break;
-                    case PUT:
-                        spark.put(endpoint.getEndpoint(), convertEndpointToSparkRoute.apply(endpoint));
-                        break;
-                    case DELETE:
-                        spark.delete(endpoint.getEndpoint(), convertEndpointToSparkRoute.apply(endpoint));
-                        break;
-                }
-        }
-    }
-
     public static Stream<Path> listFolders(Path directory) {
         try {
             return Files.list(directory)
@@ -123,16 +66,5 @@ public class GraknModuleHelper {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static Map<String, String> getHeaders(Request request) {
-        Stream<Pair<String, String>> headersAsStream = request.headers().stream().map(e -> Pair.of(e, request.headers(e)));
-
-        request.headers().forEach(e -> LOG.info("hdrz().stream().foreach -- " + e + "-" + request.headers(e)));
-
-        Map<String, String> headersAsMap = new HashMap<>();
-        headersAsStream.forEach(e -> headersAsMap.put(e.getKey(), e.getValue()));
-        LOG.info("headersAsMap size = " + headersAsMap.size());
-        return headersAsMap;
     }
 }
