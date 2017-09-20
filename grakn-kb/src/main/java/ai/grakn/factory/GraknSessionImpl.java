@@ -201,7 +201,7 @@ public class GraknSessionImpl implements GraknSession {
             Properties computerProperties = new Properties();
             computerProperties.putAll(properties);
             computerProperties.setProperty(FactoryBuilder.KB_MODE, properties.get(FactoryBuilder.KB_ANALYTICS).toString());
-            return FactoryBuilder.getFactory(keyspace, engineUri, properties);
+            return FactoryBuilder.getFactory(keyspace, engineUri, computerProperties);
         }
 
         throw new IllegalArgumentException("Config option [" + configType + "] not supported");
