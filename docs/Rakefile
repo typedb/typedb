@@ -54,7 +54,7 @@ task :test do
           /.*github\.com\/graknlabs\/sample-(projects|datasets).*/
       ],
       # TODO: fix missing alt attributes
-      :alt_ignore => [/.*/]
+      :alt_ignore => [/.*/],
       # avoid SSL errors: https://github.com/gjtorikian/html-proofer/issues/376
       :typhoeus => {
         :ssl_verifypeer => false,
