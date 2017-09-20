@@ -118,7 +118,7 @@ public class GraknSessionImpl implements GraknSession {
 
     @Override
     public GraknTx open(GraknTxType transactionType) {
-        final TxFactory<?> factory = getConfiguredFactory();
+        final TxFactory<?> factory = configureTxFactory(REST.KBConfig.DEFAULT);
         switch (transactionType){
             case READ:
             case WRITE:
@@ -130,10 +130,6 @@ public class GraknSessionImpl implements GraknSession {
             default:
                 throw GraknTxOperationException.transactionInvalid(transactionType);
         }
-    }
-
-    private TxFactory<?> getConfiguredFactory(){
-        return configureTxFactory(REST.KBConfig.DEFAULT);
     }
 
     /**
