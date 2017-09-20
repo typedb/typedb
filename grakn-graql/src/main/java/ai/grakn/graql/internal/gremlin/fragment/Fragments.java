@@ -91,7 +91,7 @@ public class Fragments {
     }
 
     public static Fragment inIsa(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_InIsaFragment(varProperty, start, end);
+        return new AutoValue_InIsaFragment(varProperty, start, end, true);
     }
 
     public static Fragment outIsa(VarProperty varProperty, Var start, Var end) {
