@@ -62,7 +62,6 @@ public class EngineCommunicator {
             return "Engine not contacted due to in memory graph being used";
         }
 
-        LOG.debug("Contacting engine on {}", engineUrl);
         for(int i = 0; i < MAX_RETRY; i++) {
             try {
                 URL url = new URL(DEFAULT_PROTOCOL + engineUrl);
