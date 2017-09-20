@@ -1,5 +1,5 @@
 {
-  "presets": ["es2015"],
+  "presets": ["env"],
   "plugins": ["transform-runtime",
     "babel-plugin-transform-class-properties",
     "babel-plugin-syntax-flow",

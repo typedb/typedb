@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -141,8 +142,10 @@ public class InferenceRule {
      */
     boolean headSatisfiesBody(){
         Set<Atomic> atoms = new HashSet<>(getHead().getAtoms());
+        Set<Var> headVars = getHead().getVarNames();
         getBody().getAtoms(TypeAtom.class)
                 .filter(t -> !t.isRelation())
+                .filter(t -> !Sets.intersection(t.getVarNames(), headVars).isEmpty())
                 .forEach(atoms::add);
         return getBody().isEquivalent(ReasonerQueries.create(atoms, tx));
     }

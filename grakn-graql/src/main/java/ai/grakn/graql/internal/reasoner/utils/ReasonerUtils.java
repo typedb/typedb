@@ -199,7 +199,7 @@ public class ReasonerUtils {
     public static Set<SchemaConcept> getSupers(SchemaConcept schemaConcept){
         Set<SchemaConcept> superTypes = new HashSet<>();
         SchemaConcept superType = schemaConcept.sup();
-        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superTypes.add(superType);
             superType = superType.sup();
         }
@@ -227,7 +227,7 @@ public class ReasonerUtils {
      */
     public static Type getTopType(Type type){
         Type superType = type;
-        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superType = superType.sup();
         }
         return superType;
@@ -420,7 +420,7 @@ public class ReasonerUtils {
     public static boolean checkCompatible(SchemaConcept parent, SchemaConcept child) {
         if(Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
         SchemaConcept superType = child;
-        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())){
             if (superType.equals(parent)) return true;
             superType = superType.sup();
         }

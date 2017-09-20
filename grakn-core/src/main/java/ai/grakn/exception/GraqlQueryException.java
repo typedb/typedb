@@ -24,6 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -267,6 +268,10 @@ public class GraqlQueryException extends GraknException{
 
     public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery reasonerQuery) {
         return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(reasonerQuery));
+    }
+
+    public static GraqlQueryException rolePatternAbsent(Atomic relation){
+        return new GraqlQueryException(ErrorMessage.ROLE_PATTERN_ABSENT.getMessage(relation));
     }
 
     public static GraqlQueryException ruleCreationArityMismatch() {
