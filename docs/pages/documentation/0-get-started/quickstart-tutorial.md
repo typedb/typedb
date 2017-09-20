@@ -22,8 +22,8 @@ If you have not yet set up GRAKN.AI, please see the [Setup guide](../get-started
 The first few steps mirror those in the [Setup Guide](./setup-guide.html), and you can skip to [The Schema](#the-schema) if you have already run through that example. Start Grakn and load the example knowledge base:
 
 ```bash
-./bin/grakn.sh start
-./bin/graql.sh -f ./examples/basic-genealogy.gql
+./grakn server start
+./graql console -f ./examples/basic-genealogy.gql
 ```
 
 {% include note.html content="Above, we are invoking the Graql shell and passing the -f flag to indicate the file to load into a knowledge base. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
@@ -32,7 +32,7 @@ If you are interested, please see our documentation about other [flags supported
 Then start the Graql shell in its interactive (REPL) mode:
 
 ```bash
-./bin/graql.sh
+./graql console
 ```
 
 You will see a `>>>` prompt. Type in a query to check that everything is working: 
@@ -288,7 +288,7 @@ match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identi
 Did you get any results? Probably not, because reasoning is not enabled by default at present, although as Grakn develops, we expect that to change. If you didn't see any results, you need to `exit` the Graql shell and restart it, passing `-n` and `-m` flags to switch on reasoning (see our documentation for more information about [flags supported by the Graql shell](https://grakn.ai/pages/documentation/graql/graql-shell.html)).
 
 ```bash
-./bin/graql.sh -n -m
+./graql console -n -m
 ```
 
 Try the query again:

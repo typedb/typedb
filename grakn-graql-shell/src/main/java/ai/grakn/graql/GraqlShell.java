@@ -153,7 +153,7 @@ public class GraqlShell {
 
     /**
      * Run a Graql REPL
-     * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
+     * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql console --help}
      */
     public static void main(String[] args) {
         int exitCode = runShell(args, GraknVersion.VERSION, HISTORY_FILENAME);
@@ -292,7 +292,7 @@ public class GraqlShell {
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();
         int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "graql.sh", null, options, leftPadding, descPadding, footer);
+        helpFormatter.printHelp(printWriter, width, "graql console", null, options, leftPadding, descPadding, footer);
         printWriter.flush();
     }
 
