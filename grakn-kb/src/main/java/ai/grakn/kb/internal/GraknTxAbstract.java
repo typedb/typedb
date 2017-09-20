@@ -444,18 +444,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             throw labelTaken(schemaConcept);
         }
 
-        //Check if the type we got is correct
-        SchemaConceptImpl finalSchemaConcept = schemaConcept;
-        T finalType = validateSchemaConcept(schemaConcept, baseType, () -> {
-            throw labelTaken(finalSchemaConcept);
-        });
-
         //Automatic shard creation - If this type does not have a shard create one
         if (!Schema.MetaSchema.isMetaLabel(label) && !SchemaConceptImpl.from(schemaConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()) {
             SchemaConceptImpl.from(schemaConcept).createShard();
         }
 
-        return finalType;
+        //noinspection unchecked
+        return (T) schemaConcept;
     }
 
     /**
