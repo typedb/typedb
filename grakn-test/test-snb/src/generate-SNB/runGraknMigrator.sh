@@ -10,11 +10,11 @@ $SCRIPTPATH/run.sh
 
 exit
 # load schema
-graql.sh -k $2 -f $GRAQL/ldbc-snb-1-resources.gql -r $1
-graql.sh -k $2 -f $GRAQL/ldbc-snb-2-relations.gql -r $1
-graql.sh -k $2 -f $GRAQL/ldbc-snb-3-entities.gql -r $1
-graql.sh -k $2 -f $GRAQL/ldbc-snb-4-rules-part1.gql -r $1
-graql.sh -k $2 -f $GRAQL/ldbc-snb-4-rules-part2.gql -r $1
+graql console -k $2 -f $GRAQL/ldbc-snb-1-resources.gql -r $1
+graql console -k $2 -f $GRAQL/ldbc-snb-2-relations.gql -r $1
+graql console -k $2 -f $GRAQL/ldbc-snb-3-entities.gql -r $1
+graql console -k $2 -f $GRAQL/ldbc-snb-4-rules-part1.gql -r $1
+graql console -k $2 -f $GRAQL/ldbc-snb-4-rules-part2.gql -r $1
 
 sed -i '' "1s/Comment.id|Comment.id/Comment.id|Message.id/" $DATA/comment_replyOf_comment_0_0.csv
 sed -i '' "1s/Person.id|Person.id/Person1.id|Person.id/" $DATA/person_knows_person_0_0.csv
@@ -32,5 +32,5 @@ do
         echo $BATCH_SIZE
 
         tail -n +2 $DATA/${DATA_FILE} | wc -l
-        time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $DATA/${DATA_FILE} -k $2 -u $1 -a ${3:-25} -b ${BATCH_SIZE}
+        time graql migrate csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $DATA/${DATA_FILE} -k $2 -u $1 -a ${3:-25} -b ${BATCH_SIZE}
 done < migrationsToRun.txt

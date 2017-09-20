@@ -12,10 +12,10 @@ language: ruby
 rvm: 2.2
 
 cache:
-   directories:
-   - $HOME/.m2
-   - grakn-dashboard/node_modules
-   - grakn-engine/npm
+  directories:
+  - $HOME/.m2
+  - grakn-dashboard/node_modules
+  - grakn-engine/npm
 
 notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT

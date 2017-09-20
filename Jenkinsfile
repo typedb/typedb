@@ -9,8 +9,9 @@ node {
     //Always wrap each test block in a timeout
     //This first block sets up engine within 15 minutes
     withEnv([
-            'PATH+EXTRA=' + workspace + '/grakn-package/bin'
-            ]) {
+        'PATH+EXTRA=' + workspace + '/grakn-package'
+        ]) {
+
       timeout(15) {
         stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
           sh 'npm config set registry http://registry.npmjs.org/'
@@ -28,13 +29,14 @@ authored by - """ + user
           sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
           sh 'mkdir grakn-package'
           sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-          sh 'grakn.sh start'
+          sh 'grakn server start'
         }
         stage('Test Connection') {
-          sh 'graql.sh -e "match \\\$x; get;"' //Sanity check query. I.e. is everything working?
+          sh 'graql console -e "match \\\$x; get;"' //Sanity check query. I.e. is everything working?
         }
       }
     }
+
     //Only run validation master/stable
     if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
       //Sets up environmental variables which can be shared between multiple tests
@@ -88,7 +90,7 @@ authored by - """ + user
       stage('Tear Down Grakn') {
         sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
         archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-        sh 'grakn-package/bin/grakn.sh stop'
+        sh 'grakn-package/grakn server stop'
         sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
       }
     }

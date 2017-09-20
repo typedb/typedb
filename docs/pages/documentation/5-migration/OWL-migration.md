@@ -16,7 +16,7 @@ This tutorial shows you how to migrate OWL into Grakn. If you have not yet set u
 The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
 
 ```bash
-usage: migration.sh owl -input <arg> -keyspace <arg> [-help] [-uri <arg>] [-verbose]
+usage: graql migrate owl -input <arg> -keyspace <arg> [-help] [-uri <arg>] [-verbose]
 
  -c,--config <arg>     Configuration file.
  -h,--help             Print usage message.

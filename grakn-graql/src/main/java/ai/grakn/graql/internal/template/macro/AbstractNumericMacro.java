@@ -20,42 +20,41 @@ package ai.grakn.graql.internal.template.macro;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
-import com.google.common.collect.ImmutableSet;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * <p>
- * Templating function that will convert the given value into a boolean (true/false). Only accepts one argument.
- *
- * Usage:
- *      {@literal @}boolean(<value>)
+ *     {@link Number} parsing {@link Macro}
  * </p>
- * @author alexandraorth
+ *
+ * <p>
+ *     Represents the base {@link Macro} exclusively used for {@link Number}s, such as {@link LongMacro} and
+ *     {@link IntMacro}
+ * </p>
+ *
+ * @param <T> A number which inherits from the {@link Number} class
+ *
+ * @author Filipe Peliz Pinto Teixeira
  */
-public class BooleanMacro implements Macro<Boolean> {
-
-    private static final Collection<String> allowedBooleanValues = ImmutableSet.of("true", "false");
+public abstract class AbstractNumericMacro<T extends Number> implements Macro<Number>{
     private static final int numberArguments = 1;
 
     @Override
-    public Boolean apply(List<Object> values) {
+    public Number apply(List<Object> values) {
         if(values.size() != numberArguments){
             throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
-        String booleanValue = values.get(0).toString().toLowerCase(Locale.getDefault());
-        if(!allowedBooleanValues.contains(booleanValue)){
-            throw GraqlQueryException.wrongMacroArgumentType(this, booleanValue);
+        String value = values.get(0).toString();
+        try {
+            return convertNumeric(value);
+        }  catch (NumberFormatException e){
+            throw GraqlQueryException.wrongMacroArgumentType(this, value);
         }
-
-        return Boolean.parseBoolean(booleanValue);
     }
 
-    @Override
-    public String name() {
-        return "boolean";
-    }
+    abstract T convertNumeric(String value);
+
+
 }

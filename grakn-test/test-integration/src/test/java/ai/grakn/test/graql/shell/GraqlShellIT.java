@@ -121,7 +121,7 @@ public class GraqlShellIT {
         assertThat(
                 result,
                 allOf(
-                        containsString("usage"), containsString("graql.sh"), containsString("-e"),
+                        containsString("usage"), containsString("graql console"), containsString("-e"),
                         containsString("--execute <arg>"), containsString("query to execute")
                 )
         );
