@@ -28,11 +28,10 @@ authored by - """ + user
                     sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
                     sh 'mkdir grakn-package'
                     sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-                    sh 'graknserver start'
+                    sh 'grakn server start'
                 }
                 stage('Test Connection') {
-                    sh 'graqlconsole -e "match \\\$x; get;"'
-                    //Sanity check query. I.e. is everything working?}
+                    sh 'graql console -e "match \\\$x; get;"' //Sanity check query. I.e. is everything working?}
                 }
             }
         }
@@ -77,9 +76,7 @@ authored by - """ + user
             }
             def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
             slackSend channel: "#github", color: "good", message: """
-  Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${
-                env.BUILD_URL
-            }|Open>)
+  Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
   authored by - """ + user
         }
     } catch (error) {
