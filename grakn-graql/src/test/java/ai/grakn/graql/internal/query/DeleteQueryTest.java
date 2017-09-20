@@ -124,7 +124,6 @@ public class DeleteQueryTest {
         assertNotExists(kurtzCastRelation);
     }
 
-    // TODO: Fix this scenario (test is fine, implementation is wrong!)
     @Test
     public void testDeleteAllRolePlayers() {
         ConceptId id = kurtzCastRelation.get("a").findFirst().get().getId();

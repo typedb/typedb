@@ -35,7 +35,7 @@ public class PostProcessingTestUtils {
         resourceVertex.property(attributeType.getDataType().getVertexProperty().name(), attribute.getValue());
         resourceVertex.property(Schema.VertexProperty.ID.name(), resourceVertex.id().toString());
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceTypeShard);
-        return (Attribute<T>) graknTx.admin().buildConcept(resourceVertex);
+        return (Attribute<T>) graknTx.admin().buildConcept(resourceVertex).get();
     }
     
     @SuppressWarnings("unchecked")

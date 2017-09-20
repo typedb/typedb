@@ -20,6 +20,7 @@ package ai.grakn.kb.internal.structure;
 
 import ai.grakn.concept.Thing;
 import ai.grakn.kb.internal.concept.ConceptImpl;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -76,7 +77,7 @@ public class Shard {
      * @param concept The concept to link to this shard
      */
     public void link(ConceptImpl concept){
-        concept.vertex().putEdge(vertex(), Schema.EdgeLabel.ISA);
+        concept.vertex().addEdge(vertex(), Schema.EdgeLabel.ISA);
     }
 
     /**
@@ -86,7 +87,9 @@ public class Shard {
     public <V extends Thing> Stream<V> links(){
         return  vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
                 map(EdgeElement::source).
-                map(vertexElement ->  vertex().tx().factory().buildConcept(vertexElement));
+                flatMap(CommonUtil::optionalToStream).
+                map(vertexElement ->  vertex().tx().factory().<V>buildConcept(vertexElement)).
+                flatMap(CommonUtil::optionalToStream);
     }
 
     /**
