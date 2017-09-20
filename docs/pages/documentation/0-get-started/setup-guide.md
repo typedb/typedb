@@ -28,20 +28,20 @@ Unzip the download into your preferred location and run the following in the ter
 
 ```bash
 cd [your Grakn install directory]
-./bin/grakn.sh start
+./grakn server start
 ```
 On macOS, you can install it using the [`brew`](https://brew.sh/) package manager. Binaries will be added to your path:
 ```bash
 brew install grakn
-grakn.sh start
+grakn server start
 ```
 
 This will start Grakn, which is an HTTP server providing batch loading, monitoring and the browser dashboard.
 
 {% include note.html content="**Useful commands**  <br />
-To start Grakn, run `grakn.sh start`.   
-To stop Grakn, run `grakn.sh stop`.    
-To remove all keyspaces from Grakn, run `grakn.sh clean`" %}
+To start Grakn, run `grakn server start`.   
+To stop Grakn, run `grakn server stop`.    
+To remove all keyspaces from Grakn, run `grakn server clean`" %}
 
 Grakn Engine is configured by default to use port 4567, but this can be changed in the *grakn-engine.properties* file, found within the */conf* directory of the installation.
 
@@ -52,13 +52,13 @@ To test that the installation is working correctly, we will load a simple schema
 Type in the following in the terminal to load the example knowledge base. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
 
 ```bash
-./bin/graql.sh -f ./examples/basic-genealogy.gql
+./graql console -f ./examples/basic-genealogy.gql
 ```
 
 Then type the following to start the Graql shell in its interactive (REPL) mode:
 
 ```bash
-./bin/graql.sh
+./graql console
 ```
 
 The Graql shell starts and you see a `>>>` prompt. Graql is our knowledge-oriented query language, which allows you to interface with Grakn. We will enter a query to check that everything is working. 

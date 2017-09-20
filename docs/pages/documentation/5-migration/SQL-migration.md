@@ -16,7 +16,7 @@ This tutorial shows you how to populate a knowledge base in Grakn with SQL data,
 The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
 
 ```bash
-usage: migration.sh sql -template <arg> -driver <arg> -user <arg> -pass <arg> -location <arg> -keyspace <arg> [-help] [-no] [-batch <arg>] [-uri <arg>] [-retry <arg>] [-v] 
+usage: graql migrate sql -template <arg> -driver <arg> -user <arg> -pass <arg> -location <arg> -keyspace <arg> [-help] [-no] [-batch <arg>] [-uri <arg>] [-retry <arg>] [-v] 
  
  -a,--active <arg>     Number of tasks (batches) running on the server at
                        any one time. Default 25.
@@ -130,7 +130,7 @@ event plays event-occurred;
 To load the schema into Grakn, we create a single file that contains both sections shown above, named *schema.gql*. From the Grakn installation folder, invoke the Graql shell, passing the -f flag to indicate the schema file to load into a knowledge base. This call starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete:
 
 ```
-./bin/graql.sh -f ./schema.gql
+./graql console -f ./schema.gql
 ```
 
 ### SQL Data Migration
@@ -201,7 +201,7 @@ $x isa <SPECIES>
 To apply the template above to the SQL query and populate the knowledge base with the `pet` entities, we use Grakn migration script:
 
 ```
-migration.sh sql -q "SELECT * FROM pet;" -location jdbc:mysql://localhost:3306/world -user root -pass root -t ./pet-template.gql -k grakn
+./graql migrate sql -q "SELECT * FROM pet;" -location jdbc:mysql://localhost:3306/world -user root -pass root -t ./pet-template.gql -k grakn
 ```
 
 
@@ -228,7 +228,7 @@ insert $event isa event
 To populate the knowledge base with the `event` entities, we then use the Grakn migration script:
 
 ```
-migration.sh sql -q "SELECT event.name AS name, event.date AS date, event.eventtype AS description FROM event;" -location jdbc:mysql://localhost:3306/world -user root -pass root -t ./pet-template.gql -k grakn
+./graql migrate sql -q "SELECT event.name AS name, event.date AS date, event.eventtype AS description FROM event;" -location jdbc:mysql://localhost:3306/world -user root -pass root -t ./pet-template.gql -k grakn
 ```
 
 Note: The SQL query is entered into the command line in quotes, although in future releases of Grakn, we plan to allow queries to be saved in a file, which can be specified with an appropriate flag.
