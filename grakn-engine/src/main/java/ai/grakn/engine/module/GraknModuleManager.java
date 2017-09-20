@@ -33,7 +33,8 @@ import java.util.stream.Stream;
 import static ai.grakn.engine.module.GraknModuleHelper.listFolders;
 import static ai.grakn.engine.module.GraknModuleHelper.listJarFiles;
 /**
- * Grakn Module Manager
+ * Grakn Module Manager class.
+ * Responsible for module initialization and provides access to available modules
  *
  * @author Ganeshwara Herawan Hananda
  */

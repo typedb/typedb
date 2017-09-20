@@ -19,32 +19,14 @@
 
 package ai.grakn.engine.module;
 
-import ai.grakn.graknmodule.GraknModule;
-import ai.grakn.graknmodule.http.Before;
-import ai.grakn.graknmodule.http.BeforeHttpEndpoint;
-import ai.grakn.graknmodule.http.HttpEndpoint;
-import ai.grakn.graknmodule.http.Response;
-import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import spark.Filter;
-import spark.Request;
-import spark.Route;
-import spark.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static spark.Spark.halt;
-
 /**
- * Grakn Module helper
+ * A helper class for grakn module.
+ * Provides helper methods such as for accessing file systems
  *
  * @author Ganeshwara Herawan Hananda
  */
