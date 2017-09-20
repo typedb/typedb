@@ -53,7 +53,7 @@ public class Migrator {
     private final static Logger LOG = LoggerFactory.getLogger(Migrator.class);
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
-    public static final int ACTIVE_TASKS = 25;
+    public static final int ACTIVE_TASKS = 16;
     public static final int DEFAULT_MAX_RETRY = 1;
 
     private final String uri;
@@ -156,9 +156,7 @@ public class Migrator {
     protected Stream<Query> template(String template, Map<String, Object> data){
         try {
             return queryBuilder.parseTemplate(template, data);
-
-            //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
-        } catch (GraqlSyntaxException | IllegalArgumentException e){
+        } catch (GraqlSyntaxException e){
             LOG.warn("Query not sent to server: " + e.getMessage());
         }
 

@@ -30,14 +30,8 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
 import ai.grakn.kb.internal.concept.RelationshipReified;
-import ai.grakn.kb.internal.concept.SchemaConceptImpl;
-import ai.grakn.kb.internal.concept.ThingImpl;
 import ai.grakn.kb.internal.structure.Casting;
-import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
-import mjson.Json;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -221,7 +215,7 @@ public class TxCache {
 
         conceptCache.remove(concept.getId());
         if (concept.isSchemaConcept()) {
-            Label label = ((SchemaConceptImpl) concept).getLabel();
+            Label label = concept.asSchemaConcept().getLabel();
             schemaConceptCache.remove(label);
             labelCache.remove(label);
         }
@@ -244,7 +238,7 @@ public class TxCache {
     public void cacheConcept(Concept concept){
         conceptCache.put(concept.getId(), concept);
         if(concept.isSchemaConcept()){
-            SchemaConceptImpl schemaConcept = (SchemaConceptImpl) concept;
+            SchemaConcept schemaConcept = concept.asSchemaConcept();
             schemaConceptCache.put(schemaConcept.getLabel(), schemaConcept);
             labelCache.put(schemaConcept.getLabel(), schemaConcept.getLabelId());
         }
@@ -327,35 +321,6 @@ public class TxCache {
     }
     private void cleanupShardingCount(ConceptId conceptId){
         if(shardingCount.get(conceptId) == 0) shardingCount.remove(conceptId);
-    }
-
-    public Json getFormattedLog(){
-        //Concepts In Need of Inspection
-        Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), loadConceptsForFixing(getModifiedAttributes()));
-
-        //Types with instance changes
-        Json typesWithInstanceChanges = Json.array();
-
-        getShardingCount().forEach((key, value) -> {
-            Json jsonObject = Json.object();
-            jsonObject.set(REST.Request.COMMIT_LOG_CONCEPT_ID, key.getValue());
-            jsonObject.set(REST.Request.COMMIT_LOG_SHARDING_COUNT, value);
-            typesWithInstanceChanges.add(jsonObject);
-        });
-
-        //Final Commit Log
-        Json formattedLog = Json.object();
-        formattedLog.set(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
-        formattedLog.set(REST.Request.COMMIT_LOG_COUNTING, typesWithInstanceChanges);
-
-        return formattedLog;
-    }
-    private  <X extends Thing> Json loadConceptsForFixing(Set<X> instances){
-        Map<String, Set<String>> conceptByIndex = new HashMap<>();
-        instances.forEach(thing ->
-                conceptByIndex.computeIfAbsent(((ThingImpl) thing).getIndex(), (e) -> new HashSet<>()).add(thing.getId().getValue()));
-        return Json.make(conceptByIndex);
     }
 
     //--------------------------------------- Concepts Needed For Validation -------------------------------------------

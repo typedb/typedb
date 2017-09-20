@@ -19,7 +19,6 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
@@ -54,9 +53,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         super(Fragments.resourceIndex(varProperty, start, label, value));
     }
 
-    static boolean applyResourceIndexOptimisation(
-            Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
-
+    static final FragmentSetOptimisation RESOURCE_INDEX_OPTIMISATION = (fragmentSets, graph) -> {
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
         for (ValueFragmentSet valueSet : valueSets) {
@@ -79,7 +76,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         }
 
         return false;
-    }
+    };
 
     private static void optimise(
             Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,

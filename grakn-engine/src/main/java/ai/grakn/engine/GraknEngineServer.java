@@ -83,9 +83,9 @@ import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
 import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
-import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -283,6 +283,7 @@ public class GraknEngineServer implements AutoCloseable {
                        Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)),
                        prop.getPath(GraknEngineConfig.STATIC_FILES_PATH),
                        prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false),
+                       prop.tryIntProperty(GraknEngineConfig.WEBSERVER_THREADS, 64),
                        jwtHandler);
     }
     
@@ -291,6 +292,7 @@ public class GraknEngineServer implements AutoCloseable {
                                       int port, 
                                       String staticFolder,
                                       boolean passwordProtected,
+                                      int maxThreads,
                                       @Nullable JWTHandler jwtHandler){
         // Set host name
         spark.ipAddress(hostName);
@@ -301,6 +303,7 @@ public class GraknEngineServer implements AutoCloseable {
         // Set the external static files folder
         spark.staticFiles.externalLocation(staticFolder);
 
+        spark.threadPool(maxThreads);
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         // Register filter to check authentication token in each request
@@ -309,7 +312,11 @@ public class GraknEngineServer implements AutoCloseable {
         }
 
         //Register exception handlers
-        spark.exception(GraknBackendException.class, (e, req, res) -> handleGraknServerError(e, res));
+        spark.exception(GraknServerException.class, (e, req, res) -> {
+            assert e instanceof GraknServerException; // This is guaranteed by `spark#exception`
+            handleGraknServerError((GraknServerException) e, res);
+        });
+
         spark.exception(Exception.class, (e, req, res) -> handleInternalError(e, res));
     }
 
@@ -389,9 +396,9 @@ public class GraknEngineServer implements AutoCloseable {
      * @param exception exception thrown by the server
      * @param response response to the client
      */
-    private static void handleGraknServerError(Exception exception, Response response){
+    private static void handleGraknServerError(GraknServerException exception, Response response){
         LOG.error("REST error", exception);
-        response.status(((GraknServerException) exception).getStatus());
+        response.status(exception.getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }

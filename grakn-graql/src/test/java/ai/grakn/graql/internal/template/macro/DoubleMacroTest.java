@@ -61,7 +61,7 @@ public class DoubleMacroTest {
 
     @Test
     public void applyDoubleMacroToInvalidValue_ExceptionIsThrown(){
-        exception.expect(NumberFormatException.class);
+        exception.expect(GraqlQueryException.class);
 
         doubleMacro.apply(ImmutableList.of("invalid"));
     }
@@ -93,6 +93,14 @@ public class DoubleMacroTest {
 
         assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
+    }
+
+    @Test
+    public void whenUsingDoubleMacroToParseString_Throw(){
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.wrongMacroArgumentType(doubleMacro, "-").getMessage());
+
+        doubleMacro.apply(ImmutableList.of("-"));
     }
 
     @Test

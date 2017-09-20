@@ -104,11 +104,11 @@ public class LazyTest {
         ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        Stream<Answer> stream = query.lookup(cache);
-        Stream<Answer> stream2 = query2.lookup(cache);
+        Stream<Answer> stream = cache.getAnswerStream(query);
+        Stream<Answer> stream2 = cache.getAnswerStream(query2);
         Stream<Answer> joinedStream = QueryAnswerStream.join(stream, stream2);
 
-        joinedStream = cache.record(query3, joinedStream.map(a -> a.filterVars(query3.getVarNames())));
+        joinedStream = cache.record(query3, joinedStream.map(a -> a.project(query3.getVarNames())));
 
         Set<Answer> collect = joinedStream.collect(toSet());
         Set<Answer> collect2 = cache.getAnswerStream(query3).collect(toSet());
@@ -132,7 +132,7 @@ public class LazyTest {
         ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        query.lookup(cache);
+        cache.getAnswerStream(query);
         InferenceRule rule = new InferenceRule(RuleUtil.getRules(graph).iterator().next(), graph);
 
         Set<Var> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
@@ -141,7 +141,7 @@ public class LazyTest {
                 query2.getQuery().stream(),
                 ImmutableSet.copyOf(joinVars)
                 )
-                .map(a -> a.filterVars(rule.getHead().getVarNames()))
+                .map(a -> a.project(rule.getHead().getVarNames()))
                 .distinct()
                 .map(ans -> ans.explain(new RuleExplanation(query, rule)));
 

@@ -39,7 +39,7 @@ public class JoinExplanation extends Explanation {
     public JoinExplanation(ReasonerQueryImpl q, Answer mergedAnswer){
         super(q, q.selectAtoms().stream()
                 .map(ReasonerQueries::atomic)
-                .map(aq -> mergedAnswer.filterVars(aq.getVarNames()).explain(new LookupExplanation(aq)))
+                .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(aq)))
                 .collect(Collectors.toSet())
         );
     }

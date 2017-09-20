@@ -22,33 +22,39 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * <p>
- * Convert the given value into an upper case string. Only accepts one argument.
- *
- * Usage:
- *      {@literal @}upper(<value)
+ *     {@link Number} parsing {@link Macro}
  * </p>
- * 
- * @author alexandraorth
+ *
+ * <p>
+ *     Represents the base {@link Macro} exclusively used for {@link Number}s, such as {@link LongMacro} and
+ *     {@link IntMacro}
+ * </p>
+ *
+ * @param <T> A number which inherits from the {@link Number} class
+ *
+ * @author Filipe Peliz Pinto Teixeira
  */
-public class UpperMacro implements Macro<String> {
-
+public abstract class AbstractNumericMacro<T extends Number> implements Macro<Number>{
     private static final int numberArguments = 1;
 
     @Override
-    public String apply(List<Object> values) {
+    public Number apply(List<Object> values) {
         if(values.size() != numberArguments){
             throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
-        return values.get(0).toString().toUpperCase(Locale.getDefault());
+        String value = values.get(0).toString();
+        try {
+            return convertNumeric(value);
+        }  catch (NumberFormatException e){
+            throw GraqlQueryException.wrongMacroArgumentType(this, value);
+        }
     }
 
-    @Override
-    public String name() {
-        return "upper";
-    }
+    abstract T convertNumeric(String value);
+
+
 }

@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.kb.internal.concept.ConceptImpl;
@@ -105,8 +106,8 @@ public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
     }
 
     @Override
-    public VertexElement addVertex(Schema.BaseType baseType){
-        return executeLockingMethod(() -> super.addVertex(baseType));
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds){
+        return executeLockingMethod(() -> super.addVertexElement(baseType, conceptIds));
     }
 
     /**

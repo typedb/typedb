@@ -87,7 +87,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraknTxOperationException.metaTypeImmutable(role.getLabel());
 
         //Do the actual put of the role and role player
-        vertex().tx().putRolePlayerEdge(thing, this, role);
+        vertex().tx().putShortcutEdge(thing, this, role);
     }
 
     /**

@@ -215,7 +215,7 @@
                         <goals>
                             <goal>generate-raml</goal>
                         </goals>
-                        <phase>process-classes</phase>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -229,7 +229,7 @@
                         <goals>
                             <goal>exec</goal>
                         </goals>
-                        <phase>process-classes</phase>
+                        <phase>package</phase>
                         <configuration>
                             <skip>${maven.javadoc.skip}</skip>
                             <executable>./npm-install-retry/bin/npm-install-retry</executable>
@@ -246,7 +246,7 @@
                         <goals>
                             <goal>exec</goal>
                         </goals>
-                        <phase>process-classes</phase>
+                        <phase>package</phase>
                         <configuration>
                             <skip>${maven.javadoc.skip}</skip>
                             <executable>npm/bin/raml2html</executable>
