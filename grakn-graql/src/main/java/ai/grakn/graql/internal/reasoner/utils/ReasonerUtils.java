@@ -415,6 +415,7 @@ public class ReasonerUtils {
      */
     public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child) {
         if (parent == null) return true;
+        if (child == null) return false;
         if (Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
         SchemaConcept superType = child;
         while( superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())){
@@ -430,6 +431,6 @@ public class ReasonerUtils {
      * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
      */
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child) {
-        return parent != null && !typesCompatible(parent, child) && !typesCompatible(child, parent);
+        return parent != null && child == null || !typesCompatible(parent, child) && !typesCompatible(child, parent);
     }
 }

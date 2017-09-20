@@ -186,8 +186,8 @@ public class ReasoningTests {
         List<Answer> answers = qb.<MatchQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<MatchQuery>parse(queryString2).execute();
 
-        assertEquals(1, answers.size());
-        assertEquals(5, answers2.size());
+        assertEquals(2, answers.size());
+        assertEquals(6, answers2.size());
         assertNotEquals(answers.size() * answers2.size(), 0);
         answers.forEach(x -> assertEquals(x.size(), 1));
         answers2.forEach(x -> assertEquals(x.size(), 2));
@@ -302,7 +302,7 @@ public class ReasoningTests {
     @Test //Expected result: The query should return two unique matches
     public void circularRuleDependencies() {
         QueryBuilder qb = testSet12.tx().graql().infer(true);
-        String queryString = "match (role1:$x, role2:$y) isa relation3;";
+        String queryString = "match (role1:$a, role2:$b) isa relation3;";
         List<Answer> answers = qb.<MatchQuery>parse(queryString).execute();
         assertEquals(answers.size(), 2);
     }
