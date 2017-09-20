@@ -1,5 +1,3 @@
-package ai.grakn.graknmodule.http;
-
 /*
  * Grakn - A Distributed Semantic Database
  * Copyright (C) 2016  Grakn Labs Limited
@@ -19,11 +17,16 @@ package ai.grakn.graknmodule.http;
  *
  */
 
+package ai.grakn.graknmodule.http;
+
 /**
- * Lists of HTTP methods supported by {@link HttpRequest}
+ * A class containing a list of HTTP methods supported by {@link HttpRequest}
  *
  * @author Ganeshwara Herawan Hananda
  */
 public class HttpMethods {
+    /**
+     * List of HTTP methods supported by {@link HttpRequest}
+     */
     public enum HTTP_METHOD { GET, POST, PUT, DELETE }
 }

@@ -1,5 +1,3 @@
-package ai.grakn.graknmodule.http;
-
 /*
  * Grakn - A Distributed Semantic Database
  * Copyright (C) 2016  Grakn Labs Limited
@@ -18,6 +16,8 @@ package ai.grakn.graknmodule.http;
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  *
  */
+
+package ai.grakn.graknmodule.http;
 
 import java.util.Map;
 import java.util.Set;

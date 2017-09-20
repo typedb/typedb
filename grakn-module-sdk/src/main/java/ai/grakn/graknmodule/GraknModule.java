@@ -1,5 +1,3 @@
-package ai.grakn.graknmodule;
-
 /*
  * Grakn - A Distributed Semantic Database
  * Copyright (C) 2016  Grakn Labs Limited
@@ -18,6 +16,8 @@ package ai.grakn.graknmodule;
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  *
  */
+
+package ai.grakn.graknmodule;
 
 import ai.grakn.graknmodule.http.HttpEndpoint;
 import ai.grakn.graknmodule.http.HttpBeforeFilter;
