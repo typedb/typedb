@@ -19,23 +19,34 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
  * @author Felix Chapman
  */
 class IsaFragmentSet extends EquivalentFragmentSet {
 
+    private final VarProperty varProperty;
     private final Var instance;
     private final Var type;
+    private final boolean mayHaveEdgeInstances;
 
-    IsaFragmentSet(VarProperty varProperty, Var instance, Var type) {
-        super(Fragments.outIsa(varProperty, instance, type), Fragments.inIsa(varProperty, type, instance));
+    IsaFragmentSet(VarProperty varProperty, Var instance, Var type, boolean mayHaveEdgeInstances) {
+        super(
+                Fragments.outIsa(varProperty, instance, type),
+                Fragments.inIsa(varProperty, type, instance, mayHaveEdgeInstances)
+        );
+        this.varProperty = varProperty;
         this.instance = instance;
         this.type = type;
+        this.mayHaveEdgeInstances = mayHaveEdgeInstances;
     }
 
     Var instance() {
@@ -44,5 +55,42 @@ class IsaFragmentSet extends EquivalentFragmentSet {
 
     Var type() {
         return type;
+    }
+
+    /**
+     * We can skip the mid-traversal check for edge instances in the following case:
+     *
+     * <ol>
+     *     <li>There is an {@link IsaFragmentSet} {@code $x-[isa:with-edges]->$X}
+     *     <li>There is a {@link LabelFragmentSet} {@code $X[label:foo,bar]}
+     *     <li>The labels {@code foo} and {@code bar} are all not types that may have edge instances</li>
+     * </ol>
+     */
+    static final FragmentSetOptimisation SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION = (fragments, tx) -> {
+        Iterable<IsaFragmentSet> isaSets = fragmentSetOfType(IsaFragmentSet.class, fragments)::iterator;
+
+        for (IsaFragmentSet isaSet : isaSets) {
+            if (!isaSet.mayHaveEdgeInstances) continue;
+
+            LabelFragmentSet labelSet = labelOf(isaSet.type(), fragments);
+
+            if (labelSet == null) continue;
+
+            boolean mayHaveEdgeInstances = labelSet.labels().stream()
+                    .map(tx::<SchemaConcept>getSchemaConcept)
+                    .anyMatch(IsaFragmentSet::mayHaveEdgeInstances);
+
+            if (!mayHaveEdgeInstances) {
+                fragments.remove(isaSet);
+                fragments.add(new IsaFragmentSet(isaSet.varProperty, isaSet.instance, isaSet.type, false));
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    private static boolean mayHaveEdgeInstances(SchemaConcept concept) {
+        return concept.isRelationshipType() && concept.isImplicit();
     }
 }
