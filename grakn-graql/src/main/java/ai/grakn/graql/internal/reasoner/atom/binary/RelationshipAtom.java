@@ -127,7 +127,7 @@ public class RelationshipAtom extends IsaAtom {
                 getRelationPlayers().toString();
         return relationString + getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
-
+    
     private Set<Label> getRoleLabels() { return roleLabels;}
     private ImmutableList<RelationPlayer> getRelationPlayers() { return relationPlayers;}
 
@@ -834,10 +834,9 @@ public class RelationshipAtom extends IsaAtom {
                         if (parentRolePattern != null && childRolePattern != null && unifyRoleVariables){
                             unifier.addMapping(childRolePattern.admin().var(), parentRolePattern.admin().var());
                         }
-
                     });
         }
-        return unifier.removeTrivialMappings();
+        return unifier;
     }
 
     /**
