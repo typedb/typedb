@@ -56,7 +56,7 @@ public class EngineContext extends ExternalResource {
     private static final Logger LOG = LoggerFactory.getLogger(EngineContext.class);
 
 
-    private final GraknEngineServer server;
+    private GraknEngineServer server;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
     private final GraknEngineConfig config;
@@ -67,7 +67,6 @@ public class EngineContext extends ExternalResource {
         Class<? extends TaskManager> taskManagerClass = startSingleQueueEngine ? RedisTaskManager.class : StandaloneTaskManager.class;
         config = EngineTestUtil.createTestConfig();
         config.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
-        server = GraknEngineServer.create(config);
     }
 
     public static EngineContext singleQueueServer(){
@@ -124,6 +123,7 @@ public class EngineContext extends ExternalResource {
 
             if (taskManagerClass != null) {
                 GraknTestSetup.startCassandraIfNeeded();
+                server = GraknEngineServer.create(config);
                 LOG.info("Starting engine on {}", uri());
                 server.start();
                 LOG.info("Engine started.");
