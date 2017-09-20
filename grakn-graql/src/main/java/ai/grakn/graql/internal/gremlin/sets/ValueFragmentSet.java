@@ -21,26 +21,22 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 
-class ValueFragmentSet extends EquivalentFragmentSet {
+import java.util.Set;
 
-    private final Var resource;
-    private final ValuePredicate predicate;
+@AutoValue
+abstract class ValueFragmentSet extends EquivalentFragmentSet {
 
-    ValueFragmentSet(VarProperty varProperty, Var resource, ValuePredicate predicate) {
-        super(Fragments.value(varProperty, resource, predicate));
-        this.resource = resource;
-        this.predicate = predicate;
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(Fragments.value(varProperty(), var(), predicate()));
     }
 
-    Var resource() {
-        return resource;
-    }
-
-    ValuePredicate predicate() {
-        return predicate;
-    }
+    abstract Var var();
+    abstract ValuePredicate predicate();
 }

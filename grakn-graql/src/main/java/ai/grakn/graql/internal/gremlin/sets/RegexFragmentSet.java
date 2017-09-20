@@ -20,16 +20,26 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
  * @author Felix Chapman
  */
-class RegexFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class RegexFragmentSet extends EquivalentFragmentSet {
 
-    RegexFragmentSet(VarProperty varProperty, Var resourceType, String regex) {
-        super(Fragments.regex(varProperty, resourceType, regex));
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(Fragments.regex(varProperty(), resourceType(), regex()));
     }
+
+    abstract Var resourceType();
+
+    abstract String regex();
 }

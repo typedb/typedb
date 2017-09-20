@@ -24,7 +24,10 @@ import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
@@ -48,17 +51,33 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragme
  *
  * @author Felix Chapman
  */
-class ResourceIndexFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
-    private ResourceIndexFragmentSet(@Nullable VarProperty varProperty, Var start, Label label, Object value) {
-        super(Fragments.resourceIndex(varProperty, start, label, value));
+    static ResourceIndexFragmentSet of(Var var, Label label, Object value) {
+        return new AutoValue_ResourceIndexFragmentSet(var, label, value);
     }
+
+    @Override
+    @Nullable
+    public final VarProperty varProperty() {
+        return null;
+    }
+
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(Fragments.resourceIndex(varProperty(), var(), label(), value()));
+    }
+
+    abstract Var var();
+    abstract Label label();
+    abstract Object value();
 
     static final FragmentSetOptimisation RESOURCE_INDEX_OPTIMISATION = (fragmentSets, graph) -> {
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
         for (ValueFragmentSet valueSet : valueSets) {
-            Var resource = valueSet.resource();
+            Var resource = valueSet.var();
 
             IsaFragmentSet isaSet = EquivalentFragmentSets.typeInformationOf(resource, fragmentSets);
             if (isaSet == null) continue;
@@ -89,10 +108,10 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         fragmentSets.remove(isaSet);
 
         // Add a new fragment set to replace the old ones
-        Var resource = valueSet.resource();
+        Var resource = valueSet.var();
         Object value = valueSet.predicate().equalsValue().get();
 
-        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(null, resource, label, value);
+        ResourceIndexFragmentSet indexFragmentSet = ResourceIndexFragmentSet.of(resource, label, value);
 
         fragmentSets.add(indexFragmentSet);
     }

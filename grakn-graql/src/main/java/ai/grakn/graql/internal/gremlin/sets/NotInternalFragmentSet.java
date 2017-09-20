@@ -20,16 +20,24 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
  * @author Felix Chapman
  */
-class NotInternalFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class NotInternalFragmentSet extends EquivalentFragmentSet {
 
-    NotInternalFragmentSet(VarProperty varProperty, Var start) {
-        super(Fragments.notInternal(varProperty, start));
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(Fragments.notInternal(varProperty(), var()));
     }
+
+    abstract Var var();
 }

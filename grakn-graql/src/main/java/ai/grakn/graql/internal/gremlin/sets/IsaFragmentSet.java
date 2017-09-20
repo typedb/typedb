@@ -20,29 +20,28 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
  * @author Felix Chapman
  */
-class IsaFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class IsaFragmentSet extends EquivalentFragmentSet {
 
-    private final Var instance;
-    private final Var type;
-
-    IsaFragmentSet(VarProperty varProperty, Var instance, Var type) {
-        super(Fragments.outIsa(varProperty, instance, type), Fragments.inIsa(varProperty, type, instance));
-        this.instance = instance;
-        this.type = type;
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(
+                Fragments.outIsa(varProperty(), instance(), type()), Fragments.inIsa(varProperty(), type(), instance())
+        );
     }
 
-    Var instance() {
-        return instance;
-    }
+    abstract Var instance();
 
-    Var type() {
-        return type;
-    }
+    abstract Var type();
 }

@@ -20,9 +20,13 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.labelOf;
@@ -30,19 +34,20 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.labelO
 /**
  * @author Felix Chapman
  */
-class SubFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class SubFragmentSet extends EquivalentFragmentSet {
 
-    private final Var subConcept;
-    private final Var superConcept;
-
-    SubFragmentSet(VarProperty varProperty, Var subConcept, Var superConcept) {
-        super(
-                Fragments.outSub(varProperty, subConcept, superConcept),
-                Fragments.inSub(varProperty, superConcept, subConcept)
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(
+                Fragments.outSub(varProperty(), subConcept(), superConcept()),
+                Fragments.inSub(varProperty(), superConcept(), subConcept())
         );
-        this.subConcept = subConcept;
-        this.superConcept = superConcept;
     }
+
+    abstract Var subConcept();
+
+    abstract Var superConcept();
 
     /**
      * A query can avoid navigating the sub hierarchy when the following conditions are met:
@@ -66,10 +71,10 @@ class SubFragmentSet extends EquivalentFragmentSet {
         Iterable<SubFragmentSet> subSets = fragmentSetOfType(SubFragmentSet.class, fragmentSets)::iterator;
 
         for (SubFragmentSet subSet : subSets) {
-            LabelFragmentSet labelSet = labelOf(subSet.superConcept, fragmentSets);
+            LabelFragmentSet labelSet = labelOf(subSet.superConcept(), fragmentSets);
             if (labelSet == null) continue;
 
-            LabelFragmentSet newLabelSet = labelSet.tryExpandSubs(subSet.subConcept, tx);
+            LabelFragmentSet newLabelSet = labelSet.tryExpandSubs(subSet.subConcept(), tx);
 
             if (newLabelSet != null) {
                 fragmentSets.remove(subSet);

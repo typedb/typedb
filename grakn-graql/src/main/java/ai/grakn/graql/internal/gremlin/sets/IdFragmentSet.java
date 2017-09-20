@@ -21,16 +21,26 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
  * @author Felix Chapman
  */
-class IdFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class IdFragmentSet extends EquivalentFragmentSet {
 
-    IdFragmentSet(VarProperty varProperty, Var start, ConceptId id) {
-        super(Fragments.id(varProperty, start, id));
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(Fragments.id(varProperty(), var(), id()));
     }
+
+    abstract Var var();
+
+    abstract ConceptId id();
 }
