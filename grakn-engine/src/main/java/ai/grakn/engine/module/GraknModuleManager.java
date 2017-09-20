@@ -44,7 +44,7 @@ public class GraknModuleManager {
     private static PluginManager pf4jPluginManager = new JarPluginManager();
 
     public static void initialise() {
-        LOG.info("Scanning Grakn modules directory..." + Paths.get(".").toAbsolutePath().toString());
+        LOG.info("Scanning Grakn modules directory at '" + Paths.get(".").toAbsolutePath().toString() + "'");
         Stream<Path> folders = listFolders(Paths.get(MODULE_DIR));
 
         Stream<String> pf4jPluginIds = folders.flatMap(moduleDir -> {

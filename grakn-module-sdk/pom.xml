@@ -7,5 +7,4 @@
     <groupId>ai.grakn</groupId>
     <artifactId>grakn-module-sdk</artifactId>
     <version>0.1</version>
-
 </project>
