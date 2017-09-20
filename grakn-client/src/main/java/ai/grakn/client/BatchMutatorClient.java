@@ -20,6 +20,7 @@ package ai.grakn.client;
 
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
+import static ai.grakn.util.ConcurrencyUtil.all;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import static ai.grakn.util.REST.Request.BATCH_NUMBER;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
@@ -43,13 +44,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,7 +67,7 @@ import mjson.Json;
  */
 public class BatchMutatorClient {
     private final int maxRetries;
-    private final Set<Future<Void>> futures;
+    private final Set<CompletableFuture<Void>> futures;
     private final Collection<Query> queries;
     private final Keyspace keyspace;
     private final TaskClient taskClient;
@@ -216,15 +215,7 @@ public class BatchMutatorClient {
      */
     public void waitToFinish(){
         flush();
-        Iterator<Future<Void>> it = futures.iterator();
-        while(it.hasNext()){
-            Future<Void> future = it.next();
-            try {
-                future.get();
-            } catch (InterruptedException|ExecutionException e) {
-                printError("Error while waiting for termination", e);
-            }
-        }
+        all(futures).join();
         futures.clear();
         System.out.println("All tasks completed");
     }
@@ -270,7 +261,7 @@ public class BatchMutatorClient {
                 .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
                 .build();
 
-        Future<Void> future = threadPool.submit(() -> {
+        CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
             try {
                 TaskResult taskId = sendQueryRetry.call(callable);
                 onCompletionOfTask.accept(taskId);
@@ -279,7 +270,7 @@ public class BatchMutatorClient {
                 printError("Error while executing queries:\n{" + queries + "} \n", e);
             }
             return null;
-        });
+        }, threadPool);
         futures.add(future);
     }
 
