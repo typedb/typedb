@@ -16,8 +16,8 @@ result for each match found. To follow along, or experiment further, with the ex
 
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh start 
-<relative-path-to-Grakn>/bin/graql.sh -f <relative-path-to-Grakn>/examples/basic-genealogy.gql
+./grakn server start 
+./graql console -f <relative-path-to-Grakn>/examples/basic-genealogy.gql
 ```
 
 <ul id="profileTabs" class="nav nav-tabs">
