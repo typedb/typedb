@@ -24,7 +24,9 @@ import ai.grakn.graql.internal.antlr.GremlinLexer;
 import ai.grakn.graql.internal.antlr.GremlinParser;
 import com.google.common.base.Strings;
 import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -32,10 +34,23 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 
-class GremlinVisitor extends GremlinBaseVisitor {
+/**
+ * Parser to make Gremlin queries pretty
+ *
+ * @author Felix Chapman
+ */
+public class GremlinVisitor extends GremlinBaseVisitor {
 
     public static void main(String[] args) throws IOException {
-        GremlinLexer lexer = new GremlinLexer(new ANTLRInputStream(System.in));
+        System.out.println(prettify(new ANTLRInputStream(System.in)));
+    }
+
+    public static String prettify(GraphTraversal<?, ?> traversal) {
+        return prettify(new ANTLRInputStream(traversal.toString()));
+    }
+
+    private static String prettify(CharStream input) {
+        GremlinLexer lexer = new GremlinLexer(input);
 
         CommonTokenStream tokens = new CommonTokenStream(lexer);
 
@@ -47,7 +62,7 @@ class GremlinVisitor extends GremlinBaseVisitor {
 
         visitor.visitTraversal(parser.traversal()).accept(pretty);
 
-        System.out.println(pretty.build());
+        return pretty.build();
     }
 
     @Override
@@ -64,9 +79,7 @@ class GremlinVisitor extends GremlinBaseVisitor {
             if (indent) str.indent();
 
             Stream<Consumer<PrettyString>> exprs = ctx.expr().stream().map(this::visitExpr);
-            intersperse(exprs, s -> s.append(", ").newline()).forEach(consumer -> {
-                consumer.accept(str);
-            });
+            intersperse(exprs, s -> s.append(", ").newline()).forEach(consumer -> consumer.accept(str));
 
             if (indent) str.unindent();
             str.append("]");
