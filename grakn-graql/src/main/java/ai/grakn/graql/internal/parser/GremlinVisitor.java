@@ -26,25 +26,39 @@ import com.google.common.base.Strings;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  * Parser to make Gremlin queries pretty
  *
  * @author Felix Chapman
  */
-public class GremlinVisitor extends GremlinBaseVisitor {
+public class GremlinVisitor extends GremlinBaseVisitor<Consumer<GremlinVisitor.PrettyStringBuilder>> {
+
+    private static final Consumer<PrettyStringBuilder> COMMA = s -> s.append(", ");
+    private static final Consumer<PrettyStringBuilder> COMMA_AND_NEWLINE = COMMA.andThen(PrettyStringBuilder::newline);
 
     public static void main(String[] args) throws IOException {
         System.out.println(prettify(new ANTLRInputStream(System.in)));
     }
 
+    /**
+     * Print the traversal to stdout in a readable format
+     */
+    public static void prettyPrint(GraphTraversal<?, ?> traversal) {
+        System.out.println(prettify(traversal));
+    }
+
+    /**
+     * Change the traversal to a string in a readable format
+     */
     public static String prettify(GraphTraversal<?, ?> traversal) {
         return prettify(new ANTLRInputStream(traversal.toString()));
     }
@@ -58,154 +72,180 @@ public class GremlinVisitor extends GremlinBaseVisitor {
 
         GremlinVisitor visitor = new GremlinVisitor();
 
-        PrettyString pretty = PrettyString.create();
+        PrettyStringBuilder pretty = PrettyStringBuilder.create();
 
-        visitor.visitTraversal(parser.traversal()).accept(pretty);
+        visitor.visit(parser.traversal()).accept(pretty);
 
         return pretty.build();
     }
 
     @Override
-    public Consumer<PrettyString> visitTraversal(GremlinParser.TraversalContext ctx) {
-        return visitExpr(ctx.expr());
+    public Consumer<PrettyStringBuilder> visitTraversal(GremlinParser.TraversalContext ctx) {
+        return visit(ctx.expr());
     }
 
     @Override
-    public Consumer<PrettyString> visitList(GremlinParser.ListContext ctx) {
+    public Consumer<PrettyStringBuilder> visitList(GremlinParser.ListContext ctx) {
+        // To save space, we only indent if the list has more than one item
         boolean indent = ctx.expr().size() > 1;
 
         return str -> {
+            // Lists are indented like:
+            // [
+            //     item1,
+            //     item2
+            // ]
             str.append("[");
             if (indent) str.indent();
-
-            Stream<Consumer<PrettyString>> exprs = ctx.expr().stream().map(this::visitExpr);
-            intersperse(exprs, s -> s.append(", ").newline()).forEach(consumer -> consumer.accept(str));
-
+            visitWithSeparator(str, ctx.expr(), COMMA_AND_NEWLINE);
             if (indent) str.unindent();
             str.append("]");
         };
     }
 
     @Override
-    public Consumer<PrettyString> visitStep(GremlinParser.StepContext ctx) {
+    public Consumer<PrettyStringBuilder> visitStep(GremlinParser.StepContext ctx) {
         return str -> {
-            visitCall(ctx.call()).accept(str);
+            visit(ctx.call()).accept(str);
 
+            // Some steps have a list of bound names after like:
+            // Step(arg1, arg2)@[x, y, z]
             if (ctx.ids() != null) {
                 str.append("@");
-                visitIds(ctx.ids()).accept(str);
+                visit(ctx.ids()).accept(str);
             }
         };
     }
 
     @Override
-    public Consumer<PrettyString> visitCall(GremlinParser.CallContext ctx) {
+    public Consumer<PrettyStringBuilder> visitCall(GremlinParser.CallContext ctx) {
         return str -> {
             str.append(ctx.ID().toString()).append("(");
-
-            Stream<Consumer<PrettyString>> exprs = ctx.expr().stream().map(this::visitExpr);
-            intersperse(exprs, s -> s.append(", ")).forEach(consumer -> {
-                consumer.accept(str);
-            });
-
+            visitWithSeparator(str, ctx.expr(), COMMA);
             str.append(")");
         };
     }
 
     @Override
-    public Consumer<PrettyString> visitIdExpr(GremlinParser.IdExprContext ctx) {
+    public Consumer<PrettyStringBuilder> visitIdExpr(GremlinParser.IdExprContext ctx) {
         return str -> {
             str.append(ctx.ID().toString());
         };
     }
 
     @Override
-    public Consumer<PrettyString> visitMethodExpr(GremlinParser.MethodExprContext ctx) {
+    public Consumer<PrettyStringBuilder> visitMethodExpr(GremlinParser.MethodExprContext ctx) {
         return str -> {
             str.append(ctx.ID().toString()).append(".");
-            visitCall(ctx.call()).accept(str);
+            visit(ctx.call()).accept(str);
         };
     }
 
     @Override
-    public Consumer<PrettyString> visitListExpr(GremlinParser.ListExprContext ctx) {
-        return visitList(ctx.list());
+    public Consumer<PrettyStringBuilder> visitListExpr(GremlinParser.ListExprContext ctx) {
+        return visit(ctx.list());
     }
 
     @Override
-    public Consumer<PrettyString> visitStepExpr(GremlinParser.StepExprContext ctx) {
-        return visitStep(ctx.step());
+    public Consumer<PrettyStringBuilder> visitStepExpr(GremlinParser.StepExprContext ctx) {
+        return visit(ctx.step());
     }
 
     @Override
-    public Consumer<PrettyString> visitNegExpr(GremlinParser.NegExprContext ctx) {
+    public Consumer<PrettyStringBuilder> visitNegExpr(GremlinParser.NegExprContext ctx) {
         return str -> {
             str.append("!");
-            visitExpr(ctx.expr()).accept(str);
+            visit(ctx.expr()).accept(str);
         };
     }
 
     @Override
-    public Consumer<PrettyString> visitSquigglyExpr(GremlinParser.SquigglyExprContext ctx) {
+    public Consumer<PrettyStringBuilder> visitSquigglyExpr(GremlinParser.SquigglyExprContext ctx) {
         return str -> {
             str.append("~");
-            visitExpr(ctx.expr()).accept(str);
+            visit(ctx.expr()).accept(str);
         };
     }
 
     @Override
-    public Consumer<PrettyString> visitMapExpr(GremlinParser.MapExprContext ctx) {
+    public Consumer<PrettyStringBuilder> visitMapExpr(GremlinParser.MapExprContext ctx) {
         return str -> {
-            str.append("{");
-            str.indent();
-
-            Stream<Consumer<PrettyString>> entries = ctx.mapEntry().stream().map(this::visitMapEntry);
-            intersperse(entries, s -> s.append(", ").newline()).forEach(consumer -> {
-                consumer.accept(str);
-            });
-
-            str.unindent();
-            str.append("}");
+            // Maps are indented like:
+            // {
+            //     key1=value1,
+            //     key2=value2
+            // }
+            str.append("{").indent();
+            visitWithSeparator(str, ctx.mapEntry(), COMMA_AND_NEWLINE);
+            str.unindent().append("}");
         };
     }
 
     @Override
-    public Consumer<PrettyString> visitMapEntry(GremlinParser.MapEntryContext ctx) {
+    public Consumer<PrettyStringBuilder> visitMapEntry(GremlinParser.MapEntryContext ctx) {
         return str -> {
-            str.append(ctx.ID().toString());
-            str.append("=");
-            visitExpr(ctx.expr()).accept(str);
+            str.append(ctx.ID().toString()).append("=");
+            visit(ctx.expr()).accept(str);
         };
     }
 
     @Override
-    public Consumer<PrettyString> visitIds(GremlinParser.IdsContext ctx) {
+    public Consumer<PrettyStringBuilder> visitIds(GremlinParser.IdsContext ctx) {
         return str -> {
-            str.append(ctx.ID().stream().map(Object::toString).collect(joining(", ", "[", "]")));
+            str.append("[");
+            visitWithSeparator(str, ctx.ID(), COMMA);
+            str.append("]");
         };
     }
 
+    @Override
+    public Consumer<PrettyStringBuilder> visitTerminal(TerminalNode node) {
+        return str -> {
+            str.append(node.getText());
+        };
+    }
+
+    private void visitWithSeparator(
+            PrettyStringBuilder str, List<? extends ParseTree> trees, Consumer<PrettyStringBuilder> elem) {
+        Stream<Consumer<PrettyStringBuilder>> exprs = trees.stream().map(this::visit);
+        intersperse(exprs, elem).forEach(consumer -> consumer.accept(str));
+    }
+
+    /**
+     * Helper method that intersperses elements of a stream with an additional element:
+     * <pre>
+     *     intersperse(Stream.of(1, 2, 3), 42) == Stream.of(1, 42, 2, 42, 3);
+     *
+     *     intersperse(Stream.of(), 42) == Stream.of()
+     *     intersperse(Stream.of(1), 42) == Stream.of(1)
+     *     intersperse(Stream.of(1, 2), 42) == Stream.of(1, 42, 2)
+     * </pre>
+     */
     private <T> Stream<T> intersperse(Stream<T> stream, T elem) {
         return stream.flatMap(i -> Stream.of(elem, i)).skip(1);
     }
 
-    Consumer<PrettyString> visitExpr(GremlinParser.ExprContext ctx) {
-        return (Consumer<PrettyString>) visit(ctx);
-    }
-
-    static class PrettyString {
+    /**
+     * Helper class wrapping a {@link StringBuilder}.
+     *
+     * <p>
+     * Supports indenting and un-indenting whole blocks. After calling {@link #indent}, all future
+     * {@link #append(String)} calls will be indented.
+     * </p>
+     */
+    static class PrettyStringBuilder {
 
         private final StringBuilder builder = new StringBuilder();
         private int indent = 0;
-        private boolean newline = true;
+        private boolean newline = false;
 
         private static final String INDENT_STR = "    ";
 
-        static PrettyString create() {
-            return new PrettyString();
+        static PrettyStringBuilder create() {
+            return new PrettyStringBuilder();
         }
 
-        PrettyString append(String string) {
+        PrettyStringBuilder append(String string) {
             if (newline) {
                 builder.append("\n");
                 builder.append(Strings.repeat(INDENT_STR, indent));
@@ -215,19 +255,19 @@ public class GremlinVisitor extends GremlinBaseVisitor {
             return this;
         }
 
-        PrettyString indent() {
+        PrettyStringBuilder indent() {
             newline();
             indent += 1;
             return this;
         }
 
-        PrettyString unindent() {
+        PrettyStringBuilder unindent() {
             newline();
             indent -= 1;
             return this;
         }
 
-        PrettyString newline() {
+        PrettyStringBuilder newline() {
             newline = true;
             return this;
         }
