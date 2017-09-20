@@ -96,14 +96,14 @@ class AnswerState extends ResolutionState {
         boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
 
         //check if the specific answer to ruleHead already in cache/db
-        Answer headAnswer = ruleHead
-                .lookupAnswer(cache, ans)
+        Answer headAnswer = cache
+                .getAnswer(ruleHead, ans)
                 .project(queryVars)
                 .unify(unifier);
 
         //if not and query different than rule head do the same with the query
         Answer queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
-                subbedQuery.lookupAnswer(cache, ans) :
+                cache.getAnswer(query, ans) :
                 new QueryAnswer();
 
         //ensure no duplicates created - only materialise answer if it doesn't exist in the db

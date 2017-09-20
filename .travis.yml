@@ -5,10 +5,10 @@ jdk:
   - oraclejdk8
 
 cache:
-   directories:
-   - $HOME/.m2
-   - grakn-dashboard/node_modules
-   - grakn-engine/npm
+  directories:
+  - $HOME/.m2
+  - grakn-dashboard/node_modules
+  - grakn-engine/npm
 
 env:
   # Split tests into grakn-test and everything else
