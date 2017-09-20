@@ -141,6 +141,31 @@ class GremlinVisitor extends GremlinBaseVisitor {
     }
 
     @Override
+    public Consumer<PrettyString> visitMapExpr(GremlinParser.MapExprContext ctx) {
+        return str -> {
+            str.append("{");
+            str.indent();
+
+            Stream<Consumer<PrettyString>> entries = ctx.mapEntry().stream().map(this::visitMapEntry);
+            intersperse(entries, s -> s.append(", ").newline()).forEach(consumer -> {
+                consumer.accept(str);
+            });
+
+            str.unindent();
+            str.append("}");
+        };
+    }
+
+    @Override
+    public Consumer<PrettyString> visitMapEntry(GremlinParser.MapEntryContext ctx) {
+        return str -> {
+            str.append(ctx.ID().toString());
+            str.append("=");
+            visitExpr(ctx.expr()).accept(str);
+        };
+    }
+
+    @Override
     public Consumer<PrettyString> visitIds(GremlinParser.IdsContext ctx) {
         return str -> {
             str.append(ctx.ID().stream().map(Object::toString).collect(joining(", ", "[", "]")));
