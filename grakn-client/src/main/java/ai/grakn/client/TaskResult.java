@@ -24,6 +24,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.auto.value.AutoValue;
 
+import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
+
 /**
  * Wrapper for handling the outcome of the execution of a task
  *
@@ -35,7 +37,7 @@ import com.google.auto.value.AutoValue;
 public abstract class TaskResult {
     @JsonProperty("taskId")
     public abstract TaskId getTaskId();
-    @JsonProperty("stackTrace")
+    @JsonProperty(STACK_TRACE)
     public abstract String getStackTrace();
     @JsonProperty("code")
     public abstract String getCode();
@@ -53,7 +55,7 @@ public abstract class TaskResult {
     public abstract static class Builder {
         @JsonProperty("taskId")
         public abstract Builder setTaskId(TaskId taskId);
-        @JsonProperty("stackTrace")
+        @JsonProperty(STACK_TRACE)
         public abstract Builder setStackTrace(String stackTrace);
         @JsonProperty("code")
         public abstract Builder setCode(String code);
