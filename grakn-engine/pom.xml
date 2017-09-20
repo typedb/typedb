@@ -34,7 +34,7 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-module-sdk</artifactId>
-            <version>0.1</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.auth0</groupId>
