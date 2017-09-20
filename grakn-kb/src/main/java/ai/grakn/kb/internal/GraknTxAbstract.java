@@ -62,7 +62,6 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -445,9 +444,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
 
         //Automatic shard creation - If this type does not have a shard create one
-        if (!Schema.MetaSchema.isMetaLabel(label) && !SchemaConceptImpl.from(schemaConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()) {
-            SchemaConceptImpl.from(schemaConcept).createShard();
-        }
+        //if (!Schema.MetaSchema.isMetaLabel(label) && !SchemaConceptImpl.from(schemaConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()) {
+        //    SchemaConceptImpl.from(schemaConcept).createShard();
+        //}
 
         //noinspection unchecked
         return (T) schemaConcept;
