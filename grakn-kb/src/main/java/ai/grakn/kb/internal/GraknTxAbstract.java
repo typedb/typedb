@@ -778,8 +778,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         validateGraph();
 
         Map<ConceptId, Long> newInstances = txCache().getShardingCount();
-        Set<Attribute> modifiedAttributes = txCache().getModifiedAttributes();
-        boolean logsExist = !newInstances.isEmpty() || !modifiedAttributes.isEmpty();
+        Map<String, ConceptId> newAttributes = txCache().getNewAttributes();
+        boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
@@ -790,9 +790,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         if (logsExist) {
             if(trackingNeeded) {
                 commitLog().addNewInstances(newInstances);
-                commitLog().addNewAttributes(modifiedAttributes);
+                commitLog().addNewAttributes(newAttributes);
             } else {
-                return Optional.of(CommitLog.formatLog(newInstances, modifiedAttributes).toString());
+                return Optional.of(CommitLog.formatTxLog(newInstances, newAttributes).toString());
             }
         }
 

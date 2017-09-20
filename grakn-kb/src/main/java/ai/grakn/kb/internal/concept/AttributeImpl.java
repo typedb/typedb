@@ -59,7 +59,14 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, Object value) {
-        return new AttributeImpl<>(vertexElement, type, value);
+        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, value);
+
+        //Generate the index again. Faster than reading
+        String index = Schema.generateAttributeIndex(type.getLabel(), value.toString());
+
+        //Track the attribute by index
+        vertexElement.tx().txCache().addNewAttribute(index, attribute.getId());
+        return attribute;
     }
 
     /**
