@@ -15,8 +15,8 @@ A match describes a pattern to find in the knowledge base. The results of the ma
 [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh start 
-<relative-path-to-Grakn>/bin/graql.sh -f <relative-path-to-Grakn>/examples/basic-genealogy.gql
+./grakn server start 
+./graql console -f <relative-path-to-Grakn>/examples/basic-genealogy.gql
 ```
 
 ## Properties

@@ -25,8 +25,8 @@ If it is not already running, start Grakn, then open a Graql shell:
 
 ```bash
 cd [your Grakn install directory]
-bin/grakn.sh start
-bin/graql.sh
+./grakn server start
+./graql console
 ```
 
 ## Defining a Schema
@@ -156,7 +156,7 @@ $x id "peter" has age "35";
 Here is the complete example - the code to define the schema and insert the data into a knowledge base. You can load this directly into Graql, if you don't want to type it out for yourself. Cut and paste the Graql below and start Graql:
 
 ```bash
-bin/graql.sh
+./graql console
 ```
 
 Then type edit, which will open up the systems default text editor where you can paste your chunk of text. Upon exiting the editor, the Graql will execute.

@@ -9,7 +9,7 @@ node {
         //Always wrap each test block in a timeout
         //This first block sets up engine within 15 minutes
         withEnv([
-                'PATH+EXTRA=' + workspace + '/grakn-package/bin'
+                'PATH+EXTRA=' + workspace + '/grakn-package'
         ]) {
             timeout(15) {
                 stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
@@ -28,11 +28,11 @@ authored by - """ + user
                     sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
                     sh 'mkdir grakn-package'
                     sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-                    sh 'grakn.sh start'
+                    sh 'graknserver start'
                 }
                 stage('Test Connection') {
-                    sh 'graql.sh -e "match \\\$x; get;"'
-                    //Sanity check query. I.e. is everything working?
+                    sh 'graqlconsole -e "match \\\$x; get;"'
+                    //Sanity check query. I.e. is everything working?}
                 }
             }
         }
@@ -63,8 +63,7 @@ authored by - """ + user
                 timeout(360) {
                     stage('Run the benchmarks') {
                         sh 'mvn clean test  -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dgrakn.test-profile=janus -Dmaven.repo.local=' + workspace + '/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
-                    }
-                    dir('grakn-test/test-snb/') {
+                    } dir('grakn-test/test-snb/') {
                         stage('Build the SNB connectors') {
                             sh 'mvn clean package assembly:single -Dmaven.repo.local=' + workspace + '/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
                         }
@@ -97,7 +96,7 @@ authored by - """ + user
                 if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
                     archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
-                sh 'grakn-package/bin/grakn.sh stop'
+                sh 'grakn-package/grakn server stop'
                 sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
             }
         }

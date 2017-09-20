@@ -112,7 +112,7 @@ public class CSVMigratorMainTest {
     public void specifyingIncorrectURIInCSVMigratorScript_ErrorIsPrintedToSystemErr(){
         run("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:" + engine.uri().substring(1), "-keyspace", keyspace.getValue());
 
-        assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn.sh start'?"));
+        assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn server start'?"));
     }
 
     @Test
@@ -128,7 +128,7 @@ public class CSVMigratorMainTest {
     public void csvMigratorCalledWithNoArgs_HelpMessagePrintedToSystemOut(){
         run();
 
-        assertThat(sysOut.getLog(), containsString("usage: migration.sh"));
+        assertThat(sysOut.getLog(), containsString("usage: graql migrate"));
     }
 
     @Test
