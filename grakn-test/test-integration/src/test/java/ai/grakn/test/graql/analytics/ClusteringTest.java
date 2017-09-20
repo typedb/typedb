@@ -18,8 +18,8 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -36,19 +36,18 @@ import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class ClusteringTest {
     private static final String thing = "thingy";
@@ -91,6 +90,7 @@ public class ClusteringTest {
     }
 
     @Test
+    @Ignore("The last assert fails intermittently (TP: 17550)")
     public void testConnectedComponentSize() throws Exception {
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
