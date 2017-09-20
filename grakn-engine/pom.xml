@@ -37,6 +37,11 @@
             <version>${java-jwt.version}</version>
         </dependency>
         <dependency>
+            <groupId>ro.fortsoft.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+            <version>${pf4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql</artifactId>
             <version>${project.version}</version>
