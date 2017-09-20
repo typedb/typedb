@@ -46,9 +46,6 @@ public class GraknEngineConfig {
 
     public static final String GRAKN_VERSION_KEY = "grakn.version";
 
-    public static final String KB_MODE = "knowledge-base.mode";
-    public static final String KB_ANALYTICS = "knowledge-base.analytics";
-
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
 
     public static final String DEFAULT_KEYSPACE_PROPERTY = "knowledge-base.default-keyspace";
