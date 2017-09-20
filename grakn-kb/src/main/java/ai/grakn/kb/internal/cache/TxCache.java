@@ -30,6 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.structure.Casting;
 
@@ -217,7 +218,9 @@ public class TxCache {
         modifiedRelationships.remove(concept);
         modifiedRules.remove(concept);
         modifiedAttributes.remove(concept);
-        newAttributes.remove(concept);
+        if(concept.isAttribute()) {
+            newAttributes.remove(AttributeImpl.from(concept.asAttribute()).getIndex());
+        }
 
         conceptCache.remove(concept.getId());
         if (concept.isSchemaConcept()) {
