@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.util.CommonUtil;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -85,15 +86,10 @@ public class MatchBase extends AbstractMatch {
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
         LOG.trace("Created query plan");
         LOG.trace(graqlTraversal.toString());
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph);
 
-        String[] selectedNames = pattern.commonVars().stream().map(Var::getValue).toArray(String[]::new);
+        Set<Var> vars = Sets.filter(pattern.commonVars(), Var::isUserDefinedName);
 
-        // Must provide three arguments in order to pass an array to .select
-        // If ordering, select the variable to order by as well
-        if (selectedNames.length != 0) {
-            traversal.select(selectedNames[0], selectedNames[0], selectedNames);
-        }
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph, vars);
 
         return traversal.toStream()
                 .map(elements -> makeResults(graph, elements))
