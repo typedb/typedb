@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -69,7 +70,14 @@ public abstract class GraqlTraversal {
         Traversal[] traversals =
                 fragments().stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 
-        return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
+        if (traversals.length == 1) {
+            // If there are no disjunctions, we don't need to union them and get a performance boost
+            return (GraphTraversal<Vertex, Map<String, Element>>) traversals[0];
+        } else {
+            // This is a sneaky trick - we want to do a union but tinkerpop requires all traversals to start from
+            // somewhere, so we start from a single arbitrary vertex.
+            return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
+        }
     }
 
     //       Set of disjunctions
@@ -82,14 +90,16 @@ public abstract class GraqlTraversal {
     /**
      * @return a gremlin traversal that represents this inner query
      */
-    private GraphTraversal<? extends Element, Map<String, Element>> getConjunctionTraversal(
+    private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
             GraknTx graph, ImmutableList<Fragment> fragmentList
     ) {
-        GraphTraversal traversal = __.V();
+        GraphTraversalSource traversalSource = graph.admin().getTinkerTraversal();
+
+        GraphTraversal traversal = traversalSource.V();
 
         // If the first fragment can operate on edges, then we have to navigate all edges as well
         if (fragmentList.get(0).canOperateOnEdges()) {
-            traversal = __.union(traversal, __.V().outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
+            traversal = __.union(traversal, traversalSource.V().outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
         }
 
         return applyFragments(graph, fragmentList, traversal);
