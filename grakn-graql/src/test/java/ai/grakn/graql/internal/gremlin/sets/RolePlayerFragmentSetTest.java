@@ -49,7 +49,7 @@ public class RolePlayerFragmentSetTest {
     public void whenApplyingRoleOptimisation_ExpandRoleToAllSubs() {
         Label author = Label.of("author");
         Label director = Label.of("director");
-        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, author);
+        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, ImmutableSet.of(author));
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
@@ -72,7 +72,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
-                EquivalentFragmentSets.label(null, d, magician)
+                EquivalentFragmentSets.label(null, d, ImmutableSet.of(magician))
         );
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
@@ -88,7 +88,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
-                EquivalentFragmentSets.label(null, d, movie)
+                EquivalentFragmentSets.label(null, d, ImmutableSet.of(movie))
         );
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
@@ -101,7 +101,7 @@ public class RolePlayerFragmentSetTest {
     @Test
     public void whenApplyingRoleOptimisationToMetaRole_DoNotExpandRoleToAllSubs() {
         Label role = Label.of("role");
-        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, role);
+        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, ImmutableSet.of(role));
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
@@ -125,7 +125,7 @@ public class RolePlayerFragmentSetTest {
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
                 EquivalentFragmentSets.isa(null, a, d),
-                EquivalentFragmentSets.label(null, d, magician)
+                EquivalentFragmentSets.label(null, d, ImmutableSet.of(magician))
         );
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
@@ -142,7 +142,7 @@ public class RolePlayerFragmentSetTest {
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
                 EquivalentFragmentSets.isa(null, a, d),
-                EquivalentFragmentSets.label(null, d, movie)
+                EquivalentFragmentSets.label(null, d, ImmutableSet.of(movie))
         );
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);

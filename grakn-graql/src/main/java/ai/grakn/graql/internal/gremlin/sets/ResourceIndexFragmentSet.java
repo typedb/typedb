@@ -25,20 +25,21 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDirectSubTypes;
 
 /**
  * A query can use a more-efficient resource index traversal when the following criteria are met:
  * <p>
  * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link Var}.
  * 2. The {@link IsaFragmentSet} refers to a type {@link Var} with a {@link LabelFragmentSet}.
- * 3. The {@link LabelFragmentSet} refers to a type in the graph without direct sub-types.
+ * 3. The {@link LabelFragmentSet} refers to one type in the knowledge base.
  * 4. The {@link ValueFragmentSet} is an equality predicate referring to a literal value.
  * <p>
  * When all these criteria are met, the fragments representing the {@link IsaFragmentSet} and the
@@ -64,13 +65,14 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
             Var type = isaSet.type();
 
-            LabelFragmentSet nameSet = EquivalentFragmentSets.typeLabelOf(type, fragmentSets);
+            LabelFragmentSet nameSet = EquivalentFragmentSets.labelOf(type, fragmentSets);
             if (nameSet == null) continue;
 
-            Label label = nameSet.label();
+            Set<Label> labels = nameSet.labels();
 
-            if (!hasDirectSubTypes(graph, label)) {
-                optimise(fragmentSets, valueSet, isaSet, nameSet.label());
+            if (labels.size() == 1) {
+                Label label = Iterables.getOnlyElement(labels);
+                optimise(fragmentSets, valueSet, isaSet, label);
                 return true;
             }
         }

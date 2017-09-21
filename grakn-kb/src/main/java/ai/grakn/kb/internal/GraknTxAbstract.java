@@ -131,6 +131,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
+    private @Nullable GraphTraversalSource graphTraversalSource = null;
 
     public GraknTxAbstract(G graph, Keyspace keyspace, String engineUri, Properties properties) {
         this.graph = graph;
@@ -320,7 +321,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public GraphTraversalSource getTinkerTraversal() {
         operateOnOpenGraph(() -> null); //This is to check if the graph is open
-        return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance());
+        if (graphTraversalSource == null) {
+            graphTraversalSource = getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance());
+        }
+        return graphTraversalSource;
     }
 
     @Override

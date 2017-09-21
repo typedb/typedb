@@ -98,6 +98,11 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
+    
+     * This is the memoized result of {@link #vars()}
+     */
+    private @Nullable ImmutableSet<Var> vars = null;
+  
     /**
      * @param conceptMap map defining mappings between this fragment and the target fragment
      * @return transformed fragment with id predicates transformed according to the concept map
@@ -240,11 +245,15 @@ public abstract class Fragment {
      * Get all variables in the fragment including the start and end (if present)
      */
     public final Set<Var> vars() {
-        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(start());
-        Var end = end();
-        if (end != null) builder.add(end);
-        builder.addAll(otherVars());
-        return builder.build();
+        if (vars == null) {
+            ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(start());
+            Var end = end();
+            if (end != null) builder.add(end);
+            builder.addAll(otherVars());
+            vars = builder.build();
+        }
+
+        return vars;
     }
 
     @Override

@@ -23,12 +23,10 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
@@ -47,7 +45,8 @@ public class EquivalentFragmentSets {
             RolePlayerFragmentSet.ROLE_OPTIMISATION,
             ResourceIndexFragmentSet.RESOURCE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
-            LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION
+            LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
+            SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION
     );
 
     /**
@@ -90,7 +89,7 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is an instance of a type.
+     * An {@link EquivalentFragmentSet} that indicates a variable is a direct instance of a type.
      */
     public static EquivalentFragmentSet isa(VarProperty varProperty, Var instance, Var type) {
         return new IsaFragmentSet(varProperty, instance, type);
@@ -125,10 +124,11 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular label.
+     * An {@link EquivalentFragmentSet} that indicates a variable representing a schema concept with one of the
+     * specified labels.
      */
-    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, Label label) {
-        return new LabelFragmentSet(varProperty, type, label);
+    public static EquivalentFragmentSet label(VarProperty varProperty, Var type, ImmutableSet<Label> labels) {
+        return new LabelFragmentSet(varProperty, type, labels);
     }
 
     /**
@@ -170,12 +170,7 @@ public class EquivalentFragmentSets {
         return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 
-    static boolean hasDirectSubTypes(GraknTx graph, Label label) {
-        Type type = graph.getSchemaConcept(label);
-        return type != null && !CommonUtil.containsOnly(type.subs(), 1);
-    }
-
-    static @Nullable LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
+    static @Nullable LabelFragmentSet labelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
                 .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
                 .findAny()
