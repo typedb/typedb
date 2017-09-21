@@ -2,11 +2,12 @@
 set -e
 
 PACKAGE=grakn-package
+DIR=$(pwd -P)
 
 case $1 in
     start)
         mkdir ${PACKAGE}
-        tar -xf ../grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C ${PACKAGE}
+        tar -xf ${DIR}/../grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C ${PACKAGE}
 
         set +e
         nc -z localhost 4567
@@ -18,11 +19,11 @@ case $1 in
             exit 1
         fi
 
-        ./${PACKAGE}/grakn server start
+        ${DIR}/${PACKAGE}/grakn server start
         ;;
     stop)
-        ./${PACKAGE}/grakn server stop
-        rm -rf ./${PACKAGE}
+        ${DIR}/${PACKAGE}/grakn server stop
+        rm -rf ${DIR}/${PACKAGE}
         ;;
     *)
         >&2 echo 'Valid commands are `start` and `stop`'
