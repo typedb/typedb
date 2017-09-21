@@ -60,7 +60,7 @@ abstract class InIsaFragment extends Fragment {
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
-        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.isVertex(traversal);
+        GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.isVertex(traversal);
 
         if (mayHaveEdgeInstances()) {
             GraphTraversal<Vertex, Vertex> isImplicitRelationType =
