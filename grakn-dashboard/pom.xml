@@ -85,6 +85,7 @@
                         <configuration>
                             <executable>yarn</executable>
                             <commandlineArgs>run e2e</commandlineArgs>
+                            <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
                 </executions>
