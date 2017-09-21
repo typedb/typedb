@@ -29,7 +29,7 @@ import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.engine.util.ConcurrencyUtil;
+import ai.grakn.util.ConcurrencyUtil;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
@@ -46,6 +46,7 @@ import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -60,6 +61,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -92,7 +94,7 @@ public class TasksController {
     private static final TaskState.Priority DEFAULT_TASK_PRIORITY = TaskState.Priority.LOW;
 
     private static final int MAX_THREADS = 10;
-    private static final Duration MAX_EXECUTION_TIME = Duration.ofSeconds(10);
+    private static final Duration MAX_EXECUTION_TIME = Duration.ofSeconds(30);
 
     private final TaskManager manager;
     private final ExecutorService executor;
@@ -119,7 +121,9 @@ public class TasksController {
 
         spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
-        this.executor = Executors.newFixedThreadPool(MAX_THREADS);
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("grakn-task-controller-%d").build();
+        this.executor = Executors.newFixedThreadPool(MAX_THREADS, namedThreadFactory);
     }
 
     @GET

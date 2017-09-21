@@ -33,7 +33,7 @@ public class ClientTest {
 
     @Test
     public void graknEngineRunning() throws Throwable {
-        EngineContext engine = EngineContext.startInMemoryServer();
+        EngineContext engine = EngineContext.inMemoryServer();
         engine.before();
 
         boolean running = Client.serverIsRunning(engine.uri());

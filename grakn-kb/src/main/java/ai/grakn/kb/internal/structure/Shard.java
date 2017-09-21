@@ -77,7 +77,7 @@ public class Shard {
      * @param concept The concept to link to this shard
      */
     public void link(ConceptImpl concept){
-        concept.vertex().putEdge(vertex(), Schema.EdgeLabel.ISA);
+        concept.vertex().addEdge(vertex(), Schema.EdgeLabel.ISA);
     }
 
     /**

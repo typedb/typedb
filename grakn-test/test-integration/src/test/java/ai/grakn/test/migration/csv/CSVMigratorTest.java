@@ -59,7 +59,7 @@ public class CSVMigratorTest {
     public final SystemOutRule systemOutRule = new SystemOutRule().enableLog();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Before
     public void setup() {

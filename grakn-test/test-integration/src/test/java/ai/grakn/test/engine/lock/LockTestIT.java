@@ -51,7 +51,7 @@ public class LockTestIT {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static EngineContext engineContext = EngineContext.startSingleQueueServer();
+    public static EngineContext engineContext = EngineContext.singleQueueServer();
 
     @DataPoints
     public static Locks[] configValues = Locks.values();

@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 public class UpdatingThingCountTaskTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startSingleQueueServer();
+    public static final EngineContext engine = EngineContext.singleQueueServer();
 
     @ClassRule
     public static final MockRedisRule mockRedisRule = new MockRedisRule();

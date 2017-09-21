@@ -86,10 +86,10 @@ esac
 
 # migrate the data into Grakn
 
-graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-1-resources.gql -r $ENGINE
-graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-2-relations.gql -r $ENGINE
-graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-3-entities.gql -r $ENGINE
-graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-4-rules.gql -r $ENGINE
+graql console -k $KEYSPACE -f $GRAQL/ldbc-snb-1-resources.gql -r $ENGINE
+graql console -k $KEYSPACE -f $GRAQL/ldbc-snb-2-relations.gql -r $ENGINE
+graql console -k $KEYSPACE -f $GRAQL/ldbc-snb-3-entities.gql -r $ENGINE
+graql console -k $KEYSPACE -f $GRAQL/ldbc-snb-4-rules.gql -r $ENGINE
 
 # lazily take account of OS
 unamestr=`uname`
@@ -117,7 +117,7 @@ do
         echo "Parallelism: $ACTIVE_TASKS"
 
         tail -n +2 $CSV_DATA/${DATA_FILE} | wc -l
-        time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -d -r 5 -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b 32
+        time graql migrate csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -d -r 5 -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b 32
 done < $SCRIPTPATH/migrationsToRun.txt
 
 # confirm there were no errors

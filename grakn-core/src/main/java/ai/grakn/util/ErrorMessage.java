@@ -194,6 +194,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
+    ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]"),
     RULE_CREATION_ARITY_ERROR("Arity mismatch when creating rule"),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms"),
