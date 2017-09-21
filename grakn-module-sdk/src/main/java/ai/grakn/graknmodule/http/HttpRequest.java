@@ -20,7 +20,6 @@
 package ai.grakn.graknmodule.http;
 
 import java.util.Map;
-import java.util.Set;
 
 /**
  * A class representing an HTTP request
