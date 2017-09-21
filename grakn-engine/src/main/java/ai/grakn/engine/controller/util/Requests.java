@@ -73,4 +73,19 @@ public class Requests {
         return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(
                 GraknServerException::requestMissingBody);
     }
+
+    /**
+     * Given a {@link Function}, retrieve the value of the {@param parameter} by applying that function
+     * @param extractParameterFunction function used to extract the parameter
+     * @param parameter value to retrieve from the HTTP request
+     * @return value of the given parameter
+     */
+
+    public static String mandatoryPathParameter(Request request, String parameter) {
+        // TODO: add new method GraknServerException.requestMissingPathParameters
+        String parameterValue = Optional.ofNullable(request.params(parameter)).orElseThrow(() ->
+            GraknServerException.requestMissingParameters(parameter));
+
+        return parameterValue;
+    }
 }
