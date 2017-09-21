@@ -143,6 +143,9 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void start() {
+        redisWrapper.testConnection();
+        LOG.info("Starting task manager {}", taskManager.getClass().getCanonicalName());
+        taskManager.start();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
@@ -229,7 +232,6 @@ public class GraknEngineServer implements AutoCloseable {
             RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
             taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
         }
-        taskManager.start();
         return taskManager;
     }
 
@@ -413,9 +415,7 @@ public class GraknEngineServer implements AutoCloseable {
         if (useSentinel) {
             builder.setMasterName(prop.tryProperty(REDIS_SENTINEL_MASTER).orElse("graknmaster"));
         }
-        RedisWrapper redisWrapper = builder.build();
-        redisWrapper.testConnection();
-        return redisWrapper;
+        return builder.build();
     }
 
     private void logStartMessage(String host, String port) {
