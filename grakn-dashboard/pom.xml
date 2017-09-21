@@ -77,6 +77,17 @@
                             <commandlineArgs>run build:prod</commandlineArgs>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>dashboard-e2e</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>verify</phase>
+                        <configuration>
+                            <executable>yarn</executable>
+                            <commandlineArgs>run e2e</commandlineArgs>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

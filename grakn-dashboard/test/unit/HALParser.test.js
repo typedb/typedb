@@ -17,7 +17,7 @@
  */
 
 
-import HALParser from '../src/js/HAL/HALParser';
+import HALParser from '../../src/js/HAL/HALParser';
 import * as MockedResponses from './modules/MockedEngineResponses';
 import * as GlobalMocks from './modules/GlobalMocks';
 

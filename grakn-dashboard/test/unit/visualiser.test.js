@@ -17,7 +17,7 @@
  */
 
 
-import Visualiser from '../src/js/visualiser/Visualiser';
+import Visualiser from '../../src/js/visualiser/Visualiser';
 import * as GlobalMocks from './modules/GlobalMocks';
 
 
