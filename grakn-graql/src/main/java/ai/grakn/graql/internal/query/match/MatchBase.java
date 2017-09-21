@@ -75,8 +75,6 @@ public class MatchBase extends AbstractMatch {
         this.pattern = pattern;
     }
 
-
-
     @Override
     public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
         GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noTx);
@@ -91,11 +89,10 @@ public class MatchBase extends AbstractMatch {
     }
 
     /**
-     *
-     * @param pattern
-     * @param graph
-     * @param graqlTraversal
-     * @return
+     * @param pattern a pattern to match in the graph
+     * @param graph the graph to get results from
+     * @param graqlTraversal gral traversal corresponding to the provided pattern
+     * @return resulting answer stream
      */
     public static Stream<Answer> streamWithTraversal(Conjunction<PatternAdmin> pattern, GraknTx graph, GraqlTraversal graqlTraversal) {
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph);

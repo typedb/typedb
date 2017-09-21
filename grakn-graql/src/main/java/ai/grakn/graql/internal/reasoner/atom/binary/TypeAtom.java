@@ -92,11 +92,6 @@ public abstract class TypeAtom extends Binary{
                 //disjoint atom
                 || !this.getNeighbours(Atom.class).findFirst().isPresent()
                 || isRuleResolvable();
-        /*
-                || getSchemaConcept() == null
-                //rule resolvable
-                || getSchemaConcept().isType() && RuleUtil.getInferrableTypes(tx()).contains(getSchemaConcept().asType());
-                */
     }
 
     @Override

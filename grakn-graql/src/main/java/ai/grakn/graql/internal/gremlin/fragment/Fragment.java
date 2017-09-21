@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
@@ -99,6 +98,10 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
+    /**
+     * @param conceptMap map defining mappings between this fragment and the target fragment
+     * @return transformed fragment with id predicates transformed according to the concept map
+     */
     public Fragment transform(Map<ConceptId, ConceptId> conceptMap){ return this;}
 
     /**

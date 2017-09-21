@@ -80,13 +80,11 @@ public class RegexAtom extends AtomicBase {
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        return false;
+        return isAlphaEquivalent(obj);
     }
 
     @Override
-    public int structuralEquivalenceHashCode() {
-        return 0;
-    }
+    public int structuralEquivalenceHashCode() { return alphaEquivalenceHashCode();}
 
     @Override
     public Atomic copy() { return new RegexAtom(this);}

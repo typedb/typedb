@@ -278,6 +278,7 @@ public class RecursiveInferenceTest {
     }
 
     //TODO remodel when repeating roles allowed
+    @Ignore
     @Test
     public void testReachabilitySymmetric(){
         QueryBuilder qb = reachabilitySymmetricContext.tx().graql().infer(false);

@@ -81,12 +81,12 @@ public class DataTypeAtom extends AtomicBase {
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        return false;
+        return isAlphaEquivalent(obj);
     }
 
     @Override
     public int structuralEquivalenceHashCode() {
-        return 0;
+        return alphaEquivalenceHashCode();
     }
 
     @Override

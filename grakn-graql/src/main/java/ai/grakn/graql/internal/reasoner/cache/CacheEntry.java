@@ -18,32 +18,30 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
-import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import java.util.Set;
 
 /**
  *
  * <p>
- * TODO
+ * Simple class for defining query entries.
  * </p>
  *
  * @param <Q> query type the entry corresponds to
+ * @param <T> corresponding element to be cached
  *
  * @author Kasper Piskorski
  *
  */
-public class StructuralCacheEntry<Q extends ReasonerQueryImpl> {
+class CacheEntry<Q extends ReasonerQueryImpl, T> {
 
     private final Q query;
-    private final GraqlTraversal traversal;
+    private final T cachedElement;
 
-    StructuralCacheEntry(Q query, GraqlTraversal traversal){
+    CacheEntry(Q query, T element){
         this.query = query;
-        this.traversal = traversal;
+        this.cachedElement = element;
     }
 
     public Q query(){ return query;}
-    public GraqlTraversal traversal(){ return traversal;}
+    public T cachedElement(){ return cachedElement;}
 }

@@ -191,8 +191,7 @@ public class RelationshipAtom extends IsaAtom {
         return hashCode;
     }
 
-    @Override
-    public boolean isAlphaEquivalent(Object obj) {
+    private boolean isBaseEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationshipAtom a2 = (RelationshipAtom) obj;
@@ -201,9 +200,15 @@ public class RelationshipAtom extends IsaAtom {
                 //check relation players equivalent
                 && getRolePlayers().size() == a2.getRolePlayers().size()
                 && getRelationPlayers().size() == a2.getRelationPlayers().size()
-                && getRoleLabels().equals(a2.getRoleLabels())
-                //check bindings
-                && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
+                && getRoleLabels().equals(a2.getRoleLabels());
+    }
+
+    @Override
+    public boolean isAlphaEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj)) return false;
+        RelationshipAtom a2 = (RelationshipAtom) obj;
+        //check bindings
+        return getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
                 && getRoleTypeMap().equals(a2.getRoleTypeMap());
     }
 
@@ -219,17 +224,10 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
+        if (!isBaseEquivalent(obj)) return false;
         RelationshipAtom a2 = (RelationshipAtom) obj;
-        return (isUserDefined() == a2.isUserDefined())
-                && Objects.equals(this.getTypeId(), a2.getTypeId())
-                //check relation players equivalent
-                && getRolePlayers().size() == a2.getRolePlayers().size()
-                && getRelationPlayers().size() == a2.getRelationPlayers().size()
-                && getRoleLabels().equals(a2.getRoleLabels())
-                // check bindings
-                && getRoleConceptIdMap().keySet().equals(a2.getRoleConceptIdMap().keySet());
+        // check bindings
+        return getRoleConceptIdMap().keySet().equals(a2.getRoleConceptIdMap().keySet());
     }
 
     @Override

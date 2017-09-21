@@ -89,7 +89,6 @@ public abstract class Atom extends AtomicBase {
     @Override
     public boolean isRuleResolvable() {
         return getApplicableRules().findFirst().isPresent();
-        //return getSchemaConcept() == null || getSchemaConcept().isType() && RuleUtil.getInferrableTypes(tx()).contains(getSchemaConcept().asType());
     }
 
     @Override

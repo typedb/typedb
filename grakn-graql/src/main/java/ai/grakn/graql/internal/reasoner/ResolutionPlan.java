@@ -30,7 +30,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.cache.StructuralCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.ImmutableList;
@@ -223,14 +222,14 @@ public final class ResolutionPlan {
      * compute the query resolution plan - list of queries ordered by their cost as computed by the graql traversal planner
      * @return list of prioritised queries
      */
-    public LinkedList<ReasonerQueryImpl> queryPlan(StructuralCache sCache){
+    public LinkedList<ReasonerQueryImpl> queryPlan(){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         LinkedList<Atom> atoms = new LinkedList<>(plan);
 
         List<Atom> nonResolvableAtoms = new ArrayList<>();
         while (!atoms.isEmpty()) {
             Atom top = atoms.remove();
-            if (/*sCache.isRuleResolvable(top)*/ top.isRuleResolvable()) {
+            if (top.isRuleResolvable()) {
                 if (!nonResolvableAtoms.isEmpty()) {
                     queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
                     nonResolvableAtoms.clear();
@@ -248,7 +247,7 @@ public final class ResolutionPlan {
      * compute the local query resolution plan - list of queries ordered by their resolution priority
      * @return list of prioritised queries
      */
-    public LinkedList<ReasonerQueryImpl> localQueryPlan(StructuralCache sCache){
+    public LinkedList<ReasonerQueryImpl> localQueryPlan(){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         LinkedList<Atom> atoms = new LinkedList<>(plan);
 
@@ -261,7 +260,7 @@ public final class ResolutionPlan {
             subbedVars.addAll(top.getVarNames());
             atoms.remove(top);
 
-            if (/*sCache.isRuleResolvable(top)*/ top.isRuleResolvable()) {
+            if (top.isRuleResolvable()) {
                 if (!nonResolvableAtoms.isEmpty()){
                     queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
                     nonResolvableAtoms.clear();

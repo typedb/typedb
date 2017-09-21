@@ -81,10 +81,9 @@ public abstract class GraqlTraversal {
     //        V            V
     public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
 
-
     /**
-     *
-     * @return
+     * @param conceptMap map defining mappings between concept ids
+     * @return graql traversal with concept id transformed according to the provided concept map
      */
     public GraqlTraversal transform(Map<ConceptId, ConceptId> conceptMap){
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(

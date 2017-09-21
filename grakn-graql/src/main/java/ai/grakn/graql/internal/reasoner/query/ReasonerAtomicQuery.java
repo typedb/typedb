@@ -317,9 +317,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
-    /**
-     * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
-     */
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();

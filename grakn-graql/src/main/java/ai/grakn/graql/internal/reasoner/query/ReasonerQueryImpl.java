@@ -49,9 +49,11 @@ import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.util.Collection;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
@@ -138,9 +140,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     *
-     * @param conceptMap
-     * @return
+     * @param conceptMap concept map defining mappings between this query and resultant query
+     * @return new query with id predicates transformed according to the concept map
      */
     public ReasonerQueryImpl transformIds(Map<ConceptId, ConceptId> conceptMap){
         Set<Atomic> atoms = getAtoms(IdPredicate.class).map(p -> {
@@ -235,9 +236,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * @return true if any of the atoms constituting the query can be resolved through a rule
-     */
     @Override
     public boolean isRuleResolvable() {
         for (Atom atom : selectAtoms()) {
@@ -259,24 +257,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
     }
 
-    /**
-     * @return atom set defining this reasoner query
-     */
     @Override
     public Set<Atomic> getAtoms() { return atomSet;}
 
-    /**
-     * @param type the class of {@link Atomic} to return
-     * @param <T> the type of {@link Atomic} to return
-     * @return stream of atoms of specified type defined in this query
-     */
     @Override
     public <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
         return atomSet.stream().filter(type::isInstance).map(type::cast);}
 
-    /**
-     * @return set of variables appearing in this query
-     */
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = new HashSet<>();
@@ -289,17 +276,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 
-    /**
-     * @return corresponding {@link GetQuery}
-     */
     @Override
     public GetQuery getQuery() {
         return tx.graql().infer(false).match(getPattern()).get();
     }
 
-    /**
-     * @return map of variable name - type pairs
-     */
     @Override
     public Map<Var, SchemaConcept> getVarSchemaConceptMap() {
         Map<Var, SchemaConcept> typeMap = new HashMap<>();
@@ -309,15 +290,28 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return typeMap;
     }
 
-    /**
-     * @param var variable name
-     * @return id predicate for the specified var name if any
-     */
     @Nullable
     public IdPredicate getIdPredicate(Var var) {
         return getAtoms(IdPredicate.class)
                 .filter(sub -> sub.getVarName().equals(var))
                 .findFirst().orElse(null);
+    }
+
+    /**
+     * @param query for which the this query-query concept map is to be constructed
+     * @param unifier between this query and provided query
+     * @return concept map between this query and provided query
+     */
+    public Map<ConceptId, ConceptId> getConceptMap(ReasonerQueryImpl query, Unifier unifier){
+        Map<ConceptId, ConceptId> conceptMap = new HashMap<>();
+        this.getAtoms(IdPredicate.class)
+                .forEach(thisP -> {
+                    Collection<Var> vars = unifier.get(thisP.getVarName());
+                    Var var = !vars.isEmpty()? Iterators.getOnlyElement(vars.iterator()) : thisP.getVarName();
+                    IdPredicate p2 = query.getIdPredicate(var);
+                    if ( p2 != null) conceptMap.put(thisP.getPredicate(), p2.getPredicate());
+                });
+        return conceptMap;
     }
 
     /**

@@ -19,73 +19,66 @@
 package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.query.match.MatchBase;
+import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.ReasonerStructuralQuery;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
-import com.google.common.collect.Iterators;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import java.util.stream.Stream;
 
 /**
  *
  * <p>
- * TODO
+ * Container class allowing to store similar graql traversals with similarity measure based on structural query equivalence.
+ *
+ * On cache hit a concept map between provided query and the one contained in the cache is constructed. Based on that mapping,
+ * id predicates of the cached query are transformed.
+ *
+ * The returned stream is a stream of the transformed cached query unified with the provided query.
  * </p>
  *
- * @param <Q> query type
+ * @param <Q> the type of query that is being cached
  *
  * @author Kasper Piskorski
  *
  */
 public class StructuralCache<Q extends ReasonerQueryImpl>{
 
-    private final Map<ReasonerStructuralQuery<Q>, Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry<Q>>> structCache;
+    private final Map<ReasonerStructuralQuery<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
 
     public StructuralCache(){
         this.structCache = new HashMap<>();
     }
 
-    public Pair<StructuralCacheEntry<Q>, Pair<Unifier, Map<ConceptId, ConceptId>>> get(Q query){
+    /**
+     * @param query to be retrieved
+     * @return answer stream of provided query
+     */
+    public Stream<Answer> get(Q query){
         ReasonerStructuralQuery<Q> structQuery = new ReasonerStructuralQuery<>(query);
 
-        Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry<Q>> match = structCache.get(structQuery);
+        CacheEntry<Q, GraqlTraversal> match = structCache.get(structQuery);
         if (match != null){
-            Q equivalentQuery = match.getKey().query();
-            GraqlTraversal traversal = match.getValue().traversal();
+            Q equivalentQuery = match.query();
+            GraqlTraversal traversal = match.cachedElement();
             Unifier unifier = equivalentQuery.getUnifier(query);
-            Map<ConceptId, ConceptId> conceptMap = new HashMap<>();
-            equivalentQuery.getAtoms(IdPredicate.class)
-                    .forEach(p -> {
-                        Collection<Var> vars = unifier.get(p.getVarName());
-                        Var var = !vars.isEmpty()? Iterators.getOnlyElement(vars.iterator()) : p.getVarName();
-                        IdPredicate p2 = query.getIdPredicate(var);
-                        if ( p2 != null){
-                            conceptMap.put(p.getPredicate(), p2.getPredicate());
-                        }
-                    });
-            return new Pair<>(
-                    new StructuralCacheEntry<>(equivalentQuery, traversal.transform(conceptMap)),
-                    new Pair<>(unifier, conceptMap)
-            );
+            Map<ConceptId, ConceptId> conceptMap = equivalentQuery.getConceptMap(query, unifier);
+
+            ReasonerQueryImpl transformedQuery = equivalentQuery.transformIds(conceptMap);
+            return MatchBase.streamWithTraversal(transformedQuery.getPattern(), transformedQuery.tx(), traversal.transform(conceptMap))
+                    .map(ans -> ans.unify(unifier))
+                    .map(a -> a.explain(new LookupExplanation(query)));
         }
 
-        StructuralCacheEntry<Q> newEntry = new StructuralCacheEntry<>(
-                query,
-                GreedyTraversalPlan.createTraversal(query.getPattern(), query.tx())
-        );
-        structCache.put(structQuery, new Pair<>(structQuery, newEntry));
-        return new Pair<>(newEntry, new Pair<>(new UnifierImpl(), new HashMap<>()));
+        GraqlTraversal traversal = GreedyTraversalPlan.createTraversal(query.getPattern(), query.tx());
+        structCache.put(structQuery, new CacheEntry<>(query, traversal));
+
+        return MatchBase.streamWithTraversal(query.getPattern(), query.tx(), traversal)
+                .map(a -> a.explain(new LookupExplanation(query)));
     }
 }

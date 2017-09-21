@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  */
 public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answer>>{
 
-    private final Map<Q, Pair<Q, T>> cache = new HashMap<>();
+    private final Map<Q, CacheEntry<Q, T>> cache = new HashMap<>();
     private final StructuralCache<Q> sCache;
 
     Cache(){
@@ -56,8 +56,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
     }
 
     /**
-     *
-     * @return
+     * @return structural cache of this cache
      */
     public StructuralCache<Q> structuralCache(){ return sCache;}
 
@@ -65,7 +64,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @param query for which the entry is to be retrieved
      * @return corresponding cache entry if any or null
      */
-    public Pair<Q, T> get(Q query){ return cache.get(query);}
+    public CacheEntry<Q, T> get(Q query){ return cache.get(query);}
 
     /**
      * Associates the specified answers with the specified query in this cache adding an (query) -> (answers) entry
@@ -73,13 +72,13 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @param answers of the association
      * @return previous value if any or null
      */
-    public Pair<Q, T> put(Q query, T answers){ return cache.put(query, new Pair<>(query, answers));}
+    public CacheEntry<Q, T> put(Q query, T answers){ return cache.put(query, new CacheEntry<>(query, answers));}
 
     /**
      * Copies all of the mappings from the specified map to this cache
      * @param map with mappings to be copied
      */
-    public void putAll(Map<Q, Pair<Q, T>> map){ cache.putAll(map);}
+    public void putAll(Map<Q, CacheEntry<Q, T>> map){ cache.putAll(map);}
 
     /**
      * Perform cache union
@@ -104,7 +103,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
     /**
      * @return all (query) -> (answers) mappings
      */
-    public Collection<Pair<Q, T>> entries(){ return cache.values();}
+    public Collection<CacheEntry<Q, T>> entries(){ return cache.values();}
 
     /**
      * Perform cache difference
