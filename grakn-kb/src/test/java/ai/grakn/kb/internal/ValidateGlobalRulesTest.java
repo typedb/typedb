@@ -123,33 +123,6 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
     }
 
-    @Test
-    public void testValidateAssertionStructure() throws Exception {
-        EntityType fakeType = tx.putEntityType("Fake Concept");
-        Role napper = tx.putRole("napper");
-        Role hunter = tx.putRole("hunter");
-        Role monster = tx.putRole("monster");
-        Role creature = tx.putRole("creature");
-        Thing cthulhu = fakeType.addEntity();
-        Thing werewolf = fakeType.addEntity();
-        Thing cartman = fakeType.addEntity();
-        RelationshipType kills = tx.putRelationshipType("kills");
-        RelationshipType naps = tx.putRelationshipType("naps").relates(napper);
-
-        RelationshipImpl assertion = (RelationshipImpl) kills.addRelationship().
-                addRolePlayer(hunter, cartman).addRolePlayer(monster, werewolf).addRolePlayer(creature, cthulhu);
-
-        kills.relates(monster);
-        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion.reified().get()).isPresent());
-
-        kills.relates(hunter);
-        kills.relates(creature);
-        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion.reified().get()).isPresent());
-
-        RelationshipImpl assertion2 = (RelationshipImpl) naps.addRelationship().addRolePlayer(hunter, cthulhu);
-        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion2.reified().get()).isPresent());
-    }
-
 
     @Test
     public void testAbstractConceptValidation(){
