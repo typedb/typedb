@@ -104,7 +104,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public void delete() {
-        Set<Relationship> relationships = castingsInstance().map(Casting::getRelation).collect(Collectors.toSet());
+        Set<Relationship> relationships = castingsInstance().map(Casting::getRelationship).collect(Collectors.toSet());
 
         vertex().tx().txCache().removedInstance(type().getId());
         deleteNode();
@@ -233,7 +233,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public Stream<Role> plays() {
-        return castingsInstance().map(Casting::getRoleType);
+        return castingsInstance().map(Casting::getRole);
     }
 
     @Override

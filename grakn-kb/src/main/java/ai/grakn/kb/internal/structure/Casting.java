@@ -66,33 +66,33 @@ public class Casting {
 
     /**
      *
-     * @return The role the instance is playing
+     * @return The {@link Role} the {@link Thing} is playing
      */
-    public Role getRoleType(){
+    public Role getRole(){
         return cachedRoleType.get();
     }
 
     /**
      *
-     * @return The relation type the instance is taking part in
+     * @return The {@link RelationshipType} the {@link Thing} is taking part in
      */
-    public RelationshipType getRelationType(){
+    public RelationshipType getRelationshipType(){
         return cachedRelationType.get();
     }
 
     /**
      *
-     * @return The relation which is linking the role and the instance
+     * @return The {@link Relationship} which is linking the {@link Role} and the instance
      */
-    public Relationship getRelation(){
+    public Relationship getRelationship(){
         return cachedRelation.get();
     }
 
     /**
      *
-     * @return The instance playing the role
+     * @return The {@link Thing} playing the {@link Role}
      */
-    public Thing getInstance(){
+    public Thing getRolePlayer(){
         return cachedInstance.get();
     }
 

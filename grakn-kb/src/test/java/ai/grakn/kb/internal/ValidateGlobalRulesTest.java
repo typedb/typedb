@@ -101,12 +101,12 @@ public class ValidateGlobalRulesTest extends TxTestBase {
 
         // Invalid with multiple relations
         relation1.reified().get().castingsRelation().forEach(rolePlayer -> {
-            if (rolePlayer.getRoleType().equals(role1)) {
+            if (rolePlayer.getRole().equals(role1)) {
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }
         });
         relation2.reified().get().castingsRelation().forEach(rolePlayer -> {
-            if (rolePlayer.getRoleType().equals(role1)) {
+            if (rolePlayer.getRole().equals(role1)) {
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }
         });

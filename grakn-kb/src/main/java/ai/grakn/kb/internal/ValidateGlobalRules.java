@@ -109,9 +109,9 @@ class ValidateGlobalRules {
         Set<String> errors = new HashSet<>();
 
         //Gets here to make sure we traverse/read only once
-        Thing thing = casting.getInstance();
-        Role role = casting.getRoleType();
-        Relationship relation = casting.getRelation();
+        Thing thing = casting.getRolePlayer();
+        Role role = casting.getRole();
+        Relationship relation = casting.getRelationship();
 
         //Actual checks
         roleNotAllowedToBePlayed(role, thing).ifPresent(errors::add);
