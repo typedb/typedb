@@ -23,6 +23,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -60,8 +61,10 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
     public static final String NAME = "isa";
 
     public static IsaProperty of(VarPatternAdmin type) {
-        return new AutoValue_IsaProperty(type);
+        return new AutoValue_IsaProperty(Graql.var(), type);
     }
+
+    public abstract Var directType();
 
     public abstract VarPatternAdmin type();
 
@@ -77,7 +80,10 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.isa(this, start, type().var()));
+        return ImmutableSet.of(
+                EquivalentFragmentSets.isa(this, start, directType()),
+                EquivalentFragmentSets.sub(this, directType(), type().var())
+        );
     }
 
     @Override
@@ -124,5 +130,26 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
         //isa part
         VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
         return new IsaAtom(isaVar, typeVariable, predicate, parent);
+    }
+
+    // TODO: These are overriden so we ignore `directType`, which ideally shouldn't be necessary
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IsaProperty) {
+            IsaProperty that = (IsaProperty) o;
+            return this.type().equals(that.type());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.type().hashCode();
+        return h;
     }
 }
