@@ -24,6 +24,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -47,7 +48,12 @@ abstract class LabelFragment extends Fragment {
         Set<Integer> labelIds =
                 labels().stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
 
-        return traversal.has(LABEL_ID.name(), P.within(labelIds));
+        if (labelIds.size() == 1) {
+            int labelId = Iterables.getOnlyElement(labelIds);
+            return traversal.has(LABEL_ID.name(), labelId);
+        } else {
+            return traversal.has(LABEL_ID.name(), P.within(labelIds));
+        }
     }
 
     @Override
