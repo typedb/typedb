@@ -83,7 +83,7 @@ public class GraknSessionImpl implements GraknSession {
         }, 0, LOG_SUBMISSION_PERIOD, TimeUnit.SECONDS);
 
         if(Grakn.IN_MEMORY.equals(engineUri)){
-            properties = getTxRemoteInMemory();
+            properties = getTxInMemoryProperties();
         } else {
             properties = getTxRemoteProperties(engineUri, keyspace);
         }
@@ -108,7 +108,7 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build an in-memory {@link GraknTx}
      */
-    private static Properties getTxRemoteInMemory(){
+    private static Properties getTxInMemoryProperties(){
         Properties inMemoryProperties = new Properties();
         inMemoryProperties.put(GraknTxAbstract.SHARDING_THRESHOLD, 100_000);
         inMemoryProperties.put(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS, 30_000);
