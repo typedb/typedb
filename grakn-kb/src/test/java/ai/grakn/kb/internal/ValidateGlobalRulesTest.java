@@ -52,7 +52,7 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         RelationshipImpl assertion = (RelationshipImpl) hunts.addRelationship().
                 addRolePlayer(witcher, geralt).addRolePlayer(monster, werewolf);
         assertion.reified().get().castingsRelation().forEach(rolePlayer ->
-                assertTrue(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent()));
+                assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
         hunter.plays(witcher);
 
@@ -60,17 +60,16 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         int count = 0;
 
         for (Casting casting : assertion.reified().get().castingsRelation().collect(Collectors.toSet())) {
-            flags[count] = ValidateGlobalRules.validatePlaysStructure(casting).isPresent();
+            flags[count] = !ValidateGlobalRules.validatePlaysAndRelatesStructure(casting).isEmpty();
             count++;
         }
-        assertFalse(flags[0] && flags[1]);
-        assertTrue(flags[0] || flags[1]);
+        assertTrue(flags[0] && flags[1]);
 
         wolf.sup(creature);
         creature.plays(monster);
 
         for (Casting casting : assertion.reified().get().castingsRelation().collect(Collectors.toSet())) {
-            assertFalse(ValidateGlobalRules.validatePlaysStructure(casting).isPresent());
+            assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(casting).isEmpty());
         }
     }
 
@@ -95,7 +94,7 @@ public class ValidateGlobalRulesTest extends TxTestBase {
 
         // Valid with only a single relation
         relation1.reified().get().castingsRelation().forEach(rolePlayer ->
-                assertFalse(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent()));
+                assertTrue(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
         RelationshipImpl relation2 = (RelationshipImpl) relationshipType.addRelationship()
                 .addRolePlayer(role2, other2).addRolePlayer(role1, entity);
@@ -103,12 +102,12 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         // Invalid with multiple relations
         relation1.reified().get().castingsRelation().forEach(rolePlayer -> {
             if (rolePlayer.getRoleType().equals(role1)) {
-                assertTrue(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent());
+                assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }
         });
         relation2.reified().get().castingsRelation().forEach(rolePlayer -> {
             if (rolePlayer.getRoleType().equals(role1)) {
-                assertTrue(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent());
+                assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }
         });
     }

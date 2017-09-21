@@ -59,6 +59,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
+import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
@@ -96,19 +97,61 @@ class ValidateGlobalRules {
     }
 
     /**
-     * This method checks if the plays edge has been added successfully. It does so By checking
-     * Casting -CAST-> ConceptInstance -ISA-> Concept -PLAYS-> X =
-     * Casting -ISA-> X
-     * @param casting The casting to be validated
-     * @return A specific error if one is found.
+     * This method checks if the plays edge has been added between the roleplayer's {@link Type} and
+     * the {@link Role} being played.
+     *
+     * It also checks if the {@link Role} of the {@link Casting} has been linked to the {@link RelationshipType} of the
+     * {@link Relationship} which the {@link Casting} connects to.
+     *
+     * @return Specific errors if any are found
      */
-    static Optional<String> validatePlaysStructure(Casting casting) {
+    static Set<String> validatePlaysAndRelatesStructure(Casting casting) {
+        Set<String> errors = new HashSet<>();
+
+        //Gets here to make sure we traverse/read only once
         Thing thing = casting.getInstance();
-        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) thing.type();
         Role role = casting.getRoleType();
+        Relationship relation = casting.getRelation();
+
+        //Actual checks
+        roleNotAllowedToBePlayed(role, thing).ifPresent(errors::add);
+        roleNotLinkedToRelationShip(role, relation.type(), relation).ifPresent(errors::add);
+
+        return errors;
+    }
+
+    /**
+     * Checks if the {@link Role} of the {@link Casting} has been linked to the {@link RelationshipType} of
+     * the {@link Relationship} which the {@link Casting} connects to.
+     *
+     * @param role the {@link Role} which the {@link Casting} refers to
+     * @param relationshipType the {@link RelationshipType} which should connect to the role
+     * @param relationship the {@link Relationship} which the {@link Casting} refers to
+     * @return an error if one is found
+     */
+    private static Optional<String> roleNotLinkedToRelationShip(Role role, RelationshipType relationshipType, Relationship relationship){
+        boolean notFound = role.relationshipTypes().
+                noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationshipType.getLabel()));
+        if(notFound){
+            return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relationship.getId(), role.getLabel(), relationshipType.getLabel()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Checks  if the plays edge has been added between the roleplayer's {@link Type} and
+     * the {@link Role} being played.
+     *
+     * Also checks that required {@link Role} are satisfied
+     *
+     * @param role The {@link Role} which the role-player is playing
+     * @param thing the role-player
+     * @return an error if one is found
+     */
+    private static Optional<String> roleNotAllowedToBePlayed(Role role, Thing thing){
+        TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) thing.type();
 
         boolean satisfiesPlays = false;
-
         while(currentConcept != null){
             Map<Role, Boolean> plays = currentConcept.directPlays();
 
@@ -130,7 +173,7 @@ class ValidateGlobalRules {
         if(satisfiesPlays) {
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_CASTING.getMessage(thing.type().getLabel(), thing.getId(), casting.getRoleType().getLabel()));
+            return Optional.of(VALIDATION_CASTING.getMessage(thing.type().getLabel(), thing.getId(), role.getLabel()));
         }
     }
 
@@ -158,35 +201,6 @@ class ValidateGlobalRules {
             return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationshipType.getLabel()));
         }
     }
-
-    /**
-     *
-     * @param relation The assertion to validate
-     * @return An error message indicating if the relation has an incorrect structure. This includes checking if there an equal
-     * number of castings and roles as well as looping the structure to make sure castings lead to the same relation type.
-     */
-    /*static Optional<String> validateRelationshipStructure(RelationshipReified relation){
-        RelationshipType relationshipType = relation.type();
-        Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
-        Collection<Role> roles = relationshipType.relates().collect(Collectors.toSet());
-
-        Set<Role> rolesViaRolePlayers = castings.stream().map(Casting::getRoleType).collect(Collectors.toSet());
-
-        if(rolesViaRolePlayers.size() > roles.size()) {
-            //return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), rolesViaRolePlayers.size(), relationshipType.getLabel(), roles.size()));
-        }
-
-        for(Casting casting : castings){
-            boolean notFound = casting.getRoleType().relationshipTypes().
-                    noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationshipType.getLabel()));
-
-            if(notFound) {
-                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRoleType().getLabel(), relationshipType.getLabel()));
-            }
-        }
-
-        return Optional.empty();
-    }*/
 
     /**
      *
