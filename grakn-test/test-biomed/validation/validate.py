@@ -17,7 +17,7 @@ def timeit(method):
 
 @timeit
 def runQuery(query, numResults):
-    result = check_output(["graql.sh", "-n", "-k", "biomed", "-e", query]);
+    result = check_output(["graql", "console", "-n", "-k", "biomed", "-e", query]);
     assert int(result) == numResults
 
 print ("Checking if data has loaded . . . ")
@@ -74,4 +74,3 @@ runQuery(query, 1)
 print ("Running query to check referenced treatments . . . ")
 query = "match $x isa referenced-treatment; offset 0; limit 2; aggregate count;"
 runQuery(query, 2)
-

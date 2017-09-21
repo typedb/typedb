@@ -128,7 +128,6 @@ public class AnalyticsTest {
 
     @Test
     public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
-        // TODO: move parallel tests to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
         addSchemaAndEntities();

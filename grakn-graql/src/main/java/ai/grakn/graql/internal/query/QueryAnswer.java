@@ -34,8 +34,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
@@ -194,23 +192,23 @@ public class QueryAnswer implements Answer {
     @Override
     public Answer unify(Unifier unifier){
         if (unifier.isEmpty()) return this;
-        Answer unified = new QueryAnswer().setExplanation(this.getExplanation());
+        Answer unified = new QueryAnswer();
 
         for(Map.Entry<Var, Concept> e : this.entrySet()){
-                    Var var = e.getKey();
-                    Concept con = e.getValue();
-                    Collection<Var> uvars = unifier.get(var);
-                    if (uvars.isEmpty() && !unifier.values().contains(var)) {
-                        Concept put = unified.put(var, con);
-                        if (put != null && !put.equals(con)) return new QueryAnswer();
-                    } else {
-                        for(Var uv : uvars){
-                            Concept put = unified.put(uv, con);
-                            if (put != null && !put.equals(con)) return new QueryAnswer();
-                        }
-                    }
+            Var var = e.getKey();
+            Concept con = e.getValue();
+            Collection<Var> uvars = unifier.get(var);
+            if (uvars.isEmpty() && !unifier.values().contains(var)) {
+                Concept put = unified.put(var, con);
+                if (put != null && !put.equals(con)) return new QueryAnswer();
+            } else {
+                for(Var uv : uvars){
+                    Concept put = unified.put(uv, con);
+                    if (put != null && !put.equals(con)) return new QueryAnswer();
+                }
+            }
         }
-        return unified;
+        return unified.setExplanation(this.getExplanation());
     }
 
     @Override

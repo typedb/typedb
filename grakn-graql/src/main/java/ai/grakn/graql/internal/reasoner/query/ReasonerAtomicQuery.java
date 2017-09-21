@@ -20,8 +20,6 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -35,7 +33,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
@@ -57,7 +54,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -327,17 +323,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
-        if (atom.isRelation() && atom.getSchemaConcept() == null){
-            List<RelationshipType> relationshipTypes = ((RelationshipAtom) atom).inferPossibleRelationTypes(sub);
-            LOG.trace("AQ: " + this + ": inferred rel types for: " + relationshipTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
-            return relationshipTypes.stream()
-                    .map(((RelationshipAtom) atom)::addType)
-                    .sorted(Comparator.comparing(Atom::isRuleResolvable))
-                    .map(ReasonerAtomicQuery::new);
-        }
-        else{
-            return Stream.of(this);
-        }
+        return atom.getSchemaConcept() == null?
+            atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new) :
+            Stream.of(this);
     }
 
     /**

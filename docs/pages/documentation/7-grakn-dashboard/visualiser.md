@@ -22,8 +22,8 @@ You can find the *basic-genealogy.gql* example that we will work with in the *ex
 The first step is to load the schema and data into Grakn. You need to use your terminal to do this, as the visualiser is a read-only interface to a knowledge base. From the terminal, start Grakn, and load the file as follows:
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh start
-<relative-path-to-Grakn>/bin/graql.sh -f ./examples/basic-genealogy.gql -k "family"
+./grakn server start
+./graql console -f ./examples/basic-genealogy.gql -k "family"
 ```
 
 To illustrate the use of different keyspaces we will use a keyspace called `family` in this example. You can simply use the default (`grakn`) keyspace if you prefer, by omitting the -k argument.
@@ -31,7 +31,7 @@ To illustrate the use of different keyspaces we will use a keyspace called `fami
 You can test in the Graql shell that all has loaded correctly. For example:
 
 ```bash
-<relative-path-to-Grakn>/bin/graql.sh -k family
+./graql console -k family
 >>>match $p isa person, has identifier $i;
 ```
 

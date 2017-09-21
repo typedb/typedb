@@ -44,6 +44,8 @@ import java.util.stream.Collectors;
  * TODO
  * </p>
  *
+ * @param <Q> query type
+ *
  * @author Kasper Piskorski
  *
  */

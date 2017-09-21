@@ -12,12 +12,12 @@ SPLITSIZESTRING=($SIZESTRING)
 echo "The size on disk is: ${SPLITSIZESTRING[0]}"
 
 # number of concepts
-CONCEPTS=$(graql.sh -k $KEYSPACE -e "compute count;")
+CONCEPTS=$(graql console -k $KEYSPACE -e "compute count;")
 echo "The number of concepts is: $CONCEPTS"
 
 # duplicates
-DISTINCT=$(graql.sh -k $KEYSPACE -e "match \$x isa gender; distinct; aggregate count;")
-ALL=$(graql.sh -k $KEYSPACE -e "match \$x isa gender; aggregate count;")
+DISTINCT=$(graql console -k $KEYSPACE -e "match \$x isa gender; distinct; aggregate count;")
+ALL=$(graql console -k $KEYSPACE -e "match \$x isa gender; aggregate count;")
 if [ "$DISTINCT" == "$ALL" ]; then
 	echo "No duplicates."
 else

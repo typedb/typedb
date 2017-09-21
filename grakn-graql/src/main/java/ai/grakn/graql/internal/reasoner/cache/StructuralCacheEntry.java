@@ -29,6 +29,8 @@ import java.util.Set;
  * TODO
  * </p>
  *
+ * @param <Q> query type the entry corresponds to
+ *
  * @author Kasper Piskorski
  *
  */
