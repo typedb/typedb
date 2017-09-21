@@ -25,6 +25,7 @@ import User, { DEFAULT_KEYSPACE } from './js/User';
 import EngineClient from './js/EngineClient';
 import routes from './routes';
 
+alert('alive');
 
 Vue.use(VueRouter);
 Vue.use(VeeValidate);

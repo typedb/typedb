@@ -17,13 +17,16 @@ module.exports = {
       {
         test: /\.vue$/,
         loader: 'vue-loader',
+        options: {
+          esModule: false,
+        }
       },
     ],
   },
   resolve: {
     alias: {
       vue$: 'vue/dist/vue.esm.js',
-    }
+    },
   },
   plugins: [
     function timestamp() {
@@ -31,6 +34,6 @@ module.exports = {
         console.log(`Begin compile at ${new Date()}`);
         callback();
       });
-    }
+    },
   ],
 };
