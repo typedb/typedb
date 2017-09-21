@@ -684,6 +684,71 @@ public class AtomicQueryTest {
     }
 
     @Test
+    public void testEquivalence_RelationsWithTypedRolePlayers(){
+        GraknTx graph = unificationTestSet.tx();
+        String patternString = "{(role: $x, role: $y);$x isa entity1;}";
+        String patternString2 = "{(role: $x, role: $y);$y isa entity1;}";
+        String patternString3 = "{(role: $x, role: $y);$x isa superEntity1;}";
+        String patternString4 = "{(role: $x, role: $y);$y isa entity1;$x isa entity1;}";
+        String patternString5 = "{(role1: $x, role2: $y);$x isa entity1;}";
+        String patternString6 = "{(role1: $x, role2: $y);$y isa entity1;}";
+        String patternString7 = "{(role1: $x, role2: $y);$x isa entity1;$y isa superEntity1;}";
+        String patternString8 = "{(role1: $x, role2: $y);$x isa entity1;$y isa entity1;}";
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern4 = conjunction(patternString4, graph);
+        Conjunction<VarPatternAdmin> pattern5 = conjunction(patternString5, graph);
+        Conjunction<VarPatternAdmin> pattern6 = conjunction(patternString6, graph);
+        Conjunction<VarPatternAdmin> pattern7 = conjunction(patternString7, graph);
+        Conjunction<VarPatternAdmin> pattern8 = conjunction(patternString8, graph);
+
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
+        ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
+        ReasonerAtomicQuery query4 = ReasonerQueries.atomic(pattern4, graph);
+        ReasonerAtomicQuery query5 = ReasonerQueries.atomic(pattern5, graph);
+        ReasonerAtomicQuery query6 = ReasonerQueries.atomic(pattern6, graph);
+        ReasonerAtomicQuery query7 = ReasonerQueries.atomic(pattern7, graph);
+        ReasonerAtomicQuery query8 = ReasonerQueries.atomic(pattern8, graph);
+
+        queryEquivalence(query, query2, true);
+        queryEquivalence(query, query3, false);
+        queryEquivalence(query, query4, false);
+        queryEquivalence(query, query5, false);
+        queryEquivalence(query, query6, false);
+        queryEquivalence(query, query7, false);
+        queryEquivalence(query, query8, false);
+
+        queryEquivalence(query2, query3, false);
+        queryEquivalence(query2, query4, false);
+        queryEquivalence(query2, query5, false);
+        queryEquivalence(query2, query6, false);
+        queryEquivalence(query2, query7, false);
+        queryEquivalence(query2, query8, false);
+
+        queryEquivalence(query3, query4, false);
+        queryEquivalence(query3, query5, false);
+        queryEquivalence(query3, query6, false);
+        queryEquivalence(query3, query7, false);
+        queryEquivalence(query3, query8, false);
+
+        queryEquivalence(query4, query5, false);
+        queryEquivalence(query4, query6, false);
+        queryEquivalence(query4, query7, false);
+        queryEquivalence(query4, query8, false);
+
+        queryEquivalence(query5, query6, false);
+        queryEquivalence(query5, query7, false);
+        queryEquivalence(query5, query8, false);
+
+        queryEquivalence(query6, query7, false);
+        queryEquivalence(query6, query8, false);
+
+        queryEquivalence(query7, query8, false);
+    }
+
+    @Test
     public void testEquivalence_RelationsWithSubstitution(){
         GraknTx graph = unificationTestSet.tx();
         String patternString = "{(role: $x, role: $y);$x id 'V666';}";
