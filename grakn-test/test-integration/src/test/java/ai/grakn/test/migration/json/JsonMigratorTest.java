@@ -58,7 +58,7 @@ public class JsonMigratorTest {
     private GraknSession factory;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Before
     public void setup(){

@@ -36,19 +36,18 @@ import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 import static org.junit.Assume.assumeFalse;
 
 public class ClusteringTest {
@@ -70,7 +69,7 @@ public class ClusteringTest {
     private ConceptId entityId4;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    public static final EngineContext context = EngineContext.inMemoryServer();
     private GraknSession factory;
 
     @Before

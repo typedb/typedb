@@ -16,8 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.util;
+package ai.grakn.util;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import static java.util.stream.Collectors.toList;
@@ -30,7 +31,7 @@ import static java.util.stream.Collectors.toList;
  * @author Domenico Corapi
  */
 public class ConcurrencyUtil {
-    static public <T> CompletableFuture<List<T>> all(List<CompletableFuture<T>> cf) {
+    static public <T> CompletableFuture<List<T>> all(Collection<CompletableFuture<T>> cf) {
         return CompletableFuture.allOf(cf.toArray(new CompletableFuture[cf.size()]))
                 .thenApply(v -> cf.stream()
                         .map(CompletableFuture::join)
