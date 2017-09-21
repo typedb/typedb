@@ -24,11 +24,11 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -84,11 +84,7 @@ public abstract class GraqlTraversal {
             // somewhere, so we start from a single arbitrary vertex.
             GraphTraversal traversal = graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
 
-            if (!vars.isEmpty()) {
-                return GraqlTraversal.selectVars(traversal, vars);
-            } else {
-                return traversal;
-            }
+            return selectVars(traversal, vars);
         }
     }
 
@@ -170,10 +166,10 @@ public abstract class GraqlTraversal {
         }
     }
 
-    public static <S, E> GraphTraversal<S, Map<String, E>> selectVars(GraphTraversal<S, ?> traversal, Set<Var> vars) {
-        Preconditions.checkArgument(!vars.isEmpty());
-
-        if (vars.size() == 1) {
+    private static <S, E> GraphTraversal<S, Map<String, E>> selectVars(GraphTraversal<S, ?> traversal, Set<Var> vars) {
+        if (vars.isEmpty()) {
+            return traversal.constant(ImmutableMap.of());
+        } else if (vars.size() == 1) {
             String label = vars.iterator().next().getValue();
             return traversal.select(label, label);
         } else {
