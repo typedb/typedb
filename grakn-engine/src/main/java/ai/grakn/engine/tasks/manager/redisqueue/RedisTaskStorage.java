@@ -104,9 +104,7 @@ public class RedisTaskStorage implements TaskStateStorage {
     public Set<TaskState> getTasks(@Nullable TaskStatus taskStatus, @Nullable String taskClassName,
             @Nullable String createdBy, @Nullable EngineID runningOnEngine, int limit, int offset) {
         Stream<TaskState> stream = redis.getStates().filter(Optional::isPresent).map(Optional::get)
-                .map(s -> {
-                    return TaskState.of(TaskId.of(s.getId()), TaskStatus.fromState(s.getStateInfo().getState()));
-                });
+                .map(s -> TaskState.of(TaskId.of(s.getId()), TaskStatus.fromState(s.getStateInfo().getState())));
 
         if (taskStatus != null) {
             stream = stream.filter(t -> t.status().equals(taskStatus));

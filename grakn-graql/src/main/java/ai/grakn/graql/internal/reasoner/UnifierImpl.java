@@ -20,13 +20,11 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.HashMultimap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
@@ -41,7 +39,7 @@ import ai.grakn.graql.internal.reasoner.utils.Pair;
  */
 public class UnifierImpl implements Unifier {
     
-    private final Multimap<Var, Var> unifier = ArrayListMultimap.create();
+    private final HashMultimap<Var, Var> unifier = HashMultimap.create();
 
     /**
      * Identity unifier.
@@ -64,7 +62,7 @@ public class UnifierImpl implements Unifier {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         UnifierImpl u2 = (UnifierImpl) obj;
-        return this.map().equals(u2.map());
+        return this.unifier.equals(u2.unifier);
     }
 
     @Override
@@ -75,11 +73,6 @@ public class UnifierImpl implements Unifier {
     @Override
     public boolean isEmpty() {
         return unifier.isEmpty();
-    }
-
-    @Override
-    public Map<Var, Collection<Var>> map() {
-        return unifier.asMap();
     }
 
     @Override
@@ -144,16 +137,6 @@ public class UnifierImpl implements Unifier {
                 })
                 .forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
         return merged;
-    }
-
-    @Override
-    public Unifier removeTrivialMappings() {
-        Set<Var> toRemove = unifier.entries().stream()
-                .filter(e -> e.getKey() == e.getValue())
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-        toRemove.forEach(unifier::removeAll);
-        return this;
     }
 
     @Override

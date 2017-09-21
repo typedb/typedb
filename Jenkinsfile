@@ -72,6 +72,11 @@ node {
     //Only run validation master/stable
     if (env.BRANCH_NAME in ['master', 'stable'] || true) {
         slackGithub "Build started"
+
+        stage('Run the benchmarks') {
+            sh 'mvn clean test  -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dgrakn.test-profile=janus -Dmaven.repo.local=' + workspace + '/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
+        }
+
         for (String moduleName : integrationTests) {
             runIntegrationTest(moduleName)
         }

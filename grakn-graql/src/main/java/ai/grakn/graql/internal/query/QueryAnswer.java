@@ -34,8 +34,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
@@ -160,8 +158,8 @@ public class QueryAnswer implements Answer {
         if(this.isEmpty()) return a2;
 
         AnswerExplanation exp = this.getExplanation();
-        Answer merged = new QueryAnswer(a2);
-        merged.putAll(this);
+        Answer merged = new QueryAnswer(this);
+        merged.putAll(a2);
 
         if(mergeExplanation) {
             exp = exp.merge(a2.getExplanation());
@@ -188,31 +186,28 @@ public class QueryAnswer implements Answer {
         QueryAnswer filteredAnswer = new QueryAnswer(this);
         Set<Var> varsToRemove = Sets.difference(vars(), vars);
         varsToRemove.forEach(filteredAnswer::remove);
-
-        return filteredAnswer.setExplanation(this.getExplanation());
+        return filteredAnswer;
     }
 
     @Override
     public Answer unify(Unifier unifier){
         if (unifier.isEmpty()) return this;
         Answer unified = new QueryAnswer();
-        Multimap<Var, Concept> answerMultimap = HashMultimap.create();
 
-        this.entrySet()
-                .forEach(e -> {
-                    Var var = e.getKey();
-                    Collection<Var> uvars = unifier.get(var);
-                    if (uvars.isEmpty() && !unifier.values().contains(var)) {
-                        answerMultimap.put(var, e.getValue());
-                    } else {
-                        uvars.forEach(uv -> answerMultimap.put(uv, e.getValue()));
-                    }
-                });
-        //non-ambiguous mapping
-        if ( answerMultimap.keySet().size() == answerMultimap.values().size()) {
-            answerMultimap.entries().forEach(e -> unified.put(e.getKey(), e.getValue()));
+        for(Map.Entry<Var, Concept> e : this.entrySet()){
+            Var var = e.getKey();
+            Concept con = e.getValue();
+            Collection<Var> uvars = unifier.get(var);
+            if (uvars.isEmpty() && !unifier.values().contains(var)) {
+                Concept put = unified.put(var, con);
+                if (put != null && !put.equals(con)) return new QueryAnswer();
+            } else {
+                for(Var uv : uvars){
+                    Concept put = unified.put(uv, con);
+                    if (put != null && !put.equals(con)) return new QueryAnswer();
+                }
+            }
         }
-
         return unified.setExplanation(this.getExplanation());
     }
 

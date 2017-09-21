@@ -194,7 +194,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
     public static TaskConfiguration createConfig(Keyspace keyspace, String config){
         Json countingConfiguration = Json.object();
         countingConfiguration.set(REST.Request.KEYSPACE, keyspace.getValue());
-        countingConfiguration.set(REST.Request.COMMIT_LOG_COUNTING, Json.read(config).at(REST.Request.COMMIT_LOG_COUNTING));;
+        countingConfiguration.set(REST.Request.COMMIT_LOG_COUNTING, Json.read(config).at(REST.Request.COMMIT_LOG_COUNTING));
         return TaskConfiguration.of(countingConfiguration);
     }
 }

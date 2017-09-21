@@ -1,7 +1,6 @@
 .idea/
 *.geany
 node_modules
-!npm-install-retry/node_modules
 static/dashboard.js
 coverage
 .nyc_output

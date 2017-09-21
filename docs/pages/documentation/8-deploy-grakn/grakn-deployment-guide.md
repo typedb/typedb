@@ -29,7 +29,7 @@ Recommended production settings are at least 4GB machine with 3GB heap.
 
 ### Standalone Grakn
 
-You can start a standalone instance of Grakn by running `grakn.sh start`. This will produce a working environment for importing and analysing your data.
+You can start a standalone instance of Grakn by running `grakn server start`. This will produce a working environment for importing and analysing your data.
 
 By default Grakn stores your data in the extracted directory, under `db/cassandra/` in the folder into which you unzipped the distribution zip.
 
@@ -50,18 +50,18 @@ We recommend changing this to another location to make upgrading Grakn easier an
 #### Default directory
 For the default storage directory, `db/cassandra/`, you need to:
 
-- stop old Grakn (`./bin/grakn.sh stop`)
+- stop old Grakn (`grakn server stop`)
 - extract the latest Grakn package into a new directory
 - copy the entire contents of the `db` directory to the new location into the new `db` directory
-- start new Grakn (`./bin/grakn.sh start`)
+- start new Grakn (`grakn server start`)
 
 #### External directory
 If you have changed the location of data_file_directories in the `conf/cassandra/cassandra.yaml`, you need to:
 
-- stop old Grakn (`./bin/grakn.sh stop`)
+- stop old Grakn (`grakn server stop`)
 - extract the latest Grakn package into a new directory
 - amend `data_file_directories`, `commitlog_directory` and `saved_caches_directory` to match your custom directories
-- start new Grakn (`./bin/grakn.sh start`)
+- start new Grakn (`grakn server start`)
 
 You will need to amend these variables with every new version of Grakn.
 
@@ -69,9 +69,9 @@ You will need to amend these variables with every new version of Grakn.
 
 Upgrading Grakn in a distributed setup is very simple:
 
-- stop and remove old Grakn Engine (`./bin/grakn-engine.sh stop`)
+- stop and remove old Grakn Engine (`grakn server stop grakn`)
 - roll out the latest Grakn package with the correct Redis variables in the configuration files
-- start new Grakn Engine (`./bin/grakn-engine.sh start`)
+- start new Grakn Engine (`grakn server start grakn`)
 
 You can perform a rolling deployment in this fashion with minimum impact on your services.
 

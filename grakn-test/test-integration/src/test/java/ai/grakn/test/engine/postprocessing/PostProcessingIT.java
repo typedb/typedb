@@ -18,15 +18,14 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
@@ -34,10 +33,6 @@ import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
-import org.janusgraph.core.SchemaViolationException;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -47,16 +42,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
+import org.janusgraph.core.SchemaViolationException;
 import static org.junit.Assume.assumeFalse;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PostProcessingIT {
+    private static final Logger LOG = LoggerFactory.getLogger(PostProcessingIT.class);
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Test
     public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws InvalidKBException, ExecutionException, InterruptedException {
@@ -127,19 +127,15 @@ public class PostProcessingIT {
         assertTrue("Failed at breaking graph", graphIsBroken(session));
 
         // Check graph fixed
-        boolean tasksStillRunning;
+        long tasksRunning = 0;
         do{
             Thread.sleep(1000);
 
-            Set<TaskState> runningPPTasks = engine.getTaskManager().storage().getTasks(null, PostProcessingTask.class.getName(), null, null, 0, 0);
-            tasksStillRunning = false;
-            for (TaskState runningPPTask : runningPPTasks) {
-                if(!runningPPTask.status().equals(TaskStatus.COMPLETED)){
-                    tasksStillRunning = true;
-                    break;
-                }
-            }
-        } while(tasksStillRunning);
+            Set<TaskState> runningPPTasks = engine.getTaskManager().storage().getTasks(null, null, null, null, 0, 0);
+            tasksRunning = runningPPTasks.stream()
+                    .filter(t -> !t.status().equals(TaskStatus.COMPLETED)).count();
+            LOG.info("Still running {}", tasksRunning);
+        } while(tasksRunning > 0);
 
         assertFalse("Failed at fixing graph", graphIsBroken(session));
 
