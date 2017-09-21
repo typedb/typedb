@@ -18,8 +18,9 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknTx;
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
@@ -34,6 +35,12 @@ import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
+import org.janusgraph.core.SchemaViolationException;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -43,15 +50,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
-import org.janusgraph.core.SchemaViolationException;
 import static org.junit.Assume.assumeFalse;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PostProcessingIT {
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingIT.class);
