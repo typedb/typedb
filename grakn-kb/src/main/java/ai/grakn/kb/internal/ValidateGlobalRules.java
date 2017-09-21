@@ -59,7 +59,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
-import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
@@ -166,7 +165,7 @@ class ValidateGlobalRules {
      * @return An error message indicating if the relation has an incorrect structure. This includes checking if there an equal
      * number of castings and roles as well as looping the structure to make sure castings lead to the same relation type.
      */
-    static Optional<String> validateRelationshipStructure(RelationshipReified relation){
+    /*static Optional<String> validateRelationshipStructure(RelationshipReified relation){
         RelationshipType relationshipType = relation.type();
         Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
         Collection<Role> roles = relationshipType.relates().collect(Collectors.toSet());
@@ -187,7 +186,7 @@ class ValidateGlobalRules {
         }
 
         return Optional.empty();
-    }
+    }*/
 
     /**
      *

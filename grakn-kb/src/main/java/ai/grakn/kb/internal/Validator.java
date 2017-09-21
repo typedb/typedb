@@ -117,7 +117,7 @@ class Validator {
         Optional<RelationshipReified> relationReified = ((RelationshipImpl) relationship).reified();
         //TODO: We need new validation mechanisms for non-reified relations
         relationReified.ifPresent(relationReified1 -> {
-            ValidateGlobalRules.validateRelationshipStructure(relationReified1).ifPresent(errorsFound::add);
+            //ValidateGlobalRules.validateRelationshipStructure(relationReified1).ifPresent(errorsFound::add);
             ValidateGlobalRules.validateRelationIsUnique(graph, relationReified1).ifPresent(errorsFound::add);
         });
     }
