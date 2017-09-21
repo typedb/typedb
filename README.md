@@ -42,7 +42,7 @@ Running Grakn requires:
 Compiling Grakn from source requires:
 * Maven 3
 * nodejs
-* npm installed and configured correctly
+* yarn installed and configured correctly
 
 You should be able to install packages global for your user via npm without needing sudo).
   
