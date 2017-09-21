@@ -18,20 +18,9 @@
 
 package ai.grakn.test.engine.lock;
 
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import ai.grakn.engine.lock.JedisLock;
 import ai.grakn.engine.lock.NonReentrantLock;
-import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -40,17 +29,23 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @Ignore("Ignored due to failing randomly on travis because of redis failures")
 @RunWith(Theories.class)
 public class LockTestIT {
 
     private static final String LOCK_NAME = "/lock";
-    private JedisPoolConfig poolConfig = new JedisPoolConfig();
-    private SimpleURI redisURI = new SimpleURI(engineContext.config().getProperty(REDIS_HOST));
-    private JedisPool jedisPool = new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort());
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -68,7 +63,7 @@ public class LockTestIT {
     private Lock getLock(Locks lock, String lockName){
         switch (lock){
             case REDIS:
-                return new JedisLock(jedisPool, lockName);
+                return new JedisLock(engineContext.getJedisPool(), lockName);
             case NONREENTRANT:
                 return new NonReentrantLock();
         }
@@ -77,7 +72,7 @@ public class LockTestIT {
 
     private Lock copy(Lock lock){
         if(lock instanceof JedisLock){
-            return new JedisLock(jedisPool, ((JedisLock) lock).getLockName());
+            return new JedisLock(engineContext.getJedisPool(), ((JedisLock) lock).getLockName());
         } else if(lock instanceof NonReentrantLock){
             return lock;
         }

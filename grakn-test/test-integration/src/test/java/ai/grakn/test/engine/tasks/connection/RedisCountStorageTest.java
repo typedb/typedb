@@ -20,13 +20,10 @@ package ai.grakn.test.engine.tasks.connection;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
-import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SampleKBLoader;
-import com.codahale.metrics.MetricRegistry;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -37,8 +34,6 @@ import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 
 /**
  * <p>
@@ -59,10 +54,7 @@ public class RedisCountStorageTest {
 
     @BeforeClass
     public static void getConnection(){
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        SimpleURI redisURI = new SimpleURI(engine.config().getProperty(REDIS_HOST));
-        JedisPool jedisPool = new JedisPool(poolConfig, redisURI.getHost(), redisURI.getPort());
-        redis = RedisCountStorage.create(jedisPool, new MetricRegistry());
+        redis = engine.redis(mockRedisRule.getServer().getHost(), mockRedisRule.getServer().getBindPort());
     }
 
     @Test
