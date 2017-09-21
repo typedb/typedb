@@ -48,7 +48,7 @@ import static org.junit.Assume.assumeFalse;
 public class CountTest {
 
     @ClassRule
-    public static final EngineContext rule = EngineContext.startInMemoryServer();
+    public static final EngineContext rule = EngineContext.inMemoryServer();
 
     private GraknSession factory;
 

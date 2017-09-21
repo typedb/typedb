@@ -149,7 +149,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     boolean selectedTypesHaveInstance() {
-        if (subLabels.isEmpty()) return false;
+        if (subLabels.isEmpty()) {
+            LOGGER.info("No types found while looking for instances");
+            return false;
+        }
 
         List<Pattern> checkSubtypes = subLabels.stream()
                 .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());

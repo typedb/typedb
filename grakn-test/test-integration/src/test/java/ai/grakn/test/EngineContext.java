@@ -67,15 +67,15 @@ public class EngineContext extends ExternalResource {
         this.startStandaloneEngine = startStandaloneEngine;
     }
 
-    public static EngineContext startNoQueue(){
+    public static EngineContext noQueue(){
         return new EngineContext( false, false);
     }
 
-    public static EngineContext startSingleQueueServer(){
+    public static EngineContext singleQueueServer(){
         return new EngineContext( true, false);
     }
 
-    public static EngineContext startInMemoryServer(){
+    public static EngineContext inMemoryServer(){
         return new EngineContext( true, true);
     }
 
@@ -120,7 +120,7 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void before() throws Throwable {
-        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");        
+        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");
         if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
             return;
         }

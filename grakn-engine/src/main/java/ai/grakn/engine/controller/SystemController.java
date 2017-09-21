@@ -23,8 +23,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.EntityType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
@@ -63,12 +63,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static ai.grakn.engine.GraknEngineConfig.KB_ANALYTICS;
-import static ai.grakn.engine.GraknEngineConfig.KB_MODE;
-import static ai.grakn.util.REST.KBConfig.COMPUTER;
-import static ai.grakn.util.REST.KBConfig.DEFAULT;
 import static ai.grakn.util.REST.Request.FORMAT;
-import static ai.grakn.util.REST.Request.CONFIG_PARAM;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
@@ -170,24 +165,11 @@ public class SystemController {
     @GET
     @Path("/configuration")
     @ApiOperation(value = "Get config which is used to build transactions")
-    @ApiImplicitParam(name = CONFIG_PARAM, value = "The type of config to return", required = true, dataType = "string", paramType = "path")
     private String getConfiguration(Request request, Response response) {
-        String config = request.queryParams(CONFIG_PARAM);
 
         // Make a copy of the properties object
         Properties properties = new Properties();
         properties.putAll(factory.properties());
-
-        // Get the correct factory based on the request
-        switch ((config != null) ? config : DEFAULT) {
-            case DEFAULT:
-                break; // Factory is already correctly set
-            case COMPUTER:
-                properties.setProperty(KB_MODE, properties.get(KB_ANALYTICS).toString());
-                break;
-            default:
-                throw GraknServerException.internalError("Unrecognised config: " + config);
-        }
 
         // Turn the properties into a Json object
         Json jsonConfig = Json.make(properties);
