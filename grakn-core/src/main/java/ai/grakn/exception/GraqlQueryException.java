@@ -45,17 +45,17 @@ import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 
 /**
  * <p>
- *     Graql Query Exception
+ * Graql Query Exception
  * </p>
- *
  * <p>
- *     Occurs when the query is syntactically correct but semantically incorrect.
- *     For example limiting the results of a query -1
+ * <p>
+ * Occurs when the query is syntactically correct but semantically incorrect.
+ * For example limiting the results of a query -1
  * </p>
  *
  * @author fppt
  */
-public class GraqlQueryException extends GraknException{
+public class GraqlQueryException extends GraknException {
 
     private GraqlQueryException(String error) {
         super(error);
@@ -92,6 +92,10 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 
+    public static GraqlQueryException roleAndRuleDoNotHaveInstance() {
+        return new GraqlQueryException(ErrorMessage.ROLE_AND_RULE_DO_NOT_HAVE_INSTANCE.getMessage());
+    }
+
     public static GraqlQueryException deleteSchemaConcept(SchemaConcept schemaConcept) {
         return create("cannot delete schema concept %s. Use `undefine` instead.", schemaConcept);
     }
@@ -104,8 +108,8 @@ public class GraqlQueryException extends GraknException{
         return GraqlQueryException.create("defining property '%s' is not supported, try `insert`", propertyName);
     }
 
-    public static GraqlQueryException mustBeResourceType(Label resourceType) {
-        return new GraqlQueryException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
+    public static GraqlQueryException mustBeAttributeType(Label attributeType) {
+        return new GraqlQueryException(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage(attributeType));
     }
 
     public static GraqlQueryException queryInstanceOfRoleType(Label label) {
@@ -146,7 +150,7 @@ public class GraqlQueryException extends GraknException{
 
     /**
      * Thrown when a concept is inserted with multiple properties when it can only have one.
-     *
+     * <p>
      * For example: {@code insert $x isa movie; $x isa person;}
      */
     public static GraqlQueryException insertMultipleProperties(String property, Object value1, Object value2) {
@@ -155,7 +159,7 @@ public class GraqlQueryException extends GraknException{
 
     /**
      * Thrown when a property is inserted on a concept that already exists and that property can't be overridden.
-     *
+     * <p>
      * For example: {@code match $x isa name; insert $x val "Bob";}
      */
     public static GraqlQueryException insertPropertyOnExistingConcept(String property, Object value, Concept concept) {
@@ -164,7 +168,7 @@ public class GraqlQueryException extends GraknException{
 
     /**
      * Thrown when a property is inserted on a concept that doesn't support that property.
-     *
+     * <p>
      * For example, an entity with a value: {@code insert $x isa movie, val "The Godfather";}
      */
     public static GraqlQueryException insertUnexpectedProperty(String property, Object value, Concept concept) {
@@ -173,7 +177,7 @@ public class GraqlQueryException extends GraknException{
 
     /**
      * Thrown when a concept does not have all expected properties required to insert it.
-     *
+     * <p>
      * For example, a resource without a value: {@code insert $x isa name;}
      */
     public static GraqlQueryException insertNoExpectedProperty(String property, VarPatternAdmin var) {
@@ -182,7 +186,7 @@ public class GraqlQueryException extends GraknException{
 
     /**
      * Thrown when attempting to insert a concept that already exists.
-     *
+     * <p>
      * For example: {@code match $x isa movie; insert $x isa name, val "Bob";}
      */
     public static GraqlQueryException insertExistingConcept(VarPatternAdmin pattern, Concept concept) {
@@ -235,7 +239,7 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException statisticsResourceTypesNotSpecified() {
-        return new GraqlQueryException(ErrorMessage.RESOURCE_TYPE_NOT_SPECIFIED.getMessage());
+        return new GraqlQueryException(ErrorMessage.ATTRIBUTE_TYPE_NOT_SPECIFIED.getMessage());
     }
 
     public static GraqlQueryException noPathDestination() {
@@ -270,7 +274,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(reasonerQuery));
     }
 
-    public static GraqlQueryException rolePatternAbsent(Atomic relation){
+    public static GraqlQueryException rolePatternAbsent(Atomic relation) {
         return new GraqlQueryException(ErrorMessage.ROLE_PATTERN_ABSENT.getMessage(relation));
     }
 
@@ -306,7 +310,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage());
     }
 
-    public static GraqlQueryException insertAbstractOnNonType(SchemaConcept concept){
+    public static GraqlQueryException insertAbstractOnNonType(SchemaConcept concept) {
         return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
     }
 }

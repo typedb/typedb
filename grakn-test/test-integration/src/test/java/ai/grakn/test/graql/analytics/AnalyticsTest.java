@@ -28,6 +28,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -35,7 +36,9 @@ import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +66,9 @@ public class AnalyticsTest {
     private String entityId4;
     private String relationId12;
     private String relationId24;
+
+    @Rule
+    public ExpectedException expectedEx = ExpectedException.none();
 
     @Before
     public void setUp() {
@@ -123,6 +129,24 @@ public class AnalyticsTest {
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
+        }
+    }
+
+    @Test
+    public void testSubgraphHasRule() {
+        expectedEx.expect(GraqlQueryException.class);
+        expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            graph.graql().compute().count().in("rule", "thing").execute();
+        }
+    }
+
+    @Test
+    public void testSubgraphHasRole() {
+        expectedEx.expect(GraqlQueryException.class);
+        expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            graph.graql().compute().count().in("role").execute();
         }
     }
 

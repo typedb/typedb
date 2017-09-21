@@ -127,7 +127,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
         SchemaConcept schemaConcept = graph.getSchemaConcept(type());
         if(schemaConcept == null || !schemaConcept.isAttributeType()) {
-            throw GraqlQueryException.mustBeResourceType(type());
+            throw GraqlQueryException.mustBeAttributeType(type());
         }
     }
 
