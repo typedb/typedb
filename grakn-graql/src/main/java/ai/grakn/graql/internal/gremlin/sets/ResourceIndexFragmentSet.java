@@ -39,7 +39,7 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragme
  * <p>
  * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link Var}.
  * 2. The {@link IsaFragmentSet} refers to a type {@link Var} with a {@link LabelFragmentSet}.
- * 3. The {@link LabelFragmentSet} refers to one type in the graph.
+ * 3. The {@link LabelFragmentSet} refers to one type in the knowledge base.
  * 4. The {@link ValueFragmentSet} is an equality predicate referring to a literal value.
  * <p>
  * When all these criteria are met, the fragments representing the {@link IsaFragmentSet} and the

@@ -80,9 +80,9 @@ class LabelFragmentSet extends EquivalentFragmentSet {
     /**
      * Optimise away any redundant {@link LabelFragmentSet}s. A {@link LabelFragmentSet} is considered redundant if:
      * <ol>
-     *   <li>It refers to a schema concept that exists in the knowledge base
-     *   <li>It is not associated with a user-defined variable
-     *   <li>The variable it is associated with is not referred to in any other fragment
+     *   <li>It refers to a {@link SchemaConcept} that exists in the knowledge base
+     *   <li>It is not associated with a user-defined {@link Var}
+     *   <li>The {@link Var} it is associated with is not referred to in any other fragment
      *   <li>The fragment set is not the only remaining fragment set</li>
      * </ol>
      */
