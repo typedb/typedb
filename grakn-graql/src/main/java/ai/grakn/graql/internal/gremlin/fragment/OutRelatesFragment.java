@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.Map;
@@ -41,8 +42,8 @@ abstract class OutRelatesFragment extends Fragment {
     public abstract Var end();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
         return Fragments.isVertex(traversal).out(RELATES.getLabel());
     }

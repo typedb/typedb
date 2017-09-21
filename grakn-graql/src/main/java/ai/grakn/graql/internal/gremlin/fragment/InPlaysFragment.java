@@ -45,9 +45,9 @@ abstract class InPlaysFragment extends Fragment {
     abstract boolean required();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
-        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.isVertex(traversal);
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+        GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.isVertex(traversal);
         if (required()) {
             vertexTraversal.inE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
         } else {

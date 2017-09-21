@@ -6,7 +6,6 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
@@ -25,7 +24,7 @@ public class OutPlaysFragmentTest {
     @Test
     @SuppressWarnings("unchecked")
     public void testApplyTraversalFollowsSubsUpwards() {
-        GraphTraversal<Element, Vertex> traversal = __.V();
+        GraphTraversal<Vertex, Vertex> traversal = __.V();
         fragment.applyTraversalInner(traversal, null, ImmutableSet.of());
 
         // Make sure we check this is a vertex, then traverse upwards subs once and plays

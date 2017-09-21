@@ -45,10 +45,10 @@ abstract class OutPlaysFragment extends Fragment {
     abstract boolean required();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
-        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.outSubs(Fragments.isVertex(traversal));
+        GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.outSubs(Fragments.isVertex(traversal));
 
         if (required()) {
             return vertexTraversal.outE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
