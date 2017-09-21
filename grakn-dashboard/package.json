@@ -21,8 +21,8 @@
     "vee-validate": "^2.0.0-beta.17",
     "vis": "^4.18.0",
     "vue": "^2.0",
-    "vue-router": "^2.0",
-    "vue-template-compiler": "^2.0"
+    "vue-router": "^2.7",
+    "vue-template-compiler": "^2.4"
   },
   "devDependencies": {
     "babel-core": "6.26.0",
