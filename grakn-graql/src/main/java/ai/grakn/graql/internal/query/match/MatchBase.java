@@ -85,19 +85,19 @@ public class MatchBase extends AbstractMatch {
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
         LOG.trace("Created query plan");
         LOG.trace(graqlTraversal.toString());
-        return streamWithTraversal(this.getPattern(), graph, graqlTraversal);
+        return streamWithTraversal(this.getPattern().commonVars(), graph, graqlTraversal);
     }
 
     /**
-     * @param pattern a pattern to match in the graph
+     * @param vars set of variables of interest
      * @param graph the graph to get results from
      * @param graqlTraversal gral traversal corresponding to the provided pattern
      * @return resulting answer stream
      */
-    public static Stream<Answer> streamWithTraversal(Conjunction<PatternAdmin> pattern, GraknTx graph, GraqlTraversal graqlTraversal) {
+    public static Stream<Answer> streamWithTraversal(Set<Var> vars, GraknTx graph, GraqlTraversal graqlTraversal) {
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph);
 
-        String[] selectedNames = pattern.commonVars().stream().map(Var::getValue).toArray(String[]::new);
+        String[] selectedNames = vars.stream().map(Var::getValue).toArray(String[]::new);
 
         // Must provide three arguments in order to pass an array to .select
         // If ordering, select the variable to order by as well
@@ -106,7 +106,7 @@ public class MatchBase extends AbstractMatch {
         }
 
         return traversal.toStream()
-                .map(elements -> makeResults(pattern, graph, elements))
+                .map(elements -> makeResults(vars, graph, elements))
                 .flatMap(CommonUtil::optionalToStream)
                 .distinct()
                 .sequential()
@@ -114,13 +114,14 @@ public class MatchBase extends AbstractMatch {
     }
 
     /**
+     * @param vars set of variables of interest
      * @param graph the graph to get results from
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private static Optional<Map<Var, Concept>> makeResults(Conjunction<PatternAdmin> pattern, GraknTx graph, Map<String, Element> elements) {
+    private static Optional<Map<Var, Concept>> makeResults(Set<Var> vars, GraknTx graph, Map<String, Element> elements) {
         Map<Var, Concept> map = new HashMap<>();
-        for (Var var : pattern.commonVars()) {
+        for (Var var : vars) {
             Optional<Concept> concept = buildConcept(graph.admin(), elements.get(var.getValue()));
 
             if(!concept.isPresent()) return Optional.empty();

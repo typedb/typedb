@@ -98,7 +98,7 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
-    
+    /*
      * This is the memoized result of {@link #vars()}
      */
     private @Nullable ImmutableSet<Var> vars = null;
