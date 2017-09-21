@@ -76,25 +76,25 @@ public interface Var extends VarPattern {
 
         UserDefined {
             @Override
-            public String prefix() {
-                return "$";
+            public char prefix() {
+                return '§';
             }
         },
 
         Generated {
             @Override
-            public String prefix() {
-                return "£";
+            public char prefix() {
+                return '#';
             }
         },
 
         Reserved {
             @Override
-            public String prefix() {
-                return "!";
+            public char prefix() {
+                return '!';
             }
         };
 
-        public abstract String prefix();
+        public abstract char prefix();
     }
 }
