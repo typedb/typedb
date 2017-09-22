@@ -5,11 +5,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.Keyspace;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import org.junit.After;
@@ -33,7 +30,7 @@ public class SystemKeyspaceTest {
     private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(engine.uri(), k).open(GraknTxType.WRITE);
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

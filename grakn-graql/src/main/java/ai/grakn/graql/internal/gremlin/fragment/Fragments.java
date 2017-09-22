@@ -114,8 +114,8 @@ public class Fragments {
         return new AutoValue_IdFragment(varProperty, start, id);
     }
 
-    public static Fragment label(VarProperty varProperty, Var start, Label label) {
-        return new AutoValue_LabelFragment(varProperty, start, label);
+    public static Fragment label(VarProperty varProperty, Var start, ImmutableSet<Label> labels) {
+        return new AutoValue_LabelFragment(varProperty, start, labels);
     }
 
     public static Fragment value(VarProperty varProperty, Var start, ValuePredicate predicate) {

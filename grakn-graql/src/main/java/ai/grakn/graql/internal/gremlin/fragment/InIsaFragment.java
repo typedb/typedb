@@ -55,9 +55,8 @@ abstract class InIsaFragment extends Fragment {
     public abstract Var end();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
-        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.inSubs(Fragments.isVertex(traversal));
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
         GraphTraversal<Vertex, Vertex> isImplicitRelationType =
                 __.<Vertex>hasLabel(RELATIONSHIP_TYPE.name()).has(IS_IMPLICIT.name(), true);
@@ -67,7 +66,7 @@ abstract class InIsaFragment extends Fragment {
                 toEdgeInstances()
         ));
 
-        return choose(vertexTraversal, isImplicitRelationType,
+        return choose(Fragments.isVertex(traversal), isImplicitRelationType,
                 toVertexAndEdgeInstances,
                 toVertexInstances(__.identity())
         );

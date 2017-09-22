@@ -63,9 +63,6 @@ public interface Unifier{
     @CheckReturnValue
     boolean isEmpty();
 
-    @CheckReturnValue
-    Map<Var, Collection<Var>> map();
-
     /**
      * @return variables present in this unifier
      */
@@ -118,11 +115,6 @@ public interface Unifier{
      * @return combined unifier
      */
     Unifier combine(Unifier u);
-
-    /**
-     * @return this
-     */
-    Unifier removeTrivialMappings();
 
     /**
      * @return unifier inverse - new unifier with inverted mappings

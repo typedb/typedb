@@ -50,7 +50,7 @@ import static org.junit.Assume.assumeFalse;
 public class AnalyticsTest {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    public static final EngineContext context = EngineContext.inMemoryServer();
     private GraknSession factory;
 
     private static final String thingy = "thingy";
@@ -128,7 +128,6 @@ public class AnalyticsTest {
 
     @Test
     public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
-        // TODO: move parallel tests to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
         addSchemaAndEntities();

@@ -54,8 +54,8 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
         return Fragments.union(Fragments.isVertex(traversal), ImmutableSet.of(
                 reifiedRelationTraversal(graph, vars),

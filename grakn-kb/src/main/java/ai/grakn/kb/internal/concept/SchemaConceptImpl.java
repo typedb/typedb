@@ -175,7 +175,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
             //Update neighbouring caches
             //noinspection unchecked
-            ((SchemaConceptImpl<SchemaConcept>) superConcept).deleteCachedDirectedSubType(getThis());
+            SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
 
             //Clear internal caching
             txCacheClear();

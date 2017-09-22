@@ -45,7 +45,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author fppt
  */
 public class FactoryBuilder {
-    public static final String KB_MODE = "knowledge-base.mode";
+    static final String KB_MODE = "knowledge-base.mode";
+    static final String KB_ANALYTICS = "knowledge-base.analytics";
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
 
     //This is used to map grakn value properties into the underlaying properties

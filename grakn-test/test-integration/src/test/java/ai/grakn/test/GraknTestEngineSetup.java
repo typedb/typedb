@@ -46,7 +46,7 @@ import static ai.grakn.graql.Graql.var;
  * <p>
  *     Sets up a grakn engine for testing purposes.
  * </p>
- * 
+ *
  * @author borislav
  *
  */

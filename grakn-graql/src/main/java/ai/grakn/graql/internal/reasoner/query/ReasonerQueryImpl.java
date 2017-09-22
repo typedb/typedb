@@ -85,6 +85,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknTx tx;
     private final ImmutableSet<Atomic> atomSet;
+    private Answer substitution = null;
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
         this.tx = tx;
@@ -138,7 +139,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public String toString(){
         return "{\n" +
                 getAtoms(Atom.class)
-                        .filter(Atomic::isSelectable)
                         .map(Atomic::toString)
                         .collect(Collectors.joining(";\n")) +
                 "\n}\n";
@@ -338,16 +338,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return substitution obtained from all id predicates (including internal) in the query
      */
     public Answer getSubstitution(){
-        Set<IdPredicate> predicates = getAtoms(TypeAtom.class)
-                .map(TypeAtom::getTypePredicate)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        getAtoms(IdPredicate.class).forEach(predicates::add);
+        if (substitution == null) {
+            Set<IdPredicate> predicates = getAtoms(TypeAtom.class)
+                    .map(TypeAtom::getTypePredicate)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            getAtoms(IdPredicate.class).forEach(predicates::add);
 
-        // the mapping function is declared separately to please the Eclipse compiler
-        Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
-
-        return new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
+            // the mapping function is declared separately to please the Eclipse compiler
+            Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
+            substitution = new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
+        }
+        return substitution;
     }
 
     public Answer getRoleSubstitution(){
@@ -496,26 +498,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
      */
     Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
-        List<Set<Atom>> atomOptions = getAtoms(Atom.class)
-                .map(at -> {
-                    if (at.isRelation() && at.getSchemaConcept() == null) {
-                        RelationshipAtom rel = (RelationshipAtom) at;
-                        Set<Atom> possibleRels = new HashSet<>();
-                        rel.inferPossibleRelationTypes(sub).stream()
-                                .map(rel::addType)
-                                .forEach(possibleRels::add);
-                        return possibleRels;
-                    } else {
-                        return Collections.singleton(at);
-                    }
-                })
+        List<List<? extends Atom>> atomOptions = getAtoms(Atom.class)
+                .map(at -> at.atomOptions(sub))
                 .collect(Collectors.toList());
 
-        if (atomOptions.stream().mapToInt(Set::size).sum() == atomOptions.size()) {
+        if (atomOptions.stream().mapToInt(List::size).sum() == atomOptions.size()) {
             return Stream.of(this);
         }
 
-        return Sets.cartesianProduct(atomOptions).stream()
+        return Lists.cartesianProduct(atomOptions).stream()
                 .map(atomList -> ReasonerQueries.create(atomList, tx()));
     }
 

@@ -57,7 +57,7 @@ public class PostProcessingTest {
     private GraknSession session;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @BeforeClass
     public static void onlyRunOnTinker(){
