@@ -66,7 +66,7 @@ public class RelationshipController {
 
         spark.post(RELATIONSHIP_TYPE + "/" + RELATIONSHIP_TYPE_LABEL_PARAMETER, this::postRelationship);
         spark.put(RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT, this::assignEntityAndRoleToRelationship);
-        // TODO: implement it after operation has been supported in the Graph API
+        // TODO: implement it after operation has been supported in the Java API
 //        spark.delete("/api/relationship/:relationshipConceptId/role/:roleConceptId/entity/:entityConceptId", this::deleteEntityAndRoleToRelationshipAssignment);
     }
 
@@ -75,6 +75,7 @@ public class RelationshipController {
         String relationshipTypeLabel = mandatoryPathParameter(request, RELATIONSHIP_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("postRelationship - attempting to find entityType " + relationshipTypeLabel + " in keyspace " + keyspace);
+        
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<RelationshipType> relationshipTypeOptional = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
             if (relationshipTypeOptional.isPresent()) {
