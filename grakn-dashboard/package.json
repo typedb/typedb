@@ -35,7 +35,6 @@
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-plugin-transform-runtime": "^6.12.0",
     "babel-preset-env": "^1.6.0",
-    "canvas-prebuilt": "^1.6.5-prerelease.1",
     "css-loader": "^0.28.4",
     "eslint": "^3.13.1",
     "eslint-config-airbnb-base": "^11.0.0",
