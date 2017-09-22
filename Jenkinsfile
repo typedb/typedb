@@ -72,7 +72,7 @@ node {
     String workspace = pwd()
 
     //Only run validation master/stable
-    if (env.BRANCH_NAME in ['master', 'stable'] || true) {
+    if (env.BRANCH_NAME in ['master', 'stable']) {
         slackGithub "Build started"
 
         stage('Run the benchmarks') {
