@@ -50,11 +50,11 @@ As well as the _subject_, [properties](#property) sometimes take other arguments
 When a [property](#property) takes a [variable](#variable) argument representing a schema concept, it is possible to
 substitute a label. For example,
 ```graql
-match $x isa $A; $A label movie; get;
+match $x isa $A; $A label person; get;
 ```
 should be written more succinctly as
 ```graql
-match $x isa movie; get;
+match $x isa person; get;
 ```
 
 There are several different [properties](#property). Which ones are supported and what they do depends on the context.

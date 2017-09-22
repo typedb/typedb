@@ -27,7 +27,8 @@ schema.
 
 In order to remove a schema concept entirely, it is sufficient to undefine its [direct super-concept](#sub):
 
-```graql
+<!-- Ignored so we don't delete the person type for real -->
+```graql-test-ignore
 undefine person sub entity;
 ```
 
@@ -63,7 +64,7 @@ one will be created.
 `$A has <identifier>` defines the type `$A` to have attributes of type `<identifier>`.
 
 This is done using the following relationship structure:
-```graql
+```graql-test-ignore
 has-<identifier>-owner sub has-<sup>-owner;
 has-<identifier>-value sub has-<sup>-value;
 has-<identifier> sub has-<sup>, relates has-<identifier>-owner, relates has-<identifier>-value;
@@ -78,7 +79,7 @@ Where `<sup>` is the direct super-concept of `<identifier>`.
 `$A key <identifier>` defines the type `$A` to have a key of attribute type `<identifier>`.
 
 This is done using the following relationship structure:
-```graql
+```graql-test-ignore
 key-<identifier>-owner sub key-<sup>-owner;
 key-<identifier>-value sub key-<sup>-value;
 key-<identifier> sub key-<sup>, relates key-<identifier>-owner, relates key-<identifier>-value;

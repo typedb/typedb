@@ -59,7 +59,7 @@ The [variable](./query.html#variable) representing the role can optionally be om
 
 This is equivalent to the following:
 <!-- TODO: Describe without referring to relationships? -->
-```graql
+```graql-test-ignore
 $r ($x, $y);
 $y isa <identifier>;
 ```
@@ -67,11 +67,11 @@ $y isa <identifier>;
 The `as $r` is optional. Additionally, a [predicate](#predicate) can be used instead of a
 [variable](./query.html#variable):
 
-```graql
+```graql-test-ignore
 $x has <identifier> <predicate>;
 ```
 which is equivalent to:
-```graql
+```graql-test-ignore
 $x has <identifier> $_;
 $_ val <predicate>;
 ```
@@ -111,7 +111,7 @@ $_ val <predicate>;
 
 <!-- TODO: Describe without referring to relationships? -->
 This is equivalent to the following:
-```graql
+```graql-test-ignore
 $_R sub relationship, relates $_O, relates $_V;
 $_O sub role;
 $_V sub role;
@@ -128,7 +128,7 @@ $_O != $_V;
 
 <!-- TODO: Describe without referring to relationships? -->
 This is equivalent to the following:
-```graql
+```graql-test-ignore
 $_R sub relationship, relates $_O, relates $_V;
 $_O sub role;
 $_V sub role;
@@ -220,14 +220,14 @@ If `<identifier>` is a key for the direct type of `$x`, then the resulting relat
 <!-- TODO: Describe without referring to relationships? -->
 If `<identifier>` is not a key for the direct type of `$x`, this is equivalent to:
 
-```graql
+```graql-test-ignore
 $r (has-<identifier>-owner: $x, has-<identifier>-value: $y) isa has-<identifier>;
 $y isa <identifier>;
 ```
 
 Otherwise, it is equivalent to:
 
-```graql
+```graql-test-ignore
 $r (key-<identifier>-owner: $x, key-<identifier>-value: $y) isa key-<identifier>;
 $y isa <identifier>;
 ```
@@ -235,13 +235,13 @@ $y isa <identifier>;
 The `as $r` is optional. Additionally, a literal [value](./query.html#value) can be used instead of a
 [variable](./query.html#variable):
 
-```graql
+```graql-test-ignore
 $x has <identifier> <value>;
 ```
 
 which is equivalent to:
 
-```graql
+```graql-test-ignore
 $x has <identifier> $_;
 $_ val <value>;
 ```
