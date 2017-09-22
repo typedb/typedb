@@ -38,12 +38,20 @@ import ai.grakn.kb.internal.structure.VertexElement;
  * @author fppt
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
-    EntityImpl(VertexElement vertexElement) {
+    private EntityImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    EntityImpl(VertexElement vertexElement, EntityType type) {
+    private EntityImpl(VertexElement vertexElement, EntityType type) {
         super(vertexElement, type);
+    }
+
+    public static EntityImpl get(VertexElement vertexElement){
+        return new EntityImpl(vertexElement);
+    }
+
+    public static EntityImpl create(VertexElement vertexElement, EntityType type){
+        return new EntityImpl(vertexElement, type);
     }
 
     public static EntityImpl from(Entity entity){

@@ -58,12 +58,20 @@ import java.util.stream.Stream;
  *
  */
 public class RelationshipReified extends ThingImpl<Relationship, RelationshipType> implements RelationshipStructure {
-    public RelationshipReified(VertexElement vertexElement) {
+    private RelationshipReified(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    public RelationshipReified(VertexElement vertexElement, RelationshipType type) {
+    private RelationshipReified(VertexElement vertexElement, RelationshipType type) {
         super(vertexElement, type);
+    }
+
+    public static RelationshipReified get(VertexElement vertexElement){
+        return new RelationshipReified(vertexElement);
+    }
+
+    public static RelationshipReified create(VertexElement vertexElement, RelationshipType type){
+        return new RelationshipReified(vertexElement, type);
     }
 
     public Map<Role, Set<Thing>> allRolePlayers() {
