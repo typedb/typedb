@@ -19,7 +19,7 @@ def runIntegrationTest(String workspace, String moduleName) {
     String modulePath = "${workspace}/grakn-test/${moduleName}"
 
     stage(moduleName) {
-        withEnv(["PATH+EXTRA=${modulePath}:${modulePath}/src/main/bash"]) {
+        withPath("${modulePath}:${modulePath}/src/main/bash") {
             withGrakn(workspace) {
                 timeout(180) {
                     stage('Load') {
@@ -37,7 +37,7 @@ def runIntegrationTest(String workspace, String moduleName) {
 }
 
 def withGrakn(String workspace, Closure closure) {
-    withEnv(["PATH+EXTRA=${workspace}/grakn-test/test-integration/src/test/bash"]) {
+    withPath("${workspace}/grakn-test/test-integration/src/test/bash") {
         //Everything is wrapped in a try catch so we can handle any test failures
         //If one test fails then all the others will stop. I.e. we fail fast
         try {
@@ -68,20 +68,26 @@ def withGrakn(String workspace, Closure closure) {
     }
 }
 
+def withPath(String path, Closure closure) {
+    return withEnv("PATH+EXTRA=${path}", closure)
+}
+
 node {
     String workspace = pwd()
 
     //Only run validation master/stable
     if (env.BRANCH_NAME in ['master', 'stable'] || true) {
-        slackGithub "Build started"
+        withPath("${workspace}/grakn-package") {
+            slackGithub "Build started"
 
-        stage('Run the benchmarks') {
-            sh "mvn clean test  -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dgrakn.test-profile=janus -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-        }
+            stage('Run the benchmarks') {
+                sh "mvn clean test  -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dgrakn.test-profile=janus -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+            }
 
-        for (String moduleName : integrationTests) {
-            runIntegrationTest(workspace, moduleName)
+            for (String moduleName : integrationTests) {
+                runIntegrationTest(workspace, moduleName)
+            }
+            slackGithub "Periodic Build Success" "good"
         }
-        slackGithub "Periodic Build Success" "good"
     }
 }
