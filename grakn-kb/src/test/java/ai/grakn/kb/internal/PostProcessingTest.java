@@ -181,7 +181,7 @@ public class PostProcessingTest extends TxTestBase {
         resourceVertex.property(Schema.VertexProperty.VALUE_STRING.name(), value);
         resourceVertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + resourceVertex.id().toString());
 
-        return new AttributeImpl<>(new VertexElement(tx, resourceVertex));
+        return AttributeImpl.get(new VertexElement(tx, resourceVertex));
     }
 
     @Test
