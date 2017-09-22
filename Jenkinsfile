@@ -72,7 +72,7 @@ def withPath(String path, Closure closure) {
 
 node {
     //Only run validation master/stable
-    if (env.BRANCH_NAME in ['master', 'stable'] || true) {
+    if (env.BRANCH_NAME in ['master', 'stable']) {
         String workspace = pwd()
         checkout scm
 
