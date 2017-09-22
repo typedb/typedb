@@ -80,6 +80,7 @@ node {
 
         stage('Run the benchmarks') {
             sh "mvn clean test  -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dgrakn.test-profile=janus -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+            archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
         }
 
         for (String moduleName : integrationTests) {
