@@ -42,6 +42,15 @@ entries:
       - title: Overview
         output: web
         url: /documentation/graql/graql-overview.html
+      - title: Graql Queries
+        output: web
+        url: /documentation/graql/query.html
+      - title: Data Definition Language
+        output: web
+        url: /documentation/graql/ddl.html
+      - title: Data Manipulation Language
+        output: web
+        url: /documentation/graql/dml.html
       - title: Graql Shell
         output: web
         url: /documentation/graql/graql-shell.html
@@ -60,15 +69,6 @@ entries:
       - title: Graql Cheatsheet
         output: web
         url: /documentation/graql/graql-cheatsheet.html
-      - title: Graql Queries
-        output: web
-        url: /documentation/graql/query.html
-      - title: Data Definition Language
-        output: web
-        url: /documentation/graql/ddl.html
-      - title: Data Manipulation Language
-        output: web
-        url: /documentation/graql/dml.html
   - title: Graql Analytics
     output: web
     folderitems:
