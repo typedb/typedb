@@ -60,9 +60,6 @@ entries:
       - title: Graql Rules
         output: web
         url: /documentation/graql/graql-rules.html
-      - title: Aggregate Queries
-        output: web
-        url: /documentation/graql/aggregate-queries.html
       - title: Compute Queries
         output: web
         url: /documentation/graql/compute-queries.html
