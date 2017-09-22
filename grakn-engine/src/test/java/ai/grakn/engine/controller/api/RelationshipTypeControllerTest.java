@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * <p>
- *     Endpoint tests for Graph API
+ *     Endpoint tests for Java API
  * </p>
  *
  * @author Ganeshwara Herawan Hananda
@@ -113,7 +113,7 @@ public class RelationshipTypeControllerTest {
     }
 
     @Test
-    public void getRelationshipTypeFromMovieGraphShouldExecuteSuccessfully() {
+    public void getRelationshipTypeFromMovieKbShouldExecuteSuccessfully() {
         String hasGenre = "has-genre";
 
         Response response = with()
