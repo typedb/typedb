@@ -73,6 +73,9 @@ def withPath(String path, Closure closure) {
 node {
     //Only run validation master/stable
     if (env.BRANCH_NAME in ['master', 'stable']) {
+	properties([
+	    buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+	])
         String workspace = pwd()
         checkout scm
 
