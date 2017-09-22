@@ -15,12 +15,12 @@ ${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.B
 authored by - ${user}"""
 }
 
-def runIntegrationTest(String moduleName) {
+def runIntegrationTest(String workspace, String moduleName) {
     String modulePath = "${workspace}/grakn-test/${moduleName}"
 
     stage(moduleName) {
         withEnv(["PATH+EXTRA=${modulePath}:${modulePath}/src/main/bash"]) {
-            withGrakn {
+            withGrakn(workspace) {
                 timeout(180) {
                     stage('Load') {
                         sh "load.sh"
@@ -36,7 +36,7 @@ def runIntegrationTest(String moduleName) {
     }
 }
 
-def withGrakn(Closure closure) {
+def withGrakn(String workspace, Closure closure) {
     withEnv(["PATH+EXTRA=${workspace}/grakn-test/test-integration/src/test/bash"]) {
         //Everything is wrapped in a try catch so we can handle any test failures
         //If one test fails then all the others will stop. I.e. we fail fast
@@ -69,6 +69,8 @@ def withGrakn(Closure closure) {
 }
 
 node {
+    String workspace = pwd()
+
     //Only run validation master/stable
     if (env.BRANCH_NAME in ['master', 'stable']) {
         slackGithub "Build started"
@@ -78,7 +80,7 @@ node {
         }
 
         for (String moduleName : integrationTests) {
-            runIntegrationTest(moduleName)
+            runIntegrationTest(workspace, moduleName)
         }
         slackGithub "Periodic Build Success" "good"
     }
