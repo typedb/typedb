@@ -79,13 +79,13 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
         //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
-        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new HashSet<>()).add(rp.getRolePlayer()));
 
         return roleMap;
     }
 
     public Stream<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getInstance);
+        return castingsRelation(roles).map(Casting::getRolePlayer);
     }
 
     public void addRolePlayer(Role role, Thing thing) {

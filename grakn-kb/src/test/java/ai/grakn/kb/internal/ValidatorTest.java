@@ -123,6 +123,24 @@ public class ValidatorTest extends TxTestBase {
     }
 
     @Test
+    public void whenCreatingRelationWithoutLinkingRelates_Throw(){
+        Role hunter = tx.putRole("hunter");
+        Role monster = tx.putRole("monster");
+        EntityType stuff = tx.putEntityType("Stuff").plays(hunter).plays(monster);
+        RelationshipType kills = tx.putRelationshipType("kills").relates(hunter);
+
+        Entity myHunter = stuff.addEntity();
+        Entity myMonster = stuff.addEntity();
+
+        Relationship relation = kills.addRelationship().addRolePlayer(hunter, myHunter).addRolePlayer(monster, myMonster);
+
+        expectedException.expect(InvalidKBException.class);
+        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), monster.getLabel(), kills.getLabel())));
+
+        tx.commit();
+    }
+
+    @Test
     public void whenDeletingRelations_EnsureGraphRemainsValid() throws InvalidKBException {
         // schema
         EntityType person = tx.putEntityType("person");
