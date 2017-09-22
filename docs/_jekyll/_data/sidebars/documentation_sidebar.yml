@@ -48,9 +48,6 @@ entries:
       - title: Matches
         output: web
         url: /documentation/graql/matches.html
-      - title: Get Queries
-        output: web
-        url: /documentation/graql/get-queries.html
       - title: Delete Queries
         output: web
         url: /documentation/graql/delete-queries.html

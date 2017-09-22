@@ -19,7 +19,7 @@ Graql](../developing-with-java/java-graql.html).
 ## Query types
 
 There are seven types of queries, which are begun with the following keywords:
-- [get](get-queries.html) - for getting concepts from the knowledge base
+- [get](dml.html#get-query) - for getting concepts from the knowledge base
 - [aggregate](aggregate-queries.html) - for transforming data in the knowledge base
 - [define](define-queries.html) - for defining schema concepts
 - [undefine](undefine-queries.html) - for removing schema concepts
