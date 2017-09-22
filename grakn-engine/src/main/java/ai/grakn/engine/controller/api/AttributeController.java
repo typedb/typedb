@@ -69,13 +69,13 @@ public class AttributeController {
         String attributeValue = requestBody.at(VALUE_JSON_FIELD).asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("postAttribute - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
-            Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(graph.getAttributeType(attributeTypeLabel));
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
+            Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
             if (attributeTypeOptional.isPresent()) {
                 LOG.debug("postAttribute - attributeType " + attributeTypeLabel + " found.");
                 AttributeType attributeType = attributeTypeOptional.get();
                 Attribute attribute = attributeType.putAttribute(attributeValue);
-                graph.commit();
+                tx.commit();
 
                 String jsonConceptId = attribute.getId().getValue();
                 Object jsonAttributeValue = attribute.getValue();
