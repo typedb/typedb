@@ -44,8 +44,6 @@ def withGrakn(String workspace, Closure closure) {
             timeout(15) {
                 //Stages allow you to organise and group things within Jenkins
                 stage('Start Grakn') {
-                    checkout scm
-
                     sh "build-grakn.sh ${env.BRANCH_NAME}"
 
                     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
@@ -73,21 +71,21 @@ def withPath(String path, Closure closure) {
 }
 
 node {
-    String workspace = pwd()
-
     //Only run validation master/stable
     if (env.BRANCH_NAME in ['master', 'stable'] || true) {
-        withPath("${workspace}/grakn-package") {
-            slackGithub "Build started"
+        String workspace = pwd()
+        checkout scm
 
-            stage('Run the benchmarks') {
-                sh "mvn clean test  -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dgrakn.test-profile=janus -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-            }
+        slackGithub "Build started"
 
-            for (String moduleName : integrationTests) {
-                runIntegrationTest(workspace, moduleName)
-            }
-            slackGithub "Periodic Build Success" "good"
+        stage('Run the benchmarks') {
+            sh "mvn clean test  -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dgrakn.test-profile=janus -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
         }
+
+        for (String moduleName : integrationTests) {
+            runIntegrationTest(workspace, moduleName)
+        }
+
+        slackGithub "Periodic Build Success" "good"
     }
 }
