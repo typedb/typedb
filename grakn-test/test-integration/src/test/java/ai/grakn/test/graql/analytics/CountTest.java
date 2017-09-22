@@ -43,17 +43,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 public class CountTest {
 
     @ClassRule
-    public static final EngineContext rule = EngineContext.startInMemoryServer();
+    public static final EngineContext rule = EngineContext.inMemoryServer();
 
     private GraknSession factory;
 
     @Before
     public void setUp() {
-        factory = rule.factoryWithNewKeyspace();
+        factory = rule.sessionWithNewKeyspace();
     }
 
     @Test
@@ -80,7 +81,6 @@ public class CountTest {
                     Graql.compute().withTx(graph).count().in(nameThing).execute().longValue());
         }
 
-        // create 1 more, rdd is refreshed
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType anotherThing = graph.putEntityType(nameAnotherThing);
             anotherThing.addEntity();
@@ -93,10 +93,26 @@ public class CountTest {
                     Graql.compute().withTx(graph).count().in(nameThing).execute().longValue());
             Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
         }
+    }
+
+    @Test
+    public void testConcurrentCount() throws Exception {
+        assumeFalse(GraknTestSetup.usingTinker());
+
+        String nameThing = "thingy";
+        String nameAnotherThing = "another";
+
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+            EntityType thingy = graph.putEntityType(nameThing);
+            thingy.addEntity();
+            thingy.addEntity();
+            EntityType anotherThing = graph.putEntityType(nameAnotherThing);
+            anotherThing.addEntity();
+            graph.commit();
+        }
 
         List<Long> list = new ArrayList<>(4);
         long workerNumber = 6L;
-        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
@@ -115,7 +131,6 @@ public class CountTest {
                 .collect(Collectors.toSet());
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(3L, result.iterator().next().longValue());
-
     }
 
     @Test

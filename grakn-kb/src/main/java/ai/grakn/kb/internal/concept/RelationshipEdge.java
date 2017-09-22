@@ -76,11 +76,11 @@ public class RelationshipEdge implements RelationshipStructure {
             orElseThrow(() -> GraknTxOperationException.missingValue(getId()))
     );
 
-    RelationshipEdge(EdgeElement edgeElement) {
+    private RelationshipEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
     }
 
-    RelationshipEdge(RelationshipType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+    private RelationshipEdge(RelationshipType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this(edgeElement);
 
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.getLabelId().getValue());
@@ -90,6 +90,14 @@ public class RelationshipEdge implements RelationshipStructure {
         this.relationType.set(relationshipType);
         this.ownerRole.set(ownerRole);
         this.valueRole.set(valueRole);
+    }
+
+    public static RelationshipEdge get(EdgeElement edgeElement){
+        return new RelationshipEdge(edgeElement);
+    }
+
+    public static RelationshipEdge create(RelationshipType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+        return new RelationshipEdge(relationshipType, ownerRole, valueRole, edgeElement);
     }
 
     private EdgeElement edge(){
@@ -105,7 +113,7 @@ public class RelationshipEdge implements RelationshipStructure {
     public RelationshipReified reify() {
         LOG.debug("Reifying concept [" + getId() + "]");
         //Build the Relationship Vertex
-        VertexElement relationVertex = edge().tx().factory().addVertexElement(Schema.BaseType.RELATIONSHIP, getId());
+        VertexElement relationVertex = edge().tx().addVertexElement(Schema.BaseType.RELATIONSHIP, getId());
         RelationshipReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge

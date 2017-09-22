@@ -93,10 +93,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     TypeImpl(VertexElement vertexElement, T superType) {
         super(vertexElement, superType);
+        //This constructor is ONLY used when CREATING new types. Which is why we shard here
+        createShard();
     }
 
     TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         super(vertexElement, superType, isImplicit);
+        //This constructor is ONLY used when CREATING new types. Which is why we shard here
+        createShard();
     }
 
     /**
@@ -150,7 +154,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
 
-        VertexElement instanceVertex = vertex().tx().factory().addVertexElement(instanceBaseType);
+        VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             vertex().tx().txCache().addedInstance(getId());
         }

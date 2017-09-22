@@ -28,62 +28,24 @@
     <fileSets>
         <fileSet>
             <outputDirectory>/</outputDirectory>
+            <directory>${basedir}/src</directory>
+            <includes>
+                <include>grakn</include>
+                <include>graql</include>
+            </includes>
+        </fileSet>
+        <!-- changelog license readme -->
+        <fileSet>
+            <outputDirectory>/</outputDirectory>
             <directory>${main.basedir}</directory>
             <includes>
-                <include>CHANGELOG</include>
                 <include>LICENSE.txt</include>
                 <include>README.md</include>
             </includes>
         </fileSet>
         <fileSet>
-            <outputDirectory>src</outputDirectory>
-            <directory>${main.basedir}/</directory>
-            <includes>
-                <include>pom.xml</include>
-                <include>LICENSE.txt</include>
-                <include>grakn-core/**</include>
-                <include>grakn-client/**</include>
-                <include>grakn-test-profiles/**</include>
-                <include>grakn-dashboard/**</include>
-                <include>grakn-dist/**</include>
-                <include>grakn-engine/**</include>
-                <include>grakn-kb/**</include>
-                <include>grakn-graql/**</include>
-                <include>grakn-graql-shell/**</include>
-                <include>grakn-migration/**</include>
-                <include>grakn-test/**</include>
-                <include>grakn-factory/**</include>
-            </includes>
-            <excludes>
-                <exclude>**/target/</exclude>
-                <exclude>grakn-dashboard/node_modules/</exclude>
-                <exclude>grakn-dashboard/static/dashboard.js</exclude>
-            </excludes>
-        </fileSet>
-        <fileSet>
-            <outputDirectory>docs/api</outputDirectory>
-            <directory>${main.basedir}/target/apidocs/</directory>
-            <includes>
-                <include>**</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <outputDirectory>docs/rest-api</outputDirectory>
-            <directory>${main.basedir}/grakn-engine/target/jaxrs-raml/</directory>
-            <includes>
-                <include>engine-apis.html</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <outputDirectory>bin</outputDirectory>
-            <directory>${basedir}/src/bin/</directory>
-            <includes>
-                <include>*</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <outputDirectory>conf</outputDirectory>
-            <directory>${basedir}/src/conf/</directory>
+            <outputDirectory>services</outputDirectory>
+            <directory>${basedir}/src/services/</directory>
             <includes>
                 <include>**</include>
             </includes>
@@ -95,15 +57,25 @@
                 <include>**</include>
             </includes>
         </fileSet>
+
+        <!-- grakn.properties -->
         <fileSet>
             <outputDirectory>conf</outputDirectory>
-            <directory>${main.basedir}/conf/</directory>
+            <directory>${main.basedir}/conf/main</directory>
             <includes>
-                <include>**</include>
+                <include>grakn.properties</include>
+            </includes>
+        </fileSet>
+        <!-- and logback.xml (main config) -->
+        <fileSet>
+            <outputDirectory>services/grakn</outputDirectory>
+            <directory>${main.basedir}/conf/main</directory>
+            <includes>
+                <include>logback.xml</include>
             </includes>
         </fileSet>
         <fileSet>
-            <outputDirectory>assets</outputDirectory>
+            <outputDirectory>services/assets</outputDirectory>
             <directory>${main.basedir}/grakn-dashboard/static</directory>
             <includes>
                 <include>**</include>
@@ -137,9 +109,16 @@
                 <exclude>*/**</exclude>
             </excludes>
         </fileSet>
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>db/redis</outputDirectory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+        </fileSet>
         <!-- Redis Package -->
         <fileSet>
-            <outputDirectory>bin</outputDirectory>
+            <outputDirectory>services/redis</outputDirectory>
             <directory>${basedir}/target/redis-prebuilt-redis-3.2.9</directory>
             <excludes>
                 <exclude>README.md</exclude>
@@ -148,7 +127,7 @@
     </fileSets>
     <dependencySets>
         <dependencySet>
-            <outputDirectory>lib</outputDirectory>
+            <outputDirectory>services/lib</outputDirectory>
             <unpack>false</unpack>
             <scope>runtime</scope>
             <useProjectArtifact>false</useProjectArtifact>

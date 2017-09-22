@@ -21,47 +21,72 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.common.collect.ImmutableSet;
 
-import java.util.Collection;
+import javax.annotation.Nullable;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Felix Chapman
  */
 class LabelFragmentSet extends EquivalentFragmentSet {
 
+    private final VarProperty varProperty;
     private final Var type;
-    private Label label;
+    private ImmutableSet<Label> labels;
 
-    LabelFragmentSet(VarProperty varProperty, Var type, Label label) {
-        super(Fragments.label(varProperty, type, label));
+    LabelFragmentSet(VarProperty varProperty, Var type, ImmutableSet<Label> labels) {
+        super(Fragments.label(varProperty, type, labels));
+        this.varProperty = varProperty;
         this.type = type;
-        this.label = label;
+        this.labels = labels;
     }
 
     Var type() {
         return type;
     }
 
-    Label label() {
-        return label;
+    ImmutableSet<Label> labels() {
+        return labels;
+    }
+
+    /**
+     * Expand a {@link LabelFragmentSet} to match all sub-concepts of the single existing {@link Label}.
+     *
+     * Returns null if there is not exactly one label any of the {@link Label}s mentioned are not in the knowledge base.
+     */
+    @Nullable
+    LabelFragmentSet tryExpandSubs(Var typeVar, GraknTx tx) {
+        if (labels.size() != 1) return null;
+
+        Label oldLabel = labels.iterator().next();
+
+        SchemaConcept concept = tx.getSchemaConcept(oldLabel);
+        if (concept == null) return null;
+
+        Set<Label> newLabels = concept.subs().map(SchemaConcept::getLabel).collect(toSet());
+
+        return new LabelFragmentSet(varProperty, typeVar, ImmutableSet.copyOf(newLabels));
     }
 
     /**
      * Optimise away any redundant {@link LabelFragmentSet}s. A {@link LabelFragmentSet} is considered redundant if:
      * <ol>
-     *   <li>It refers to a type that exists in the graph
-     *   <li>It is not associated with a user-defined variable
-     *   <li>The variable it is associated with is not referred to in any other fragment
+     *   <li>It refers to a {@link SchemaConcept} that exists in the knowledge base
+     *   <li>It is not associated with a user-defined {@link Var}
+     *   <li>The {@link Var} it is associated with is not referred to in any other fragment
      *   <li>The fragment set is not the only remaining fragment set</li>
      * </ol>
      */
-    static boolean applyRedundantLabelEliminationOptimisation(
-            Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
+    static final FragmentSetOptimisation REDUNDANT_LABEL_ELIMINATION_OPTIMISATION = (fragmentSets, graph) -> {
 
         if (fragmentSets.size() <= 1) return false;
 
@@ -73,7 +98,7 @@ class LabelFragmentSet extends EquivalentFragmentSet {
             boolean hasUserDefinedVar = labelSet.type().isUserDefinedName();
             if (hasUserDefinedVar) continue;
 
-            boolean existsInGraph = graph.getSchemaConcept(labelSet.label()) != null;
+            boolean existsInGraph = labelSet.labels().stream().anyMatch(label -> graph.getSchemaConcept(label) != null);
             if (!existsInGraph) continue;
 
             boolean varReferredToInOtherFragment = fragmentSets.stream()
@@ -89,5 +114,6 @@ class LabelFragmentSet extends EquivalentFragmentSet {
         }
 
         return false;
-    }
+    };
+
 }

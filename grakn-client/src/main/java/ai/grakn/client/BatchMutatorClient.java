@@ -20,17 +20,22 @@ package ai.grakn.client;
 
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
+import static ai.grakn.util.ConcurrencyUtil.all;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.BATCH_NUMBER;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
-import mjson.Json;
-
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,23 +44,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
-import static ai.grakn.util.REST.Request.BATCH_NUMBER;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
-import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.stream.Collectors.toList;
+import mjson.Json;
 
 /**
  * Client to batch load qraql queries into Grakn that mutate the graph.
@@ -68,7 +67,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class BatchMutatorClient {
     private final int maxRetries;
-    private final Set<Future<Void>> futures;
+    private final Set<CompletableFuture<Void>> futures;
     private final Collection<Query> queries;
     private final Keyspace keyspace;
     private final TaskClient taskClient;
@@ -170,7 +169,9 @@ public class BatchMutatorClient {
      * @param size number of tasks to allow to run at any given time
      */
     public BatchMutatorClient setNumberActiveTasks(int size){
-        this.threadPool = Executors.newFixedThreadPool(size);
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("grakn-batch-mutator-%d").build();
+        this.threadPool = Executors.newFixedThreadPool(size, namedThreadFactory);
         return this;
     }
 
@@ -214,15 +215,7 @@ public class BatchMutatorClient {
      */
     public void waitToFinish(){
         flush();
-        Iterator<Future<Void>> it = futures.iterator();
-        while(it.hasNext()){
-            Future<Void> future = it.next();
-            try {
-                future.get();
-            } catch (InterruptedException|ExecutionException e) {
-                printError("Error while waiting for termination", e);
-            }
-        }
+        all(futures).join();
         futures.clear();
         System.out.println("All tasks completed");
     }
@@ -263,11 +256,12 @@ public class BatchMutatorClient {
         Retryer<TaskResult> sendQueryRetry = RetryerBuilder.<TaskResult>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
+                .retryIfResult(r -> r != null && r.getCode().startsWith("5"))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetries))
                 .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
                 .build();
 
-        Future<Void> future = threadPool.submit(() -> {
+        CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
             try {
                 TaskResult taskId = sendQueryRetry.call(callable);
                 onCompletionOfTask.accept(taskId);
@@ -276,7 +270,7 @@ public class BatchMutatorClient {
                 printError("Error while executing queries:\n{" + queries + "} \n", e);
             }
             return null;
-        });
+        }, threadPool);
         futures.add(future);
     }
 

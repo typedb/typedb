@@ -18,11 +18,6 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.macro.Macro;
-
-import java.util.List;
-
 /**
  * <p>
  * Convert the given value into an integer. Only accepts one argument.
@@ -33,22 +28,11 @@ import java.util.List;
  *
  * @author alexandraorth
  */
-public class IntMacro implements Macro<Integer> {
-
-    private static final int numberArguments = 1;
+public class IntMacro extends AbstractNumericMacro<Integer> {
 
     @Override
-    public Integer apply(List<Object> values) {
-        if(values.size() != numberArguments){
-            throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
-        }
-
-        String intValue = values.get(0).toString();
-        try {
-            return Integer.parseInt(intValue);
-        } catch (NumberFormatException e){
-            throw GraqlQueryException.wrongMacroArgumentType(this, "an integer", intValue);
-        }
+    Integer convertNumeric(String value) {
+        return Integer.parseInt(value);
     }
 
     @Override

@@ -59,11 +59,9 @@ import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import mjson.Json;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -112,6 +110,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public static final String NORMAL_CACHE_TIMEOUT_MS = "knowledge-base.schema-cache-timeout-ms";
 
     //----------------------------- Shared Variables
+    private final CommitLog commitLog;
     private final Keyspace keyspace;
     private final String engineUri;
     private final Properties properties;
@@ -131,13 +130,15 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
+    private @Nullable GraphTraversalSource graphTraversalSource = null;
 
     public GraknTxAbstract(G graph, Keyspace keyspace, String engineUri, Properties properties) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engineUri = engineUri;
         this.properties = properties;
-        elementFactory = new ElementFactory(this);
+        this.elementFactory = new ElementFactory(this);
+        this.commitLog = new CommitLog();
 
         //Initialise Graph Caches
         globalCache = new GlobalCache(properties);
@@ -197,6 +198,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      */
     public void openTransaction(GraknTxType txType) {
         txCache().openTx(txType);
+    }
+
+    public CommitLog commitLog(){
+        return commitLog;
     }
 
     @Override
@@ -315,7 +320,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public GraphTraversalSource getTinkerTraversal() {
         operateOnOpenGraph(() -> null); //This is to check if the graph is open
-        return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance());
+        if (graphTraversalSource == null) {
+            graphTraversalSource = getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance());
+        }
+        return graphTraversalSource;
     }
 
     @Override
@@ -367,18 +375,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         if (isReadOnly()) throw GraknTxOperationException.transactionReadOnly(this);
     }
 
-    private VertexElement putVertex(Label label, Schema.BaseType baseType) {
-        VertexElement vertex;
-        ConceptImpl concept = getSchemaConcept(convertToId(label));
-        if (concept == null) {
-            vertex = addTypeVertex(getNextId(), label, baseType);
-        } else {
-            if (!baseType.equals(concept.baseType())) {
-                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.SCHEMA_LABEL, label);
-            }
-            vertex = concept.vertex();
-        }
-        return vertex;
+
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId ... conceptIds){
+        return factory().addVertexElement(baseType, conceptIds);
     }
 
     /**
@@ -390,7 +389,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      * @return The new type vertex
      */
     private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
-        VertexElement vertexElement = factory().addVertexElement(baseType);
+        VertexElement vertexElement = addVertexElement(baseType);
         vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;
@@ -419,21 +418,45 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory) {
+    /**
+     * This is a helper method which will either find or create a {@link SchemaConcept}.
+     * When a new {@link SchemaConcept} is created it is added for validation through it's own creation method for
+     * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role, Boolean)}.
+     *
+     * When an existing {@link SchemaConcept} is found it is build via it's get method such as
+     * {@link ai.grakn.kb.internal.concept.RoleImpl#get(VertexElement)} and skips validation.
+     *
+     * Once the {@link SchemaConcept} is found or created a few checks for uniqueness and correct
+     * {@link ai.grakn.util.Schema.BaseType} are performed.
+     *
+     * @param label The {@link Label} of the {@link SchemaConcept} to find or create
+     * @param baseType The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
+     * @param newConceptFactory the factory to be using when creating a new {@link SchemaConcept}
+     * @param <T> The type of {@link SchemaConcept} to return
+     * @return a new or existing {@link SchemaConcept}
+     */
+    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, Function<VertexElement, T> newConceptFactory) {
         checkSchemaMutationAllowed();
-        SchemaConcept schemaConcept = buildSchemaConcept(label, () -> factory.apply(putVertex(label, baseType)));
 
-        T finalType = validateSchemaConcept(schemaConcept, baseType, () -> {
-            if (Schema.MetaSchema.isMetaLabel(label)) throw GraknTxOperationException.reservedLabel(label);
-            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, label);
-        });
-
-        //Automatic shard creation - If this type does not have a shard create one
-        if (!Schema.MetaSchema.isMetaLabel(label) && !SchemaConceptImpl.from(schemaConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()) {
-            SchemaConceptImpl.from(schemaConcept).createShard();
+        //Get the type if it already exists otherwise build a new one
+        SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
+        if (schemaConcept == null) {
+            VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
+            schemaConcept = SchemaConceptImpl.from(buildSchemaConcept(label, () -> newConceptFactory.apply(vertexElement)));
+        } else if (!baseType.equals(schemaConcept.baseType())) {
+            throw labelTaken(schemaConcept);
         }
 
-        return finalType;
+        //noinspection unchecked
+        return (T) schemaConcept;
+    }
+
+    /**
+     * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
+     */
+    private GraknTxOperationException labelTaken(SchemaConcept schemaConcept){
+        if (Schema.MetaSchema.isMetaLabel(schemaConcept.getLabel())) return GraknTxOperationException.reservedLabel(schemaConcept.getLabel());
+        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.getLabel());
     }
 
     private <T extends Concept> T validateSchemaConcept(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler) {
@@ -708,7 +731,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         close(true, true);
     }
 
-    private Optional<String> close(boolean commitRequired, boolean submitLogs) {
+    private Optional<String> close(boolean commitRequired, boolean trackLogs) {
         Optional<String> logs = Optional.empty();
         if (isClosed()) {
             return logs;
@@ -718,11 +741,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         try {
             if (commitRequired) {
                 closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
-                logs = commitWithLogs();
-                if (logs.isPresent() && submitLogs) {
-                    String logsToUpload = logs.get();
-                    new Thread(() -> LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logsToUpload) + "]")).start();
-                }
+                logs = commitWithLogs(trackLogs);
                 txCache().writeToGraphCache(true);
             } else {
                 txCache().writeToGraphCache(isReadOnly());
@@ -743,31 +762,33 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
     }
 
-    /**
-     * Commits to the graph without submitting any commit logs.
-     *
-     * @throws InvalidKBException when the graph does not conform to the object concept
-     */
     @Override
     public Optional<String> commitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
 
-    private Optional<String> commitWithLogs() throws InvalidKBException {
+    private Optional<String> commitWithLogs(boolean trackingNeeded) throws InvalidKBException {
         validateGraph();
 
-        boolean submissionNeeded = !txCache().getShardingCount().isEmpty() ||
-                !txCache().getModifiedAttributes().isEmpty();
-        Json conceptLog = txCache().getFormattedLog();
+        Map<ConceptId, Long> newInstances = txCache().getShardingCount();
+        Map<String, ConceptId> newAttributes = txCache().getNewAttributes();
+        boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
 
         LOG.trace("Graph committed.");
 
-        if (submissionNeeded) {
-            return Optional.of(conceptLog.toString());
+        //If we have logs to commit get them and add them
+        if (logsExist) {
+            if(trackingNeeded) {
+                commitLog().addNewInstances(newInstances);
+                commitLog().addNewAttributes(newAttributes);
+            } else {
+                return Optional.of(CommitLog.formatTxLog(newInstances, newAttributes).toString());
+            }
         }
+
         return Optional.empty();
     }
 
@@ -785,13 +806,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             List<String> errors = validator.getErrorsFound();
             if (!errors.isEmpty()) throw InvalidKBException.validationErrors(errors);
         }
-    }
-
-    private String getCommitLogEndPoint() {
-        if (Grakn.IN_MEMORY.equals(engineUri)) {
-            return Grakn.IN_MEMORY;
-        }
-        return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
     private String getDeleteKeyspaceEndpoint() {

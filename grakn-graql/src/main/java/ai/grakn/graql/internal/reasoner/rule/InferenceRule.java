@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -31,7 +32,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -67,6 +67,7 @@ public class InferenceRule {
     private final ReasonerAtomicQuery head;
 
     private int priority = Integer.MAX_VALUE;
+    private Boolean requiresMaterialisation = null;
 
     public InferenceRule(Rule rule, GraknTx tx){
         this.tx = tx;
@@ -142,8 +143,10 @@ public class InferenceRule {
      */
     boolean headSatisfiesBody(){
         Set<Atomic> atoms = new HashSet<>(getHead().getAtoms());
+        Set<Var> headVars = getHead().getVarNames();
         getBody().getAtoms(TypeAtom.class)
                 .filter(t -> !t.isRelation())
+                .filter(t -> !Sets.intersection(t.getVarNames(), headVars).isEmpty())
                 .forEach(atoms::add);
         return getBody().isEquivalent(ReasonerQueries.create(atoms, tx));
     }
@@ -154,10 +157,14 @@ public class InferenceRule {
      *
      * @return true if the rule needs to be materialised
      */
-    public boolean requiresMaterialisation(Atom parentAtom){
-        return parentAtom.requiresMaterialisation()
-            || getHead().getAtom().requiresMaterialisation()
-            || hasDisconnectedHead();}
+    public boolean requiresMaterialisation(Atom parentAtom) {
+        if (requiresMaterialisation == null) {
+            requiresMaterialisation = parentAtom.requiresMaterialisation()
+                    || getHead().getAtom().requiresMaterialisation()
+                    || hasDisconnectedHead();
+        }
+        return requiresMaterialisation;
+    }
 
     /**
      * @return body of the rule of the form head :- body
@@ -293,9 +300,9 @@ public class InferenceRule {
         if (parentAtom.getSchemaConcept() != null){
             return childAtom.getUnifier(parentAtom);
         }
-        //case of match all relation atom
+        //case of match all atom (atom without type)
         else{
-            Atom extendedParent = ((RelationAtom) parentAtom)
+            Atom extendedParent = parentAtom
                     .addType(childAtom.getSchemaConcept())
                     .inferTypes();
             return childAtom.getUnifier(extendedParent);

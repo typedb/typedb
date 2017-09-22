@@ -60,12 +60,8 @@ person
 	plays son-in-law
 	plays son
 	plays daughter
-	plays sibling1
-	plays sibling2
 	plays grandparent
 	plays grandchild
-	plays cousin1
-	plays cousin2
 	plays child-in-law
 	plays parent-in-law
 	plays mother
@@ -92,13 +88,9 @@ son sub child;
 daughter sub child;
 
 siblings sub relationship
-    relates sibling  # TODO, deal with this role properly
-	relates sibling1
-	relates sibling2;
+    relates sibling;
 
 sibling sub role;
-sibling1 sub sibling;
-sibling2 sub sibling;
 
 grandparentship sub relationship
 	relates grandparent
@@ -116,13 +108,9 @@ grandson sub grandchild;
 granddaughter sub grandchild;
 
 cousins sub relationship
-    relates cousin  # TODO, deal with this role properly
-	relates cousin1
-	relates cousin2;
+    relates cousin;
 
 cousin sub role;
-cousin1 sub cousin;
-cousin2 sub cousin;
 
 in-laws sub relationship
 	relates child-in-law
@@ -419,7 +407,7 @@ when
 $x != $y;
 }
 then
-{(sibling1: $x, sibling2: $y) isa siblings;};
+{(sibling: $x, sibling: $y) isa siblings;};
 
 peopleWithSiblingsParentsAreCousins sub rule
 when
@@ -429,7 +417,7 @@ when
 (parent: $p2, child: $c2) isa parentship;
 }
 then
-{(cousin1: $c1, cousin2: $c2) isa cousins;};
+{(cousin: $c1, cousin: $c2) isa cousins;};
 
 inLaws1 sub rule
 when

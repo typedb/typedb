@@ -49,12 +49,22 @@ import java.util.stream.Stream;
 public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationship> implements RelationshipType {
     private final Cache<Set<Role>> cachedRelates = new Cache<>(Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RelationshipTypeImpl(VertexElement vertexElement) {
+    private RelationshipTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type, Boolean isImplicit) {
+    private RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type, Boolean isImplicit) {
         super(vertexElement, type, isImplicit);
+    }
+
+    public static RelationshipTypeImpl get(VertexElement vertexElement){
+        return new RelationshipTypeImpl(vertexElement);
+    }
+
+    public static RelationshipTypeImpl create(VertexElement vertexElement, RelationshipType type, Boolean isImplicit){
+        RelationshipTypeImpl relationType = new RelationshipTypeImpl(vertexElement, type, isImplicit);
+        vertexElement.tx().txCache().trackForValidation(relationType);
+        return relationType;
     }
 
     @Override

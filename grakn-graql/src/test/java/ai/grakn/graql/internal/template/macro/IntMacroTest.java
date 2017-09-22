@@ -27,10 +27,8 @@ import org.junit.rules.ExpectedException;
 import java.util.Collections;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 public class IntMacroTest {
 
@@ -63,7 +61,7 @@ public class IntMacroTest {
     @Test
     public void applyIntMacroToInvalidValue_ExceptionIsThrown(){
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(containsString("is not an integer"));
+        exception.expectMessage(GraqlQueryException.wrongMacroArgumentType(intMacro, "invalid").getMessage());
 
         intMacro.apply(ImmutableList.of("invalid"));
     }
@@ -76,7 +74,7 @@ public class IntMacroTest {
     @Test
     public void applyIntMacroToDoubleValue_ExceptionIsThrown(){
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(containsString("is not an integer"));
+        exception.expectMessage(GraqlQueryException.wrongMacroArgumentType(intMacro, "15.0").getMessage());
 
         intMacro.apply(ImmutableList.of("15.0"));
     }
@@ -84,7 +82,7 @@ public class IntMacroTest {
     @Test
     public void applyIntMacroToIntValueWithUnderscores_ExceptionIsThrown(){
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(containsString("is not an integer"));
+        exception.expectMessage(GraqlQueryException.wrongMacroArgumentType(intMacro, "15_000").getMessage());
 
         intMacro.apply(ImmutableList.of("15_000"));
     }

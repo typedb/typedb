@@ -62,11 +62,11 @@ public class TestOwlGraknBase {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Before
     public void init() {
-        factory = engine.factoryWithNewKeyspace();
+        factory = engine.sessionWithNewKeyspace();
         tx = factory.open(GraknTxType.WRITE);
         manager = OWLManager.createOWLOntologyManager();
         migrator = new OWLMigrator();

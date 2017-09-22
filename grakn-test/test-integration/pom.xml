@@ -141,14 +141,23 @@
             <version>${hermit.version}</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh-core.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.github.stefanbirkner</groupId>
             <artifactId>system-rules</artifactId>
             <version>${systen-rules.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>janus-factory</artifactId>
@@ -163,5 +172,8 @@
             </exclusions>
         </dependency>
     </dependencies>
+    <properties>
+        <jmh-core.version>1.19</jmh-core.version>
+    </properties>
 
 </project>

@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -70,8 +71,8 @@ public class TxCacheTest extends TxTestBase {
         tx.putAttributeType("4", AttributeType.DataType.STRING);
 
         // verify the concepts that we expected are returned in the set
-        assertThat(tx.txCache().getModifiedRoles(), containsInAnyOrder(t3));
-        assertThat(tx.txCache().getModifiedRelationshipTypes(), containsInAnyOrder(t2));
+        assertThat(tx.txCache().getConceptCache().values(), hasItem(t3));
+        assertThat(tx.txCache().getConceptCache().values(), hasItem(t2));
     }
 
     @Test
@@ -121,10 +122,8 @@ public class TxCacheTest extends TxTestBase {
         tx.commit();
         tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(tx.txCache().getModifiedEntities(), is(empty()));
-
         Entity i1 = t1.addEntity();
-        assertThat(tx.txCache().getModifiedEntities(), containsInAnyOrder(i1));
+        assertThat(tx.txCache().getConceptCache().values(), hasItem(i1));
     }
 
     @Test
@@ -163,20 +162,27 @@ public class TxCacheTest extends TxTestBase {
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
                 "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
                 REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
-        assertEquals("Unexpected graph logs", expected, tx.txCache().getFormattedLog());
+        assertEquals("Unexpected graph logs", expected, tx.commitLog().getFormattedLog());
     }
 
     @Test
-    public void whenAddedEntities_EnsureLogNotEmpty() {
+    public void whenAddingEntities_EnsureLogIsFilledAfterCommit() {
         EntityType entityType = tx.putEntityType("My Type");
         entityType.addEntity();
         entityType.addEntity();
-        Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
+        Json emptyLog = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
+                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
+                REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
+        assertEquals("Logs are not empty", emptyLog, tx.commitLog().getFormattedLog());
+
+        tx.commit();
+
+        Json filledLog = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
                 "\":{\"" + Schema.BaseType.ATTRIBUTE.name() +
                 "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
                 "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
                 "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
-        assertEquals("Unexpected graph logs", expected, tx.txCache().getFormattedLog());
+        assertEquals("Logs are empty", filledLog, tx.commitLog().getFormattedLog());
     }
 
     @Test
@@ -227,7 +233,6 @@ public class TxCacheTest extends TxTestBase {
         assertThat(cache.getSchemaConceptCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
         assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
-        assertThat(cache.getModifiedAttributes(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
         assertThat(cache.getModifiedCastings(), not(empty()));
 

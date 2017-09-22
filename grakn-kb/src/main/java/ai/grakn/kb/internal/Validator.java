@@ -117,7 +117,6 @@ class Validator {
         Optional<RelationshipReified> relationReified = ((RelationshipImpl) relationship).reified();
         //TODO: We need new validation mechanisms for non-reified relations
         relationReified.ifPresent(relationReified1 -> {
-            ValidateGlobalRules.validateRelationshipStructure(relationReified1).ifPresent(errorsFound::add);
             ValidateGlobalRules.validateRelationIsUnique(graph, relationReified1).ifPresent(errorsFound::add);
         });
     }
@@ -127,7 +126,7 @@ class Validator {
      * @param casting The Role player to validate
      */
     private void validateCasting(Casting casting){
-        ValidateGlobalRules.validatePlaysStructure(casting).ifPresent(errorsFound::add);
+        errorsFound.addAll(ValidateGlobalRules.validatePlaysAndRelatesStructure(casting));
     }
 
     /**

@@ -67,10 +67,12 @@ public class ConjunctionQueryTest {
 
         Type resourceTypeWithoutSubTypesMock = mock(Type.class);
         doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subs();
+        when(resourceTypeWithoutSubTypesMock.getLabel()).thenReturn(resourceTypeWithoutSubTypesLabel);
 
         Type resourceTypeWithSubTypesMock = mock(Type.class);
         doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
                 .when(resourceTypeWithSubTypesMock).subs();
+        when(resourceTypeWithSubTypesMock.getLabel()).thenReturn(resourceTypeWithSubTypesLabel);
 
         when(tx.getSchemaConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
         when(tx.getSchemaConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);

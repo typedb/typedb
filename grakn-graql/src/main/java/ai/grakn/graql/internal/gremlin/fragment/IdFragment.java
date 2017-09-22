@@ -39,8 +39,8 @@ abstract class IdFragment extends Fragment {
     abstract ConceptId id();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
         if (canOperateOnEdges()) {
             // Handle both edges and vertices
             return traversal.or(
@@ -52,13 +52,13 @@ abstract class IdFragment extends Fragment {
         }
     }
 
-    private GraphTraversal<Element, Vertex> vertexTraversal(GraphTraversal<Element, ? extends Element> traversal) {
+    private GraphTraversal<Vertex, Vertex> vertexTraversal(GraphTraversal<Vertex, ? extends Element> traversal) {
         // A vertex should always be looked up by vertex property, not the actual vertex ID which may be incorrect.
         // This is because a vertex may represent a reified relation, which will use the original edge ID as an ID.
         
         // We know only vertices have this property, so the cast is safe
         //noinspection unchecked
-        return (GraphTraversal<Element, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id().getValue());
+        return (GraphTraversal<Vertex, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id().getValue());
     }
 
     private GraphTraversal<Edge, Edge> edgeTraversal() {

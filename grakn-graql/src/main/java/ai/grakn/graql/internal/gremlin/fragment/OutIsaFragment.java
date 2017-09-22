@@ -46,15 +46,13 @@ abstract class OutIsaFragment extends Fragment {
     public abstract Var end();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
-        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.union(traversal, ImmutableSet.of(
+        return Fragments.union(traversal, ImmutableSet.of(
                 Fragments.isVertex(__.identity()).out(ISA.getLabel()).out(SHARD.getLabel()),
                 edgeTraversal()
         ));
-
-        return Fragments.outSubs(vertexTraversal);
     }
 
     private GraphTraversal<Element, Vertex> edgeTraversal() {

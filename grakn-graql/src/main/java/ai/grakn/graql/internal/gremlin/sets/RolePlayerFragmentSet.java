@@ -19,13 +19,12 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -35,9 +34,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Describes the edge connecting a {@link Relationship} to a role-player.
@@ -76,13 +77,13 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
      * A query can use the role-type labels on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
      * <ol>
      *     <li>There is a {@link RolePlayerFragmentSet} {@code $r-[role-player:$e role:$R ...]->$p}
-     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
+     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo,bar]}
      * </ol>
      *
      * When these criteria are met, the {@link RolePlayerFragmentSet} can be filtered to the indirect sub-types of
-     * {@code foo} and will no longer need to navigate to the {@link Role} directly:
+     * {@code foo} and {@code bar} and will no longer need to navigate to the {@link Role} directly:
      * <p>
-     * {@code $r-[role-player:$e roles:foo ...]->$p}
+     * {@code $r-[role-player:$e roles:foo,bar ...]->$p}
      * <p>
      * In the special case where the role is specified as the meta {@code role}, no labels are added and the {@link Role}
      * variable is detached from the {@link Schema.EdgeLabel#ROLE_PLAYER} edge.
@@ -90,28 +91,31 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
      * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
      * referred to elsewhere in the query.
      */
-    static boolean applyRolePlayerRoleOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
-        Iterable<RolePlayerFragmentSet> rolePlayers = EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
+    static final FragmentSetOptimisation ROLE_OPTIMISATION = (fragmentSets, tx) -> {
+        Iterable<RolePlayerFragmentSet> rolePlayers =
+                EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
 
         for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
             Var roleVar = rolePlayer.role;
 
             if (roleVar == null) continue;
 
-            @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar, fragmentSets);
+            @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.labelOf(roleVar, fragmentSets);
 
             if (roleLabel == null) continue;
 
             @Nullable RolePlayerFragmentSet newRolePlayer = null;
 
-            if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
+            if (roleLabel.labels().equals(ImmutableSet.of(Schema.MetaSchema.ROLE.getLabel()))) {
                 newRolePlayer = rolePlayer.removeRoleVar();
             } else {
-                SchemaConcept schemaConcept = graph.getSchemaConcept(roleLabel.label());
+                Set<SchemaConcept> concepts = roleLabel.labels().stream()
+                        .map(tx::<SchemaConcept>getSchemaConcept)
+                        .collect(toSet());
 
-                if (schemaConcept != null && schemaConcept.isRole()) {
-                    Role role = schemaConcept.asRole();
-                    newRolePlayer = rolePlayer.substituteRoleTypeLabel(role);
+                if (concepts.stream().allMatch(schemaConcept -> schemaConcept != null && schemaConcept.isRole())) {
+                    Stream<Role> roles = concepts.stream().map(Concept::asRole);
+                    newRolePlayer = rolePlayer.substituteRoleLabel(roles);
                 }
             }
 
@@ -123,7 +127,7 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
         }
 
         return false;
-    }
+    };
 
     /**
      * A query can use the {@link RelationshipType} {@link Label}s on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
@@ -131,11 +135,11 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
      *     <li>There is a {@link RolePlayerFragmentSet} {@code $r-[role-player:$e ...]->$p}
      *         without any {@link RelationshipType} {@link Label}s specified
      *     <li>There is a {@link IsaFragmentSet} {@code $r-[isa]->$R}
-     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
+     *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo,bar]}
      * </ol>
      *
-     * When these criteria are met, the {@link RolePlayerFragmentSet} can be filtered to the indirect sub-types of
-     * {@code foo}.
+     * When these criteria are met, the {@link RolePlayerFragmentSet} can be filtered to the types
+     * {@code foo} and {@code bar}.
      * <p>
      * {@code $r-[role-player:$e rels:foo]->$p}
      * <p>
@@ -147,8 +151,9 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
      * it can help with performance: there are some instances where it makes sense to navigate from the {@link RelationshipType}
      * {@code foo} to all instances. In order to do that, the {@link IsaFragmentSet} must be present.
      */
-    static boolean applyRolePlayerRelationTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
-        Iterable<RolePlayerFragmentSet> rolePlayers = EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
+    static final FragmentSetOptimisation RELATION_TYPE_OPTIMISATION = (fragmentSets, graph) -> {
+        Iterable<RolePlayerFragmentSet> rolePlayers =
+                EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
 
         for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
 
@@ -158,35 +163,35 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
             if (isa == null) continue;
 
-            @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.typeLabelOf(isa.type(), fragmentSets);
+            @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.labelOf(isa.type(), fragmentSets);
 
             if (relationLabel == null) continue;
 
-            SchemaConcept schemaConcept = graph.getSchemaConcept(relationLabel.label());
+            Stream<SchemaConcept> concepts =
+                    relationLabel.labels().stream().map(graph::<SchemaConcept>getSchemaConcept);
 
-            if (schemaConcept != null && schemaConcept.isRelationshipType()) {
-                RelationshipType relationshipType = schemaConcept.asRelationshipType();
-
+            if (concepts.allMatch(schemaConcept -> schemaConcept != null && schemaConcept.isRelationshipType())) {
                 fragmentSets.remove(rolePlayer);
-                fragmentSets.add(rolePlayer.addRelationTypeLabel(relationshipType));
+                fragmentSets.add(rolePlayer.addRelationshipTypeLabels(relationLabel.labels()));
 
                 return true;
             }
         }
 
         return false;
-    }
+    };
 
     /**
      * Apply an optimisation where we check the {@link Role} property instead of navigating to the {@link Role} directly.
-     * @param role the {@link Role} that this role-player fragment must link to
+     * @param roles the role-player must link to any of these (or their sub-types)
      * @return a new {@link RolePlayerFragmentSet} with the same properties excepting role-types
      */
-    private RolePlayerFragmentSet substituteRoleTypeLabel(Role role) {
+    private RolePlayerFragmentSet substituteRoleLabel(Stream<Role> roles) {
         Preconditions.checkNotNull(this.role);
         Preconditions.checkState(roleTypeLabels == null);
 
-        ImmutableSet<Label> newRoleLabels = role.subs().map(SchemaConcept::getLabel).collect(toImmutableSet());
+        ImmutableSet<Label> newRoleLabels =
+                roles.flatMap(Role::subs).map(SchemaConcept::getLabel).collect(toImmutableSet());
 
         return new RolePlayerFragmentSet(varProperty,
                 relation, edge, rolePlayer, null, newRoleLabels, relationTypeLabels
@@ -195,17 +200,12 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
     /**
      * Apply an optimisation where we check the {@link RelationshipType} property.
-     * @param relationshipType the {@link RelationshipType} that this role-player fragment must link to
+     * @param relTypeLabels the role-player fragment must link to any of these (not including sub-types)
      * @return a new {@link RolePlayerFragmentSet} with the same properties excepting relation-type labels
      */
-    private RolePlayerFragmentSet addRelationTypeLabel(RelationshipType relationshipType) {
+    private RolePlayerFragmentSet addRelationshipTypeLabels(ImmutableSet<Label> relTypeLabels) {
         Preconditions.checkState(relationTypeLabels == null);
-
-        ImmutableSet<Label> newRelationLabels = relationshipType.subs().map(Type::getLabel).collect(toImmutableSet());
-
-        return new RolePlayerFragmentSet(varProperty,
-                relation, edge, rolePlayer, role, roleTypeLabels, newRelationLabels
-        );
+        return new RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, roleTypeLabels, relTypeLabels);
     }
 
     /**
