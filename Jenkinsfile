@@ -3,6 +3,10 @@
 if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
   properties([pipelineTriggers([cron('H H/8 * * *')])])
 }
+properties([
+  buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+])
+
 node {
   //Everything is wrapped in a try catch so we can handle any test failures
   //If one test fails then all the others will stop. I.e. we fail fast
