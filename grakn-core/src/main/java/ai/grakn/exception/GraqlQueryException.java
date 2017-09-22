@@ -48,7 +48,6 @@ import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
  * Graql Query Exception
  * </p>
  * <p>
- * <p>
  * Occurs when the query is syntactically correct but semantically incorrect.
  * For example limiting the results of a query -1
  * </p>
@@ -152,6 +151,7 @@ public class GraqlQueryException extends GraknException {
      * Thrown when a concept is inserted with multiple properties when it can only have one.
      * <p>
      * For example: {@code insert $x isa movie; $x isa person;}
+     * </p>
      */
     public static GraqlQueryException insertMultipleProperties(String property, Object value1, Object value2) {
         return create("a concept cannot have multiple properties `%s` and `%s` for `%s`", value1, value2, property);
@@ -161,6 +161,7 @@ public class GraqlQueryException extends GraknException {
      * Thrown when a property is inserted on a concept that already exists and that property can't be overridden.
      * <p>
      * For example: {@code match $x isa name; insert $x val "Bob";}
+     * </p>
      */
     public static GraqlQueryException insertPropertyOnExistingConcept(String property, Object value, Concept concept) {
         return create("cannot insert property `%s %s` on existing concept `%s`", property, value, concept);
@@ -170,6 +171,7 @@ public class GraqlQueryException extends GraknException {
      * Thrown when a property is inserted on a concept that doesn't support that property.
      * <p>
      * For example, an entity with a value: {@code insert $x isa movie, val "The Godfather";}
+     * </p>
      */
     public static GraqlQueryException insertUnexpectedProperty(String property, Object value, Concept concept) {
         return create("unexpected property `%s %s` for concept `%s`", property, value, concept);
@@ -179,6 +181,7 @@ public class GraqlQueryException extends GraknException {
      * Thrown when a concept does not have all expected properties required to insert it.
      * <p>
      * For example, a resource without a value: {@code insert $x isa name;}
+     * </p>
      */
     public static GraqlQueryException insertNoExpectedProperty(String property, VarPatternAdmin var) {
         return create("missing expected property `%s` in `%s`", property, var);
@@ -188,6 +191,7 @@ public class GraqlQueryException extends GraknException {
      * Thrown when attempting to insert a concept that already exists.
      * <p>
      * For example: {@code match $x isa movie; insert $x isa name, val "Bob";}
+     * </p>
      */
     public static GraqlQueryException insertExistingConcept(VarPatternAdmin pattern, Concept concept) {
         return create("cannot overwrite properties `%s` on  concept `%s`", pattern, concept);

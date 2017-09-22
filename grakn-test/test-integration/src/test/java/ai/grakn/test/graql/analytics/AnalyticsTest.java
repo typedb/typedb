@@ -103,7 +103,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testNullResourceDoesntBreakAnalytics() throws InvalidKBException {
+    public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
@@ -133,7 +133,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testSubgraphHasRule() {
+    public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
@@ -142,7 +142,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testSubgraphHasRole() {
+    public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
