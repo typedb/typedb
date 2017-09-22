@@ -75,7 +75,6 @@ public class RelationshipController {
         String relationshipTypeLabel = mandatoryPathParameter(request, RELATIONSHIP_TYPE_LABEL_PARAMETER);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("postRelationship - attempting to find entityType " + relationshipTypeLabel + " in keyspace " + keyspace);
-        
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<RelationshipType> relationshipTypeOptional = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
             if (relationshipTypeOptional.isPresent()) {
