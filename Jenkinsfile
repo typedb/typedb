@@ -69,7 +69,7 @@ def withGrakn(String workspace, Closure closure) {
 }
 
 def withPath(String path, Closure closure) {
-    return withEnv("PATH+EXTRA=${path}", closure)
+    return withEnv(["PATH+EXTRA=${path}"], closure)
 }
 
 node {
