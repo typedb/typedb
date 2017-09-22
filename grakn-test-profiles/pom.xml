@@ -30,12 +30,6 @@
                 <version>2.19.1</version>
 
                 <configuration>
-                    <systemPropertyVariables>
-                        <grakn.conf>${user.dir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
-                        <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
-                        <logback.configurationFile>${user.dir}/conf/test/logback-test.xml</logback.configurationFile>
-                        <main.basedir>${user.dir}</main.basedir>
-                    </systemPropertyVariables>
                     <!-- uncomment the following to be able to run only specific packages with
                         for example -DtestGroup=ai/grakn/test/migration/sql
 					<includes>
@@ -45,7 +39,15 @@
                     <!-- This is important for otherwise surefire reports or the console
                     don't contain stack traces! -->
                     <trimStackTrace>false</trimStackTrace>
-                    <argLine>-XX:+HeapDumpOnOutOfMemoryError</argLine>
+
+                    <!-- We specify these here because for some reason they were ignored in <systemPropertyVariables>-->
+                    <argLine>
+                        -XX:+HeapDumpOnOutOfMemoryError
+                        -Dgrakn.conf=${user.dir}/conf/test/${grakn.test-profile}/grakn.properties
+                        -Dgrakn.test-profile=${grakn.test-profile}
+                        -Dlogback.configurationFile=${user.dir}/conf/test/logback-test.xml
+                        -Dmain.basedir=${user.dir}
+                    </argLine>
                 </configuration>
             </plugin>
             <plugin>
