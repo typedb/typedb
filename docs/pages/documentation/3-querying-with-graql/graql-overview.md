@@ -22,7 +22,7 @@ There are seven types of queries, which are begun with the following keywords:
 - [get](dml.html#get-query) - for getting concepts from the knowledge base
 - [aggregate](dml.html#aggregate-query) - for transforming data in the knowledge base
 - [define](ddl.html#define-query) - for defining schema concepts
-- [undefine](undefine-queries.html) - for removing schema concepts
+- [undefine](ddl.html#undefine-query) - for removing schema concepts
 - [insert](insert-queries.html) - for inserting data
 - [delete](delete-queries.html) - for deleting data
 - [compute](compute-queries.html) - for computing useful information about your knowledge base
