@@ -55,8 +55,8 @@ abstract class InIsaFragment extends Fragment {
     public abstract Var end();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
         GraphTraversal<Vertex, Vertex> isImplicitRelationType =
                 __.<Vertex>hasLabel(RELATIONSHIP_TYPE.name()).has(IS_IMPLICIT.name(), true);

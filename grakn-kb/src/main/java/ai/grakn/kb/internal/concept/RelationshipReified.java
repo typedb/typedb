@@ -58,12 +58,20 @@ import java.util.stream.Stream;
  *
  */
 public class RelationshipReified extends ThingImpl<Relationship, RelationshipType> implements RelationshipStructure {
-    public RelationshipReified(VertexElement vertexElement) {
+    private RelationshipReified(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    public RelationshipReified(VertexElement vertexElement, RelationshipType type) {
+    private RelationshipReified(VertexElement vertexElement, RelationshipType type) {
         super(vertexElement, type);
+    }
+
+    public static RelationshipReified get(VertexElement vertexElement){
+        return new RelationshipReified(vertexElement);
+    }
+
+    public static RelationshipReified create(VertexElement vertexElement, RelationshipType type){
+        return new RelationshipReified(vertexElement, type);
     }
 
     public Map<Role, Set<Thing>> allRolePlayers() {
@@ -71,13 +79,13 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
         //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
-        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new HashSet<>()).add(rp.getRolePlayer()));
 
         return roleMap;
     }
 
     public Stream<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getInstance);
+        return castingsRelation(roles).map(Casting::getRolePlayer);
     }
 
     public void addRolePlayer(Role role, Thing thing) {

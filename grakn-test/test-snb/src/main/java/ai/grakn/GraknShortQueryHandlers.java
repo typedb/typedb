@@ -77,7 +77,7 @@ public class GraknShortQueryHandlers {
                                 "($person, $gender) isa has-gender; " +
                                 "($person, $creation-date) isa has-creation-date; " +
                                 "(located: $person, region: $place) isa is-located-in; " +
-                                "($place, $placeID) isa key-place-id; ";
+                                "($place, $placeID) isa key-place-id; get;";
 
                 List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
                 if (results.size() > 0) {
@@ -123,7 +123,7 @@ public class GraknShortQueryHandlers {
                         "($message, $date) isa has-creation-date ; " +
                         "($message, $messageId) isa key-message-id; " +
                         "order by $date desc;" +
-                        "limit " + String.valueOf(operation.limit()) + ";";
+                        "limit " + String.valueOf(operation.limit()) + "; get;";
 
                 List<Answer> messageResults = graph.graql().<GetQuery>parse(messageQuery).execute();
 
@@ -142,7 +142,7 @@ public class GraknShortQueryHandlers {
                             "(product: $originalPost, creator: $person2) isa has-creator; " +
                             "($person2, $authorId) isa key-person-id; " +
                             "($person2, $fname) isa has-first-name; " +
-                            "($person2, $lname) isa has-last-name; ";
+                            "($person2, $lname) isa has-last-name; get;";
 
                     List<Answer> results = graph.graql().infer(true).<GetQuery>parse(query).execute();
                     allResults.addAll(results);
@@ -191,7 +191,7 @@ public class GraknShortQueryHandlers {
                         "$person has person-id " + operation.personId() + "; " +
                         "$rel ($person, $friend) isa knows; " +
                         "$rel has creation-date  $date; " +
-                        "$friend has person-id $friendId has first-name $fname has last-name $lname;";
+                        "$friend has person-id $friendId has first-name $fname has last-name $lname; get;";
 
 
                 List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
@@ -236,7 +236,7 @@ public class GraknShortQueryHandlers {
                 String query = "match " +
                         "$m has message-id " + operation.messageId() + "; " +
                         "($m, $date) isa has-creation-date; " +
-                        "($m, $content) isa has-content or ($m, $content) isa has-image-file;";
+                        "($m, $content) isa has-content or ($m, $content) isa has-image-file; get;";
 
                 List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
 
@@ -279,7 +279,7 @@ public class GraknShortQueryHandlers {
                         " (product: $m , creator: $person) isa has-creator;" +
                         " ($person, $fname) isa has-first-name;" +
                         " ($person, $lname) isa has-last-name;" +
-                        " ($person, $pID) isa key-person-id;";
+                        " ($person, $pID) isa key-person-id; get;";
 
                 List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
 
@@ -321,7 +321,7 @@ public class GraknShortQueryHandlers {
                         "(member-message: $m , group-forum: $forum) isa forum-member;" +
                         "$forum has forum-id $fid has title $title; " +
                         "(moderated: $forum, moderator: $mod) isa has-moderator; " +
-                        "$mod isa person has person-id $modid has first-name $fname has last-name $lname;";
+                        "$mod isa person has person-id $modid has first-name $fname has last-name $lname; get;";
 
 
                 List<Answer> results = graph.graql().infer(true).<GetQuery>parse(query).execute();
@@ -370,7 +370,7 @@ public class GraknShortQueryHandlers {
                         "(product: $comment, creator: $author2) isa has-creator; " +
                         "($author2, $pid) isa key-person-id; " +
                         "($author2, $fname) isa has-first-name; " +
-                        "($author2, $lname) isa has-last-name;";
+                        "($author2, $lname) isa has-last-name; get;";
 
                 List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
 

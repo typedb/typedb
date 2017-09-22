@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * <p>
- *     Endpoint tests for Graph API
+ *     Endpoint tests for Java API
  * </p>
  *
  * @author Ganeshwara Herawan Hananda
@@ -110,7 +110,7 @@ public class AttributeTypeControllerTest {
     }
 
     @Test
-    public void getAttributeTypeFromMovieGraphShouldExecuteSuccessfully() {
+    public void getAttributeTypeFromMovieKbShouldExecuteSuccessfully() {
         String attributeTypeLabel = "tmdb-vote-count";
         String attributeTypeDataType = "long";
         Response response = with()
