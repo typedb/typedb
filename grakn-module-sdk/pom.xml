@@ -29,4 +29,12 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>grakn-module-sdk</artifactId>
 
+    <dependencies>
+        <!-- Required For REST Components and Headers-->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>${apache-http-core.version}</version>
+        </dependency>
+    </dependencies>
 </project>
