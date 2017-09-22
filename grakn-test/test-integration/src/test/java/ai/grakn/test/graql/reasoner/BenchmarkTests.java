@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.MatrixKBII;
+import ai.grakn.test.kbs.PathKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
 import org.junit.Before;
@@ -90,15 +91,10 @@ public class BenchmarkTests {
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
         GetQuery query = iqb.parse(queryString);
 
-        startTime = System.currentTimeMillis();
-        List<Answer> execute = query.execute();
-        System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
+        executeQuery(query, "linear matrix full");
 
         int limit = 100;
-        startTime = System.currentTimeMillis();
-        List<Answer> results = query.match().limit(limit).get().execute();
-        long answerTime = System.currentTimeMillis() - startTime;
-        System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
+        executeQuery(query.match().limit(limit).get(), "limit " + limit);
     }
 
     /**
@@ -118,7 +114,8 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
-        final int N = 20;
+        final int N = 100;
+        final int answers = (N+1)*N/2;
         long startTime = System.currentTimeMillis();
         sampleKB.load(TransitivityChainKB.get(N));
         long loadTime = System.currentTimeMillis() - startTime;
@@ -133,26 +130,12 @@ public class BenchmarkTests {
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
         GetQuery query2 = iqb.parse(queryString2);
 
-        startTime = System.currentTimeMillis();
-        List<Answer> execute = query.execute();
-        assertEquals(execute.size(), N*N/2 + N/2);
-        System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
-
-        startTime = System.currentTimeMillis();
-        List<Answer> execute2 = query2.execute();
-        assertEquals(execute2.size(), N);
-        System.out.println("computeTime with resource: " + (System.currentTimeMillis() - startTime) + " results: " + execute2.size());
+        assertEquals(executeQuery(query, "chain full").size(), answers);
+        assertEquals(executeQuery(query2, "chain with resource").size(), N);
 
         int limit = 10;
-        startTime = System.currentTimeMillis();
-        List<Answer> results = query.match().limit(limit).get().execute();
-        long answerTime = System.currentTimeMillis() - startTime;
-        System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
-
-        startTime = System.currentTimeMillis();
-        results = query2.match().limit(limit).get().execute();
-        answerTime = System.currentTimeMillis() - startTime;
-        System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
+        executeQuery(query.match().limit(limit).get(), "limit " + limit);
+        executeQuery(query2.match().limit(limit).get(), "limit " + limit);
     }
 
     /**
@@ -177,7 +160,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveMatrix(){
-        final int N = 5;
+        final int N = 10;
 
         //                         DJ       IC     FO
         //results @N = 15 14400     ?
@@ -207,23 +190,11 @@ public class BenchmarkTests {
         String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.getId().getValue() + "'; get;";
         GetQuery query3 = iqb.parse(queryString3);
 
-        startTime = System.currentTimeMillis();
-        List<Answer> execute = query.execute();
-        System.out.println("full result computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
-
-        startTime = System.currentTimeMillis();
-        List<Answer> execute2 = query2.execute();
-        System.out.println("computeTime with resource: " + (System.currentTimeMillis() - startTime) + " results: " + execute2.size());
-
-        startTime = System.currentTimeMillis();
-        List<Answer> execute3 = query3.execute();
-        System.out.println("computeTime with specific substitution: " + (System.currentTimeMillis() - startTime) + " results: " + execute3.size());
-
+        executeQuery(query, "matrix full");
+        executeQuery(query2, "matrix with resource");
+        executeQuery(query3, "matrix with specific substitution");
         int limit = 100;
-        startTime = System.currentTimeMillis();
-        List<Answer> results = query.match().limit(limit).get().execute();
-        long answerTime = System.currentTimeMillis() - startTime;
-        System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
+        executeQuery(query.match().limit(limit).get(), "limit " + limit);
     }
 
     /**
@@ -249,7 +220,6 @@ public class BenchmarkTests {
      *  i e [0, N)
      *  j e [0, N)
      */
-
     @Test
     public void testDiagonal()  {
         final int N = 10; //9604
@@ -268,14 +238,73 @@ public class BenchmarkTests {
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GetQuery query = iqb.parse(queryString);
 
-        startTime = System.currentTimeMillis();
-        List<Answer> execute = query.execute();
-        System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
+        executeQuery(query, "diagonal");
 
         int limit = 10;
-        startTime = System.currentTimeMillis();
-        List<Answer> results = query.match().limit(limit).get().execute();
-        long answerTime = System.currentTimeMillis() - startTime;
-        System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
+        executeQuery(query.match().limit(limit).get(), "limit " + limit);
+    }
+
+    /**
+     * single-rule mimicking transitivity test rule defined by two-hop relations
+     * Initial data arranged in N x N square grid.
+     *
+     * Rules:
+     * (arc-from: $x, arc-to: $y) isa arc;},
+     * ->
+     * (path-from: $x, path-to: $y) isa path;};
+
+     *
+     * (path-from: $x, path-to: $z) isa path;
+     * (path-from: $z, path-to: $y) isa path;},
+     * ->
+     * (path-from: $x, path-to: $y) isa path;};
+     *
+     * Initial data arranged as follows:
+     *
+     * N - tree heights
+     * l - number of links per entity
+     *
+     *                     a0
+      *               /     .   \
+     *             arc          arc
+     *             /       .       \
+     *           a1,1     ...    a1,1^l
+     *         /   .  \         /    .  \
+     *       arc   .  arc     arc    .  arc
+     *       /     .   \       /     .    \
+     *     a2,1 ...  a2,l  a2,l+1  ...  a2,2^l
+     *            .             .
+     *            .             .
+     *            .             .
+     *   aN,1    ...  ...  ...  ...  ... ... aN,N^l
+     *
+     */
+    @Test
+    public void testPathTree(){
+        final int N = 5;
+        final int linksPerEntity = 5;
+        int answers = 0;
+        for(int i = 1 ; i <= N ; i++) answers += Math.pow(linksPerEntity, i);
+        sampleKB.load(PathKB.get(N, linksPerEntity));
+        GraknTx graph = sampleKB.tx();
+
+        String queryString = "match (path-from: $x, path-to: $y) isa path;" +
+                "$x has index 'a0';" +
+                "limit " + answers + ";" +
+                "get $y;";
+
+        assertEquals(executeQuery(queryString, graph, "tree").size(), answers);
+    }
+
+    private List<Answer> executeQuery(String queryString, GraknTx graph, String msg){
+        return executeQuery(graph.graql().infer(true).parse(queryString), msg);
+    }
+
+    private List<Answer> executeQuery(GetQuery query, String msg) {
+        final long startTime = System.currentTimeMillis();
+        List<Answer> results = query.execute();
+        final long answerTime = System.currentTimeMillis() - startTime;
+        System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
+        return results;
     }
 }
