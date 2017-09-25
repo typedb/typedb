@@ -128,8 +128,8 @@ public class HALUtils {
             resource.withProperty(DATATYPE_PROPERTY, concept.asAttribute().dataType().getName());
         }
 
-        if (concept.isType()) {
-            resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());
+        if (concept.isSchemaConcept()) {
+            resource.withProperty(NAME_PROPERTY, concept.asSchemaConcept().getLabel().getValue());
             resource.withProperty(IMPLICIT_PROPERTY, ((SchemaConcept)concept).isImplicit());
             if(concept.isAttributeType()){
                 String dataType = Optional.ofNullable(concept.asAttributeType().getDataType()).map(x->x.getName()).orElse("");
