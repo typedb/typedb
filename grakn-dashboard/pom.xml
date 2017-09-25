@@ -76,18 +76,6 @@
                             <commandlineArgs>run build:prod</commandlineArgs>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>dashboard-e2e</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>integration-test</phase>
-                        <configuration>
-                            <executable>yarn</executable>
-                            <commandlineArgs>run e2e</commandlineArgs>
-                            <skip>${skipTests}</skip>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
         </plugins>
