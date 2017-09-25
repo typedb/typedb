@@ -2,5 +2,5 @@
 
 source env.sh
 
-nodetool flush
+${PACKAGE}/services/cassandra/nodetool flush
 du -hd 0 ${PACKAGE}/db/cassandra/data
