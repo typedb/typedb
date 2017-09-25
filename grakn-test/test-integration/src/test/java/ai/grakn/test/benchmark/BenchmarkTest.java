@@ -14,6 +14,8 @@ import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import static ai.grakn.test.benchmark.BenchmarkTest.DEFAULT_FORK;
 import static ai.grakn.test.benchmark.BenchmarkTest.DEFAULT_MEASURE_ITERATIONS;
@@ -41,12 +43,16 @@ public abstract class BenchmarkTest {
 
         // We have to pass system properties into the child JVM
         // TODO: This should probably not be necessary
+        List<String> jvmArgs = new ArrayList<>();
+
         for (GraknSystemProperty property : GraknSystemProperty.values()) {
             String value = property.value();
             if (value != null) {
-                runnerOptions.jvmArgsAppend("-D" + property.key() + "=" + value);
+                jvmArgs.add("-D" + property.key() + "=" + value);
             }
         }
+
+        runnerOptions.jvmArgsAppend(jvmArgs.toArray(new String[jvmArgs.size()]));
 
         if (getWarmupIterations() > 0) {
             runnerOptions.warmupIterations(getWarmupIterations());
