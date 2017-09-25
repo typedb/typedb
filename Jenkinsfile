@@ -15,12 +15,12 @@ ${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.B
 authored by - ${user}"""
 }
 
-def runIntegrationTest(String moduleName) {
+def runIntegrationTest(String workspace, String moduleName) {
     String modulePath = "${workspace}/grakn-test/${moduleName}"
 
     stage(moduleName) {
-        withEnv(["PATH+EXTRA=${modulePath}:${modulePath}/src/main/bash"]) {
-            withGrakn {
+        withPath("${modulePath}:${modulePath}/src/main/bash") {
+            withGrakn(workspace) {
                 timeout(180) {
                     stage('Load') {
                         sh "load.sh"
@@ -36,16 +36,14 @@ def runIntegrationTest(String moduleName) {
     }
 }
 
-def withGrakn(Closure closure) {
-    withEnv(["PATH+EXTRA=${workspace}/grakn-test/test-integration/src/test/bash"]) {
+def withGrakn(String workspace, Closure closure) {
+    withPath("${workspace}/grakn-test/test-integration/src/test/bash") {
         //Everything is wrapped in a try catch so we can handle any test failures
         //If one test fails then all the others will stop. I.e. we fail fast
         try {
             timeout(15) {
                 //Stages allow you to organise and group things within Jenkins
                 stage('Start Grakn') {
-                    checkout scm
-
                     sh "build-grakn.sh ${env.BRANCH_NAME}"
 
                     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
@@ -68,18 +66,27 @@ def withGrakn(Closure closure) {
     }
 }
 
+def withPath(String path, Closure closure) {
+    return withEnv(["PATH+EXTRA=${path}"], closure)
+}
+
 node {
     //Only run validation master/stable
     if (env.BRANCH_NAME in ['master', 'stable']) {
+        String workspace = pwd()
+        checkout scm
+
         slackGithub "Build started"
 
         stage('Run the benchmarks') {
-            sh "mvn clean test  -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dgrakn.test-profile=janus -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+            sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+            archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
         }
 
         for (String moduleName : integrationTests) {
-            runIntegrationTest(moduleName)
+            runIntegrationTest(workspace, moduleName)
         }
+
         slackGithub "Periodic Build Success" "good"
     }
 }
