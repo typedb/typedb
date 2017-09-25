@@ -1,10 +1,7 @@
 package ai.grakn.test.benchmark;
 
-import static ai.grakn.test.benchmark.BenchmarkTest.DEFAULT_FORK;
-import static ai.grakn.test.benchmark.BenchmarkTest.DEFAULT_MEASURE_ITERATIONS;
-import static ai.grakn.test.benchmark.BenchmarkTest.DEFAULT_WARMUP_ITERATIONS;
+import ai.grakn.GraknSystemProperty;
 import io.netty.util.internal.SystemPropertyUtil;
-import java.io.File;
 import org.junit.Test;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
@@ -15,6 +12,14 @@ import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import static ai.grakn.test.benchmark.BenchmarkTest.DEFAULT_FORK;
+import static ai.grakn.test.benchmark.BenchmarkTest.DEFAULT_MEASURE_ITERATIONS;
+import static ai.grakn.test.benchmark.BenchmarkTest.DEFAULT_WARMUP_ITERATIONS;
 
 
 /**
@@ -34,7 +39,20 @@ public abstract class BenchmarkTest {
         String className = getClass().getSimpleName();
 
         ChainedOptionsBuilder runnerOptions = new OptionsBuilder()
-                .include(".*" + className + ".*");
+                .include(".*" + className + ".*").detectJvmArgs();
+
+        // We have to pass system properties into the child JVM
+        // TODO: This should probably not be necessary
+        List<String> jvmArgs = new ArrayList<>();
+
+        for (GraknSystemProperty property : GraknSystemProperty.values()) {
+            String value = property.value();
+            if (value != null) {
+                jvmArgs.add("-D" + property.key() + "=" + value);
+            }
+        }
+
+        runnerOptions.jvmArgsAppend(jvmArgs.toArray(new String[jvmArgs.size()]));
 
         if (getWarmupIterations() > 0) {
             runnerOptions.warmupIterations(getWarmupIterations());
