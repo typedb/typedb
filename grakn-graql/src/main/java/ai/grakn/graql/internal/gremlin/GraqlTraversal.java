@@ -84,9 +84,7 @@ public abstract class GraqlTraversal {
             // somewhere, so we start from a single arbitrary vertex.
             GraphTraversal traversal = graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
 
-
-                return selectVars(traversal, vars);
-
+            return selectVars(traversal, vars);
         }
     }
 
