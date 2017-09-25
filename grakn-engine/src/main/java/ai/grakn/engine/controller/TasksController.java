@@ -104,6 +104,10 @@ public class TasksController {
     private final Timer getTasksTimer;
 
     public TasksController(Service spark, TaskManager manager, MetricRegistry metricRegistry) {
+        this(spark, manager, metricRegistry, taskExecutor());
+    }
+
+    public TasksController(Service spark, TaskManager manager, MetricRegistry metricRegistry, ExecutorService executor) {
         if (manager==null) {
             throw GraknServerException.internalError("Task manager has not been instantiated.");
         }
@@ -123,7 +127,7 @@ public class TasksController {
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
         ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("grakn-task-controller-%d").build();
-        this.executor = Executors.newFixedThreadPool(MAX_THREADS, namedThreadFactory);
+        this.executor = executor;
     }
 
     @GET
@@ -415,7 +419,7 @@ public class TasksController {
 
             return clazz;
         } catch (ClassNotFoundException e) {
-            
+
             throw GraknServerException.invalidTask(className);
 
         }
@@ -467,5 +471,10 @@ public class TasksController {
         public Json getConfiguration() {
             return configuration;
         }
+    }
+
+    public static ExecutorService taskExecutor() {
+        return Executors.newFixedThreadPool(MAX_THREADS, new ThreadFactoryBuilder()
+                .setNameFormat("grakn-task-controller-%d").build());
     }
 }

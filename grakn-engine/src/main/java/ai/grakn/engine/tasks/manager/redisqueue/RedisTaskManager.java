@@ -147,20 +147,17 @@ public class RedisTaskManager implements TaskManager {
     public Future<Void> subscribeToTask(TaskId taskId)
             throws StateFutureInitializationException, ExecutionException, InterruptedException {
         return redisq
-                .getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
-                        TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                .getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue());
     }
 
     public void waitForTask(TaskId taskId)
             throws StateFutureInitializationException, ExecutionException, InterruptedException {
-        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
-                TIMEOUT_SECONDS, TimeUnit.SECONDS).get();
+        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue()).get();
     }
 
     public void waitForTask(TaskId taskId, long timeout, TimeUnit timeUnit)
             throws StateFutureInitializationException, ExecutionException, InterruptedException, TimeoutException {
-        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
-                TIMEOUT_SECONDS, TimeUnit.SECONDS).get(timeout, timeUnit);
+        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue()).get(timeout, timeUnit);
     }
 
     public Redisq getQueue() {

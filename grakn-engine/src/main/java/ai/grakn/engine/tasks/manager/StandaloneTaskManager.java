@@ -290,7 +290,6 @@ public class StandaloneTaskManager implements TaskManager {
 
     private synchronized void cancelTask(TaskState task){
         if(!scheduledTasks.containsKey(task.getId())){
-            LOG.debug("Given task is not scheduled.");
             return;
         }
 
