@@ -29,6 +29,9 @@ public class RequestsTest {
 
     @Test
     public void extractJsonField_MustThrowInformativeError() {
+        // in this test, extractJsonField expects the existence of a field "topLevelField.nestedField"
+        // however, the input incorrectly contains "topLevelField.incorrectlyNamedNestedField" instead
+
         String nestedFieldValue = "nestedFieldValue";
         Json input = Json.object("topLevelField",
             Json.object("incorrectlyNamedNestedField", nestedFieldValue)
@@ -37,11 +40,12 @@ public class RequestsTest {
         // test if exception is properly thrown
         boolean errorMessageThrown_ContainingMissingFieldInfo;
         try {
-            extractJsonField(input, "topLevelField", "nestedField").asString();
+            extractJsonField(input, "topLevelField", "nestedField");
             errorMessageThrown_ContainingMissingFieldInfo = false;
         } catch (GraknServerException e) {
             errorMessageThrown_ContainingMissingFieldInfo = e.getMessage().contains("nestedField");
         }
+
         assertThat(errorMessageThrown_ContainingMissingFieldInfo, equalTo(true));
     }
 }
