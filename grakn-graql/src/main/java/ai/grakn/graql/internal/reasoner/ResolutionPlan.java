@@ -38,11 +38,9 @@ import com.google.common.collect.Multimap;
 import java.util.ArrayList;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -242,9 +240,7 @@ public final class ResolutionPlan {
                 if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
             }
         }
-        return queries;//.stream()
-                //.sorted(Comparator.comparing(q -> !q.isRuleResolvable()))
-                //.collect(Collectors.toCollection(LinkedList::new));
+        return queries;
     }
 
     /**
