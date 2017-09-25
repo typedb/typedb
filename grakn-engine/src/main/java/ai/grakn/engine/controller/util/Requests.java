@@ -95,7 +95,7 @@ public class Requests {
      * Given a {@link Json} object, attempt to extract a single field as supplied,
      * or throw a user-friendly exception clearly indicating the missing field
      * @param json the {@link Json} object containing the field to be extracted
-     * @param fieldPath vargargs denoting the path of the field to be extracted
+     * @param fieldPath String varargs representing the path of the field to be extracted
      * @return the extracted {@link Json} object
      * @throws {@link GraknServerException} with a clear indication of the missing field
      */
