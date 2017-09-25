@@ -35,6 +35,7 @@ import spark.Service;
 
 import java.util.Optional;
 
+import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
@@ -67,8 +68,8 @@ public class AttributeTypeController {
     private Json postAttributeType(Request request, Response response) {
         LOG.debug("postAttributeType - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
-        String attributeTypeLabel = requestBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
-        String attributeTypeDataTypeRaw = requestBody.at(ATTRIBUTE_TYPE_OBJECT_JSON_FIELD).at(TYPE_JSON_FIELD).asString();
+        String attributeTypeLabel = extractJsonField(requestBody, ATTRIBUTE_TYPE_OBJECT_JSON_FIELD, LABEL_JSON_FIELD).asString();
+        String attributeTypeDataTypeRaw = extractJsonField(requestBody, ATTRIBUTE_TYPE_OBJECT_JSON_FIELD, TYPE_JSON_FIELD).asString();
         AttributeType.DataType<?> attributeTypeDataType = fromString(attributeTypeDataTypeRaw);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);

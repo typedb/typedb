@@ -36,6 +36,7 @@ import spark.Service;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
+import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
@@ -96,7 +97,7 @@ public class EntityTypeController {
     private Json postEntityType(Request request, Response response) {
         LOG.debug("postEntityType - request received");
         Json requestBody = Json.read(mandatoryBody(request));
-        String entityTypeLabel = requestBody.at(ENTITY_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
+        String entityTypeLabel = extractJsonField(requestBody, ENTITY_TYPE_OBJECT_JSON_FIELD, LABEL_JSON_FIELD).asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
