@@ -72,7 +72,8 @@ def withPath(String path, Closure closure) {
 
 node {
     //Only run validation master/stable
-    if (env.BRANCH_NAME in ['master', 'stable']) {
+    // TODO: don't merge this change
+    if (env.BRANCH_NAME in ['master', 'stable'] || true) {
         String workspace = pwd()
         checkout scm
 
