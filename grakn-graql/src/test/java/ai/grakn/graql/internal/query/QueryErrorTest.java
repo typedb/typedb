@@ -118,7 +118,7 @@ public class QueryErrorTest {
     public void testErrorHasGenreQuery() {
         // 'has genre' is not allowed because genre is an entity type
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage("genre"));
+        exception.expectMessage(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage("genre"));
         //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("movie").has("genre", "Drama")).stream();
     }

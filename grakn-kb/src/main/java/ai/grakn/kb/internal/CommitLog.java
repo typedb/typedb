@@ -20,17 +20,13 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
-import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.concept.ThingImpl;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import mjson.Json;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -52,11 +48,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class CommitLog {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Map<ConceptId, Long> newInstanceCount = new ConcurrentHashMap<>();
-    private final Set<Attribute> newAttributes = ConcurrentHashMap.newKeySet();
+    private final Map<String, Set<String>> newAttributes = new ConcurrentHashMap<>();
 
 
-    void addNewAttributes(Set<Attribute> attributes){
-        lockDataAddition(() -> newAttributes.addAll(attributes));
+    void addNewAttributes(Map<String, ConceptId> attributes){
+        lockDataAddition(() -> attributes.forEach((key, value) -> {
+            newAttributes.merge(key, Sets.newHashSet(value.getValue()), (v1, v2) -> {
+                v1.addAll(v2);
+                return v1;
+            });
+        }));
     }
 
     void addNewInstances(Map<ConceptId, Long> instances){
@@ -113,14 +114,22 @@ public class CommitLog {
         return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
+    static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes){
+        Map<String, Set<String>> newAttributes = new ConcurrentHashMap<>();
+        attributes.forEach((key, value) -> {
+            newAttributes.put(key, Sets.newHashSet(value.getValue()));
+        });
+        return formatLog(instances, newAttributes);
+    }
+
     /**
      * Returns the Formatted Log which is uploaded to the server.
      * @return a formatted Json log
      */
-    static Json formatLog(Map<ConceptId, Long> instances, Set<Attribute> attributes){
+    static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<String>> attributes){
         //Concepts In Need of Inspection
         Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), loadConceptsForFixing(attributes));
+        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(attributes));
 
         //Types with instance changes
         Json typesWithInstanceChanges = Json.array();
@@ -139,12 +148,4 @@ public class CommitLog {
 
         return formattedLog;
     }
-    private static <X extends Thing> Json loadConceptsForFixing(Set<X> instances){
-        Map<String, Set<String>> conceptByIndex = new HashMap<>();
-        instances.forEach(thing ->
-                conceptByIndex.computeIfAbsent(((ThingImpl) thing).getIndex(), (e) -> new HashSet<>()).add(thing.getId().getValue()));
-        return Json.make(conceptByIndex);
-    }
-
-
 }

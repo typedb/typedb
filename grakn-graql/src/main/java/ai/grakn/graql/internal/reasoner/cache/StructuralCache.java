@@ -48,11 +48,11 @@ import java.util.stream.Stream;
  * @author Kasper Piskorski
  *
  */
-public class StructuralCache<Q extends ReasonerQueryImpl>{
+class StructuralCache<Q extends ReasonerQueryImpl>{
 
     private final Map<ReasonerStructuralQuery<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
 
-    public StructuralCache(){
+    StructuralCache(){
         this.structCache = new HashMap<>();
     }
 
@@ -72,7 +72,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
             Map<ConceptId, ConceptId> conceptMap = equivalentQuery.getConceptMap(query, unifier);
 
             ReasonerQueryImpl transformedQuery = equivalentQuery.transformIds(conceptMap);
-            return MatchBase.streamWithTraversal(transformedQuery.getPattern(), tx, traversal.transform(conceptMap))
+            return MatchBase.streamWithTraversal(transformedQuery.getPattern().commonVars(), tx, traversal.transform(conceptMap))
                     .map(ans -> ans.unify(unifier))
                     .map(a -> a.explain(new LookupExplanation(query)));
         }
@@ -80,7 +80,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
         GraqlTraversal traversal = GreedyTraversalPlan.createTraversal(query.getPattern(), tx);
         structCache.put(structQuery, new CacheEntry<>(query, traversal));
 
-        return MatchBase.streamWithTraversal(query.getPattern(), tx, traversal)
+        return MatchBase.streamWithTraversal(query.getPattern().commonVars(), tx, traversal)
                 .map(a -> a.explain(new LookupExplanation(query)));
     }
 }

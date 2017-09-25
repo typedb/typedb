@@ -18,9 +18,11 @@
 
 package ai.grakn.test.engine.postprocessing;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
@@ -33,6 +35,12 @@ import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
+import org.janusgraph.core.SchemaViolationException;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -42,15 +50,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
-import org.janusgraph.core.SchemaViolationException;
 import static org.junit.Assume.assumeFalse;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PostProcessingIT {
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingIT.class);
@@ -63,6 +67,7 @@ public class PostProcessingIT {
         assumeFalse(GraknTestSetup.usingTinker());
 
         GraknSession session = engine.sessionWithNewKeyspace();
+        Keyspace keyspace;
 
         int transactionSize = 50;
         int numAttempts = 200;
@@ -79,6 +84,8 @@ public class PostProcessingIT {
         Set<Future> futures = new HashSet<>();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            keyspace = graph.getKeyspace();
+
             //Create Simple Schema
             for (int i = 0; i < numEntTypes; i++) {
                 EntityType entityType = graph.putEntityType("ent" + i);
@@ -98,8 +105,9 @@ public class PostProcessingIT {
         }
 
         for(int i = 0; i < numAttempts; i++){
+            GraknSession finalSession = session;
             futures.add(pool.submit(() -> {
-                try(GraknTx graph = session.open(GraknTxType.WRITE)){
+                try(GraknTx graph = finalSession.open(GraknTxType.WRITE)){
                     Random r = new Random();
 
                     for(int j = 0; j < transactionSize; j ++) {
@@ -122,6 +130,9 @@ public class PostProcessingIT {
         for (Future future : futures) {
             future.get();
         }
+
+        session.close();
+        session = Grakn.session(engine.uri(), keyspace);
 
         //Check current broken state of graph
         assertTrue("Failed at breaking graph", graphIsBroken(session));

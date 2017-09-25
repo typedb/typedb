@@ -49,13 +49,21 @@ import java.util.regex.Pattern;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    AttributeTypeImpl(VertexElement vertexElement) {
+    private AttributeTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
+    private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
         super(vertexElement, type);
         vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
+    }
+
+    public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement){
+        return new AttributeTypeImpl<>(vertexElement);
+    }
+
+    public static <D> AttributeTypeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
+        return new AttributeTypeImpl<>(vertexElement, type, dataType);
     }
 
     /**

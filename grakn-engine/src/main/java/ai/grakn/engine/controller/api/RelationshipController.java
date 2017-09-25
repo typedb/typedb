@@ -66,7 +66,7 @@ public class RelationshipController {
 
         spark.post(RELATIONSHIP_TYPE + "/" + RELATIONSHIP_TYPE_LABEL_PARAMETER, this::postRelationship);
         spark.put(RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT, this::assignEntityAndRoleToRelationship);
-        // TODO: implement it after operation has been supported in the Graph API
+        // TODO: implement it after operation has been supported in the Java API
 //        spark.delete("/api/relationship/:relationshipConceptId/role/:roleConceptId/entity/:entityConceptId", this::deleteEntityAndRoleToRelationshipAssignment);
     }
 

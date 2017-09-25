@@ -28,6 +28,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.stream.Collectors;
+import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -68,10 +69,18 @@ public abstract class GraqlTraversal {
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
     public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknTx graph) {
-        Traversal[] traversals =
-                fragments().stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 
-        return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
+        if (fragments().size() == 1) {
+            // If there are no disjunctions, we don't need to union them and get a performance boost
+            return getConjunctionTraversal(graph, graph.admin().getTinkerTraversal().V(), Iterables.getOnlyElement(fragments()));
+        } else {
+            Traversal[] traversals =
+                    fragments().stream().map(list -> getConjunctionTraversal(graph, __.V(), list)).toArray(Traversal[]::new);
+
+            // This is a sneaky trick - we want to do a union but tinkerpop requires all traversals to start from
+            // somewhere, so we start from a single arbitrary vertex.
+            return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
+        }
     }
 
     //       Set of disjunctions
@@ -96,21 +105,21 @@ public abstract class GraqlTraversal {
     /**
      * @return a gremlin traversal that represents this inner query
      */
-    private GraphTraversal<? extends Element, Map<String, Element>> getConjunctionTraversal(
-            GraknTx graph, ImmutableList<Fragment> fragmentList
+    private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
+            GraknTx graph, GraphTraversal<Vertex, Vertex> traversal, ImmutableList<Fragment> fragmentList
     ) {
-        GraphTraversal traversal = __.V();
+        GraphTraversal<Vertex, ? extends Element> newTraversal = traversal;
 
         // If the first fragment can operate on edges, then we have to navigate all edges as well
         if (fragmentList.get(0).canOperateOnEdges()) {
-            traversal = __.union(traversal, __.V().outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
+            newTraversal = traversal.union(__.identity(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
         }
 
-        return applyFragments(graph, fragmentList, traversal);
+        return applyFragments(graph, fragmentList, newTraversal);
     }
 
-    private GraphTraversal<?, Map<String, Element>> applyFragments(
-            GraknTx graph, ImmutableList<Fragment> fragmentList, GraphTraversal<Element, Element> traversal) {
+    private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
+            GraknTx graph, ImmutableList<Fragment> fragmentList, GraphTraversal<Vertex, ? extends Element> traversal) {
         Set<Var> foundNames = new HashSet<>();
 
         // Apply fragments in order into one single traversal

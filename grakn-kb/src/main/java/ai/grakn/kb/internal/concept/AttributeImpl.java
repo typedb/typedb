@@ -45,13 +45,28 @@ import java.util.stream.Stream;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
-    public AttributeImpl(VertexElement vertexElement) {
+    private AttributeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    AttributeImpl(VertexElement vertexElement, AttributeType<D> type, Object value) {
+    private AttributeImpl(VertexElement vertexElement, AttributeType<D> type, Object value) {
         super(vertexElement, type);
         setValue(value);
+    }
+
+    public static <D> AttributeImpl<D> get(VertexElement vertexElement){
+        return new AttributeImpl<>(vertexElement);
+    }
+
+    public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, Object value) {
+        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, value);
+
+        //Generate the index again. Faster than reading
+        String index = Schema.generateAttributeIndex(type.getLabel(), value.toString());
+
+        //Track the attribute by index
+        vertexElement.tx().txCache().addNewAttribute(index, attribute.getId());
+        return attribute;
     }
 
     /**

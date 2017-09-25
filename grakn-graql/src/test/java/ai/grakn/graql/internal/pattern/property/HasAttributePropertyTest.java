@@ -47,7 +47,7 @@ public class HasAttributePropertyTest {
         HasResourceProperty property = HasResourceProperty.of(label, var("x").admin(), var().admin());
 
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.mustBeResourceType(label).getMessage());
+        exception.expectMessage(GraqlQueryException.mustBeAttributeType(label).getMessage());
 
         property.checkValidProperty(sampleKB.tx(), var("y").admin());
     }

@@ -97,6 +97,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     ThingImpl(VertexElement vertexElement, V type) {
         this(vertexElement);
         type((TypeImpl) type);
+        track();
+    }
+
+    /**
+     * This {@link Thing} gets tracked for validation only if it has keys which need to be checked.
+     */
+    private void track(){
+        if(type().keys().findAny().isPresent()){
+            vertex().tx().txCache().trackForValidation(this);
+        }
     }
 
     /**
@@ -104,7 +114,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public void delete() {
-        Set<Relationship> relationships = castingsInstance().map(Casting::getRelation).collect(Collectors.toSet());
+        Set<Relationship> relationships = castingsInstance().map(Casting::getRelationship).collect(Collectors.toSet());
 
         vertex().tx().txCache().removedInstance(type().getId());
         deleteNode();
@@ -233,7 +243,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public Stream<Role> plays() {
-        return castingsInstance().map(Casting::getRoleType);
+        return castingsInstance().map(Casting::getRole);
     }
 
     @Override

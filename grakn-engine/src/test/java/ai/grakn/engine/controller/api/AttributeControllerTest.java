@@ -48,7 +48,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * <p>
- *     Endpoint tests for Graph API
+ *     Endpoint tests for Java API
  * </p>
  *
  * @author Ganeshwara Herawan Hananda
