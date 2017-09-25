@@ -54,7 +54,6 @@ public class Patterns {
     }
 
     public static Var var() {
-        // TODO: Make sure these never clash with user-specified vars
         return new AutoValue_VarImpl(Long.toString(counter.getAndIncrement()), Var.Kind.Generated);
     }
 
