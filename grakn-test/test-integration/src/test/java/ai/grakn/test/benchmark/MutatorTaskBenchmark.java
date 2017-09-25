@@ -1,6 +1,7 @@
 package ai.grakn.test.benchmark;
 
 import ai.grakn.client.TaskClient;
+import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
@@ -40,8 +41,17 @@ public class MutatorTaskBenchmark extends BenchmarkTest {
     }
 
     @Benchmark
-    public void sendTaskAndWait() {
+    public void sendTaskAndWaitShort() {
         Class<?> taskClass = ShortExecutionMockTask.class;
+        String creator = this.getClass().getName();
+        Instant runAt = now();
+        Json configuration = Json.object("id", "123");
+        client.sendTask(taskClass, creator, runAt, null, configuration, true).getTaskId();
+    }
+
+    @Benchmark
+    public void sendTaskAndWaitLong() {
+        Class<?> taskClass = LongExecutionMockTask.class;
         String creator = this.getClass().getName();
         Instant runAt = now();
         Json configuration = Json.object("id", "123");
