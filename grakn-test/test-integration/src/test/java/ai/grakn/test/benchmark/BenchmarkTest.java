@@ -39,10 +39,13 @@ public abstract class BenchmarkTest {
         ChainedOptionsBuilder runnerOptions = new OptionsBuilder()
                 .include(".*" + className + ".*").detectJvmArgs();
 
-        // We have to pass the path to the config file into the child JVM
+        // We have to pass system properties into the child JVM
         // TODO: This should probably not be necessary
-        if (GraknSystemProperty.CONFIGURATION_FILE.value() != null) {
-            runnerOptions.jvmArgsAppend("-D" + GraknSystemProperty.CONFIGURATION_FILE.key() + "=" + GraknSystemProperty.CONFIGURATION_FILE.value());
+        for (GraknSystemProperty property : GraknSystemProperty.values()) {
+            String value = property.value();
+            if (value != null) {
+                runnerOptions.jvmArgsAppend("-D" + property.key() + "=" + value);
+            }
         }
 
         if (getWarmupIterations() > 0) {
