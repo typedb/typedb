@@ -137,23 +137,32 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     private void getAllSubTypes(GraknTx tx) {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
+        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
         if (subLabels.isEmpty()) {
             if (includeAttribute) {
                 tx.admin().getMetaConcept().subs().forEach(subTypes::add);
             } else {
                 tx.admin().getMetaEntityType().subs().forEach(subTypes::add);
-                tx.admin().getMetaRelationType().subs().forEach(subTypes::add);
+                tx.admin().getMetaRelationType().subs()
+                        .filter(entityType -> !entityType.isImplicit()).forEach(subTypes::add);
             }
         } else {
             subTypes = subLabels.stream().map(label -> {
                 SchemaConcept type = tx.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
                 if (type.isRole() || type.isRule()) throw GraqlQueryException.roleAndRuleDoNotHaveInstance();
-                if (type.isAttributeType() && !includeAttribute) includeAttribute = true;
+                if (!includeAttribute && (type.isAttributeType() || type.isImplicit())) {
+                    includeAttribute = true;
+                }
                 return type.asType();
             }).collect(Collectors.toSet());
 
-            subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
+            if (includeAttribute) {
+                subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
+            } else {
+                subTypes = subTypes.stream().flatMap(Type::subs)
+                        .filter(entityType -> !entityType.isImplicit()).collect(Collectors.toSet());
+            }
         }
         subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
     }

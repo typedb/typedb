@@ -23,6 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
+import ai.grakn.graql.internal.analytics.CountMapReduceWithAttribute;
 import ai.grakn.graql.internal.analytics.CountVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
@@ -51,17 +52,25 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
             return 0L;
         }
 
-        Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds();
-
         Set<LabelId> typeLabelIds = convertLabelsToIds(subLabels);
-        rolePlayerLabelIds.addAll(typeLabelIds);
+        Map<Integer, Long> count;
 
-        ComputerResult result = getGraphComputer().compute(
-                new CountVertexProgram(),
-                new CountMapReduce(),
-                rolePlayerLabelIds, false);
+        if (includeAttribute) {
+            Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds();
+            rolePlayerLabelIds.addAll(typeLabelIds);
 
-        Map<Integer, Long> count = result.memory().get(CountMapReduce.class.getName());
+            ComputerResult result = getGraphComputer().compute(
+                    new CountVertexProgram(),
+                    new CountMapReduceWithAttribute(),
+                    rolePlayerLabelIds, false);
+            count = result.memory().get(CountMapReduceWithAttribute.class.getName());
+        } else {
+            ComputerResult result = getGraphComputer().compute(
+                    null,
+                    new CountMapReduce(),
+                    typeLabelIds, false);
+            count = result.memory().get(CountMapReduce.class.getName());
+        }
 
         long finalCount = count.keySet().stream()
                 .filter(id -> typeLabelIds.contains(LabelId.of(id)))
