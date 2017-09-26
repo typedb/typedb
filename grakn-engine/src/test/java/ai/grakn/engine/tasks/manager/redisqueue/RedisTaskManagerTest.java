@@ -66,7 +66,6 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class RedisTaskManagerTest {
@@ -127,26 +126,6 @@ public class RedisTaskManagerTest {
         assertEquals(COMPLETED, taskManager.storage().getState(state.getId()).status());
     }
 
-    @Test
-    public void whenTaskFails_EnsureStackTraceIsReturned(){
-        RedisTaskStorage taskStorage = taskManager.storage();
-
-        //Add failed task
-        String reason = "The state started smelling funny";
-        TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), TaskState.Priority.LOW);
-        state.markFailed(reason);
-
-        TaskConfiguration config = testConfig(state.getId());
-
-        taskManager.runTask(state, config);
-
-        //Get the task state
-        TaskState foundState = taskStorage.getState(state.getId());
-
-        assertNotNull(foundState.exception());
-        assertEquals(reason, foundState.exception());
-    }
-
     @Test(expected = TimeoutException.class)
     public void whenNotAddingTask_TastStateIsNotRetrievable()
             throws ExecutionException, RetryException, StateFutureInitializationException, InterruptedException, TimeoutException {
@@ -168,6 +147,7 @@ public class RedisTaskManagerTest {
     public void whenSending10Tasks_AllTaskStatesRetrievable()
             throws ExecutionException, RetryException, StateFutureInitializationException, InterruptedException {
         Map<TaskId, Future<Void>> states = new HashMap<>();
+
         for(int i = 0; i < 10; i++) {
             TaskId generate = TaskId.generate();
             TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), Priority.LOW);
@@ -175,6 +155,7 @@ public class RedisTaskManagerTest {
             states.put(id, taskManager.subscribeToTask(id));
             taskManager.addTask(state, testConfig(generate));
         }
+
         states.forEach((id, state) -> {
             try {
                 System.out.println("Waiting for " + id);

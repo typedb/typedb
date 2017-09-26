@@ -95,10 +95,10 @@ public class RedisTaskStorage implements TaskStateStorage {
             throw GraknBackendException.stateStorage();
         }
 
-        TaskState taskState = TaskState.of(id);
+        TaskState taskState = TaskState.of(id, TaskStatus.fromState(state.get().getState()));
 
         //Make sure exception gets transferred across
-        if(state.get().getState().equals(State.FAILED)) {
+        if(taskState.status().equals(TaskStatus.FAILED)) {
             String info = state.get().getInfo();
             taskState.markFailed(info);
         }
