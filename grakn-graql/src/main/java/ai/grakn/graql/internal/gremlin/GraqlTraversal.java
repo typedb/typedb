@@ -25,11 +25,14 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectStep;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -66,18 +69,22 @@ public abstract class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknTx graph) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknTx graph, Set<Var> vars) {
 
         if (fragments().size() == 1) {
             // If there are no disjunctions, we don't need to union them and get a performance boost
-            return getConjunctionTraversal(graph, graph.admin().getTinkerTraversal().V(), Iterables.getOnlyElement(fragments()));
+            ImmutableList<Fragment> list = Iterables.getOnlyElement(fragments());
+            return getConjunctionTraversal(graph, graph.admin().getTinkerTraversal().V(), vars, list);
         } else {
-            Traversal[] traversals =
-                    fragments().stream().map(list -> getConjunctionTraversal(graph, __.V(), list)).toArray(Traversal[]::new);
+            Traversal[] traversals = fragments().stream()
+                    .map(list -> getConjunctionTraversal(graph, __.V(), vars, list))
+                    .toArray(Traversal[]::new);
 
             // This is a sneaky trick - we want to do a union but tinkerpop requires all traversals to start from
             // somewhere, so we start from a single arbitrary vertex.
-            return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
+            GraphTraversal traversal = graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
+
+            return selectVars(traversal, vars);
         }
     }
 
@@ -92,7 +99,7 @@ public abstract class GraqlTraversal {
      * @return a gremlin traversal that represents this inner query
      */
     private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
-            GraknTx graph, GraphTraversal<Vertex, Vertex> traversal, ImmutableList<Fragment> fragmentList
+            GraknTx graph, GraphTraversal<Vertex, Vertex> traversal, Set<Var> vars, ImmutableList<Fragment> fragmentList
     ) {
         GraphTraversal<Vertex, ? extends Element> newTraversal = traversal;
 
@@ -101,25 +108,26 @@ public abstract class GraqlTraversal {
             newTraversal = traversal.union(__.identity(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
         }
 
-        return applyFragments(graph, fragmentList, newTraversal);
+        return applyFragments(graph, vars, fragmentList, newTraversal);
     }
 
     private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
-            GraknTx graph, ImmutableList<Fragment> fragmentList, GraphTraversal<Vertex, ? extends Element> traversal) {
-        Set<Var> foundNames = new HashSet<>();
+            GraknTx graph, Set<Var> vars, ImmutableList<Fragment> fragmentList,
+            GraphTraversal<Vertex, ? extends Element> traversal
+    ) {
+        Set<Var> foundVars = new HashSet<>();
 
         // Apply fragments in order into one single traversal
         Var currentName = null;
 
         for (Fragment fragment : fragmentList) {
             // Apply fragment to traversal
-            fragment.applyTraversal(traversal, graph, foundNames, currentName);
+            fragment.applyTraversal(traversal, graph, foundVars, currentName);
             currentName = fragment.end() != null ? fragment.end() : fragment.start();
         }
 
         // Select all the variable names
-        String[] traversalNames = foundNames.stream().map(Var::getValue).toArray(String[]::new);
-        return traversal.select(traversalNames[0], traversalNames[0], traversalNames);
+        return selectVars(traversal, Sets.intersection(vars, foundVars));
     }
 
     /**
@@ -155,6 +163,18 @@ public abstract class GraqlTraversal {
         } else {
             // Restart traversal, meaning we are navigating from all vertices
             return COST_NEW_TRAVERSAL;
+        }
+    }
+
+    private static <S, E> GraphTraversal<S, Map<String, E>> selectVars(GraphTraversal<S, ?> traversal, Set<Var> vars) {
+        if (vars.isEmpty()) {
+            return traversal.constant(ImmutableMap.of());
+        } else if (vars.size() == 1) {
+            String label = vars.iterator().next().getValue();
+            return traversal.select(label, label);
+        } else {
+            String[] labelArray = vars.stream().map(Var::getValue).toArray(String[]::new);
+            return traversal.asAdmin().addStep(new SelectStep<>(traversal.asAdmin(), null, labelArray));
         }
     }
 
