@@ -385,6 +385,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
+
+        if(isAbstract){
+            vertex().tx().txCache().removeFromValidation(this);
+        } else {
+            vertex().tx().txCache().trackForValidation(this);
+        }
+
         return getThis();
     }
 

@@ -138,12 +138,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @param conceptMap concept map defining mappings between this query and resultant query
-     * @return new query with id predicates transformed according to the concept map
+     * @param transform map defining id transform: var -> new id
+     * @return new query with id predicates transformed according to the transform
      */
-    public ReasonerQueryImpl transformIds(Map<ConceptId, ConceptId> conceptMap){
-        Set<Atomic> atoms = getAtoms(IdPredicate.class).map(p -> {
-            ConceptId conceptId = conceptMap.get(p.getPredicate());
+    public ReasonerQueryImpl transformIds(Map<Var, ConceptId> transform){
+        Set<Atomic> atoms = this.getAtoms(IdPredicate.class).map(p -> {
+            ConceptId conceptId = transform.get(p.getVarName());
             if (conceptId != null) return new IdPredicate(p.getVarName(), conceptId, p.getParentQuery());
             return p;
         }).collect(Collectors.toSet());
@@ -285,20 +285,22 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @param query for which the this query-query concept map is to be constructed
+     * returns id transform that would convert this query to a query alpha-equivalent to the query,
+     * provided they are structurally equivalent
+     * @param query for which the transform is to be constructed
      * @param unifier between this query and provided query
-     * @return concept map between this query and provided query
+     * @return id transform
      */
-    public Map<ConceptId, ConceptId> getConceptMap(ReasonerQueryImpl query, Unifier unifier){
-        Map<ConceptId, ConceptId> conceptMap = new HashMap<>();
+    public Map<Var, ConceptId> idTransform(ReasonerQueryImpl query, Unifier unifier){
+        Map<Var, ConceptId> transform = new HashMap<>();
         this.getAtoms(IdPredicate.class)
                 .forEach(thisP -> {
                     Collection<Var> vars = unifier.get(thisP.getVarName());
                     Var var = !vars.isEmpty()? Iterators.getOnlyElement(vars.iterator()) : thisP.getVarName();
                     IdPredicate p2 = query.getIdPredicate(var);
-                    if ( p2 != null) conceptMap.put(thisP.getPredicate(), p2.getPredicate());
+                    if ( p2 != null) transform.put(thisP.getVarName(), p2.getPredicate());
                 });
-        return conceptMap;
+        return transform;
     }
 
     /**

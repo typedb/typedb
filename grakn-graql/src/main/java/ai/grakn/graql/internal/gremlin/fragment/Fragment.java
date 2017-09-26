@@ -105,10 +105,10 @@ public abstract class Fragment {
     private @Nullable ImmutableSet<Var> vars = null;
   
     /**
-     * @param conceptMap map defining mappings between this fragment and the target fragment
-     * @return transformed fragment with id predicates transformed according to the concept map
+     * @param transform map defining id transform var -> new id
+     * @return transformed fragment with id predicates transformed according to the transform
      */
-    public Fragment transform(Map<ConceptId, ConceptId> conceptMap){ return this;}
+    public Fragment transform(Map<Var, ConceptId> transform){ return this;}
 
     /**
      * Get the corresponding property

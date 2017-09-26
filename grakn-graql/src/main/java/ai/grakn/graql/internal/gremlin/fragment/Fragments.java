@@ -139,12 +139,12 @@ public class Fragments {
     }
 
     /**
-     * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
+     * A {@link Fragment} that uses an index stored on each attribute. Attributes are indexed by direct type and value.
      */
-    public static Fragment resourceIndex(
-            @Nullable VarProperty varProperty, Var start, Label label, Object resourceValue) {
-        String resourceIndex = Schema.generateAttributeIndex(label, resourceValue.toString());
-        return new AutoValue_ResourceIndexFragment(varProperty, start, resourceIndex);
+    public static Fragment attributeIndex(
+            @Nullable VarProperty varProperty, Var start, Label label, Object attributeValue) {
+        String attributeIndex = Schema.generateAttributeIndex(label, attributeValue.toString());
+        return new AutoValue_AttributeIndexFragment(varProperty, start, attributeIndex);
     }
 
     static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal) {

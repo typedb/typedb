@@ -21,16 +21,27 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
+ * @see EquivalentFragmentSets#dataType(ai.grakn.graql.admin.VarProperty, Var, AttributeType.DataType)
+ *
  * @author Felix Chapman
  */
-class DataTypeFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class DataTypeFragmentSet extends EquivalentFragmentSet {
 
-    DataTypeFragmentSet(VarProperty varProperty, Var resourceType, AttributeType.DataType dataType) {
-        super(Fragments.dataType(varProperty, resourceType, dataType));
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(Fragments.dataType(varProperty(), attributeType(), dataType()));
     }
+
+    abstract Var attributeType();
+    abstract AttributeType.DataType dataType();
 }

@@ -98,12 +98,12 @@ public abstract class GraqlTraversal {
     public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
 
     /**
-     * @param conceptMap map defining mappings between concept ids
-     * @return graql traversal with concept id transformed according to the provided concept map
+     * @param transform map defining id transform var -> new id
+     * @return graql traversal with concept id transformed according to the provided transform
      */
-    public GraqlTraversal transform(Map<ConceptId, ConceptId> conceptMap){
+    public GraqlTraversal transform(Map<Var, ConceptId> transform){
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(
-                Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(conceptMap)).collect(Collectors.toList())
+                Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
         );
         return new AutoValue_GraqlTraversal(ImmutableSet.of(fragments));
     }
