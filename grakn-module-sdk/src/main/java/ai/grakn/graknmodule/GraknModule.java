@@ -30,8 +30,21 @@ import java.util.List;
  * @author Ganeshwara Herawan Hananda
  */
 public interface GraknModule {
+    /**
+     * This method must return the ID of the Grakn Module
+     * @return the ID of the Grakn Module
+     */
     String getGraknModuleName();
 
+    /**
+     * This method should return the list of {@link HttpBeforeFilter} objects, which are to be applied to Grakn HTTP endpoints
+     * @return list of {@link HttpBeforeFilter}
+     */
     List<HttpBeforeFilter> getHttpBeforeFilters();
+
+    /**
+     * This method should return the list of {@link HttpEndpoint} objects
+     * @return list of {@link HttpEndpoint} object
+     */
     List<HttpEndpoint> getHttpEndpoints();
 }

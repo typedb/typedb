@@ -45,33 +45,53 @@ public class GraknModuleManager {
     private static PluginManager pf4jPluginManager = new JarPluginManager();
 
     public static void initialise() {
-        LOG.info("Scanning Grakn modules directory at '" + Paths.get(".").toAbsolutePath().toString() + "'");
-        Stream<Path> folders = listFolders(Paths.get(MODULE_DIR));
-
-        Stream<String> pf4jPluginIds = folders.flatMap(moduleDir -> {
-            LOG.info("Scanning '" + moduleDir.getFileName() + "' for a module");
-
-            Stream<String> pluginIds = listJarFiles(moduleDir).map(moduleJar -> {
-                LOG.info("Loading '" + moduleJar.getFileName() + "'");
-                return pf4jPluginManager.loadPlugin(moduleJar);
-            });
-
-            return pluginIds;
-        });
-
-        pf4jPluginIds.forEach(pluginId -> {
-            LOG.info("Starting module '" + pluginId + "'");
-            pf4jPluginManager.startPlugin(pluginId);
-        });
+        String graknHomeDir = Paths.get(".").toAbsolutePath().toString();
+        LOG.info("Scanning Grakn modules directory at '" + graknHomeDir + "'");
+        try {
+            Stream<Path> folders = listFolders(Paths.get(MODULE_DIR));
+            Stream<String> pf4jPluginIds = folders.flatMap(GraknModuleManager::scanModuleDir);
+            pf4jPluginIds.forEach(GraknModuleManager::startPf4JPlugin);
+        } catch (RuntimeException e) {
+            throw GraknModuleException.exception("Unable to scan module directory at '" + graknHomeDir + "'", e);
+        }
     }
 
     public static List<GraknModule> getGraknModules() {
-        List<GraknModule> modules = pf4jPluginManager.getExtensions(GraknModule.class);
-        LOG.info("number of Grakn Module(s) found: " + modules.size());
-        for (GraknModule module : modules) {
-            LOG.info("loaded the following module '" + module.getGraknModuleName() + "'");
-        }
+        try {
+            List<GraknModule> modules = pf4jPluginManager.getExtensions(GraknModule.class);
+            LOG.info("number of Grakn Module(s) found: " + modules.size());
+            for (GraknModule module : modules) {
+                LOG.info("loaded the following module '" + module.getGraknModuleName() + "'");
+            }
 
-        return modules;
+            return modules;
+        } catch (RuntimeException e) {
+            throw GraknModuleException.exception("Unable to scan module directory", e);
+        }
+    }
+
+    private static Stream<String> scanModuleDir(Path moduleDir) {
+        LOG.info("Scanning '" + moduleDir.getFileName() + "' for a module");
+
+        Stream<String> pluginIds = listJarFiles(moduleDir).map(moduleJar -> {
+            LOG.info("Loading '" + moduleJar.getFileName() + "'");
+            try {
+               return pf4jPluginManager.loadPlugin(moduleJar);
+            } catch (RuntimeException e) {
+                throw GraknModuleException.exception("Unable to load module '" + moduleJar + "'", e);
+            }
+        });
+
+        return pluginIds;
+    }
+
+    private static void startPf4JPlugin(String pf4jPluginId) {
+        LOG.info("Starting module '" + pf4jPluginId + "'");
+        try {
+            pf4jPluginManager.startPlugin(pf4jPluginId);
+        } catch (RuntimeException e) {
+            throw GraknModuleException.exception("Unable to start module '" + pf4jPluginId + "'", e);
+        }
     }
 }
+

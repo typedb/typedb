@@ -17,24 +17,22 @@
  *
  */
 
-package ai.grakn.graknmodule.http;
+package ai.grakn.engine.module;
+
+import ai.grakn.exception.GraknException;
 
 /**
- * A class representing an HTTP endpoint before filter, supported by a {@link ai.grakn.graknmodule.GraknModule}
+ * A class representing grakn module-related exceptions
  *
  * @author Ganeshwara Herawan Hananda
  */
+public class GraknModuleException extends GraknException {
 
-public interface HttpBeforeFilter {
-    /**
-     * @return the URL pattern of which this HttpBeforeFilter will be applied on
-     */
-    String getUrlPattern();
+    protected GraknModuleException(String error, Exception e) {
+        super(error, e);
+    }
 
-    /**
-     * The filter which will be applied to the endpoints
-     * @param Http request object
-     * @return {@link HttpBeforeFilterResult} object indicating whether the request should be allowed or denied
-     */
-    HttpBeforeFilterResult getHttpBeforeFilter(HttpRequest request);
+    public static GraknModuleException exception(String error, Exception e) {
+        return new GraknModuleException(error, e);
+    }
 }
