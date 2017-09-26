@@ -1,6 +1,6 @@
 ---
 title: Grakn Academy
-keywords: contributors, developers
+keywords: getting started
 last_updated: September 2017
 tags: [getting-started]
 sidebar: academy_sidebar
