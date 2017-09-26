@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
@@ -31,7 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#dataType(VarProperty, Var, AttributeType.DataType)
+ * @see EquivalentFragmentSets#dataType(ai.grakn.graql.admin.VarProperty, Var, AttributeType.DataType)
  *
  * @author Felix Chapman
  */
