@@ -19,7 +19,10 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.graql.macro.Macro;
+
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -29,8 +32,6 @@ import java.util.stream.Stream;
  * @author Felix Chapman
  */
 public interface QueryParser {
-
-    void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod);
 
     /**
      * @param queryString a string representing a query
@@ -57,4 +58,24 @@ public interface QueryParser {
      * @return a pattern
      */
     Pattern parsePattern(String patternString);
+
+    /**
+     * @param template a string representing a templated graql query
+     * @param data     data to use in template
+     * @return a resolved graql query
+     */
+    <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data);
+
+    /**
+     * Register an aggregate that can be used when parsing a Graql query
+     * @param name the name of the aggregate
+     * @param aggregateMethod a function that will produce an aggregate when passed a list of arguments
+     */
+    void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod);
+
+    /**
+     * Register a macro that can be used when parsing a Graql template
+     * @param macro the macro to register
+     */
+    void registerMacro(Macro macro);
 }

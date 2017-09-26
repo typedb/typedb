@@ -25,7 +25,7 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.internal.query.QueryBuilderImpl;
+import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.macro.Macro;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ public class Migrator {
     private final static AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
 
     private final static Logger LOG = LoggerFactory.getLogger(Migrator.class);
-    private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
+    private final QueryParser queryParser = Graql.withoutGraph().infer(false).parser();
     public static final int BATCH_SIZE = 25;
     public static final int ACTIVE_TASKS = 16;
     public static final int DEFAULT_MAX_RETRY = 1;
@@ -79,7 +79,7 @@ public class Migrator {
      * Register a macro to use in templating
      */
     public Migrator registerMacro(Macro macro){
-        queryBuilder.registerMacro(macro);
+        queryParser.registerMacro(macro);
         return this;
     }
 
@@ -155,7 +155,7 @@ public class Migrator {
      */
     protected Stream<Query> template(String template, Map<String, Object> data){
         try {
-            return queryBuilder.parseTemplate(template, data);
+            return queryParser.parseTemplate(template, data);
         } catch (GraqlSyntaxException e){
             LOG.warn("Query not sent to server: " + e.getMessage());
         }

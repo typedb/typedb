@@ -31,6 +31,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
+import ai.grakn.graql.internal.template.TemplateParser;
+import ai.grakn.graql.macro.Macro;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -54,6 +56,7 @@ import java.util.stream.Stream;
 public class QueryParserImpl implements QueryParser {
 
     private final QueryBuilder queryBuilder;
+    private final TemplateParser templateParser = TemplateParser.create();
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
 
     public static final ImmutableBiMap<String, AttributeType.DataType> DATA_TYPES = ImmutableBiMap.of(
@@ -103,6 +106,11 @@ public class QueryParserImpl implements QueryParser {
     }
 
     @Override
+    public void registerMacro(Macro macro) {
+        templateParser.registerMacro(macro);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T extends Query<?>> T parseQuery(String queryString) {
         // We can't be sure the returned query type is correct - even at runtime(!) because Java erases generics.
@@ -140,6 +148,11 @@ public class QueryParserImpl implements QueryParser {
     @Override
     public Pattern parsePattern(String patternString){
         return parseQueryFragment(GraqlParser::pattern, QueryVisitor::visitPattern, patternString, getLexer(patternString));
+    }
+
+    @Override
+    public <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data) {
+        return parseList(templateParser.parseTemplate(template, data));
     }
 
     /**

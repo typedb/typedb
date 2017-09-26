@@ -176,8 +176,7 @@ public class SampleKBLoader {
         try {
             File graql = new File(file);
 
-            graph.graql()
-                    .parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(Collectors.joining("\n")))
+            graph.graql().parser().parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(Collectors.joining("\n")))
                     .forEach(Query::execute);
         } catch (IOException |InvalidKBException e){
             throw new RuntimeException(e);
