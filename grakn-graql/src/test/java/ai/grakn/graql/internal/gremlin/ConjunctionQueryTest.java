@@ -157,7 +157,7 @@ public class ConjunctionQueryTest {
     }
 
     private Matcher<Pattern> usesResourceIndex(Var varName, Object value) {
-        Fragment resourceIndexFragment = Fragments.resourceIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
+        Fragment resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<VarPatternAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();

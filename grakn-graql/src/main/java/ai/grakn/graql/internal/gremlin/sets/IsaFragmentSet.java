@@ -23,39 +23,35 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
+ * @see EquivalentFragmentSets#isa(VarProperty, Var, Var, boolean)
+ *
  * @author Felix Chapman
  */
-class IsaFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class IsaFragmentSet extends EquivalentFragmentSet {
 
-    private final VarProperty varProperty;
-    private final Var instance;
-    private final Var type;
-    private final boolean mayHaveEdgeInstances;
-
-    IsaFragmentSet(VarProperty varProperty, Var instance, Var type, boolean mayHaveEdgeInstances) {
-        super(
-                Fragments.outIsa(varProperty, instance, type),
-                Fragments.inIsa(varProperty, type, instance, mayHaveEdgeInstances)
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(
+                Fragments.outIsa(varProperty(), instance(), type()),
+                Fragments.inIsa(varProperty(), type(), instance(), mayHaveEdgeInstances())
         );
-        this.varProperty = varProperty;
-        this.instance = instance;
-        this.type = type;
-        this.mayHaveEdgeInstances = mayHaveEdgeInstances;
     }
 
-    Var instance() {
-        return instance;
-    }
-
-    Var type() {
-        return type;
-    }
+    abstract Var instance();
+    abstract Var type();
+    abstract boolean mayHaveEdgeInstances();
 
     /**
      * We can skip the mid-traversal check for edge instances in the following case:
@@ -70,7 +66,7 @@ class IsaFragmentSet extends EquivalentFragmentSet {
         Iterable<IsaFragmentSet> isaSets = fragmentSetOfType(IsaFragmentSet.class, fragments)::iterator;
 
         for (IsaFragmentSet isaSet : isaSets) {
-            if (!isaSet.mayHaveEdgeInstances) continue;
+            if (!isaSet.mayHaveEdgeInstances()) continue;
 
             LabelFragmentSet labelSet = labelOf(isaSet.type(), fragments);
 
@@ -82,7 +78,7 @@ class IsaFragmentSet extends EquivalentFragmentSet {
 
             if (!mayHaveEdgeInstances) {
                 fragments.remove(isaSet);
-                fragments.add(new IsaFragmentSet(isaSet.varProperty, isaSet.instance, isaSet.type, false));
+                fragments.add(EquivalentFragmentSets.isa(isaSet.varProperty(), isaSet.instance(), isaSet.type(), false));
                 return true;
             }
         }

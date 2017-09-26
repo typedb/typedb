@@ -22,15 +22,30 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
+ * @see EquivalentFragmentSets#plays(VarProperty, Var, Var, boolean)
+ *
  * @author Felix Chapman
  */
-class PlaysFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class PlaysFragmentSet extends EquivalentFragmentSet {
 
-    PlaysFragmentSet(VarProperty varProperty, Var type, Var roleType, boolean required) {
-        super(Fragments.outPlays(varProperty, type, roleType, required),
-                Fragments.inPlays(varProperty, roleType, type, required));
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(
+                Fragments.outPlays(varProperty(), type(), role(), required()),
+                Fragments.inPlays(varProperty(), role(), type(), required())
+        );
     }
+
+    abstract Var type();
+    abstract Var role();
+    abstract boolean required();
 }
