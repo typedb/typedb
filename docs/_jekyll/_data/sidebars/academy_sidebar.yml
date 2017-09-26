@@ -2,29 +2,22 @@
 
 entries:
 - title: Sidebar
-  product: Academy
-  folders:
+  product: Grakn Academy
 
-  - title: Get Started
+
+  folders:
+  - title: 1. Welcome to the Academy
     output: web
     folderitems:
-      - title: Home
+      - title: What is Grakn
         output: web
-        url: /index.html
-      - title: Setup Guide
+        url: /academy/grakn-intro.html
+      - title: Academy Setup
         output: web
-        url: /documentation/get-started/setup-guide.html
-      - title: Quickstart Tutorial
-        output: web
-        url: /documentation/get-started/quickstart-tutorial.html
-  - title: Grakn Fundamentals
-    output: web
-    folderitems:
-      - title: Grakn Knowledge Model
-        output: web
-        url: /documentation/the-fundamentals/grakn-knowledge-model.html
+        url: /academy/setup.html
+
 
   items:
-  - title: Documentation
+  - title: Documentation Portal
     output: web
     url: /index.html

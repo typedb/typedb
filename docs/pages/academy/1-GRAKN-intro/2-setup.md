@@ -1,10 +1,10 @@
 ---
-title: Grakn Academy
+title: Setting up the academy
 keywords: contributors, developers
 last_updated: September 2017
 tags: [getting-started]
 sidebar: academy_sidebar
-permalink: ./academy/index.html
+permalink: ./academy/setup.html
 folder: overview
 toc: false
 ---

@@ -1,10 +1,10 @@
 ---
-title: Grakn Academy
+title: Introduction to Grakn
 keywords: contributors, developers
 last_updated: September 2017
 tags: [getting-started]
 sidebar: academy_sidebar
-permalink: ./academy/index.html
+permalink: ./academy/grakn-intro.html
 folder: overview
 toc: false
 ---
