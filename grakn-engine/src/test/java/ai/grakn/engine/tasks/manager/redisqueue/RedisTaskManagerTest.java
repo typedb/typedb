@@ -131,14 +131,14 @@ public class RedisTaskManagerTest {
     public void whenTaskFails_EnsureStackTraceIsReturned(){
         RedisTaskStorage taskStorage = taskManager.storage();
 
-        //Add state to store
-        TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), TaskState.Priority.LOW);
-        taskStorage.newState(state);
-
-        //Fail it
+        //Add failed task
         String reason = "The state started smelling funny";
+        TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), TaskState.Priority.LOW);
         state.markFailed(reason);
-        taskStorage.newState(state);
+
+        TaskConfiguration config = testConfig(state.getId());
+
+        taskManager.runTask(state, config);
 
         //Get the task state
         TaskState foundState = taskStorage.getState(state.getId());

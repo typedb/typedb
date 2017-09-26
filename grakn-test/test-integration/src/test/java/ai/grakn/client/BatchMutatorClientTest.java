@@ -57,11 +57,25 @@ public class BatchMutatorClientTest {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.singleQueueServer();
 
     @Before
     public void setupSession(){
         this.session = engine.sessionWithNewKeyspace();
+    }
+
+    @Test
+    public void whenValidationErrorOccurs_CorrectExceptionIsReturned(){
+        BatchMutatorClient loader = loader();
+
+        InsertQuery insertQuery = insert(
+                var("x").isa("name_tag"),
+                var("y").isa("name_tag"),
+                var().isa("some-relationship").rel("some-role", "x").rel("some-role", "y"));
+
+        loader.add(insertQuery);
+
+        loader.waitToFinish();
     }
 
     @Test
