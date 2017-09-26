@@ -22,13 +22,14 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
+
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nullable;
 
 /**
  * <p>
@@ -39,20 +40,31 @@ import javax.annotation.Nullable;
  * @author Denis Lobanov, alexandraorth
  */
 public class TaskStateInMemoryStore implements TaskStateStorage {
-    private final Map<TaskId, TaskState> storage;
+
+    private final Map<TaskId, TaskState> storage = new ConcurrentHashMap<>();
+    private final Set<TaskId> finishedTasks = ConcurrentHashMap.newKeySet();
+
+    private static final int MAX_FINISHED_TASKS = 10_000;
 
     public TaskStateInMemoryStore() {
-        storage = new ConcurrentHashMap<>();
     }
 
     @Override
     public TaskId newState(TaskState state) {
-        storage.put(state.getId(), state.copy());
+        updateState(state);
         return state.getId();
     }
 
     @Override
     public Boolean updateState(TaskState state) {
+        // Empty storage of any finished tasks to avoid ever-increasing memory usage
+        if (state.getStatus() == TaskStatus.COMPLETED || state.getStatus() == TaskStatus.FAILED) {
+            finishedTasks.add(state.getId());
+            if (finishedTasks.size() > MAX_FINISHED_TASKS) {
+                clearCompletedTasks();
+            }
+        }
+
         storage.put(state.getId(), state.copy());
         return true;
     }
@@ -117,5 +129,14 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
     @Override
     public void clear() {
         storage.clear();
+        finishedTasks.clear();
+    }
+
+    private void clearCompletedTasks() {
+        for (TaskId taskId : finishedTasks) {
+            storage.remove(taskId);
+        }
+
+        finishedTasks.clear();
     }
 }
