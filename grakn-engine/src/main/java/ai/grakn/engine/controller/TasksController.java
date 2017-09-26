@@ -125,8 +125,6 @@ public class TasksController {
 
         spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
-        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("grakn-task-controller-%d").build();
         this.executor = executor;
     }
 
