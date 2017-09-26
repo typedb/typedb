@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
@@ -33,6 +34,8 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragme
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
+ * @see EquivalentFragmentSets#isa(VarProperty, Var, Var, boolean)
+ *
  * @author Felix Chapman
  */
 @AutoValue

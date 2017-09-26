@@ -23,6 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
@@ -36,6 +37,8 @@ import java.util.Set;
 import static java.util.stream.Collectors.toSet;
 
 /**
+ * @see EquivalentFragmentSets#label(VarProperty, Var, ImmutableSet)
+ *
  * @author Felix Chapman
  */
 @AutoValue
@@ -47,7 +50,6 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
     }
 
     abstract Var var();
-
     abstract ImmutableSet<Label> labels();
 
     /**

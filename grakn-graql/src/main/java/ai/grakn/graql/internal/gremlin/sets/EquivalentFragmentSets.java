@@ -23,6 +23,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
@@ -43,7 +46,7 @@ public class EquivalentFragmentSets {
 
     private static final ImmutableCollection<FragmentSetOptimisation> OPTIMISATIONS = ImmutableSet.of(
             RolePlayerFragmentSet.ROLE_OPTIMISATION,
-            ResourceIndexFragmentSet.RESOURCE_INDEX_OPTIMISATION,
+            AttributeIndexFragmentSet.ATTRIBUTE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
             LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
             SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION,
@@ -53,16 +56,20 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a type whose instances play a role.
      *
-     * @param type     a type variable label
-     * @param roleType a role type variable label
+     * @param type a type variable label
+     * @param role a role variable label
      * @param required whether the plays must be constrained to be "required"
      */
-    public static EquivalentFragmentSet plays(VarProperty varProperty, Var type, Var roleType, boolean required) {
-        return new AutoValue_PlaysFragmentSet(varProperty, type, roleType, required);
+    public static EquivalentFragmentSet plays(VarProperty varProperty, Var type, Var role, boolean required) {
+        return new AutoValue_PlaysFragmentSet(varProperty, type, role, required);
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a {@link ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edge between two role-players.
+     * Describes the edge connecting a {@link Relationship} to a role-player.
+     * <p>
+     * Can be constrained with information about the possible {@link Role}s or {@link RelationshipType}s.
+     *
+     * @author Felix Chapman
      */
     public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role) {
         return new AutoValue_RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, null, null);
@@ -78,8 +85,8 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation type which involves a role.
      */
-    public static EquivalentFragmentSet relates(VarProperty varProperty, Var relationType, Var roleType) {
-        return new AutoValue_RelatesFragmentSet(varProperty, relationType, roleType);
+    public static EquivalentFragmentSet relates(VarProperty varProperty, Var relationType, Var role) {
+        return new AutoValue_RelatesFragmentSet(varProperty, relationType, role);
     }
 
     /**
@@ -149,7 +156,7 @@ public class EquivalentFragmentSets {
 
     /**
      * Modify the given collection of {@link EquivalentFragmentSet} to introduce certain optimisations, such as the
-     * {@link ResourceIndexFragmentSet}.
+     * {@link AttributeIndexFragmentSet}.
      * <p>
      * This involves substituting various {@link EquivalentFragmentSet} with other {@link EquivalentFragmentSet}.
      */

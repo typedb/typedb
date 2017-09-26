@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
@@ -29,6 +30,8 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 /**
+ * @see EquivalentFragmentSets#plays(VarProperty, Var, Var, boolean)
+ *
  * @author Felix Chapman
  */
 @AutoValue
@@ -43,8 +46,6 @@ abstract class PlaysFragmentSet extends EquivalentFragmentSet {
     }
 
     abstract Var type();
-
     abstract Var role();
-
     abstract boolean required();
 }

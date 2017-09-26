@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import com.google.auto.value.AutoValue;
@@ -30,6 +31,8 @@ import java.util.Set;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.isAbstract;
 
 /**
+ * @see EquivalentFragmentSets#isAbstract(VarProperty, Var)
+ *
  * @author Felix Chapman
  */
 @AutoValue

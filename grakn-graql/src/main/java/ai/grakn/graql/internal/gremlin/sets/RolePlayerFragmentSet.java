@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
@@ -43,9 +42,7 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Describes the edge connecting a {@link Relationship} to a role-player.
- * <p>
- * Can be constrained with information about the possible {@link Role}s or {@link RelationshipType}s.
+ * @see EquivalentFragmentSets#rolePlayer(VarProperty, Var, Var, Var, Var)
  *
  * @author Felix Chapman
  */
