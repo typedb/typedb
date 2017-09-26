@@ -19,6 +19,7 @@
 package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.redisq.Redisq;
 import ai.grakn.redisq.State;
@@ -51,6 +52,7 @@ public class RedisTaskStorageTest {
 
         //Check the exception is preserved
         TaskState state = redisTaskStorage.getState(taskId);
+        assertEquals(TaskStatus.FAILED, state.status());
         assertNotNull(state.exception());
         assertEquals(myException, state.exception());
     }
