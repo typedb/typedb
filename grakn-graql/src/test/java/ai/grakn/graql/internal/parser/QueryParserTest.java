@@ -37,14 +37,18 @@ import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -57,6 +61,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
@@ -925,6 +930,27 @@ public class QueryParserTest {
     @Test
     public void regexPredicateParsesForwardSlashesCorrectly() {
         assertEquals(match(var("x").val(regex("/"))).get(), parse("match $x val /\\//; get;"));
+    }
+
+    @Test
+    public void whenParsingAQueryAndDefiningAllVars_AllVarsAreDefined() {
+        QueryParser parser = Graql.parser();
+        parser.defineAllVars(true);
+        GetQuery query = parser.parseQuery("match ($x, $y) isa foo; get;");
+
+        System.out.println(query);
+
+        Conjunction<PatternAdmin> conjunction = query.match().admin().getPattern();
+
+        Set<PatternAdmin> patterns = conjunction.getPatterns();
+
+        VarPatternAdmin pattern = Iterables.getOnlyElement(patterns).asVarPattern();
+
+        assertTrue(pattern.var().isUserDefinedName());
+
+        IsaProperty property = pattern.getProperty(IsaProperty.class).get();
+
+        assertTrue(property.type().var().isUserDefinedName());
     }
 
     private static void assertParseEquivalence(String query) {

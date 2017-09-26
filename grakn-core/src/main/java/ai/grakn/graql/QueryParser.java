@@ -78,4 +78,17 @@ public interface QueryParser {
      * @param macro the macro to register
      */
     void registerMacro(Macro macro);
+
+    /**
+     * Set whether the parser should set all {@link Var}s as user-defined. If it does, then every variable will
+     * generate a user-defined name and be returned in results. For example:
+     * <pre>
+     *     match ($x, $y);
+     * </pre>
+     *
+     * The previous query would normally return only two concepts per result for {@code $x} and {@code $y}. However,
+     * if the flag is set it will also return a third variable with a random name representing the relation
+     * {@code $123 ($x, $y)}.
+     */
+    void defineAllVars(boolean defineAllVars);
 }

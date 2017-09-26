@@ -58,6 +58,7 @@ public class QueryParserImpl implements QueryParser {
     private final QueryBuilder queryBuilder;
     private final TemplateParser templateParser = TemplateParser.create();
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
+    private boolean defineAllVars = false;
 
     public static final ImmutableBiMap<String, AttributeType.DataType> DATA_TYPES = ImmutableBiMap.of(
             "long", AttributeType.DataType.LONG,
@@ -108,6 +109,11 @@ public class QueryParserImpl implements QueryParser {
     @Override
     public void registerMacro(Macro macro) {
         templateParser.registerMacro(macro);
+    }
+
+    @Override
+    public void defineAllVars(boolean defineAllVars) {
+        this.defineAllVars = defineAllVars;
     }
 
     @Override
@@ -203,7 +209,7 @@ public class QueryParserImpl implements QueryParser {
         ImmutableMap<String, Function<List<Object>, Aggregate>> immutableAggregates =
                 ImmutableMap.copyOf(aggregateMethods);
 
-        return new QueryVisitor(immutableAggregates, queryBuilder, false);
+        return new QueryVisitor(immutableAggregates, queryBuilder, defineAllVars);
     }
 
     // Aggregate methods that include other aggregates, such as group are not necessarily safe at runtime.
