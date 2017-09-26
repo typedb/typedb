@@ -22,6 +22,26 @@ package ai.grakn.client;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.exception.GraknBackendException;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import mjson.Json;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Duration;
+import java.time.Instant;
+
 import static ai.grakn.util.REST.Request.CONFIGURATION_PARAM;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
 import static ai.grakn.util.REST.Request.TASKS_PARAM;
@@ -30,35 +50,18 @@ import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_WAIT_PARAMETER;
+import static ai.grakn.util.REST.Response.Task.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import java.io.IOException;
 import static java.lang.String.format;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Duration;
-import java.time.Instant;
-import mjson.Json;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
-import org.apache.http.HttpResponse;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.utils.URIBuilder;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClients;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Client for interacting with tasks on engine
@@ -143,6 +146,7 @@ public class TaskClient extends Client {
                     .setTaskId(TaskId.of(responseElement.at("id").asString()))
                     .setCode(responseElement.at("code").asString())
                     .setStackTrace(responseElement.has(STACK_TRACE) ? responseElement.at(STACK_TRACE).asString() : "")
+                    .setStackTrace(responseElement.has(EXCEPTION) ? responseElement.at(EXCEPTION).asString() : "")
                     .build();
         } catch (IOException e) {
             throw GraknBackendException.engineUnavailable(host, port, e);

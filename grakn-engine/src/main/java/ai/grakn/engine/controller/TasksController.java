@@ -331,6 +331,7 @@ public class TasksController {
                 TaskState stateAfterRun = manager.storage().getState(id);
                 if (stateAfterRun != null && stateAfterRun.status().equals(FAILED)) {
                     singleTaskReturnJson.set("code", HttpStatus.SC_BAD_REQUEST);
+                    singleTaskReturnJson.set(EXCEPTION, stateAfterRun.exception());
                     singleTaskReturnJson.set(STACK_TRACE, stateAfterRun.stackTrace());
                 }
                 // TODO handle the case where the task returned is null

@@ -204,8 +204,7 @@ public class TaskState implements Serializable {
     public TaskState markFailed(String reason){
         this.status = FAILED;
         this.exception = reason;
-        //TODO: Clean this part up
-        this.stackTrace = reason;
+        this.stackTrace = "No Stack Trace Provided";
         this.statusChangeTime = now();
         return this;
     }
