@@ -26,8 +26,9 @@ import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
+import ai.grakn.graql.internal.reasoner.query.QueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.ReasonerStructuralQuery;
+import com.google.common.base.Equivalence;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -50,7 +51,8 @@ import java.util.stream.Stream;
  */
 class StructuralCache<Q extends ReasonerQueryImpl>{
 
-    private final Map<ReasonerStructuralQuery<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
+    private final Equivalence<ReasonerQueryImpl> equivalence = QueryEquivalence.StructuralEquivalence;
+    private final Map<Equivalence.Wrapper<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
 
     StructuralCache(){
         this.structCache = new HashMap<>();
@@ -61,7 +63,7 @@ class StructuralCache<Q extends ReasonerQueryImpl>{
      * @return answer stream of provided query
      */
     public Stream<Answer> get(Q query){
-        ReasonerStructuralQuery<Q> structQuery = new ReasonerStructuralQuery<>(query);
+        Equivalence.Wrapper<Q> structQuery = equivalence.wrap(query);
         GraknTx tx = query.tx();
 
         CacheEntry<Q, GraqlTraversal> match = structCache.get(structQuery);

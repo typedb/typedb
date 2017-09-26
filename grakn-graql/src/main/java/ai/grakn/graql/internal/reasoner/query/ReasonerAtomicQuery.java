@@ -48,6 +48,7 @@ import ai.grakn.graql.internal.reasoner.state.QueryState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +74,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilt
  * @author Kasper Piskorski
  *
  */
+@SuppressFBWarnings("EQ_DOESNT_OVERRIDE_EQUALS")
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private final Atom atom;
@@ -112,19 +114,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return !(obj == null || this.getClass() != obj.getClass()) && super.equals(obj);
-    }
-
-    @Override
     public String toString(){
         return getAtoms(Atom.class)
                 .map(Atomic::toString).collect(Collectors.joining(", "));
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode() + 37;
     }
 
     @Override
@@ -252,7 +244,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         answers = dCache.record(ruleHead, answers);
 
         //unify answers
-        boolean isHeadEquivalent = this.isEquivalent(ruleHead, Atomic::isAlphaEquivalent);
+        boolean isHeadEquivalent = this.isEquivalent(ruleHead);
         Set<Var> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? ruleUnifier.keySet() : ruleHead.getVarNames();
         answers = answers
                 .map(a -> a.project(queryVars))

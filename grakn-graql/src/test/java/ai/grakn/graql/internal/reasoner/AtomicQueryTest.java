@@ -35,13 +35,15 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.QueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerStructuralQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.util.Schema;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import java.util.HashSet;
@@ -870,29 +872,20 @@ public class AtomicQueryTest {
         queryEquivalence(a, b, expectation, expectation, structuralExpectation);
     }
 
-    private void structuralQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation){
-        ReasonerStructuralQuery<ReasonerAtomicQuery> sa = new ReasonerStructuralQuery<>(a);
-        ReasonerStructuralQuery<ReasonerAtomicQuery> sb = new ReasonerStructuralQuery<>(b);
-        assertEquals("Query: " + sa.toString() + " =? " + sb.toString(), sa.equals(sb), queryExpectation);
-        assertEquals("Query: " + sb.toString() + " =? " + sa.toString(), sb.equals(sa), queryExpectation);
+    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, Equivalence<ReasonerQueryImpl> equiv){
+        assertEquals("Query: " + a.toString() + " =? " + b.toString(), equiv.equivalent(a, b), queryExpectation);
+        assertEquals("Query: " + b.toString() + " =? " + a.toString(), equiv.equivalent(b, a), queryExpectation);
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
-            assertEquals(sa.toString() + " hash=? " + sb.toString(), sa.hashCode() == sb.hashCode(), true);
+            assertEquals(a.toString() + " hash=? " + b.toString(), equiv.hash(a) == equiv.hash(b), true);
         }
     }
 
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, boolean atomExpectation, boolean structuralExpectation){
-        assertEquals("Query: " + a.toString() + " =? " + b.toString(), a.equals(b), queryExpectation);
-        assertEquals("Query: " + b.toString() + " =? " + a.toString(), b.equals(a), queryExpectation);
-
-        //check hash additionally if need to be equal
-        if (queryExpectation) {
-            assertEquals(a.toString() + " hash=? " + b.toString(), a.hashCode() == b.hashCode(), true);
-        }
-
+        queryEquivalence(a, b, queryExpectation, QueryEquivalence.AlphaEquivalence);
+        queryEquivalence(a, b, structuralExpectation, QueryEquivalence.StructuralEquivalence);
         atomicEquivalence(a.getAtom(), b.getAtom(), atomExpectation);
-        structuralQueryEquivalence(a, b, structuralExpectation);
     }
 
     private void atomicEquivalence(Atomic a, Atomic b, boolean expectation){

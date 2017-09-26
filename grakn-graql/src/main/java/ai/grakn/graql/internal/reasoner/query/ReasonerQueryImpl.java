@@ -65,8 +65,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -172,39 +170,28 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        ReasonerQueryImpl a2 = (ReasonerQueryImpl) obj;
-        return this.isEquivalent(a2, Atomic::isAlphaEquivalent);
+        ReasonerQueryImpl q2 = (ReasonerQueryImpl) obj;
+        return this.isEquivalent(q2);
     }
 
     @Override
     public int hashCode() {
-        int hashCode = 1;
-        SortedSet<Integer> hashes = new TreeSet<>();
-        getAtoms().forEach(atom -> hashes.add(atom.alphaEquivalenceHashCode()));
-        for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
-        return hashCode;
+        return QueryEquivalence.AlphaEquivalence.hash(this);
     }
 
     /**
      * @param q query to be compared with
      * @return true if two queries are alpha-equivalent
      */
-    public boolean isEquivalent(ReasonerQueryImpl q, BiFunction<Atom, Atom, Boolean> equivalenceFunction) {
-        if(getAtoms().size() != q.getAtoms().size()) return false;
-        Set<Atom> atoms = getAtoms(Atom.class).collect(Collectors.toSet());
-        for (Atom atom : atoms){
-            if(!q.containsEquivalentAtom(atom, equivalenceFunction)){
-                return false;
-            }
-        }
-        return true;
+    public boolean isEquivalent(ReasonerQueryImpl q) {
+        return QueryEquivalence.AlphaEquivalence.equivalent(this, q);
     }
 
     /**
      * @param atom in question
      * @return true if query contains an equivalent atom
      */
-    private boolean containsEquivalentAtom(Atom atom, BiFunction<Atom, Atom, Boolean> equivalenceFunction) {
+    boolean containsEquivalentAtom(Atom atom, BiFunction<Atom, Atom, Boolean> equivalenceFunction) {
         return !getEquivalentAtoms(atom, equivalenceFunction).isEmpty();
     }
 
