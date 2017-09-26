@@ -1,0 +1,30 @@
+# This is your sidebar TOC. The sidebar code loops through sections here and provides the appropriate formatting.
+
+entries:
+- title: Sidebar
+  product: Academy
+  folders:
+
+  - title: Get Started
+    output: web
+    folderitems:
+      - title: Home
+        output: web
+        url: /index.html
+      - title: Setup Guide
+        output: web
+        url: /documentation/get-started/setup-guide.html
+      - title: Quickstart Tutorial
+        output: web
+        url: /documentation/get-started/quickstart-tutorial.html
+  - title: Grakn Fundamentals
+    output: web
+    folderitems:
+      - title: Grakn Knowledge Model
+        output: web
+        url: /documentation/the-fundamentals/grakn-knowledge-model.html
+
+  items:
+  - title: Documentation
+    output: web
+    url: /index.html
