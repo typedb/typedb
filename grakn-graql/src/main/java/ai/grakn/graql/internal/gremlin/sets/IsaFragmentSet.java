@@ -19,6 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
@@ -27,6 +28,9 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
+
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
  * @author Felix Chapman
@@ -37,11 +41,49 @@ abstract class IsaFragmentSet extends EquivalentFragmentSet {
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
-                Fragments.outIsa(varProperty(), instance(), type()), Fragments.inIsa(varProperty(), type(), instance())
+                Fragments.outIsa(varProperty(), instance(), type()),
+                Fragments.inIsa(varProperty(), type(), instance(), mayHaveEdgeInstances())
         );
     }
 
     abstract Var instance();
-
     abstract Var type();
+    abstract boolean mayHaveEdgeInstances();
+
+    /**
+     * We can skip the mid-traversal check for edge instances in the following case:
+     *
+     * <ol>
+     *     <li>There is an {@link IsaFragmentSet} {@code $x-[isa:with-edges]->$X}
+     *     <li>There is a {@link LabelFragmentSet} {@code $X[label:foo,bar]}
+     *     <li>The labels {@code foo} and {@code bar} are all not types that may have edge instances</li>
+     * </ol>
+     */
+    static final FragmentSetOptimisation SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION = (fragments, tx) -> {
+        Iterable<IsaFragmentSet> isaSets = fragmentSetOfType(IsaFragmentSet.class, fragments)::iterator;
+
+        for (IsaFragmentSet isaSet : isaSets) {
+            if (!isaSet.mayHaveEdgeInstances()) continue;
+
+            LabelFragmentSet labelSet = labelOf(isaSet.type(), fragments);
+
+            if (labelSet == null) continue;
+
+            boolean mayHaveEdgeInstances = labelSet.labels().stream()
+                    .map(tx::<SchemaConcept>getSchemaConcept)
+                    .anyMatch(IsaFragmentSet::mayHaveEdgeInstances);
+
+            if (!mayHaveEdgeInstances) {
+                fragments.remove(isaSet);
+                fragments.add(EquivalentFragmentSets.isa(isaSet.varProperty(), isaSet.instance(), isaSet.type(), false));
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    private static boolean mayHaveEdgeInstances(SchemaConcept concept) {
+        return concept.isRelationshipType() && concept.isImplicit();
+    }
 }

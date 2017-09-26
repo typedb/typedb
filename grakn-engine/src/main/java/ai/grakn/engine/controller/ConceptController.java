@@ -74,7 +74,7 @@ import static java.util.stream.Collectors.toList;
  *
  * @author alexandraorth
  */
-@Path("/graph")
+@Path("/kb")
 public class ConceptController {
 
     private static final int separationDegree = 1;

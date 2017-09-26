@@ -81,7 +81,7 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(
-                EquivalentFragmentSets.isa(this, start, directType()),
+                EquivalentFragmentSets.isa(this, start, directType(), true),
                 EquivalentFragmentSets.sub(this, directType(), type().var())
         );
     }

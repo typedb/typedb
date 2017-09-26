@@ -46,7 +46,8 @@ public class EquivalentFragmentSets {
             ResourceIndexFragmentSet.RESOURCE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
             LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
-            SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION
+            SubFragmentSet.SUB_TRAVERSAL_ELIMINATION_OPTIMISATION,
+            IsaFragmentSet.SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION
     );
 
     /**
@@ -91,8 +92,9 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a direct instance of a type.
      */
-    public static EquivalentFragmentSet isa(VarProperty varProperty, Var instance, Var type) {
-        return new AutoValue_IsaFragmentSet(varProperty, instance, type);
+    public static EquivalentFragmentSet isa(
+            VarProperty varProperty, Var instance, Var type, boolean mayHaveEdgeInstances) {
+        return new AutoValue_IsaFragmentSet(varProperty, instance, type, mayHaveEdgeInstances);
     }
 
     /**

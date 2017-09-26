@@ -84,7 +84,7 @@ public class RuleControllerTest {
     }
 
     @Test
-    public void getRuleFromMovieGraphShouldExecuteSuccessfully() {
+    public void getRuleFromMovieKbShouldExecuteSuccessfully() {
         String expectationRule = "expectation-rule";
 
         Response response = with()

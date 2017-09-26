@@ -54,22 +54,30 @@ abstract class InIsaFragment extends Fragment {
     @Override
     public abstract Var end();
 
+    abstract boolean mayHaveEdgeInstances();
+
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
-        GraphTraversal<Vertex, Vertex> isImplicitRelationType =
-                __.<Vertex>hasLabel(RELATIONSHIP_TYPE.name()).has(IS_IMPLICIT.name(), true);
+        GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.isVertex(traversal);
 
-        GraphTraversal<Vertex, Element> toVertexAndEdgeInstances = Fragments.union(ImmutableSet.of(
-                toVertexInstances(__.identity()),
-                toEdgeInstances()
-        ));
+        if (mayHaveEdgeInstances()) {
+            GraphTraversal<Vertex, Vertex> isImplicitRelationType =
+                    __.<Vertex>hasLabel(RELATIONSHIP_TYPE.name()).has(IS_IMPLICIT.name(), true);
 
-        return choose(Fragments.isVertex(traversal), isImplicitRelationType,
-                toVertexAndEdgeInstances,
-                toVertexInstances(__.identity())
-        );
+            GraphTraversal<Vertex, Element> toVertexAndEdgeInstances = Fragments.union(ImmutableSet.of(
+                    toVertexInstances(__.identity()),
+                    toEdgeInstances()
+            ));
+
+            return choose(vertexTraversal, isImplicitRelationType,
+                    toVertexAndEdgeInstances,
+                    toVertexInstances(__.identity())
+            );
+        } else {
+            return toVertexInstances(vertexTraversal);
+        }
     }
 
     /**
@@ -115,7 +123,7 @@ abstract class InIsaFragment extends Fragment {
 
     @Override
     public String name() {
-        return "<-[isa]-";
+        return String.format("<-[isa:%s]-", mayHaveEdgeInstances() ? "with-edges" : "");
     }
 
     @Override

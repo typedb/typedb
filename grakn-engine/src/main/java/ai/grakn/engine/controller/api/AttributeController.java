@@ -34,6 +34,7 @@ import spark.Service;
 
 import java.util.Optional;
 
+import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
@@ -66,16 +67,16 @@ public class AttributeController {
         LOG.debug("postAttribute - request received.");
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         Json requestBody = Json.read(mandatoryBody(request));
-        String attributeValue = requestBody.at(VALUE_JSON_FIELD).asString();
+        String attributeValue = extractJsonField(requestBody, VALUE_JSON_FIELD).asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("postAttribute - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
-            Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(graph.getAttributeType(attributeTypeLabel));
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
+            Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
             if (attributeTypeOptional.isPresent()) {
                 LOG.debug("postAttribute - attributeType " + attributeTypeLabel + " found.");
                 AttributeType attributeType = attributeTypeOptional.get();
                 Attribute attribute = attributeType.putAttribute(attributeValue);
-                graph.commit();
+                tx.commit();
 
                 String jsonConceptId = attribute.getId().getValue();
                 Object jsonAttributeValue = attribute.getValue();

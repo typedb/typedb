@@ -31,6 +31,7 @@ import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -148,8 +149,8 @@ public abstract class Fragment {
      * @param traversal the traversal to extend with this Fragment
      * @param graph     the graph to execute the traversal on
      */
-    public final GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph,
+    public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph,
             Collection<Var> vars, @Nullable Var currentVar
     ) {
         if (currentVar != null) {
@@ -196,8 +197,8 @@ public abstract class Fragment {
      * @param graph     the graph to execute the traversal on
      * @param vars
      */
-    abstract GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars);
+    abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars);
 
     /**
      * The name of the fragment
