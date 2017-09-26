@@ -336,7 +336,9 @@ A full list of statistics that can be explored is documented in the [Compute Que
 
 ### Shortest Path
 
-It is also possible to find the shortest path between two nodes in the knowledge base. The documentation for the Grakn visualiser describes how to use the [query builder tool](../grakn-dashboard/visualiser.html#analytics-queries---shortest-path), and includes a video.
+It is also possible to find the shortest path between two nodes in the knowledge base. The documentation for the Grakn
+visualiser describes how to use the [query builder tool](../grakn-dashboard/visualiser.html#shortest-path), and includes
+a video.
 
 In brief, let's select two people from the genealogy dataset:
 

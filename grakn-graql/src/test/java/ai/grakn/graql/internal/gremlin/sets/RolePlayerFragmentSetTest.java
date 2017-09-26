@@ -59,7 +59,7 @@ public class RolePlayerFragmentSetTest {
         RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, sampleKB.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                new RolePlayerFragmentSet(null, a, b, c, null, ImmutableSet.of(author, director), null),
+                RolePlayerFragmentSet.of(null, a, b, c, null, ImmutableSet.of(author, director), null),
                 authorLabelFragmentSet
         );
 
@@ -111,7 +111,7 @@ public class RolePlayerFragmentSetTest {
         RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, sampleKB.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                new RolePlayerFragmentSet(null, a, b, c, null, null, null),
+                RolePlayerFragmentSet.of(null, a, b, c, null, null, null),
                 authorLabelFragmentSet
         );
 
@@ -124,7 +124,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
-                EquivalentFragmentSets.isa(null, a, d),
+                EquivalentFragmentSets.isa(null, a, d, true),
                 EquivalentFragmentSets.label(null, d, ImmutableSet.of(magician))
         );
 
@@ -141,7 +141,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
                 EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
-                EquivalentFragmentSets.isa(null, a, d),
+                EquivalentFragmentSets.isa(null, a, d, true),
                 EquivalentFragmentSets.label(null, d, ImmutableSet.of(movie))
         );
 

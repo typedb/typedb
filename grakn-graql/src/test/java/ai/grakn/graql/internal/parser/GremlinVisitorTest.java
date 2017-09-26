@@ -17,31 +17,31 @@
  *
  */
 
-package ai.grakn.graql.internal.gremlin.sets;
+package ai.grakn.graql.internal.parser;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.junit.Test;
 
-import java.util.Set;
-
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.isAbstract;
+import static org.junit.Assert.assertEquals;
 
 /**
- * @see EquivalentFragmentSets#isAbstract(VarProperty, Var)
- *
  * @author Felix Chapman
  */
-@AutoValue
-abstract class IsAbstractFragmentSet extends EquivalentFragmentSet {
+public class GremlinVisitorTest {
 
-    @Override
-    public final Set<Fragment> fragments() {
-        return ImmutableSet.of(isAbstract(varProperty(), var()));
+    @Test
+    public void whenPrettifyingSimpleTraversal_ResultIsExpectedString() {
+        GraphTraversal<?, ?> traversal = __.V().out("knows").as("x");
+
+        String pretty = GremlinVisitor.prettify(traversal);
+
+        assertEquals(
+                "[\n" +
+                "    GraphStep(vertex, []), \n" +
+                "    VertexStep(OUT, [knows], vertex)@[x]\n" +
+                "]",
+                pretty
+        );
     }
-
-    abstract Var var();
 }

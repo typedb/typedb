@@ -36,6 +36,34 @@ task :serve => ['clean', 'build'] do
     :clean
 end
 
+task :test do
+  require 'html-proofer'
+
+  jekyll('build')
+  options = {
+      :assume_extension => true,
+      :allow_hash_href => true,
+      :url_ignore => [
+          # The favicon is not in the repo
+          '/favicon.ico',
+          # This is the address of engine by default
+          /.*:\/\/localhost:4567.*/,
+          # We generate links to the pages within our repo which may not exist yet
+          /.*github\.com\/graknlabs\/grakn\/tree\/.*/,
+          # TODO: fix links to non-existent sample projects/datasets
+          /.*github\.com\/graknlabs\/sample-(projects|datasets).*/
+      ],
+      # TODO: fix missing alt attributes
+      :alt_ignore => [/.*/],
+      # avoid SSL errors: https://github.com/gjtorikian/html-proofer/issues/376
+      :typhoeus => {
+        :ssl_verifypeer => false,
+        :ssl_verifyhost => 0
+      }
+  }
+  HTMLProofer.check_directory("./_jekyll/_site", options).run
+end
+
 # ---- Rake functions
 
 # Run Jekyll

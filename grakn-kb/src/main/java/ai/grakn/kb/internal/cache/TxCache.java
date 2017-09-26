@@ -30,6 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.structure.Casting;
@@ -164,6 +165,12 @@ public class TxCache {
     }
     public void trackForValidation(Casting casting) {
         modifiedCastings.add(casting);
+    }
+
+    public void removeFromValidation(Type type){
+        if (type.isRelationshipType()) {
+            modifiedRelationshipTypes.add(type.asRelationshipType());
+        }
     }
 
     /**

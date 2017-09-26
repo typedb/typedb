@@ -24,7 +24,10 @@ import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
@@ -35,7 +38,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
 
 /**
- * A query can use a more-efficient resource index traversal when the following criteria are met:
+ * A query can use a more-efficient attribute index traversal when the following criteria are met:
  * <p>
  * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link Var}.
  * 2. The {@link IsaFragmentSet} refers to a type {@link Var} with a {@link LabelFragmentSet}.
@@ -43,24 +46,40 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragme
  * 4. The {@link ValueFragmentSet} is an equality predicate referring to a literal value.
  * <p>
  * When all these criteria are met, the fragments representing the {@link IsaFragmentSet} and the
- * {@link ValueFragmentSet} can be replaced with a {@link ResourceIndexFragmentSet} that will use the resource index to
- * perform a unique lookup in constant time.
+ * {@link ValueFragmentSet} can be replaced with a {@link AttributeIndexFragmentSet} that will use the attribute index
+ * to perform a unique lookup in constant time.
  *
  * @author Felix Chapman
  */
-class ResourceIndexFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
 
-    private ResourceIndexFragmentSet(@Nullable VarProperty varProperty, Var start, Label label, Object value) {
-        super(Fragments.resourceIndex(varProperty, start, label, value));
+    static AttributeIndexFragmentSet of(Var var, Label label, Object value) {
+        return new AutoValue_AttributeIndexFragmentSet(var, label, value);
     }
 
-    static final FragmentSetOptimisation RESOURCE_INDEX_OPTIMISATION = (fragmentSets, graph) -> {
+    @Override
+    @Nullable
+    public final VarProperty varProperty() {
+        return null;
+    }
+
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(Fragments.attributeIndex(varProperty(), var(), label(), value()));
+    }
+
+    abstract Var var();
+    abstract Label label();
+    abstract Object value();
+
+    static final FragmentSetOptimisation ATTRIBUTE_INDEX_OPTIMISATION = (fragmentSets, graph) -> {
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
         for (ValueFragmentSet valueSet : valueSets) {
-            Var resource = valueSet.resource();
+            Var attribute = valueSet.var();
 
-            IsaFragmentSet isaSet = EquivalentFragmentSets.typeInformationOf(resource, fragmentSets);
+            IsaFragmentSet isaSet = EquivalentFragmentSets.typeInformationOf(attribute, fragmentSets);
             if (isaSet == null) continue;
 
             Var type = isaSet.type();
@@ -89,10 +108,10 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         fragmentSets.remove(isaSet);
 
         // Add a new fragment set to replace the old ones
-        Var resource = valueSet.resource();
+        Var attribute = valueSet.var();
         Object value = valueSet.predicate().equalsValue().get();
 
-        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(null, resource, label, value);
+        AttributeIndexFragmentSet indexFragmentSet = AttributeIndexFragmentSet.of(attribute, label, value);
 
         fragmentSets.add(indexFragmentSet);
     }

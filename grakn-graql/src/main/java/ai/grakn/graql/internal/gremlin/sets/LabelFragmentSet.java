@@ -27,7 +27,9 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
 import java.util.Set;
@@ -35,28 +37,20 @@ import java.util.Set;
 import static java.util.stream.Collectors.toSet;
 
 /**
+ * @see EquivalentFragmentSets#label(VarProperty, Var, ImmutableSet)
+ *
  * @author Felix Chapman
  */
-class LabelFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class LabelFragmentSet extends EquivalentFragmentSet {
 
-    private final VarProperty varProperty;
-    private final Var type;
-    private ImmutableSet<Label> labels;
-
-    LabelFragmentSet(VarProperty varProperty, Var type, ImmutableSet<Label> labels) {
-        super(Fragments.label(varProperty, type, labels));
-        this.varProperty = varProperty;
-        this.type = type;
-        this.labels = labels;
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(Fragments.label(varProperty(), var(), labels()));
     }
 
-    Var type() {
-        return type;
-    }
-
-    ImmutableSet<Label> labels() {
-        return labels;
-    }
+    abstract Var var();
+    abstract ImmutableSet<Label> labels();
 
     /**
      * Expand a {@link LabelFragmentSet} to match all sub-concepts of the single existing {@link Label}.
@@ -65,16 +59,16 @@ class LabelFragmentSet extends EquivalentFragmentSet {
      */
     @Nullable
     LabelFragmentSet tryExpandSubs(Var typeVar, GraknTx tx) {
-        if (labels.size() != 1) return null;
+        if (labels().size() != 1) return null;
 
-        Label oldLabel = labels.iterator().next();
+        Label oldLabel = Iterables.getOnlyElement(labels());
 
         SchemaConcept concept = tx.getSchemaConcept(oldLabel);
         if (concept == null) return null;
 
         Set<Label> newLabels = concept.subs().map(SchemaConcept::getLabel).collect(toSet());
 
-        return new LabelFragmentSet(varProperty, typeVar, ImmutableSet.copyOf(newLabels));
+        return new AutoValue_LabelFragmentSet(varProperty(), typeVar, ImmutableSet.copyOf(newLabels));
     }
 
     /**
@@ -95,7 +89,7 @@ class LabelFragmentSet extends EquivalentFragmentSet {
 
         for (LabelFragmentSet labelSet : labelFragments) {
 
-            boolean hasUserDefinedVar = labelSet.type().isUserDefinedName();
+            boolean hasUserDefinedVar = labelSet.var().isUserDefinedName();
             if (hasUserDefinedVar) continue;
 
             boolean existsInGraph = labelSet.labels().stream().anyMatch(label -> graph.getSchemaConcept(label) != null);
@@ -105,7 +99,7 @@ class LabelFragmentSet extends EquivalentFragmentSet {
                     .filter(set -> !set.equals(labelSet))
                     .flatMap(set -> set.fragments().stream())
                     .map(Fragment::vars)
-                    .anyMatch(vars -> vars.contains(labelSet.type()));
+                    .anyMatch(vars -> vars.contains(labelSet.var()));
 
             if (!varReferredToInOtherFragment) {
                 fragmentSets.remove(labelSet);

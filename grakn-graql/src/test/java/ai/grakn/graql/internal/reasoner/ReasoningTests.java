@@ -871,7 +871,7 @@ public class ReasoningTests {
      *                  y     - != - >  z2
      */
     @Test
-    public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates_(){
+    public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates(){
         QueryBuilder qb = testSet29.tx().graql().infer(true);
         String baseQueryString = "match " +
                 "(role1: $x, role2: $y) isa relation1;" +
@@ -897,6 +897,45 @@ public class ReasoningTests {
             assertNotEquals(ans.get("x"), ans.get("z1"));
             assertNotEquals(ans.get("y"), ans.get("z2"));
         });
+    }
+
+    @Test //tests whether shared resources are recognised correctly
+    public void inferrableRelationWithRolePlayersSharingResource(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        String queryString = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "$x has name $n;" +
+                "$y has name $n;" +
+                "get;";
+
+        String queryString2 = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "$x has name $n;" +
+                "$y has name $n;" +
+                "$n val 'a';" +
+                "get;";
+
+        String queryString3 = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "$x has name 'a';" +
+                "$y has name 'a';" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+
+        assertEquals(answers.size(), 3);
+        answers.forEach(ans -> {
+            assertEquals(ans.size(), 3);
+            assertEquals(ans.get("x"), ans.get("y"));
+        });
+
+        assertEquals(answers2.size(), 1);
+        assertEquals(answers3.size(), 1);
+        answers2.stream()
+                .map(a -> a.project(Sets.newHashSet(var("x"), var("y"))))
+                .forEach(a -> assertTrue(answers3.contains(a)));
     }
 
     @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation
