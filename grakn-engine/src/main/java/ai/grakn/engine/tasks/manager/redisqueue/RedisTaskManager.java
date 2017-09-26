@@ -60,7 +60,6 @@ import redis.clients.util.Pool;
 public class RedisTaskManager implements TaskManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedisTaskManager.class);
-    private static final int TIMEOUT_SECONDS = 5;
     private static final String QUEUE_NAME = "grakn";
 
     private final Redisq<Task> redisq;
