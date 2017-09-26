@@ -34,6 +34,7 @@ import spark.Service;
 
 import java.util.Optional;
 
+import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
@@ -66,7 +67,7 @@ public class AttributeController {
         LOG.debug("postAttribute - request received.");
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         Json requestBody = Json.read(mandatoryBody(request));
-        String attributeValue = requestBody.at(VALUE_JSON_FIELD).asString();
+        String attributeValue = extractJsonField(requestBody, VALUE_JSON_FIELD).asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("postAttribute - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {

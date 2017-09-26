@@ -131,9 +131,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             tx.admin().getMetaConcept().subs().forEach(subTypes::add);
         } else {
             subTypes = subLabels.stream().map(label -> {
-                Type type = tx.getSchemaConcept(label);
+                SchemaConcept type = tx.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
-                return type;
+                if (type.isRole() || type.isRule()) throw GraqlQueryException.roleAndRuleDoNotHaveInstance();
+                return type.asType();
             }).collect(Collectors.toSet());
 
             subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
@@ -182,9 +183,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     Set<LabelId> getRolePlayerLabelIds() {
         return subTypes.stream()
                 .filter(Concept::isRelationshipType)
-                .map(relationType -> ((RelationshipType) relationType).relates().collect(Collectors.toSet()))
-                .filter(roles -> roles.size() == 2)
-                .flatMap(roles -> roles.stream().flatMap(Role::playedByTypes))
+                .map(Concept::asRelationshipType)
+                .filter(RelationshipType::isImplicit)
+                .flatMap(RelationshipType::relates)
+                .flatMap(Role::playedByTypes)
                 .map(type -> tx.get().admin().convertToId(type.getLabel()))
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());

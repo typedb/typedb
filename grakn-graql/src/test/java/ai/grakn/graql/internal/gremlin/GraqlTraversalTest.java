@@ -90,7 +90,7 @@ public class GraqlTraversalTest {
     private static final Fragment xValue = value(null, x, eq("hello"));
     private static final Fragment yId = id(null, y, ConceptId.of("movie"));
     private static final Fragment xIsaY = outIsa(null, x, y);
-    private static final Fragment yTypeOfX = inIsa(null, y, x);
+    private static final Fragment yTypeOfX = inIsa(null, y, x, true);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
     private static GraknTx tx;
@@ -136,7 +136,7 @@ public class GraqlTraversalTest {
     @Test
     public void testComplexityConnectedVsDisconnected() {
         GraqlTraversal connectedDoubleIsa = traversal(xIsaY, outIsa(null, y, z));
-        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z, y));
+        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z, y, true));
         assertFaster(connectedDoubleIsa, disconnectedDoubleIsa);
     }
 
@@ -159,7 +159,7 @@ public class GraqlTraversalTest {
         GraqlTraversal fromInstance =
                 traversal(outIsa(null, x, xx), id(null, xx, ConceptId.of("_")), inRolePlayer(x, z), outRolePlayer(z, y));
         GraqlTraversal fromType =
-                traversal(id(null, xx, ConceptId.of("_")), inIsa(null, xx, x), inRolePlayer(x, z), outRolePlayer(z, y));
+                traversal(id(null, xx, ConceptId.of("_")), inIsa(null, xx, x, true), inRolePlayer(x, z), outRolePlayer(z, y));
         assertFaster(fromType, fromInstance);
     }
 

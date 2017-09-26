@@ -23,7 +23,8 @@ It is also possible to interact with the knowledge base using a Java API to form
 
 In the [Basic Schema documentation](../building-a-schema/basic-schema.html) we introduced a simple schema built using Graql.
 Let's see how we can build the same schema exclusively via the java API.
-First we need a knowledge base. For this example we will just use an [in-memory knowledge base](./java-setup.html#initialising-a-knowledge-base):
+First we need a knowledge base. For this example we will just use an
+[in-memory knowledge base](./java-setup.html#initialising-a-transaction-on-the-knowledge-base):
 
 ```java
 GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "myknowlegdebase").open(GraknTxType.WRITE);

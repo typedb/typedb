@@ -16,9 +16,8 @@ Graql](../developing-with-java/java-graql.html).
 
 ## Query types
 
-There are five types of queries, which are begun with the following keywords:  
-- [match](match-queries.html) - for matching patterns in the knowledge base  
-- [ask](ask-queries.html) - for querying if certain patterns exist in the knowledge base  
+There are several types of queries, which are begun with the following keywords:
+- [get](get-queries.html) - for finding patterns in the knowledge base
 - [define](define-queries.html) - for defining schema concepts
 - [insert](insert-queries.html) - for inserting data
 - [delete](delete-queries.html) - for deleting schema concepts and data

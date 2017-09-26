@@ -86,8 +86,8 @@ public class Fragments {
         return new AutoValue_OutRelatesFragment(varProperty, start, end);
     }
 
-    public static Fragment inIsa(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_InIsaFragment(varProperty, start, end);
+    public static Fragment inIsa(VarProperty varProperty, Var start, Var end, boolean mayHaveEdgeInstances) {
+        return new AutoValue_InIsaFragment(varProperty, start, end, mayHaveEdgeInstances);
     }
 
     public static Fragment outIsa(VarProperty varProperty, Var start, Var end) {
