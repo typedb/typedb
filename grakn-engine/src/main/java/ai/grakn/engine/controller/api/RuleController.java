@@ -32,6 +32,7 @@ import spark.Service;
 
 import java.util.Optional;
 
+import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
@@ -89,9 +90,9 @@ public class RuleController {
     private Json postRule(Request request, Response response) {
         LOG.debug("postRule - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
-        String ruleLabel = requestBody.at(RULE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
-        String when = requestBody.at(RULE_OBJECT_JSON_FIELD).at(WHEN_JSON_FIELD).asString();
-        String then = requestBody.at(RULE_OBJECT_JSON_FIELD).at(THEN_JSON_FIELD).asString();
+        String ruleLabel = extractJsonField(requestBody, RULE_OBJECT_JSON_FIELD, LABEL_JSON_FIELD).asString();
+        String when = extractJsonField(requestBody, RULE_OBJECT_JSON_FIELD, WHEN_JSON_FIELD).asString();
+        String then = extractJsonField(requestBody, RULE_OBJECT_JSON_FIELD, THEN_JSON_FIELD).asString();
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.debug("postRule - attempting to add a new rule " + ruleLabel + " on keyspace " + keyspace);

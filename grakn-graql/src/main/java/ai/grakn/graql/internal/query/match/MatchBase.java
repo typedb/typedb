@@ -34,8 +34,7 @@ import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.util.CommonUtil;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -89,21 +88,15 @@ public class MatchBase extends AbstractMatch {
     }
 
     /**
-     * @param vars set of variables of interest
+     * @param commonVars set of variables of interest
      * @param graph the graph to get results from
      * @param graqlTraversal gral traversal corresponding to the provided pattern
      * @return resulting answer stream
      */
-    public static Stream<Answer> streamWithTraversal(Set<Var> vars, GraknTx graph, GraqlTraversal graqlTraversal) {
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph);
+    public static Stream<Answer> streamWithTraversal(Set<Var> commonVars, GraknTx graph, GraqlTraversal graqlTraversal) {
+        Set<Var> vars = Sets.filter(commonVars, Var::isUserDefinedName);
 
-        String[] selectedNames = vars.stream().map(Var::getValue).toArray(String[]::new);
-
-        // Must provide three arguments in order to pass an array to .select
-        // If ordering, select the variable to order by as well
-        if (selectedNames.length != 0) {
-            traversal.select(selectedNames[0], selectedNames[0], selectedNames);
-        }
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph, vars);
 
         return traversal.toStream()
                 .map(elements -> makeResults(vars, graph, elements))

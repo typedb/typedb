@@ -21,6 +21,8 @@ package ai.grakn.engine.controller.util;
 import ai.grakn.exception.GraknServerException;
 import java.util.Optional;
 import java.util.function.Function;
+
+import mjson.Json;
 import spark.Request;
 
 /**
@@ -88,4 +90,28 @@ public class Requests {
 
         return parameterValue;
     }
+
+    /**
+     * Given a {@link Json} object, attempt to extract a single field as supplied,
+     * or throw a user-friendly exception clearly indicating the missing field
+     * @param json the {@link Json} object containing the field to be extracted
+     * @param fieldPath String varargs representing the path of the field to be extracted
+     * @return the extracted {@link Json} object
+     * @throws {@link GraknServerException} with a clear indication of the missing field
+     */
+    public static Json extractJsonField(Json json, String... fieldPath) {
+        Json currentField = json;
+
+        for (String field : fieldPath) {
+            Json tmp = currentField.at(field);
+            if (tmp != null) {
+                currentField = tmp;
+            } else {
+                throw GraknServerException.requestMissingBodyParameters(field);
+            }
+        }
+
+        return currentField;
+    }
+
 }

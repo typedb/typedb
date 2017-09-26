@@ -139,6 +139,16 @@ public class HALBuilderTest {
     }
 
     @Test
+    public void whenSelectRelationshipType_EnsureRolesAreEmbeddedWithNames() {
+        Json response = getHALRepresentation(genealogyKB.tx(), "match $x label parentship; offset 0; limit 5; get;");
+        String conceptId = response.asJsonList().get(0).at("_id").asString();
+        Json halObj = getHALExploreRepresentation(genealogyKB.tx(), conceptId);
+        halObj.at("_embedded").at("relates").asJsonList().forEach(role-> {
+            assertTrue(role.has("_name"));
+        });
+    }
+
+    @Test
     public void whenTriggerReasonerWithTransitiveRule_EnsureWeReceiveAValidHALResponse() {
         Json response = getHALRepresentation(academyKB.tx(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20; get;");
         // Limit to 20 results, each result will contain 3 variables, expected size 60
