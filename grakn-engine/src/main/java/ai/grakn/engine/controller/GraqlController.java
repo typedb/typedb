@@ -54,6 +54,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.ArrayList;
+import java.util.Optional;
 
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
@@ -119,11 +120,11 @@ public class GraqlController {
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
 
-        boolean defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean).orElse(false);
+        Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
         try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
             QueryParser parser = graph.graql().materialise(materialise).infer(infer).parser();
-            parser.defineAllVars(defineAllVars);
+            defineAllVars.ifPresent(parser::defineAllVars);
             Query<?> query = parser.parseQuery(queryString);
             Object resp = respond(response, acceptType, executeQuery(graph.getKeyspace(), limitEmbedded, query, acceptType));
             graph.commit();
