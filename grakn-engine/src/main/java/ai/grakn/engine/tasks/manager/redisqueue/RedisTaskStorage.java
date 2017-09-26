@@ -100,7 +100,7 @@ public class RedisTaskStorage implements TaskStateStorage {
         //Make sure exception gets transferred across
         if(state.get().getState().equals(State.FAILED)) {
             String info = state.get().getInfo();
-            if (info != null) taskState.markFailed(info);
+            taskState.markFailed(info);
         }
 
         return taskState;
