@@ -57,9 +57,10 @@ class HALExploreSchemaConcept extends HALExploreConcept {
             attachRolesPlayed(halResource, schemaConcept.asType().plays());
             // Resources types owned by the current type
             attachTypeResources(halResource, schemaConcept.asType());
-            // Subtypes
-            attachSubTypes(halResource, schemaConcept.asType());
         }
+
+        // Subtypes
+        attachSubTypes(halResource, schemaConcept);
 
         if (schemaConcept.isRelationshipType()) {
             // Role types that make up this RelationshipType
@@ -71,10 +72,10 @@ class HALExploreSchemaConcept extends HALExploreConcept {
 
     }
 
-    private void attachSubTypes(Representation halResource, Type conceptType) {
-        conceptType.subs().forEach(instance -> {
+    private void attachSubTypes(Representation halResource, SchemaConcept schemaConcept) {
+        schemaConcept.subs().forEach(instance -> {
             // let's not put the current type in its own embedded
-            if (!instance.getId().equals(conceptType.getId())) {
+            if (!instance.getId().equals(schemaConcept.getId())) {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams())
                         .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                 generateStateAndLinks(instanceResource, instance);
