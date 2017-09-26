@@ -46,6 +46,22 @@ import static org.junit.Assert.assertThat;
 
 public class ValidatorTest extends TxTestBase {
 
+
+    @Test
+    public void whenCreatingAbstractRelationshipWithSubType_EnsureValidationRuleForMatchingSubRolesIsSkipped(){
+        Role role1 = tx.putRole("my role");
+        Role role2 = tx.putRole("my role 2");
+
+        RelationshipType abstractRelationType = tx.putRelationshipType("my abstract relation type").
+                relates(role1).
+                setAbstract(true);
+        tx.putRelationshipType("my relation type").
+                sup(abstractRelationType).
+                relates(role2);
+
+        tx.commit();
+    }
+
     @Test
     public void whenCommittingGraphWhichFollowsValidationRules_Commit(){
         RelationshipType cast = tx.putRelationshipType("Cast");
