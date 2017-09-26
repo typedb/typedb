@@ -35,6 +35,7 @@ import spark.Service;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
@@ -90,8 +91,8 @@ public class RelationshipTypeController {
     private Json postRelationshipType(Request request, Response response) {
         LOG.debug("postRelationshipType - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
-        String relationshipTypeLabel = requestBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(LABEL_JSON_FIELD).asString();
-        Stream<String> roleLabels = requestBody.at(RELATIONSHIP_TYPE_OBJECT_JSON_FIELD).at(ROLE_ARRAY_JSON_FIELD).asList().stream().map(e -> (String) e);
+        String relationshipTypeLabel = extractJsonField(requestBody, RELATIONSHIP_TYPE_OBJECT_JSON_FIELD, LABEL_JSON_FIELD).asString();
+        Stream<String> roleLabels = extractJsonField(requestBody, RELATIONSHIP_TYPE_OBJECT_JSON_FIELD, ROLE_ARRAY_JSON_FIELD).asList().stream().map(e -> (String) e);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
         LOG.debug("postRelationshipType - attempting to add a new relationshipType " + relationshipTypeLabel + " on keyspace " + keyspace);
