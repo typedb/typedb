@@ -31,10 +31,18 @@ public class HttpResponse {
         this.body = body;
     }
 
+    /**
+     * Get the HTTP response status code
+     * @return HTTP response status code
+     */
     public int getStatusCode() {
         return statusCode;
     }
 
+    /**
+     * Get the body out of the HTTP response
+     * @return HTTP response body
+     */
     public String getBody() {
         return body;
     }

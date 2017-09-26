@@ -27,20 +27,29 @@ import java.util.Optional;
  * @author Ganeshwara Herawan Hananda
  */
 public class HttpBeforeFilterResult {
+    /**
+     * Returns a representation indicating that the request is allowed to pass through
+     */
     public static HttpBeforeFilterResult allowRequest() {
         return new HttpBeforeFilterResult();
     }
 
+    /**
+     * Returns a representation indicating that the request is denied
+     */
     public static HttpBeforeFilterResult denyRequest(HttpResponse response) {
         return new HttpBeforeFilterResult(response);
     }
 
-    private HttpBeforeFilterResult(HttpResponse responseIfDenied) {
-        this.responseIfDenied = Optional.of(responseIfDenied);
-    }
-
+    /**
+     * Returns an {@link Optional} containing a {@link HttpResponse} object to be sent in case the request is denied
+     */
     public Optional<HttpResponse> getResponseIfDenied() {
         return responseIfDenied;
+    }
+
+    private HttpBeforeFilterResult(HttpResponse responseIfDenied) {
+        this.responseIfDenied = Optional.of(responseIfDenied);
     }
 
     private HttpBeforeFilterResult() {

@@ -26,7 +26,6 @@ import java.util.Map;
  *
  * @author Ganeshwara Herawan Hananda
  */
-
 public class HttpRequest {
     private final Map<String, String> headers;
     private final Map<String, String> queryParameters;
@@ -38,14 +37,26 @@ public class HttpRequest {
         this.requestBody = requestBody;
     }
 
+    /**
+     * Returns the HTTP headers as a {@link Map}
+     * @return HTTP headers
+     */
     public Map<String, String> getHeaders() {
         return headers;
     }
 
+    /**
+     * Returns the query parameters as a {@link Map}
+     * @return HTTP query parameters
+     */
     public Map<String, String> getQueryParameters() {
         return queryParameters;
     }
 
+    /**
+     * Returns the request body
+     * @return HTTP request body
+     */
     public String getRequestBody() {
         return requestBody;
     }

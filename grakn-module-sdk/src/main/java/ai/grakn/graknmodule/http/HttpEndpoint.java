@@ -25,8 +25,21 @@ package ai.grakn.graknmodule.http;
  * @author Ganeshwara Herawan Hananda
  */
 public interface HttpEndpoint {
+    /**
+     * Specifies the HTTP method supported by this endpoint
+     * @return A {@link ai.grakn.graknmodule.http.HttpMethods.HTTP_METHOD}
+     */
     HttpMethods.HTTP_METHOD getHttpMethod();
+
+    /**
+     * The URL for this endpoint
+     * @return The endpoint's URL
+     */
     String getEndpoint();
 
+    /**
+     * The request handler for this endpoint
+     * @return A {@link HttpResponse}
+     */
     HttpResponse getRequestHandler(HttpRequest request);
 }
