@@ -201,7 +201,7 @@ public class QueryParser {
         ImmutableMap<String, Function<List<Object>, Aggregate>> immutableAggregates =
                 ImmutableMap.copyOf(aggregateMethods);
 
-        return new QueryVisitor(immutableAggregates, queryBuilder);
+        return new QueryVisitor(immutableAggregates, queryBuilder, false);
     }
 
     // Aggregate methods that include other aggregates, such as group are not necessarily safe at runtime.

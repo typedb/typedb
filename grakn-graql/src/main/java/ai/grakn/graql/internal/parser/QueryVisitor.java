@@ -89,11 +89,15 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
+    private final boolean makeEverythingUserDefined;
 
     QueryVisitor(
-            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder) {
+            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder,
+            boolean makeEverythingUserDefined
+    ) {
         this.aggregateMethods = aggregateMethods;
         this.queryBuilder = queryBuilder;
+        this.makeEverythingUserDefined = makeEverythingUserDefined;
     }
 
     @Override
@@ -670,7 +674,11 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private Var getVariable(Token variable) {
         // Remove '$' prefix
-        return var(variable.getText().substring(1));
+        Var var = var(variable.getText().substring(1));
+
+        if (makeEverythingUserDefined) var = var.asUserDefined();
+
+        return var;
     }
 
     private String getRegex(TerminalNode string) {
