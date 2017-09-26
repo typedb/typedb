@@ -57,7 +57,7 @@ There is an example of [SQL migration using the Java API](../examples/SQL-migrat
 
 ### OWL Migration
 
-There is an example of [OWL migration using the Java API](./OWL-migration.html) on this portal.
+There is an example of [OWL migration using the Java API](../migration/OWL-migration.html) on this portal.
 
 {% include links.html %}
 
