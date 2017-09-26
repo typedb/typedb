@@ -4,4 +4,4 @@
 set -e
 
 PACKAGE=grakn-package
-PATH="${WORKSPACE}/${PACKAGE}/bin:${PATH}"
+PATH="${WORKSPACE}/${PACKAGE}:${PATH}"
