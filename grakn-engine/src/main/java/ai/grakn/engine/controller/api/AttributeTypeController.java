@@ -24,7 +24,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.internal.parser.QueryParserImpl;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -113,7 +113,7 @@ public class AttributeTypeController {
 
     private AttributeType.DataType<?> fromString(String dataType) {
         Optional<AttributeType.DataType> fromStringOpt =
-            Optional.ofNullable(QueryParser.DATA_TYPES.get(dataType));
+            Optional.ofNullable(QueryParserImpl.DATA_TYPES.get(dataType));
 
         return fromStringOpt.orElseThrow(() ->
             GraknServerException.invalidQueryExplaination("invalid data type supplied: '" + dataType + "'")
@@ -122,7 +122,7 @@ public class AttributeTypeController {
 
     private String toString(AttributeType.DataType<?> dataType) {
         Optional<String> toStringOpt =
-            Optional.ofNullable(QueryParser.DATA_TYPES.inverse().get(dataType));
+            Optional.ofNullable(QueryParserImpl.DATA_TYPES.inverse().get(dataType));
 
         return toStringOpt.orElseThrow(() ->
             GraknServerException.invalidQueryExplaination("invalid data type supplied: '" + dataType + "'")

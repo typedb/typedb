@@ -33,7 +33,8 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.QueryParser;
+import ai.grakn.graql.internal.parser.QueryParserImpl;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
 import ai.grakn.graql.internal.query.match.MatchBase;
@@ -71,13 +72,13 @@ public class QueryBuilderImpl implements QueryBuilder {
 
     public QueryBuilderImpl() {
         this.tx = Optional.empty();
-        queryParser = QueryParser.create(this);
+        queryParser = QueryParserImpl.create(this);
         templateParser = TemplateParser.create();
     }
 
     public QueryBuilderImpl(GraknTx tx) {
         this.tx = Optional.of(tx);
-        queryParser = QueryParser.create(this);
+        queryParser = QueryParserImpl.create(this);
         templateParser = TemplateParser.create();
     }
 

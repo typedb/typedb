@@ -738,6 +738,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private AttributeType.DataType getDatatype(TerminalNode datatype) {
-        return QueryParser.DATA_TYPES.get(datatype.getText());
+        return QueryParserImpl.DATA_TYPES.get(datatype.getText());
     }
 }

@@ -26,6 +26,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
@@ -46,11 +47,11 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * Class for parsing query strings into valid queries
+ * Default implementation of {@link QueryParser}
  *
  * @author Felix Chapman
  */
-public class QueryParser {
+public class QueryParserImpl implements QueryParser {
 
     private final QueryBuilder queryBuilder;
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
@@ -67,7 +68,7 @@ public class QueryParser {
      * Create a query parser with the specified graph
      *  @param queryBuilder the QueryBuilderImpl to operate the query on
      */
-    private QueryParser(QueryBuilder queryBuilder) {
+    private QueryParserImpl(QueryBuilder queryBuilder) {
         this.queryBuilder = queryBuilder;
     }
 
@@ -77,7 +78,7 @@ public class QueryParser {
      *  @return a query parser that operates with the specified graph
      */
     public static QueryParser create(QueryBuilder queryBuilder) {
-        QueryParser parser = new QueryParser(queryBuilder);
+        QueryParserImpl parser = new QueryParserImpl(queryBuilder);
         parser.registerDefaultAggregates();
         return parser;
     }
@@ -96,15 +97,12 @@ public class QueryParser {
         });
     }
 
+    @Override
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
         aggregateMethods.put(name, aggregateMethod);
     }
 
-    /**
-     * @param queryString a string representing a query
-     * @return
-     * a query, the type will depend on the type of query.
-     */
+    @Override
     @SuppressWarnings("unchecked")
     public <T extends Query<?>> T parseQuery(String queryString) {
         // We can't be sure the returned query type is correct - even at runtime(!) because Java erases generics.
@@ -117,10 +115,7 @@ public class QueryParser {
         return (T) parseQueryFragment(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF, queryString, getLexer(queryString));
     }
 
-    /**
-     * @param queryString a string representing several queries
-     * @return a list of queries
-     */
+    @Override
     public <T extends Query<?>> Stream<T> parseList(String queryString) {
         GraqlLexer lexer = getLexer(queryString);
 
@@ -137,18 +132,12 @@ public class QueryParser {
         return queries.map(query -> (T) query);
     }
 
-    /**
-     * @param patternsString a string representing a list of patterns
-     * @return a list of patterns
-     */
+    @Override
     public List<Pattern> parsePatterns(String patternsString) {
         return parseQueryFragment(GraqlParser::patterns, QueryVisitor::visitPatterns, patternsString, getLexer(patternsString));
     }
 
-    /**
-     * @param patternString a string representing a pattern
-     * @return a pattern
-     */
+    @Override
     public Pattern parsePattern(String patternString){
         return parseQueryFragment(GraqlParser::pattern, QueryVisitor::visitPattern, patternString, getLexer(patternString));
     }
