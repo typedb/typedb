@@ -23,6 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
@@ -187,6 +188,9 @@ public class BatchMutatorClientTest {
     private BatchMutatorClient loader(){
         // load schema
         try(GraknTx graph = session.open(GraknTxType.WRITE)){
+            Role role = graph.putRole("another amazing role");
+            graph.putRelationshipType("Another amazing Relationship").relates(role);
+
             EntityType nameTag = graph.putEntityType("name_tag");
             AttributeType<String> nameTagString = graph.putAttributeType("name_tag_string", AttributeType.DataType.STRING);
             AttributeType<String> nameTagId = graph.putAttributeType("name_tag_id", AttributeType.DataType.STRING);
