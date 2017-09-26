@@ -24,12 +24,10 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
-import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -40,9 +38,7 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
@@ -61,7 +57,7 @@ public class BatchMutatorClientTest {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.singleQueueServer();
 
     @Before
     public void setupSession(){
@@ -72,12 +68,14 @@ public class BatchMutatorClientTest {
     public void whenValidationErrorOccurs_CorrectExceptionIsReturned(){
         BatchMutatorClient loader = loader();
 
-        DefineQuery defineQuery = define(label("disconnected-role").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()));
+        InsertQuery insertQuery = insert(
+                var("x").isa("name_tag"),
+                var("y").isa("name_tag"),
+                var().isa("some-relationship").rel("some-role", "x").rel("some-role", "y"));
 
-        loader.add(defineQuery);
+        loader.add(insertQuery);
 
         loader.waitToFinish();
-
     }
 
     @Test
@@ -188,8 +186,8 @@ public class BatchMutatorClientTest {
     private BatchMutatorClient loader(){
         // load schema
         try(GraknTx graph = session.open(GraknTxType.WRITE)){
-            Role role = graph.putRole("another amazing role");
-            graph.putRelationshipType("Another amazing Relationship").relates(role);
+            Role role = graph.putRole("some-role");
+            graph.putRelationshipType("some-relationship").relates(role);
 
             EntityType nameTag = graph.putEntityType("name_tag");
             AttributeType<String> nameTagString = graph.putAttributeType("name_tag_string", AttributeType.DataType.STRING);
