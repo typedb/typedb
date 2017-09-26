@@ -55,6 +55,11 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     @Override
+    public boolean isStatisticsQuery() {
+        return true;
+    }
+
+    @Override
     public boolean isReadOnly() {
         return true;
     }

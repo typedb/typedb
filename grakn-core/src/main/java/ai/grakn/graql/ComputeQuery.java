@@ -28,7 +28,6 @@ import java.util.Collection;
  * A query that triggers an analytics OLAP computation on a graph.
  *
  * @param <T> the type of result this query will return
- *
  * @author Jason Liu
  */
 public interface ComputeQuery<T> extends Query<T> {
@@ -53,6 +52,23 @@ public interface ComputeQuery<T> extends Query<T> {
      */
     @CheckReturnValue
     ComputeQuery<T> in(Collection<Label> subLabels);
+
+    /**
+     * Allow analytics query to include attributes and their relationships
+     *
+     * @return a ComputeQuery with the subLabels set
+     */
+    @CheckReturnValue
+    ComputeQuery<T> includeAttribute();
+
+    /**
+     * Returns <tt>true</tt> if this is a statistics query
+     *
+     * @return <tt>true</tt> if this is a statistics query
+     */
+    default boolean isStatisticsQuery() {
+        return false;
+    }
 
     /**
      * kill the compute query, terminate the job

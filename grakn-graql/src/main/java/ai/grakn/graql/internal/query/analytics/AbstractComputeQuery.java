@@ -62,8 +62,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
     Optional<GraknTx> tx = Optional.empty();
-    GraknComputer graknComputer = null;
-    Keyspace keySpace;
+    private GraknComputer graknComputer = null;
+    private Keyspace keySpace;
+
+    boolean includeAttribute = false;
 
     Set<Label> subLabels = new HashSet<>();
     Set<Type> subTypes = new HashSet<>();
@@ -85,6 +87,12 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     @Override
     public ComputeQuery<T> in(Collection<Label> subLabels) {
         this.subLabels = Sets.newHashSet(subLabels);
+        return this;
+    }
+
+    @Override
+    public ComputeQuery<T> includeAttribute() {
+        this.includeAttribute = true;
         return this;
     }
 
@@ -113,7 +121,6 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 });
             }
         }
-
         return Stream.of(printer.graqlString(computeResult));
     }
 
@@ -122,19 +129,29 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         keySpace = theGraph.getKeyspace();
         url = theGraph.admin().getEngineUrl();
 
+        if (this.isStatisticsQuery()) {
+            includeAttribute = true;
+        }
         getAllSubTypes(theGraph);
     }
 
     private void getAllSubTypes(GraknTx tx) {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subLabels.isEmpty()) {
-            tx.admin().getMetaConcept().subs().forEach(subTypes::add);
+            if (includeAttribute) {
+                tx.admin().getMetaConcept().subs().forEach(subTypes::add);
+            } else {
+                tx.admin().getMetaEntityType().subs().forEach(subTypes::add);
+                tx.admin().getMetaRelationType().subs().forEach(subTypes::add);
+            }
         } else {
             subTypes = subLabels.stream().map(label -> {
                 SchemaConcept type = tx.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
                 if (type.isRole() || type.isRule()) throw GraqlQueryException.roleAndRuleDoNotHaveInstance();
                 return type.asType();
+                if (type.isAttributeType() && !includeAttribute) includeAttribute = true;
+                return type;
             }).collect(Collectors.toSet());
 
             subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
@@ -199,12 +216,13 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
 
-        return tx.equals(that.tx) && subLabels.equals(that.subLabels);
+        return tx.equals(that.tx) && includeAttribute == that.includeAttribute && subLabels.equals(that.subLabels);
     }
 
     @Override
     public int hashCode() {
         int result = tx.hashCode();
+        result = 31 * result + Boolean.hashCode(includeAttribute);
         result = 31 * result + subLabels.hashCode();
         return result;
     }
