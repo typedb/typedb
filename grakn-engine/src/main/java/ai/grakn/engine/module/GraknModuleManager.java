@@ -45,23 +45,23 @@ public class GraknModuleManager {
     private static PluginManager pf4jPluginManager = new JarPluginManager();
 
     public static void initialise() {
-        String graknHomeDir = Paths.get(".").toAbsolutePath().toString();
-        LOG.info("Scanning Grakn modules directory at '" + graknHomeDir + "'");
+        String moduleDirAbsolute = Paths.get(MODULE_DIR).toAbsolutePath().toString();
+        LOG.info("Scanning Grakn modules directory at '{}'", moduleDirAbsolute);
         try {
             Stream<Path> folders = listFolders(Paths.get(MODULE_DIR));
             Stream<String> pf4jPluginIds = folders.flatMap(GraknModuleManager::scanModuleDir);
             pf4jPluginIds.forEach(GraknModuleManager::startPf4JPlugin);
         } catch (RuntimeException e) {
-            throw GraknModuleException.exception("Unable to scan module directory at '" + graknHomeDir + "'", e);
+            throw GraknModuleException.exception("Unable to scan module directory at '" + moduleDirAbsolute + "'", e);
         }
     }
 
     public static List<GraknModule> getGraknModules() {
         try {
             List<GraknModule> modules = pf4jPluginManager.getExtensions(GraknModule.class);
-            LOG.info("number of Grakn Module(s) found: " + modules.size());
+            LOG.info("Number of Grakn module(s) found: {}", modules.size());
             for (GraknModule module : modules) {
-                LOG.info("loaded the following module '" + module.getGraknModuleName() + "'");
+                LOG.info("Module '{}' loaded", module.getGraknModuleName());
             }
 
             return modules;
@@ -71,10 +71,10 @@ public class GraknModuleManager {
     }
 
     private static Stream<String> scanModuleDir(Path moduleDir) {
-        LOG.info("Scanning '" + moduleDir.getFileName() + "' for a module");
+        LOG.info("Scanning '{}' directory for a module", moduleDir.getFileName());
 
         Stream<String> pluginIds = listJarFiles(moduleDir).map(moduleJar -> {
-            LOG.info("Loading '" + moduleJar.getFileName() + "'");
+            LOG.info("Found '{}'", moduleJar.getFileName());
             try {
                return pf4jPluginManager.loadPlugin(moduleJar);
             } catch (RuntimeException e) {
@@ -86,7 +86,7 @@ public class GraknModuleManager {
     }
 
     private static void startPf4JPlugin(String pf4jPluginId) {
-        LOG.info("Starting module '" + pf4jPluginId + "'");
+        LOG.info("Starting module '{}'", pf4jPluginId);
         try {
             pf4jPluginManager.startPlugin(pf4jPluginId);
         } catch (RuntimeException e) {
