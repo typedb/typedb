@@ -26,13 +26,14 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.engine.util.ConcurrencyUtil;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
+import ai.grakn.util.ConcurrencyUtil;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -58,21 +59,18 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
+import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
+import static ai.grakn.util.REST.Request.TASK_RUN_WAIT_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.Task.CLASS_NAME;
-import static ai.grakn.util.REST.Response.Task.CREATOR;
-import static ai.grakn.util.REST.Response.Task.ENGINE_ID;
-import static ai.grakn.util.REST.Response.Task.EXCEPTION;
+import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.ID;
-import static ai.grakn.util.REST.Response.Task.INTERVAL;
-import static ai.grakn.util.REST.Response.Task.RECURRING;
-import static ai.grakn.util.REST.Response.Task.RUN_AT;
 import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static ai.grakn.util.REST.Response.Task.STATUS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
@@ -98,7 +96,7 @@ public class TasksController {
     private static final TaskState.Priority DEFAULT_TASK_PRIORITY = TaskState.Priority.LOW;
 
     private static final int MAX_THREADS = 10;
-    private static final Duration MAX_EXECUTION_TIME = Duration.ofSeconds(10);
+    private static final Duration MAX_EXECUTION_TIME = Duration.ofSeconds(30);
 
     private final TaskManager manager;
     private final ExecutorService executor;
@@ -125,7 +123,9 @@ public class TasksController {
 
         spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
-        this.executor = Executors.newFixedThreadPool(MAX_THREADS);
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("grakn-task-controller-%d").build();
+        this.executor = Executors.newFixedThreadPool(MAX_THREADS, namedThreadFactory);
     }
 
     @GET
@@ -183,7 +183,7 @@ public class TasksController {
         try {
             response.status(200);
             response.type(APPLICATION_JSON);
-            return serialiseStateFull(manager.storage().getState(TaskId.of(id)));
+            return serialiseStateSubset(manager.storage().getState(TaskId.of(id)));
         } finally {
             context.stop();
         }
@@ -210,11 +210,16 @@ public class TasksController {
             @ApiImplicitParam(name = REST.Request.TASKS_PARAM, value = "JSON Array containing an ordered list of task parameters and comfigurations.", required = true, dataType = "List", paramType = "body")
     })
     private Json createTasks(Request request, Response response) {
+
         Json requestBodyAsJson = bodyAsJson(request);
         // This covers the previous behaviour. It looks like a quirk of the testing
         // client library we are using. Consider deprecating it.
         if (requestBodyAsJson.has("value")) {
             requestBodyAsJson = requestBodyAsJson.at("value");
+        }
+        boolean wait = true;
+        if (requestBodyAsJson.has(TASK_RUN_WAIT_PARAMETER)) {
+            wait = requestBodyAsJson.at(TASK_RUN_WAIT_PARAMETER).asBoolean();
         }
         if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM)) {
             LOG.error("Malformed request body: {}", requestBodyAsJson);
@@ -229,7 +234,7 @@ public class TasksController {
         final Timer.Context context = createTasksTimer.time();
         try {
             List<TaskStateWithConfiguration> taskStates = parseTasks(taskJsonList);
-            CompletableFuture<List<Json>> completableFuture = saveTasksInQueue(taskStates);
+            CompletableFuture<List<Json>> completableFuture = executeTasks(taskStates, wait);
             try {
                 return buildResponseForTasks(response, responseJson, completableFuture);
             } catch (TimeoutException | InterruptedException e) {
@@ -287,12 +292,12 @@ public class TasksController {
         return taskStates;
     }
 
-    private CompletableFuture<List<Json>> saveTasksInQueue(
-            List<TaskStateWithConfiguration> taskStates) {
+    private CompletableFuture<List<Json>> executeTasks(
+            List<TaskStateWithConfiguration> taskStates, boolean wait) {
         // Put the tasks in a persistent queue
         List<CompletableFuture<Json>> futures = taskStates.stream()
                 .map(taskStateWithConfiguration -> CompletableFuture
-                        .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration), executor))
+                        .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration, wait), executor))
                 .collect(toList());
         return ConcurrencyUtil.all(futures);
     }
@@ -313,12 +318,29 @@ public class TasksController {
         }
     }
 
-    private Json addTaskToManager(TaskStateWithConfiguration taskState) {
+    // TODO: move away from JSON and create API class
+    private Json addTaskToManager(TaskStateWithConfiguration taskState, boolean wait) {
         Json singleTaskReturnJson = Json.object().set("index", taskState.getIndex());
         try {
-            manager.addTask(taskState.getTaskState(), TaskConfiguration.of(taskState.getConfiguration()));
-            singleTaskReturnJson.set("id", taskState.getTaskState().getId().getValue());
+            TaskState state = taskState.getTaskState();
+            TaskId id = state.getId();
             singleTaskReturnJson.set("code", HttpStatus.SC_OK);
+            if (wait) {
+                LOG.debug("Running task {}", state.getId());
+                manager.runTask(state, TaskConfiguration.of(taskState.getConfiguration()));
+                TaskState stateAfterRun = manager.storage().getState(id);
+                if (stateAfterRun != null && stateAfterRun.status().equals(FAILED)) {
+                    singleTaskReturnJson.set("code", HttpStatus.SC_BAD_REQUEST);
+                    singleTaskReturnJson.set(EXCEPTION, stateAfterRun.exception());
+                    singleTaskReturnJson.set(STACK_TRACE, stateAfterRun.stackTrace());
+                }
+                // TODO handle the case where the task returned is null
+            } else {
+                LOG.debug("Adding to queue task {}", state.getId());
+                manager.addTask(state, TaskConfiguration.of(taskState.getConfiguration()));
+                singleTaskReturnJson.set("code", HttpStatus.SC_OK);
+            }
+            singleTaskReturnJson.set("id", id.getValue());
         } catch (Exception e) {
             LOG.error("Server error while adding the task", e);
             singleTaskReturnJson.set("code", HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -422,18 +444,7 @@ public class TasksController {
         return Json.object()
                 .set(ID, state.getId().getValue())
                 .set(STATUS, state.status().name())
-                .set(CREATOR, state.creator())
-                .set(CLASS_NAME, state.taskClass().getName())
-                .set(RUN_AT, state.schedule().runAt().toEpochMilli())
-                .set(RECURRING, state.schedule().isRecurring());
-    }
-
-    private Json serialiseStateFull(TaskState state) {
-        return serialiseStateSubset(state)
-                .set(INTERVAL, state.schedule().interval().map(Duration::toMillis).orElse(null))
-                .set(EXCEPTION, state.exception())
-                .set(STACK_TRACE, state.stackTrace())
-                .set(ENGINE_ID, state.engineID() != null ? state.engineID().value() : null);
+                .set(EXCEPTION, state.exception());
     }
 
     private static class TaskStateWithConfiguration {

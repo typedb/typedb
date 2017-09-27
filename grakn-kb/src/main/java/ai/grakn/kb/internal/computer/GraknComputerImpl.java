@@ -76,14 +76,14 @@ public class GraknComputerImpl implements GraknComputer {
 
     @Override
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
-                                  @Nullable Set<LabelId> types, Boolean includesShortcut) {
+                                  @Nullable Set<LabelId> types, Boolean includesRolePlayerEdges) {
         try {
             if (program != null) graphComputer = getGraphComputer().program(program);
             if (mapReduce != null) graphComputer = graphComputer.mapReduce(mapReduce);
-            applyFilters(types, includesShortcut);
+            applyFilters(types, includesRolePlayerEdges);
             return graphComputer.submit().get();
         } catch (InterruptedException | ExecutionException e) {
-            throw asRuntimeException(e);
+            throw asRuntimeException(e.getCause());
         }
     }
 
@@ -125,16 +125,16 @@ public class GraknComputerImpl implements GraknComputer {
         return graph.compute(this.graphComputerClass);
     }
 
-    private void applyFilters(Set<LabelId> types, boolean includesShortcut) {
+    private void applyFilters(Set<LabelId> types, boolean includesRolePlayerEdge) {
         if (types == null || types.isEmpty()) return;
         Set<Integer> labelIds = types.stream().map(LabelId::getValue).collect(Collectors.toSet());
 
         Traversal<Vertex, Vertex> vertexFilter =
                 __.has(Schema.VertexProperty.THING_TYPE_LABEL_ID.name(), P.within(labelIds));
 
-        Traversal<Vertex, Edge> edgeFilter = includesShortcut ?
+        Traversal<Vertex, Edge> edgeFilter = includesRolePlayerEdge ?
                 __.union(
-                        __.bothE(Schema.EdgeLabel.SHORTCUT.getLabel()),
+                        __.bothE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()),
                         __.bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
                                 .has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(labelIds))) :
                 __.union(

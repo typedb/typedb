@@ -86,8 +86,8 @@ class AnswerState extends ResolutionState {
     private Answer getMaterialisedAnswer(ReasonerAtomicQuery query, InferenceRule rule, QueryCache<ReasonerAtomicQuery> cache){
         Answer ans = getSubstitution();
         Unifier unifier = getUnifier();
-        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query).addSubstitution(ans);
-        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead()).addSubstitution(ans);
+        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, ans);
+        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), ans);
 
         Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()?
                 unifier.keySet() :
@@ -96,14 +96,14 @@ class AnswerState extends ResolutionState {
         boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
 
         //check if the specific answer to ruleHead already in cache/db
-        Answer headAnswer = ruleHead
-                .lookupAnswer(cache, ans)
+        Answer headAnswer = cache
+                .getAnswer(ruleHead, ans)
                 .project(queryVars)
                 .unify(unifier);
 
         //if not and query different than rule head do the same with the query
         Answer queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
-                subbedQuery.lookupAnswer(cache, ans) :
+                cache.getAnswer(query, ans) :
                 new QueryAnswer();
 
         //ensure no duplicates created - only materialise answer if it doesn't exist in the db

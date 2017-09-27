@@ -21,21 +21,13 @@ package ai.grakn.test;
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import ai.grakn.engine.util.SimpleURI;
-import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.startRedis;
-import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
@@ -43,6 +35,15 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 import javax.annotation.Nullable;
+
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static ai.grakn.test.GraknTestEngineSetup.startEngine;
+import static ai.grakn.test.GraknTestEngineSetup.startRedis;
+import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
+import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
+import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 
 
 /**
@@ -66,16 +67,16 @@ public class EngineContext extends ExternalResource {
         this.startStandaloneEngine = startStandaloneEngine;
     }
 
-    public static EngineContext startNoQueue(){
+    public static EngineContext noQueue(){
         return new EngineContext( false, false);
     }
 
-    public static EngineContext startSingleQueueServer(){
+    public static EngineContext singleQueueServer(){
         return new EngineContext( true, false);
     }
 
-    public static EngineContext startInMemoryServer(){
-        return new EngineContext( false, true);
+    public static EngineContext inMemoryServer(){
+        return new EngineContext( true, true);
     }
 
     public int port() {
@@ -113,14 +114,13 @@ public class EngineContext extends ExternalResource {
         return config.uri();
     }
 
-    //TODO Rename this method to "sessionWithNewKeyspace"
-    public GraknSession factoryWithNewKeyspace() {
+    public GraknSession sessionWithNewKeyspace() {
         return Grakn.session(uri(), randomKeyspace());
     }
 
     @Override
     public void before() throws Throwable {
-        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");        
+        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");
         if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
             return;
         }

@@ -21,9 +21,9 @@ package ai.grakn.graql.internal.reasoner.utils;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
@@ -199,7 +199,7 @@ public class ReasonerUtils {
     public static Set<SchemaConcept> getSupers(SchemaConcept schemaConcept){
         Set<SchemaConcept> superTypes = new HashSet<>();
         SchemaConcept superType = schemaConcept.sup();
-        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superTypes.add(superType);
             superType = superType.sup();
         }
@@ -227,7 +227,7 @@ public class ReasonerUtils {
      */
     public static Type getTopType(Type type){
         Type superType = type;
-        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superType = superType.sup();
         }
         return superType;
@@ -273,7 +273,7 @@ public class ReasonerUtils {
     }
 
     /**
-     * compute the map of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
+     * compute the map of compatible relation types for given types (intersection of allowed sets of relationship types for each entry type)
      * and compatible role types
      * @param types for which the set of compatible relation types is to be computed
      //* @param typeMapper function mapping a type to the set of compatible relation types
@@ -322,49 +322,52 @@ public class ReasonerUtils {
     }
 
     /**
-     * create transitive rule R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
-     * @param relType transitive relation type
-     * @param fromRoleLabel  from directional role type type label
-     * @param toRoleLabel to directional role type type label
-     * @param graph graph for the rule to be inserted
-     * @return rule instance
+     * create transitive {@link Rule} R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
+     * @param label the {@link Label} of the new {@link Rule} to create
+     * @param relType transitive {@link RelationshipType}
+     * @param fromRoleLabel  from directional {@link Role} {@link Label}
+     * @param toRoleLabel to directional {@link Role} {@link Label}
+     * @param tx for the {@link Rule} to be inserted
+     * @return the new {@link Rule}
      */
-    public static Rule createTransitiveRule(RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx graph){
+    public static Rule createTransitiveRule(String label, RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx tx){
         if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPatternAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
         VarPatternAdmin endVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "z").rel(Graql.label(toRoleLabel), "y").admin();
         VarPatternAdmin headVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
-        return graph.admin().getMetaRuleInference().putRule(body, headVar);
+        return tx.putRule(label, body, headVar);
     }
 
     /**
      * create reflexive rule R(from: X, to: X) :- R(from: X,to: Y)
-     * @param relType reflexive relation type
-     * @param fromRoleLabel from directional role type type label
-     * @param toRoleLabel to directional role type type label
-     * @param graph graph for the rule to be inserted
-     * @return rule instance
+     * @param label the {@link Label} of the new {@link Rule} to create
+     * @param relType reflexive {@link RelationshipType}
+     * @param fromRoleLabel from directional {@link Role} {@link Label}
+     * @param toRoleLabel to directional {@link Role} {@link Label}
+     * @param tx for the {@link Rule} to be inserted
+     * @return the new {@link Rule}
      */
-    public static Rule createReflexiveRule(RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx graph){
+    public static Rule createReflexiveRule(String label, RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx tx){
         if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
         VarPattern head = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "x");
-        return graph.admin().getMetaRuleInference().putRule(body, head);
+        return tx.putRule(label, body, head);
     }
 
     /**
      * creates rule parent :- child
-     * @param parent relation type of parent
-     * @param child relation type of child
-     * @param roleMappings map of corresponding role type type names
-     * @param graph graph for the rule to be inserted
-     * @return rule instance
+     * @param label the {@link Label} of the new {@link Rule} to create
+     * @param parent {@link RelationshipType} of parent
+     * @param child {@link RelationshipType} of child
+     * @param roleMappings map of corresponding {@link Role} names
+     * @param tx for the {@link Rule} to be inserted
+     * @return the new {@link Rule}
      */
-    public static Rule createSubPropertyRule(RelationshipType parent, RelationshipType child, Map<Label, Label> roleMappings,
-                                             GraknTx graph){
+    public static Rule createSubPropertyRule(String label, RelationshipType parent, RelationshipType child, Map<Label, Label> roleMappings,
+                                             GraknTx tx){
         final long parentArity = parent.relates().count();
         final long childArity = child.relates().count();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
@@ -378,20 +381,21 @@ public class ReasonerUtils {
             parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
             childVar = childVar.rel(Graql.label(entry.getValue()), varName);
         }
-        return graph.admin().getMetaRuleInference().putRule(childVar, parentVar);
+        return tx.putRule(label, childVar, parentVar);
     }
 
     /**
      * creates rule R(fromRole: x, toRole: xm) :- R1(fromRole: x, ...), , R2, ... , Rn(..., toRole: xm)
-     * @param relation head relation
-     * @param fromRoleLabel specifies the role directionality of the head relation
-     * @param toRoleLabel specifies the role directionality of the head relation
-     * @param chain map containing ordered relation with their corresponding role mappings
-     * @param graph graph for the rule to be inserted
-     * @return rule instance
+     * @param label the {@link Label} of the new {@link Rule} to create
+     * @param relation head {@link RelationshipType}
+     * @param fromRoleLabel specifies the {@link Role} directionality of the head {@link RelationshipType}
+     * @param toRoleLabel specifies the {@link Role} directionality of the head {@link RelationshipType}
+     * @param chain map containing ordered relation with their corresponding {@link Role} mappings
+     * @param tx for the {@link Rule} to be inserted
+     * @return the new {@link Rule}
      */
-    public static Rule createPropertyChainRule(RelationshipType relation, Label fromRoleLabel, Label toRoleLabel,
-                                               LinkedHashMap<RelationshipType, Pair<Label, Label>> chain, GraknTx graph){
+    public static Rule createPropertyChainRule(String label, RelationshipType relation, Label fromRoleLabel, Label toRoleLabel,
+                                               LinkedHashMap<RelationshipType, Pair<Label, Label>> chain, GraknTx tx){
         Stack<Var> varNames = new Stack<>();
         varNames.push(var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();
@@ -405,7 +409,7 @@ public class ReasonerUtils {
         });
 
         VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), varNames.peek());
-        return graph.admin().getMetaRuleInference().putRule(Patterns.conjunction(bodyVars), headVar);
+        return tx.putRule(label, Patterns.conjunction(bodyVars), headVar);
     }
 
     /**
@@ -416,7 +420,7 @@ public class ReasonerUtils {
     public static boolean checkCompatible(SchemaConcept parent, SchemaConcept child) {
         if(Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
         SchemaConcept superType = child;
-        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())){
             if (superType.equals(parent)) return true;
             superType = superType.sup();
         }

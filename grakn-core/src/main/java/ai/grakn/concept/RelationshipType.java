@@ -158,13 +158,31 @@ public interface RelationshipType extends Type {
     RelationshipType plays(Role role);
 
     /**
-     * Removes the Role to prevent instances of this {@link RelationshipType} from playing it.
+     * Removes the ability of this {@link RelationshipType} to play a specific {@link Role}
      *
-     * @param role The Role which the instances of this Type should no longer be allowed to play.
-     * @return The {@link RelationshipType} itself.
+     * @param role The {@link Role} which the {@link Thing}s of this {@link Rule} should no longer be allowed to play.
+     * @return The {@link Rule} itself.
      */
     @Override
     RelationshipType deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link RelationshipType} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RelationshipType} can no longer have
+     * @return The {@link RelationshipType} itself.
+     */
+    @Override
+    RelationshipType deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link RelationshipType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RelationshipType} can no longer have as a key
+     * @return The {@link RelationshipType} itself.
+     */
+    @Override
+    RelationshipType deleteKey(AttributeType attributeType);
 
     /**
      * Retrieve all the {@link Relationship} instances of this {@link RelationshipType}

@@ -18,13 +18,15 @@
 
 package ai.grakn.migration.base;
 
+import ai.grakn.Keyspace;
 import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.client.TaskResult;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
-import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static java.lang.String.format;
 
 /**
@@ -52,25 +53,25 @@ public class Migrator {
     private final static Logger LOG = LoggerFactory.getLogger(Migrator.class);
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
-    public static final int ACTIVE_TASKS = 25;
-    private static final boolean RETRY = false;
+    public static final int ACTIVE_TASKS = 16;
+    public static final int DEFAULT_MAX_RETRY = 1;
 
     private final String uri;
-    private final String keyspace;
+    private final Keyspace keyspace;
     private int batchSize;
     private long startTime;
 
     /**
      *
      * @param uri Uri where one instance of Grakn Engine is running
-     * @param keyspace The name of the keyspace where the data should be persisted
+     * @param keyspace The {@link Keyspace} where the data should be persisted
      */
-    private Migrator(String uri, String keyspace){
+    private Migrator(String uri, Keyspace keyspace){
         this.uri = uri;
         this.keyspace = keyspace;
     }
 
-    public static Migrator to(String uri, String keyspace){
+    public static Migrator to(String uri, Keyspace keyspace){
         return new Migrator(uri, keyspace);
     }
 
@@ -88,11 +89,13 @@ public class Migrator {
      *
      * Uses the default batch size and number of active tasks.
      *
+     * NOTE: Currently only used for testing purposes
+     *
      * @param template
      * @param converter
      */
     public void load(String template, Stream<Map<String, Object>> converter) {
-        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.RETRY);
+        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.DEFAULT_MAX_RETRY, true);
     }
 
     /**
@@ -114,20 +117,24 @@ public class Migrator {
      * @param batchSize The number of queries to execute in one transaction. Default is 25.
      * @param numberActiveTasks Number of tasks running on the server at any one time. Consider this a safeguard
      *                  to bot the system load. Default is 25.
-     * @param retry If the Loader should continue attempt to send tasks when Engine is not available
+     * @param retrySize If the Loader should continue attempt to send tasks when Engine is not available or an exception occurs
      */
     public void load(String template, Stream<Map<String, Object>> converter,
-                     int batchSize, int numberActiveTasks, boolean retry){
+                     int batchSize, int numberActiveTasks, int retrySize, boolean debug){
         this.startTime = System.currentTimeMillis();
         this.batchSize = batchSize;
 
-        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates());
+        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates(), true, debug, retrySize);
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
-        loader.setRetryPolicy(retry);
-        loader.setTaskCompletionConsumer(json -> {
-            if (json.has(STACK_TRACE) && json.at(STACK_TRACE).isString()) {
-                System.err.println(json.at(STACK_TRACE).asString());
+        loader.setTaskCompletionConsumer(taskResult -> {
+            String stackTrace = taskResult.getStackTrace();
+            if (stackTrace != null && !stackTrace.isEmpty()) {
+                if(debug){
+                    throw GraknBackendException.migrationFailure(stackTrace);
+                } else {
+                    System.err.println(stackTrace);
+                }
             }
         });
 
@@ -138,6 +145,7 @@ public class Migrator {
                     loader.add(q);
                 });
         loader.waitToFinish();
+        loader.close();
     }
 
     /**
@@ -148,9 +156,7 @@ public class Migrator {
     protected Stream<Query> template(String template, Map<String, Object> data){
         try {
             return queryBuilder.parseTemplate(template, data);
-
-            //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
-        } catch (GraqlSyntaxException | IllegalArgumentException e){
+        } catch (GraqlSyntaxException e){
             LOG.warn("Query not sent to server: " + e.getMessage());
         }
 
@@ -163,8 +169,8 @@ public class Migrator {
      *
      * @return function that operates on completion of a task
      */
-    private Consumer<Json> recordMigrationStates(){
-        return (Json json) -> {
+    private Consumer<TaskResult> recordMigrationStates(){
+        return (TaskResult taskId) -> {
             numberBatchesCompleted.incrementAndGet();
 
             long timeElapsedSeconds = (System.currentTimeMillis() - startTime)/1000;

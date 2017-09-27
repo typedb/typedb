@@ -21,17 +21,17 @@ relation2 sub relationship
 	relates role1
 	relates role2;
 
-insert
-
 #Rules
 
-isa inference-rule 
+rule-1 sub rule
 	when {
 		(role1:$x, role2:$y) isa relation1;
 	}
 	then {
 		(role1:$x, role2:$y) isa relation2;
 	};
+
+insert
 
 #Data
 

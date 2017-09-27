@@ -38,7 +38,6 @@ import java.util.stream.Stream;
  * @see Role
  * @see RelationshipType
  * @see AttributeType
- * @see RuleType
  *
  * @author fppt
  *
@@ -151,21 +150,30 @@ public interface Type extends SchemaConcept {
     @CheckReturnValue
     Boolean isAbstract();
 
-    /**
-     * Retrieve a list of the Instances that scope this Type.
-     *
-     * @return A list of the Instances that scope this Type.
-     */
-    @CheckReturnValue
-    Stream<Thing> scopes();
-
     //------------------------------------- Other ----------------------------------
     /**
+     * Removes the ability of this {@link Type} to play a specific {@link Role}
      *
-     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Type itself.
+     * @param role The {@link Role} which the {@link Thing}s of this {@link Type} should no longer be allowed to play.
+     * @return The {@link Type} itself.
      */
     Type deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link Type} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have
+     * @return The {@link Type} itself.
+     */
+    Type deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link Type}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have as a key
+     * @return The {@link Type} itself.
+     */
+    Type deleteKey(AttributeType attributeType);
 
     @Deprecated
     @CheckReturnValue

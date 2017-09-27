@@ -9,7 +9,7 @@ permalink: /documentation/graql/insert-queries.html
 folder: documentation
 ---
 
-The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](#variable-patterns)
+The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](./matches.html#variable-patterns)
 describing data. To follow along, or experiment further, with the examples given below, please
 load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on
 [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
@@ -20,7 +20,7 @@ the knowledge base." %}
 
 ## `match-insert`
 
-If a [match query](match-queries.html) is provided, the query will insert the given variable patterns for every result of the query.
+If a [match](matches.html) is provided, the query will insert the given variable patterns for every result of the query.
 The pattern describes [properties](#properties) to set on a particular concept and can optionally be bound to a variable or an ID.
 
 In the example below, we insert additional (fictional) information for a `person` entity who we have matched through `identifier` Mary Guthrie.
@@ -142,9 +142,30 @@ qb.insert(var().isa("person").has("identifier", "Fuchsia Groan").has("gender", "
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
+You can also specify a variable to represent the relationship connecting the thing and the attribute:
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell6" data-toggle="tab">Graql</a></li>
+    <li><a href="#java6" data-toggle="tab">Java</a></li>
+</ul>
+
+<!-- TODO: Update to final syntax -->
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell6">
+<pre>
+insert isa person has identifier "Fuchsia Groan" as $r;
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java6">
+<pre>
+qb.insert(var().isa("person").has(Label.of("identifier"), var().val("Fuchsia Groan"), var("r"))).execute();
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
 ### relationship
 
-Make the concept a relationship that relates the given role players, playing the given roles.   
+Make the concept a relationship that relates the given role players, playing the given roles.
 *(With apologies to 'Gormenghast' fans, who will be aware that Titus and Fuchsia are siblings and thus cannot marry).*
 
 <ul id="profileTabs" class="nav nav-tabs">
@@ -155,7 +176,7 @@ Make the concept a relationship that relates the given role players, playing the
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell7">
 <pre>
-match $p1 has identifier "Titus Groan"; $p2 has identifier "Fuchsia Groan"; insert (spouse1: $p1, spouse2: $p2) isa marriage;
+match $p1 has identifier "Titus Groan"; $p2 has identifier "Fuchsia Groan"; insert (spouse: $p1, spouse: $p2) isa marriage;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java7">
@@ -165,8 +186,8 @@ qb.match(
   var("p2").has("name", "Fuchsia Groan")
 ).insert(
   var()
-    .rel("spouse1", "p1")
-    .rel("spouse2", "p2")
+    .rel("spouse", "p1")
+    .rel("spouse", "p2")
     .isa("marriage")
 ).execute();
 

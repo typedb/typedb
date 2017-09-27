@@ -87,15 +87,15 @@ public enum ErrorMessage {
     VALIDATION_RELATION_DUPLICATE("You have created one or more relationships with the following roles and role player [%s] \n"),
     VALIDATION_REQUIRED_RELATION("The role player [%s] of type [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 
-    VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] of type [%s] refers to type [%s] which does not exist in the graph \n"),
+    VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] refers to type [%s] which does not exist in the graph \n"),
 
-    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a disjunction in the body\n"),
+    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the body\n"),
 
-    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),
+    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),
 
-    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
+    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
 
-    VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),
+    VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),
 
     VALIDATION_RULE_INVALID_RELATION_TYPE("Attempting to define a rule containing a relation pattern with type [%s] which is not a relation type\n"),
 
@@ -116,7 +116,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Client Errors
     INVALID_ENGINE_RESPONSE("Grakn Engine located at [%s] returned response [%s], cannot proceed."),
     INVALID_FACTORY("Graph Factory [%s] is not valid"),
-    MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. " +
+    MISSING_FACTORY_DEFINITION("Graph Factor Config ['knowledge-base.mode'] missing from provided config. " +
             "Cannot produce graph"),
     COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
 
@@ -126,7 +126,7 @@ public enum ErrorMessage {
     SYNTAX_ERROR_NO_POINTER("syntax error at line %s:\n%s"),
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
-    MUST_BE_RESOURCE_TYPE("type '%s' must be a resource-type"),
+    MUST_BE_ATTRIBUTE_TYPE("type '%s' must be a attribute-type"),
     LABEL_NOT_FOUND("label '%s' not found"),
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
     NOT_A_RELATION_TYPE("'%s' is not a relation type. perhaps you forgot to separate your statements with a ';'?"),
@@ -154,8 +154,6 @@ public enum ErrorMessage {
     INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
 
-    DELETE_UNSUPPORTED_PROPERTY("deleting property '%s' is not supported"),
-
     INVALID_STATMENT("Value [%s] not of type [%s] in data [%s]"),
 
     //Templating
@@ -168,6 +166,7 @@ public enum ErrorMessage {
 
     //Server Errors
     ENGINE_ERROR("Exception on Grakn engine"),
+    ENGINE_STARTUP_ERROR("Could not start Grakn engine: [%s]"),
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
     UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
@@ -175,7 +174,7 @@ public enum ErrorMessage {
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
-    EXPLAIN_ONLY_MATCH("Cannot get explanation for non-match query, given: [%s]"),
+    EXPLAIN_ONLY_MATCH("Cannot get explanation for non-get query, given: [%s]"),
     INVALID_QUERY_USAGE("Only %s queries are allowed."),
     MISSING_TASK_ID("Could not retrieve id %s"),
     TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
@@ -195,6 +194,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
+    ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]"),
     RULE_CREATION_ARITY_ERROR("Arity mismatch when creating rule"),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms"),
@@ -202,8 +202,9 @@ public enum ErrorMessage {
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),
-    RESOURCE_TYPE_NOT_SPECIFIED("no resource type provided for compute query."),
+    ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     INSTANCE_DOES_NOT_EXIST("Thing does not exist in the subgraph."),
+    ROLE_AND_RULE_DO_NOT_HAVE_INSTANCE("Role and rule do not have instances."),
     NO_PATH_EXIST("There is no path between the two instances."),
     MAX_ITERATION_REACHED("Max iteration of [%s] reached.");
 

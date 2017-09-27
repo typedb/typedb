@@ -1,102 +1,92 @@
 #!groovy
+
+// In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
+// `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
+// `validate.sh` will be passed the branch name (e.g. "master") as the first argument
+def integrationTests = ["test-snb", "test-biomed"]
+
 //This sets properties in the Jenkins server. In this case run every 8 hours
-if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
-  properties([pipelineTriggers([cron('H H/8 * * *')])])
+properties([pipelineTriggers([cron('H H/8 * * *')])])
+
+def slackGithub(String message, String color = null) {
+    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+    slackSend channel: "#github", color: color, message: """
+${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - ${user}"""
 }
-properties([
-  buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
-])
+
+def runIntegrationTest(String workspace, String moduleName) {
+    String modulePath = "${workspace}/grakn-test/${moduleName}"
+
+    stage(moduleName) {
+        withPath("${modulePath}:${modulePath}/src/main/bash") {
+            withGrakn(workspace) {
+                timeout(180) {
+                    stage('Load') {
+                        sh "load.sh"
+                    }
+                }
+                timeout(360) {
+                    stage('Validate') {
+                        sh "validate.sh ${env.BRANCH_NAME}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+def withGrakn(String workspace, Closure closure) {
+    withPath("${workspace}/grakn-test/test-integration/src/test/bash") {
+        //Everything is wrapped in a try catch so we can handle any test failures
+        //If one test fails then all the others will stop. I.e. we fail fast
+        try {
+            timeout(15) {
+                //Stages allow you to organise and group things within Jenkins
+                stage('Start Grakn') {
+                    sh "build-grakn.sh ${env.BRANCH_NAME}"
+
+                    archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
+
+                    sh 'init-grakn.sh'
+                }
+            }
+            closure()
+        } catch (error) {
+            slackGithub "Periodic Build Failed" "danger"
+            throw error
+        } finally { // Tears down test environment
+            timeout(5) {
+                stage('Stop Grakn') {
+                    archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+                    sh 'tear-down.sh'
+                }
+            }
+        }
+    }
+}
+
+def withPath(String path, Closure closure) {
+    return withEnv(["PATH+EXTRA=${path}"], closure)
+}
 
 node {
-  //Everything is wrapped in a try catch so we can handle any test failures
-  //If one test fails then all the others will stop. I.e. we fail fast
-  try {
-    def workspace = pwd()
-    //Always wrap each test block in a timeout
-    //This first block sets up engine within 15 minutes
-    withEnv([
-            'PATH+EXTRA=' + workspace + '/grakn-package/bin'
-            ]) {
-      timeout(15) {
-        stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
-          sh 'npm config set registry http://registry.npmjs.org/'
-          checkout scm
-            def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-          slackSend channel: "#github", message: """
-Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-authored by - """ + user
-          sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
-          sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
-          sh 'mvn clean install -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
-          archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
-        }
-        stage('Init Grakn') {
-          sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
-          sh 'mkdir grakn-package'
-          sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-          sh 'grakn.sh start'
-        }
-        stage('Test Connection') {
-          sh 'graql.sh -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
-        }
-      }
-    }
     //Only run validation master/stable
-    if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
-      //Sets up environmental variables which can be shared between multiple tests
-      withEnv(['VALIDATION_DATA=' + workspace + '/generate-SNB/readwrite_neo4j--validation_set.tar.gz',
-	       'CSV_DATA=' + workspace + '/generate-SNB/social_network',
-	       'KEYSPACE=snb',
-	       'ENGINE=localhost:4567',
-	       'ACTIVE_TASKS=1000',
-	       'PATH+EXTRA=' + workspace + '/grakn-package/bin',
-	       'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
-	       'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
-	       'LDBC_VALIDATION_CONFIG=' + workspace + '/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
-	timeout(180) {
-	  dir('generate-SNB') {
-	    stage('Load Validation Data') {
-	      sh 'wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz'
-	      sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
-	    }
-	  }
-	  stage('Measure Size') {
-	    sh 'nodetool flush'
-	    sh 'du -hd 0 grakn-package/db/cassandra/data'
-	  }
-	}
-	timeout(360) {
-	  dir('grakn-test/test-snb/') {
-	    stage('Build the SNB connectors') {
-	      sh 'mvn clean package assembly:single -Dmaven.repo.local=' + workspace + '/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
-	    }
-	  }
-	  dir('validate-snb') {
-	    stage('Validate Queries') {
-	      sh '../grakn-test/test-snb/src/validate-snb/validate.sh'
-	    }
-	  }
-	}
-      }
-      def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-      slackSend channel: "#github", color: "good", message: """
-  Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-  authored by - """ + user
+    if (env.BRANCH_NAME in ['master', 'stable']) {
+        String workspace = pwd()
+        checkout scm
+
+        slackGithub "Build started"
+
+        stage('Run the benchmarks') {
+            sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+            archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+        }
+
+        for (String moduleName : integrationTests) {
+            runIntegrationTest(workspace, moduleName)
+        }
+
+        slackGithub "Periodic Build Success" "good"
     }
-  } catch (error) {
-    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-    slackSend channel: "#github", color: "danger", message: """
-Periodic Build Failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-authored by - """ + user
-    throw error
-  } finally { // Tears down test environment
-    timeout(5) {
-      stage('Tear Down Grakn') {
-        sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
-        archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-        sh 'grakn-package/bin/grakn.sh stop'
-        sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
-      }
-    }
-  }
 }

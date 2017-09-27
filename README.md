@@ -1,14 +1,19 @@
 ![GRAKN.AI](https://grakn.ai/img/Grakn%20logo%20-%20transparent.png)
 
-AI systems process knowledge that is too complex for current databases. Grakn is a **hyper-relational** database for **knowledge-oriented** systems. Grakn enables machines to manage complex data that serves as a knowledge base for cognitive/AI systems. Graql is Grakn's Reasoning (through OLTP) and Analytics (through OLAP) Query Language. Graql is a much higher level abstraction over traditional query language - SQL, NoSQL, or Graphs.
-
 ---
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
 [![Build Status](https://travis-ci.org/graknlabs/grakn.svg?branch=internal)](https://travis-ci.org/graknlabs/grakn)
 [![Coverage Status](https://codecov.io/gh/graknlabs/grakn/branch/master/graph/badge.svg)](https://codecov.io/gh/graknlabs/grakn)
 [![Javadocs](https://javadoc.io/badge/ai.grakn/grakn.svg)](https://javadoc.io/doc/ai.grakn/grakn)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
+[![Stack Overflow][stackoverflow-shield]][stackoverflow-link]
 [![Download count](http://shields.grakn.ai/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download/latest)
+
+
+[stackoverflow-shield]: https://img.shields.io/badge/stackoverflow-grakn-blue.svg
+[stackoverflow-link]: https://stackoverflow.com/questions/tagged/grakn
+
+AI systems process knowledge that is too complex for current databases. Grakn is a **hyper-relational** database for **knowledge-oriented** systems. Grakn enables machines to manage complex data that serves as a knowledge base for cognitive/AI systems. Graql is Grakn's Reasoning (through OLTP) and Analytics (through OLAP) Query Language. Graql is a much higher level abstraction over traditional query language - SQL, NoSQL, or Graphs.
 
 Copyright (C) 2016-2017  Grakn Labs Limited.
 
@@ -37,7 +42,7 @@ Running Grakn requires:
 Compiling Grakn from source requires:
 * Maven 3
 * nodejs
-* npm installed and configured correctly
+* yarn installed and configured correctly
 
 You should be able to install packages global for your user via npm without needing sudo).
   

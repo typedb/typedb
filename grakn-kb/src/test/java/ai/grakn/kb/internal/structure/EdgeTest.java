@@ -56,12 +56,12 @@ public class EdgeTest extends TxTestBase {
 
     @Test
     public void whenGettingTheSourceOfAnEdge_ReturnTheConceptTheEdgeComesFrom() throws Exception {
-        assertEquals(entity.vertex(), edge.source());
+        assertEquals(entity.vertex(), edge.source().get());
     }
 
     @Test
     public void whenGettingTheTargetOfAnEdge_ReturnTheConceptTheEdgePointsTowards() throws Exception {
-        assertEquals(entityType.currentShard().vertex(), edge.target());
+        assertEquals(entityType.currentShard().vertex(), edge.target().get());
     }
 
     @Test

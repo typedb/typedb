@@ -20,21 +20,23 @@ package ai.grakn.test;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import ai.grakn.engine.GraknEngineServer;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.util.JWTHandler;
-import static ai.grakn.graql.Graql.var;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
+import org.slf4j.LoggerFactory;
+import spark.Service;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
-import org.slf4j.LoggerFactory;
-import spark.Service;
+
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import static ai.grakn.graql.Graql.var;
 
 /**
  * <p>
@@ -44,7 +46,7 @@ import spark.Service;
  * <p>
  *     Sets up a grakn engine for testing purposes.
  * </p>
- * 
+ *
  * @author borislav
  *
  */
@@ -84,7 +86,7 @@ public abstract class GraknTestEngineSetup {
 
         // start engine
         setRestAssuredUri(config);
-        GraknEngineServer server = new GraknEngineServer(config);
+        GraknEngineServer server = GraknEngineServer.create(config);
         server.start();
 
         LOG.info("engine started.");
@@ -124,9 +126,8 @@ public abstract class GraknTestEngineSetup {
     private static void clearGraphs(GraknEngineServer server) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
-                    .execute()
                     .forEach(x -> x.values().forEach(y -> {
                         keyspaceNames.add(y.asAttribute().getValue().toString());
                     }));

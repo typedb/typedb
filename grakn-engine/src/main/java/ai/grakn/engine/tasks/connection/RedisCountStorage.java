@@ -18,17 +18,20 @@
 
 package ai.grakn.engine.tasks.connection;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.util.Pool;
+
+import java.util.function.Function;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * <p>
@@ -107,10 +110,10 @@ public class RedisCountStorage {
     /**
      * All the valid keys which map to values in the redis cache
      */
-    public static String getKeyNumInstances(String keyspace, ConceptId conceptId){
+    public static String getKeyNumInstances(Keyspace keyspace, ConceptId conceptId){
         return "NI_"+ keyspace + "_" + conceptId.getValue();
     }
-    public static String getKeyNumShards(String keyspace, ConceptId conceptId){
+    public static String getKeyNumShards(Keyspace keyspace, ConceptId conceptId){
         return "NS_" + keyspace + "_" + conceptId.getValue();
     }
 }

@@ -22,10 +22,10 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
@@ -39,7 +39,6 @@ import ai.grakn.util.Schema;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
@@ -61,7 +60,7 @@ import static org.junit.Assume.assumeThat;
 @RunWith(JUnitQuickcheck.class)
 public class GraknTxPutPropertyTest {
 
-    @Rule
+    @org.junit.Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Property
@@ -94,7 +93,6 @@ public class GraknTxPutPropertyTest {
         Type type = putType.apply(graph, label);
 
         assertThat("Type should not play any roles", type.plays().collect(toSet()), empty());
-        assertThat("Type should not have any scopes", type.scopes().collect(toSet()), empty());
         assertFalse("Type should not be abstract", type.isAbstract());
     }
 
@@ -187,22 +185,22 @@ public class GraknTxPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknTx graph, @Unused Label label) {
-        RuleType ruleType = graph.putRuleType(label);
-        assertEquals(graph.admin().getMetaRuleType(), ruleType.sup());
+    public void whenCallingPutRule_CreateATypeWithSuperTypeRule(@Open GraknTx tx, @Unused Label label) {
+        Rule rule = tx.putRule(label, tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
+        assertEquals(tx.admin().getMetaRule(), rule.sup());
     }
 
     @Property
-    public void whenCallingPutRuleTypeWithAnExistingRuleTypeLabel_ItReturnsThatType(
-            @Open GraknTx graph, @FromTx RuleType ruleType) {
-        RuleType newType = graph.putRuleType(ruleType.getLabel());
-        assertEquals(ruleType, newType);
+    public void whenCallingPutRuleWithAnExistingRuleTypeLabel_ItReturnsThatType(
+            @Open GraknTx tx, @FromTx Rule rule) {
+        Rule newType = tx.putRule(rule.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
+        assertEquals(rule, newType);
     }
 
     @Property
-    public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeLabel_Throw(
-            @Open GraknTx graph, @FromTx Type type) {
-        assumeFalse(type.isRuleType());
+    public void whenCallingPutRuleWithAnExistingNonRuleTypeLabel_Throw(
+            @Open GraknTx tx, @FromTx Type type) {
+        assumeFalse(type.isRule());
 
         exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
@@ -211,14 +209,14 @@ public class GraknTxPutPropertyTest {
             exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
         }
 
-        graph.putRuleType(type.getLabel());
+        tx.putRule(type.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
     }
 
     @Property
     public void whenCallingPutRelationType_CreateATypeWithSuperTypeRelation(
-            @Open GraknTx graph, @Unused Label label) {
-        RelationshipType relationshipType = graph.putRelationshipType(label);
-        assertEquals(graph.admin().getMetaRelationType(), relationshipType.sup());
+            @Open GraknTx tx, @Unused Label label) {
+        RelationshipType relationshipType = tx.putRelationshipType(label);
+        assertEquals(tx.admin().getMetaRelationType(), relationshipType.sup());
     }
 
     @Property

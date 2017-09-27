@@ -119,9 +119,15 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonRule() {
-        Rule jsonRule = movieContext.tx().getAttributeType("name").getAttribute("expectation-rule").owner().asRule();
+        Rule jsonRule = movieContext.tx().getRule("expectation-rule");
         assertJsonEquals(
-                Json.object("id", jsonRule.getId().getValue(), "isa", "a-rule-type", "when", jsonRule.getWhen().toString(), "then", jsonRule.getThen().toString()),
+                Json.object(
+                        "id", jsonRule.getId().getValue(),
+                        "name", "expectation-rule",
+                        "sub", "rule",
+                        "when", jsonRule.getWhen().toString(),
+                        "then", jsonRule.getThen().toString()
+                ),
                 jsonRule
         );
     }

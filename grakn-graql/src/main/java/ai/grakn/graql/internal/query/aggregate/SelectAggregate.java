@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Match;
 import com.google.common.collect.ImmutableSet;
 import ai.grakn.graql.NamedAggregate;
 
@@ -31,7 +32,7 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * An aggregate that combines several aggregates together into a map (where keys are the names of the aggregates)
- * @param <S> the type of the match query results
+ * @param <S> the type of the {@link Match} results
  * @param <T> the type of the aggregate results
  */
 class SelectAggregate<S, T> extends AbstractAggregate<S, Map<String, T>> {

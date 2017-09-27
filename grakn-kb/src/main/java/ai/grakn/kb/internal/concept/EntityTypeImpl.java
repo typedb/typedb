@@ -38,12 +38,20 @@ import ai.grakn.util.Schema;
  *
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
-    EntityTypeImpl(VertexElement vertexElement) {
+    private EntityTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    EntityTypeImpl(VertexElement vertexElement, EntityType type) {
+    private EntityTypeImpl(VertexElement vertexElement, EntityType type) {
         super(vertexElement, type);
+    }
+
+    public static EntityTypeImpl get(VertexElement vertexElement){
+        return new EntityTypeImpl(vertexElement);
+    }
+
+    public static EntityTypeImpl create(VertexElement vertexElement, EntityType type){
+        return new EntityTypeImpl(vertexElement, type);
     }
 
     @Override

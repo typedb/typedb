@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -28,16 +29,18 @@ import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.REST;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * <p>
@@ -62,7 +65,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
             Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
             metricRegistry().histogram(name(UpdatingInstanceCountTask.class, "jobs"))
                     .update(jobs.size());
-            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+            Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
 
             //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
             //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
@@ -123,7 +126,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @return true if sharding is needed.
      */
     private static boolean updateShardCounts(
-            RedisCountStorage redis, String keyspace, ConceptId conceptId, long value, long shardingThreshold){
+            RedisCountStorage redis, Keyspace keyspace, ConceptId conceptId, long value, long shardingThreshold){
         long numShards = redis.getCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId));
         if(numShards == 0) numShards = 1;
         long numInstances = redis.adjustCount(
@@ -138,11 +141,11 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * - Actually sharding
      * - Incrementing the number of shards on each type
      *
-     * @param keyspace The graph containing the type to shard
+     * @param keyspace The database containing the {@link ai.grakn.concept.Type} to shard
      * @param conceptId The id of the concept to shard
      */
     private void shardConcept(RedisCountStorage redis, EngineGraknTxFactory factory,
-            String keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
+            Keyspace keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
         Lock engineLock = this.getLockProvider().getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 
@@ -164,7 +167,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
         }
     }
 
-    private static String getLockingKey(String keyspace, ConceptId conceptId){
+    private static String getLockingKey(Keyspace keyspace, ConceptId conceptId){
         return "/updating-instance-count-lock/" + keyspace + "/" + conceptId.getValue();
     }
 
@@ -188,10 +191,10 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param config The config which contains the concepts with updated counts
      * @return The task configuration encapsulating the above details in a manner executable by the task runner
      */
-    public static TaskConfiguration createConfig(String keyspace, String config){
+    public static TaskConfiguration createConfig(Keyspace keyspace, String config){
         Json countingConfiguration = Json.object();
-        countingConfiguration.set(REST.Request.KEYSPACE, keyspace);
-        countingConfiguration.set(REST.Request.COMMIT_LOG_COUNTING, Json.read(config).at(REST.Request.COMMIT_LOG_COUNTING));;
+        countingConfiguration.set(REST.Request.KEYSPACE, keyspace.getValue());
+        countingConfiguration.set(REST.Request.COMMIT_LOG_COUNTING, Json.read(config).at(REST.Request.COMMIT_LOG_COUNTING));
         return TaskConfiguration.of(countingConfiguration);
     }
 }

@@ -44,10 +44,10 @@ public class HasAttributePropertyTest {
     @Test
     public void whenCallingCheckValidPropertyAndLabelRefersToARole_Throw() {
         Label label = Schema.MetaSchema.ROLE.getLabel();
-        HasResourceProperty property = HasResourceProperty.of(label, var("x").admin());
+        HasResourceProperty property = HasResourceProperty.of(label, var("x").admin(), var().admin());
 
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.mustBeResourceType(label).getMessage());
+        exception.expectMessage(GraqlQueryException.mustBeAttributeType(label).getMessage());
 
         property.checkValidProperty(sampleKB.tx(), var("y").admin());
     }

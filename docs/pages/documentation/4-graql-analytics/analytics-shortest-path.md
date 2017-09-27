@@ -17,6 +17,7 @@ In the knowledge base below I have displayed two specific people using the query
 match
 $x has identifier "Barbara Shafner";
 $y has identifier "Jacob J. Niesz";
+get;
 ```
 
 and then searched for relationships joining two of them using:

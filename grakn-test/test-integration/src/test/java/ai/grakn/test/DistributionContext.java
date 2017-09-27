@@ -151,7 +151,7 @@ public class DistributionContext extends ExternalResource {
         // Java commands to start Engine process
         String[] commands = {"java",
                 "-cp", getClassPath(),
-                "-Dgrakn.dir=" + DIST_DIRECTORY + "/bin",
+                "-Dgrakn.dir=" + DIST_DIRECTORY + "/services",
                 "-Dgrakn.conf=" + propertiesFile.getAbsolutePath(),
                 "ai.grakn.engine.GraknEngineServer", "&"};
 
@@ -165,10 +165,10 @@ public class DistributionContext extends ExternalResource {
      * Get the class path of all the jars in the /lib folder
      */
     private String getClassPath(){
-        Stream<File> jars = Stream.of(new File(DIST_DIRECTORY + "/lib").listFiles(jarFiles));
-        File conf = new File(DIST_DIRECTORY + "/conf/main/");
-
-        return Stream.concat(jars, Stream.of(conf))
+        Stream<File> jars = Stream.of(new File(DIST_DIRECTORY + "/services/lib").listFiles(jarFiles));
+        File conf = new File(DIST_DIRECTORY + "/conf/");
+        File graknLogback = new File(DIST_DIRECTORY + "/services/grakn/");
+        return Stream.concat(jars, Stream.of(conf, graknLogback))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(File::getAbsolutePath)
                 .collect(joining(":"));
@@ -178,7 +178,7 @@ public class DistributionContext extends ExternalResource {
      * Wait for the engine REST API to be available
      */
     private static void waitForEngine(int port) {
-        long endTime = currentTimeMillis() + 60000;
+        long endTime = currentTimeMillis() + 120000;
         while (currentTimeMillis() < endTime) {
             if (Client.serverIsRunning("localhost:" + port)) {
                 return;

@@ -32,13 +32,15 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
+import java.util.ArrayList;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -157,7 +159,7 @@ public final class ResolutionPlan {
      * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
      */
     private ImmutableList<Atom> planFromTraversal(ReasonerQueryImpl query){
-        Map<VarProperty, Atom> propertyMap = new HashMap<>();
+        Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         query.getAtoms(Atom.class)
                 .filter(Atomic::isSelectable)
                 .forEach(at -> at.getVarProperties().forEach(p -> propertyMap.put(p, at)));
@@ -168,11 +170,11 @@ public final class ResolutionPlan {
 
         return ImmutableList.<Atom>builder().addAll(
                 fragments.stream()
-                        .map(Fragment::getVarProperty)
+                        .map(Fragment::varProperty)
                         .filter(Objects::nonNull)
                         .filter(properties::contains)
                         .distinct()
-                        .map(propertyMap::get)
+                        .flatMap(p -> propertyMap.get(p).stream())
                         .distinct()
                         .iterator())
                 .build();
@@ -224,7 +226,7 @@ public final class ResolutionPlan {
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         LinkedList<Atom> atoms = new LinkedList<>(plan);
 
-        Set<Atom> nonResolvableAtoms = new HashSet<>();
+        List<Atom> nonResolvableAtoms = new ArrayList<>();
         while (!atoms.isEmpty()) {
             Atom top = atoms.remove();
             if (top.isRuleResolvable()) {
@@ -250,8 +252,9 @@ public final class ResolutionPlan {
         LinkedList<Atom> atoms = new LinkedList<>(plan);
 
         Atom top = atoms.getFirst();
-        Set<Atom> nonResolvableAtoms = new HashSet<>();
+        List<Atom> nonResolvableAtoms = new ArrayList<>();
         Set<Var> subbedVars = top.getParentQuery().getAtoms(IdPredicate.class).map(IdPredicate::getVarName).collect(Collectors.toSet());
+
         while (!atoms.isEmpty()) {
 
             subbedVars.addAll(top.getVarNames());

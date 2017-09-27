@@ -29,10 +29,10 @@ There are lots of ways you can get involved! Please take a look at our [contribu
 
 ### Why does Grakn hang when I try to start it?   
 
-I am running `grakn.sh start` but it hangs on `Starting ...`. Why?
+I am running `grakn server start` but it hangs on `Starting ...`. Why?
 
 This may be because you have cloned the Grakn repo into a directory which has a space in its name (e.g. `/grakn test`). 
-You can build our code successfully, but when you start `grakn.sh`, it hangs because the database needs you to have single word pathnames. 
+You can build our code successfully, but when you run `./grakn server start`, it hangs because the database needs you to have single word pathnames. 
 Remove the spaces (e.g. `/grakn_test`) and try again.
 
 ### Why am I getting ghost vertices?
@@ -60,26 +60,26 @@ SLF4J: Defaulting to no-operation (NOP) logger implementation
 SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
 ```
 
-So you need to include a logger dependnecy. In the GRAKN.AI distribution we use [Logback](https://logback.qos.ch/). Take a look at the [`logback.xml`](https://github.com/graknlabs/grakn/blob/master/conf/main/logback.xml) used in the Grakn project for an idea how to configure your own. 
+So you need to include a logger dependency. In the GRAKN.AI distribution we use [Logback](https://logback.qos.ch/). Take a look at the [`logback.xml`](https://github.com/graknlabs/grakn/blob/master/conf/main/logback.xml) used in the Grakn project for an idea how to configure your own. 
 
 ### How do I load data into Grakn?
 
 There are several ways to load data into Grakn. For small amounts of data (<1000 lines), you an load it directly via the Graql shell. For example, the following loads up the an example file called `family-data.gql`:
 
 ```bash
-bin/graql.sh -f examples/family-data.gql
+./graql console -f examples/family-data.gql
 ```
 
 If you have a larger file, you will need to batch load it. The file will be divided in batches that will be committed concurrently. This differs from a regular load, where the whole file is committed in a single chunk when you call commit. See the example below, which loads the Graql file FILENAME.gql, from PATH.
 
 ```bash
-bin/graql.sh -b PATH/FILENAME.gql
+./graql console -b PATH/FILENAME.gql
 ```
 
-In order to check the status of the loading, you can open a new terminal window, navigate to the logs directory of your Grakn installation and run the command:
+In order to check the status of the loading, you can open a new terminal window and run the command:
 
 ```bash
-tail -f grakn.log
+tail -f logs/grakn.log
 ```
 
 
@@ -152,8 +152,8 @@ If you are using the Graql shell and have not committed what you have in the kno
 If you've committed, then you must stop Grakn and specifically clean the knowledge base:
 
 ```bash
-./bin/grakn.sh stop
-./bin/grakn.sh clean
+./grakn server stop
+./grakn server clean
 ```
 
 ### How do I run Graql from a bash script?
@@ -161,7 +161,7 @@ If you've committed, then you must stop Grakn and specifically clean the knowled
 If you want to run Graql from a bash script, for example, to grep the results, you don't want to have to filter out stuff the license and command prompt. The best way therefor, is to use the -e flag or -f flag, which lets you provide a query to the shell. The -e flag accepts a query, while the -f flag accepts a filename. For example:
     
 ```    
-graql.sh -e "match \$x isa movie;"
+./graql console -e "match \$x isa movie;"
 ```
 
 Notice that you have to escape the dollars to stop the shell interpreting them. You can then pipe the output into a command or a file.

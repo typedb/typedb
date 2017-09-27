@@ -38,6 +38,7 @@ import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -87,8 +88,8 @@ public class ConceptTest extends TxTestBase {
         assertThat(superType, is(not(empty())));
         assertThat(subs, is(not(empty())));
 
-        superType.forEach(edge -> assertEquals(entityType1, tx.factory().buildConcept(edge.target())));
-        subs.forEach(edge -> assertEquals(entityType3, tx.factory().buildConcept(edge.source())));
+        superType.forEach(edge -> assertEquals(entityType1, tx.factory().buildConcept(edge.target().get()).get()));
+        subs.forEach(edge -> assertEquals(entityType3, tx.factory().buildConcept(edge.source().get()).get()));
     }
 
     @Test
@@ -110,5 +111,12 @@ public class ConceptTest extends TxTestBase {
 
         //noinspection ResultOfMethodCallIgnored
         thing.asType();
+    }
+
+    @Test
+    public void whenAConceptIsNotDeleted_CallingIsDeletedReturnsFalse() {
+        Concept stillAlive = tx.putEntityType("still-alive");
+
+        assertFalse(stillAlive.isDeleted());
     }
 }

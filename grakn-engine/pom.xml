@@ -32,17 +32,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>net.greghaines</groupId>
-            <artifactId>jesque</artifactId>
-            <version>${jesque.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
             <version>${java-jwt.version}</version>
@@ -174,7 +163,7 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
+       <dependency>
           <groupId>io.dropwizard.metrics</groupId>
           <artifactId>metrics-core</artifactId>
           <version>${metrics.version}</version>
@@ -226,7 +215,7 @@
                         <goals>
                             <goal>generate-raml</goal>
                         </goals>
-                        <phase>process-classes</phase>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -240,7 +229,7 @@
                         <goals>
                             <goal>exec</goal>
                         </goals>
-                        <phase>process-classes</phase>
+                        <phase>package</phase>
                         <configuration>
                             <skip>${maven.javadoc.skip}</skip>
                             <executable>./npm-install-retry/bin/npm-install-retry</executable>
@@ -257,7 +246,7 @@
                         <goals>
                             <goal>exec</goal>
                         </goals>
-                        <phase>process-classes</phase>
+                        <phase>package</phase>
                         <configuration>
                             <skip>${maven.javadoc.skip}</skip>
                             <executable>npm/bin/raml2html</executable>

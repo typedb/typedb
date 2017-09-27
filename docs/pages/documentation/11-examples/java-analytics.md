@@ -21,14 +21,14 @@ You can find *basic-genealogy.gql* in the *examples* directory of the Grakn dist
 The first step is to load it into Grakn using the terminal. Start Grakn, and load the file as follows:
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh start
-<relative-path-to-Grakn>/bin/graql.sh -f ./examples/basic-genealogy.gql -k "genealogy"
+./grakn server start
+./graql console -f ./examples/basic-genealogy.gql -k "genealogy"
 ```
 
 You can test in the Graql shell that all has loaded correctly. For example:
 
 ```bash
-<relative-path-to-Grakn>/bin/graql.sh -k genealogy
+./graql console -k genealogy
 >>>match $p isa person, has identifier $i;
 ```
 -->
@@ -41,7 +41,7 @@ If you have not yet set up the Grakn environment, please see the [Setup guide](.
 First, we start Grakn Engine using the terminal:
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh start
+./grakn server start
 ```
 
 The rest of the project is contained in the Java example code, which can be found on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql). The maven dependencies for this project are:
@@ -98,11 +98,11 @@ private static void testConnection() {
         // open a tx (database transaction)
         try (GraknTx tx = session.open(GraknTxType.READ)) {
 
-            // construct a match query to find people
-            MatchQuery query = tx.graql().match(var("x").isa("person"));
+            // construct a match to find people
+            Match match = tx.graql().match(var("x").isa("person"));
 
             // execute the query
-            List<Map<String, Concept>> result = query.limit(10).execute();
+            List<Map<String, Concept>> result = match.limit(10).get().execute();
 
             // write the results to the console
             result.forEach(System.out::println);
@@ -220,7 +220,7 @@ private static void persistClusters(Map<String, Set<String>> results) {
 We can now switch to the visualiser, by browsing to [localhost:4567](http://localhost:4567), and execute this query:
 
 ```graql
-match $x isa cluster;
+match $x isa cluster; get;
 ```
 
 If you explore the results you can now see the entities that are members of a given cluster, similar to the image shown below.

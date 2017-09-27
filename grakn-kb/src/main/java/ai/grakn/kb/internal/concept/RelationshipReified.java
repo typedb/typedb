@@ -58,12 +58,20 @@ import java.util.stream.Stream;
  *
  */
 public class RelationshipReified extends ThingImpl<Relationship, RelationshipType> implements RelationshipStructure {
-    public RelationshipReified(VertexElement vertexElement) {
+    private RelationshipReified(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    public RelationshipReified(VertexElement vertexElement, RelationshipType type) {
+    private RelationshipReified(VertexElement vertexElement, RelationshipType type) {
         super(vertexElement, type);
+    }
+
+    public static RelationshipReified get(VertexElement vertexElement){
+        return new RelationshipReified(vertexElement);
+    }
+
+    public static RelationshipReified create(VertexElement vertexElement, RelationshipType type){
+        return new RelationshipReified(vertexElement, type);
     }
 
     public Map<Role, Set<Thing>> allRolePlayers() {
@@ -71,13 +79,13 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
         //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
-        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new HashSet<>()).add(rp.getRolePlayer()));
 
         return roleMap;
     }
 
     public Stream<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getInstance);
+        return castingsRelation(roles).map(Casting::getRolePlayer);
     }
 
     public void addRolePlayer(Role role, Thing thing) {
@@ -154,7 +162,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
      */
     public Stream<Casting> castingsRelation(Role... roles){
         if(roles.length == 0){
-            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
+            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
                     map(edge -> vertex().tx().factory().buildCasting(edge));
         }
 
@@ -162,7 +170,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
         return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
                 toStream().map(edge -> vertex().tx().factory().buildCasting(edge));

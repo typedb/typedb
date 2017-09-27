@@ -20,11 +20,11 @@ package ai.grakn.kb.internal.concept;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
@@ -97,7 +97,7 @@ public class SchemaMutationTest extends TxTestBase {
     @Test
     public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidKBException {
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(person, car, driver).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(person, car, wife).getMessage());
 
         man.sup(car);
     }
@@ -137,15 +137,6 @@ public class SchemaMutationTest extends TxTestBase {
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putAttributeType("This Will Fail", AttributeType.DataType.STRING);
-    }
-
-    @Test
-    public void whenAddingRuleTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
-
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
-        graknGraphBatch.putRuleType("This Will Fail");
     }
 
     @Test

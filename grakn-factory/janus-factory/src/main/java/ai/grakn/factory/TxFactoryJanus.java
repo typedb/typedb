@@ -19,9 +19,11 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.LazyBarrierStrategy;
@@ -45,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -68,11 +71,35 @@ import static java.util.Arrays.stream;
  */
 final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
     private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);
-    private final static String DEFAULT_CONFIG = "backend-default";
-
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
 
-    TxFactoryJanus(String keyspace, String engineUrl, Properties properties) {
+    //These properties are loaded in by default and can optionally be overwritten
+    static final Properties DEFAULT_PROPERTIES;
+    static {
+        String DEFAULT_CONFIG = "default-configs.properties";
+        DEFAULT_PROPERTIES = new Properties();
+        try (InputStream in = TxFactoryJanus.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
+            DEFAULT_PROPERTIES.load(in);
+            in.close();
+        } catch (IOException e) {
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
+        }
+    }
+
+    /**
+     * This map is used to override hidden config files.
+     * The key of the map refers to the key of the properties file that gets passed in which provides the value to be injected.
+     * The value of the map specifies the key to inject into.
+     */
+    private static final Map<String, String> overrideMap = ImmutableMap.of(
+            "storage.backend", "janusmr.ioformat.conf.storage.backend",
+            "storage.hostname", "janusmr.ioformat.conf.storage.hostname"
+    );
+
+    //This maps the storage backend to the needed value
+    private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
+
+    TxFactoryJanus(Keyspace keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
     }
 
@@ -96,8 +123,8 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         return newJanusGraph(super.keyspace, super.engineUrl, super.properties, batchLoading);
     }
 
-    private synchronized JanusGraph newJanusGraph(String name, String address, Properties properties, boolean batchLoading){
-        JanusGraph JanusGraph = configureGraph(name, address, properties, batchLoading);
+    private synchronized JanusGraph newJanusGraph(Keyspace keyspace, String address, Properties properties, boolean batchLoading){
+        JanusGraph JanusGraph = configureGraph(keyspace, address, properties, batchLoading);
         buildJanusIndexes(JanusGraph);
         JanusGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
 
@@ -113,25 +140,35 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         return JanusGraph;
     }
 
-    private JanusGraph configureGraph(String name, String address, Properties properties, boolean batchLoading){
-        //Load default properties if none provided
-        if(properties == null){
-            properties = new Properties();
-            try (InputStream in = getClass().getResourceAsStream(DEFAULT_CONFIG)) {
-                properties.load(in);
-                in.close();
-            } catch (IOException e) {
-                throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
-            }
-        }
-
-
+    private JanusGraph configureGraph(Keyspace keyspace, String address, Properties properties, boolean batchLoading){
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().
                 set("storage.hostname", address).
-                set("storage.cassandra.keyspace", name).
+                set("storage.cassandra.keyspace", keyspace.getValue()).
                 set("storage.batch-loading", batchLoading);
 
-        properties.forEach((key, value) -> builder.set(key.toString(), value));
+        String storageBackend = "storage.backend";
+
+        //Load Defaults
+        DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
+
+        //Load Passed in properties
+        properties.forEach((key, value) -> {
+
+            //Overwrite storage
+            if(key.equals(storageBackend)){
+                value = storageBackendMapper.get(value);
+            }
+
+            //Inject properties into other default properties
+            if(overrideMap.containsKey(key)){
+                builder.set(overrideMap.get(key), value);
+            }
+
+            builder.set(key.toString(), value);
+        });
+
+
+
         LOG.debug("Opening graph on {}", address);
         return builder.open();
     }

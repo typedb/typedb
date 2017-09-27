@@ -18,8 +18,8 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -28,6 +28,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -35,7 +36,9 @@ import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +53,7 @@ import static org.junit.Assume.assumeFalse;
 public class AnalyticsTest {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startInMemoryServer();
+    public static final EngineContext context = EngineContext.inMemoryServer();
     private GraknSession factory;
 
     private static final String thingy = "thingy";
@@ -64,40 +67,43 @@ public class AnalyticsTest {
     private String relationId12;
     private String relationId24;
 
+    @Rule
+    public ExpectedException expectedEx = ExpectedException.none();
+
     @Before
     public void setUp() {
-        factory = context.factoryWithNewKeyspace();
+        factory = context.sessionWithNewKeyspace();
     }
 
-    @Ignore // No longer applicable
+    @Ignore
     @Test
-    public void testInferredResourceRelation() throws InvalidKBException {
+    public void testImplicitResourceRelation() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
-            Label resourceLabel = Label.of("degree");
-            AttributeType<Long> degree = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
+            Label resourceLabel = Label.of("someResource");
+            AttributeType<Long> someResource = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
-            thingy.attribute(degree);
+            thingy.attribute(someResource);
 
             Entity thisThing = thingy.addEntity();
-            Attribute thisAttribute = degree.putAttribute(1L);
+            Attribute thisAttribute = someResource.putAttribute(1L);
             thisThing.attribute(thisAttribute);
             graph.commit();
         }
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees;
-            degrees = graph.graql().compute().degree().of("thingy").in("thingy", "degree").execute();
+            degrees = graph.graql().compute().degree().of("thingy").in("someResource").execute();
             assertEquals(1, degrees.size());
             assertEquals(1, degrees.get(1L).size());
 
-            degrees = graph.graql().compute().degree().in("thingy", "degree").execute();
+            degrees = graph.graql().compute().degree().in("thingy", "someResource").execute();
             assertEquals(1, degrees.size());
             assertEquals(2, degrees.get(1L).size());
         }
     }
 
     @Test
-    public void testNullResourceDoesntBreakAnalytics() throws InvalidKBException {
+    public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
@@ -127,8 +133,25 @@ public class AnalyticsTest {
     }
 
     @Test
+    public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
+        expectedEx.expect(GraqlQueryException.class);
+        expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            graph.graql().compute().count().in("rule", "thing").execute();
+        }
+    }
+
+    @Test
+    public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
+        expectedEx.expect(GraqlQueryException.class);
+        expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            graph.graql().compute().count().in("role").execute();
+        }
+    }
+
+    @Test
     public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
-        // TODO: move parallel tests to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
         addSchemaAndEntities();

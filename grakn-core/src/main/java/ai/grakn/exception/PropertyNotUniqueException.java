@@ -21,6 +21,7 @@ package ai.grakn.exception;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -55,10 +56,10 @@ public class PropertyNotUniqueException extends GraknTxOperationException {
     }
 
     /**
-     * Thrown when trying to create a concept using a unique property which is already taken.
+     * Thrown when trying to create a {@link SchemaConcept} using a unique property which is already taken.
      * For example this happens when using an already taken {@link Label}
      */
-    public static PropertyNotUniqueException cannotCreateProperty(Concept conceptWithValue, Schema.VertexProperty property, Object value){
-        return new PropertyNotUniqueException(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, conceptWithValue));
+    public static PropertyNotUniqueException cannotCreateProperty(Concept concept, Schema.VertexProperty property, Object value){
+        return new PropertyNotUniqueException(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, concept));
     }
 }

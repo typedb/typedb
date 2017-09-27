@@ -20,9 +20,9 @@ package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.Schema;
 import ai.grakn.util.StringUtil;
@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.concept.AttributeType.DataType.SUPPORTED_TYPES;
 
-abstract class ComparatorPredicate implements ValuePredicateAdmin {
+abstract class ComparatorPredicate implements ValuePredicate {
 
     private final Optional<Object> originalValue;
     private final Optional<Object> value;
@@ -115,7 +115,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     }
 
     @Override
-    public boolean isCompatibleWith(ValuePredicateAdmin predicate) {
+    public boolean isCompatibleWith(ValuePredicate predicate) {
         if (!(predicate instanceof EqPredicate)) return false;
         EqPredicate p = (EqPredicate) predicate;
         Object v = value.orElse(null);
@@ -152,7 +152,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
                     .map(prop -> __.values(prop).as(otherValue).select(thisVar).values(prop).where(gremlinPredicate(otherValue)))
                     .toArray(Traversal[]::new);
 
-            traversal.as(thisVar).select(otherVar.getValue()).or(traversals).select(thisVar);
+            traversal.as(thisVar).select(otherVar.name()).or(traversals).select(thisVar);
         });
 
         value.ifPresent(theValue -> {

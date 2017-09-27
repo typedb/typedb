@@ -64,7 +64,7 @@ public class SparkContext extends ExternalResource {
         Optional<String> jwtProperty = config.tryProperty(JWT_SECRET_PROPERTY);
 
         configureSpark(spark, hostName, port(), config.getPath(GraknEngineConfig.STATIC_FILES_PATH),
-                        config.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false),
+                        config.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false), 64,
                         jwtProperty.isPresent() ? JWTHandler.create(jwtProperty.get()) : null);
 
         RestAssured.baseURI = "http://" + hostName + ":" + port();

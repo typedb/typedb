@@ -18,26 +18,29 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -269,11 +272,20 @@ public abstract class Atom extends AtomicBase {
         return Collections.singleton(new UnifierImpl());
     }
 
-    /**
-     * infers types (type, role types) fo the atom if applicable/possible
-     * @return either this atom if nothing could be inferred or a fresh atom with inferred types
-     */
+    @Override
     public Atom inferTypes(){ return this; }
+
+    /**
+     * @param sub partial substitution
+     * @return list of possible atoms obtained by applying type inference
+     */
+    public List<Atom> atomOptions(Answer sub){ return Lists.newArrayList(inferTypes());}
+
+    /**
+     * @param type to be added to this {@link Atom}
+     * @return new {@link Atom} with specified type
+     */
+    public Atom addType(SchemaConcept type){ return this;}
 
     /**
      * rewrites the atom to one with user defined name

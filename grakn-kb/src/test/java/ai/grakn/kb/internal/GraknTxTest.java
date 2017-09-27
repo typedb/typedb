@@ -19,8 +19,8 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -28,9 +28,8 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
@@ -103,19 +102,17 @@ public class GraknTxTest extends TxTestBase {
         assertNull(tx.getRelationshipType(relationTypeLabel));
         assertNull(tx.getRole(roleTypeLabel));
         assertNull(tx.getAttributeType(resourceTypeLabel));
-        assertNull(tx.getRuleType(ruleTypeLabel));
+        assertNull(tx.getRule(ruleTypeLabel));
 
         EntityType entityType = tx.putEntityType(entityTypeLabel);
         RelationshipType relationshipType = tx.putRelationshipType(relationTypeLabel);
         Role role = tx.putRole(roleTypeLabel);
         AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
-        RuleType ruleType = tx.putRuleType(ruleTypeLabel);
 
         assertEquals(entityType, tx.getEntityType(entityTypeLabel));
         assertEquals(relationshipType, tx.getRelationshipType(relationTypeLabel));
         assertEquals(role, tx.getRole(roleTypeLabel));
         assertEquals(attributeType, tx.getAttributeType(resourceTypeLabel));
-        assertEquals(ruleType, tx.getRuleType(ruleTypeLabel));
     }
 
     @Test
@@ -127,10 +124,7 @@ public class GraknTxTest extends TxTestBase {
                 tx.admin().getMetaConcept(),
                 tx.admin().getMetaRelationType(),
                 tx.admin().getMetaEntityType(),
-                tx.admin().getMetaRuleType(),
                 tx.admin().getMetaResourceType(),
-                tx.admin().getMetaRuleConstraint(),
-                tx.admin().getMetaRuleInference(),
                 sampleEntityType,
                 sampleRelationshipType
         ));
@@ -149,6 +143,7 @@ public class GraknTxTest extends TxTestBase {
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(Collectors.toSet()));
         finalTypes.add(tx.admin().getMetaRole());
+        finalTypes.add(tx.admin().getMetaRule());
 
         tx.abort();
 
@@ -164,7 +159,7 @@ public class GraknTxTest extends TxTestBase {
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
         EntityTypeImpl et = (EntityTypeImpl) tx.putEntityType("Sample Entity Type");
-        assertEquals(et, tx.factory().buildConcept(et.vertex()));
+        assertEquals(et, tx.factory().buildConcept(et.vertex()).get());
     }
 
     @Test
@@ -183,7 +178,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidKBException {
-        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
+        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testingagain").open(GraknTxType.WRITE);
         graph.close();
 
         boolean errorThrown = false;
@@ -196,7 +191,7 @@ public class GraknTxTest extends TxTestBase {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, "testingagain").open(GraknTxType.WRITE);
         graph.putEntityType("A Thing");
     }
 
@@ -255,7 +250,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void whenAttemptingToMutateReadOnlyGraph_Throw(){
-        String keyspace = "my-read-only-graph";
+        String keyspace = "myreadonlygraph";
         String entityType = "My Entity Type";
         String roleType1 = "My Role Type 1";
         String roleType2 = "My Role Type 2";

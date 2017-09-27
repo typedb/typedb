@@ -20,12 +20,6 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.util.EngineID;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -33,8 +27,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 import java.time.Instant;
+
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.time.Instant.now;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -112,19 +114,32 @@ public class TaskState implements Serializable {
         return new TaskState(null, null, null, id, null);
     }
 
+    public static TaskState of(TaskId id, TaskStatus taskStatus) {
+        return new TaskState(null, null, null, id, null, taskStatus);
+    }
+
     @JsonCreator
     public TaskState(@JsonProperty("taskClass") Class<?> taskClass,
             @JsonProperty("creator") String creator,
             @JsonProperty("schedule") TaskSchedule schedule,
             @JsonProperty("id") TaskId id,
-            @JsonProperty("priority") Priority priority) {
-        this.status = CREATED;
+            @JsonProperty("priority") Priority priority,
+            @JsonProperty("status") TaskStatus status) {
+        this.status = status;
         this.statusChangeTime = now();
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
         this.creator = creator;
         this.schedule = schedule;
         this.taskId = id.getValue();
         this.priority = priority;
+    }
+
+    public TaskState(Class<?> taskClass,
+            String creator,
+            TaskSchedule schedule,
+            TaskId id,
+            Priority priority) {
+        this(taskClass, creator, schedule, id, priority, CREATED);
     }
 
     private TaskState(TaskState taskState) {
@@ -183,10 +198,14 @@ public class TaskState implements Serializable {
         this.exception = exception.getClass().getName();
         this.stackTrace = getFullStackTrace(exception);
         this.statusChangeTime = now();
+        return this;
+    }
 
-        // We want to keep the configuration and checkpoint here
-        // It's useful to debug failed states
-
+    public TaskState markFailed(String reason){
+        this.status = FAILED;
+        this.exception = reason;
+        this.stackTrace = "No Stack Trace Provided";
+        this.statusChangeTime = now();
         return this;
     }
 

@@ -25,7 +25,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -48,6 +49,7 @@ import org.junit.rules.ExpectedException;
 
 import static ai.grakn.concept.AttributeType.DataType.BOOLEAN;
 import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.parse;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static ai.grakn.util.GraqlTestUtil.assertNotExists;
@@ -66,6 +68,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -131,8 +134,8 @@ public class DefineQueryTest {
                 label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
-        MatchQuery query = qb.match(var("x").label("my-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
+        Match match = qb.match(var("x").label("my-type"));
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
     }
@@ -144,8 +147,8 @@ public class DefineQueryTest {
                 label("sub-type").sub("my-type")
         ).execute();
 
-        MatchQuery query = qb.match(var("x").label("sub-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
+        Match match = qb.match(var("x").label("sub-type"));
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
     }
@@ -186,7 +189,7 @@ public class DefineQueryTest {
 
         qb.insert(var("x").isa("new-type")).execute();
 
-        MatchQuery typeQuery = qb.match(var("n").label("new-type"));
+        Match typeQuery = qb.match(var("n").label("new-type"));
 
         assertEquals(1, typeQuery.stream().count());
 
@@ -197,16 +200,6 @@ public class DefineQueryTest {
         assertTrue(newType.plays().anyMatch(role -> role.equals(movies.tx().getRole(roleTypeLabel))));
 
         assertExists(qb, var().isa("new-type"));
-    }
-
-    @Test
-    public void testDefineRuleType() {
-        assertDefine(var("x").label("my-inference-rule").sub(RULE.getLabel().getValue()));
-    }
-
-    @Test
-    public void testDefineRuleSub() {
-        assertDefine(var("x").label("an-sub-rule-type").sub("a-rule-type"));
     }
 
     @Test
@@ -272,7 +265,7 @@ public class DefineQueryTest {
     public void testResourceTypeRegex() {
         qb.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
 
-        MatchQuery match = qb.match(var("x").label("greeting"));
+        Match match = qb.match(var("x").label("greeting"));
         assertEquals("hello|good day", match.get("x").findFirst().get().asAttributeType().getRegex());
     }
 
@@ -285,7 +278,7 @@ public class DefineQueryTest {
         DefineQuery query = qb.define(type.label("my-type").sub("entity"), type2.label("my-type"));
 
         Answer result = query.execute();
-        assertThat(result.keySet(), containsInAnyOrder(type, type2));
+        assertThat(result.vars(), containsInAnyOrder(type, type2));
         assertEquals(result.get(type), result.get(type2));
     }
 
@@ -297,6 +290,16 @@ public class DefineQueryTest {
         qb.define(label("a-new-type").sub("movie")).execute();
         
         assertEquals(movie, newType.sup());
+    }
+
+    @Test
+    public void whenDefiningARule_TheRuleIsInTheKB() {
+        Pattern when = qb.parsePattern("$x isa entity");
+        Pattern then = qb.parsePattern("$x isa entity");
+        VarPattern vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
+        qb.define(vars).execute();
+
+        assertNotNull(movies.tx().getRule("my-rule"));
     }
 
     @Test
@@ -359,6 +362,34 @@ public class DefineQueryTest {
     }
 
     @Test
+    public void whenDefiningRuleWithoutWhen_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
+        qb.define(label("a-rule").sub(label(RULE.getLabel())).then(var("x").isa("movie"))).execute();
+    }
+
+    @Test
+    public void whenDefiningRuleWithoutThen_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
+        qb.define(label("a-rule").sub(label(RULE.getLabel())).when(var("x").isa("movie"))).execute();
+    }
+
+    @Test
+    public void whenDefiningANonRuleWithAWhenPattern_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
+        qb.define(label("yes").sub(label(ENTITY.getLabel())).when(var("x"))).execute();
+    }
+
+    @Test
+    public void whenDefiningANonRuleWithAThenPattern_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
+        qb.define(label("covfefe").sub(label(ENTITY.getLabel())).then(var("x"))).execute();
+    }
+
+    @Test
     public void whenDefiningAThing_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());
@@ -379,6 +410,13 @@ public class DefineQueryTest {
         qb.define(var().id(id).has("title", "Bob")).execute();
     }
 
+    @Test
+    public void whenCallingToStringOfDefineQuery_ReturnCorrectRepresentation(){
+        String queryString = "define label my-entity sub entity;";
+        DefineQuery defineQuery = parse(queryString);
+        assertEquals(queryString, defineQuery.toString());
+    }
+
     private void assertDefine(VarPattern... vars) {
         // Make sure vars don't exist
         for (VarPattern var : vars) {
@@ -393,10 +431,8 @@ public class DefineQueryTest {
             assertExists(qb, var);
         }
 
-        // Delete all vars
-        for (VarPattern var : vars) {
-            qb.match(var).delete(var.admin().var()).execute();
-        }
+        // Undefine all vars
+        qb.undefine(vars).execute();
 
         // Make sure vars don't exist
         for (VarPattern var : vars) {

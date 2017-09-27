@@ -26,6 +26,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -55,7 +57,7 @@ public class PostProcessingTest {
     private GraknSession session;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @BeforeClass
     public static void onlyRunOnTinker(){
@@ -64,7 +66,7 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
-        session = engine.factoryWithNewKeyspace();
+        session = engine.sessionWithNewKeyspace();
     }
 
     @After
@@ -114,12 +116,21 @@ public class PostProcessingTest {
         PostProcessingTask task = new PostProcessingTask();
         TaskConfiguration configuration = TaskConfiguration.of(
                 Json.object(
-                        KEYSPACE, graph.getKeyspace(),
+                        KEYSPACE, graph.getKeyspace().getValue(),
                         REST.Request.COMMIT_LOG_FIXING, Json.object(
                                 Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory(),
+        TaskSubmitter taskSubmitter = new TaskSubmitter() {
+            @Override
+            public void addTask(TaskState taskState, TaskConfiguration configuration) {
+            }
+
+            @Override
+            public void runTask(TaskState taskState, TaskConfiguration configuration) {
+            }
+        };
+        task.initialize(null, configuration, taskSubmitter, engine.config(), null, engine.server().factory(),
                 new ProcessWideLockProvider(), new MetricRegistry());
 
         task.start();

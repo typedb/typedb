@@ -53,7 +53,7 @@ public interface GraknComputer {
     /**
      * Execute the given vertex program using a graph computer.
      *
-     * @param includesShortcut whether the graph computer should include shortcut edges
+     * @param includesRolePlayerEdges whether the graph computer should include {@link ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edges
      * @param types            instance types in the subgraph
      * @param program          the vertex program
      * @param mapReduce        a list of mapReduce job
@@ -62,7 +62,7 @@ public interface GraknComputer {
      */
     @CheckReturnValue
     ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
-                           @Nullable Set<LabelId> types, Boolean includesShortcut);
+                           @Nullable Set<LabelId> types, Boolean includesRolePlayerEdges);
 
     /**
      * Execute the given vertex program using a graph computer.

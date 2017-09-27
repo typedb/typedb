@@ -1,0 +1,5 @@
+match
+	$mirna has mirID <miRNA>;
+	$gene has gene-symbol <Target-Gene>;
+insert
+	$rel (targeted-gene: $gene, targeting-mirna: $mirna) isa gene-target;

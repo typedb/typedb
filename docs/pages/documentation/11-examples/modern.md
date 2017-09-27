@@ -25,8 +25,8 @@ If it is not already running, start Grakn, then open a Graql shell:
 
 ```bash
 cd [your Grakn install directory]
-bin/grakn.sh start
-bin/graql.sh
+./grakn server start
+./graql console
 ```
 
 ## Defining a Schema
@@ -124,10 +124,11 @@ This example is designed to get you up close and personal with Graql queries. It
 
 OK, so if you've followed the above, you should now have a schema and some data in a knowledge base. How do you go about using the knowledge base to answer your queries? That's where the `match` statement comes in. 
 
-As with any query language, you use a variable to receive the results of the match query, which you must prefix with a `$`. So, to make the query "List every person in the knowledge base", you would use the following in Graql:
+As with any query language, you use a variable to receive the results of the get query, which you must prefix with a
+`$`. So, to make the query "List every person in the knowledge base", you would use the following in Graql:
 
 ```graql
->>> match $x isa person, has name $n; select $n;
+>>> match $x isa person, has name $n; get $n;
 
 $n val "vadas" isa name;
 $n val "marko" isa name;
@@ -135,12 +136,15 @@ $n val "josh" isa name;
 $n val "peter" isa name;
 ```
  
-In Graql, a match is formed of three parts: the `match` statement, an optional `select` statement, and any other optional [modifiers](../graql/match-queries.html#modifiers) that you choose to apply to the listing of results. Only the first part of a match query is needed: the modifier parts are optional.   
+In Graql, a match is formed of two parts: the `match` statement statement and any optional
+[modifiers](../graql/matches.html#modifiers) that you choose to apply to the listing of results. Only the first
+part of a match is needed: the modifiers are optional.
 
-In the `match $x isa person` query we are not using any select or delimiters, so let's add some now.  We can add a `select` statement to ask Graql to list out every person and to include their id (which is their name) and age. We use `order by` to modify how the results are listed out - in this case, we order them by ascending age, so the youngest person is shown first.
+In the `match $x isa person` match we are not using any modifiers, so let's add some now. We use `order by` to modify
+how the results are listed out - in this case, we order them by ascending age, so the youngest person is shown first.
 
 ```graql
->>> match $x isa person, has name $n, has age $a; select $n, $a; order by $a asc;
+>>> match $x isa person, has name $n, has age $a; order by $a asc; get $n, $a;
 
 $x id "vadas" has age "27"; 
 $x id "marko" has age "29"; 
@@ -152,7 +156,7 @@ $x id "peter" has age "35";
 Here is the complete example - the code to define the schema and insert the data into a knowledge base. You can load this directly into Graql, if you don't want to type it out for yourself. Cut and paste the Graql below and start Graql:
 
 ```bash
-bin/graql.sh
+./graql console
 ```
 
 Then type edit, which will open up the systems default text editor where you can paste your chunk of text. Upon exiting the editor, the Graql will execute.

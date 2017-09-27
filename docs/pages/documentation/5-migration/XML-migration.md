@@ -16,7 +16,7 @@ This is reference documenation for how to migrate XML data into grakn. Make sure
 The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
 
 ```bash
-usage: migration.sh xml -template <arg> -input <arg> -keyspace <arg> -element <arg> -schema <arg> [-help] [-no] [-batch <arg>] [-active <arg>] [-uri <arg>] [-retry <arg>] [-verbose]
+usage: graql migrate xml -template <arg> -input <arg> -keyspace <arg> -element <arg> -schema <arg> [-help] [-no] [-batch <arg>] [-active <arg>] [-uri <arg>] [-retry <arg>] [-verbose]
  
 OPTIONS
  -a,--active <arg>     Number of tasks (batches) running on the server at
@@ -36,6 +36,7 @@ OPTIONS
  -t,--template <arg>   Graql template to apply to the data.
  -u,--uri <arg>        Location of Grakn Engine.
  -v,--verbose          Print counts of migrated data.
+ -d,--debug            Migration immediatly stops if any transaction fails
 ```
 
 ## XML Migration Basics
@@ -265,13 +266,13 @@ The tirangle brackets are used to specify nested elements: in the XML `<BOTANICA
 Before running any migration you need to ensure that the schema has been loaded to the knowledge base: 
 
 ```
-./<grakn-install-location>/bin/graql.sh -f plants-schema.gql -k plants
+./graql console -f plants-schema.gql -k plants
 ```
 
 At this point you can run the XML migration script on the resources we have described above: 
 
 ```
-./<grakn-install-location>/bin/migration.sh xml -i plants.xml -t plants-template.gql -e PLANT -k plants 
+./graql migrate xml -i plants.xml -t plants-template.gql -e PLANT -k plants 
 ```
 
 Adding the `-n` tag to the migration script will print the resolved graql statements to system out. This is a useful tactic to get used to the Graql langauge and know exactly what is being inserted into your knowledge base:

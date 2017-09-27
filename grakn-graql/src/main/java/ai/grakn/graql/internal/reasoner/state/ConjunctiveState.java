@@ -62,13 +62,10 @@ public class ConjunctiveState extends QueryState {
                             Set<ReasonerAtomicQuery> subGoals,
                             QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
-
-        this.query = ReasonerQueries
-                    .create(q)
-                    .addSubstitution(sub);
+        this.query = ReasonerQueries.create(q, sub);
 
         if (!query.isRuleResolvable()){
-            dbIterator = query.getMatchQuery().stream()
+            dbIterator = query.getQuery().stream()
                     .map(at -> at.explain(new JoinExplanation(query, at)))
                     .iterator();
             subQueries = new LinkedList<>();

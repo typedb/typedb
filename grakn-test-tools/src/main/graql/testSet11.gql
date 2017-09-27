@@ -25,11 +25,9 @@ relation3 sub relationship
 	relates role1
 	relates role2;
 
-insert
-
 #Rules
 
-isa inference-rule 
+rule-1 sub rule
 	when {
 		(role1:$x, role2:$y) isa relation1;
 		(role1:$y, role2:$z) isa relation2;
@@ -39,7 +37,7 @@ isa inference-rule
 		(role1:$x, role2:$u) isa relation3;
 	};
 
-isa inference-rule 
+rule-2 sub rule
 	when {
 		(role1:$x, role2:$y) isa relation2;
 		(role1:$y, role2:$z) isa relation2;
@@ -47,6 +45,8 @@ isa inference-rule
 	then {
 		(role1:$x, role2:$z) isa relation2;
 	};
+
+insert
 
 #Data
 

@@ -19,6 +19,7 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.postprocessing.GraknTxMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
@@ -38,6 +39,8 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Task that will mutate data in a graph. It uses the engine running on the
@@ -48,6 +51,7 @@ import mjson.Json;
  * @author Alexandra Orth
  */
 public class MutatorTask extends BackgroundTask {
+    private static final Logger LOG = LoggerFactory.getLogger(MutatorTask.class);
 
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
@@ -55,7 +59,7 @@ public class MutatorTask extends BackgroundTask {
     public boolean start() {
         Collection<Query> inserts = getInserts(configuration());
         metricRegistry().histogram(name(MutatorTask.class, "jobs")).update(inserts.size());
-        String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+        Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
         int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
         GraknTxMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
@@ -80,6 +84,9 @@ public class MutatorTask extends BackgroundTask {
                 inserts.forEach(q -> {
                     try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
                         q.withTx(graph).execute();
+                    } catch (Exception e) {
+                        LOG.error("Error while executing insert for query: \n{}\nError: {}", q, e.getMessage());
+                        throw e;
                     }
                 });
 

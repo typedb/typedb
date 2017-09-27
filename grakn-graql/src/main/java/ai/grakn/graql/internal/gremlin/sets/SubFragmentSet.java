@@ -22,14 +22,69 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
+
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
+ * @see EquivalentFragmentSets#sub(VarProperty, Var, Var)
+ *
  * @author Felix Chapman
  */
-class SubFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class SubFragmentSet extends EquivalentFragmentSet {
 
-    SubFragmentSet(VarProperty varProperty, Var subType, Var superType) {
-        super(Fragments.outSub(varProperty, subType, superType), Fragments.inSub(varProperty, superType, subType));
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(
+                Fragments.outSub(varProperty(), subConcept(), superConcept()),
+                Fragments.inSub(varProperty(), superConcept(), subConcept())
+        );
     }
+
+    abstract Var subConcept();
+    abstract Var superConcept();
+
+    /**
+     * A query can avoid navigating the sub hierarchy when the following conditions are met:
+     *
+     * <ol>
+     *     <li>There is a {@link SubFragmentSet} {@code $X-[sub]->$Y}
+     *     <li>There is a {@link LabelFragmentSet} {@code $Y[label:foo,bar]}
+     * </ol>
+     *
+     * <p>
+     * In this case, the {@link SubFragmentSet} can be replaced with a {@link LabelFragmentSet}
+     * {@code $X[label:foo,...]} that is the <b>intersection</b> of all the subs of {@code foo} and {@code bar}.
+     * </p>
+     *
+     * <p>
+     * However, we still keep the old {@link LabelFragmentSet} in case it is connected to anything.
+     * {@link LabelFragmentSet#REDUNDANT_LABEL_ELIMINATION_OPTIMISATION} will eventually remove it if it is not.
+     * </p>
+     */
+    static final FragmentSetOptimisation SUB_TRAVERSAL_ELIMINATION_OPTIMISATION = (fragmentSets, tx) -> {
+        Iterable<SubFragmentSet> subSets = fragmentSetOfType(SubFragmentSet.class, fragmentSets)::iterator;
+
+        for (SubFragmentSet subSet : subSets) {
+            LabelFragmentSet labelSet = labelOf(subSet.superConcept(), fragmentSets);
+            if (labelSet == null) continue;
+
+            LabelFragmentSet newLabelSet = labelSet.tryExpandSubs(subSet.subConcept(), tx);
+
+            if (newLabelSet != null) {
+                fragmentSets.remove(subSet);
+                fragmentSets.add(newLabelSet);
+                return true;
+            }
+        }
+
+        return false;
+    };
 }

@@ -22,14 +22,28 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
+ * @see EquivalentFragmentSets#neq(VarProperty, Var, Var)
+ *
  * @author Felix Chapman
  */
-class NeqFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class NeqFragmentSet extends EquivalentFragmentSet {
 
-    NeqFragmentSet(VarProperty varProperty, Var varA, Var varB) {
-        super(Fragments.neq(varProperty, varA, varB), Fragments.neq(varProperty, varB, varA));
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(
+                Fragments.neq(varProperty(), varA(), varB()), Fragments.neq(varProperty(), varB(), varA())
+        );
     }
+
+    abstract Var varA();
+    abstract Var varB();
 }

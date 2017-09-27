@@ -26,7 +26,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -118,17 +118,9 @@ public class QueryErrorTest {
     public void testErrorHasGenreQuery() {
         // 'has genre' is not allowed because genre is an entity type
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage("genre"));
+        exception.expectMessage(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage("genre"));
         //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("movie").has("genre", "Drama")).stream();
-    }
-
-    @Test
-    public void testExceptionWhenNoSelectVariablesProvided() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage("select");
-        //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("movie")).select();
     }
 
     @Test
@@ -187,9 +179,9 @@ public class QueryErrorTest {
 
     @Test
     public void testGetNonExistentVariable() {
-        MatchQuery query = qb.match(var("x").isa("movie"));
+        Match match = qb.match(var("x").isa("movie"));
 
-        Stream<Concept> concepts = query.get("y");
+        Stream<Concept> concepts = match.get("y");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("y")));

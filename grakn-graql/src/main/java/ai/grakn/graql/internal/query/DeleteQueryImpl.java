@@ -22,13 +22,12 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
-import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
@@ -37,29 +36,30 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
+
 /**
- * A DeleteQuery that will execute deletions for every result of a MatchQuery
+ * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
  */
-class DeleteQueryImpl implements DeleteQueryAdmin {
-    private final ImmutableCollection<VarPatternAdmin> deleters;
-    private final MatchQueryAdmin matchQuery;
+@AutoValue
+abstract class DeleteQueryImpl implements DeleteQueryAdmin {
+
+    abstract ImmutableCollection<Var> vars();
+
+    @Override
+    public abstract Match match();
 
     /**
-     * @param deleters a collection of variable patterns to delete
-     * @param matchQuery a pattern to match and delete for each result
+     * @param vars a collection of variables to delete
+     * @param match a pattern to match and delete for each result
      */
-    DeleteQueryImpl(Collection<VarPatternAdmin> deleters, MatchQuery matchQuery) {
-        if (deleters.isEmpty()) {
-            throw GraqlQueryException.noPatterns();
-        }
-
-        this.deleters = ImmutableSet.copyOf(deleters);
-        this.matchQuery = matchQuery.admin();
+    static DeleteQueryImpl of(Collection<? extends Var> vars, Match match) {
+        return new AutoValue_DeleteQueryImpl(ImmutableSet.copyOf(vars), match);
     }
 
     @Override
     public Void execute() {
-        List<Answer> results = matchQuery.execute();
+        List<Answer> results = match().stream().collect(toList());
         results.forEach(this::deleteResult);
         return null;
     }
@@ -77,7 +77,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public DeleteQuery withTx(GraknTx tx) {
-        return Queries.delete(deleters, matchQuery.withTx(tx));
+        return Queries.delete(vars(), match().withTx(tx));
     }
 
     @Override
@@ -86,68 +86,21 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     private void deleteResult(Answer result) {
-        for (VarPatternAdmin deleter : deleters) {
-            Concept concept = result.get(deleter.var());
+        Collection<Var> toDelete = vars().isEmpty() ? result.vars() : vars();
 
-            if (concept == null) {
-                throw GraqlQueryException.varNotInQuery(deleter.var());
+        for (Var var : toDelete) {
+            Concept concept = result.get(var);
+
+            if (concept.isSchemaConcept()) {
+                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
             }
 
-            deletePattern(concept, deleter);
+            concept.delete();
         }
-    }
-
-    /**
-     * Delete a result from a query. This may involve deleting the whole concept or specific edges, depending
-     * on what deleters were provided.
-     * @param result the concept that matches the variable in the graph
-     * @param deleter the pattern to delete on the concept
-     */
-    private void deletePattern(Concept result, VarPatternAdmin deleter) {
-        if (!deleter.getProperties().findAny().isPresent()) {
-            // Delete whole concept if nothing specified to delete
-            result.delete();
-        } else {
-            deleter.getProperties().forEach(property ->
-                    ((VarPropertyInternal) property).delete(tx(), result)
-            );
-        }
-    }
-
-    private GraknTx tx() {
-        return matchQuery.tx().orElseThrow(GraqlQueryException::noTx);
-    }
-
-    @Override
-    public Collection<VarPatternAdmin> getDeleters() {
-        return deleters;
-    }
-
-    @Override
-    public MatchQuery getMatchQuery() {
-        return matchQuery;
     }
 
     @Override
     public String toString() {
-        return matchQuery + " delete " + deleters.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        DeleteQueryImpl that = (DeleteQueryImpl) o;
-
-        if (!deleters.equals(that.deleters)) return false;
-        return matchQuery.equals(that.matchQuery);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = deleters.hashCode();
-        result = 31 * result + matchQuery.hashCode();
-        return result;
+        return match() + " delete " + vars().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 }

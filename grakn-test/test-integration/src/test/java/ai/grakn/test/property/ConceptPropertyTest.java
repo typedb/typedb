@@ -21,9 +21,9 @@ package ai.grakn.test.property;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
@@ -117,6 +118,14 @@ public class ConceptPropertyTest {
     }
 
     @Property
+    public void whenConceptIsNotARule_TheConceptCannotBeConvertedToARule(Concept concept) {
+        assumeFalse(concept.isRule());
+        exception.expect(GraknTxOperationException.class);
+        //noinspection ResultOfMethodCallIgnored
+        concept.asRule();
+    }
+
+    @Property
     public void whenCallingDelete_TheConceptIsNoLongerInTheGraph(
             @Open GraknTx graph, @NonMeta @FromTx Concept concept) {
         assumeDeletable(graph, concept);
@@ -124,6 +133,11 @@ public class ConceptPropertyTest {
         assertThat(allConceptsFrom(graph), hasItem(concept));
         concept.delete();
         assertThat(allConceptsFrom(graph), not(hasItem(concept)));
+    }
+
+    @Property
+    public void whenAConceptIsNotDeleted_CallingIsDeletedReturnsFalse(Concept concept) {
+        assertFalse(concept.isDeleted());
     }
 
     @Property
@@ -142,7 +156,7 @@ public class ConceptPropertyTest {
 
         if (concept.isAttributeType()) assertEquals(concept, concept.asAttributeType());
 
-        if (concept.isRuleType()) assertEquals(concept, concept.asRuleType());
+        if (concept.isRule()) assertEquals(concept, concept.asRule());
 
         if (concept.isThing()) assertEquals(concept, concept.asThing());
 
@@ -152,7 +166,6 @@ public class ConceptPropertyTest {
 
         if (concept.isAttribute()) assertEquals(concept, concept.asAttribute());
 
-        if (concept.isRule()) assertEquals(concept, concept.asRule());
     }
 
     @Property
@@ -205,10 +218,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARuleType_TheConceptCannotBeConvertedToARuleType(Concept concept) {
-        assumeFalse(concept.isRuleType());
+        assumeFalse(concept.isRule());
         exception.expect(GraknTxOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asRuleType();
+        concept.asRule();
     }
 
     @Property
@@ -241,14 +254,6 @@ public class ConceptPropertyTest {
         exception.expect(GraknTxOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asAttribute();
-    }
-
-    @Property
-    public void whenConceptIsNotARule_TheConceptCannotBeConvertedToARule(Concept concept) {
-        assumeFalse(concept.isRule());
-        exception.expect(GraknTxOperationException.class);
-        //noinspection ResultOfMethodCallIgnored
-        concept.asRule();
     }
 
     private static void assumeDeletable(GraknTx graph, Concept concept) {

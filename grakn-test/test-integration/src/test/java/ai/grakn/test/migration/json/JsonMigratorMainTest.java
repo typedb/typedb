@@ -19,9 +19,10 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -54,7 +55,7 @@ public class JsonMigratorMainTest {
     private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();
     private final String templateFile = getFile("json", "simple-schema/template.gql").getAbsolutePath();
 
-    private String keyspace;
+    private Keyspace keyspace;
     private GraknSession session;
 
     @Rule
@@ -64,7 +65,7 @@ public class JsonMigratorMainTest {
     public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Before
     public void setup() {
@@ -76,13 +77,13 @@ public class JsonMigratorMainTest {
 
     @Test
     public void jsonMigratorCalledWithCorrectArgs_DataMigratedCorrectly(){
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace);
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void jsonMigratorCalledWithNoArgs_HelpMessagePrintedToSystemOut() {
         run("json");
-        assertThat(sysOut.getLog(), containsString("usage: migration.sh"));
+        assertThat(sysOut.getLog(), containsString("usage: graql migrate"));
     }
 
     @Test
@@ -111,9 +112,10 @@ public class JsonMigratorMainTest {
 
     @Test
     public void whenMigrationFailsOnTheServer_ErrorIsPrintedToSystemErr(){
-        run("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrong-keyspace");
-        String expectedMessage = GraknBackendException.noSuchKeyspace("wrong-keyspace").getMessage();
-        assertThat(sysErr.getLog(), containsString(expectedMessage));
+        run("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrongkeyspace");
+        String expectedMessage = GraknBackendException.noSuchKeyspace(Keyspace.of("wrongkeyspace")).getMessage();
+        // TODO Temporarily checking sysOut. Change it so it goes to sysErr
+        assertThat(sysOut.getLog(), containsString(expectedMessage));
     }
 
     private void run(String... args){

@@ -19,10 +19,6 @@
 package ai.grakn.migration.csv;
 
 import ai.grakn.migration.base.MigrationCLI;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,10 +30,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import static java.util.stream.Collectors.toMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static java.util.stream.Collectors.toMap;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 /**
  * The CSV migrator will migrate all of the data in a CSV file into Grakn Graql var patters, to be
@@ -57,12 +55,12 @@ public class CSVMigrator implements AutoCloseable {
     private final Reader reader;
 
     public static void main(String[] args) {
-        try {
+        try{
             MigrationCLI.init(args, CSVMigrationOptions::new).stream()
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .forEach(CSVMigrator::runCSV);
-        } catch (Throwable e){
+        } catch (IllegalArgumentException e){
             System.err.println(e.getMessage());
         }
     }
@@ -87,8 +85,6 @@ public class CSVMigrator implements AutoCloseable {
                                 .setNullString(options.getNullString())
         ) {
             MigrationCLI.loadOrPrint(csvTemplate, csvMigrator.convert(), options);
-        } catch (Throwable throwable) {
-            System.err.println(throwable.getMessage());
         }
     }
 

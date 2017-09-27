@@ -26,9 +26,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -36,7 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,21 +49,21 @@ public interface GraknAdmin {
 
     /**
      *
-     * @param vertex A vertex which contains properties necessary to build a concept from.
      * @param <T> The type of the concept being built
+     * @param vertex A vertex which contains properties necessary to build a concept from.
      * @return A concept built using the provided vertex
      */
     @CheckReturnValue
-    <T extends Concept> T buildConcept(Vertex vertex);
+    <T extends Concept> Optional<T> buildConcept(Vertex vertex);
 
     /**
      *
-     * @param edge An {@link Edge} which contains properties necessary to build a {@link Concept} from.
      * @param <T> The type of the {@link Concept} being built
+     * @param edge An {@link Edge} which contains properties necessary to build a {@link Concept} from.
      * @return A {@link Concept} built using the provided {@link Edge}
      */
     @CheckReturnValue
-    <T extends Concept> T buildConcept(Edge edge);
+    <T extends Concept> Optional<T> buildConcept(Edge edge);
 
 
     /**
@@ -90,7 +89,7 @@ public interface GraknAdmin {
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    SchemaConcept getMetaConcept();
+    Type getMetaConcept();
 
     /**
      * Get the root of all {@link RelationshipType}.
@@ -125,28 +124,12 @@ public interface GraknAdmin {
     EntityType getMetaEntityType();
 
     /**
-     * Get the root of all Rule Types;
+     * Get the root of all {@link Rule}s;
      *
-     * @return The meta rule type -> rule-type.
+     * @return The meta {@link Rule}
      */
     @CheckReturnValue
-    RuleType getMetaRuleType();
-
-    /**
-     * Get the root of all inference rules.
-     *
-     * @return The meta rule -> inference-rule.
-     */
-    @CheckReturnValue
-    RuleType getMetaRuleInference();
-
-    /**
-     * Get the root of all constraint rules.
-     *
-     * @return The meta rule -> constraint-rule.
-     */
-    @CheckReturnValue
-    RuleType getMetaRuleConstraint();
+    Rule getMetaRule();
 
     //------------------------------------- Admin Specific Operations ----------------------------------
 
@@ -203,8 +186,7 @@ public interface GraknAdmin {
      * @return A concept with the matching key and value
      */
     @CheckReturnValue
-    @Nullable
-    <T extends Concept> T getConcept(Schema.VertexProperty key, Object value);
+    <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.

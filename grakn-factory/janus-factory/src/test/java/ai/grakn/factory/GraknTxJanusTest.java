@@ -21,10 +21,14 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Attribute;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxJanus;
@@ -42,11 +46,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.ErrorMessage.TX_CLOSED_ON_ACTION;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
+import static ai.grakn.util.ErrorMessage.TX_CLOSED_ON_ACTION;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyArray;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -112,18 +118,8 @@ public class GraknTxJanusTest extends JanusTestBase {
     }
 
     @Test
-    public void whenCreatingGraphsWithDifferentKeyspace_EnsureCaseIsIgnored(){
-        TxFactoryJanus factory1 =  new TxFactoryJanus("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        TxFactoryJanus factory2 = new TxFactoryJanus("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknTxJanus case1 = factory1.open(GraknTxType.WRITE);
-        GraknTxJanus case2 = factory2.open(GraknTxType.WRITE);
-
-        assertEquals(case1.getKeyspace(), case2.getKeyspace());
-    }
-
-    @Test
     public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
-        GraknTxJanus graph = new TxFactoryJanus("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTxJanus graph = new TxFactoryJanus(Keyspace.of("test"), Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
         String entityTypeLabel = "Hello";
 
@@ -141,7 +137,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
-        GraknTxJanus graph = new TxFactoryJanus("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTxJanus graph = new TxFactoryJanus(Keyspace.of("case"), Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
         AttributeType<LocalDateTime> dateType = graph.putAttributeType("date", AttributeType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
         Attribute<LocalDateTime> date = dateType.putAttribute(now);
@@ -260,5 +256,29 @@ public class GraknTxJanusTest extends JanusTestBase {
         try(GraknTx graph = factory.open(GraknTxType.WRITE)){
             graph.getEntityType(label).addEntity();
         }
+    }
+
+    @Test
+    public void whenDeletingAConcept_TheConceptIsDeleted() {
+        Concept sacrifice = graknTx.putEntityType("sacrifice");
+
+        assertFalse(sacrifice.isDeleted());
+
+        sacrifice.delete();
+
+        assertTrue(sacrifice.isDeleted());
+    }
+
+    @Test
+    public void whenDeletingARelationshipTypeWithRoles_TheRelationshipTypeIsDeleted() {
+        Role murderer = graknTx.putRole("murderer");
+        Role victim = graknTx.putRole("victim");
+        RelationshipType murder = graknTx.putRelationshipType("murder").relates(murderer).relates(victim);
+
+        murder.delete();
+
+        assertTrue(murder.isDeleted());
+        assertThat(murderer.relationshipTypes().toArray(), emptyArray());
+        assertThat(victim.relationshipTypes().toArray(), emptyArray());
     }
 }

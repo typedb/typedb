@@ -39,17 +39,19 @@ $peter isa person, has name "peter";
 (parent: $john, child: $peter) isa Parent;
 (parent: $john, child: $bill) isa Parent;
 
+define
+
 ####################################################
 ##################RULES#############################
 ####################################################
 
-isa inference-rule,
+rule-1 sub rule,
 when {
 (sibA: $x, sibB: $y) isa Sibling;},
 then {
 (SG-role-A: $x, SG-role-B: $y) isa SameGen;};
 
-isa inference-rule,
+rule-2 sub rule,
 when {
 (parent: $x, child: $u) isa Parent;
 ($u, $v) isa SameGen;
@@ -57,7 +59,7 @@ when {
 then {
 (SG-role-A: $x, SG-role-B: $y) isa SameGen;};
 
-isa inference-rule,
+rule-3 sub rule,
 when {
 (parent: $z, child: $x) isa Parent;
 (parent: $z, child: $y) isa Parent;},

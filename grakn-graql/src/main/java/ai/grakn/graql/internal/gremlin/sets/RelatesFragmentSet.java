@@ -22,15 +22,29 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
+ * @see EquivalentFragmentSets#relates(VarProperty, Var, Var)
+ *
  * @author Felix Chapman
  */
-class RelatesFragmentSet extends EquivalentFragmentSet {
+@AutoValue
+abstract class RelatesFragmentSet extends EquivalentFragmentSet {
 
-    RelatesFragmentSet(VarProperty varProperty, Var relationType, Var roleType) {
-        super(Fragments.outRelates(varProperty, relationType, roleType),
-                Fragments.inRelates(varProperty, roleType, relationType));
+    @Override
+    public final Set<Fragment> fragments() {
+        return ImmutableSet.of(
+                Fragments.outRelates(varProperty(), relationshipType(), role()),
+                Fragments.inRelates(varProperty(), role(), relationshipType())
+        );
     }
+
+    abstract Var relationshipType();
+    abstract Var role();
 }

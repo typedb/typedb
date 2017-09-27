@@ -9,7 +9,7 @@ permalink: /documentation/graql/define-queries.html
 folder: documentation
 ---
 
-The page documents use of the Graql `define` query, which will define a specified [variable pattern](#variable-patterns)
+The page documents use of the Graql `define` query, which will define a specified [variable pattern](./matches.html#variable-patterns)
 describing a schema. To follow along, or experiment further, with the examples given below, please
 load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on
 [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
@@ -81,14 +81,14 @@ Add a role to a relationship.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell9">
 <pre>
-define siblings sub relationship, relates sibling1, relates sibling2;
+define siblings sub relationship, relates sibling, relates sibling;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java9">
 <pre>
 qb.define(
   label("siblings").sub("relationship")
-    .relates("sibling1").relates("sibling2")
+    .relates("sibling").relates("sibling")
 ).execute();
 </pre>
 </div> <!-- tab-pane -->
@@ -106,14 +106,14 @@ Allow the concept type to play the given role.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell10">
 <pre>
-define person plays sibling1;
-define person plays sibling2;
+define person plays sibling;
+define person plays sibling;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java10">
 <pre>
-qb.define(label("person").plays("sibling1")).execute();
-qb.define(label("person").plays("sibling2")).execute();
+qb.define(label("person").plays("sibling")).execute();
+qb.define(label("person").plays("sibling")).execute();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

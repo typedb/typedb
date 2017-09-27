@@ -23,6 +23,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.util.Schema;
@@ -34,7 +35,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  * </p>
  *
  * <p>
- *    Wraps the shortcut {@link Edge} which contains the information unifying an {@link Thing},
+ *    Wraps the {@link Schema.EdgeLabel#ROLE_PLAYER} {@link Edge} which contains the information unifying an {@link Thing},
  *    {@link Relationship} and {@link Role}.
  * </p>
  *
@@ -44,8 +45,16 @@ public class Casting {
     private final EdgeElement edgeElement;
     private final Cache<Role> cachedRoleType = new Cache<>(Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
     private final Cache<RelationshipType> cachedRelationType = new Cache<>(Cacheable.concept(), () -> (RelationshipType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
-    private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().target()));
-    private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().source()));
+
+    private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> edge().target().
+            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
+    );
+
+    private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> edge().source().
+            flatMap(vertexElement -> edge().tx().factory().<Relationship>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()))
+    );
 
     public Casting(EdgeElement edgeElement){
         this.edgeElement = edgeElement;
@@ -57,33 +66,33 @@ public class Casting {
 
     /**
      *
-     * @return The role the instance is playing
+     * @return The {@link Role} the {@link Thing} is playing
      */
-    public Role getRoleType(){
+    public Role getRole(){
         return cachedRoleType.get();
     }
 
     /**
      *
-     * @return The relation type the instance is taking part in
+     * @return The {@link RelationshipType} the {@link Thing} is taking part in
      */
-    public RelationshipType getRelationType(){
+    public RelationshipType getRelationshipType(){
         return cachedRelationType.get();
     }
 
     /**
      *
-     * @return The relation which is linking the role and the instance
+     * @return The {@link Relationship} which is linking the {@link Role} and the instance
      */
-    public Relationship getRelation(){
+    public Relationship getRelationship(){
         return cachedRelation.get();
     }
 
     /**
      *
-     * @return The instance playing the role
+     * @return The {@link Thing} playing the {@link Role}
      */
-    public Thing getInstance(){
+    public Thing getRolePlayer(){
         return cachedInstance.get();
     }
 

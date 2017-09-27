@@ -18,6 +18,7 @@
 package ai.grakn.engine.data;
 
 import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.exception.GraknBackendException;
 import com.google.common.base.Preconditions;
 import java.util.Collection;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.util.Pool;
 
 /**
@@ -37,9 +39,11 @@ import redis.clients.util.Pool;
 public class RedisWrapper {
 
     private Pool<Jedis> jedisPool;
+    private Set<String> uriSet;
 
-    private RedisWrapper(Pool<Jedis> jedisPool) {
+    private RedisWrapper(Pool<Jedis> jedisPool, Set<String> uriSet) {
         this.jedisPool = jedisPool;
+        this.uriSet = uriSet;
     }
 
     public Pool<Jedis> getJedisPool() {
@@ -52,6 +56,16 @@ public class RedisWrapper {
 
     public void close() {
         jedisPool.close();
+    }
+
+    public void testConnection() {
+        try {
+            getJedisPool().getResource();
+        } catch (JedisConnectionException e) {
+            throw GraknBackendException.serverStartupException(
+                    "Redis is not available. Make sure it's running on " + String
+                            .join(", ", uriSet), e);
+        }
     }
 
     /**
@@ -96,9 +110,12 @@ public class RedisWrapper {
 
         public RedisWrapper build() {
             // TODO make connection pool sizes configurable
-            Preconditions.checkState(!uriSet.isEmpty(), "Trying to build RedisWrapper without uriSet");
-            Preconditions.checkState(!(!useSentinel && uriSet.size() > 1), "More than one URL provided but Sentinel not used");
-            Preconditions.checkState(!(useSentinel && masterName == null), "Using Sentinel but master name not provided");
+            Preconditions
+                    .checkState(!uriSet.isEmpty(), "Trying to build RedisWrapper without uriSet");
+            Preconditions.checkState(!(!useSentinel && uriSet.size() > 1),
+                    "More than one URL provided but Sentinel not used");
+            Preconditions.checkState(!(useSentinel && masterName == null),
+                    "Using Sentinel but master name not provided");
             Pool<Jedis> jedisPool;
             JedisPoolConfig poolConfig = new JedisPoolConfig();
             poolConfig.setTestOnBorrow(true);
@@ -109,9 +126,10 @@ public class RedisWrapper {
             } else {
                 String uri = uriSet.stream().findFirst().get();
                 SimpleURI simpleURI = SimpleURI.withDefaultPort(uri, DEFAULT_PORT);
-                jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort(), TIMEOUT);
+                jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort(),
+                        TIMEOUT);
             }
-            return new RedisWrapper(jedisPool);
+            return new RedisWrapper(jedisPool, uriSet);
         }
     }
 }
