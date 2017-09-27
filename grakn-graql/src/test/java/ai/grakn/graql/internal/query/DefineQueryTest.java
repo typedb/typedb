@@ -413,12 +413,14 @@ public class DefineQueryTest {
 
     @Test
     public void whenSpecifyingLabelOfAnExistingConcept_LabelIsChanged() {
-        EntityType movie = movies.tx().getEntityType("movie");
-        Label newLabel = Label.of("film");
+        movies.tx().putEntityType("a-new-type");
 
-        qb.define(label(newLabel).id(movie.getId())).execute();
+        EntityType type = movies.tx().getEntityType("a-new-type");
+        Label newLabel = Label.of("a-new-new-type");
 
-        assertEquals(newLabel, movie.getLabel());
+        qb.define(label(newLabel).id(type.getId())).execute();
+
+        assertEquals(newLabel, type.getLabel());
     }
 
     @Test
