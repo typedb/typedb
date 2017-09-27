@@ -65,8 +65,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     @Override
-    void initSubGraph() {
-        super.initSubGraph();
+    void getAllSubTypes() {
+        super.getAllSubTypes();
         getResourceTypes(tx.get());
     }
 

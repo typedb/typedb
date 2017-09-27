@@ -61,6 +61,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         if (sourceId == null) throw GraqlQueryException.noPathSource();
         if (destinationId == null) throw GraqlQueryException.noPathDestination();
         initSubGraph();
+        getAllSubTypes();
+
         if (!verticesExistInSubgraph(sourceId, destinationId)) {
             throw GraqlQueryException.instanceDoesNotExist();
         }

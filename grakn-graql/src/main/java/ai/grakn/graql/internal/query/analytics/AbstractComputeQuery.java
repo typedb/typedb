@@ -125,30 +125,30 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     void initSubGraph() {
-        GraknTx theGraph = tx.orElseThrow(GraqlQueryException::noTx);
-        keySpace = theGraph.getKeyspace();
-        url = theGraph.admin().getEngineUrl();
+        GraknTx graknTx = tx.orElseThrow(GraqlQueryException::noTx);
+        keySpace = graknTx.getKeyspace();
+        url = graknTx.admin().getEngineUrl();
 
         if (this.isStatisticsQuery()) {
             includeAttribute = true;
         }
-        getAllSubTypes(theGraph);
     }
 
-    private void getAllSubTypes(GraknTx tx) {
+    void getAllSubTypes() {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
+        GraknTx graknTx = tx.get();
         if (subLabels.isEmpty()) {
             if (includeAttribute) {
-                tx.admin().getMetaConcept().subs().forEach(subTypes::add);
+                graknTx.admin().getMetaConcept().subs().forEach(subTypes::add);
             } else {
-                tx.admin().getMetaEntityType().subs().forEach(subTypes::add);
-                tx.admin().getMetaRelationType().subs()
+                graknTx.admin().getMetaEntityType().subs().forEach(subTypes::add);
+                graknTx.admin().getMetaRelationType().subs()
                         .filter(entityType -> !entityType.isImplicit()).forEach(subTypes::add);
             }
         } else {
             subTypes = subLabels.stream().map(label -> {
-                SchemaConcept type = tx.getSchemaConcept(label);
+                SchemaConcept type = graknTx.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
                 if (type.isRole() || type.isRule()) throw GraqlQueryException.roleAndRuleDoNotHaveInstance();
                 if (!includeAttribute && (type.isAttributeType() || type.isImplicit())) {

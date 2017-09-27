@@ -48,6 +48,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         LOGGER.info("ConnectedComponentsVertexProgram is called");
         long startTime = System.currentTimeMillis();
         initSubGraph();
+        getAllSubTypes();
+
         if (!selectedTypesHaveInstance()) {
             LOGGER.info("Selected types don't have instances");
             return (T) Collections.emptyMap();
