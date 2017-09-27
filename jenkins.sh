@@ -15,6 +15,6 @@ PATH="${WORKSPACE}/grakn-test/test-integration/src/test/bash:${WORKSPACE}/grakn-
 build-grakn.sh "local-test" &&
 init-grakn.sh &&
 load.sh &&
-validate.sh "local-test";
+validate.sh;
 
 tear-down.sh
