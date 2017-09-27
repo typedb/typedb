@@ -118,7 +118,7 @@ do
         echo "Parallelism: $ACTIVE_TASKS"
 
         tail -n +2 $CSV_DATA/${DATA_FILE} | wc -l
-        time graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -d -r 5 -k ${KEYSPACE} -u ${ENGINE} -a ${ACTIVE_TASKS:-25} -b 32
+        time graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -d -r 5 -k ${KEYSPACE} -u ${ENGINE} -a 1 -b 32
 done < ${SCRIPTPATH}/migrationsToRun.txt
 
 # confirm there were no errors

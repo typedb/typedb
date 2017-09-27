@@ -21,11 +21,11 @@ def runIntegrationTest(String workspace, String moduleName) {
     stage(moduleName) {
         withPath("${modulePath}:${modulePath}/src/main/bash") {
             withGrakn(workspace) {
-                timeout(180) {
+//                timeout(180) {
                     stage('Load') {
                         sh "load.sh"
                     }
-                }
+//                }
                 timeout(360) {
                     stage('Validate') {
                         sh "validate.sh ${env.BRANCH_NAME}"
@@ -72,7 +72,7 @@ def withPath(String path, Closure closure) {
 
 node {
     //Only run validation master/stable
-    if (env.BRANCH_NAME in ['master', 'stable']) {
+    if (env.BRANCH_NAME in ['master', 'stable'] || true) {
         String workspace = pwd()
         checkout scm
 

@@ -60,7 +60,7 @@ public abstract class GraknTxMutators {
      * @param keyspace {@link Keyspace} of the database to mutate
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
-    static void runMutationWithRetry(
+    public static void runMutationWithRetry(
             EngineGraknTxFactory factory, Keyspace keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
         runMutationWithRetry(factory, keyspace, GraknTxType.WRITE, maxRetry, mutatingFunction);
     }
