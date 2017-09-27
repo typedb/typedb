@@ -938,6 +938,51 @@ public class ReasoningTests {
                 .forEach(a -> assertTrue(answers3.contains(a)));
     }
 
+    @Test
+    public void queriesRequiryingDifferentMultiunifiers(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+
+        String queryString = "match " +
+                "(role1: $a, role2: $b, role3: $c) isa ternary;" +
+                "get;";
+
+        String queryString2 = "match " +
+                "(role: $a, role2: $b, role: $c) isa ternary;" +
+                "$b has name 'b';" +
+                "get;";
+
+        String queryString3 = "match " +
+                "(role1: $a, $r2: $b, $r3: $c) isa ternary;" +
+                "$a has name 'a';" +
+                "get;";
+
+        String queryString4 = "match " +
+                "($r: $a) isa ternary;" +
+                "get;";
+
+        String queryString5 = "match " +
+                "($r: $b) isa ternary;" +
+                "$b has name 'b';" +
+                "get;";
+
+        String queryString6 = "match " +
+                "$r($role: $x) isa ternary;" +
+                "get;";
+
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<Answer> answers4 = qb.<GetQuery>parse(queryString4).execute();
+        List<Answer> answers5 = qb.<GetQuery>parse(queryString5).execute();
+        assertEquals(answers.size(), 27);
+        assertEquals(answers2.size(), 9);
+        assertEquals(answers3.size(), 63);
+        assertEquals(answers4.size(), 12);
+        assertEquals(answers5.size(), 4);
+        System.out.println();
+    }
+
     @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation
     public void mutuallyRecursiveRelationAndResource_queryForAttributedType(){
         QueryBuilder qb = testSet30.tx().graql().infer(true);

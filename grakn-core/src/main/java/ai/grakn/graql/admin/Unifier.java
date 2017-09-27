@@ -110,7 +110,10 @@ public interface Unifier{
     Unifier merge(Unifier u);
 
     /**
-     * unifier combination by joining mappings
+     * Setting v = this unifier, produces a unifier u' that applied to an expression E has the following properties:
+     *
+     *  u'E = u x E' = u x (v E)
+     *
      * @param u unifier to be combined with this unifier
      * @return combined unifier
      */

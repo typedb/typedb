@@ -4,6 +4,7 @@ define
 
 role1 sub role;
 role2 sub role;
+role3 sub role;
 
 #Entities
 
@@ -18,6 +19,11 @@ relation1 sub relationship
 	relates role1
 	relates role2;
 
+ternary sub relationship
+	relates role1
+	relates role2
+	relates role3;
+
 name sub attribute datatype string;
 
 #Rules
@@ -29,6 +35,15 @@ rule-1 sub rule
 	}
 	then {
 		(role1:$x, role2:$y) isa relation1;
+	};
+
+rule-2 sub rule
+	when {
+		(role1:$x, role2:$z) isa relation1;
+		(role1:$z, role2:$y) isa relation1;
+	}
+	then {
+		(role1:$x, role2:$y, role3: $z) isa ternary;
 	};
 
 insert

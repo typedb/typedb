@@ -111,15 +111,17 @@ public class AtomicState extends QueryState{
     InferenceRule getCurrentRule(){ return currentRule;}
 
     private ResolutionState generateSubGoalFromRule(RuleTuple ruleTuple){
-        currentRule = ruleTuple.getRule();
-        //TODO
         Unifier ruleUnifier = ruleTuple.getRuleUnifier();
         Unifier permutationUnifier = ruleTuple.getPermutationUnifier();
+        Unifier combinedUnifierInverse = permutationUnifier.combine(ruleUnifier.inverse());
+
+
+        currentRule = ruleTuple.getRule()
+                .propagateConstraints(query.getAtom(), combinedUnifierInverse);
 
         //delta' = theta . thetaP . delta
         Answer partialSubPrime = query.getSubstitution()
-                .unify(permutationUnifier)
-                .unify(ruleUnifier.inverse());
+                .unify(combinedUnifierInverse);
 
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
         return currentRule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache());

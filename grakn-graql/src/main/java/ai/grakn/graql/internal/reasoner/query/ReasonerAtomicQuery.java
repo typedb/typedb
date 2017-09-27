@@ -289,12 +289,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 //TODO
                 Unifier unifier = ruleContext.getRuleUnifier();
                 Unifier permutationUnifier = ruleContext.getPermutationUnifier();
+                Unifier combinedUnifierInverse =  permutationUnifier.combine(unifier.inverse());
 
-                Answer sub = this.getSubstitution()
-                        .unify(permutationUnifier)
-                        .unify(unifier.inverse());
+                Answer sub = this.getSubstitution().unify(combinedUnifierInverse);
 
-                InferenceRule rule = ruleContext.getRule().withSubstitution(sub);
+                InferenceRule rule = ruleContext.getRule()
+                        .propagateConstraints(getAtom(), combinedUnifierInverse)
+                        .withSubstitution(sub);
 
                 Stream<Answer> localStream = resolveViaRule(rule, unifier, permutationUnifier, subGoals, cache, dCache, differentialJoin);
                 answerStream = Stream.concat(answerStream, localStream);
@@ -338,13 +339,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return getAtom().getApplicableRules()
                 .flatMap(r -> {
                     //TODO
+                    /*
                     Unifier ruleUnifier = r.getUnifier(getAtom());
-                    Unifier ruleUnifierInv = ruleUnifier.inverse();
                     return getAtom().getPermutationUnifiers(r.getHead().getAtom()).stream()
-                            .map(permutationUnifier ->
-                                    new RuleTuple(r.propagateConstraints(getAtom(), permutationUnifier.combine(ruleUnifierInv)),
-                                            ruleUnifier,
-                                            permutationUnifier));
+                            .map(permutationUnifier -> new RuleTuple(r, ruleUnifier, permutationUnifier));
+                            */
+                    return r.getMultiUnifier(getAtom()).stream()
+                            .map(unifier -> new RuleTuple(r, unifier, new UnifierImpl()));
+
                 })
                 .sorted(Comparator.comparing(rt -> -rt.getRule().resolutionPriority()))
                 .iterator();
