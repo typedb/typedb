@@ -58,6 +58,5 @@ public class AddBenchmark extends BenchmarkTest {
             Entity entity1 = entityType.addEntity();
             Entity entity2 = entityType.addEntity();
             relationshipType.addRelationship().addRolePlayer(role1, entity1).addRolePlayer(role2, entity2);
-            graph.commit();
     }
 }
