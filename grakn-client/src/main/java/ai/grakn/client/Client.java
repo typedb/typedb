@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -65,13 +64,13 @@ public class Client {
         }
     };
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         int result;
         try {
             result = checkServerRunning();
         } catch (Exception e) {
-            LOG.error("An exception has occurred", e);
-            throw e;
+            LOG.error("An unexpected error occurred", e);
+            result = 2;
         }
         System.exit(result);
     }
@@ -88,9 +87,6 @@ public class Client {
         Properties properties = new Properties();
         try (FileInputStream stream = new FileInputStream(confPath)) {
             properties.load(stream);
-        } catch (FileNotFoundException e) {
-            LOG.error("Could not find config file at `" + confPath + "`");
-            return 2;
         }
 
         String serverUri = properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
@@ -113,19 +109,25 @@ public class Client {
             URL url = new URL("http://" + uri + REST.WebPath.System.CONFIGURATION);
 
             HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
+
             connection.setRequestMethod("GET");
-            connection.connect();
+
+            try {
+                connection.connect();
+            } catch (IOException e) {
+                // If this fails, then the server is not reachable
+                return false;
+            }
 
             InputStream inputStream = connection.getInputStream();
             if (inputStream.available() == 0) {
                 LOG.error("input stream is not available");
                 return false;
             }
+            return true;
         } catch (IOException e) {
-            LOG.error("An exception has occurred", e);
-            return false;
+            throw new RuntimeException(e);
         }
-        return true;
     }
 
     private static URL mapQuadZeroRouteToLocalhost(URL originalUrl) throws MalformedURLException {
@@ -133,9 +135,8 @@ public class Client {
 
         URL mappedUrl;
         if ((originalUrl.getProtocol() + originalUrl.getHost()).equals(QUAD_ZERO_ROUTE)) {
-            mappedUrl = new URL(originalUrl.getProtocol() + "://" +
-                "localhost" + ":" + originalUrl.getPort() +
-                REST.WebPath.System.CONFIGURATION);
+            mappedUrl = new URL(
+                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.System.CONFIGURATION);
         } else {
             mappedUrl = originalUrl;
         }
