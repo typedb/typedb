@@ -23,24 +23,27 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
-import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.match;
-import static ai.grakn.graql.Graql.var;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import static java.util.stream.Stream.generate;
-import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static java.util.stream.Stream.generate;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -169,6 +172,9 @@ public class BatchMutatorClientTest {
     private BatchMutatorClient loader(){
         // load schema
         try(GraknTx graph = session.open(GraknTxType.WRITE)){
+            Role role = graph.putRole("some-role");
+            graph.putRelationshipType("some-relationship").relates(role);
+
             EntityType nameTag = graph.putEntityType("name_tag");
             AttributeType<String> nameTagString = graph.putAttributeType("name_tag_string", AttributeType.DataType.STRING);
             AttributeType<String> nameTagId = graph.putAttributeType("name_tag_id", AttributeType.DataType.STRING);

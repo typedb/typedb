@@ -253,6 +253,7 @@ public class REST {
          */
         public static class Task {
             public static final String STACK_TRACE = "stackTrace";
+            public static final String EXCEPTION = "exception";
             public static final String ID = "id";
             public static final String STATUS = "status";
         }
