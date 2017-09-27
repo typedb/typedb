@@ -315,7 +315,6 @@ public class InferenceRule {
         if (multiUnifier.size() > 1){
             System.out.println();
         }
-
         System.out.println(parentAtom);
         System.out.println(getHead().getAtom());
         System.out.println(multiUnifier.iterator().next());
