@@ -28,7 +28,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -261,16 +260,6 @@ public abstract class Atom extends AtomicBase {
      * @return set of type atoms that describe specific role players or resource owner
      */
     public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
-
-    /**
-     * computes a set of permutation unifiers that define swapping operation between role players
-     * NB: returns an identity unifier by default
-     * @param headAtom unification reference atom
-     * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
-     */
-    public Set<Unifier> getPermutationUnifiers(Atom headAtom){
-        return Collections.singleton(new UnifierImpl());
-    }
 
     @Override
     public Atom inferTypes(){ return this; }

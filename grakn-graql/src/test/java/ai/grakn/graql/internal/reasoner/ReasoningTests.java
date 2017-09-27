@@ -188,7 +188,7 @@ public class ReasoningTests {
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
         assertEquals(2, answers.size());
-        assertEquals(6, answers2.size());
+        assertEquals(8, answers2.size());
         assertNotEquals(answers.size() * answers2.size(), 0);
         answers.forEach(x -> assertEquals(x.size(), 1));
         answers2.forEach(x -> assertEquals(x.size(), 2));

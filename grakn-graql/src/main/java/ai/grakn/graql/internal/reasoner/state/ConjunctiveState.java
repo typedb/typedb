@@ -91,14 +91,12 @@ public class ConjunctiveState extends QueryState {
 
     ResolutionState propagateAnswer(AnswerState state){
         Answer answer = state.getAnswer();
-        //return AnswerStateFactory.create(answer, getMultiUnifier(), getParentState());
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
     }
 
     @Override
     public ResolutionState generateSubGoal(){
         if (dbIterator.hasNext()){
-           // return AnswerStateFactory.create(dbIterator.next(), getMultiUnifier(), getParentState());
             return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
         }
 

@@ -53,7 +53,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -71,13 +70,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSupers;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static java.util.stream.Collectors.toSet;
 
@@ -516,30 +512,6 @@ public class RelationshipAtom extends IsaAtom {
                 .collect(toSet());
     }
 
-    /**
-     * @return rolePlayer-roleVariable pairs that are not specific (either don't have a role pattern or have a meta role)
-     */
-    private Set<Pair<Var, Var>> getNonSpecificRelationPlayers() {
-        return getRelationPlayers().stream()
-                .filter(rp -> rp.getRole().isPresent())
-                .filter(rp -> {
-                    VarPatternAdmin rolePattern = rp.getRole().orElse(null);
-                    if (rolePattern == null) return true;
-
-                    Label roleLabel = rolePattern.getTypeLabel().orElse(null);
-                    return roleLabel == null || Schema.MetaSchema.isMetaLabel(roleLabel);
-                })
-                .map(rp -> {
-                    Var rolePlayer = rp.getRolePlayer().var();
-                    VarPatternAdmin rolePattern = rp.getRole().orElse(null);
-                    if (rolePattern != null){
-                        return new Pair<>(rolePlayer, rolePattern.var());
-                    }
-                    return new Pair<Var, Var>(rolePlayer, null);
-                })
-                .collect(Collectors.toSet());
-    }
-
     @Override
     public Set<TypeAtom> getSpecificTypeConstraints() {
         Set<Var> mappedVars = getSpecificRolePlayers();
@@ -547,22 +519,6 @@ public class RelationshipAtom extends IsaAtom {
                 .filter(t -> mappedVars.contains(t.getVarName()))
                 .filter(t -> Objects.nonNull(t.getSchemaConcept()))
                 .collect(toSet());
-    }
-
-    @Override
-    public Set<Unifier> getPermutationUnifiers(Atom headAtom) {
-        if (!headAtom.isRelation()) return Collections.singleton(new UnifierImpl());
-
-        //if this atom is a match all atom, add type from rule head and find unmapped roles
-        RelationshipAtom relAtom = getPredicateVariable().getValue().isEmpty() ? this.addType(headAtom.getSchemaConcept()) : this;
-        List<Pair<Var, Var>> permuteVars = new ArrayList<>(relAtom.getNonSpecificRelationPlayers());
-        if (permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
-
-        List<List<Pair<Var, Var>>> varPermutations =
-                getListPermutations(new ArrayList<>(permuteVars))
-                        .stream()
-                        .collect(Collectors.toList());
-        return getUnifiersFromPermutations(permuteVars, varPermutations);
     }
 
     /**
@@ -807,6 +763,7 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public Unifier getUnifier(Atom pAtom){
+        //TODO fix that
         return getMultiUnifier(pAtom, true).iterator().next();
     }
 

@@ -75,7 +75,6 @@ public class NeqComplementState extends AtomicState {
                 .filter(p -> !p.isSatisfied(fullAnswer))
                 .findFirst().isPresent();
         return isNeqSatisfied?
-                //AnswerStateFactory.create(state.getSubstitution(), getMultiUnifier(), getParentState()) :
                 new AnswerState(state.getSubstitution(), getUnifier(), getParentState()) :
                 null;
     }

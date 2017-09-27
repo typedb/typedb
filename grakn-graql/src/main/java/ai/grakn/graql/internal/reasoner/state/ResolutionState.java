@@ -19,8 +19,6 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.Unifier;
-import java.util.Set;
 
 /**
  *

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
+import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;

@@ -48,6 +48,7 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -948,7 +949,7 @@ public class AtomicTest {
         RelationshipAtom headAtom = (RelationshipAtom) testRule.getHead().getAtom();
         Var headVarName = headAtom.getVarName();
 
-        Unifier unifier = testRule.getUnifier(parentAtom);
+        Unifier unifier = Iterables.getOnlyElement(testRule.getMultiUnifier(parentAtom));
         Unifier correctUnifier = new UnifierImpl(
                 ImmutableMap.of(
                         var("x"), var("x"),
@@ -973,7 +974,7 @@ public class AtomicTest {
         PatternAdmin head = graph.graql().parsePattern("(role1: $z, role2: $b) isa relation1").admin();
         InferenceRule rule = new InferenceRule(graph.putRule("Rule: Checking Unification", body, head), graph);
 
-        Unifier unifier = rule.getUnifier(parent);
+        Unifier unifier = Iterables.getOnlyElement(rule.getMultiUnifier(parent));
         Set<Var> vars = rule.getHead().getAtom().getVarNames();
         Set<Var> correctVars = Sets.newHashSet(var("r"), var("a"), var("x"));
         assertTrue(!vars.contains(var("")));

@@ -144,14 +144,14 @@ public class AtomicQueryTest {
         Atom mappedAtom = ReasonerQueries.atomic(conjunction(query.match().admin().getPattern()), graph).getAtom();
         Atom unmappedAtom = ReasonerQueries.atomic(conjunction(query2.match().admin().getPattern()), graph).getAtom();
 
-        Set<Unifier> permutationUnifiers = mappedAtom.getPermutationUnifiers(mappedAtom);
+        Set<Unifier> multiUnifier = mappedAtom.getMultiUnifier(mappedAtom);
         Set<Answer> permutedAnswers = answers.stream()
-                .flatMap(a -> a.permute(permutationUnifiers))
+                .flatMap(a -> multiUnifier.stream().map(a::unify))
                 .collect(Collectors.toSet());
 
-        Set<Unifier> permutationUnifiers2 = unmappedAtom.getPermutationUnifiers(mappedAtom);
+        Set<Unifier> multiUnifier2 = mappedAtom.getMultiUnifier(unmappedAtom);
         Set<Answer> permutedAnswers2 = answers.stream()
-                .flatMap(a -> a.permute(permutationUnifiers2))
+                .flatMap(a -> multiUnifier2.stream().map(a::unify))
                 .collect(Collectors.toSet());
 
         assertEquals(fullAnswers, permutedAnswers2);

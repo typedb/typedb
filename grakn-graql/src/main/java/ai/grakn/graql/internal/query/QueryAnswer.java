@@ -212,12 +212,6 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public Stream<Answer> permute(Set<Unifier> unifierSet){
-        if (unifierSet.isEmpty()) return Stream.of(this);
-        return unifierSet.stream().map(this::unify);
-    }
-
-    @Override
     public Stream<Answer> expandHierarchies(Set<Var> toExpand){
         if (toExpand.isEmpty()) return Stream.of(this);
         Map<Var, Set<Concept>> conceptHierarchies = new HashMap<>();

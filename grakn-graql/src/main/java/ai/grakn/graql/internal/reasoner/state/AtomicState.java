@@ -24,7 +24,6 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.Collections;
@@ -45,7 +44,7 @@ public class AtomicState extends QueryState{
 
     private final ReasonerAtomicQuery query;
     private final Iterator<Answer> dbIterator;
-    private final Iterator<RuleTuple> ruleIterator;
+    private final Iterator<Pair<InferenceRule, Unifier>> ruleIterator;
 
     private InferenceRule currentRule = null;
     private final Unifier cacheUnifier;
@@ -95,7 +94,6 @@ public class AtomicState extends QueryState{
     @Override
     public ResolutionState generateSubGoal() {
         if (dbIterator.hasNext()){
-            //return AnswerStateFactory.create(dbIterator.next(), getMultiUnifier(), this);
             return new AnswerState(dbIterator.next(), getUnifier(), this);
         }
         if (ruleIterator.hasNext()) return generateSubGoalFromRule(ruleIterator.next());
@@ -110,20 +108,17 @@ public class AtomicState extends QueryState{
 
     InferenceRule getCurrentRule(){ return currentRule;}
 
-    private ResolutionState generateSubGoalFromRule(RuleTuple ruleTuple){
-        Unifier ruleUnifier = ruleTuple.getRuleUnifier();
-        Unifier permutationUnifier = ruleTuple.getPermutationUnifier();
-        Unifier combinedUnifierInverse = permutationUnifier.combine(ruleUnifier.inverse());
-
-
-        currentRule = ruleTuple.getRule()
-                .propagateConstraints(query.getAtom(), combinedUnifierInverse);
+    private ResolutionState generateSubGoalFromRule(Pair<InferenceRule, Unifier> rulePair){
+        Unifier ruleUnifier = rulePair.getValue();
+        Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta
         Answer partialSubPrime = query.getSubstitution()
-                .unify(combinedUnifierInverse);
+                .unify(ruleUnifierInverse);
 
-        Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
-        return currentRule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache());
+        currentRule = rulePair.getKey()
+                .propagateConstraints(query.getAtom(), ruleUnifierInverse);
+
+        return currentRule.getBody().subGoal(partialSubPrime, ruleUnifier, this, getSubGoals(), getCache());
     }
 }
