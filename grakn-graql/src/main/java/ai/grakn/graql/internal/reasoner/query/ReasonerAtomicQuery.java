@@ -48,6 +48,7 @@ import ai.grakn.graql.internal.reasoner.state.QueryState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +74,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilt
  * @author Kasper Piskorski
  *
  */
+@SuppressFBWarnings("EQ_DOESNT_OVERRIDE_EQUALS")
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private final Atom atom;
@@ -112,19 +114,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return !(obj == null || this.getClass() != obj.getClass()) && super.equals(obj);
-    }
-
-    @Override
     public String toString(){
         return getAtoms(Atom.class)
                 .map(Atomic::toString).collect(Collectors.joining(", "));
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode() + 37;
     }
 
     @Override
@@ -161,7 +153,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Set<Atom> unified = new HashSet<>();
         getAtom().getTypeConstraints()
                 .forEach(type -> {
-                    Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
+                    Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type, Atomic::isAlphaEquivalent), unified);
                     Atom equiv = toUnify.stream().findFirst().orElse(null);
                     //only apply if unambiguous
                     if (equiv != null && toUnify.size() == 1){
@@ -272,9 +264,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return stream of differential answers
      */
     Stream<Answer> answerStream(Set<ReasonerAtomicQuery> subGoals,
-                                       Cache<ReasonerAtomicQuery, ?> cache,
-                                       Cache<ReasonerAtomicQuery, ?> dCache,
-                                       boolean differentialJoin){
+                                Cache<ReasonerAtomicQuery, ?> cache,
+                                Cache<ReasonerAtomicQuery, ?> dCache,
+                                boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
         LOG.trace("AQ: " + this);
@@ -317,9 +309,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
-    /**
-     * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
-     */
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
@@ -365,7 +354,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private final LazyQueryCache<ReasonerAtomicQuery> dCache;
         private Iterator<Answer> answerIterator;
 
-        QueryAnswerIterator(LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache){
+        QueryAnswerIterator(LazyQueryCache<ReasonerAtomicQuery> cache,
+                            LazyQueryCache<ReasonerAtomicQuery> dCache){
             this.cache = cache;
             this.dCache = dCache;
             this.answerIterator = query().answerStream(subGoals, cache, dCache, iter != 0).iterator();

@@ -100,15 +100,6 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.getMultiPredicate().hashCode();
-        return hashCode;
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
@@ -119,7 +110,53 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public int equivalenceHashCode() {
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
+        hashCode = hashCode * 37 + this.getMultiPredicate().hashCode();
+        return hashCode;
+    }
+
+    private boolean hasMultiPredicateEquivalentWith(ResourceAtom atom){
+        if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
+        for (ValuePredicate vp : getMultiPredicate()) {
+            Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
+            boolean predicateHasEquivalent = false;
+            while (objIt.hasNext() && !predicateHasEquivalent) {
+                predicateHasEquivalent = vp.isAlphaEquivalent(objIt.next());
+            }
+            if (!predicateHasEquivalent) return false;
+        }
+        return true;
+    }
+
+    @Override
+    boolean hasEquivalentPredicatesWith(Binary at) {
+        if (!(at instanceof ResourceAtom && super.hasEquivalentPredicatesWith(at))) return false;
+
+        ResourceAtom atom = (ResourceAtom) at;
+        if (!hasMultiPredicateEquivalentWith(atom)) return false;
+
+        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
+        IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
+        return thisPredicate == null && predicate == null || thisPredicate != null && thisPredicate.isAlphaEquivalent(predicate);
+    }
+
+    @Override
+    boolean predicateBindingsAreEquivalent(Binary at) {
+        if (!(at instanceof ResourceAtom && super.predicateBindingsAreEquivalent(at))) return false;
+
+        ResourceAtom atom = (ResourceAtom) at;
+        if (!hasMultiPredicateEquivalentWith(atom)) return false;
+
+        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
+        IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
+        return (thisPredicate == null) == (predicate == null);
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
@@ -129,30 +166,12 @@ public class ResourceAtom extends Binary{
     private int multiPredicateEquivalenceHashCode(){
         int hashCode = 0;
         SortedSet<Integer> hashes = new TreeSet<>();
-        getMultiPredicate().forEach(atom -> hashes.add(atom.equivalenceHashCode()));
+        getMultiPredicate().forEach(atom -> hashes.add(atom.alphaEquivalenceHashCode()));
         for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
     }
 
-    @Override
-    boolean hasEquivalentPredicatesWith(Binary at) {
-        if (!(at instanceof ResourceAtom && super.hasEquivalentPredicatesWith(at))) return false;
 
-        ResourceAtom atom = (ResourceAtom) at;
-        if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
-        for (ValuePredicate vp : getMultiPredicate()) {
-            Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
-            boolean predicateHasEquivalent = false;
-            while (objIt.hasNext() && !predicateHasEquivalent) {
-                predicateHasEquivalent = vp.isEquivalent(objIt.next());
-            }
-            if (!predicateHasEquivalent) return false;
-        }
-
-        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
-        IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
-        return thisPredicate == null && predicate == null || thisPredicate != null && thisPredicate.isEquivalent(predicate);
-    }
 
     @Override
     public void setParentQuery(ReasonerQuery q) {

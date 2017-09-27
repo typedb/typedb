@@ -59,13 +59,13 @@ public class DataTypeAtom extends AtomicBase {
 
     @Override
     public int hashCode(){
-        int hashCode = equivalenceHashCode();
+        int hashCode = alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
 
     @Override
-    public boolean isEquivalent(Object obj) {
+    public boolean isAlphaEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         DataTypeAtom a2 = (DataTypeAtom) obj;
@@ -73,10 +73,20 @@ public class DataTypeAtom extends AtomicBase {
     }
 
     @Override
-    public int equivalenceHashCode() {
+    public int alphaEquivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.datatype.hashCode();
         return hashCode;
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        return isAlphaEquivalent(obj);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
     }
 
     @Override
