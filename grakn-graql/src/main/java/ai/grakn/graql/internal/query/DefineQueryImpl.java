@@ -30,6 +30,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
@@ -73,5 +74,10 @@ abstract class DefineQueryImpl implements DefineQuery {
     @Override
     public boolean isReadOnly() {
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return "define " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 }

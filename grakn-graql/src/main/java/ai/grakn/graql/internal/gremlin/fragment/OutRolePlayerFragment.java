@@ -34,8 +34,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_DIRECTION;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_EDGE;
+import static ai.grakn.graql.internal.pattern.Patterns.RELATION_DIRECTION;
+import static ai.grakn.graql.internal.pattern.Patterns.RELATION_EDGE;
 import static ai.grakn.util.Schema.EdgeLabel.ROLE_PLAYER;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
@@ -67,7 +67,7 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     private GraphTraversal<Element, Vertex> reifiedRelationTraversal(GraknTx graph, Collection<Var> vars) {
         GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
 
-        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().getValue());
+        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().name());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
@@ -89,8 +89,8 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         traverseToRole(edgeTraversal, role(), roleProperty, vars);
 
         // Identify the relation - role-player pair by combining the relationship edge and direction into a map
-        edgeTraversal.as(RELATION_EDGE).constant(direction).as(RELATION_DIRECTION);
-        edgeTraversal.select(Pop.last, RELATION_EDGE, RELATION_DIRECTION).as(edge().getValue()).select(RELATION_EDGE);
+        edgeTraversal.as(RELATION_EDGE.name()).constant(direction).as(RELATION_DIRECTION.name());
+        edgeTraversal.select(Pop.last, RELATION_EDGE.name(), RELATION_DIRECTION.name()).as(edge().name()).select(RELATION_EDGE.name());
 
         return edgeTraversal.toV(direction);
     }

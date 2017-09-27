@@ -115,7 +115,7 @@ public class MatchBase extends AbstractMatch {
     private static Optional<Map<Var, Concept>> makeResults(Set<Var> vars, GraknTx graph, Map<String, Element> elements) {
         Map<Var, Concept> map = new HashMap<>();
         for (Var var : vars) {
-            Optional<Concept> concept = buildConcept(graph.admin(), elements.get(var.getValue()));
+            Optional<Concept> concept = buildConcept(graph.admin(), elements.get(var.name()));
 
             if(!concept.isPresent()) return Optional.empty();
             map.put(var, concept.get());

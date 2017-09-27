@@ -22,6 +22,7 @@ package ai.grakn.graql.internal.pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 
@@ -36,23 +37,28 @@ import java.util.Set;
 abstract class VarImpl extends AbstractVarPattern implements Var {
 
     @Override
-    public abstract String getValue();
-
-    @Override
-    public abstract boolean isUserDefinedName();
+    public boolean isUserDefinedName() {
+        return kind() == Kind.UserDefined;
+    }
 
     @Override
     public Var asUserDefined() {
         if (isUserDefinedName()) {
             return this;
         } else {
-            return new AutoValue_VarImpl(getValue(), true);
+            return new AutoValue_VarImpl(getValue(), Kind.UserDefined);
         }
+    }
+
+    @Memoized
+    @Override
+    public String name() {
+        return kind().prefix() + getValue();
     }
 
     @Override
     public String shortName() {
-        return "$" + StringUtils.left(getValue(), 3);
+        return kind().prefix() + StringUtils.left(getValue(), 3);
     }
 
     @Override

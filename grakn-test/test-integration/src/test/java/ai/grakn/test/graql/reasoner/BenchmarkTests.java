@@ -282,7 +282,7 @@ public class BenchmarkTests {
     @Test
     public void testPathTree(){
         final int N = 5;
-        final int linksPerEntity = 5;
+        final int linksPerEntity = 4;
         int answers = 0;
         for(int i = 1 ; i <= N ; i++) answers += Math.pow(linksPerEntity, i);
         sampleKB.load(PathKB.get(N, linksPerEntity));

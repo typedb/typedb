@@ -51,10 +51,6 @@ import static java.util.stream.Collectors.joining;
  */
 public class Fragments {
 
-    // TODO: Make sure these never clash with a real Graql variable
-    static final String RELATION_EDGE = "!RELATION_EDGE";
-    static final String RELATION_DIRECTION = "!RELATION_DIRECTION";
-
     private Fragments() {
     }
 
@@ -215,10 +211,10 @@ public class Fragments {
 
         // Access label ID from edge
         Var labelId = Graql.var();
-        traversal.values(edgeProperty.name()).as(labelId.getValue());
+        traversal.values(edgeProperty.name()).as(labelId.name());
 
         // Look up schema concept using ID
-        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
+        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.name())));
     }
 
 }

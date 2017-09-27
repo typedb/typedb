@@ -181,12 +181,13 @@ public abstract class GraqlTraversal {
 
     private static <S, E> GraphTraversal<S, Map<String, E>> selectVars(GraphTraversal<S, ?> traversal, Set<Var> vars) {
         if (vars.isEmpty()) {
+            // Produce an empty result
             return traversal.constant(ImmutableMap.of());
         } else if (vars.size() == 1) {
-            String label = vars.iterator().next().getValue();
+            String label = vars.iterator().next().name();
             return traversal.select(label, label);
         } else {
-            String[] labelArray = vars.stream().map(Var::getValue).toArray(String[]::new);
+            String[] labelArray = vars.stream().map(Var::name).toArray(String[]::new);
             return traversal.asAdmin().addStep(new SelectStep<>(traversal.asAdmin(), null, labelArray));
         }
     }
