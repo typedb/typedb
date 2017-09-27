@@ -135,7 +135,7 @@ public class AnalyticsTest {
     @Test
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
-        expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
+        expectedEx.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().count().in("rule", "thing").execute();
         }
@@ -144,7 +144,7 @@ public class AnalyticsTest {
     @Test
     public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
-        expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
+        expectedEx.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("role")).getMessage());
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().count().in("role").execute();
         }
