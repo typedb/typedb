@@ -84,7 +84,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     private void getResourceTypes(GraknTx graph) {
         if (statisticsResourceLabels.isEmpty()) {
-            throw GraqlQueryException.statisticsResourceTypesNotSpecified();
+            throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
         }
 
         statisticsResourceTypes = statisticsResourceLabels.stream()

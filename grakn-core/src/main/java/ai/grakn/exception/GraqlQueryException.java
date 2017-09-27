@@ -242,7 +242,7 @@ public class GraqlQueryException extends GraknException {
                 .getMessage(clazz.toString()));
     }
 
-    public static GraqlQueryException statisticsResourceTypesNotSpecified() {
+    public static GraqlQueryException statisticsAttributeTypesNotSpecified() {
         return new GraqlQueryException(ErrorMessage.ATTRIBUTE_TYPE_NOT_SPECIFIED.getMessage());
     }
 
