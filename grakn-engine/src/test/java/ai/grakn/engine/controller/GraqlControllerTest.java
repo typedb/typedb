@@ -169,6 +169,14 @@ public class GraqlControllerTest {
     }
 
     @Test
+    public void whenMatchingRules_ResponseStatusIs200() {
+        String queryString = "match $x sub rule; get;";
+        int limitEmbedded = 10;
+        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
+        resp.then().statusCode(200);
+    }
+
+    @Test
     public void whenMatchingSchema_NoInstancesInResponse() {
         String queryString = "match $x sub thing; get;";
         Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, -1);
