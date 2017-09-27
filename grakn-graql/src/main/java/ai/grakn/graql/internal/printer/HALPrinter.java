@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.printer;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.internal.hal.HALBuilder;
 import mjson.Json;
@@ -26,17 +27,17 @@ import mjson.Json;
 
 class HALPrinter extends JsonPrinter {
 
-    private final String keyspace;
+    private final Keyspace keyspace;
     private final int limitEmbedded;
 
-    HALPrinter(String keyspace, int limitEmbedded) {
+    HALPrinter(Keyspace keyspace, int limitEmbedded) {
         this.keyspace = keyspace;
         this.limitEmbedded = limitEmbedded;
     }
 
     @Override
     public Json graqlString(boolean inner, Concept concept) {
-        String json = HALBuilder.renderHALConceptData(concept, 1,keyspace,0, limitEmbedded);
+        String json = HALBuilder.renderHALConceptData(concept, 0, keyspace,0, limitEmbedded);
         return Json.read(json);
     }
 

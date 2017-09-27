@@ -10,6 +10,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -71,7 +72,7 @@ public class EngineGraknSessionTest {
     public void closeGraphWhenOnlyOneTransactionIsOpen(){
         assumeFalse(GraknTestSetup.usingTinker()); //Tinker does not have any connections to close
 
-        GraknSession factory = Grakn.session(factoryUri, "RandomKeySpaceIsRandom");
+        GraknSession factory = Grakn.session(factoryUri, SampleKBLoader.randomKeyspace());
         GraknTx graph = factory.open(GraknTxType.WRITE);
         factory.close();
 

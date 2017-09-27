@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -109,7 +110,7 @@ public class GraqlControllerReadOnlyTest {
 
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomkeyspace"));
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
         when(mockSystemKeyspace.ensureKeyspaceInitialised(any())).thenReturn(true);
@@ -188,7 +189,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchNoMaterialise_ResponseStatusIs400() {
-        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace())
+        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .body("match $x isa movie;")
                 .queryParam(INFER, true)
                 .accept(APPLICATION_TEXT)
@@ -214,7 +215,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithNoInfer_ResponseStatusIs400() {
-        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace())
+        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .body("match $x isa movie;")
                 .accept(APPLICATION_TEXT)
                 .post(REST.WebPath.KB.ANY_GRAQL);
@@ -240,7 +241,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlMatchWithHALTypeAndNumberEmbedded1_ResponsesContainAtMost1Concept() {
         Response response =
-                sendRequest("match $x isa movie;", APPLICATION_HAL, false, true, 1);
+                sendRequest("match $x isa movie; get;", APPLICATION_HAL, false, true, 1);
 
         jsonResponse(response).asJsonList().forEach(e -> {
             Json embedded = e.asJsonMap().get("x").asJsonMap().get("_embedded");
@@ -252,7 +253,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithHALType_ResponseIsCorrectHal() {
-        String queryString = "match $x isa movie;";
+        String queryString = "match $x isa movie; get;";
         Response response = sendRequest(queryString, APPLICATION_HAL);
 
         Printer<?> printer = Printers.hal(mockTx.getKeyspace(), -1);
@@ -271,7 +272,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithHALTypeAndEmptyResponse_ResponseIsEmptyJsonArray() {
-        Response response = sendRequest("match $x isa runtime;", APPLICATION_HAL);
+        Response response = sendRequest("match $x isa runtime; get;", APPLICATION_HAL);
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }
@@ -300,7 +301,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithGraqlJsonType_ResponseIsCorrectGraql() {
-        String query = "match $x isa movie;";
+        String query = "match $x isa movie; get;";
         Response response = sendRequest(APPLICATION_JSON_GRAQL);
 
         Json expectedResponse = Json.read(
@@ -310,7 +311,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithGraqlJsonTypeAndEmptyResponse_ResponseIsEmptyJsonObject() {
-        Response response = sendRequest("match $x isa \"runtime\";", APPLICATION_JSON_GRAQL);
+        Response response = sendRequest("match $x isa \"runtime\"; get;", APPLICATION_JSON_GRAQL);
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }
@@ -461,7 +462,7 @@ public class GraqlControllerReadOnlyTest {
     }
 
     private Response sendRequest(String acceptType) {
-        return sendRequest("match $x isa movie;", acceptType, false, false, -1);
+        return sendRequest("match $x isa movie; get;", acceptType, false, false, -1);
     }
 
     private Response sendRequest(String match, String acceptType) {
@@ -471,7 +472,7 @@ public class GraqlControllerReadOnlyTest {
     private Response sendRequest(String match, String acceptType, boolean reasonser,
                                  boolean materialise, int limitEmbedded) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, mockTx.getKeyspace())
+                .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .body(match)
                 .queryParam(INFER, reasonser)
                 .queryParam(MATERIALISE, materialise)

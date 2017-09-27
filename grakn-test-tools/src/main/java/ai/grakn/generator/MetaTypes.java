@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 
 /**
@@ -29,15 +29,14 @@ import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
  *
  * @author Felix Chapman
  */
-public class MetaTypes extends FromTxGenerator<SchemaConcept> {
+public class MetaTypes extends FromTxGenerator<Type> {
 
     public MetaTypes() {
-        // TODO: This should generate `Type`, not `SchemaConcept`
-        super(SchemaConcept.class);
+        super(Type.class);
     }
 
     @Override
-    protected SchemaConcept generateFromTx() {
+    protected Type generateFromTx() {
         return tx().admin().getMetaConcept();
     }
 

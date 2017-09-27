@@ -20,28 +20,28 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
-import ai.grakn.kb.internal.concept.SchemaConceptImpl;
-import ai.grakn.kb.internal.concept.RelationshipReified;
-import ai.grakn.kb.internal.concept.RuleImpl;
-import ai.grakn.kb.internal.concept.TypeImpl;
-import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.kb.internal.concept.RelationshipImpl;
+import ai.grakn.kb.internal.concept.RelationshipReified;
+import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
+import ai.grakn.kb.internal.concept.RuleImpl;
+import ai.grakn.kb.internal.concept.SchemaConceptImpl;
+import ai.grakn.kb.internal.concept.TypeImpl;
+import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -61,7 +61,6 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
-import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_MORE_CASTING_THAN_ROLES;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
@@ -98,19 +97,61 @@ class ValidateGlobalRules {
     }
 
     /**
-     * This method checks if the plays edge has been added successfully. It does so By checking
-     * Casting -CAST-> ConceptInstance -ISA-> Concept -PLAYS-> X =
-     * Casting -ISA-> X
-     * @param casting The casting to be validated
-     * @return A specific error if one is found.
+     * This method checks if the plays edge has been added between the roleplayer's {@link Type} and
+     * the {@link Role} being played.
+     *
+     * It also checks if the {@link Role} of the {@link Casting} has been linked to the {@link RelationshipType} of the
+     * {@link Relationship} which the {@link Casting} connects to.
+     *
+     * @return Specific errors if any are found
      */
-    static Optional<String> validatePlaysStructure(Casting casting) {
-        Thing thing = casting.getInstance();
+    static Set<String> validatePlaysAndRelatesStructure(Casting casting) {
+        Set<String> errors = new HashSet<>();
+
+        //Gets here to make sure we traverse/read only once
+        Thing thing = casting.getRolePlayer();
+        Role role = casting.getRole();
+        Relationship relation = casting.getRelationship();
+
+        //Actual checks
+        roleNotAllowedToBePlayed(role, thing).ifPresent(errors::add);
+        roleNotLinkedToRelationShip(role, relation.type(), relation).ifPresent(errors::add);
+
+        return errors;
+    }
+
+    /**
+     * Checks if the {@link Role} of the {@link Casting} has been linked to the {@link RelationshipType} of
+     * the {@link Relationship} which the {@link Casting} connects to.
+     *
+     * @param role the {@link Role} which the {@link Casting} refers to
+     * @param relationshipType the {@link RelationshipType} which should connect to the role
+     * @param relationship the {@link Relationship} which the {@link Casting} refers to
+     * @return an error if one is found
+     */
+    private static Optional<String> roleNotLinkedToRelationShip(Role role, RelationshipType relationshipType, Relationship relationship){
+        boolean notFound = role.relationshipTypes().
+                noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationshipType.getLabel()));
+        if(notFound){
+            return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relationship.getId(), role.getLabel(), relationshipType.getLabel()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Checks  if the plays edge has been added between the roleplayer's {@link Type} and
+     * the {@link Role} being played.
+     *
+     * Also checks that required {@link Role} are satisfied
+     *
+     * @param role The {@link Role} which the role-player is playing
+     * @param thing the role-player
+     * @return an error if one is found
+     */
+    private static Optional<String> roleNotAllowedToBePlayed(Role role, Thing thing){
         TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) thing.type();
-        Role role = casting.getRoleType();
 
         boolean satisfiesPlays = false;
-
         while(currentConcept != null){
             Map<Role, Boolean> plays = currentConcept.directPlays();
 
@@ -132,7 +173,7 @@ class ValidateGlobalRules {
         if(satisfiesPlays) {
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_CASTING.getMessage(thing.type().getLabel(), thing.getId(), casting.getRoleType().getLabel()));
+            return Optional.of(VALIDATION_CASTING.getMessage(thing.type().getLabel(), thing.getId(), role.getLabel()));
         }
     }
 
@@ -163,41 +204,12 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param relation The assertion to validate
-     * @return An error message indicating if the relation has an incorrect structure. This includes checking if there an equal
-     * number of castings and roles as well as looping the structure to make sure castings lead to the same relation type.
-     */
-    static Optional<String> validateRelationshipStructure(RelationshipReified relation){
-        RelationshipType relationshipType = relation.type();
-        Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
-        Collection<Role> roles = relationshipType.relates().collect(Collectors.toSet());
-
-        Set<Role> rolesViaRolePlayers = castings.stream().map(Casting::getRoleType).collect(Collectors.toSet());
-
-        if(rolesViaRolePlayers.size() > roles.size()) {
-            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), rolesViaRolePlayers.size(), relationshipType.getLabel(), roles.size()));
-        }
-
-        for(Casting casting : castings){
-            boolean notFound = casting.getRoleType().relationshipTypes().
-                    noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationshipType.getLabel()));
-
-            if(notFound) {
-                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRoleType().getLabel(), relationshipType.getLabel()));
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    /**
-     *
      * @param relationshipType the relation type to be validated
      * @return Error messages if the role type sub structure does not match the relation type sub structure
      */
     static Set<String> validateRelationTypesToRolesSchema(RelationshipType relationshipType){
         RelationshipTypeImpl superRelationType = (RelationshipTypeImpl) relationshipType.sup();
-        if(Schema.MetaSchema.isMetaLabel(superRelationType.getLabel())){ //If super type is a meta type no validation needed
+        if(Schema.MetaSchema.isMetaLabel(superRelationType.getLabel()) || superRelationType.isAbstract()){ //If super type is a meta type no validation needed
             return Collections.emptySet();
         }
 
@@ -323,11 +335,11 @@ class ValidateGlobalRules {
      * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
      */
     private static Optional<String> setRelationUnique(GraknTxAbstract<?> graph, RelationshipReified relationReified, String hash){
-        RelationshipImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
+        Optional<RelationshipImpl> foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
 
-        if(foundRelation == null){
+        if(!foundRelation.isPresent()){
             relationReified.setHash(hash);
-        } else if(foundRelation.reified().isPresent() && !foundRelation.reified().get().equals(relationReified)){
+        } else if(foundRelation.get().reified().isPresent() && !foundRelation.get().reified().get().equals(relationReified)){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }
         return Optional.empty();
@@ -342,7 +354,7 @@ class ValidateGlobalRules {
     static Set<String> validateRuleIsValidHornClause(GraknTx graph, Rule rule){
         Set<String> errors = new HashSet<>();
         if (rule.getWhen().admin().isDisjunction()){
-            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getLabel()));
         }
         errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
         return errors;
@@ -379,17 +391,17 @@ class ValidateGlobalRules {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<VarPatternAdmin>> patterns = head.admin().getDisjunctiveNormalForm().getPatterns();
         if (patterns.size() != 1){
-            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getLabel()));
         } else {
             ReasonerQuery headQuery = patterns.iterator().next().toReasonerQuery(graph);
             Set<Atomic> allowed = headQuery.getAtoms().stream()
                     .filter(Atomic::isAllowedToFormRuleHead).collect(Collectors.toSet());
 
             if (allowed.size() > 1) {
-                errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getId(), rule.type().getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getLabel()));
             }
             else if (allowed.isEmpty()){
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getLabel()));
             }
         }
         return errors;
@@ -423,7 +435,7 @@ class ValidateGlobalRules {
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);
                     if(schemaConcept == null){
-                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
+                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getLabel(), typeLabel));
                     } else {
                         if(Schema.VertexProperty.RULE_WHEN.equals(side)){
                             if (schemaConcept.isType()){

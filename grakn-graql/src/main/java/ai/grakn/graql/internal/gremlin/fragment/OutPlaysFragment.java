@@ -20,37 +20,37 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 
-class OutPlaysFragment extends AbstractFragment {
-
-    private final boolean required;
-
-    OutPlaysFragment(VarProperty varProperty, Var start, Var end, boolean required) {
-        super(varProperty, start, end);
-        this.required = required;
-    }
+@AutoValue
+abstract class OutPlaysFragment extends Fragment {
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+    public abstract Var end();
 
-        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.outSubs(Fragments.isVertex(traversal));
+    abstract boolean required();
 
-        if (required) {
+    @Override
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+
+        GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.outSubs(Fragments.isVertex(traversal));
+
+        if (required()) {
             return vertexTraversal.outE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
         } else {
             return vertexTraversal.out(PLAYS.getLabel());
@@ -58,8 +58,8 @@ class OutPlaysFragment extends AbstractFragment {
     }
 
     @Override
-    public String getName() {
-        if (required) {
+    public String name() {
+        if (required()) {
             return "-[plays:required]->";
         } else {
             return "-[plays]->";
@@ -72,8 +72,8 @@ class OutPlaysFragment extends AbstractFragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
-                                                              Map<Node, Map<Node, Fragment>> edges) {
-        return getDirectedEdges(NodeId.NodeType.PLAYS, nodes, edges);
+    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
+        return directedEdges(NodeId.NodeType.PLAYS, nodes, edges);
     }
 }

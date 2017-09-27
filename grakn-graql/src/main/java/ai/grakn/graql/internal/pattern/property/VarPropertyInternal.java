@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
@@ -30,14 +30,14 @@ import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
- * Internal interface for {@link VarProperty}, providing additional methods to match, insert or delete the property.
+ * Internal interface for {@link VarProperty}, providing additional methods to match, insert or define the property.
  *
  * @author Felix Chapman
  */
 public interface VarPropertyInternal extends VarProperty {
 
     /**
-     * Check if the given property can be used in a match query
+     * Check if the given property can be used in a {@link Match}
      */
     void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException;
 
@@ -61,6 +61,8 @@ public interface VarPropertyInternal extends VarProperty {
 
     PropertyExecutor define(Var var) throws GraqlQueryException;
 
+    PropertyExecutor undefine(Var var) throws GraqlQueryException;
+
     /**
      * Whether this property will uniquely identify a concept in the graph, if one exists.
      * This is used for recognising equivalent variables in insert queries.
@@ -68,13 +70,6 @@ public interface VarPropertyInternal extends VarProperty {
     default boolean uniquelyIdentifiesConcept() {
         return false;
     }
-
-    /**
-     * Delete the given property from the graph, if possible.
-     * @param graph the graph to operate on
-     * @param concept the concept to delete properties of
-     */
-    void delete(GraknTx graph, Concept concept) throws GraqlQueryException;
 
     @Override
     default Stream<VarPatternAdmin> innerVarPatterns() {

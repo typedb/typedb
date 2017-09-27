@@ -21,52 +21,33 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Collection;
 
 import static ai.grakn.util.Schema.VertexProperty.DATA_TYPE;
 
-class DataTypeFragment extends AbstractFragment {
+@AutoValue
+abstract class DataTypeFragment extends Fragment {
 
-    private final AttributeType.DataType dataType;
+    abstract AttributeType.DataType dataType();
 
-    DataTypeFragment(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
-        super(varProperty, start);
-        this.dataType = dataType;
+    @Override
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx tx, Collection<Var> vars) {
+        return traversal.has(DATA_TYPE.name(), dataType().getName());
     }
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
-        return traversal.has(DATA_TYPE.name(), dataType.getName());
-    }
-
-    @Override
-    public String getName() {
-        return "[datatype:" + dataType.getName() + "]";
+    public String name() {
+        return "[datatype:" + dataType().getName() + "]";
     }
 
     @Override
     public double fragmentCost() {
-        return COST_DATA_TYPE;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        DataTypeFragment that = (DataTypeFragment) o;
-
-        return dataType != null ? dataType.equals(that.dataType) : that.dataType == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (dataType != null ? dataType.hashCode() : 0);
-        return result;
+        return COST_NODE_DATA_TYPE;
     }
 }

@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
@@ -27,7 +28,7 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.analytics.PathQuery;
@@ -79,7 +80,7 @@ import static java.lang.Boolean.parseBoolean;
  * @author Marco Scoppetta, alexandraorth
  */
 @Path("/graph/graql")
-@Api(value = "/graph/graql", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
+@Api(value = "/graph/graql", description = "Endpoints used to query the graph by ID or Graql get query and build HAL objects.")
 @Produces({"application/json", "text/plain"})
 public class GraqlController {
 
@@ -97,8 +98,6 @@ public class GraqlController {
         spark.post(REST.WebPath.KB.ANY_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.KB.GRAQL,    this::executeGraqlGET);
 
-        //TODO The below exceptions are very broad. They should be revised after we improve exception
-        //TODO hierarchies in Graql and GraknTx
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
 
@@ -109,10 +108,10 @@ public class GraqlController {
 
     @POST
     @Path("/execute")
-    @ApiOperation(value = "Execute an arbitrary Graql queryEndpoints used to query the graph by ID or Graql match query and build HAL objects.")
+    @ApiOperation(value = "Execute an arbitrary Graql queryEndpoints used to query the graph by ID or Graql get query and build HAL objects.")
     private Object executeGraql(Request request, Response response) {
         String queryString = mandatoryBody(request);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(request, KEYSPACE));
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
@@ -120,7 +119,7 @@ public class GraqlController {
 
         try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
-            Object resp = respond(response, acceptType, executeQuery(keyspace, limitEmbedded, query, acceptType));
+            Object resp = respond(response, acceptType, executeQuery(graph.getKeyspace(), limitEmbedded, query, acceptType));
             graph.commit();
             return resp;
         }
@@ -133,7 +132,7 @@ public class GraqlController {
                     "Return type is determined by the provided accept type: application/graql+json, application/hal+json or application/text")
     @ApiImplicitParams({
             @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QUERY,       value = "Get query to execute", required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = INFER,       value = "Should reasoner with the current query.", required = true, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = MATERIALISE, value = "Should reasoner materialise results with the current query.", required = true, dataType = "boolean", paramType = "query")
     })
@@ -152,7 +151,7 @@ public class GraqlController {
 
             if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
 
-            Object responseBody = executeGET(keyspace, limitEmbedded, query, acceptType);
+            Object responseBody = executeGET(graph.getKeyspace(), limitEmbedded, query, acceptType);
             return respond(response, acceptType, responseBody);
         }
     }
@@ -213,7 +212,7 @@ public class GraqlController {
      * @param query read query to be executed
      * @param acceptType response format that the client will accept
      */
-    private Object executeQuery(String keyspace, int limitEmbedded, Query<?> query, String acceptType){
+    private Object executeQuery(Keyspace keyspace, int limitEmbedded, Query<?> query, String acceptType){
         Printer<?> printer;
 
         switch (acceptType) {
@@ -244,11 +243,11 @@ public class GraqlController {
     /**
      * Execute a read query and return a response in the format specified by the request.
      *
-     * @param keyspace the keyspace the query is running on
+     * @param keyspace the {@link Keyspace} the query is running on
      * @param query read query to be executed
      * @param acceptType response format that the client will accept
      */
-    private Object executeGET(String keyspace, int limitEmbedded, Query<?> query, String acceptType){
+    private Object executeGET(Keyspace keyspace, int limitEmbedded, Query<?> query, String acceptType){
         switch (acceptType){
             case APPLICATION_TEXT:
                 return formatGETAsGraql(Printers.graql(false), query);
@@ -262,19 +261,19 @@ public class GraqlController {
     }
 
     /**
-     * Format a match query as HAL
+     * Format a query as HAL
      *
      * @param query query to format
      * @param numberEmbeddedComponents the number of embedded components for the HAL format, taken from the request
-     * @param keyspace the keyspace from the request //TODO only needed because HAL does not support admin interface
+     * @param keyspace the {@link Keyspace} from the request //TODO only needed because HAL does not support admin interface
      * @return HAL representation
      */
-    private Json formatGETAsHAL(Query<?> query, String keyspace, int numberEmbeddedComponents) {
+    private Json formatGETAsHAL(Query<?> query, Keyspace keyspace, int numberEmbeddedComponents) {
         // This ugly instanceof business needs to be done because the HAL array renderer does not
         // support Compute queries and because Compute queries do not have the "admin" interface
 
-        if(query instanceof MatchQuery) {
-            return renderHALArrayData((MatchQuery) query, 0, numberEmbeddedComponents);
+        if(query instanceof GetQuery) {
+            return renderHALArrayData((GetQuery) query, 0, numberEmbeddedComponents);
         } else if(query instanceof PathQuery) {
             Json array = Json.array();
             // The below was taken line-for-line from previous way of rendering

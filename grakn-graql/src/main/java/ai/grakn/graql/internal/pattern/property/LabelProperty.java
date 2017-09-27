@@ -66,7 +66,7 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, label()));
+        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, ImmutableSet.of(label())));
     }
 
     @Override
@@ -85,12 +85,18 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        // This is supported in undefine queries in order to allow looking up schema concepts by label
+        return define(var);
+    }
+
+    @Override
     public boolean uniquelyIdentifiesConcept() {
         return true;
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new IdPredicate(var.var(), this, parent);
+        return new IdPredicate(var.var().asUserDefined(), this, parent);
     }
 }

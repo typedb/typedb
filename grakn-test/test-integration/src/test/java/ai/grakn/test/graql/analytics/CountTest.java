@@ -18,15 +18,15 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
@@ -43,17 +43,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 public class CountTest {
 
     @ClassRule
-    public static final EngineContext rule = EngineContext.startInMemoryServer();
+    public static final EngineContext rule = EngineContext.inMemoryServer();
 
     private GraknSession factory;
 
     @Before
     public void setUp() {
-        factory = rule.factoryWithNewKeyspace();
+        factory = rule.sessionWithNewKeyspace();
     }
 
     @Test
@@ -80,7 +81,6 @@ public class CountTest {
                     Graql.compute().withTx(graph).count().in(nameThing).execute().longValue());
         }
 
-        // create 1 more, rdd is refreshed
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType anotherThing = graph.putEntityType(nameAnotherThing);
             anotherThing.addEntity();
@@ -93,10 +93,26 @@ public class CountTest {
                     Graql.compute().withTx(graph).count().in(nameThing).execute().longValue());
             Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
         }
+    }
+
+    @Test
+    public void testConcurrentCount() throws Exception {
+        assumeFalse(GraknTestSetup.usingTinker());
+
+        String nameThing = "thingy";
+        String nameAnotherThing = "another";
+
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+            EntityType thingy = graph.putEntityType(nameThing);
+            thingy.addEntity();
+            thingy.addEntity();
+            EntityType anotherThing = graph.putEntityType(nameAnotherThing);
+            anotherThing.addEntity();
+            graph.commit();
+        }
 
         List<Long> list = new ArrayList<>(4);
         long workerNumber = 6L;
-        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
@@ -115,11 +131,10 @@ public class CountTest {
                 .collect(Collectors.toSet());
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(3L, result.iterator().next().longValue());
-
     }
 
     @Test
-    public void testDegreeWithHasResourceEdges() {
+    public void testHasResourceEdges() {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
@@ -132,25 +147,25 @@ public class CountTest {
         long count;
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
-            assertEquals(count, 3L);
+            assertEquals(3L, count);
 
             count = graph.graql().compute().count().in("name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name", "name").execute();
-            assertEquals(count, 2L);
-        }
-    }
+            assertEquals(2L, count);
 
-    @Test
-    public void testDegreeWithHasResourceVertices() {
+            count = graph.graql().compute().count().in("relationship").execute();
+            assertEquals(1L, count);
+        }
+
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
 
             // manually construct the relation type and instance
-            EntityType person = graph.putEntityType("person");
+            EntityType person = graph.getEntityType("person");
             Entity aPerson = person.addEntity();
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
             Attribute jason = name.putAttribute("jason");
@@ -168,19 +183,91 @@ public class CountTest {
             graph.commit();
         }
 
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            count = graph.graql().compute().count().execute();
+            assertEquals(5L, count);
+
+            count = graph.graql().compute().count().in("name").execute();
+            assertEquals(1L, count);
+
+            count = graph.graql().compute().count().in("has-name").execute();
+            assertEquals(2L, count);
+
+            count = graph.graql().compute().count().in("has-name", "name").execute();
+            assertEquals(3L, count);
+
+            count = graph.graql().compute().count().in("relationship").execute();
+            assertEquals(2L, count);
+        }
+    }
+
+    @Test
+    public void testHasResourceVerticesAndEdges() {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+
+            // manually construct the relation type and instance
+            EntityType person = graph.putEntityType("person");
+            Entity aPerson = person.addEntity();
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            Attribute jason = name.putAttribute("jason");
+
+            person.attribute(name);
+
+            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
+            person.plays(resourceOwner);
+            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
+            name.plays(resourceValue);
+
+            RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
+                    .relates(resourceOwner).relates(resourceValue);
+            relationshipType.addRelationship()
+                    .addRolePlayer(resourceOwner, aPerson)
+                    .addRolePlayer(resourceValue, jason);
+
+            graph.commit();
+        }
+
         long count;
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
-            assertEquals(count, 3L);
+            assertEquals(3L, count);
 
             count = graph.graql().compute().count().in("name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name").execute();
-            assertEquals(count, 1L);
+            assertEquals(1L, count);
 
             count = graph.graql().compute().count().in("has-name", "name").execute();
-            assertEquals(count, 2L);
+            assertEquals(2L, count);
+
+            count = graph.graql().compute().count().in("relationship").execute();
+            assertEquals(1L, count);
+        }
+
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+            EntityType person = graph.getEntityType("person");
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            Entity aPerson = person.addEntity();
+            aPerson.attribute(name.getAttribute("jason"));
+            graph.commit();
+        }
+
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            count = graph.graql().compute().count().execute();
+            assertEquals(5L, count);
+
+            count = graph.graql().compute().count().in("name").execute();
+            assertEquals(1L, count);
+
+            count = graph.graql().compute().count().in("has-name").execute();
+            assertEquals(2L, count);
+
+            count = graph.graql().compute().count().in("has-name", "name").execute();
+            assertEquals(3L, count);
+
+            count = graph.graql().compute().count().in("relationship").execute();
+            assertEquals(2L, count);
         }
     }
 

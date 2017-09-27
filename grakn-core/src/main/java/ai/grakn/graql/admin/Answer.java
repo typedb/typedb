@@ -43,7 +43,7 @@ public interface Answer {
     Answer copy();
 
     @CheckReturnValue
-    Set<Var> keySet();
+    Set<Var> vars();
 
     @CheckReturnValue
     Collection<Concept> values();
@@ -181,4 +181,12 @@ public interface Answer {
      */
     @CheckReturnValue
     Set<AnswerExplanation> getExplanations();
+
+    /**
+     * @param parent query context
+     * @return (partial) set of predicates corresponding to this answer
+     */
+    @CheckReturnValue
+    Set<Atomic> toPredicates(ReasonerQuery parent);
+
 }

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
@@ -29,7 +30,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Aggregate that finds mean of a match query.
+ * Aggregate that finds mean of a {@link Match}.
  */
 class MeanAggregate extends AbstractAggregate<Answer, Optional<Double>> {
 

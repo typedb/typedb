@@ -23,10 +23,11 @@ It is also possible to interact with the knowledge base using a Java API to form
 
 In the [Basic Schema documentation](../building-a-schema/basic-schema.html) we introduced a simple schema built using Graql.
 Let's see how we can build the same schema exclusively via the java API.
-First we need a knowledge base. For this example we will just use an [in-memory knowledge base](./java-setup.html#initialising-a-knowledge-base):
+First we need a knowledge base. For this example we will just use an
+[in-memory knowledge base](./java-setup.html#initialising-a-transaction-on-the-knowledge-base):
 
 ```java
-GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.WRITE);
+GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "myknowlegdebase").open(GraknTxType.WRITE);
 ```
 
 We need to define our constructs before we can use them. We will begin by defining our attribute types since they are used everywhere. In Graql, they were defined as follows:
@@ -166,7 +167,7 @@ insert $x isa person has firstname "John";
 Now the equivalent Java API:    
 
 ```java
-tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.WRITE);
+tx = Grakn.session(Grakn.IN_MEMORY, "myknowlegdebase").open(GraknTxType.WRITE);
 
 Attribute johnName = firstname.putAttribute("John"); //Create the attribute
 person.addEntity().attribute(johnName); //Link it to an entity
@@ -242,18 +243,12 @@ It is worth remembering that adding a type hierarchy allows you to create a more
 
 ## Rule Java API
 
-All rule instances are of type inference-rule which can be retrieved by:
-
-```java
-RuleType inferenceRule = tx.getMetaRuleInference();
-```
-
-Rule instances can be added to the knowledge base both through the Java API as well as through Graql. We will consider an example:
+Rules can be added to the knowledge base both through the Java API as well as through Graql. We will consider an example:
 
 ```graql
-insert
+define
 
-$R1 isa inference-rule,
+R1 sub rule,
 when {
     (parent: $p, child: $c) isa Parent;
 },
@@ -261,7 +256,7 @@ then {
     (ancestor: $p, descendant: $c) isa Ancestor;
 };
 
-$R2 isa inference-rule,
+R2 sub rule,
 when {
     (parent: $p, child: $c) isa Parent;
     (ancestor: $c, descendant: $d) isa Ancestor;
@@ -297,8 +292,8 @@ rule2then = and(tx.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Anc
 We conclude the rule creation with defining the rules from their constituent patterns:
 
 ```java
-Rule rule1 = inferenceRule.putRule(rule1when, rule1then);
-Rule rule2 = inferenceRule.putRule(rule2when, rule2then);
+Rule rule1 = tx.putRule("R1", rule1when, rule1then);
+Rule rule2 = tx.putRule("R2", rule2when, rule2then);
 ```
 
 {% include links.html %}

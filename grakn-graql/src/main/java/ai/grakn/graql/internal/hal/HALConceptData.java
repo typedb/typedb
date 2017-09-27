@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
@@ -63,7 +64,7 @@ public class HALConceptData {
     private final Representation halResource;
 
     private final String resourceLinkPrefix;
-    private final String keyspace;
+    private final Keyspace keyspace;
 
     private final boolean embedType;
     private final Set<Label> typesInQuery;
@@ -72,7 +73,7 @@ public class HALConceptData {
     private final int limit;
 
 
-    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, String keyspace, int offset, int limit){
+    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, Keyspace keyspace, int offset, int limit){
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
@@ -118,7 +119,7 @@ public class HALConceptData {
             embedSuperType(halResource, concept.asType());
         }
 
-        //If a match query contains an assertion we always embed the role players
+        //If a get query contains an assertion we always embed the role players
         if (concept.isRelationship() && separationDegree == 0) {
             generateRelationEmbedded(halResource, concept.asRelationship(), 1);
         }
@@ -284,8 +285,7 @@ public class HALConceptData {
             });
         }
         // We only limit the number of instances and not subtypes.
-        // TODO: This `asSchemaConcept` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
-        type.asSchemaConcept().subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
+        type.subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
             Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(subResource, sub, separationDegree - 1);

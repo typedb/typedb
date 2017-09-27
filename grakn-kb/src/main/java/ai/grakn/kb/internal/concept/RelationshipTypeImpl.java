@@ -25,6 +25,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -48,12 +49,22 @@ import java.util.stream.Stream;
 public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationship> implements RelationshipType {
     private final Cache<Set<Role>> cachedRelates = new Cache<>(Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RelationshipTypeImpl(VertexElement vertexElement) {
+    private RelationshipTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type, Boolean isImplicit) {
+    private RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type, Boolean isImplicit) {
         super(vertexElement, type, isImplicit);
+    }
+
+    public static RelationshipTypeImpl get(VertexElement vertexElement){
+        return new RelationshipTypeImpl(vertexElement);
+    }
+
+    public static RelationshipTypeImpl create(VertexElement vertexElement, RelationshipType type, Boolean isImplicit){
+        RelationshipTypeImpl relationType = new RelationshipTypeImpl(vertexElement, type, isImplicit);
+        vertexElement.tx().txCache().trackForValidation(relationType);
+        return relationType;
     }
 
     @Override
@@ -133,13 +144,12 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     @Override
     public void delete(){
-        //Force load the cache
-        cachedRelates.get();
+        //load the cache before deleting the concept
+        Set<Role> roles = cachedRelates.get();
 
         super.delete();
 
-        //Update the cache of the connected role types
-        cachedRelates.get().forEach(r -> {
+        roles.forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
             vertex().tx().txCache().trackForValidation(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
@@ -169,7 +179,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     private Stream<Relationship> relationEdges(){
         //Unfortunately this is a slow process
         return relates().
-                flatMap(role -> role.playedByTypes()).
+                flatMap(Role::playedByTypes).
                 flatMap(type ->{
                     //Traversal is used here to take advantage of vertex centric index
                     return  vertex().tx().getTinkerTraversal().V().
@@ -179,7 +189,8 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
                             outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
                             has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), getLabelId().getValue()).
                             toStream().
-                            map(edge -> vertex().tx().factory().buildConcept(edge).asRelationship());
+                            map(edge -> vertex().tx().factory().<Relationship>buildConcept(edge)).
+                            flatMap(CommonUtil::optionalToStream);
                 });
     }
 }

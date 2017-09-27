@@ -21,14 +21,14 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -63,7 +63,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Optional<GraknTx> tx = Optional.empty();
     GraknComputer graknComputer = null;
-    String keySpace;
+    Keyspace keySpace;
 
     Set<Label> subLabels = new HashSet<>();
     Set<Type> subTypes = new HashSet<>();
@@ -125,29 +125,21 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         getAllSubTypes(theGraph);
     }
 
-    private void getAllSubTypes(GraknTx graph) {
+    private void getAllSubTypes(GraknTx tx) {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subLabels.isEmpty()) {
-            EntityType metaEntityType = graph.admin().getMetaEntityType();
-            metaEntityType.subs().forEach(subTypes::add);
-            subTypes.remove(metaEntityType);
-            AttributeType<?> metaAttributeType = graph.admin().getMetaResourceType();
-            metaAttributeType.subs().forEach(subTypes::add);
-            subTypes.remove(metaAttributeType);
-            RelationshipType metaRelationshipType = graph.admin().getMetaRelationType();
-            metaRelationshipType.subs().forEach(subTypes::add);
-            subTypes.remove(metaRelationshipType);
-            subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
+            tx.admin().getMetaConcept().subs().forEach(subTypes::add);
         } else {
             subTypes = subLabels.stream().map(label -> {
-                Type type = graph.getSchemaConcept(label);
+                SchemaConcept type = tx.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
-                return type;
+                if (type.isRole() || type.isRule()) throw GraqlQueryException.roleAndRuleDoNotHaveInstance();
+                return type.asType();
             }).collect(Collectors.toSet());
-            for (Type type : subTypes) {
-                type.subs().forEach(subType -> this.subLabels.add(subType.getLabel()));
-            }
+
+            subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
         }
+        subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
     }
 
     GraknComputer getGraphComputer() {
@@ -158,7 +150,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     boolean selectedTypesHaveInstance() {
-        if (subLabels.isEmpty()) return false;
+        if (subLabels.isEmpty()) {
+            LOGGER.info("No types found while looking for instances");
+            return false;
+        }
 
         List<Pattern> checkSubtypes = subLabels.stream()
                 .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
@@ -185,10 +180,15 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return "compute " + graqlString();
     }
 
-    Set<Label> getHasResourceRelationTypes() {
+    Set<LabelId> getRolePlayerLabelIds() {
         return subTypes.stream()
-                .filter(Concept::isAttributeType)
-                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
+                .filter(Concept::isRelationshipType)
+                .map(Concept::asRelationshipType)
+                .filter(RelationshipType::isImplicit)
+                .flatMap(RelationshipType::relates)
+                .flatMap(Role::playedByTypes)
+                .map(type -> tx.get().admin().convertToId(type.getLabel()))
+                .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }
 
@@ -213,6 +213,13 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return labelSet.stream()
                 .map(tx.get().admin()::convertToId)
                 .filter(LabelId::isValid)
+                .collect(Collectors.toSet());
+    }
+
+    static Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
+        return subTypes.stream()
+                .filter(Concept::isAttributeType)
+                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
                 .collect(Collectors.toSet());
     }
 

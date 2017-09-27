@@ -24,8 +24,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
@@ -68,7 +68,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
         if (userExists(username)) {
             return false;
         }
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             VarPattern user = var().isa(USER_ENTITY);
             for (Map.Entry<String, Json> entry : userJson.asJsonMap().entrySet()) {
                 String property = entry.getKey();
@@ -105,7 +105,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
         if (superUsername().equals(username)) {
             return true;
         }
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.READ)) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.READ)) {
             VarPattern lookup = var().isa(USER_ENTITY).has(USER_NAME, username);
             return graph.graql().match(lookup).iterator().hasNext();
         }
@@ -125,11 +125,11 @@ public class SystemKeyspaceUsers extends UsersHandler {
         if (superUsername().equals(username)) {
             return Json.object(USER_NAME, username);
         }
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.READ)) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.READ)) {
             VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
             Var resource = var("property");
 
-            MatchQuery query = graph.graql().match(lookup.has(ATTRIBUTE.getLabel(), resource));
+            GetQuery query = graph.graql().match(lookup.has(ATTRIBUTE.getLabel(), resource)).get();
             List<Answer> L = query.execute();
             if (L.isEmpty()) {
                 return Json.nil();
@@ -160,14 +160,14 @@ public class SystemKeyspaceUsers extends UsersHandler {
         if (superUsername().equals(username)) {
             return passwordClient.equals(adminPassword);
         }
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.READ)) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.READ)) {
             List<Answer> results = graph.graql().match(
                     var("salt").isa(USER_SALT),
                     var("stored-password").isa(USER_PASSWORD),
                     var("entity").isa(USER_ENTITY).
                             has(USER_NAME, username).
                             has(USER_PASSWORD, var("stored-password")).
-                            has(USER_SALT, var("salt"))).execute();
+                            has(USER_SALT, var("salt"))).get().execute();
 
             if(!results.isEmpty()) {
                 Concept saltConcept = results.get(0).get("salt");
@@ -192,9 +192,9 @@ public class SystemKeyspaceUsers extends UsersHandler {
      */
     @Override
     public Json allUsers(int offset, int limit) {
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.READ)) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.READ)) {
             VarPattern lookup = var("entity").isa(USER_ENTITY);
-            MatchQuery query = graph.graql().match(lookup.has(USER_NAME, var("username"))).limit(limit).offset(offset);
+            GetQuery query = graph.graql().match(lookup.has(USER_NAME, var("username"))).limit(limit).offset(offset).get();
             List<Answer> L = query.execute();
             Json all = Json.array();
             L.forEach(concepts -> {
@@ -218,8 +218,8 @@ public class SystemKeyspaceUsers extends UsersHandler {
     @Override
     public boolean removeUser(String username) {
         VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
-            MatchQuery query = graph.graql().match(lookup);
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+            GetQuery query = graph.graql().match(lookup).get();
             List<Answer> results = query.execute();
             boolean exists = !results.isEmpty();
             results.forEach(map -> {

@@ -36,13 +36,15 @@ Check the [Developing With Java](../developing-with-java/migration-api.html) sec
 It is also possible to export data from Grakn using the migration shell script. Usage is as follows:
 
 ```bash
-usage: migration.sh export -data -schema [-help] [-no] [-batch <arg>] [-uri <arg>] [-keyspace <arg>]
+usage: graql migrate export -data -schema [-help] [-no] [-batch <arg>] [-uri <arg>] [-keyspace <arg>]
  -data                 export data
  -schema             export schema
  -h,--help             print usage message
  -k,--keyspace <arg>   keyspace to use
  -n,--no               dry run- write to standard out
  -u,--uri <arg>        uri to engine endpoint
+ -r, --retry           Number of times to retry sending tasks if engine is not available
+ -d,--debug            Migration immediatly stops if any transaction fails
 ```
 
 Exporting data or the schema from Grakn, into Graql, will always redirect to standard out. 

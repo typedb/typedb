@@ -3,9 +3,9 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
@@ -19,13 +19,13 @@ public class InPlaysFragmentTest {
 
     private final Var start = Graql.var();
     private final Var end = Graql.var();
-    private final InPlaysFragment fragment = new InPlaysFragment(null, start, end, false);
+    private final Fragment fragment = Fragments.inPlays(null, start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")
     public void testApplyTraversalFollowsSubsDownwards() {
-        GraphTraversal<Element, Vertex> traversal = __.V();
-        fragment.applyTraversal(traversal, null);
+        GraphTraversal<Vertex, Vertex> traversal = __.V();
+        fragment.applyTraversalInner(traversal, null, ImmutableSet.of());
 
         // Make sure we check this is a vertex, then traverse plays and downwards subs once
         assertThat(traversal, is(__.V()

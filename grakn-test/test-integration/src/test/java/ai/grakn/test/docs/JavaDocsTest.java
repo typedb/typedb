@@ -66,7 +66,7 @@ public class JavaDocsTest {
     private static int numFound = 0;
 
     @ClassRule
-    public static EngineContext engine = EngineContext.startInMemoryServer();
+    public static EngineContext engine = EngineContext.inMemoryServer();
 
     @Parameterized.Parameters(name = "{1}")
     public static Collection files() {
@@ -83,7 +83,7 @@ public class JavaDocsTest {
 
     @AfterClass
     public static void assertEnoughExamplesFound() {
-        if (GraknTestSetup.usingTinker() && numFound < 10) {
+        if (GraknTestSetup.usingTinker() && numFound < 8) {
             fail("Only found " + numFound + " Java examples. Perhaps the regex is wrong?");
         }
     }

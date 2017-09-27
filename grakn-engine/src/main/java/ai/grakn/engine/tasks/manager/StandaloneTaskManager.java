@@ -150,6 +150,11 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     @Override
+    public void runTask(TaskState taskState, TaskConfiguration configuration) {
+        executeTask(taskState, configuration).run();
+    }
+
+    @Override
     public CompletableFuture<Void> start() {
         // NO-OP The consumer runs straight after the addTask
         return CompletableFuture

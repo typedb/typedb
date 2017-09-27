@@ -67,10 +67,12 @@ public class ConjunctionQueryTest {
 
         Type resourceTypeWithoutSubTypesMock = mock(Type.class);
         doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subs();
+        when(resourceTypeWithoutSubTypesMock.getLabel()).thenReturn(resourceTypeWithoutSubTypesLabel);
 
         Type resourceTypeWithSubTypesMock = mock(Type.class);
         doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
                 .when(resourceTypeWithSubTypesMock).subs();
+        when(resourceTypeWithSubTypesMock.getLabel()).thenReturn(resourceTypeWithSubTypesLabel);
 
         when(tx.getSchemaConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
         when(tx.getSchemaConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
@@ -155,7 +157,7 @@ public class ConjunctionQueryTest {
     }
 
     private Matcher<Pattern> usesResourceIndex(Var varName, Object value) {
-        Fragment resourceIndexFragment = Fragments.resourceIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
+        Fragment resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<VarPatternAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();

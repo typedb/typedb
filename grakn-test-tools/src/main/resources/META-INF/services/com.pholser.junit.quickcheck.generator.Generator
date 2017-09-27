@@ -23,7 +23,7 @@ ai.grakn.generator.Labels
 ai.grakn.generator.ConceptIds
 ai.grakn.generator.EntityTypes
 ai.grakn.generator.RelationTypes
-ai.grakn.generator.RuleTypes
+ai.grakn.generator.Rules
 ai.grakn.generator.ResourceTypes
 ai.grakn.generator.MetaTypes
 ai.grakn.generator.Roles

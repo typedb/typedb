@@ -19,9 +19,10 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -35,23 +36,21 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collections;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static ai.grakn.util.GraqlTestUtil.assertNotExists;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class DeleteQueryTest {
+
+    private static final VarPattern ENTITY = Graql.label(Schema.MetaSchema.ENTITY.getLabel());
 
     public static final Var x = var("x");
     public static final Var y = var("y");
@@ -63,10 +62,10 @@ public class DeleteQueryTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private MatchQuery kurtz;
-    private MatchQuery marlonBrando;
-    private MatchQuery apocalypseNow;
-    private MatchQuery kurtzCastRelation;
+    private Match kurtz;
+    private Match marlonBrando;
+    private Match apocalypseNow;
+    private Match kurtzCastRelation;
 
     @Before
     public void setUp() {
@@ -86,7 +85,7 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteMultiple() {
-        qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
+        qb.define(label("fake-type").sub(ENTITY)).execute();
         qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
@@ -94,77 +93,6 @@ public class DeleteQueryTest {
         qb.match(x.isa("fake-type")).delete(x).execute();
 
         assertNotExists(qb, var().isa("fake-type"));
-    }
-
-    @Test
-    public void testDeleteName() {
-        qb.insert(
-                var().isa("person")
-                        .has("real-name", "Bob")
-                        .has("real-name", "Robert")
-                        .has("gender", "male")
-        ).execute();
-
-        assertExists(qb, var().isa("person").has("real-name", "Bob"));
-        assertExists(qb, var().isa("person").has("real-name", "Robert"));
-        assertExists(qb, var().isa("person").has("gender", "male"));
-
-        qb.match(x.has("real-name", "Bob")).delete(x.has("real-name", y)).execute();
-
-        assertNotExists(qb, var().isa("person").has("real-name", "Bob"));
-        assertNotExists(qb, var().isa("person").has("real-name", "Robert"));
-        assertExists(qb, var().isa("person").has("gender", "male"));
-
-        qb.match(x.has("gender", "male")).delete(x).execute();
-        assertNotExists(qb, var().has("gender", "male"));
-
-        assertExists(qb, var().isa("real-name").val("Bob"));
-        assertExists(qb, var().isa("real-name").val("Robert"));
-        assertExists(qb, var().isa("gender").val("male"));
-    }
-
-    @Test
-    public void testDeleteSpecificEdge() {
-        VarPattern actor = label("has-cast").relates("actor");
-        VarPattern productionWithCast = label("has-cast").relates("production-with-cast");
-
-        assertExists(qb, actor);
-        assertExists(qb, productionWithCast);
-
-        qb.match(x.label("has-cast")).delete(x.relates("actor")).execute();
-        assertExists(qb, label("has-cast"));
-        assertNotExists(qb, actor);
-        assertExists(qb, productionWithCast);
-
-        qb.define(actor).execute();
-        assertExists(qb, actor);
-    }
-
-    @Test
-    public void testDeleteSpecificName() {
-        qb.insert(
-                var().isa("person")
-                        .has("real-name", "Bob")
-                        .has("real-name", "Robert")
-                        .has("gender", "male")
-        ).execute();
-
-        assertExists(qb, var().isa("person").has("real-name", "Bob"));
-        assertExists(qb, var().isa("person").has("real-name", "Robert"));
-        assertExists(qb, var().isa("person").has("gender", "male"));
-
-        qb.match(x.has("real-name", "Bob")).delete(x.has("real-name", "Robert")).execute();
-
-        assertExists(qb, var().isa("person").has("real-name", "Bob"));
-        assertNotExists(qb, var().isa("person").has("real-name", "Robert"));
-        assertExists(qb, var().isa("person").has("gender", "male"));
-
-        qb.match(x.has("real-name", "Bob")).delete(x).execute();
-        assertNotExists(qb, var().has("real-name", "Bob").isa("person"));
-
-        assertExists(qb, var().isa("real-name").val("Bob"));
-        assertExists(qb, var().isa("real-name").val("Robert"));
-        assertExists(qb, var().isa("gender").val("male"));
     }
 
     @Test
@@ -196,11 +124,10 @@ public class DeleteQueryTest {
         assertNotExists(kurtzCastRelation);
     }
 
-    // TODO: Fix this scenario (test is fine, implementation is wrong!)
     @Test
     public void testDeleteAllRolePlayers() {
         ConceptId id = kurtzCastRelation.get("a").findFirst().get().getId();
-        MatchQuery relation = qb.match(var().id(id));
+        Match relation = qb.match(var().id(id));
 
         assertExists(kurtz);
         assertExists(marlonBrando);
@@ -248,21 +175,8 @@ public class DeleteQueryTest {
     }
 
     @Test
-    public void testDeleteEntityTypeWithNoInstances() {
-        MatchQuery shoeType = qb.match(x.label("shoe").sub("entity"));
-
-        qb.define(label("shoe").sub("entity")).execute();
-
-        assertExists(shoeType);
-
-        shoeType.delete(x).execute();
-
-        assertNotExists(shoeType);
-    }
-
-    @Test
-    public void testDeleteEntityTypeAfterInstances() {
-        MatchQuery movie = qb.match(x.isa("movie"));
+    public void afterDeletingAllInstances_TheTypeCanBeUndefined() {
+        Match movie = qb.match(x.isa("movie"));
 
         assertNotNull(movieKB.tx().getEntityType("movie"));
         assertExists(movie);
@@ -272,14 +186,14 @@ public class DeleteQueryTest {
         assertNotNull(movieKB.tx().getEntityType("movie"));
         assertNotExists(movie);
 
-        qb.match(x.label("movie").sub("entity")).delete(x).execute();
+        qb.undefine(label("movie").sub("production")).execute();
 
         assertNull(movieKB.tx().getEntityType("movie"));
     }
 
     @Test
     public void whenDeletingMultipleVariables_AllVariablesGetDeleted() {
-        qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
+        qb.define(label("fake-type").sub(ENTITY)).execute();
         qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
@@ -290,38 +204,15 @@ public class DeleteQueryTest {
     }
 
     @Test
-    public void testErrorWhenDeleteEntityTypeWithInstances() {
-        assertExists(qb, x.label("movie").sub("entity"));
-        assertExists(qb, x.isa("movie"));
+    public void whenDeletingWithNoArguments_AllVariablesGetDeleted() {
+        qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
+        qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
-        exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
-        qb.match(x.label("movie").sub("entity")).delete(x).execute();
-    }
+        assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
 
-    @Test
-    public void testErrorWhenDeleteSuperEntityType() {
-        assertExists(qb, x.label("production").sub("entity"));
+        qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).limit(1).delete().execute();
 
-        exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(allOf(containsString("production"), containsString("delet")));
-        qb.match(x.label("production").sub("entity")).delete(x).execute();
-    }
-
-    @Test
-    public void testErrorWhenDeleteRoleTypeWithPlayers() {
-        assertExists(qb, x.label("actor"));
-
-        exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(allOf(containsString("actor"), containsString("delet")));
-        qb.match(x.label("actor")).delete(x).execute();
-    }
-
-    @Test
-    public void testErrorWhenDeleteValue() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("delet"), containsString("val")));
-        qb.match(x.isa("movie")).delete(x.val("hello")).execute();
+        assertNotExists(qb, var().isa("fake-type"));
     }
 
     @Test
@@ -332,15 +223,17 @@ public class DeleteQueryTest {
     }
 
     @Test
-    public void whenDeletingAnEmptyPattern_Throw() {
+    public void whenDeletingASchemaConcept_Throw() {
+        SchemaConcept newType = qb.define(x.label("new-type").sub(ENTITY)).execute().get(x).asSchemaConcept();
+
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(NO_PATTERNS.getMessage());
-        movieKB.tx().graql().match(var()).delete(Collections.EMPTY_SET).execute();
+        exception.expectMessage(GraqlQueryException.deleteSchemaConcept(newType).getMessage());
+        qb.match(x.label("new-type")).delete(x).execute();
     }
 
     @Test(expected = Exception.class)
     public void deleteVarNameNullSet() {
-        movieKB.tx().graql().match(var()).delete((Set<VarPattern>) null).execute();
+        movieKB.tx().graql().match(var()).delete((Set<Var>) null).execute();
     }
 
     @Test(expected = Exception.class)

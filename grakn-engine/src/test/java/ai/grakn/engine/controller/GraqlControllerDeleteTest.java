@@ -24,6 +24,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
+import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
@@ -77,7 +78,7 @@ public class GraqlControllerDeleteTest {
 
         tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(tx.getKeyspace()).thenReturn("randomKeyspace");
+        when(tx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
         when(tx.graql()).thenReturn(mockQueryBuilder);
 
         when(mockFactory.tx(eq(tx.getKeyspace()), any())).thenReturn(tx);
@@ -163,7 +164,7 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEGraqlDeleteNotValid_ResponseStatusCodeIs422(){
         // Not allowed to delete roles with incoming edges
-        Response response = sendRequest("match $x label \"production-being-directed\"; delete $x;");
+        Response response = sendRequest("undefine production-being-directed sub work;");
 
         assertThat(response.statusCode(), equalTo(422));
     }
@@ -171,7 +172,7 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEGraqlDeleteNotValid_ResponseExceptionContainsValidationErrorMessage(){
         // Not allowed to delete roles with incoming edges
-        Response response = sendRequest("match $x label \"production-being-directed\"; delete $x;");
+        Response response = sendRequest("undefine production-being-directed sub work;");
 
         assertThat(exception(response), containsString("cannot be deleted"));
     }
@@ -185,7 +186,7 @@ public class GraqlControllerDeleteTest {
 
     private Response sendRequest(String query){
         return RestAssured.with()
-                .queryParam(KEYSPACE, tx.getKeyspace())
+                .queryParam(KEYSPACE, tx.getKeyspace().getValue())
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
                 .accept(APPLICATION_TEXT)

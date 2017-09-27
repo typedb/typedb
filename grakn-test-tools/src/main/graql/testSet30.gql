@@ -32,13 +32,11 @@ pair sub relationship
 name sub attribute datatype string;
 typ sub attribute datatype string;
 
-insert
-
 ##################################################################
 # Inference: all pairs;
 ##################################################################
 
-isa inference-rule
+rule-1 sub rule
     when {
         $x isa word;
         $y isa word;
@@ -53,7 +51,7 @@ isa inference-rule
 # Inference: pairs FF
 ##################################################################
 
-isa inference-rule
+rule-2 sub rule
     when {
         $f isa f;
         (subtype: $prep, supertype: $f) isa inheritance;
@@ -68,7 +66,7 @@ isa inference-rule
 # Inference: pairs FO
 ##################################################################
 
-isa inference-rule
+rule-3 sub rule
     when {
         $f isa f;
         $o isa o;
@@ -83,6 +81,8 @@ isa inference-rule
 ##################################################################
 # Data
 ##################################################################
+
+insert
 
 $f isa f, has name "f";
 $o isa o, has name "o";

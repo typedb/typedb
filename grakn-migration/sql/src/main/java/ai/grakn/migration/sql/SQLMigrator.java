@@ -42,10 +42,14 @@ public class SQLMigrator {
     private final Stream<Record> records;
 
     public static void main(String[] args) {
-        MigrationCLI.init(args, SQLMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(SQLMigrator::runSQL);
+        try {
+            MigrationCLI.init(args, SQLMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(SQLMigrator::runSQL);
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
+        }
     }
 
     private static void runSQL(SQLMigrationOptions options) {

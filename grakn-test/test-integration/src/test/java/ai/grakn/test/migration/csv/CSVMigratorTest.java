@@ -19,9 +19,10 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -58,11 +59,11 @@ public class CSVMigratorTest {
     public final SystemOutRule systemOutRule = new SystemOutRule().enableLog();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Before
     public void setup() {
-        String keyspace = SampleKBLoader.randomKeyspace();
+        Keyspace keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
         migrator = Migrator.to(engine.uri(), keyspace);
     }

@@ -16,11 +16,9 @@ relation1 sub relationship
 #Resources
 res1 sub attribute datatype string;
 
-insert
-
 #Rules
 
-isa inference-rule
+rule-1 sub rule
 when {
     $x isa entity1, has res1 $y;
     $z isa relation1;
@@ -28,6 +26,8 @@ when {
 then {
     $z has res1 $y;
 };
+
+insert
 
 #Data
 

@@ -16,7 +16,7 @@ This tutorial shows you how to migrate OWL into Grakn. If you have not yet set u
 The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
 
 ```bash
-usage: migration.sh owl -input <arg> -keyspace <arg> [-help] [-uri <arg>] [-verbose]
+usage: graql migrate owl -input <arg> -keyspace <arg> [-help] [-uri <arg>] [-verbose]
 
  -c,--config <arg>     Configuration file.
  -h,--help             Print usage message.
@@ -24,6 +24,7 @@ usage: migration.sh owl -input <arg> -keyspace <arg> [-help] [-uri <arg>] [-verb
  -k,--keyspace <arg>   Grakn knowledge base. Required.
  -u,--uri <arg>        Location of Grakn Engine.
  -v,--verbose          Print counts of migrated data.
+ -d,--debug            Migration immediatly stops if any transaction fails
 ```
 
 Please note: `-no` and `-retry` are not supported by OWL at the moment.
@@ -106,26 +107,27 @@ $eWitold isa tPerson;
 $eStefan isa tPerson;
 (owl-subject-op-isParentOf: $eStefan, owl-object-op-isParentOf: $eWitold) isa op-isParentOf;
 
-$inv-op-hasAncestor isa inference-rule,
+define
+inv-op-hasAncestor sub rule,
 when {
 (owl-subject-op-hasAncestor: $x, owl-object-op-hasAncestor: $y) isa hasAncestor;},
 then {
 (owl-subject-op-isAncestorOf: $y, owl-object-op-isAncestorOf: $x) isa isAncestorOf;};
 
-$inv-op-isAncestorOf isa inference-rule,
+inv-op-isAncestorOf sub rule,
 when {
 (owl-subject-op-isAncestorOf: $x, owl-object-op-isAncestorOf: $y) isa isAncestorOf;},
 then {
 (owl-subject-op-hasAncestor: $y, owl-object-op-hasAncestor: $x) isa hasAncestor;};
 
-$trst-op-hasAncestor isa inference-rule,
+trst-op-hasAncestor sub rule,
 when {
 (owl-subject-op-hasParent: $x, owl-object-op-hasParent: $z) isa hasAncestor;
 (owl-subject-op-hasAncestor: $z, owl-object-op-hasAncestor: $y) isa hasAncestor;},
 then {
 (owl-subject-op-hasAncestor: $x, owl-object-op-hasAncestor: $y) isa hasAncestor;};
 
-$pch-op-hasAncestor isa inference-rule,
+pch-op-hasAncestor sub rule,
 when {
 (owl-subject-op-hasParent: $x, owl-object-op-hasParent: $z) isa hasParent;
 (owl-subject-op-hasAncestor: $z, owl-object-op-hasAncestor: $y) isa hasAncestor;},

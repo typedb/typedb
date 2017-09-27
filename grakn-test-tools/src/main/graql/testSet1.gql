@@ -27,11 +27,9 @@ relation2 sub relationship
 	relates role1
 	relates role2;
 
-insert
-
 #Rules
 
-isa inference-rule 
+rule-1 sub rule
 	when {
 		$x isa entity1;
 	}
@@ -39,7 +37,7 @@ isa inference-rule
 		(role1:$x, role2:$x) isa relation1;
 	};
 
-isa inference-rule
+rule-2 sub rule
     when {
         (role1: $c, role2: $m) isa relation2;
         (role1: $m, role2: $op) isa relation1;
@@ -47,6 +45,8 @@ isa inference-rule
     then {
         (role1: $c, role2: $op) isa relation1;
     };
+
+insert
 
 #Data
 

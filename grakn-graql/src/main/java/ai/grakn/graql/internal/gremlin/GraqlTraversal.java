@@ -19,32 +19,34 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.auto.value.AutoValue;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectStep;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A traversal over a Grakn graph, representing one of many ways to execute a {@code MatchQuery}.
+ * A traversal over a Grakn knowledge base, representing one of many ways to execute a {@link Match}.
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  *
@@ -67,11 +69,23 @@ public abstract class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknTx graph) {
-        Traversal[] traversals =
-                fragments().stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknTx graph, Set<Var> vars) {
 
-        return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
+        if (fragments().size() == 1) {
+            // If there are no disjunctions, we don't need to union them and get a performance boost
+            ImmutableList<Fragment> list = Iterables.getOnlyElement(fragments());
+            return getConjunctionTraversal(graph, graph.admin().getTinkerTraversal().V(), vars, list);
+        } else {
+            Traversal[] traversals = fragments().stream()
+                    .map(list -> getConjunctionTraversal(graph, __.V(), vars, list))
+                    .toArray(Traversal[]::new);
+
+            // This is a sneaky trick - we want to do a union but tinkerpop requires all traversals to start from
+            // somewhere, so we start from a single arbitrary vertex.
+            GraphTraversal traversal = graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
+
+            return selectVars(traversal, vars);
+        }
     }
 
     //       Set of disjunctions
@@ -84,81 +98,36 @@ public abstract class GraqlTraversal {
     /**
      * @return a gremlin traversal that represents this inner query
      */
-    private GraphTraversal<? extends Element, Map<String, Element>> getConjunctionTraversal(
-            GraknTx graph, ImmutableList<Fragment> fragmentList
+    private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
+            GraknTx graph, GraphTraversal<Vertex, Vertex> traversal, Set<Var> vars, ImmutableList<Fragment> fragmentList
     ) {
-        GraphTraversal traversal = __.V();
+        GraphTraversal<Vertex, ? extends Element> newTraversal = traversal;
 
         // If the first fragment can operate on edges, then we have to navigate all edges as well
         if (fragmentList.get(0).canOperateOnEdges()) {
-            traversal = __.union(traversal, __.V().outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
+            newTraversal = traversal.union(__.identity(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
         }
 
-        return applyFragments(graph, fragmentList, traversal);
+        return applyFragments(graph, vars, fragmentList, newTraversal);
     }
 
-    private GraphTraversal<?, Map<String, Element>> applyFragments(
-            GraknTx graph, ImmutableList<Fragment> fragmentList, GraphTraversal<Element, Element> traversal) {
-        Set<Var> foundNames = new HashSet<>();
+    private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
+            GraknTx graph, Set<Var> vars, ImmutableList<Fragment> fragmentList,
+            GraphTraversal<Vertex, ? extends Element> traversal
+    ) {
+        Set<Var> foundVars = new HashSet<>();
 
         // Apply fragments in order into one single traversal
         Var currentName = null;
 
         for (Fragment fragment : fragmentList) {
-            applyFragment(fragment, traversal, currentName, foundNames, graph);
-            currentName = fragment.getEnd().orElse(fragment.getStart());
+            // Apply fragment to traversal
+            fragment.applyTraversal(traversal, graph, foundVars, currentName);
+            currentName = fragment.end() != null ? fragment.end() : fragment.start();
         }
 
         // Select all the variable names
-        String[] traversalNames = foundNames.stream().map(Var::getValue).toArray(String[]::new);
-        return traversal.select(traversalNames[0], traversalNames[0], traversalNames);
-    }
-
-    /**
-     * Apply the given fragment to the traversal. Keeps track of variable names so far so that it can decide whether
-     * to use "as" or "select" steps in gremlin.
-     * @param fragment the fragment to apply to the traversal
-     * @param traversal the gremlin traversal to apply the fragment to
-     * @param currentName the variable name that the traversal is currently at
-     * @param names a set of variable names so far encountered in the query
-     */
-    private void applyFragment(
-            Fragment fragment, GraphTraversal<Element, ? extends Element> traversal,
-            @Nullable Var currentName, Set<Var> names, GraknTx graph
-    ) {
-        Var start = fragment.getStart();
-
-        if (currentName != null) {
-            if (!currentName.equals(start)) {
-                if (names.contains(start)) {
-                    // If the variable name has been visited but the traversal is not at that variable name, select it
-                    traversal.select(start.getValue());
-                } else {
-                    // Restart traversal when fragments are disconnected
-                    traversal.V().as(start.getValue());
-                }
-            }
-        } else {
-            // If the variable name has not been visited yet, remember it and use the 'as' step
-            traversal.as(start.getValue());
-        }
-
-        names.add(start);
-
-        // Apply fragment to traversal
-        fragment.applyTraversal(traversal, graph);
-
-        fragment.getEnd().ifPresent(end -> {
-            if (!names.contains(end)) {
-                // This variable name has not been encountered before, remember it and use the 'as' step
-                traversal.as(end.getValue());
-            } else {
-                // This variable name has been encountered before, confirm it is the same
-                traversal.where(P.eq(end.getValue()));
-            }
-        });
-
-        names.addAll(fragment.getVariableNames());
+        return selectVars(traversal, Sets.intersection(vars, foundVars));
     }
 
     /**
@@ -178,24 +147,35 @@ public abstract class GraqlTraversal {
     static double fragmentListCost(List<Fragment> fragments) {
         Set<Var> names = new HashSet<>();
 
-        double cost = 0;
         double listCost = 0;
 
         for (Fragment fragment : fragments) {
-            cost = fragmentCost(fragment, names);
-            names.addAll(fragment.getVariableNames());
-            listCost += cost;
+            listCost += fragmentCost(fragment, names);
+            names.addAll(fragment.vars());
         }
 
         return listCost;
     }
 
     static double fragmentCost(Fragment fragment, Collection<Var> names) {
-        if (names.contains(fragment.getStart())) {
+        if (names.contains(fragment.start()) || fragment.hasFixedFragmentCost()) {
             return fragment.fragmentCost();
         } else {
             // Restart traversal, meaning we are navigating from all vertices
             return COST_NEW_TRAVERSAL;
+        }
+    }
+
+    private static <S, E> GraphTraversal<S, Map<String, E>> selectVars(GraphTraversal<S, ?> traversal, Set<Var> vars) {
+        if (vars.isEmpty()) {
+            // Produce an empty result
+            return traversal.constant(ImmutableMap.of());
+        } else if (vars.size() == 1) {
+            String label = vars.iterator().next().name();
+            return traversal.select(label, label);
+        } else {
+            String[] labelArray = vars.stream().map(Var::name).toArray(String[]::new);
+            return traversal.asAdmin().addStep(new SelectStep<>(traversal.asAdmin(), null, labelArray));
         }
     }
 
@@ -206,19 +186,19 @@ public abstract class GraqlTraversal {
             Var currentName = null;
 
             for (Fragment fragment : list) {
-                if (!fragment.getStart().equals(currentName)) {
+                if (!fragment.start().equals(currentName)) {
                     if (currentName != null) sb.append(" ");
 
-                    sb.append(fragment.getStart().shortName());
-                    currentName = fragment.getStart();
+                    sb.append(fragment.start().shortName());
+                    currentName = fragment.start();
                 }
 
-                sb.append(fragment.getName());
+                sb.append(fragment.name());
 
-                Optional<Var> end = fragment.getEnd();
-                if (end.isPresent()) {
-                    sb.append(end.get().shortName());
-                    currentName = end.get();
+                Var end = fragment.end();
+                if (end != null) {
+                    sb.append(end.shortName());
+                    currentName = end;
                 }
             }
 

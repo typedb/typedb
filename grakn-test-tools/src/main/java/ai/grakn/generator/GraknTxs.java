@@ -31,9 +31,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
@@ -254,14 +254,14 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             },
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> {
-                RuleType ruleType1 = ruleType();
-                RuleType ruleType2 = ruleType();
-                ruleType1.sup(ruleType2);
-                summary(ruleType1, "superType", ruleType2);
+                Rule rule1 = ruleType();
+                Rule rule2 = ruleType();
+                rule1.sup(rule2);
+                summary(rule1, "superType", rule2);
             },
             //TODO: re-enable when grakn-kb can create graql constructs
             /*() -> {
-                RuleType ruleType = ruleType();
+                Rule ruleType = ruleType();
                 Rule rule = ruleType.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));// TODO: generate more complicated rules
                 summaryAssign(rule, ruleType, "putRule", "var(\"x\")", "var(\"y\")");
             },*/
@@ -312,9 +312,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
     }
 
     private Type type() {
-        // TODO: Revise this when meta concept is a type
-        Collection<? extends Type> candidates = tx.admin().getMetaConcept().subs().
-                map(Concept::asType).collect(toSet());
+        Collection<? extends Type> candidates = tx.admin().getMetaConcept().subs().collect(toSet());
         return random.choose(candidates);
     }
 
@@ -334,8 +332,8 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         return random.choose(tx.admin().getMetaRelationType().subs().collect(toSet()));
     }
 
-    private RuleType ruleType() {
-        return random.choose(tx.admin().getMetaRuleType().subs().collect(toSet()));
+    private Rule ruleType() {
+        return random.choose(tx.admin().getMetaRule().subs().collect(toSet()));
     }
 
     private Thing instance() {
@@ -374,13 +372,12 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         Set<SchemaConcept> allSchemaConcepts = new HashSet<>();
         allSchemaConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
         allSchemaConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
+        allSchemaConcepts.addAll(graph.admin().getMetaRule().subs().collect(toSet()));
         return allSchemaConcepts;
     }
 
     public static Stream<? extends Thing> allInstancesFrom(GraknTx graph) {
-        // TODO: Revise this when meta concept is a type
-        return graph.admin().getMetaConcept().subs().
-                flatMap(element -> element.asType().instances());
+        return graph.admin().getMetaConcept().instances();
     }
 
     @Override

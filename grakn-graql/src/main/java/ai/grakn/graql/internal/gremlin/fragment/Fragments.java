@@ -18,13 +18,12 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
@@ -37,14 +36,13 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
+import javax.annotation.Nullable;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Factory for creating instances of {@link Fragment}.
@@ -53,102 +51,96 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Fragments {
 
-    // TODO: Make sure these never clash with a real Graql variable
-    static final String RELATION_EDGE = "!RELATION_EDGE";
-    static final String RELATION_DIRECTION = "!RELATION_DIRECTION";
-
     private Fragments() {
     }
 
-    public static Fragment inShortcut(VarProperty varProperty,
-                                      Var rolePlayer, Var edge, Var relation, Optional<Var> role,
-                                      Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels);
+    public static Fragment inRolePlayer(VarProperty varProperty,
+                                        Var rolePlayer, Var edge, Var relation, @Nullable Var role,
+                                        @Nullable ImmutableSet<Label> roleLabels,
+                                        @Nullable ImmutableSet<Label> relationTypeLabels) {
+        return new AutoValue_InRolePlayerFragment(
+                varProperty, rolePlayer, relation, edge, role, roleLabels, relationTypeLabels);
     }
 
-    public static Fragment outShortcut(VarProperty varProperty,
-                                       Var relation, Var edge, Var rolePlayer, Optional<Var> role,
-                                       Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
+    public static Fragment outRolePlayer(VarProperty varProperty,
+                                         Var relation, Var edge, Var rolePlayer, @Nullable Var role,
+                                         @Nullable ImmutableSet<Label> roleLabels,
+                                         @Nullable ImmutableSet<Label> relationTypeLabels) {
+        return new AutoValue_OutRolePlayerFragment(
+                varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
-        return new InSubFragment(varProperty, start, end);
+        return new AutoValue_InSubFragment(varProperty, start, end);
     }
 
     public static Fragment outSub(VarProperty varProperty, Var start, Var end) {
-        return new OutSubFragment(varProperty, start, end);
+        return new AutoValue_OutSubFragment(varProperty, start, end);
     }
 
     public static InRelatesFragment inRelates(VarProperty varProperty, Var start, Var end) {
-        return new InRelatesFragment(varProperty, start, end);
+        return new AutoValue_InRelatesFragment(varProperty, start, end);
     }
 
     public static Fragment outRelates(VarProperty varProperty, Var start, Var end) {
-        return new OutRelatesFragment(varProperty, start, end);
+        return new AutoValue_OutRelatesFragment(varProperty, start, end);
     }
 
-    public static Fragment inIsa(VarProperty varProperty, Var start, Var end) {
-        return new InIsaFragment(varProperty, start, end);
+    public static Fragment inIsa(VarProperty varProperty, Var start, Var end, boolean mayHaveEdgeInstances) {
+        return new AutoValue_InIsaFragment(varProperty, start, end, mayHaveEdgeInstances);
     }
 
     public static Fragment outIsa(VarProperty varProperty, Var start, Var end) {
-        return new OutIsaFragment(varProperty, start, end);
-    }
-
-    public static Fragment inHasScope(VarProperty varProperty, Var start, Var end) {
-        return new InHasScopeFragment(varProperty, start, end);
-    }
-
-    public static Fragment outHasScope(VarProperty varProperty, Var start, Var end) {
-        return new OutHasScopeFragment(varProperty, start, end);
+        return new AutoValue_OutIsaFragment(varProperty, start, end);
     }
 
     public static Fragment dataType(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
-        return new DataTypeFragment(varProperty, start, dataType);
+        return new AutoValue_DataTypeFragment(varProperty, start, dataType);
     }
 
     public static Fragment inPlays(VarProperty varProperty, Var start, Var end, boolean required) {
-        return new InPlaysFragment(varProperty, start, end, required);
+        return new AutoValue_InPlaysFragment(varProperty, start, end, required);
     }
 
     public static Fragment outPlays(VarProperty varProperty, Var start, Var end, boolean required) {
-        return new OutPlaysFragment(varProperty, start, end, required);
+        return new AutoValue_OutPlaysFragment(varProperty, start, end, required);
     }
 
     public static Fragment id(VarProperty varProperty, Var start, ConceptId id) {
-        return new IdFragment(varProperty, start, id);
+        return new AutoValue_IdFragment(varProperty, start, id);
     }
 
-    public static Fragment label(VarProperty varProperty, Var start, Label label) {
-        return new LabelFragment(varProperty, start, label);
+    public static Fragment label(VarProperty varProperty, Var start, ImmutableSet<Label> labels) {
+        return new AutoValue_LabelFragment(varProperty, start, labels);
     }
 
-    public static Fragment value(VarProperty varProperty, Var start, ValuePredicateAdmin predicate) {
-        return new ValueFragment(varProperty, start, predicate);
+    public static Fragment value(VarProperty varProperty, Var start, ValuePredicate predicate) {
+        return new AutoValue_ValueFragment(varProperty, start, predicate);
     }
 
     public static Fragment isAbstract(VarProperty varProperty, Var start) {
-        return new IsAbstractFragment(varProperty, start);
+        return new AutoValue_IsAbstractFragment(varProperty, start);
     }
 
     public static Fragment regex(VarProperty varProperty, Var start, String regex) {
-        return new RegexFragment(varProperty, start, regex);
+        return new AutoValue_RegexFragment(varProperty, start, regex);
     }
 
     public static Fragment notInternal(VarProperty varProperty, Var start) {
-        return new NotInternalFragment(varProperty, start);
+        return new AutoValue_NotInternalFragment(varProperty, start);
     }
 
     public static Fragment neq(VarProperty varProperty, Var start, Var other) {
-        return new NeqFragment(varProperty, start, other);
+        return new AutoValue_NeqFragment(varProperty, start, other);
     }
 
     /**
-     * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
+     * A {@link Fragment} that uses an index stored on each attribute. Attributes are indexed by direct type and value.
      */
-    public static Fragment resourceIndex(VarProperty varProperty, Var start, Label label, Object resourceValue) {
-        return new ResourceIndexFragment(varProperty, start, label, resourceValue);
+    public static Fragment attributeIndex(
+            @Nullable VarProperty varProperty, Var start, Label label, Object attributeValue) {
+        String attributeIndex = Schema.generateAttributeIndex(label, attributeValue.toString());
+        return new AutoValue_AttributeIndexFragment(varProperty, start, attributeIndex);
     }
 
     static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal) {
@@ -206,34 +198,12 @@ public class Fragments {
         return (GraphTraversal<T, Edge>) traversal.hasNot(Schema.VertexProperty.ID.name());
     }
 
-    static String displayOptionalTypeLabels(String name, Optional<Set<Label>> typeLabels) {
-        return typeLabels.map(labels ->
-                " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
-        ).orElse("");
-    }
-
-    static void applyTypeLabelsToTraversal(
-            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknTx graph) {
-        typeLabels.ifPresent(labels -> {
-            Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
-            traversal.has(property.name(), P.within(typeIds));
-        });
-    }
-
-    /**
-     * Optionally traverse from a shortcut edge to the role-type it mentions, plus any super-types.
-     *
-     * @param traversal the traversal, starting from the shortcut edge
-     * @param role the variable to assign to the role. If not present, do nothing
-     * @param edgeProperty the edge property to look up the role label ID
-     */
-    static void traverseRoleFromShortcutEdge(GraphTraversal<?, Edge> traversal, Optional<Var> role, Schema.EdgeProperty edgeProperty) {
-        role.ifPresent(var -> {
-            Var edge = Graql.var();
-            traversal.as(edge.getValue());
-            Fragments.outSubs(traverseSchemaConceptFromEdge(traversal, edgeProperty));
-            traversal.as(var.getValue()).select(edge.getValue());
-        });
+    static String displayOptionalTypeLabels(String name, @Nullable Set<Label> typeLabels) {
+        if (typeLabels != null) {
+            return " " + name + ":" + typeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(","));
+        } else {
+            return "";
+        }
     }
 
     static <S> GraphTraversal<S, Vertex> traverseSchemaConceptFromEdge(
@@ -241,10 +211,10 @@ public class Fragments {
 
         // Access label ID from edge
         Var labelId = Graql.var();
-        traversal.values(edgeProperty.name()).as(labelId.getValue());
+        traversal.values(edgeProperty.name()).as(labelId.name());
 
         // Look up schema concept using ID
-        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
+        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.name())));
     }
 
 }

@@ -87,9 +87,9 @@ made sub role;
 To load *schema.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh clean
-<relative-path-to-Grakn>/bin/grakn.sh start
-<relative-path-to-Grakn>/bin/graql.sh -f ./schema.gql
+./grakn server clean
+./grakn server start
+./graql console -f ./schema.gql
 ```		
 
 ## Data Migration
@@ -97,7 +97,7 @@ To load *schema.gql* into Grakn, make sure the engine is running and choose a cl
 We migrated the CSV data using template Graql files, but for ease of use, we provide a single data file that you can load to populate a knowledge base.
 
 ```bash
-<relative-path-to-Grakn>/bin/graql.sh -b ./data.gql
+./graql console -b ./data.gql
 ```		
 
 Spin up the [Grakn visualiser](../grakn-dashboard/visualiser.html) by pointing your browser to [http://localhost:4567/](http://localhost:4567/). You can submit queries to check the data, or explore it using the Types dropdown menu.
@@ -106,16 +106,16 @@ Some sample queries:
 
 ```graql
 # Cars where the model name contains "Merc"
-match $x has model contains "Merc";
+match $x has model contains "Merc"; get;
 
 # Cars with more than 4 gears
-match $x has gear > 4;
+match $x has gear > 4; get;
 
 # Japanese-made cars that are manual
-match $x isa manual-car has model $s; $y isa japanese-maker; (made: $x, maker:$y);
+match $x isa manual-car has model $s; $y isa japanese-maker; (made: $x, maker:$y); get;
 
 # European cars that are automatic
-match $x isa automatic-car has model $s; $y isa european-maker; (made: $x, maker:$y);
+match $x isa automatic-car has model $s; $y isa european-maker; (made: $x, maker:$y); get;
 
 ```
 
@@ -123,7 +123,7 @@ At this point, you are ready to start investigating statistics within the data u
 
 ## `aggregate`
 
-You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **knowledge base** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `graql.sh` at the terminal, from within the *bin* directory of the Grakn installation.
+You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **knowledge base** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `./graql console` at the terminal, from within the *bin* directory of the Grakn installation.
 
 Here are some example `aggregate` queries to try:
 
@@ -215,7 +215,7 @@ $x id "254120" isa automatic-car; $y val "Pontiac Firebird" isa model;
 
 ## Where Next?
 
-If you haven't already, we recommend that you review the documentation about [Graql analytics](https://grakn.ai/pages/documentation/graql-analytics/analytics-overview.html), since there is more to `compute` than just statistical analysis. Unfortunately, this example is not a good one to illustrate clusters, degrees or shortest path analytics, which is why it isn't described here. There is also an example of using Graql analytics on the genealogy dataset available [here](./examples/java-analytics.html).
+If you haven't already, we recommend that you review the documentation about [Graql analytics](https://grakn.ai/pages/documentation/graql-analytics/analytics-overview.html), since there is more to `compute` than just statistical analysis. Unfortunately, this example is not a good one to illustrate clusters, degrees or shortest path analytics, which is why it isn't described here. There is also an example of using Graql analytics on the genealogy dataset available [here](../examples/java-analytics.html).
 
 This example was based on CSV data migrated into Grakn. Having read it, Yyou may want to further study our documentation about [CSV migration](../migration/CSV-migration.html) and [Graql templating](https://grakn.ai/pages/documentation/graql/graql-templating.html).  
 

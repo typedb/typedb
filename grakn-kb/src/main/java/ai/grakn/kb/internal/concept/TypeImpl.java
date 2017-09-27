@@ -21,8 +21,8 @@ package ai.grakn.kb.internal.concept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -32,6 +32,7 @@ import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -72,9 +74,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            Role role = vertex().tx().factory().buildConcept(edge.target());
-            Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
-            roleTypes.put(role, required);
+
+            Optional<Role> role = edge.target().flatMap(roleVertex ->
+                    vertex().tx().factory().<Role>buildConcept(roleVertex));
+
+            if (role.isPresent()) {
+                Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
+                roleTypes.put(role.get(), required);
+            }
         });
 
         return roleTypes;
@@ -86,10 +93,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     TypeImpl(VertexElement vertexElement, T superType) {
         super(vertexElement, superType);
+        //This constructor is ONLY used when CREATING new types. Which is why we shard here
+        createShard();
     }
 
     TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         super(vertexElement, superType, isImplicit);
+        //This constructor is ONLY used when CREATING new types. Which is why we shard here
+        createShard();
     }
 
     /**
@@ -143,7 +154,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
 
-        VertexElement instanceVertex = vertex().tx().addVertex(instanceBaseType);
+        VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             vertex().tx().txCache().addedInstance(getId());
         }
@@ -158,7 +169,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     private void preCheckForInstanceCreation(){
         vertex().tx().checkMutationAllowed();
 
-        if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
+        if(Schema.MetaSchema.isMetaLabel(getLabel())){
             throw GraknTxOperationException.metaTypeImmutable(getLabel());
         }
     }
@@ -241,18 +252,15 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     Stream<V> instancesDirect(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
-                map(edge -> vertex().tx().factory().buildShard(edge.source())).
+                map(EdgeElement::source).
+                flatMap(CommonUtil::optionalToStream).
+                map(source -> vertex().tx().factory().buildShard(source)).
                 flatMap(Shard::<V>links);
     }
 
     @Override
     public Boolean isAbstract() {
         return cachedIsAbstract.get();
-    }
-
-    @Override
-    public Stream<Thing> scopes() {
-        return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE);
     }
 
     void trackRolePlayers(){
@@ -321,11 +329,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return changingSuperAllowed;
     }
 
-    /**
-     *
-     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Type itself.
-     */
     @Override
     public T deletePlays(Role role) {
         checkSchemaMutationAllowed();
@@ -334,6 +337,37 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         ((RoleImpl) role).deleteCachedDirectPlaysByType(this);
 
         trackRolePlayers();
+
+        return getThis();
+    }
+
+    @Override
+    public T deleteAttribute(AttributeType attributeType){
+        return deleteAttribute(Schema.ImplicitType.HAS_OWNER, attributes(), attributeType);
+    }
+
+    @Override
+    public T deleteKey(AttributeType attributeType){
+        return deleteAttribute(Schema.ImplicitType.KEY_OWNER, keys(), attributeType);
+    }
+
+
+    /**
+     * Helper method to delete a {@link AttributeType} which is possible linked to this {@link Type}.
+     * The link to {@link AttributeType} is removed if <code>attributeToRemove</code> is in the candidate list
+     * <code>attributeTypes</code>
+     *
+     * @param implicitType the {@link Schema.ImplicitType} which specifies which implicit {@link Role} should be removed
+     * @param attributeTypes The list of candidate which potentially contains the {@link AttributeType} to remove
+     * @param attributeToRemove the {@link AttributeType} to remove
+     * @return the {@link Type} itself
+     */
+    private T deleteAttribute(Schema.ImplicitType implicitType,  Stream<AttributeType> attributeTypes, AttributeType attributeToRemove){
+        if(attributeTypes.anyMatch(a ->  a.equals(attributeToRemove))){
+            Label label = implicitType.getLabel(attributeToRemove.getLabel());
+            Role role = vertex().tx().getSchemaConcept(label);
+            if(role != null) deletePlays(role);
+        }
 
         return getThis();
     }
@@ -351,6 +385,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
+
+        if(isAbstract){
+            vertex().tx().txCache().removeFromValidation(this);
+        } else {
+            vertex().tx().txCache().trackForValidation(this);
+        }
+
         return getThis();
     }
 

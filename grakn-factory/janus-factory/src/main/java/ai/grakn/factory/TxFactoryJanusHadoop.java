@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.Keyspace;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
@@ -29,7 +30,7 @@ import java.util.Properties;
 
 /**
  * <p>
- *     A {@link GraknTx} on top of {@link HadoopGraph}
+ *     A {@link ai.grakn.GraknTx} on top of {@link HadoopGraph}
  * </p>
  *
  * <p>
@@ -49,11 +50,11 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
 
-    TxFactoryJanusHadoop(String keyspace, String engineUrl, Properties properties) {
+    TxFactoryJanusHadoop(Keyspace keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
 
-        properties.setProperty(CLUSTER_KEYSPACE, keyspace);
-        properties.setProperty(INPUT_KEYSPACE, keyspace);
+        properties.setProperty(CLUSTER_KEYSPACE, keyspace.getValue());
+        properties.setProperty(INPUT_KEYSPACE, keyspace.getValue());
     }
 
     @Override
@@ -64,6 +65,14 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
     @Override
     HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
         LOG.warn("Hadoop graph ignores parameter address [" + super.engineUrl + "]");
+
+        //Load Defaults
+        TxFactoryJanus.DEFAULT_PROPERTIES.forEach((key, value) -> {
+            if(!properties.containsKey(key)){
+                properties.put(key, value);
+            }
+        });
+
         return (HadoopGraph) GraphFactory.open(properties);
     }
 

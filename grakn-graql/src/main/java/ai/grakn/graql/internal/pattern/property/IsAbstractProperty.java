@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -80,6 +81,18 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
                 concept.asType().setAbstract(true);
             } else {
                 throw GraqlQueryException.insertAbstractOnNonType(concept.asSchemaConcept());
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var).build();
+    }
+
+    @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Type type = executor.get(var).asType();
+            if (!type.isDeleted()) {
+                type.setAbstract(false);
             }
         };
 

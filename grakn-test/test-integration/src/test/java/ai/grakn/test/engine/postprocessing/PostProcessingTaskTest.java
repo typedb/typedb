@@ -52,7 +52,7 @@ public class PostProcessingTaskTest {
 
     public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
     @ClassRule
-    public static EngineContext engine = EngineContext.startInMemoryServer();
+    public static EngineContext engine = EngineContext.inMemoryServer();
 
     private String mockResourceIndex;
     private Set<ConceptId> mockResourceSet;
@@ -75,7 +75,7 @@ public class PostProcessingTaskTest {
                 )));
 
         //Initialise keyspaces
-        Grakn.session(engine.uri(), SystemKeyspace.SYSTEM_KB_NAME).open(GraknTxType.WRITE).close();
+        Grakn.session(engine.uri(), SystemKeyspace.SYSTEM_KB_KEYSPACE).open(GraknTxType.WRITE).close();
         Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE).close();
     }
 

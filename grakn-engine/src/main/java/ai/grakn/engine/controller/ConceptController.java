@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -73,7 +74,7 @@ import static java.util.stream.Collectors.toList;
  *
  * @author alexandraorth
  */
-@Path("/graph")
+@Path("/kb")
 public class ConceptController {
 
     private static final int separationDegree = 1;
@@ -105,7 +106,7 @@ public class ConceptController {
     private Json conceptByIdentifier(Request request, Response response){
         validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
 
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(request, KEYSPACE));
         ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);

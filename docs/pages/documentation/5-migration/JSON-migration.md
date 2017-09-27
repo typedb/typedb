@@ -16,7 +16,7 @@ This tutorial shows you how to populate Grakn with JSON data. If you have not ye
 The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
 
 ```bash
-usage: migration.sh json --template <arg> --input <arg> --keyspace <arg> [--help] [--no] [--batch <arg>] [--active <arg>] [--uri <arg>] [--retry <arg>] [--verbose]
+usage: graql migrate json --template <arg> --input <arg> --keyspace <arg> [--help] [--no] [--batch <arg>] [--active <arg>] [--uri <arg>] [--retry <arg>] [--verbose]
  
 OPTIONS
  -a,--active <arg>     Number of tasks (batches) running on the server at
@@ -32,6 +32,7 @@ OPTIONS
  -t,--template <arg>   Graql template to apply to the data.
  -u,--uri <arg>        Location of Grakn Engine.
  -v,--verbose          Print counts of migrated data.
+ -d,--debug            Migration immediatly stops if any transaction fails
 ```
 
 {% include note.html content="The JSON migrator can handle either a directory or a file as the -input parameter!" %}

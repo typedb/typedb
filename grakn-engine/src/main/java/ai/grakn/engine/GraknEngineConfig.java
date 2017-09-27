@@ -22,17 +22,19 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileInputStream;
 import java.io.IOException;
-import static java.lang.Math.min;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.lang.Math.min;
 
 
 /**
@@ -44,16 +46,14 @@ public class GraknEngineConfig {
 
     public static final String GRAKN_VERSION_KEY = "grakn.version";
 
-    public static final String FACTORY_INTERNAL = "factory.internal";
-    public static final String FACTORY_ANALYTICS = "factory.analytics";
-
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
 
-    public static final String DEFAULT_KEYSPACE_PROPERTY = "graph.default-keyspace";
+    public static final String DEFAULT_KEYSPACE_PROPERTY = "knowledge-base.default-keyspace";
 
     public static final String NUM_THREADS_PROPERTY = "loader.threads";
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";
     public static final String PASSWORD_PROTECTED_PROPERTY = "password.protected";
+    public static final String WEBSERVER_THREADS = "webserver.threads";
     public static final String ADMIN_PASSWORD_PROPERTY = "admin.password";
 
     public static final String SERVER_HOST_NAME = "server.host";
@@ -61,7 +61,7 @@ public class GraknEngineConfig {
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
-    public static final String REDIS_HOST = "redis.host";
+    public static final String REDIS_HOST = "queue.host";
     public static final String REDIS_SENTINEL_HOST = "redis.sentinel.host";
     public static final String REDIS_SENTINEL_MASTER = "redis.sentinel.master";
     public static final String REDIS_POOL_SIZE = "redis.pool-size";

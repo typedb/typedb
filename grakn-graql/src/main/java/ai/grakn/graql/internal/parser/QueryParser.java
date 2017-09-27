@@ -23,8 +23,6 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -32,30 +30,20 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.IntStream;
-import org.antlr.v4.runtime.ListTokenSource;
-import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.TokenSource;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.UnbufferedTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * Class for parsing query strings into valid queries
@@ -74,9 +62,6 @@ public class QueryParser {
             "boolean", AttributeType.DataType.BOOLEAN,
             "date", AttributeType.DataType.DATE
     );
-
-    private static final Set<Integer> NEW_QUERY_TOKENS =
-            ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.DEFINE);
 
     /**
      * Create a query parser with the specified graph
@@ -143,53 +128,13 @@ public class QueryParser {
         lexer.removeErrorListeners();
         lexer.addErrorListener(errorListener);
 
-        UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(lexer);
+        // Use an unbuffered token stream so we can handle extremely large input strings
+        UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(ChannelTokenSource.of(lexer));
 
-        // Merge any match...insert queries together
-        // TODO: Find a way to NOT do this horrid thing
-        AbstractIterator<T> iterator = new AbstractIterator<T>() {
-            @Nullable
-            T previous = null;
+        Stream<? extends Query<?>> queries =
+                parseQueryFragment(GraqlParser::queryList, QueryVisitor::visitQueryList, tokenStream, errorListener);
 
-            @Nullable
-            @Override
-            protected T computeNext() {
-                if (tokenStream.LA(1) == GraqlLexer.EOF) {
-                    if (previous != null) {
-                        return swapPrevious(null);
-                    } else {
-                        endOfData();
-                        return null;
-                    }
-                }
-
-                TokenSource oneQuery = consumeOneQuery(tokenStream);
-                T current = parseQueryFragment(GraqlParser::query, (q, t) -> (T) q.visitQuery(t), oneQuery, errorListener);
-
-                if (previous == null) {
-                    previous = current;
-                    return computeNext();
-                } else if (previous instanceof MatchQuery && current instanceof InsertQuery) {
-                    return (T) joinMatchInsert((MatchQuery) swapPrevious(null), (InsertQuery) current);
-                } else {
-                    return swapPrevious(current);
-                }
-            }
-
-            @Nullable
-            private T swapPrevious(@Nullable T newPrevious) {
-                T oldPrevious = previous;
-                previous = newPrevious;
-                return oldPrevious;
-            }
-
-            private InsertQuery joinMatchInsert(MatchQuery match, InsertQuery insert) {
-                return match.insert(insert.admin().varPatterns());
-            }
-        };
-
-        Iterable<T> iterable = () -> iterator;
-        return StreamSupport.stream(iterable.spliterator(), false);
+        return queries.map(query -> (T) query);
     }
 
     /**
@@ -225,15 +170,14 @@ public class QueryParser {
         lexer.removeErrorListeners();
         lexer.addErrorListener(errorListener);
 
-        return parseQueryFragment(parseRule, visit, lexer, errorListener);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        return parseQueryFragment(parseRule, visit, tokens, errorListener);
     }
 
     private <T, S extends ParseTree> T parseQueryFragment(
             Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit,
-            TokenSource source, GraqlErrorListener errorListener
+            TokenStream tokens, GraqlErrorListener errorListener
     ) {
-        CommonTokenStream tokens = new CommonTokenStream(source);
-
         GraqlParser parser = new GraqlParser(tokens);
 
         parser.removeErrorListeners();
@@ -246,35 +190,6 @@ public class QueryParser {
         }
 
         return visit.apply(getQueryVisitor(), tree);
-    }
-
-    /**
-     * Consume a single query from the given token stream.
-     *
-     * @param tokenStream the {@link TokenStream} to consume
-     * @return a new {@link TokenSource} containing the tokens comprising the query
-     */
-    private TokenSource consumeOneQuery(TokenStream tokenStream) {
-        List<Token> tokens = new ArrayList<>();
-
-        boolean startedQuery = false;
-
-        while (true) {
-            Token token = tokenStream.LT(1);
-            boolean isNewQuery = NEW_QUERY_TOKENS.contains(token.getType());
-            boolean isEndOfTokenStream = token.getType() == IntStream.EOF;
-            boolean isEndOfFirstQuery = startedQuery && isNewQuery;
-
-            // Stop parsing tokens after reaching the end of the first query
-            if (isEndOfTokenStream || isEndOfFirstQuery) break;
-
-            if (isNewQuery) startedQuery = true;
-
-            tokens.add(token);
-            tokenStream.consume();
-        }
-
-        return new ListTokenSource(tokens);
     }
 
     private GraqlLexer getLexer(String queryString) {

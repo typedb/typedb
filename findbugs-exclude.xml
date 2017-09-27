@@ -21,27 +21,9 @@
             <Class name="ai.grakn.concept.ConceptId"/>
             <Class name="ai.grakn.concept.Label"/>
             <Class name="ai.grakn.concept.LabelId"/>
+            <Class name="ai.grakn.Keyspace"/>
         </Or>
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>
-    </Match>
-
-    <!-- Exclude a lot of bugs we can't be bothered to fix -->
-    <!-- TODO: Re-enable these -->
-
-    <Match>
-        <Bug pattern="BC_UNCONFIRMED_CAST"/>
-    </Match>
-
-    <Match>
-        <Bug pattern="CN_IDIOM_NO_SUPER_CALL"/>
-    </Match>
-
-    <Match>
-        <Bug pattern="DM_CONVERT_CASE"/>
-    </Match>
-
-    <Match>
-        <Bug pattern="UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR"/>
     </Match>
 
 </FindBugsFilter>

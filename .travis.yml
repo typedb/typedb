@@ -4,15 +4,11 @@ language: java
 jdk:
   - oraclejdk8
 
-language: node_js
-node_js:
-  - "6"
-
 cache:
-   directories:
-   - $HOME/.m2
-   - grakn-dashboard/node_modules
-   - grakn-engine/npm
+  directories:
+  - $HOME/.m2
+  - grakn-dashboard/node_modules
+  - grakn-engine/npm
 
 env:
   # Split tests into grakn-test and everything else

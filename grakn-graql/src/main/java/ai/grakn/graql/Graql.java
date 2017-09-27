@@ -64,19 +64,19 @@ public class Graql {
 
     /**
      * @param patterns an array of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static MatchQuery match(Pattern... patterns) {
+    public static Match match(Pattern... patterns) {
         return withoutGraph().match(patterns);
     }
 
     /**
      * @param patterns a collection of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static MatchQuery match(Collection<? extends Pattern> patterns) {
+    public static Match match(Collection<? extends Pattern> patterns) {
         return withoutGraph().match(patterns);
     }
 
@@ -114,6 +114,24 @@ public class Graql {
     @CheckReturnValue
     public static DefineQuery define(Collection<? extends VarPattern> varPatterns) {
         return withoutGraph().define(varPatterns);
+    }
+
+    /**
+     * @param varPatterns an array of {@link VarPattern}s undefining {@link SchemaConcept}s
+     * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    public static UndefineQuery undefine(VarPattern... varPatterns) {
+        return withoutGraph().undefine(varPatterns);
+    }
+
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s undefining {@link SchemaConcept}s
+     * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    public static UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
+        return withoutGraph().undefine(varPatterns);
     }
 
     /**

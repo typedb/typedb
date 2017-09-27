@@ -48,18 +48,20 @@ $h isa entity2, has name "h";
 
 (parent: $h, child: $g) isa Parent;
 
+define
+
 ####################################################
 ##################RULES#############################
 ####################################################
 
-isa inference-rule,
+rule-1 sub rule,
 when {
 $x isa Human;},
 then {
 (SG-role: $x, SG-role: $x) isa SameGen;
 };
 
-isa inference-rule,
+rule-2 sub rule,
 when {
 (parent: $x, child: $u) isa Parent;
 (SG-role: $u, SG-role: $v) isa SameGen;

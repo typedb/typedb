@@ -18,9 +18,6 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -97,9 +94,17 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
-    public void delete(GraknTx graph, Concept concept) {
-        Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
-        concept.asRelationshipType().deleteRelates(graph.getSchemaConcept(roleLabel));
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            RelationshipType relationshipType = executor.get(var).asRelationshipType();
+            Role role = executor.get(this.role().var()).asRole();
+
+            if (!relationshipType.isDeleted() && !role.isDeleted()) {
+                relationshipType.deleteRelates(role);
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
     }
 
     @Override

@@ -31,6 +31,14 @@ import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
+import ai.grakn.engine.controller.api.EntityController;
+import ai.grakn.engine.controller.api.EntityTypeController;
+import ai.grakn.engine.controller.api.RelationshipController;
+import ai.grakn.engine.controller.api.RelationshipTypeController;
+import ai.grakn.engine.controller.api.AttributeController;
+import ai.grakn.engine.controller.api.AttributeTypeController;
+import ai.grakn.engine.controller.api.RoleController;
+import ai.grakn.engine.controller.api.RuleController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.data.RedisWrapper.Builder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -47,6 +55,8 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
+import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
+import ai.grakn.util.GraknVersion;
 import ai.grakn.util.REST;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
@@ -82,6 +92,8 @@ import spark.Service;
  */
 public class GraknEngineServer implements AutoCloseable {
 
+    private static final String REDIS_VERSION_KEY = "info:version";
+
     private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -100,12 +112,12 @@ public class GraknEngineServer implements AutoCloseable {
     private final GraknEngineStatus graknEngineStatus = new GraknEngineStatus();
     private final RedisWrapper redisWrapper;
 
-    public GraknEngineServer(GraknEngineConfig prop) {
+    private GraknEngineServer(GraknEngineConfig prop, RedisWrapper redisWrapper) {
         this.prop = prop;
         // Metrics
         this.metricRegistry = new MetricRegistry();
         // Redis connection pool
-        this.redisWrapper = instantiateRedis(prop);
+        this.redisWrapper = redisWrapper;
         // Lock provider
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         boolean inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
@@ -113,30 +125,56 @@ public class GraknEngineServer implements AutoCloseable {
                 : new JedisLockProvider(redisWrapper.getJedisPool());
         this.factory = EngineGraknTxFactory.create(prop.getProperties());
         // Task manager
-        this.taskManager = startTaskManager(inMemoryQueue, redisWrapper.getJedisPool(), lockProvider);
+        this.taskManager = makeTaskManager(inMemoryQueue, redisWrapper.getJedisPool(), lockProvider);
+    }
+
+    public static GraknEngineServer create(GraknEngineConfig prop) {
+        return create(prop, instantiateRedis(prop));
+    }
+
+    public static GraknEngineServer create(GraknEngineConfig prop, RedisWrapper redisWrapper) {
+        return new GraknEngineServer(prop, redisWrapper);
     }
 
     public static void main(String[] args) {
-        GraknEngineConfig prop = GraknEngineConfig.create();
-        // Start Engine
-        GraknEngineServer graknEngineServer = new GraknEngineServer(prop);
-        graknEngineServer.start();
-        // close GraknEngineServer on SIGTERM
-        Thread closeThread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
-        Runtime.getRuntime().addShutdownHook(closeThread);
+        try {
+            GraknEngineConfig prop = GraknEngineConfig.create();
+            // Start Engine
+            GraknEngineServer graknEngineServer = create(prop);
+            graknEngineServer.start();
+            // close GraknEngineServer on SIGTERM
+            Thread closeThread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
+            Runtime.getRuntime().addShutdownHook(closeThread);
+        } catch (Exception e) {
+            LOG.error("An exception has occurred", e);
+        }
     }
 
     public void start() {
+        redisWrapper.testConnection();
+        LOG.info("Starting task manager {}", taskManager.getClass().getCanonicalName());
+        taskManager.start();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         synchronized (this){
+            checkVersion();
             lockAndInitializeSystemSchema();
             startHTTP();
         }
         graknEngineStatus.setReady(true);
-        LOG.info("Engine started in {}", timer.stop());
+        LOG.info("Grakn started in {}", timer.stop());
+    }
+
+    private void checkVersion() {
+        Jedis jedis = redisWrapper.getJedisPool().getResource();
+        String storedVersion = jedis.get(REDIS_VERSION_KEY);
+        if (storedVersion == null) {
+            jedis.set(REDIS_VERSION_KEY, GraknVersion.VERSION);
+        } else if (!storedVersion.equals(GraknVersion.VERSION)) {
+            LOG.warn(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, storedVersion));
+        }
     }
 
     @Override
@@ -176,7 +214,7 @@ public class GraknEngineServer implements AutoCloseable {
      * @param inMemoryQueue         True if running in memory
      * @param jedisPool
      */
-    private TaskManager startTaskManager(
+    private TaskManager makeTaskManager(
             final boolean inMemoryQueue,
             final Pool<Jedis> jedisPool,
             final LockProvider lockProvider) {
@@ -197,11 +235,11 @@ public class GraknEngineServer implements AutoCloseable {
                     .map(s -> new RedisTaskManager(engineId, prop, jedisPool, Integer.parseInt(s), factory, lockProvider, metricRegistry))
                     .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
         } else  {
+            LOG.info("Task queue in memory");
             // Redis storage for counts, in the RedisTaskManager it's created in consumers
             RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
             taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
         }
-        taskManager.start();
         return taskManager;
     }
 
@@ -219,7 +257,6 @@ public class GraknEngineServer implements AutoCloseable {
         RemoteSession graqlWebSocket = passwordProtected ? RemoteSession.passwordProtected(usersHandler) : RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
-        String defaultKeyspace = prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
         int postProcessingDelay = prop.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
 
         // Start all the controllers
@@ -229,8 +266,16 @@ public class GraknEngineServer implements AutoCloseable {
         new SystemController(factory, spark, graknEngineStatus, metricRegistry);
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
-        new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);
+        new CommitLogController(spark, postProcessingDelay, taskManager);
         new TasksController(spark, taskManager, metricRegistry);
+        new EntityController(factory, spark);
+        new EntityTypeController(factory, spark);
+        new RelationshipController(factory, spark);
+        new RelationshipTypeController(factory, spark);
+        new AttributeController(factory, spark);
+        new AttributeTypeController(factory, spark);
+        new RoleController(factory, spark);
+        new RuleController(factory, spark);
 
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
@@ -242,6 +287,7 @@ public class GraknEngineServer implements AutoCloseable {
                        Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)),
                        prop.getPath(GraknEngineConfig.STATIC_FILES_PATH),
                        prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false),
+                       prop.tryIntProperty(GraknEngineConfig.WEBSERVER_THREADS, 64),
                        jwtHandler);
     }
     
@@ -250,6 +296,7 @@ public class GraknEngineServer implements AutoCloseable {
                                       int port, 
                                       String staticFolder,
                                       boolean passwordProtected,
+                                      int maxThreads,
                                       @Nullable JWTHandler jwtHandler){
         // Set host name
         spark.ipAddress(hostName);
@@ -260,6 +307,7 @@ public class GraknEngineServer implements AutoCloseable {
         // Set the external static files folder
         spark.staticFiles.externalLocation(staticFolder);
 
+        spark.threadPool(maxThreads);
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         // Register filter to check authentication token in each request
@@ -268,7 +316,11 @@ public class GraknEngineServer implements AutoCloseable {
         }
 
         //Register exception handlers
-        spark.exception(GraknBackendException.class, (e, req, res) -> handleGraknServerError(e, res));
+        spark.exception(GraknServerException.class, (e, req, res) -> {
+            assert e instanceof GraknServerException; // This is guaranteed by `spark#exception`
+            handleGraknServerError((GraknServerException) e, res);
+        });
+
         spark.exception(Exception.class, (e, req, res) -> handleInternalError(e, res));
     }
 
@@ -348,9 +400,9 @@ public class GraknEngineServer implements AutoCloseable {
      * @param exception exception thrown by the server
      * @param response response to the client
      */
-    private static void handleGraknServerError(Exception exception, Response response){
+    private static void handleGraknServerError(GraknServerException exception, Response response){
         LOG.error("REST error", exception);
-        response.status(((GraknServerException) exception).getStatus());
+        response.status(exception.getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
@@ -367,7 +419,7 @@ public class GraknEngineServer implements AutoCloseable {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
-    private RedisWrapper instantiateRedis(GraknEngineConfig prop) {
+    private static RedisWrapper instantiateRedis(GraknEngineConfig prop) {
         List<String> redisUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_HOST).orElse("localhost:6379"));
         List<String> sentinelUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
         int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 32);

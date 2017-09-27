@@ -20,6 +20,7 @@ package ai.grakn.test.migration.csv;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
+import ai.grakn.Keyspace;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.SampleKBLoader;
@@ -29,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemErrRule;
 import org.junit.contrib.java.lang.system.SystemOutRule;
+import org.junit.rules.ExpectedException;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
@@ -39,19 +41,23 @@ import static org.hamcrest.Matchers.containsString;
 
 public class CSVMigratorMainTest {
     private GraknSession factory;
-    private String keyspace;
+    private Keyspace keyspace;
 
     private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
+    private final String templateCorruptFile = getFile("csv", "pets/template-corrupt.gql").getAbsolutePath();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Rule
     public final SystemOutRule sysOut = new SystemOutRule().enableLog();
 
     @Rule
     public final SystemErrRule sysErr = new SystemErrRule().enableLog();
+
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setup(){
@@ -62,46 +68,58 @@ public class CSVMigratorMainTest {
     }
 
     @Test
+    public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsSet_Throw(){
+        expectedException.expect(RuntimeException.class);
+
+        run("-d", "-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
+    }
+
+    @Test
+    public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsNotSet_DontThrow(){
+        run("-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
+    }
+
+    @Test
     public void runningCSVMigrationFromScript_PetDataMigratedCorrectly(){
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace);
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void usingTabsAsSeparatorInCSVMigratorScript_PetDataMigratedCorrectly(){
         String tsvFile = getFile("csv", "pets/data/pets.tsv").getAbsolutePath();
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", keyspace);
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void usingSpacesAsSeparatorInCSVMigratorScript_PetDataMigratedCorrectly(){
         String tsvFile = getFile("csv", "pets/data/pets.spaces").getAbsolutePath();
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", keyspace);
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void usingSingleQuotesForStringInCSVMigratorScript_PetDataMigratedCorrectly(){
         String quoteFile = getFile("csv", "pets/data/pets.singlequotes").getAbsolutePath();
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", quoteFile, "-template", templateFile, "-quote", "\'", "-keyspace", keyspace);
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", quoteFile, "-template", templateFile, "-quote", "\'", "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void usingNullsInTemplateInCSVMigratorScript_PetDataMigratedCorrectly(){
         String nullTemplate = getFile("csv", "pets/template-null.gql").getAbsolutePath();
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", nullTemplate, "-keyspace", keyspace, "-null", "");
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", nullTemplate, "-keyspace", keyspace.getValue(), "-null", "");
     }
 
     @Test
     public void specifyingIncorrectURIInCSVMigratorScript_ErrorIsPrintedToSystemErr(){
-        run("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:" + engine.uri().substring(1), "-keyspace", keyspace);
+        run("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:" + engine.uri().substring(1), "-keyspace", keyspace.getValue());
 
-        assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn.sh start'?"));
+        assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn server start'?"));
     }
 
     @Test
     public void usingPropertiesFileInCSVMigratorScript_PetDataMigratedCorrectly(){
         load(factory, getFile("csv", "multi-file/schema.gql"));
         String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
-        run("csv", "-u", engine.uri(), "-config", configurationFile, "-keyspace", keyspace);
+        run("csv", "-u", engine.uri(), "-config", configurationFile, "-keyspace", keyspace.getValue());
 
         assertPokemonGraphCorrect(factory);
     }
@@ -110,7 +128,7 @@ public class CSVMigratorMainTest {
     public void csvMigratorCalledWithNoArgs_HelpMessagePrintedToSystemOut(){
         run();
 
-        assertThat(sysOut.getLog(), containsString("usage: migration.sh"));
+        assertThat(sysOut.getLog(), containsString("usage: graql migrate"));
     }
 
     @Test

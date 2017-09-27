@@ -24,10 +24,11 @@ import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -35,7 +36,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
-import ai.grakn.graql.internal.query.match.MatchQueryBase;
+import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.template.TemplateParser;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.graql.macro.Macro;
@@ -54,7 +55,7 @@ import java.util.stream.Stream;
  * A starting point for creating queries.
  * <p>
  * A {@code QueryBuiler} is constructed with a {@code GraknTx}. All operations are performed using this
- * graph. The user must explicitly commit or rollback changes after executing queries.
+ * transaction. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
  *
@@ -93,29 +94,29 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     /**
-     * @param patterns an array of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @param patterns an array of patterns to match in the knowledge base
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(Pattern... patterns) {
+    public Match match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
 
     /**
-     * @param patterns a collection of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @param patterns a collection of patterns to match in the knowledge base
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(Collection<? extends Pattern> patterns) {
+    public Match match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
-        MatchQueryBase base = new MatchQueryBase(conjunction);
-        MatchQuery query = infer ? base.infer(materialise).admin() : base;
-        return tx.map(query::withTx).orElse(query);
+        MatchBase base = new MatchBase(conjunction);
+        Match match = infer ? base.infer(materialise).admin() : base;
+        return tx.map(match::withTx).orElse(match);
     }
 
     /**
-     * @param vars an array of variables to insert into the graph
-     * @return an insert query that will insert the given variables into the graph
+     * @param vars an array of variables to insert into the knowledge base
+     * @return an insert query that will insert the given variables into the knowledge base
      */
     @Override
     public InsertQuery insert(VarPattern... vars) {
@@ -123,8 +124,8 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     /**
-     * @param vars a collection of variables to insert into the graph
-     * @return an insert query that will insert the given variables into the graph
+     * @param vars a collection of variables to insert into the knowledge base
+     * @return an insert query that will insert the given variables into the knowledge base
      */
     @Override
     public InsertQuery insert(Collection<? extends VarPattern> vars) {
@@ -141,6 +142,17 @@ public class QueryBuilderImpl implements QueryBuilder {
     public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
         return DefineQueryImpl.of(admins, tx.orElse(null));
+    }
+
+    @Override
+    public UndefineQuery undefine(VarPattern... varPatterns) {
+        return undefine(Arrays.asList(varPatterns));
+    }
+
+    @Override
+    public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
+        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
+        return UndefineQueryImpl.of(admins, tx.orElse(null));
     }
 
     /**

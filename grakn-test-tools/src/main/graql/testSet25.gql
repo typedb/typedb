@@ -28,11 +28,9 @@ message-succession sub relationship
 
 creation-date sub attribute datatype long;
 
-insert
-
 #Rules
 
-$rule2 isa inference-rule
+rule2 sub rule
     when{
         (original:$p, reply:$s) isa reply-of;
         $s has creation-date $d1;
@@ -43,6 +41,8 @@ $rule2 isa inference-rule
     then {
         (predecessor:$s, successor:$r) isa message-succession;
     };
+
+insert
 
 #Data
 

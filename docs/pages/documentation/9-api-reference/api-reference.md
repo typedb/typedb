@@ -173,7 +173,7 @@ Execute **read-only** graql queries on a Grakn knowledge base. Read-only queries
 - **keyspace** Keyspace where query should execute. Required.
 - **infer** Enables reasoner inference on the provided query. Required.
 - **materialise** Enables materialisation of reasoner results from the provided query. Required.
-- **query** Graql match query to be executed. Required.
+- **query** Graql get query to be executed. Required.
 
 **Response Headers**
 
@@ -196,7 +196,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 
 - 401 *Unauthorized* Provided privileges are not authorized.
 
-- 405 *Method Not Allowed* Attempted to execute a non-match query.
+- 405 *Method Not Allowed* Attempted to execute a non-get query.
 
   `{"exception":"Only \"read-only\" queries are allowed."}`
 

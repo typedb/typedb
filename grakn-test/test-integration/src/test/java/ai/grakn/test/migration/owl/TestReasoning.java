@@ -20,13 +20,14 @@ package ai.grakn.test.migration.owl;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.migration.owl.OwlModel;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -97,10 +98,10 @@ public class TestReasoning extends TestOwlGraknBase {
 
         //match $x isa tPerson; $x has name $name;
         //$y has name 'instance';(owl-subject-relationId: $x, owl-object-relationId: $y) isa relationId;
-        MatchQuery query = qb.match(
+        GetQuery query = qb.match(
                 var("x").isa("tPerson"),
                 var("y").has(OwlModel.IRI.owlname(), "e"+instanceId),
-                var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).select("x");
+                var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).get(ImmutableSet.of(var("x")));
         QueryAnswers gknAnswers = queryAnswers(query);
         long gknTime = System.currentTimeMillis() - gknStartTime;
         System.out.println("Grakn Reasoner answers: " + gknAnswers.size() + " in " + gknTime + " ms");
@@ -116,7 +117,7 @@ public class TestReasoning extends TestOwlGraknBase {
         String hasGreatUncleId = "op-hasGreatUncle";
         String explicitQuery = "match $x isa tPerson;" +
                 "{$x has owl-iri 'erichard_john_bright_1962';} or {$x has owl-iri 'erobert_david_bright_1965';};";
-        assertEquals(inferRelationGrakn(hasGreatUncleId, richardId), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertEquals(inferRelationGrakn(hasGreatUncleId, richardId), Sets.newHashSet(qb.<GetQuery>parse(explicitQuery)));
 
         String queryString2 = "match (owl-subject-op-hasGreatUncle: $x, owl-object-op-hasGreatUncle: $y) isa op-hasGreatUncle;" +
                 "$x has owl-iri 'eethel_archer_1912'; select $y;";
@@ -126,7 +127,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$y has owl-iri 'ewalter_whitfield_1863';} or" +
                 "{$y has owl-iri 'ewilliam_whitfield_1852';} or" +
                 "{$y has owl-iri 'egeorge_whitfield_1865';};";
-        assertEquals(iqb.<MatchQuery>parse(queryString2).stream(), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)).stream());
+        assertEquals(iqb.<GetQuery>parse(queryString2).stream(), Sets.newHashSet(qb.<GetQuery>parse(explicitQuery2)).stream());
 
         String queryString3 = "match (owl-subject-op-hasGreatAunt: $x, owl-object-op-hasGreatAunt: $y) isa op-hasGreatAunt;" +
                 "$x has owl-iri 'emary_kate_green_1865'; select $y;";
@@ -135,7 +136,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$y has owl-iri 'esarah_ingelby_1821';} or {$y has owl-iri 'eann_pickard_1809';} or" +
                 "{$y has owl-iri 'esusanna_pickard_1803';} or {$y has owl-iri 'emary_green_1803';} or" +
                 "{$y has owl-iri 'erebecca_green_1800';} or {$y has owl-iri 'eann_green_1806';};";
-        assertEquals(iqb.<MatchQuery>parse(queryString3).stream(), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)).stream());
+        assertEquals(iqb.<GetQuery>parse(queryString3).stream(), Sets.newHashSet(qb.<GetQuery>parse(explicitQuery3)).stream());
 
         IRI hasAncestor = baseIri.resolve("#hasAncestor");
         String hasAncestorId = "op-hasAncestor";
@@ -174,7 +175,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$iri value 'ejohn_archer_1835';} or {$iri value 'eelizabeth_archer_1843';} or" +
                 "{$iri value 'enorman_james_archer_1909';} or {$iri value 'ereece_bright_1993';}; select $x;";
         QueryAnswers elisabethAnswers = inferRelationGrakn(hasAncestorId, elisabethId);
-        assertEquals(elisabethAnswers, Sets.newHashSet(qb.<MatchQuery>parse(explicitElisabethQuery)));
+        assertEquals(elisabethAnswers, Sets.newHashSet(qb.<GetQuery>parse(explicitElisabethQuery)));
 
         String anneId = "anne_archer_1964";
         String explicitAnneQuery = "match $x isa tPerson, has owl-iri $iri;" +
@@ -193,7 +194,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$iri value 'ehumphrey_archer_1726';} or {$iri value 'ejohn_archer_1804';} or" +
                 "{$iri value 'ejames_whitfield_1792';} or {$iri value 'eann_norton_1799';} or" +
                 "{$iri value 'ewilliam_lock';} or {$iri value 'esarah_lockey_1848';}; select $x;";
-        assertEquals(inferRelationGrakn(isAncestorOfId, anneId), Sets.newHashSet(qb.<MatchQuery>parse(explicitAnneQuery)));
+        assertEquals(inferRelationGrakn(isAncestorOfId, anneId), Sets.newHashSet(qb.<GetQuery>parse(explicitAnneQuery)));
 
         String megaId = "mega_clamper_1995";
         String explicitMegaQuery = "match $x isa tPerson, has owl-iri $iri;" +
@@ -208,14 +209,14 @@ public class TestReasoning extends TestOwlGraknBase {
                 "{$iri value 'esusanna_wife_of_william_cotton';} or {$iri value 'ejohn_cotton_1778';} or" +
                 "{$iri value 'eelizabeth_blanchard_1807';} or {$iri value 'ejames_dickens_1774';} or" +
                 "{$iri value 'emartha_cotton_1832';}; select $x;";
-        assertEquals(inferRelationGrakn(isAncestorOfId, megaId), Sets.newHashSet(qb.<MatchQuery>parse(explicitMegaQuery)));
+        assertEquals(inferRelationGrakn(isAncestorOfId, megaId), Sets.newHashSet(qb.<GetQuery>parse(explicitMegaQuery)));
     }
 
     private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
         assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
     }
 
-    private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().stream().collect(toSet()));
+    private QueryAnswers queryAnswers(GetQuery query) {
+        return new QueryAnswers(query.stream().collect(toSet()));
     }
 }

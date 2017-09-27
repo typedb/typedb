@@ -55,47 +55,47 @@ entity2 plays B5-role-A, plays B5-role-B;
 ####################RULES##########################
 ##################################################
 
-isa inference-rule,
+rule-1 sub rule,
 when {
 ($x, $z) isa P1;
 ($z, $y) isa Q;},
 then {
 ($x, $y) isa P;};
 
-isa inference-rule,
+rule-2 sub rule,
 when {
 ($x, $z) isa P;
 ($z, $y) isa P2;},
 then {
 ($x, $y) isa Q;};
 
-isa inference-rule,
+rule-3 sub rule,
 when {
 ($x, $y) isa B3;},
 then {
 ($x, $y) isa P;};
 
-isa inference-rule,
+rule-4 sub rule,
 when {
 ($x, $z) isa B1;
 ($z, $y) isa P1;},
 then {
 ($x, $y) isa P1;};
 
-isa inference-rule,
+rule-5 sub rule,
 when {
 ($x, $y) isa B4;}
 then {
 ($x, $y) isa P1;};
 
-isa inference-rule,
+rule-6 sub rule,
 when {
 ($x, $z) isa B2;
 ($z, $y) isa P2;},
 then {
 ($x, $y) isa P2;};
 
-isa inference-rule,
+rule-7 sub rule,
 when {
 ($x, $y) isa B5;},
 then {

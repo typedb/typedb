@@ -18,14 +18,15 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
@@ -48,7 +49,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
@@ -69,6 +69,8 @@ import static ai.grakn.util.Schema.MetaSchema.ENTITY;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.notNullValue;
@@ -84,7 +86,14 @@ public class InsertQueryTest {
 
     private QueryBuilder qb;
 
-    @Rule
+    private static final Var w = var("w");
+    private static final Var x = var("x");
+    private static final Var y = var("y");
+    private static final Var z = var("z");
+
+    private static final Label title = Label.of("title");
+
+    @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
@@ -205,7 +214,7 @@ public class InsertQueryTest {
         Set<Answer> results = insert.stream().collect(toSet());
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
-        assertEquals(ImmutableSet.of(var("x"), var("z")), result.keySet());
+        assertEquals(ImmutableSet.of(var("x"), var("z")), result.vars());
         assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
@@ -225,7 +234,7 @@ public class InsertQueryTest {
         assertNotExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
 
         Answer result1 = results.next();
-        assertEquals(ImmutableSet.of(var("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(var("x")), result1.vars());
 
         boolean query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).iterator().hasNext();
         boolean query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).iterator().hasNext();
@@ -236,7 +245,7 @@ public class InsertQueryTest {
 
         //Check that both are inserted correctly
         Answer result2 = results.next();
-        assertEquals(ImmutableSet.of(var("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(var("x")), result1.vars());
         assertExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
         assertExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
         assertFalse(results.hasNext());
@@ -281,21 +290,6 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testInsertRule() {
-        String ruleTypeId = "a-rule-type";
-        Pattern when = qb.parsePattern("$x isa entity");
-        Pattern then = qb.parsePattern("$x isa entity");
-        VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
-        qb.insert(vars).execute();
-
-        RuleType ruleType = movieKB.tx().getRuleType(ruleTypeId);
-        boolean found = ruleType.instances().
-                anyMatch(rule -> when.equals(rule.getWhen()) && then.equals(rule.getThen()));
-
-        assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);
-    }
-
-    @Test
     public void testInsertRepeatType() {
         assertInsert(var("x").has("title", "WOW A TITLE").isa("movie").isa("movie"));
     }
@@ -318,12 +312,12 @@ public class InsertQueryTest {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.define(
-                label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
+                label("a-new-type").sub("entity").key("a-new-attribute-type"),
+                label("a-new-attribute-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
         qb.insert(
-                var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
+                var().isa("a-new-type").has("a-new-attribute-type", "hello").has("a-new-attribute-type", "goodbye")
         ).execute();
 
         exception.expect(InvalidKBException.class);
@@ -373,9 +367,44 @@ public class InsertQueryTest {
         InsertQuery query = qb.insert(x.isa(type), type.label("movie"));
 
         Answer result = Iterables.getOnlyElement(query);
-        assertThat(result.keySet(), containsInAnyOrder(x, type));
+        assertThat(result.vars(), containsInAnyOrder(x, type));
         assertEquals(result.get(type), result.get(x).asEntity().type());
         assertEquals(result.get(type).asType().getLabel(), Label.of("movie"));
+    }
+
+    @Test
+    public void whenAddingAnAttributeRelationshipWithProvenance_TheAttributeAndProvenanceAreAdded() {
+        InsertQuery query = qb.insert(
+                y.has("provenance", z.val("Someone told me")),
+                w.isa("movie").has(title, x.val("My Movie"), y)
+        );
+
+        Answer answer = Iterables.getOnlyElement(query.execute());
+
+        Entity movie = answer.get(w).asEntity();
+        Attribute<String> theTitle = answer.get(x).asAttribute();
+        Relationship hasTitle = answer.get(y).asRelationship();
+        Attribute<String> provenance = answer.get(z).asAttribute();
+
+        assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
+        assertThat(hasTitle.attributes().toArray(), arrayContaining(provenance));
+    }
+
+    @Test
+    public void whenAddingProvenanceToAnExistingRelationship_TheProvenanceIsAdded() {
+        InsertQuery query = qb
+                .match(w.isa("movie").has(title, x.val("The Muppets"), y))
+                .insert(y.has("provenance", z.val("Someone told me")));
+
+        Answer answer = Iterables.getOnlyElement(query.execute());
+
+        Entity movie = answer.get(w).asEntity();
+        Attribute<String> theTitle = answer.get(x).asAttribute();
+        Relationship hasTitle = answer.get(y).asRelationship();
+        Attribute<String> provenance = answer.get(z).asAttribute();
+
+        assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
+        assertThat(hasTitle.attributes().toArray(), arrayContaining(provenance));
     }
 
     @Test
@@ -423,7 +452,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertDuplicatePattern() {
         qb.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")).execute();
-        assertEquals(2, qb.match(var().has("name", "a name")).stream().count());
+        assertEquals(2, qb.match(x.has("name", "a name")).stream().count());
     }
 
     @Test
@@ -467,34 +496,6 @@ public class InsertQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("isa")));
         qb.insert(var().has("name", "Bob")).execute();
-    }
-
-    @Test
-    public void testInsertRuleWithoutLhs() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
-        qb.insert(var().isa("inference-rule").then(var("x").isa("movie"))).execute();
-    }
-
-    @Test
-    public void testInsertRuleWithoutRhs() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
-        qb.insert(var().isa("inference-rule").when(var("x").isa("movie"))).execute();
-    }
-
-    @Test
-    public void whenInsertingANonRuleWithAWhenPattern_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
-        qb.insert(var().isa("movie").when(var("x"))).execute();
-    }
-
-    @Test
-    public void whenInsertingANonRuleWithAThenPattern_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
-        qb.insert(var().isa("movie").then(var("x"))).execute();
     }
 
     @Test

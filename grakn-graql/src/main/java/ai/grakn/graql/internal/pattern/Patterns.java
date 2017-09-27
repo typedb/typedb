@@ -27,7 +27,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 
 import java.util.Set;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Factory for instances of {@link ai.grakn.graql.Pattern}.
@@ -37,6 +37,11 @@ import java.util.UUID;
  * @author Felix Chapman
  */
 public class Patterns {
+
+    private static final AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
+
+    public static final Var RELATION_EDGE = reservedVar("RELATION_EDGE");
+    public static final Var RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
 
     private Patterns() {}
 
@@ -49,11 +54,11 @@ public class Patterns {
     }
 
     public static Var var() {
-        return new AutoValue_VarImpl(UUID.randomUUID().toString(), false);
+        return new AutoValue_VarImpl(Long.toString(counter.getAndIncrement()), Var.Kind.Generated);
     }
 
     public static Var var(String value) {
-        return new AutoValue_VarImpl(value, true);
+        return new AutoValue_VarImpl(value, Var.Kind.UserDefined);
     }
 
     public static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
@@ -62,5 +67,9 @@ public class Patterns {
         } else {
             return new AutoValue_VarPatternImpl(name, properties);
         }
+    }
+
+    private static Var reservedVar(String value) {
+        return new AutoValue_VarImpl(value, Var.Kind.Reserved);
     }
 }

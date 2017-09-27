@@ -22,6 +22,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * <p>
@@ -43,7 +44,7 @@ public class UpperMacro implements Macro<String> {
             throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
-        return values.get(0).toString().toUpperCase();
+        return values.get(0).toString().toUpperCase(Locale.getDefault());
     }
 
     @Override

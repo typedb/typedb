@@ -20,14 +20,17 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.kb.internal.concept.ConceptImpl;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.util.JanusGraphCleanup;
@@ -53,8 +56,8 @@ import java.util.function.Supplier;
  * @author fppt
  */
 public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
-    public GraknTxJanus(JanusGraph graph, String name, String engineUrl, Properties properties){
-        super(graph, name, engineUrl, properties);
+    public GraknTxJanus(JanusGraph graph, Keyspace keyspace, String engineUrl, Properties properties){
+        super(graph, keyspace, engineUrl, properties);
     }
 
     /**
@@ -103,8 +106,8 @@ public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
     }
 
     @Override
-    public VertexElement addVertex(Schema.BaseType baseType){
-        return executeLockingMethod(() -> super.addVertex(baseType));
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds){
+        return executeLockingMethod(() -> super.addVertexElement(baseType, conceptIds));
     }
 
     /**
@@ -126,11 +129,7 @@ public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
     }
 
     @Override
-    public void validVertex(Vertex vertex) {
-        super.validVertex(vertex);
-
-        if(((JanusGraphVertex) vertex).isRemoved()){
-            throw new IllegalStateException("The vertex [" + vertex + "] has been removed and is no longer valid");
-        }
+    public boolean validElement(Element element) {
+        return super.validElement(element) && !((JanusGraphElement) element).isRemoved();
     }
 }

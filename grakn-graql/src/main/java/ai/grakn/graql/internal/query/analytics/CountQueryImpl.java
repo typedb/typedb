@@ -19,11 +19,8 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
 import ai.grakn.graql.internal.analytics.CountVertexProgram;
@@ -35,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.GraknMapReduce.RESERVED_TYPE_LABEL_KEY;
-import static java.util.stream.Collectors.toSet;
 
 class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
@@ -55,31 +51,21 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
             return 0L;
         }
 
-        Set<LabelId> rolePlayerLabelIds = subTypes.stream()
-                .filter(Concept::isRelationshipType)
-                .map(relationType -> ((RelationshipType) relationType).relates().collect(toSet()))
-                .filter(roles -> roles.size() == 2)
-                .flatMap(roles -> roles.stream().flatMap(Role::playedByTypes))
-                .map(type -> tx.get().admin().convertToId(type.getLabel()))
-                .filter(LabelId::isValid)
-                .collect(toSet());
+        Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds();
 
         Set<LabelId> typeLabelIds = convertLabelsToIds(subLabels);
         rolePlayerLabelIds.addAll(typeLabelIds);
 
-        String randomId = getRandomJobId();
-
         ComputerResult result = getGraphComputer().compute(
-                new CountVertexProgram(randomId),
-                new CountMapReduce(CountVertexProgram.EDGE_COUNT + randomId),
+                new CountVertexProgram(),
+                new CountMapReduce(),
                 rolePlayerLabelIds, false);
 
         Map<Integer, Long> count = result.memory().get(CountMapReduce.class.getName());
 
         long finalCount = count.keySet().stream()
                 .filter(id -> typeLabelIds.contains(LabelId.of(id)))
-                .map(count::get)
-                .reduce(0L, (x, y) -> x + y);
+                .mapToLong(count::get).sum();
         if (count.containsKey(RESERVED_TYPE_LABEL_KEY)) {
             finalCount += count.get(RESERVED_TYPE_LABEL_KEY);
         }

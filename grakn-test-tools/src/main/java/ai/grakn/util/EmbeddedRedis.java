@@ -18,7 +18,6 @@
 
 package ai.grakn.util;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.LoggerFactory;
 import redis.embedded.RedisServer;
 import redis.embedded.exceptions.EmbeddedRedisException;
@@ -38,7 +37,6 @@ import redis.embedded.exceptions.EmbeddedRedisException;
  */
 public class EmbeddedRedis {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedRedis.class);
-    private static AtomicInteger REDIS_COUNTER = new AtomicInteger(0);
     private static volatile RedisServer redisServer;
 
     static {
@@ -56,19 +54,19 @@ public class EmbeddedRedis {
      *
      * @param port The port to start redis on
      */
-    public static void start(int port){
-        if(REDIS_COUNTER.getAndIncrement() == 0) {
+    public static void start(int port, boolean force){
+        try {
             LOG.info("Starting redis...");
             redisServer = RedisServer.builder()
                     .port(port)
                     // We have short running tests and sometimes we kill the connections
                     .setting("timeout 360")
                     .build();
-            if (!redisServer.isActive()) {
+            if (force || !redisServer.isActive()) {
                 try {
                     redisServer.start();
                 } catch (EmbeddedRedisException e) {
-                    LOG.warn("Unexpected Redis instance already running on port {}", port, e);
+                    LOG.warn("Unexpected Redis instance already running on port {}", port);
                 } catch (Exception e) {
                     LOG.warn("Exception while trying to start Redis on port {}. Will attempt to continue.", port, e);
                 }
@@ -76,19 +74,29 @@ public class EmbeddedRedis {
             } else {
                 LOG.warn("Redis already running.");
             }
+        } catch (Exception e) {
+            LOG.warn("Failure to start redis on port {}, maybe running alredy", port, e);
         }
+    }
+
+    public static void start(int port){
+        start(port, false);
+    }
+
+    public static void forceStart(int port){
+        start(port, true);
     }
 
     /**
      * Stops the embedded redis
      */
     public static void stop(){
-        if (redisServer != null && REDIS_COUNTER.decrementAndGet() <= 0) {
+        try {
             LOG.info("Stopping Redis...");
             redisServer.stop();
             LOG.info("Redis stopped.");
-        } else {
-            LOG.warn("Called stop while {} redis instances are running", REDIS_COUNTER);
+        } catch (Exception e) {
+            LOG.warn("Failure while stopping redis", e);
         }
     }
 }

@@ -19,11 +19,10 @@
 package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.Schema;
@@ -33,6 +32,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -47,22 +47,26 @@ import static ai.grakn.graql.Graql.var;
 public class RuleUtil {
 
     /**
+     * @param graph of interest
      * @return set of inference rule contained in the graph
      */
     public static Stream<Rule> getRules(GraknTx graph) {
-        return graph.admin().getMetaRuleInference().instances();
+        return graph.admin().getMetaRule().subs().
+                filter(sub -> !sub.equals(graph.admin().getMetaRule()));
     }
 
     /**
+     * @param graph of interest
      * @return true if at least one inference rule is present in the graph
      */
     public static boolean hasRules(GraknTx graph) {
-        Label inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
-        return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).iterator().hasNext();
+        VarPattern rule = label(Schema.MetaSchema.RULE.getLabel());
+        return graph.graql().infer(false).match(var("x").sub(rule).neq(rule)).iterator().hasNext();
     }
 
     /**
      * @param type for which rules containing it in the head are sought
+     * @param graph of interest
      * @return rules containing specified type in the head
      */
     public static Stream<Rule> getRulesWithType(SchemaConcept type, GraknTx graph){
@@ -73,6 +77,7 @@ public class RuleUtil {
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
+     * @param graph of interest
      * @return true if the rule subgraph formed from provided rules contains loops
      */
     public static boolean subGraphHasLoops(Set<InferenceRule> rules, GraknTx graph){
@@ -86,6 +91,7 @@ public class RuleUtil {
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
+     * @param graph of interest
      * @return true if the rule subgraph formed from provided rules contains loops with negative net flux (appears in more rule heads than bodies)
      */
     public static boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules, GraknTx graph){

@@ -18,11 +18,9 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -99,9 +97,17 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public void delete(GraknTx graph, Concept concept) {
-        Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
-        concept.asType().deletePlays(graph.getSchemaConcept(roleLabel));
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Type type = executor.get(var).asType();
+            Role role = executor.get(this.role().var()).asRole();
+
+            if (!type.isDeleted() && !role.isDeleted()) {
+                type.deletePlays(role);
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
     }
 
     @Override

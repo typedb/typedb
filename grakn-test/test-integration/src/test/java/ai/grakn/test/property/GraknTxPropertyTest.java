@@ -28,9 +28,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
@@ -47,7 +47,6 @@ import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
@@ -81,7 +80,7 @@ import static org.junit.Assume.assumeThat;
 @RunWith(JUnitQuickcheck.class)
 public class GraknTxPropertyTest {
 
-    @Rule
+    @org.junit.Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Property
@@ -236,10 +235,10 @@ public class GraknTxPropertyTest {
     }
 
     @Property
-    public void whenCallingGetRuleType_TheResultIsTheSameAsGetSchemaConcept(
-            @Open GraknTx graph, @FromTx RuleType type) {
+    public void whenCallingGetRule_TheResultIsTheSameAsGetSchemaConcept(
+            @Open GraknTx graph, @FromTx Rule type) {
         Label label = type.getLabel();
-        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRuleType(label.getValue()));
+        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRule(label.getValue()));
     }
 
     @Property

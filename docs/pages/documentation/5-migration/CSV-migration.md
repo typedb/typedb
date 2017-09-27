@@ -16,7 +16,7 @@ This tutorial shows you how to populate Grakn with CSV data. If you have not yet
 The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
 
 ```bash
-usage: ./migration.sh csv -template <arg> -input <arg> -keyspace <arg> [-help] [-no] [-separator <arg>] [-active <arg>] [-batch <arg>] [-uri <arg>] [-null <arg>] [-quote <arg>] [-r <arg>] [-v]
+usage: ./graql migrate csv -template <arg> -input <arg> -keyspace <arg> [-help] [-no] [-separator <arg>] [-active <arg>] [-batch <arg>] [-uri <arg>] [-null <arg>] [-quote <arg>] [-r <arg>] [-v]
 
 OPTIONS
  -a,--active <arg>      Number of tasks (batches) running on the server at
@@ -36,6 +36,7 @@ OPTIONS
  -t,--template <arg>    Graql template to apply to the data.
  -u,--uri <arg>         Location of Grakn Engine.
  -v,--verbose           Print counts of migrated data.
+ -d,--debug            Migration immediatly stops if any transaction fails
 ```
 
 ## CSV Migration Basics
@@ -81,7 +82,7 @@ price sub attribute datatype double;
 Make sure to load your schema into the knowledge base:
 
 ```bash
-./<grakn-install-location>/bin/graql.sh -f ./schema.gql -k grakn
+./graql console -f ./schema.gql -k grakn
 ```
 
 And the Graql template, *car-migrator.gql*:   
@@ -101,7 +102,7 @@ The template will create a `car` entity for each row. It will attach `year` and 
 The template is applied to each row by calling the migration script:
 
 ```bash
-./<grakn-install-location>/bin/migration.sh csv -i ./cars.csv -t ./car-migrator.gql -k grakn
+./graql migrate csv -i ./cars.csv -t ./car-migrator.gql -k grakn
 ```
 
 The resulting Graql statement, if printed out, looks as follows:
@@ -129,7 +130,7 @@ air  moon roof   loaded"  4799.00
 This file would be migrated in the same way as the previous example when you specify the separator using the `-s \t` argument:
 
 ```bash
-./<grakn-install-location>/bin/migration.sh csv -i ./cars.tsv -t ./car-migrator.gql -s \t -k grakn
+./graql migrate csv -i ./cars.tsv -t ./car-migrator.gql -s \t -k grakn
 ```
 
 ## Where Next?

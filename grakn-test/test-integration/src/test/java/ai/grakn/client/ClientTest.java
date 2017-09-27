@@ -33,14 +33,14 @@ public class ClientTest {
 
     @Test
     public void graknEngineRunning() throws Throwable {
-        EngineContext engine = EngineContext.startInMemoryServer();
+        EngineContext engine = EngineContext.inMemoryServer();
         engine.before();
 
         boolean running = Client.serverIsRunning(engine.uri());
         assertTrue(running);
 
         // Check that we've loaded the schema
-        try(GraknTx graph = engine.server().factory().tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)){
+        try(GraknTx graph = engine.server().factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
             assertNotNull(graph.getAttributeType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
         }
 

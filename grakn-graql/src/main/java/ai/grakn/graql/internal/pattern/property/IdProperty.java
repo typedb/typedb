@@ -85,6 +85,12 @@ public abstract class IdProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        // This property works in undefine queries, because it is only for look-ups
+        return insert(var);
+    }
+
+    @Override
     public boolean uniquelyIdentifiesConcept() {
         return true;
     }
