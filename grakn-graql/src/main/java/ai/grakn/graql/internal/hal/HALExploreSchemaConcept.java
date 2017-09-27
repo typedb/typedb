@@ -22,6 +22,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
@@ -41,37 +42,40 @@ import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
  * Class used to build the HAL representation of a given concept.
  */
 
-class HALExploreType extends HALExploreConcept{
+class HALExploreSchemaConcept extends HALExploreConcept {
 
-    HALExploreType(Concept concept, Keyspace keyspace, int offset, int limit) {
+    HALExploreSchemaConcept(Concept concept, Keyspace keyspace, int offset, int limit) {
         super(concept, keyspace, offset, limit);
     }
 
     void populateEmbedded(Representation halResource, Concept concept) {
 
-        Type type = concept.asType();
+        SchemaConcept schemaConcept = concept.asSchemaConcept();
 
-        // Role types played by current type
-        attachRolesPlayed(halResource, type.plays());
-        // Resources types owned by the current type
-        attachTypeResources(halResource, type);
+        if (schemaConcept.isType()) {
+            // Role types played by current type
+            attachRolesPlayed(halResource, schemaConcept.asType().plays());
+            // Resources types owned by the current type
+            attachTypeResources(halResource, schemaConcept.asType());
+        }
+
         // Subtypes
-        attachSubTypes(halResource, type);
+        attachSubTypes(halResource, schemaConcept);
 
-        if (type.isRelationshipType()) {
+        if (schemaConcept.isRelationshipType()) {
             // Role types that make up this RelationshipType
-            relationshipTypeRoles(halResource, type.asRelationshipType());
-        } else if (type.isRole()) {
+            relationshipTypeRoles(halResource, schemaConcept.asRelationshipType());
+        } else if (schemaConcept.isRole()) {
             // Types that can play this role && Relationship types this role can take part in.
-            roleTypeSchema(halResource, type.asRole());
+            roleTypeSchema(halResource, schemaConcept.asRole());
         }
 
     }
 
-    private void attachSubTypes(Representation halResource, Type conceptType) {
-        conceptType.subs().forEach(instance -> {
+    private void attachSubTypes(Representation halResource, SchemaConcept schemaConcept) {
+        schemaConcept.subs().forEach(instance -> {
             // let's not put the current type in its own embedded
-            if (!instance.getId().equals(conceptType.getId())) {
+            if (!instance.getId().equals(schemaConcept.getId())) {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams())
                         .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                 generateStateAndLinks(instanceResource, instance);
