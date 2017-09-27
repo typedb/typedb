@@ -35,8 +35,9 @@ More precisely, it is what we call a [Knowledge Based System](https://en.wikiped
 
   * __User interfaces.__ A set of user interfaces that allow to access and interact with your knowledge base both graphically and programmatically and make it easy to extend and build applications on top of GRAKN.
 
+A knowledge base management system like GRAKN helps you turning data into information (thanks to its data layer and model components) and to turn information into knowledge thanks to its reasoning engine.
 
-TODO: ADD DIKW PYRAMID FIGURE
+  ![DIKW Pyramid](/images/academy/1-welcome/DIKW.svg)
 
 On top of that, GRAKN adds
 
