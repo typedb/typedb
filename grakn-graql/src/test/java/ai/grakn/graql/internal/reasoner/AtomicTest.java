@@ -28,6 +28,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -972,7 +973,7 @@ public class AtomicTest {
         Atom parent = ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
         Atom child = ReasonerQueries.atomic(conjunction(childString, graph), graph).getAtom();
 
-        Set<Unifier> multiUnifier = child.getMultiUnifier(parent);
+        MultiUnifier multiUnifier = child.getMultiUnifier(parent);
         Unifier correctUnifier = new UnifierImpl(
                 ImmutableMap.of(
                         var("z"), var("a"),

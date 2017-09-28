@@ -26,6 +26,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
@@ -209,6 +210,11 @@ public class QueryAnswer implements Answer {
             }
         }
         return unified.setExplanation(this.getExplanation());
+    }
+
+    @Override
+    public Stream<Answer> unify(MultiUnifier multiUnifier) {
+        return multiUnifier.stream().map(this::unify);
     }
 
     @Override

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -59,7 +60,7 @@ class CumulativeState extends QueryState{
     ReasonerQueryImpl getQuery() { return getParentState().getQuery();}
 
     @Override
-    Unifier getCacheUnifier() { return getParentState().getCacheUnifier();}
+    MultiUnifier getCacheUnifier() { return getParentState().getCacheUnifier();}
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {

@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -45,12 +46,11 @@ public class UnifierImpl implements Unifier {
      * Identity unifier.
      */
     public UnifierImpl(){}
+    public UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){ mappings.forEach(m -> unifier.put(m.getKey(), m.getValue()));}
     public UnifierImpl(Map<Var, Var> map){
-        map.entrySet().forEach(m -> unifier.put(m.getKey(), m.getValue()));
+        this(map.entrySet());
     }
-    public UnifierImpl(Unifier u){
-        merge(u);
-    }
+    public UnifierImpl(Unifier u){ this(u.mappings());}
 
     @Override
     public String toString(){
@@ -86,7 +86,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Collection<Map.Entry<Var, Var>> mappings(){ return unifier.entries();}
+    public Set<Map.Entry<Var, Var>> mappings(){ return unifier.entries();}
 
     @Override
     public boolean addMapping(Var key, Var value){
@@ -113,8 +113,8 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public Unifier merge(Unifier d) {
-        d.mappings().forEach(m -> unifier.put(m.getKey(), m.getValue()));
-        return this;
+        if (d.isEmpty()) return this;
+        return new UnifierImpl(Sets.union(this.mappings(), d.mappings()));
     }
 
     @Override

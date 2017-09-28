@@ -139,6 +139,13 @@ public interface Answer {
     Answer unify(Unifier unifier);
 
     /**
+     * @param multiUnifier
+     * @return
+     */
+    @CheckReturnValue
+    Stream<Answer> unify(MultiUnifier multiUnifier);
+
+    /**
      * @param vars variables for which {@link ai.grakn.concept.Role} hierarchy should be expanded
      * @return stream of answers with expanded role hierarchy
      */

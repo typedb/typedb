@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -70,7 +71,7 @@ public abstract class QueryState extends ResolutionState {
     /**
      * @return cache unifier if any
      */
-    abstract Unifier getCacheUnifier();
+    abstract MultiUnifier getCacheUnifier();
 
     /**
      * @return unifier of this state with parent state

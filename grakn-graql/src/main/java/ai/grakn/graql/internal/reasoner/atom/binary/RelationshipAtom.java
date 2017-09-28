@@ -29,6 +29,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -37,6 +38,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -766,22 +768,20 @@ public class RelationshipAtom extends IsaAtom {
     @Override
     public Unifier getUnifier(Atom pAtom){
         //TODO fix that
-        Set<Unifier> multiUnifier = getMultiUnifier(pAtom, true);
+        MultiUnifier multiUnifier = getMultiUnifier(pAtom, true);
         if (multiUnifier.isEmpty()){
             System.out.println();
         }
-        return multiUnifier.iterator().next();
+        return multiUnifier.getUnifier();
     }
 
     @Override
-    public Set<Unifier> getMultiUnifier(Atom pAtom) {
+    public MultiUnifier getMultiUnifier(Atom pAtom) {
         return getMultiUnifier(pAtom, false);
     }
 
-    private Set<Unifier> getMultiUnifier(Atom pAtom, boolean exact) {
-        if (this.equals(pAtom)){
-            return Sets.newHashSet(new UnifierImpl());
-        }
+    private MultiUnifier getMultiUnifier(Atom pAtom, boolean exact) {
+        if (this.equals(pAtom))  return new MultiUnifierImpl();
 
         Unifier baseUnifier = super.getUnifier(pAtom);
         Set<Unifier> unifiers = new HashSet<>();
@@ -814,7 +814,7 @@ public class RelationshipAtom extends IsaAtom {
         } else {
             unifiers.add(baseUnifier);
         }
-        return unifiers;
+        return new MultiUnifierImpl(unifiers);
     }
 
     /**

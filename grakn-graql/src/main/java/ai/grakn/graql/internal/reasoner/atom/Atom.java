@@ -23,10 +23,12 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -293,5 +295,5 @@ public abstract class Atom extends AtomicBase {
      * @param parentAtom atom to be unified with
      * @return multiunifier
      */
-    public Set<Unifier> getMultiUnifier(Atom parentAtom){ return Sets.newHashSet(getUnifier(parentAtom));}
+    public MultiUnifier getMultiUnifier(Atom parentAtom){ return new MultiUnifierImpl(getUnifier(parentAtom));}
 }

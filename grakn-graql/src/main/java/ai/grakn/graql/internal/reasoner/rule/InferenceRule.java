@@ -26,6 +26,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -295,7 +296,7 @@ public class InferenceRule {
      * @param parentAtom atom to unify the rule with
      * @return corresponding unifier
      */
-    public Set<Unifier> getMultiUnifier(Atom parentAtom) {
+    public MultiUnifier getMultiUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         if (parentAtom.getSchemaConcept() != null){
             return childAtom.getMultiUnifier(parentAtom);

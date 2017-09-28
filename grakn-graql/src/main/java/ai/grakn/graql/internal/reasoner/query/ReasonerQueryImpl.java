@@ -27,6 +27,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -268,7 +269,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public Unifier getUnifier(ReasonerQuery parent) {
+    public MultiUnifier getMultiUnifier(ReasonerQuery parent) {
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 

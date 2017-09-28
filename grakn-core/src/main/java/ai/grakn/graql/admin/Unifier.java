@@ -79,7 +79,7 @@ public interface Unifier{
      * @return set of mappings constituting this unifier
      */
     @CheckReturnValue
-    Collection<Map.Entry<Var, Var>> mappings();
+    Set<Map.Entry<Var, Var>> mappings();
 
     /**
      * @param key variable to be inspected for presence
@@ -107,6 +107,7 @@ public interface Unifier{
      * @param u unifier to be merged with this unifier
      * @return merged unifier
      */
+    @CheckReturnValue
     Unifier merge(Unifier u);
 
     /**
@@ -117,6 +118,7 @@ public interface Unifier{
      * @param u unifier to be combined with this unifier
      * @return combined unifier
      */
+    @CheckReturnValue
     Unifier combine(Unifier u);
 
     /**

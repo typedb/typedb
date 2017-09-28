@@ -27,10 +27,12 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -149,26 +151,25 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @throws IllegalArgumentException if passed a {@link ReasonerQuery} that is not a {@link ReasonerAtomicQuery}.
      */
     @Override
-    public Unifier getUnifier(ReasonerQuery p){
-        if (p == this) return new UnifierImpl();
-
+    public MultiUnifier getMultiUnifier(ReasonerQuery p){
+        if (p == this) return new MultiUnifierImpl();
         Preconditions.checkArgument(p instanceof ReasonerAtomicQuery);
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
 
-        Unifier unifier = getAtom().getUnifier(parent.getAtom());
         //get type unifiers
         Set<Atom> unified = new HashSet<>();
+        Unifier typeUnifier = new UnifierImpl();
         getAtom().getTypeConstraints()
                 .forEach(type -> {
                     Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
                     Atom equiv = toUnify.stream().findFirst().orElse(null);
                     //only apply if unambiguous
                     if (equiv != null && toUnify.size() == 1){
-                        unifier.merge(type.getUnifier(equiv));
+                        typeUnifier.merge(type.getUnifier(equiv));
                         unified.add(equiv);
                     }
                 });
-        return unifier;
+        return getAtom().getMultiUnifier(parent.getAtom()).merge(typeUnifier);
     }
 
     /**

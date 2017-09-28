@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -47,7 +48,7 @@ public class AtomicState extends QueryState{
     private final Iterator<Pair<InferenceRule, Unifier>> ruleIterator;
 
     private InferenceRule currentRule = null;
-    private final Unifier cacheUnifier;
+    private final MultiUnifier cacheUnifier;
 
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
@@ -59,7 +60,7 @@ public class AtomicState extends QueryState{
         super(sub, u, parent, subGoals, cache);
         this.query = ReasonerQueries.atomic(q, sub);
 
-        Pair<Stream<Answer>, Unifier> streamUnifierPair = cache.getAnswerStreamWithUnifier(query);
+        Pair<Stream<Answer>, MultiUnifier> streamUnifierPair = cache.getAnswerStreamWithUnifier(query);
         this.dbIterator = streamUnifierPair.getKey()
                 .map(a -> a.explain(a.getExplanation().setQuery(query)))
                 .iterator();
@@ -104,7 +105,7 @@ public class AtomicState extends QueryState{
     ReasonerAtomicQuery getQuery(){return query;}
 
     @Override
-    Unifier getCacheUnifier(){ return cacheUnifier;}
+    MultiUnifier getCacheUnifier(){ return cacheUnifier;}
 
     InferenceRule getCurrentRule(){ return currentRule;}
 
