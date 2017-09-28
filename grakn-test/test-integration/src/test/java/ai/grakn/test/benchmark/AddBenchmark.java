@@ -12,14 +12,11 @@ import ai.grakn.concept.Role;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 
-@State(Scope.Benchmark)
-public class InsertWithCommitBenchmark extends BenchmarkTest {
+public class AddBenchmark extends BenchmarkTest {
 
     private static final Keyspace KEYSPACE = SampleKBLoader.randomKeyspace();
 
@@ -27,6 +24,7 @@ public class InsertWithCommitBenchmark extends BenchmarkTest {
     private GraknSession session;
     private EntityType entityType;
     private RelationshipType relationshipType;
+    private GraknTx graph;
     private Role role1;
     private Role role2;
 
@@ -35,36 +33,30 @@ public class InsertWithCommitBenchmark extends BenchmarkTest {
         engine = EngineContext.inMemoryServer();
         engine.before();
         session = Grakn.session(engine.uri(), KEYSPACE);
-        try(GraknTx tx = session.open(GraknTxType.WRITE)) {
-            role1 = tx.putRole("benchmark_role1");
-            role2 = tx.putRole("benchmark_role2");
-            entityType = tx.putEntityType("benchmark_Entitytype").plays(role1).plays(role2);
-            relationshipType = tx.putRelationshipType("benchmark_relationshipType").relates(role1).relates(role2);
-            tx.commit();
-        }
+        graph = session.open(GraknTxType.WRITE);
+        entityType = graph.putEntityType("benchmarkEntitytype");
+        role1 = graph.putRole("benchmark_role1");
+        role2 = graph.putRole("benchmark_role2");
+        relationshipType = graph.putRelationshipType("benchmark_relationshipType").relates(role1).relates(role2);
+
     }
 
     @TearDown
     public void tearDown() {
+        graph.commit();
         session.close();
         engine.after();
     }
 
     @Benchmark
     public void addEntity() {
-        try(GraknTx graph = session.open(GraknTxType.WRITE)) {
-            entityType.addEntity();
-            graph.commit();
-        }
+        entityType.addEntity();
     }
 
     @Benchmark
     public void addRelation() {
-        try(GraknTx graph = session.open(GraknTxType.WRITE)) {
             Entity entity1 = entityType.addEntity();
             Entity entity2 = entityType.addEntity();
             relationshipType.addRelationship().addRolePlayer(role1, entity1).addRolePlayer(role2, entity2);
-            graph.commit();
-        }
     }
 }
