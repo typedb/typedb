@@ -635,7 +635,16 @@ update_classpath_global_var
 # temporarily disabling trap as it's probably not needed
 # trap handle_ctrl_c INT # run handle_ctrl_c when receiving CTRL+C
 
-echo "Grakn: Database For AI"
+echo "
+==================================================
+      ___  ___  ___  _  __ _  _     ___  ___
+     / __|| _ \/   \| |/ /| \| |   /   \|_ _|
+    | (_ ||   /| - || ' < | .\` | _ | - | | |
+     \___||_|_\|_|_||_|\_\|_|\_|(_)|_|_||___|
+
+            Grakn: The Database For AI
+==================================================
+"
 echo ""
 
 case "$1" in
