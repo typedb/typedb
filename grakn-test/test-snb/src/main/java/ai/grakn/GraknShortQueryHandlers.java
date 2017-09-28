@@ -252,6 +252,8 @@ public class GraknShortQueryHandlers {
                     resultReporter.report(0, result, operation);
 
                 } else {
+                    System.out.println("NO RESULT FOR message-id " + operation.messageId());
+
                     resultReporter.report(0, null, operation);
 
                 }

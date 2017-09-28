@@ -29,18 +29,20 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Task that will mutate data in a graph. It uses the engine running on the
@@ -84,6 +86,7 @@ public class MutatorTask extends BackgroundTask {
                 inserts.forEach(q -> {
                     try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
                         q.withTx(graph).execute();
+                        LOG.info("THIS IS WHAT I RAN: " + q);
                     } catch (Exception e) {
                         LOG.error("Error while executing insert for query: \n{}\nError: {}", q, e.getMessage());
                         throw e;
