@@ -51,25 +51,26 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS =
             Collections.singleton(MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true));
 
-    private String clusterLabel;
+//    private String clusterLabel;
 
     public ConnectedComponentVertexProgram() {
     }
 
-    public ConnectedComponentVertexProgram(String randomId) {
-        clusterLabel = CLUSTER_LABEL + randomId;
-        this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
-    }
+//    public ConnectedComponentVertexProgram(String randomId) {
+//        clusterLabel = CLUSTER_LABEL + randomId;
+//        this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
+//    }
 
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        this.clusterLabel = (String) this.persistentProperties.get(CLUSTER_LABEL);
-    }
+//    @Override
+//    public void loadState(final Graph graph, final Configuration configuration) {
+//        super.loadState(graph, configuration);
+//        this.clusterLabel = (String) this.persistentProperties.get(CLUSTER_LABEL);
+//    }
 
     @Override
     public Set<VertexComputeKey> getVertexComputeKeys() {
-        return Collections.singleton(VertexComputeKey.of(clusterLabel, false));
+//        return Collections.singleton(VertexComputeKey.of(clusterLabel, false));
+        return Collections.singleton(VertexComputeKey.of(CLUSTER_LABEL, false));
     }
 
     @Override
@@ -88,7 +89,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         switch (memory.getIteration()) {
             case 0:
                 String id = vertex.value(Schema.VertexProperty.ID.name());
-                vertex.property(clusterLabel, id);
+                vertex.property(CLUSTER_LABEL, id);
                 messenger.sendMessage(messageScopeIn, id);
                 messenger.sendMessage(messageScopeOut, id);
                 break;
@@ -99,11 +100,11 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     }
 
     private void update(Vertex vertex, Messenger<String> messenger, Memory memory) {
-        String currentMax = vertex.value(clusterLabel);
+        String currentMax = vertex.value(CLUSTER_LABEL);
         String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
         if (max.compareTo(currentMax) > 0) {
-            vertex.property(clusterLabel, max);
+            vertex.property(CLUSTER_LABEL, max);
             messenger.sendMessage(messageScopeIn, max);
             messenger.sendMessage(messageScopeOut, max);
             memory.add(VOTE_TO_HALT, false);

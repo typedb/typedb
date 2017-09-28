@@ -76,9 +76,6 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
 
-//        Set<Label> withResourceRelationTypes = getHasResourceRelationLabels(subTypes);
-//        withResourceRelationTypes.addAll(subLabels);
-//        Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(withResourceRelationTypes);
         Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(subLabels);
         Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
@@ -158,6 +155,11 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     @Override
     public DegreeQuery withTx(GraknTx tx) {
         return (DegreeQuery) super.withTx(tx);
+    }
+
+    @Override
+    public DegreeQuery includeAttribute() {
+        return (DegreeQuery) super.includeAttribute();
     }
 
     @Override

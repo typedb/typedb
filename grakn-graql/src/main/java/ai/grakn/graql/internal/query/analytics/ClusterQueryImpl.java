@@ -56,25 +56,25 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         }
 
         ComputerResult result;
-        Set<Label> withResourceRelationTypes = getHasResourceRelationLabels(subTypes);
-        withResourceRelationTypes.addAll(subLabels);
+//        Set<Label> withResourceRelationTypes = getHasResourceRelationLabels(subTypes);
+//        withResourceRelationTypes.addAll(subLabels);
 
-        String randomId = getRandomJobId();
+//        String randomId = getRandomJobId();
 
-        Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(withResourceRelationTypes);
+        Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(subLabels);
 
         if (members) {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(randomId),
+                        new ConnectedComponentVertexProgram(),
                         new ClusterMemberMapReduce(
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId),
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL),
                         withResourceRelationLabelIds);
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(randomId),
+                        new ConnectedComponentVertexProgram(),
                         new ClusterMemberMapReduce(
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize),
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL, clusterSize),
                         withResourceRelationLabelIds);
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
@@ -83,21 +83,26 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         } else {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(randomId),
+                        new ConnectedComponentVertexProgram(),
                         new ClusterSizeMapReduce(
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId),
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL),
                         withResourceRelationLabelIds);
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(randomId),
+                        new ConnectedComponentVertexProgram(),
                         new ClusterSizeMapReduce(
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize),
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL, clusterSize),
                         withResourceRelationLabelIds);
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
                     + (System.currentTimeMillis() - startTime) + " ms");
             return result.memory().get(ClusterSizeMapReduce.class.getName());
         }
+    }
+
+    @Override
+    public ClusterQuery<T> includeAttribute() {
+        return (ClusterQuery<T>) super.includeAttribute();
     }
 
     @Override

@@ -110,5 +110,4 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     public CountQuery withTx(GraknTx tx) {
         return (CountQuery) super.withTx(tx);
     }
-
 }

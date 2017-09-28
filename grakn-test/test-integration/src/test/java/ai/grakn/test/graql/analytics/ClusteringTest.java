@@ -87,6 +87,7 @@ public class ClusteringTest {
             assertTrue(memberMap.isEmpty());
 
             assertEquals(0L, graph.graql().compute().count().execute().longValue());
+            assertEquals(0L, graph.graql().compute().count().includeAttribute().execute().longValue());
         }
     }
 

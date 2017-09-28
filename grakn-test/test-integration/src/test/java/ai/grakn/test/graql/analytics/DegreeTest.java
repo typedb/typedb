@@ -304,7 +304,7 @@ public class DegreeTest {
             ));
 
             // full tx
-            degrees = graph.graql().compute().degree().includeAttribute().execute();
+            degrees = graph.graql().compute().degree().includeAttribute().of().execute();
             assertEquals(3, degrees.size());
             System.out.println("degrees = " + degrees);
             degrees.forEach((key, value1) -> value1.forEach(
