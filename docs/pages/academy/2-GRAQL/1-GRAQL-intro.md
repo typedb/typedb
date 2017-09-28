@@ -2,7 +2,7 @@
 title: GRAQL - the language of knowledge
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn about the dataset you will be dealing with in the Academy and will get a firs taste of the GRAQL language
+summary: In this lesson you will learn about the dataset you will be dealing with in the Academy and will get a first taste of the GRAQL language
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/graql-intro.html
@@ -81,4 +81,4 @@ By now, you should be familiar the background of the demo dataset we will be wor
 
 ## What next?
 
-In the next lesson (TODO: add link) we will dive more deeply into the syntax for get and insert queries. If you are curious about all the possible GRAQL query and you want to go faster, you can have a look at the GRAQL syntax [documentation](/index.html), but it might be a bit too advanced at this point in time.
+In the [next lesson](/academy/get-queries.html) we will dive more deeply into the syntax for get and insert queries. If you are curious about all the possible GRAQL query and you want to go faster, you can have a look at the GRAQL syntax [documentation](/index.html), but it might be a bit too advanced at this point in time.
