@@ -968,23 +968,27 @@ public class AtomicTest {
     public void testUnification_MatchAllParentAtom(){
         GraknTx graph = unificationTestSet.tx();
         String parentString = "{$r($a, $x);}";
-        RelationshipAtom parent = (RelationshipAtom) ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
+        String childString = "(role1: $z, role2: $b) isa relation1";
+        Atom parent = ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
+        Atom child = ReasonerQueries.atomic(conjunction(childString, graph), graph).getAtom();
 
-        PatternAdmin body = graph.graql().parsePattern("(role1: $z, role2: $b) isa relation1").admin();
-        PatternAdmin head = graph.graql().parsePattern("(role1: $z, role2: $b) isa relation1").admin();
-        InferenceRule rule = new InferenceRule(graph.putRule("Rule: Checking Unification", body, head), graph);
-
-        Unifier unifier = Iterables.getOnlyElement(rule.getMultiUnifier(parent));
-        Set<Var> vars = rule.getHead().getAtom().getVarNames();
-        Set<Var> correctVars = Sets.newHashSet(var("r"), var("a"), var("x"));
-        assertTrue(!vars.contains(var("")));
-        assertTrue(
-                "Variables not in subset relation:\n" + correctVars.toString() + "\n" + vars.toString(),
-                unifier.values().containsAll(correctVars)
+        Set<Unifier> multiUnifier = child.getMultiUnifier(parent);
+        Unifier correctUnifier = new UnifierImpl(
+                ImmutableMap.of(
+                        var("z"), var("a"),
+                        var("b"), var("x"),
+                        child.getVarName(), parent.getVarName())
         );
+        Unifier correctUnifier2 = new UnifierImpl(
+                ImmutableMap.of(
+                        var("z"), var("x"),
+                        var("b"), var("a"),
+                        child.getVarName(), parent.getVarName())
+        );
+        assertEquals(multiUnifier.size(), 2);
+        multiUnifier.forEach(u -> assertTrue(u.containsAll(correctUnifier) || u.containsAll(correctUnifier2)));
     }
 
-    @Ignore
     @Test
     public void testUnification_IndirectRoles(){
         GraknTx graph = unificationTestSet.tx();
@@ -993,7 +997,6 @@ public class AtomicTest {
         testUnification(parentRelation, childRelation, true, true, graph);
     }
 
-    @Ignore
     @Test
     public void testUnification_IndirectRoles_NoRelationType(){
         GraknTx graph = unificationTestSet.tx();

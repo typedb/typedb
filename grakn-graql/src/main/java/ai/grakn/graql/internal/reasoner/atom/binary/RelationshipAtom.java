@@ -183,8 +183,10 @@ public class RelationshipAtom extends IsaAtom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationshipAtom a2 = (RelationshipAtom) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && this.getVarNames().equals(a2.getVarNames())
+        return //(isUserDefined() == a2.isUserDefined())
+                //&& !isUserDefined() || getVarName().equals(a2.getVarName())
+                Objects.equals(this.getTypeId(), a2.getTypeId())
+                        && getVarNames().equals(a2.getVarNames())
                 && getRelationPlayers().equals(a2.getRelationPlayers());
     }
 
@@ -710,8 +712,8 @@ public class RelationshipAtom extends IsaAtom {
                         List<RelationPlayer> compatibleRelationPlayers = new ArrayList<>();
                         compatibleChildRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
-                                .forEach(r -> {
-                                    childRoleRPMap.get(r).stream()
+                                .forEach(role -> {
+                                    childRoleRPMap.get(role).stream()
                                             //check for type compatibility
                                             .filter(crp -> {
                                                 SchemaConcept childType = childVarSchemaConceptMap.get(crp.getRolePlayer().var());
@@ -764,7 +766,11 @@ public class RelationshipAtom extends IsaAtom {
     @Override
     public Unifier getUnifier(Atom pAtom){
         //TODO fix that
-        return getMultiUnifier(pAtom, true).iterator().next();
+        Set<Unifier> multiUnifier = getMultiUnifier(pAtom, true);
+        if (multiUnifier.isEmpty()){
+            System.out.println();
+        }
+        return multiUnifier.iterator().next();
     }
 
     @Override
@@ -773,7 +779,9 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     private Set<Unifier> getMultiUnifier(Atom pAtom, boolean exact) {
-        if (this.equals(pAtom)) return Sets.newHashSet(new UnifierImpl());
+        if (this.equals(pAtom)){
+            return Sets.newHashSet(new UnifierImpl());
+        }
 
         Unifier baseUnifier = super.getUnifier(pAtom);
         Set<Unifier> unifiers = new HashSet<>();
@@ -805,9 +813,6 @@ public class RelationshipAtom extends IsaAtom {
                     });
         } else {
             unifiers.add(baseUnifier);
-        }
-        if (unifiers.isEmpty()){
-            System.out.println();
         }
         return unifiers;
     }
