@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
@@ -31,6 +32,7 @@ import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -97,6 +99,17 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
+    /*
+     * This is the memoized result of {@link #vars()}
+     */
+    private @Nullable ImmutableSet<Var> vars = null;
+  
+    /**
+     * @param transform map defining id transform var -> new id
+     * @return transformed fragment with id predicates transformed according to the transform
+     */
+    public Fragment transform(Map<Var, ConceptId> transform){ return this;}
+
     /**
      * Get the corresponding property
      */
@@ -143,23 +156,23 @@ public abstract class Fragment {
      * @param traversal the traversal to extend with this Fragment
      * @param graph     the graph to execute the traversal on
      */
-    public final GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph,
+    public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph,
             Collection<Var> vars, @Nullable Var currentVar
     ) {
         if (currentVar != null) {
             if (!currentVar.equals(start())) {
                 if (vars.contains(start())) {
                     // If the variable name has been visited but the traversal is not at that variable name, select it
-                    traversal.select(start().getValue());
+                    traversal.select(start().name());
                 } else {
                     // Restart traversal when fragments are disconnected
-                    traversal.V().as(start().getValue());
+                    traversal.V().as(start().name());
                 }
             }
         } else {
             // If the variable name has not been visited yet, remember it and use the 'as' step
-            traversal.as(start().getValue());
+            traversal.as(start().name());
         }
 
         vars.add(start());
@@ -179,10 +192,10 @@ public abstract class Fragment {
     static <T, U> GraphTraversal<T, U> assignVar(GraphTraversal<T, U> traversal, Var var, Collection<Var> vars) {
         if (!vars.contains(var)) {
             // This variable name has not been encountered before, remember it and use the 'as' step
-            return traversal.as(var.getValue());
+            return traversal.as(var.name());
         } else {
             // This variable name has been encountered before, confirm it is the same
-            return traversal.where(P.eq(var.getValue()));
+            return traversal.where(P.eq(var.name()));
         }
     }
 
@@ -191,8 +204,9 @@ public abstract class Fragment {
      * @param graph     the graph to execute the traversal on
      * @param vars
      */
-    abstract GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars);
+    abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars);
+
 
     /**
      * The name of the fragment
@@ -232,11 +246,15 @@ public abstract class Fragment {
      * Get all variables in the fragment including the start and end (if present)
      */
     public final Set<Var> vars() {
-        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(start());
-        Var end = end();
-        if (end != null) builder.add(end);
-        builder.addAll(otherVars());
-        return builder.build();
+        if (vars == null) {
+            ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(start());
+            Var end = end();
+            if (end != null) builder.add(end);
+            builder.addAll(otherVars());
+            vars = builder.build();
+        }
+
+        return vars;
     }
 
     @Override

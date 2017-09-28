@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -66,6 +67,7 @@ public class InferenceRule {
     private final ReasonerAtomicQuery head;
 
     private int priority = Integer.MAX_VALUE;
+    private Boolean requiresMaterialisation = null;
 
     public InferenceRule(Rule rule, GraknTx tx){
         this.tx = tx;
@@ -141,8 +143,10 @@ public class InferenceRule {
      */
     boolean headSatisfiesBody(){
         Set<Atomic> atoms = new HashSet<>(getHead().getAtoms());
+        Set<Var> headVars = getHead().getVarNames();
         getBody().getAtoms(TypeAtom.class)
                 .filter(t -> !t.isRelation())
+                .filter(t -> !Sets.intersection(t.getVarNames(), headVars).isEmpty())
                 .forEach(atoms::add);
         return getBody().isEquivalent(ReasonerQueries.create(atoms, tx));
     }
@@ -154,9 +158,13 @@ public class InferenceRule {
      * @return true if the rule needs to be materialised
      */
     public boolean requiresMaterialisation(Atom parentAtom){
-        return parentAtom.requiresMaterialisation()
-            || getHead().getAtom().requiresMaterialisation()
-            || hasDisconnectedHead();}
+        if (requiresMaterialisation == null) {
+            requiresMaterialisation = parentAtom.requiresMaterialisation()
+                    || getHead().getAtom().requiresMaterialisation()
+                    || hasDisconnectedHead();
+        }
+        return requiresMaterialisation;
+    }
 
     /**
      * @return body of the rule of the form head :- body

@@ -27,10 +27,12 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.QueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -238,7 +240,7 @@ public class ReasonerTest {
         String patternString2 = "{$x isa person;$x has firstname $y;}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, snbKB.tx()), snbKB.tx());
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, snbKB.tx()), snbKB.tx());
-        assertTrue(query.isEquivalent(query2));
+        assertTrue(QueryEquivalence.AlphaEquivalence.equivalent(query, query2));
     }
 
     //TODO: problems with engine connection seem to be encountered in this test

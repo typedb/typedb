@@ -26,7 +26,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Match;
 import ai.grakn.graql.Query;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;

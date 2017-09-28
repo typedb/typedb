@@ -46,6 +46,22 @@ import static org.junit.Assert.assertThat;
 
 public class ValidatorTest extends TxTestBase {
 
+
+    @Test
+    public void whenCreatingAbstractRelationshipWithSubType_EnsureValidationRuleForMatchingSubRolesIsSkipped(){
+        Role role1 = tx.putRole("my role");
+        Role role2 = tx.putRole("my role 2");
+
+        RelationshipType abstractRelationType = tx.putRelationshipType("my abstract relation type").
+                relates(role1).
+                setAbstract(true);
+        tx.putRelationshipType("my relation type").
+                sup(abstractRelationType).
+                relates(role2);
+
+        tx.commit();
+    }
+
     @Test
     public void whenCommittingGraphWhichFollowsValidationRules_Commit(){
         RelationshipType cast = tx.putRelationshipType("Cast");
@@ -118,6 +134,24 @@ public class ValidatorTest extends TxTestBase {
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.getLabel())));
+
+        tx.commit();
+    }
+
+    @Test
+    public void whenCreatingRelationWithoutLinkingRelates_Throw(){
+        Role hunter = tx.putRole("hunter");
+        Role monster = tx.putRole("monster");
+        EntityType stuff = tx.putEntityType("Stuff").plays(hunter).plays(monster);
+        RelationshipType kills = tx.putRelationshipType("kills").relates(hunter);
+
+        Entity myHunter = stuff.addEntity();
+        Entity myMonster = stuff.addEntity();
+
+        Relationship relation = kills.addRelationship().addRolePlayer(hunter, myHunter).addRolePlayer(monster, myMonster);
+
+        expectedException.expect(InvalidKBException.class);
+        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), monster.getLabel(), kills.getLabel())));
 
         tx.commit();
     }

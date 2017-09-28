@@ -52,6 +52,9 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
     private IdPredicate(IdPredicate a) { super(a);}
 
+    public IdPredicate(Var varName, ConceptId cId, ReasonerQuery par) {
+        super(createIdVar(varName, cId), par);
+    }
     public IdPredicate(Var varName, Concept con, ReasonerQuery par) {
         super(createIdVar(varName, con.getId()), par);
     }

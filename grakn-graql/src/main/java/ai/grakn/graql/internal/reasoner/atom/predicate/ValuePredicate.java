@@ -84,7 +84,7 @@ public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
     }
 
     @Override
-    public boolean isEquivalent(Object obj){
+    public boolean isAlphaEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         ValuePredicate a2 = (ValuePredicate) obj;
@@ -93,8 +93,8 @@ public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
     }
 
     @Override
-    public int equivalenceHashCode() {
-        int hashCode = super.equivalenceHashCode();
+    public int alphaEquivalenceHashCode() {
+        int hashCode = super.alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getPredicate().getClass().getName().hashCode();
         return hashCode;
     }

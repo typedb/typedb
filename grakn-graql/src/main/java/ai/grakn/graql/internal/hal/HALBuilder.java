@@ -103,8 +103,8 @@ public class HALBuilder {
         if (concept.isThing()) {
             renderedHAL = new HALExploreInstance(concept, keyspace, offset, limit).render();
         }
-        if (concept.isType()) {
-            renderedHAL = new HALExploreType(concept, keyspace, offset, limit).render();
+        if (concept.isSchemaConcept()) {
+            renderedHAL = new HALExploreSchemaConcept(concept, keyspace, offset, limit).render();
         }
 
         return renderedHAL;

@@ -93,10 +93,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     TypeImpl(VertexElement vertexElement, T superType) {
         super(vertexElement, superType);
+        //This constructor is ONLY used when CREATING new types. Which is why we shard here
+        createShard();
     }
 
     TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         super(vertexElement, superType, isImplicit);
+        //This constructor is ONLY used when CREATING new types. Which is why we shard here
+        createShard();
     }
 
     /**
@@ -381,6 +385,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
+
+        if(isAbstract){
+            vertex().tx().txCache().removeFromValidation(this);
+        } else {
+            vertex().tx().txCache().trackForValidation(this);
+        }
+
         return getThis();
     }
 

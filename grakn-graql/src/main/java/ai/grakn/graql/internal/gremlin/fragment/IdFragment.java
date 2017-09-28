@@ -21,8 +21,10 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
+import java.util.Map;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -38,9 +40,15 @@ abstract class IdFragment extends Fragment {
 
     abstract ConceptId id();
 
+    public Fragment transform(Map<Var, ConceptId> transform) {
+        ConceptId toId = transform.get(start());
+        if (toId == null) return this;
+        return new AutoValue_IdFragment(IdProperty.of(toId), start(), toId);
+    }
+
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
         if (canOperateOnEdges()) {
             // Handle both edges and vertices
             return traversal.or(
@@ -52,13 +60,13 @@ abstract class IdFragment extends Fragment {
         }
     }
 
-    private GraphTraversal<Element, Vertex> vertexTraversal(GraphTraversal<Element, ? extends Element> traversal) {
+    private GraphTraversal<Vertex, Vertex> vertexTraversal(GraphTraversal<Vertex, ? extends Element> traversal) {
         // A vertex should always be looked up by vertex property, not the actual vertex ID which may be incorrect.
         // This is because a vertex may represent a reified relation, which will use the original edge ID as an ID.
         
         // We know only vertices have this property, so the cast is safe
         //noinspection unchecked
-        return (GraphTraversal<Element, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id().getValue());
+        return (GraphTraversal<Vertex, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id().getValue());
     }
 
     private GraphTraversal<Edge, Edge> edgeTraversal() {

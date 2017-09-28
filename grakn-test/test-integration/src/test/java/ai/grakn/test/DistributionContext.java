@@ -151,7 +151,7 @@ public class DistributionContext extends ExternalResource {
         // Java commands to start Engine process
         String[] commands = {"java",
                 "-cp", getClassPath(),
-                "-Dgrakn.dir=" + DIST_DIRECTORY + "/bin",
+                "-Dgrakn.dir=" + DIST_DIRECTORY + "/services",
                 "-Dgrakn.conf=" + propertiesFile.getAbsolutePath(),
                 "ai.grakn.engine.GraknEngineServer", "&"};
 

@@ -25,6 +25,7 @@ import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
@@ -32,8 +33,8 @@ import java.util.Collection;
 abstract class NotInternalFragment extends Fragment {
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
         return traversal.not(__.hasLabel(Schema.BaseType.SHARD.name()));
     }
 

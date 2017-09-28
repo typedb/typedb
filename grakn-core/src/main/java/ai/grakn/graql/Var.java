@@ -32,6 +32,11 @@ public interface Var extends VarPattern {
     String getValue();
 
     /**
+     * The {@link Kind} of the {@link Var}, such as whether it is user-defined.
+     */
+    Kind kind();
+
+    /**
      * Whether the variable has been manually defined or automatically generated.
      * @return whether the variable has been manually defined or automatically generated.
      */
@@ -47,6 +52,11 @@ public interface Var extends VarPattern {
     Var asUserDefined();
 
     /**
+     * Get a unique name identifying the variable, differentiating user-defined variables from generated ones.
+     */
+    String name();
+
+    /**
      * Get a shorter representation of the variable (with prefixed "$")
      */
     String shortName();
@@ -58,4 +68,33 @@ public interface Var extends VarPattern {
 
     @Override
     int hashCode();
+
+    /**
+     * The {@link Kind} of a {@link Var}, such as whether it is user-defined.
+     */
+    enum Kind {
+
+        UserDefined {
+            @Override
+            public char prefix() {
+                return '§';
+            }
+        },
+
+        Generated {
+            @Override
+            public char prefix() {
+                return '#';
+            }
+        },
+
+        Reserved {
+            @Override
+            public char prefix() {
+                return '!';
+            }
+        };
+
+        public abstract char prefix();
+    }
 }

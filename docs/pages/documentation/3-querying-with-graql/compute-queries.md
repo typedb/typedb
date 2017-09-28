@@ -30,7 +30,7 @@ compute count;
 
 ## Subgraph
 
-The subgraph syntax is provided to control the types that a chosen [algorithm](#available-algorithms) operates upon.
+The subgraph syntax is provided to control the types that a chosen algorithm operates upon.
 By default, the compute algorithms include instances of every type in the calculation.
 Using the `in` keyword followed by a comma separated list of types will restrict the calculations to instances of those types only.
 

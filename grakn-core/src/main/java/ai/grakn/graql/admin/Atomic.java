@@ -68,16 +68,28 @@ public interface Atomic {
     default boolean isResource(){ return false;}
 
     /**
-     * @return true if atom alpha-equivalent
+     * @return true if obj alpha-equivalent
      */
     @CheckReturnValue
-    boolean isEquivalent(Object obj);
+    boolean isAlphaEquivalent(Object obj);
+
+    /**
+     * @return true if obj structurally equivalent
+     */
+    @CheckReturnValue
+    boolean isStructurallyEquivalent(Object obj);
 
     /**
      * @return alpha-equivalence hash code
      */
     @CheckReturnValue
-    int equivalenceHashCode();
+    int alphaEquivalenceHashCode();
+
+    /**
+     * @return structural-equivalence hash code
+     */
+    @CheckReturnValue
+    int structuralEquivalenceHashCode();
 
     /**
      * @return true if the atomic is user defined (all its variables are user defined)

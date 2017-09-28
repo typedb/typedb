@@ -126,7 +126,7 @@ public enum ErrorMessage {
     SYNTAX_ERROR_NO_POINTER("syntax error at line %s:\n%s"),
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
-    MUST_BE_RESOURCE_TYPE("type '%s' must be a resource-type"),
+    MUST_BE_ATTRIBUTE_TYPE("type '%s' must be a attribute-type"),
     LABEL_NOT_FOUND("label '%s' not found"),
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
     NOT_A_RELATION_TYPE("'%s' is not a relation type. perhaps you forgot to separate your statements with a ';'?"),
@@ -194,6 +194,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
+    ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]"),
     RULE_CREATION_ARITY_ERROR("Arity mismatch when creating rule"),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms"),
@@ -201,8 +202,9 @@ public enum ErrorMessage {
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),
-    RESOURCE_TYPE_NOT_SPECIFIED("no resource type provided for compute query."),
+    ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     INSTANCE_DOES_NOT_EXIST("Thing does not exist in the subgraph."),
+    ROLE_AND_RULE_DO_NOT_HAVE_INSTANCE("Role and rule do not have instances."),
     NO_PATH_EXIST("There is no path between the two instances."),
     MAX_ITERATION_REACHED("Max iteration of [%s] reached.");
 

@@ -24,11 +24,9 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import com.google.common.collect.Sets;
-import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -147,6 +145,9 @@ public class ReasoningTests {
 
     @ClassRule
     public static final SampleKBContext testSet28 = SampleKBContext.preLoad("testSet28.gql").assumeTrue(GraknTestSetup.usingTinker());
+
+    @ClassRule
+    public static final SampleKBContext testSet28b = SampleKBContext.preLoad("testSet28b.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
     public static final SampleKBContext testSet29 = SampleKBContext.preLoad("testSet29.gql").assumeTrue(GraknTestSetup.usingTinker());
@@ -651,7 +652,7 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: no answers (if types were incorrectly inferred the query would yield answers)
-    public void relationTypesAreCorrectlyInferredInConjunctionWhenTypeIsPresent(){
+    public void relationTypesAreCorrectlyInferredInConjunction_TypeArePresent(){
         QueryBuilder qb = testSet28.tx().graql().infer(true);
         String queryString = "match " +
                 "(role1: $x, role2: $y) isa relation1;" +
@@ -659,6 +660,49 @@ public class ReasoningTests {
                 "(role3: $z, role4: $w) isa relation3; get;";
 
         assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
+    }
+
+    @Test
+    public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent(){
+        QueryBuilder qb = testSet28b.tx().graql().infer(true);
+        String queryString = "match " +
+                "$a isa entity1;" +
+                "($a, $b); $b isa entity3;" +
+                "($b, $c);" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 4);
+        answers.forEach(ans -> assertEquals(ans.size(), 3));
+    }
+
+    @Test
+    public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_DisconnectedQuery(){
+        QueryBuilder qb = testSet28b.tx().graql().infer(true);
+        String queryString = "match " +
+                "$a isa entity1;" +
+                "($a, $b); $b isa entity3;" +
+                "($c, $d);" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 10);
+        answers.forEach(ans -> assertEquals(ans.size(), 4));
+    }
+
+    @Test
+    public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_WithRelationWithoutAnyBounds(){
+        QueryBuilder qb = testSet28b.tx().graql().infer(true);
+        String queryString = "match " +
+                "$a isa entity1;" +
+                "($a, $b); $b isa entity3;" +
+                "($b, $c);" +
+                "($c, $d);" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 6);
+        answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
     @Test //tests a query containing a neq predicate bound to a recursive relation
@@ -827,7 +871,7 @@ public class ReasoningTests {
      *                  y     - != - >  z2
      */
     @Test
-    public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates_(){
+    public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates(){
         QueryBuilder qb = testSet29.tx().graql().infer(true);
         String baseQueryString = "match " +
                 "(role1: $x, role2: $y) isa relation1;" +
@@ -853,6 +897,46 @@ public class ReasoningTests {
             assertNotEquals(ans.get("x"), ans.get("z1"));
             assertNotEquals(ans.get("y"), ans.get("z2"));
         });
+    }
+
+    @Test //tests whether shared resources are recognised correctly
+    public void inferrableRelationWithRolePlayersSharingResource(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        String queryString = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "$x has name $n;" +
+                "$y has name $n;" +
+                "get;";
+
+        String queryString2 = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "$x has name $n;" +
+                "$y has name $n;" +
+                "$n val 'a';" +
+                "get;";
+
+        String queryString3 = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "$x has name 'a';" +
+                "$y has name 'a';" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+
+        assertEquals(answers.size(), 3);
+        answers.forEach(ans -> {
+            assertEquals(ans.size(), 3);
+            assertEquals(ans.get("x"), ans.get("y"));
+        });
+
+        assertEquals(answers2.size(), 1);
+
+        assertEquals(answers3.size(), 1);
+        answers2.stream()
+                .map(a -> a.project(Sets.newHashSet(var("x"), var("y"))))
+                .forEach(a -> assertTrue(answers3.contains(a)));
     }
 
     @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation

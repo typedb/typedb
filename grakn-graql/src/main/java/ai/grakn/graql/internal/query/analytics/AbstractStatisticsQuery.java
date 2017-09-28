@@ -86,7 +86,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
                 .map((label) -> {
                     Type type = graph.getSchemaConcept(label);
                     if (type == null) throw GraqlQueryException.labelNotFound(label);
-                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeResourceType(type.getLabel());
+                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
                     return type;
                 })
                 .flatMap(Type::subs)
@@ -101,7 +101,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         AttributeType.DataType dataType = null;
         for (Type type : statisticsResourceTypes) {
             // check if the selected type is a resource-type
-            if (!type.isAttributeType()) throw GraqlQueryException.mustBeResourceType(type.getLabel());
+            if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.getLabel());
             AttributeType resourceType = (AttributeType) type;
             if (dataType == null) {
                 // check if the resource-type has data-type LONG or DOUBLE

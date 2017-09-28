@@ -47,18 +47,28 @@ public class IsAbstractAtom extends AtomicBase {
 
     @Override
     public int hashCode(){
-        int hashCode = equivalenceHashCode();
+        int hashCode = alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
 
     @Override
-    public boolean isEquivalent(Object obj) {
+    public boolean isAlphaEquivalent(Object obj) {
         return !(obj == null || this.getClass() != obj.getClass());
     }
 
     @Override
-    public int equivalenceHashCode() { return 1;}
+    public int alphaEquivalenceHashCode() { return 1;}
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        return isAlphaEquivalent(obj);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
+    }
 
     @Override
     public Atomic copy() { return new IsAbstractAtom(this); }

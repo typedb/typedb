@@ -52,7 +52,7 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         RelationshipImpl assertion = (RelationshipImpl) hunts.addRelationship().
                 addRolePlayer(witcher, geralt).addRolePlayer(monster, werewolf);
         assertion.reified().get().castingsRelation().forEach(rolePlayer ->
-                assertTrue(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent()));
+                assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
         hunter.plays(witcher);
 
@@ -60,17 +60,16 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         int count = 0;
 
         for (Casting casting : assertion.reified().get().castingsRelation().collect(Collectors.toSet())) {
-            flags[count] = ValidateGlobalRules.validatePlaysStructure(casting).isPresent();
+            flags[count] = !ValidateGlobalRules.validatePlaysAndRelatesStructure(casting).isEmpty();
             count++;
         }
-        assertFalse(flags[0] && flags[1]);
-        assertTrue(flags[0] || flags[1]);
+        assertTrue(flags[0] && flags[1]);
 
         wolf.sup(creature);
         creature.plays(monster);
 
         for (Casting casting : assertion.reified().get().castingsRelation().collect(Collectors.toSet())) {
-            assertFalse(ValidateGlobalRules.validatePlaysStructure(casting).isPresent());
+            assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(casting).isEmpty());
         }
     }
 
@@ -95,20 +94,20 @@ public class ValidateGlobalRulesTest extends TxTestBase {
 
         // Valid with only a single relation
         relation1.reified().get().castingsRelation().forEach(rolePlayer ->
-                assertFalse(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent()));
+                assertTrue(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
         RelationshipImpl relation2 = (RelationshipImpl) relationshipType.addRelationship()
                 .addRolePlayer(role2, other2).addRolePlayer(role1, entity);
 
         // Invalid with multiple relations
         relation1.reified().get().castingsRelation().forEach(rolePlayer -> {
-            if (rolePlayer.getRoleType().equals(role1)) {
-                assertTrue(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent());
+            if (rolePlayer.getRole().equals(role1)) {
+                assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }
         });
         relation2.reified().get().castingsRelation().forEach(rolePlayer -> {
-            if (rolePlayer.getRoleType().equals(role1)) {
-                assertTrue(ValidateGlobalRules.validatePlaysStructure(rolePlayer).isPresent());
+            if (rolePlayer.getRole().equals(role1)) {
+                assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }
         });
     }
@@ -121,33 +120,6 @@ public class ValidateGlobalRulesTest extends TxTestBase {
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.relates(hunter);
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
-    }
-
-    @Test
-    public void testValidateAssertionStructure() throws Exception {
-        EntityType fakeType = tx.putEntityType("Fake Concept");
-        Role napper = tx.putRole("napper");
-        Role hunter = tx.putRole("hunter");
-        Role monster = tx.putRole("monster");
-        Role creature = tx.putRole("creature");
-        Thing cthulhu = fakeType.addEntity();
-        Thing werewolf = fakeType.addEntity();
-        Thing cartman = fakeType.addEntity();
-        RelationshipType kills = tx.putRelationshipType("kills");
-        RelationshipType naps = tx.putRelationshipType("naps").relates(napper);
-
-        RelationshipImpl assertion = (RelationshipImpl) kills.addRelationship().
-                addRolePlayer(hunter, cartman).addRolePlayer(monster, werewolf).addRolePlayer(creature, cthulhu);
-
-        kills.relates(monster);
-        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion.reified().get()).isPresent());
-
-        kills.relates(hunter);
-        kills.relates(creature);
-        assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion.reified().get()).isPresent());
-
-        RelationshipImpl assertion2 = (RelationshipImpl) naps.addRelationship().addRolePlayer(hunter, cthulhu);
-        assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion2.reified().get()).isPresent());
     }
 
 

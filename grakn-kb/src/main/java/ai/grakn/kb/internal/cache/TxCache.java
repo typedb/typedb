@@ -30,6 +30,8 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
+import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.structure.Casting;
 
@@ -84,6 +86,11 @@ public class TxCache {
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
+
+    //New attributes are tracked so that we can merge any duplicate attributes in post.
+    // This is a map of attribute indices to concept ids
+    // The index and id are directly cached to prevent unneeded reads
+    private Map<String, ConceptId> newAttributes = new HashMap<>();
 
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
@@ -160,6 +167,12 @@ public class TxCache {
         modifiedCastings.add(casting);
     }
 
+    public void removeFromValidation(Type type){
+        if (type.isRelationshipType()) {
+            modifiedRelationshipTypes.add(type.asRelationshipType());
+        }
+    }
+
     /**
      *
      * @return All the relations which have been affected in the transaction
@@ -212,6 +225,9 @@ public class TxCache {
         modifiedRelationships.remove(concept);
         modifiedRules.remove(concept);
         modifiedAttributes.remove(concept);
+        if(concept.isAttribute()) {
+            newAttributes.remove(AttributeImpl.from(concept.asAttribute()).getIndex());
+        }
 
         conceptCache.remove(concept.getId());
         if (concept.isSchemaConcept()) {
@@ -323,6 +339,14 @@ public class TxCache {
         if(shardingCount.get(conceptId) == 0) shardingCount.remove(conceptId);
     }
 
+
+    public void addNewAttribute(String index, ConceptId conceptId){
+        newAttributes.put(index, conceptId);
+    }
+    public Map<String, ConceptId> getNewAttributes() {
+        return newAttributes;
+    }
+
     //--------------------------------------- Concepts Needed For Validation -------------------------------------------
     public Set<Entity> getModifiedEntities() {
         return modifiedEntities;
@@ -367,6 +391,7 @@ public class TxCache {
         modifiedRules.clear();
         modifiedAttributes.clear();
         modifiedCastings.clear();
+        newAttributes.clear();
         relationIndexCache.clear();
         shardingCount.clear();
         conceptCache.clear();

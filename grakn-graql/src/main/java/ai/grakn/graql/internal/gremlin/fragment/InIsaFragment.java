@@ -54,23 +54,30 @@ abstract class InIsaFragment extends Fragment {
     @Override
     public abstract Var end();
 
+    abstract boolean mayHaveEdgeInstances();
+
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
-        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.inSubs(Fragments.isVertex(traversal));
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
-        GraphTraversal<Vertex, Vertex> isImplicitRelationType =
-                __.<Vertex>hasLabel(RELATIONSHIP_TYPE.name()).has(IS_IMPLICIT.name(), true);
+        GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.isVertex(traversal);
 
-        GraphTraversal<Vertex, Element> toVertexAndEdgeInstances = Fragments.union(ImmutableSet.of(
-                toVertexInstances(__.identity()),
-                toEdgeInstances()
-        ));
+        if (mayHaveEdgeInstances()) {
+            GraphTraversal<Vertex, Vertex> isImplicitRelationType =
+                    __.<Vertex>hasLabel(RELATIONSHIP_TYPE.name()).has(IS_IMPLICIT.name(), true);
 
-        return choose(vertexTraversal, isImplicitRelationType,
-                toVertexAndEdgeInstances,
-                toVertexInstances(__.identity())
-        );
+            GraphTraversal<Vertex, Element> toVertexAndEdgeInstances = Fragments.union(ImmutableSet.of(
+                    toVertexInstances(__.identity()),
+                    toEdgeInstances()
+            ));
+
+            return choose(vertexTraversal, isImplicitRelationType,
+                    toVertexAndEdgeInstances,
+                    toVertexInstances(__.identity())
+            );
+        } else {
+            return toVertexInstances(vertexTraversal);
+        }
     }
 
     /**
@@ -100,7 +107,7 @@ abstract class InIsaFragment extends Fragment {
 
         // First retrieve the type ID
         GraphTraversal<Vertex, Vertex> traversal =
-                __.<Vertex>as(type.getValue()).values(LABEL_ID.name()).as(labelId.getValue()).select(type.getValue());
+                __.<Vertex>as(type.name()).values(LABEL_ID.name()).as(labelId.name()).select(type.name());
 
         // Next, navigate the schema to all possible types whose instances can be in this relation
         traversal = Fragments.inSubs(traversal.out(RELATES.getLabel()).in(PLAYS.getLabel()));
@@ -111,12 +118,12 @@ abstract class InIsaFragment extends Fragment {
 
         // Finally, navigate to all relation edges with the correct type attached to these instances
         return traversal.outE(ATTRIBUTE.getLabel())
-                .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
+                .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.name())));
     }
 
     @Override
     public String name() {
-        return "<-[isa]-";
+        return String.format("<-[isa:%s]-", mayHaveEdgeInstances() ? "with-edges" : "");
     }
 
     @Override
