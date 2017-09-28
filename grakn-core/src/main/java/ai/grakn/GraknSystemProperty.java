@@ -31,7 +31,8 @@ public enum GraknSystemProperty {
     CURRENT_DIRECTORY("grakn.dir"),
     CONFIGURATION_FILE("grakn.conf"),
     TEST_PROFILE("grakn.test-profile"),
-    PROJECT_RELATIVE_DIR("main.basedir");
+    PROJECT_RELATIVE_DIR("main.basedir"),
+    LOGBACK_CONFIG("logback.configurationFile");
 
     private String key;
 
