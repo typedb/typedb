@@ -70,6 +70,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import javax.annotation.Nullable;
@@ -111,6 +112,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final LockProvider lockProvider;
     private final GraknEngineStatus graknEngineStatus = new GraknEngineStatus();
     private final RedisWrapper redisWrapper;
+    private final ExecutorService taskExecutor;
 
     private GraknEngineServer(GraknEngineConfig prop, RedisWrapper redisWrapper) {
         this.prop = prop;
@@ -126,6 +128,7 @@ public class GraknEngineServer implements AutoCloseable {
         this.factory = EngineGraknTxFactory.create(prop.getProperties());
         // Task manager
         this.taskManager = makeTaskManager(inMemoryQueue, redisWrapper.getJedisPool(), lockProvider);
+        this.taskExecutor = TasksController.taskExecutor();
     }
 
     public static GraknEngineServer create(GraknEngineConfig prop) {
@@ -183,6 +186,7 @@ public class GraknEngineServer implements AutoCloseable {
             stopTaskManager();
             stopHTTP();
             redisWrapper.close();
+            taskExecutor.shutdown();
         }
     }
 
@@ -267,7 +271,7 @@ public class GraknEngineServer implements AutoCloseable {
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
         new CommitLogController(spark, postProcessingDelay, taskManager);
-        new TasksController(spark, taskManager, metricRegistry);
+        new TasksController(spark, taskManager, metricRegistry, taskExecutor);
         new EntityController(factory, spark);
         new EntityTypeController(factory, spark);
         new RelationshipController(factory, spark);
@@ -417,6 +421,10 @@ public class GraknEngineServer implements AutoCloseable {
         response.status(500);
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
+    }
+
+    public MetricRegistry getMetricRegistry() {
+        return metricRegistry;
     }
 
     private static RedisWrapper instantiateRedis(GraknEngineConfig prop) {

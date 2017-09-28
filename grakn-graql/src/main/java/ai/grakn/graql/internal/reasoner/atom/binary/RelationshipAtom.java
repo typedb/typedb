@@ -53,6 +53,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -96,7 +97,7 @@ public class RelationshipAtom extends IsaAtom {
     private Multimap<Role, SchemaConcept> roleTypeMap = null;
     private Multimap<Role, String> roleConceptIdMap = null;
     private final ImmutableList<RelationPlayer> relationPlayers;
-    private final Set<Label> roleLabels;
+    private final ImmutableSet<Label> roleLabels;
 
     public RelationshipAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicateVar, predicate, par);
@@ -105,12 +106,13 @@ public class RelationshipAtom extends IsaAtom {
                 .getProperty(RelationshipProperty.class)
                 .ifPresent(prop -> prop.relationPlayers().forEach(rps::add));
         this.relationPlayers = ImmutableList.copyOf(rps);
-        this.roleLabels = relationPlayers.stream()
+        Set<Label> roleLabels = relationPlayers.stream()
                 .map(RelationPlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
+        this.roleLabels = ImmutableSet.copyOf(roleLabels);
     }
 
     private RelationshipAtom(RelationshipAtom a) {
@@ -128,7 +130,7 @@ public class RelationshipAtom extends IsaAtom {
         return relationString + getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
     
-    private Set<Label> getRoleLabels() { return roleLabels;}
+    private ImmutableSet<Label> getRoleLabels() { return roleLabels;}
     private ImmutableList<RelationPlayer> getRelationPlayers() { return relationPlayers;}
 
     /**
@@ -172,16 +174,6 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public int hashCode() {
-        if (hashCode == 0) {
-            hashCode = 1;
-            hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
-            hashCode = hashCode * 37 + getVarNames().hashCode();
-        }
-        return hashCode;
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
@@ -192,7 +184,16 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public boolean isEquivalent(Object obj) {
+    public int hashCode() {
+        if (hashCode == 0) {
+            hashCode = 1;
+            hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
+            hashCode = hashCode * 37 + getVarNames().hashCode();
+        }
+        return hashCode;
+    }
+
+    private boolean isBaseEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationshipAtom a2 = (RelationshipAtom) obj;
@@ -202,18 +203,45 @@ public class RelationshipAtom extends IsaAtom {
                 && getRolePlayers().size() == a2.getRolePlayers().size()
                 && getRelationPlayers().size() == a2.getRelationPlayers().size()
                 && getRoleLabels().equals(a2.getRoleLabels())
-                //check bindings
-                && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
+                //check role-type bindings
                 && getRoleTypeMap().equals(a2.getRoleTypeMap());
     }
 
+    private int baseHashCode(){
+        int baseHashCode = 1;
+        baseHashCode = baseHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
+        baseHashCode = baseHashCode * 37 + this.getRoleTypeMap().hashCode();
+        baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
+        return baseHashCode;
+    }
+
     @Override
-    public int equivalenceHashCode() {
-        int equivalenceHashCode = 1;
-        equivalenceHashCode = equivalenceHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
+    public boolean isAlphaEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj)) return false;
+        RelationshipAtom a2 = (RelationshipAtom) obj;
+        //check id predicate bindings
+        return getRoleConceptIdMap().equals(a2.getRoleConceptIdMap());
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        int equivalenceHashCode = baseHashCode();
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().hashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap().hashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleLabels().hashCode();
+        return equivalenceHashCode;
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (!isBaseEquivalent(obj)) return false;
+        RelationshipAtom a2 = (RelationshipAtom) obj;
+        // check bindings
+        return getRoleConceptIdMap().keySet().equals(a2.getRoleConceptIdMap().keySet());
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        int equivalenceHashCode = baseHashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().keySet().hashCode();
         return equivalenceHashCode;
     }
 
@@ -788,7 +816,7 @@ public class RelationshipAtom extends IsaAtom {
                                         IdPredicate childId = getPredicates(IdPredicate.class)
                                                 .filter(p -> p.getVarName().equals(e.getValue().getRolePlayer().var()))
                                                 .findFirst().orElse(null);
-                                        return !(parentId != null && parentId.isEquivalent(childId));
+                                        return !(parentId != null && parentId.isAlphaEquivalent(childId));
                                     }))
                                     .findFirst().orElse(null)
                     );

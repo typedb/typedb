@@ -932,6 +932,7 @@ public class ReasoningTests {
         });
 
         assertEquals(answers2.size(), 1);
+
         assertEquals(answers3.size(), 1);
         answers2.stream()
                 .map(a -> a.project(Sets.newHashSet(var("x"), var("y"))))

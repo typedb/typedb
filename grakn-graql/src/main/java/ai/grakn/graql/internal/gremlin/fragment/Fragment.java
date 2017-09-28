@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
@@ -98,10 +99,16 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
-    /**
+    /*
      * This is the memoized result of {@link #vars()}
      */
     private @Nullable ImmutableSet<Var> vars = null;
+  
+    /**
+     * @param transform map defining id transform var -> new id
+     * @return transformed fragment with id predicates transformed according to the transform
+     */
+    public Fragment transform(Map<Var, ConceptId> transform){ return this;}
 
     /**
      * Get the corresponding property
@@ -199,6 +206,7 @@ public abstract class Fragment {
      */
     abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars);
+
 
     /**
      * The name of the fragment

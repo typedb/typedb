@@ -28,21 +28,21 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
+import static ai.grakn.util.EngineCommunicator.contactEngine;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.WebPath.System.INITIALISE;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-
-import static ai.grakn.util.EngineCommunicator.contactEngine;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.WebPath.System.INITIALISE;
 import static mjson.Json.read;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -76,7 +76,9 @@ public class GraknSessionImpl implements GraknSession {
         this.engineUri = engineUri;
         this.keyspace = keyspace;
 
-        commitLogSubmitter = Executors.newSingleThreadScheduledExecutor();
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("commit-log-subbmit-%d").build();
+        commitLogSubmitter = Executors.newSingleThreadScheduledExecutor(namedThreadFactory);
         commitLogSubmitter.scheduleAtFixedRate(() -> {
             submitLogs(tx);
             submitLogs(txBatch);

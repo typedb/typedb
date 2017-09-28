@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
@@ -36,6 +37,7 @@ import ai.grakn.test.kbs.PathKBSymmetric;
 import ai.grakn.test.kbs.TailRecursionKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
+import java.util.List;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -276,6 +278,7 @@ public class RecursiveInferenceTest {
     }
 
     //TODO remodel when repeating roles allowed
+    @Ignore
     @Test
     public void testReachabilitySymmetric(){
         QueryBuilder qb = reachabilitySymmetricContext.tx().graql().infer(false);
