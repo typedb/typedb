@@ -22,9 +22,11 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -86,6 +88,10 @@ public class GraknEngineConfig {
     private static final int MAX_NUMBER_OF_THREADS = 120;
     private final Properties prop = new Properties();
     private int numOfThreads = -1;
+
+    protected static final String GRAKN_ASCII = loadGraknAsciiFile();
+
+    private static final String GRAKN_ASCII_PATH = "/grakn/grakn-ascii.txt";
 
     public static GraknEngineConfig create() {
         setConfigFilePath();
@@ -229,10 +235,15 @@ public class GraknEngineConfig {
         return Arrays.stream(s.split(",")).map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
     }
 
-    static final String GRAKN_ASCII =
-                    "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
-                    "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    %n" +
-                    "   | (_ ||   /| - || ' < | .` | _ | - | | |     %n" +
-                    "    \\___||_|_\\|_|_||_|\\_\\|_|\\_|(_)|_|_||___|   %n%n" +
-                    " Web Dashboard available at [%s]";
+    private static String loadGraknAsciiFile() {
+        String asciiPath = getProjectPath() + GRAKN_ASCII_PATH;
+        try {
+            File asciiFile = Paths.get(asciiPath).toFile();
+            return FileUtils.readFileToString(asciiFile);
+        } catch (IOException e) {
+            // couldn't find Grakn ASCII art. Let's just fail gracefully
+            LOG.warn("Oops, unable to find Grakn ASCII art. Will just display nothing then.");
+            return "";
+        }
+    }
 }
