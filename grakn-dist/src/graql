@@ -70,9 +70,6 @@ help     Print this message"
 
 update_classpath
 
-echo "Grakn: Database For AI"
-echo ""
-
 case "$1" in
   console)
     echo "Starting Graql console..."
