@@ -87,15 +87,13 @@ def ssh(String command) {
 def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
-
-//Only run validation master/stable
-if (env.BRANCH_NAME in ['master', 'stable']) {
-    properties([
+    //Only run validation master/stable
+    // TODO: don't merge this changeif (env.BRANCH_NAME in ['master', 'stable']|| true) {properties([
 	buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
     ])
     node {
-	String workspace = pwd()
-	checkout scm
+        String workspace = pwd()
+        checkout scm
 
 	slackGithub "Build started"
 
