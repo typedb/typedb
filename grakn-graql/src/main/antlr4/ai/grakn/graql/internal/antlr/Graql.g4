@@ -68,7 +68,7 @@ property       : 'isa' variable                     # isa
                | 'val' predicate                    # propValue
                | 'when' '{' patterns '}'            # propWhen
                | 'then' '{' varPatterns '}'         # propThen
-               | 'has' label (resource=VARIABLE | predicate) ('as' relation=VARIABLE)?# propHas
+               | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)?# propHas
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey
                | '(' casting (',' casting)* ')'     # propRel

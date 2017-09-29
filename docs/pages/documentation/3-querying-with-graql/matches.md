@@ -85,8 +85,6 @@ qb.match(var("x").val(contains("Bar"))).get();
 
 ### has
 
-<!-- TODO: Describe new reified syntax -->
-
 Match things that have the attribute specified. If a [predicate](#predicates) is provided, the attribute must also match that predicate.
 
 <ul id="profileTabs" class="nav nav-tabs">
@@ -120,7 +118,7 @@ You can also specify a variable to represent the relationship connecting the thi
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell5">
 <pre>
-match $x has identifier "Bar" as $r; get;
+match $x has identifier "Bar" via $r; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java5">

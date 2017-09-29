@@ -850,7 +850,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAQueryWithReifiedAttributeRelationshipSyntax_ItIsEquivalentToJavaGraql() {
-        assertParseEquivalence("match $x has name $z as $x; get $x;");
+        assertParseEquivalence("match $x has name $z via $x; get $x;");
     }
 
     @Test(expected = GraqlSyntaxException.class)

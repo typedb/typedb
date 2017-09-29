@@ -153,7 +153,7 @@ You can also specify a variable to represent the relationship connecting the thi
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell6">
 <pre>
-insert isa person has identifier "Fuchsia Groan" as $r;
+insert isa person has identifier "Fuchsia Groan" via $r;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java6">
