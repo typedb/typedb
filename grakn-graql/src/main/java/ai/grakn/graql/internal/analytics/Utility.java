@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -120,7 +119,7 @@ public class Utility {
     /**
      * Check whether it is possible that there is a resource edge between the two given concepts.
      */
-    public static boolean mayHaveResourceEdge(GraknTx graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
+    static boolean mayHaveResourceEdge(GraknTx graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
         Concept concept1 = graknGraph.getConcept(conceptId1);
         Concept concept2 = graknGraph.getConcept(conceptId2);
         return concept1 != null && concept2 != null && (concept1.isAttribute() || concept2.isAttribute());
@@ -136,10 +135,6 @@ public class Utility {
                     var("y").id(conceptId2),
                     var("z").rel(var("x")).rel(var("y")))
                     .get("z")
-                    .filter(concept -> {
-                        Relationship relationship = (Relationship) concept;
-                        return relationship.type().isImplicit();
-                    })
                     .findFirst();
             if (firstConcept.isPresent()) {
                 return firstConcept.get().getId();
