@@ -144,7 +144,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             } else {
                 graknTx.admin().getMetaEntityType().subs().forEach(subTypes::add);
                 graknTx.admin().getMetaRelationType().subs()
-                        .filter(entityType -> !entityType.isImplicit()).forEach(subTypes::add);
+                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypes::add);
             }
         } else {
             subTypes = subLabels.stream().map(label -> {
@@ -163,7 +163,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
             } else {
                 subTypes = subTypes.stream().flatMap(Type::subs)
-                        .filter(entityType -> !entityType.isImplicit()).collect(Collectors.toSet());
+                        .filter(relationshipType -> !relationshipType.isImplicit()).collect(Collectors.toSet());
             }
         }
         subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
