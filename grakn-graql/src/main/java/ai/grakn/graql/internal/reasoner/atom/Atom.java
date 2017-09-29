@@ -293,7 +293,8 @@ public abstract class Atom extends AtomicBase {
     /**
      * find the (multi) unifier with parent atom
      * @param parentAtom atom to be unified with
+     * @param exact flag indicating whether unification should be exact
      * @return multiunifier
      */
-    public MultiUnifier getMultiUnifier(Atom parentAtom){ return new MultiUnifierImpl(getUnifier(parentAtom));}
+    public MultiUnifier getMultiUnifier(Atom parentAtom, boolean exact){ return new MultiUnifierImpl(getUnifier(parentAtom));}
 }

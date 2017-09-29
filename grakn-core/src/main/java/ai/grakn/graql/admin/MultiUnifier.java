@@ -19,6 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Streamable;
+import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;
 
 /**
@@ -39,7 +40,17 @@ public interface MultiUnifier extends Iterable<Unifier>, Streamable<Unifier> {
     boolean isEmpty();
 
 
+    /**
+     *
+     * @return
+     */
     Unifier getUnifier();
+
+    /**
+     *
+     * @return
+     */
+    ImmutableSet<Unifier> unifiers();
 
     /**
      * unifier merging by simple mapping addition (no variable clashes assumed)
@@ -55,6 +66,22 @@ public interface MultiUnifier extends Iterable<Unifier>, Streamable<Unifier> {
      */
     @CheckReturnValue
     MultiUnifier inverse();
+
+    /**
+     *
+     * @param u
+     * @return
+     */
+    @CheckReturnValue
+    boolean contains(Unifier u);
+
+    /**
+     *
+     * @param u
+     * @return
+     */
+    @CheckReturnValue
+    boolean containsAll(MultiUnifier u);
 
     /**
      * @return number of mappings that constitute this unifier

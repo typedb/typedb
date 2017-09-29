@@ -107,7 +107,6 @@ public interface Unifier{
      * @param u unifier to be merged with this unifier
      * @return merged unifier
      */
-    @CheckReturnValue
     Unifier merge(Unifier u);
 
     /**

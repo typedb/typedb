@@ -18,11 +18,13 @@
 
 package ai.grakn.graql.internal.reasoner;
 
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,6 +56,11 @@ public class MultiUnifierImpl implements MultiUnifier{
     public MultiUnifierImpl(){
         this.multiUnifier = ImmutableSet.of(new UnifierImpl());
     }
+    public MultiUnifierImpl(Map<Var, Var>... maps){
+        this.multiUnifier = ImmutableSet.<Unifier>builder()
+                .addAll(Stream.of(maps).map(UnifierImpl::new).iterator())
+                .build();
+    }
 
     @Override
     public Stream<Unifier> stream() {
@@ -71,8 +78,23 @@ public class MultiUnifierImpl implements MultiUnifier{
     }
 
     @Override
+    public ImmutableSet<Unifier> unifiers() { return multiUnifier;}
+
+    @Override
     public boolean isEmpty() {
         return multiUnifier.isEmpty();
+    }
+
+    @Override
+    public boolean contains(Unifier u2) {
+        return unifiers().stream().filter(u -> u.containsAll(u2)).findFirst().isPresent();
+    }
+
+    @Override
+    public boolean containsAll(MultiUnifier mu) {
+        return mu.unifiers().stream()
+                .filter(u -> !unifiers().stream().filter(u::containsAll).findFirst().isPresent())
+                .findFirst().isPresent();
     }
 
     @Override

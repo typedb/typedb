@@ -169,7 +169,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                         unified.add(equiv);
                     }
                 });
-        return getAtom().getMultiUnifier(parent.getAtom()).merge(typeUnifier);
+        return getAtom().getMultiUnifier(parent.getAtom(), true).merge(typeUnifier);
     }
 
     /**

@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -113,8 +112,8 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public Unifier merge(Unifier d) {
-        if (d.isEmpty()) return this;
-        return new UnifierImpl(Sets.union(this.mappings(), d.mappings()));
+        d.mappings().forEach(m -> unifier.put(m.getKey(), m.getValue()));
+        return this;
     }
 
     @Override

@@ -299,14 +299,14 @@ public class InferenceRule {
     public MultiUnifier getMultiUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         if (parentAtom.getSchemaConcept() != null){
-            return childAtom.getMultiUnifier(parentAtom);
+            return childAtom.getMultiUnifier(parentAtom, false);
         }
         //case of match all atom (atom without type)
         else{
             Atom extendedParent = parentAtom
                     .addType(childAtom.getSchemaConcept())
                     .inferTypes();
-            return childAtom.getMultiUnifier(extendedParent);
+            return childAtom.getMultiUnifier(extendedParent, false);
         }
     }
 }

@@ -767,20 +767,11 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public Unifier getUnifier(Atom pAtom){
-        //TODO fix that
-        MultiUnifier multiUnifier = getMultiUnifier(pAtom, true);
-        if (multiUnifier.isEmpty()){
-            System.out.println();
-        }
-        return multiUnifier.getUnifier();
+        return getMultiUnifier(pAtom, true).getUnifier();
     }
 
     @Override
-    public MultiUnifier getMultiUnifier(Atom pAtom) {
-        return getMultiUnifier(pAtom, false);
-    }
-
-    private MultiUnifier getMultiUnifier(Atom pAtom, boolean exact) {
+    public MultiUnifier getMultiUnifier(Atom pAtom, boolean exact) {
         if (this.equals(pAtom))  return new MultiUnifierImpl();
 
         Unifier baseUnifier = super.getUnifier(pAtom);
