@@ -76,13 +76,13 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
 
-        Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
         Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(ofLabelIds),
                 new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
-                withResourceRelationLabelIds);
+                subLabelIds);
 
         LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());

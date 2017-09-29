@@ -20,13 +20,11 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.util.Schema;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -51,25 +49,11 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS =
             Collections.singleton(MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true));
 
-//    private String clusterLabel;
-
     public ConnectedComponentVertexProgram() {
     }
 
-//    public ConnectedComponentVertexProgram(String randomId) {
-//        clusterLabel = CLUSTER_LABEL + randomId;
-//        this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
-//    }
-
-//    @Override
-//    public void loadState(final Graph graph, final Configuration configuration) {
-//        super.loadState(graph, configuration);
-//        this.clusterLabel = (String) this.persistentProperties.get(CLUSTER_LABEL);
-//    }
-
     @Override
     public Set<VertexComputeKey> getVertexComputeKeys() {
-//        return Collections.singleton(VertexComputeKey.of(clusterLabel, false));
         return Collections.singleton(VertexComputeKey.of(CLUSTER_LABEL, false));
     }
 
