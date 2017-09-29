@@ -579,7 +579,7 @@ public class MatchTest {
 
     @Test
     public void testMatchRuleRightHandSide() {
-        Match query = qb.match(x.when(qb.parsePattern("$x id 'expect-when'")).then(qb.parsePattern("$x id 'expect-then'")));
+        Match query = qb.match(x.when(qb.parser().parsePattern("$x id 'expect-when'")).then(qb.parser().parsePattern("$x id 'expect-then'")));
 
         expectedException.expect(UnsupportedOperationException.class);
         expectedException.expectMessage(MATCH_INVALID.getMessage("when"));

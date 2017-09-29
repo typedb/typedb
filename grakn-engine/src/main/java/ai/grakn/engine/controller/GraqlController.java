@@ -31,6 +31,7 @@ import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
@@ -53,6 +54,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.ArrayList;
+import java.util.Optional;
 
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
@@ -60,6 +62,7 @@ import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
+import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -117,8 +120,12 @@ public class GraqlController {
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
 
+        Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
+
         try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
-            Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
+            QueryParser parser = graph.graql().materialise(materialise).infer(infer).parser();
+            defineAllVars.ifPresent(parser::defineAllVars);
+            Query<?> query = parser.parseQuery(queryString);
             Object resp = respond(response, acceptType, executeQuery(graph.getKeyspace(), limitEmbedded, query, acceptType));
             graph.commit();
             return resp;

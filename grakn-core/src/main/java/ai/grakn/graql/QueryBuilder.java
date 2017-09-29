@@ -19,14 +19,9 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.macro.Macro;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Starting point for creating queries
@@ -98,18 +93,9 @@ public interface QueryBuilder {
     ComputeQueryBuilder compute();
 
     /**
-     * @param patternsString a string representing a list of patterns
-     * @return a list of patterns
+     * Get a {@link QueryParser} for parsing queries from strings
      */
-    @CheckReturnValue
-    List<Pattern> parsePatterns(String patternsString);
-
-    /**
-     * @param patternString a string representing a pattern
-     * @return a pattern
-     */
-    @CheckReturnValue
-    Pattern parsePattern(String patternString);
+    QueryParser parser();
 
     /**
      * @param queryString a string representing a query
@@ -117,34 +103,6 @@ public interface QueryBuilder {
      */
     @CheckReturnValue
     <T extends Query<?>> T parse(String queryString);
-
-    /**
-     * @param queryString a string representing several queries
-     * @return a list of queries
-     */
-    @CheckReturnValue
-    <T extends Query<?>> Stream<T> parseList(String queryString);
-
-    /**
-     * @param template a string representing a templated graql query
-     * @param data data to use in template
-     * @return a query, the type will depend on the type of template.
-     */
-    @CheckReturnValue
-    <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data);
-
-    /**
-     * Register an aggregate that can be used when parsing a Graql query
-     * @param name the name of the aggregate
-     * @param aggregateMethod a function that will produce an aggregate when passed a list of arguments
-     */
-    void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod);
-
-    /**
-     * Register a macro that can be used when parsing a Graql template
-     * @param macro the macro to register
-     */
-    void registerMacro(Macro macro);
 
     /**
      * Enable or disable inference

@@ -70,7 +70,7 @@ public class PhilosophersExampleIT {
 
     private static void runQueries(String path) throws IOException {
         String query = Files.readAllLines(Paths.get(path)).stream().collect(joining("\n"));
-        qb.parseList(query).forEach(Query::execute);
+        qb.parser().parseList(query).forEach(Query::execute);
     }
 
 }

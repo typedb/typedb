@@ -26,6 +26,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
@@ -105,7 +106,11 @@ public class GraqlControllerReadOnlyTest {
 
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
-        when(mockQueryBuilder.parse(any()))
+
+        QueryParser mockParser = mock(QueryParser.class);
+
+        when(mockQueryBuilder.parser()).thenReturn(mockParser);
+        when(mockParser.parseQuery(any()))
                 .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
@@ -125,8 +130,8 @@ public class GraqlControllerReadOnlyTest {
         String query = "match $x isa movie;";
         sendRequest(query, APPLICATION_TEXT);
 
-        verify(mockTx.graql().materialise(anyBoolean()).infer(anyBoolean()))
-                .parse(argThat(argument -> argument.equals(query)));
+        verify(mockTx.graql().materialise(anyBoolean()).infer(anyBoolean()).parser())
+                .parseQuery(argThat(argument -> argument.equals(query)));
     }
 
     @Test

@@ -940,8 +940,8 @@ public class AtomicTest {
         String childPatternString = "(superRole1: $x, superRole2: $y) isa relation1";
         InferenceRule testRule = new InferenceRule(
                 graph.putRule("Checking Rewrite & Unification",
-                        graph.graql().parsePattern(childPatternString),
-                        graph.graql().parsePattern(childPatternString)),
+                        graph.graql().parser().parsePattern(childPatternString),
+                        graph.graql().parser().parsePattern(childPatternString)),
                 graph)
                 .rewriteToUserDefined(parentAtom);
 
@@ -969,8 +969,8 @@ public class AtomicTest {
         String parentString = "{$r($a, $x);}";
         RelationshipAtom parent = (RelationshipAtom) ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
 
-        PatternAdmin body = graph.graql().parsePattern("(role1: $z, role2: $b) isa relation1").admin();
-        PatternAdmin head = graph.graql().parsePattern("(role1: $z, role2: $b) isa relation1").admin();
+        PatternAdmin body = graph.graql().parser().parsePattern("(role1: $z, role2: $b) isa relation1").admin();
+        PatternAdmin head = graph.graql().parser().parsePattern("(role1: $z, role2: $b) isa relation1").admin();
         InferenceRule rule = new InferenceRule(graph.putRule("Rule: Checking Unification", body, head), graph);
 
         Unifier unifier = rule.getUnifier(parent);
@@ -1051,7 +1051,7 @@ public class AtomicTest {
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
-        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
+        Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

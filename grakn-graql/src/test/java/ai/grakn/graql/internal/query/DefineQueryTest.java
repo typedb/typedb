@@ -294,8 +294,8 @@ public class DefineQueryTest {
 
     @Test
     public void whenDefiningARule_TheRuleIsInTheKB() {
-        Pattern when = qb.parsePattern("$x isa entity");
-        Pattern then = qb.parsePattern("$x isa entity");
+        Pattern when = qb.parser().parsePattern("$x isa entity");
+        Pattern then = qb.parser().parsePattern("$x isa entity");
         VarPattern vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
         qb.define(vars).execute();
 

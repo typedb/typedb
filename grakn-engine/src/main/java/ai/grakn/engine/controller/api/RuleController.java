@@ -99,8 +99,8 @@ public class RuleController {
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Rule rule = tx.putRule(
                 ruleLabel,
-                tx.graql().parsePattern(when),
-                tx.graql().parsePattern(then)
+                    tx.graql().parser().parsePattern(when),
+                    tx.graql().parser().parsePattern(then)
             );
             tx.commit();
 
