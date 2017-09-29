@@ -1,8 +1,8 @@
 ---
-title: Logic inference - From Data to Knowledge
+title: Logic inference - The power of knowledge
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn how to load schema and data GRAQL files into your GRAKN distribution.
+summary: In this lesson you will be introduced to logic inference and the uses of GRAKN reasoning engine.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/reasoner-intro.html

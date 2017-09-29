@@ -9,33 +9,20 @@ folder: academy
 toc: false
 ---
 
-Another module of the Academy has gone, so it is time to review what you have learned about loading data into GRAKN. Notice that the following assumes that you have followed the lessons of this module and done all the exercises.
+What you have learned in this module is not a lot in terms of notions but has great importance. Together with the type system and data model, Reasoner is one of the most defining characteristic of GRAKN that makes it different from other databases, so what you have learned in this module really brings your GRAKN game to a different level.
 
-### Loading files
-Load the file `articles.gql` to your knowledge dataset and check that the two articles about the Italian Referendum have been loaded.
+### Exercise 1: Logic inference
+Make an example for which a logic inference engine improves the query results of your database.
 
-Batch load the file `country-region.gql`. Have a look at the file and try to understand what it does.
 
-Do you remember what is the difference between loading a file and using the batch loader? When should you use the normal loader?
+### Exercise 2: A new rule
+Add a rule to make the located-in relationship transitive in your knowledge base. This means, make sure that if A is located in B and B is located in C, you also have that A is located in C.
 
-### Loading CSV files
-There is no reason not to use multiple templates against the same data file to migrate different aspects of your knowledge base. Write a template file to be run against the oil platform csv file relationships linking platforms to their owner and relationships linking them to the countries they are located in.
+Load the rule in the knowledge base and verify that everything has worked by querying for oil platforms located in North America.
 
-Hint: you can use a single (match) insert query to migrate both relationships for each platform.
+After that use the explanation facility on one of the results on the dashboard.
 
-When you are done, compare it to the template you can find into the VM (`academy/short-training/templates`) and migrate it into your knowledge base.
-
-Check that the migration has executed successfully using the graph visualiser.
-
-### Loading XML
-Migrate the file `bonds.xml` using the schema `bonds.xsd` and the template file `bond-template.gql` into the knowledge base.
-
-Verify that bonds have been migrated into the knowledge base using the GRAQL shell.
-
-## Test your knowledge base!
-Congratulations! You should have built your first GRAKN knowledge base at this point!
-
-Retrieve the big GRAQL query from [module 2](/academy/graql-intro.html) and test it on your knowledge base. Did you get the same answer as you did within the "Academy" keypsace? Celebrate!
+  ![Located-in explanation](/images/academy/5-reasoner/location-explanation.png)
 
 ## What next?
-Now that you have data into your knowledge base, we have barely started the engine. It’s time to push the gas pedal a bit. It is time to look at [inference rules](/academy/reasoner-intro.html).
+You have reached an important milestone in your GRAKN training. You could stop at this point and you would already be able to take advantage of the GRAKN software stack. But there is more to GRAKN than "just" the database. Now that you are equipped to fully understand them, feel free to examine the numerous examples in the [documentation](/index.html) and [blog](https://blog.grakn.ai) to get more ideas on how to use GRAKN.

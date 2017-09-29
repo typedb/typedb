@@ -83,10 +83,10 @@ entries:
       - title: 5.1 Loading files
         output: web
         url: /academy/reasoner-intro.html
-      - title: 5.2 Data migration - CSV
+      - title: 5.2 Inference rules
         output: web
         url: /academy/inference-rules.html
-      - title: 5.3 Data migration - XML and JSON
+      - title: 5.3 Advanced reasoning
         output: web
         url: /academy/advanced-rules.html
       - title: Module Review

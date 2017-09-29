@@ -2,7 +2,7 @@
 title: Advanced inference rules
 keywords: setup, getting started
 last_updated: September 2017
-summary: TODO.
+summary: In this lesson you will learn more advanced uses of reasoning and how to chain inference rules.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/advanced-rules.html
@@ -10,91 +10,145 @@ folder: academy
 toc: false
 ---
 
-Data stored into CSV files is particularly easy to migrate, because it has a nice and clean tabular format. In this lesson, we will have a quick glance at how it is possible to migrate into GRAKN more structured data files, like XML and JSON files.
-
-We will cover here only some basic constructs that can be used to migrate XML files (they work as is for JSON files as well) to avoid this course becoming a full course on XML, which is a very rich topic on its own, but if you are interested in studying more, [the internet is your friend](https://www.w3schools.com/xml/xml_whatis.asp).
-
-## XML data
-Data in an XML file is organised in what is called a tree-like structure, like the structure of the folders in your file system: every element can contain several other elements and they can contain other elements as well. In XML, to denote the beginning of an element, we use an XML tag (that looks like `<ELEMENT>`), while to denote the end of the same element we use a closing tag (that looks like `</ELEMENT>`); in JSON, an element is contained within curly braces. An XML file, thus, can look more or less like the following:
-
-```
-<ROOT>
-<LEVEL1>
-    <LEVEL2>
-Content
-    </LEVEL2>
-</LEVEL1>
-<LEVEL1>
-    <LEVEL2>
-    Other Content
-    </LEVEL2>
-    <NESTED>
-        <LEVEL3>
-        Something
-        </LEVEL3>
-    </NESTED>
-    <NESTED>
-        <LEVEL3>
-        Something Else
-        </LEVEL3>
-    </NESTED>
-</LEVEL1>
-</ROOT>
-```
-
-To navigate the tree structure in GRAQL, we use the standard dot notation. This means that, for example if we want to refer to the content of one of the elements "Level 2" in the file above, we would use `<LEVEL1.LEVEL2>` in our template file (exactly like we used the column names in the CSV templates.
-
-## Loops
-You probably have noticed from the example above that an XML element can contain several elements of the same type. What can we do if we want to access the content of all of them?
-
-We need a "for" loop.
-
-The syntax of a "for" loop is very similar to that of an "if" statement:
-
-```
-...
-for (<NESTED> do {
-  $x has <LEVEL3>
-}
-...
-```
-
-The template bit above (WARNING: that is not a complete and valid template) will loop each element `<NESTED>`, then fetch the content of the tag `<LEVEL3>` within and put it into the GRAQL statement within curly braces.
-
-It might sound complicated, but it honestly just requires a bit of practice and familiarity with the XML format.
-
-## Loading XML files
-Loading a GRAQL template against an XML file is a very similar process to the one you learned in the last lesson, but it requires a couple of extra arguments:
-
-While dealing with XML files you often find that the actually interesting stuff only starts after two or three levels of nesting. In the fake example above, for instance, we are only interested in the content of "LEVEL1" elements. We will then call our migration command with the option `-e` that tells GRAKN what to consider the base element of the file. In a way, you can think of it like splitting the XML file into many separate files, each containing one single "LEVEL1" element.
-XML files, and sometimes JSON files, usually come with a schema stored in a XSD file. The schema describes formally the structure of the XML file and it is used by GRAKN to migrate the XML file (for example in a schema for the XML mock above you would find the information that each "LEVEL1" element can contain more that one "NESTED" element. To refer to the schema while calling the migration command, use the `-s` option.
-
-The command to migrate a template against an XML file, thus, looks like this:
-
-```
-graql migrate xml -i INPUT_FILE.xml -s SCHEMA_FILE.xsd -e BASE_ELEMENT -t TEMPLATE.gql -k KEYSPACE
-```
-
-## Putting it all together
-In your VM, you will find an xml file called `bonds.xml` with its schema called `bonds.xsd`. Examine it carefully and then have a look at the following template (that is stored as the `bonds-template.gql` file).
+In the last session you have built a Reasoner rule to connect the articles in your knowledge base to the relevant bonds according to the query you have been examining since the start of module 2. If everything went right, you should then have a file called `rules.gql` that looks like this:
 
 ```graql
-match $issuer isa company has name <issuerName>;
-insert
-for (<bonds.bond>) do {
-  $bond isa bond has name <bondName>
-  has risk @double(<bondRisk>);
-  (issuer: $issuer, issued: $bond) isa issues;
+define
+referendum-bond isa rule
+when {
+$article isa article has subject "Italian Referendum";
+$platform isa oil-platform has distance-from-coast <= 18;
+$italy isa country has name "Italy";
+(located: $platform, location: $country) isa located-in;
+(owned: $platform, owner: $company) isa owns;
+(issued: $bond, issuer: $company) isa issues;
 }
+then {
+(information: $article, affected: $bond) isa affects;
+};
 ```
 
-What do you think the template will do?
+This rule alone would work, but it is very specific. Besides, it would not link, for example, the articles to the oil platform, but only to the bonds. And the latter connection is definitely an indirect one.
 
-How would you migrate the xml file using "bondIssuer" as the base element?
+Let’s fix this.
+
+
+## Breaking the rule
+If you think about it, there are two levels into answering the question "what are the bonds affected by the Italian referendum?". As I said above, that connection is indirect, but what we are really asking is: "What are the oil platforms affected by the Italian referendum?" and then "What are the bonds issued by companies owning those platforms?".
+
+Let’s do it step by step. The first stage is to rewrite the rule above so that it links the articles to the oil platforms instead of the bonds. This should be pretty easy.
+
+```graql
+define
+article-platform  isa rule
+when {
+$article isa article has subject "Italian Referendum";
+$platform isa oil-platform has distance-from-coast <= 18;
+$italy isa country has name "Italy";
+(located: $platform, location: $country) isa located-in;
+}
+then {
+(information: $article, affected: $platform) isa affects;
+};
+```
+
+The rule above will link the articles about the Italian referendum to the relevant oil platform instead of the bond. What should be done next? How we translate the question "What are the bonds issued by companies owning those platforms?" into a rule?
+
+Once again it is very easy:
+
+```
+article-bond  isa rule
+when {
+$article isa article has subject "Italian Referendum";
+$platform isa oil-platform;
+(information: $article, affected: $platform) isa affects;
+(owned: $platform, owner: $company) isa owns;
+(issued: $bond, issuer: $company) isa issues;
+
+}
+then {
+(information: $article, affected: $bond) isa affects;
+};
+```
+
+This new rule checks for the articles about the Italian referendum linked to a platform and then links the same articles to bonds issued by companies owning those platforms.
+
+But we already know that in our data there are no links between articles and anything else, let alone oil platforms, so how can this rule work? The answer is that Reasoner knows that the first rule can link the articles to the oil platform and so that the results of the first rule can in fact change the results of the second one. It takes care of considering the rule in the correct order no matter how many you write and chain them for you. It’s just a bit more of GRAKN magic…
+
+
+## But… why?
+Ok, we have created two rules to link the articles on the Italian referendum to the relevant bonds… which is something that we had achieved with only one rule so why would you want to do that?
+There are multiple reasons, in fact. The first one is that this way you will have linked also the articles to the appropriate oil platform, which makes a lot of sense since that is more precisely what is affected by the Italian referendum.
+The second reason can become evident if you modify the second rule like so:
+
+```graql
+article-bond  isa rule
+when {
+(information: $article, affected: $platform) isa affects;
+(owned: $platform, owner: $company) isa owns;
+(issued: $bond, issuer: $company) isa issues;
+}
+then {
+(information: $article, affected: $bond) isa affects;
+};
+```
+
+This new rule is much more generic: it brings whatever is affects whatever is linked to an oil platform and connect it to the bonds issued by companies owning that platform. So it still work in our case, but it is more powerful. If we find, for example articles about an oil spills in a specific platform and we add the link to the platform in our knowledge base, the article will also show up with the relevant bonds.
+
+So this new rule is much more useful: it is telling us that everything that affects an oil platform might potentially affect the bond issued by their owner.
+
+
+## Can you explain that?
+Save the two rules in their latest version in your `rules.gql` file and load them into your knowledge base as you have learned in the [last module](/academy/loading-files.html.
+
+Making sure that the GRAKN distribution in the VM is running, open the dashboard and make sure that the inference is turned on as shown below
+
+  ![Inference settings](/images/academy/5-reasoner/inference-settings.png)
+
+Then run this query and see what happens:
+
+```graql
+match $x isa article;
+$y isa bond; ($x, $y);
+get;
+```
+
+Now compare the query above with its extended version:
+
+```graql
+match
+$article isa article has subject "Italian Referendum";
+$platform isa oil-platform has distance-from-coast <= 18;
+(location: $country, located: $platform) isa located-in;
+$country isa country has name "Italy";
+(owner: $company, owned: $platform) isa owns;
+(issuer: $company, issued: $bond) isa issues;
+limit 3; get $bond, $article;
+```
+
+Not bad eh?
+
+This is one good example that shows both how Reasoner can be used for shortening queries and to infer new information (remember: the link between the articles and the bonds is not in the data!).
+
+There is one more trick up Reasoner’s sleeve to be learned before we proceed to the next topic.
+
+Run the query to find the articles and the linked bonds again and click on the small circles connecting the bonds and the articles.
+
+  ![Inferred relationships](/images/academy/5-reasoner/inferred-relationships.png)
+
+If you look at the panel that shows up, you will see that that circles is representing an "inferred relationship", i.e. a relationship that is not in your data, but has been added by Reasoner.
+So we know that those bonds and those platforms are connected, but why it is so? Double click the small circle and check what happens:
+
+  ![Explanation example 1](/images/academy/5-reasoner/bond-explanation.png)
+
+What you have just witnessed is the action of the explanation facility. What this means is that when you double click on an inferred relationship, Reasoner will tell you exactly why that relationship has been inferred and then you will be see the explanation with the graph visualiser.
+
+If you check carefully the explanation that has been added to your visualiser, you will see that there is another inferred relationship. This is result of the first inference rule.
+
 
 ### What have you learned?
-Whew! That was a lot to take in! You should by know have learned the basic of data migration into GRAKN. Be sure to have understood well how to issue the migration commands for XML files, because you will need them in the module review.
+In this lesson you have learned how rules chaining works in reasoner (not much to do on your side: it just works) and how to use the explanation facility. There are still many things to discover, but you are ready to build powerful knowledge bases with GRAKN and to take full advantage of its capabilities! Well done!
 
 ## What next
-You are almost there! After the module [review](/academy/migration-review.html) you will have put all the data into your knowledge base and you will be able to proceed to one of the most exciting topics of the academy: logic inference.
-If you want to go deeper into the topic of data migration head to the [docs](/index.html).
+One last thing to do before we proceed to the next module: it is time to [review your knowledge](/academy/reasoner-review.html) about logic reasoning.
+

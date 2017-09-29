@@ -1,8 +1,8 @@
 ---
-title: Migrating CSV files - GRAQL templates
+title: Inference rules
 keywords: setup, getting started
 last_updated: September 2017
-summary: TODO.
+summary: In this lesson you will learn how to build inference rules to turn your data into knowledge
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/inference-rules.html
@@ -10,111 +10,75 @@ folder: academy
 toc: false
 ---
 
-In the last lesson, you should have learned how to load a file containing a (potentially very long) list of GRAQL statements into GRAKN.
+As anticipated in the [last lesson](/academy/reasoner-intro.html), in this module you are going to learn how to use GRAKN Reasoner to make your data more intelligent.
 
-Unfortunately, GRAQL is not a widely accepted file standard (yet) so we need a way to a way to load into our knowledge base some more common file formats like CSV.
+Among others, the two most common uses for Reasoner are:
+Knowledge discovery: as in the deserted island example you have read about in the last lesson, we can use logic inference to extract more knowledge out of our data without modifying it.
+Query shortening: sometimes you use the same long query over and over again. It is convenient in those cases to use reasoner to simply create new "virtual" relationship that will make running those same queries in a more succint way.
+In this and the following lesson, we will build an example that will demonstrate both these points.
 
-To do this, we some more power added to GRAQL. Meet the GRAQL templating language.
+## Structure of inference rules
+A rule in GRAKN is, roughly speaking, an insert query that does not actually insert data, but will modify the results of the get queries.
 
-## Templates
-A template file is just a file written in GRAQL (with some added features) that acts as a filter: you "pour" your file through it and out comes GRAKN digestible data.
+Since rules add to the knowledge model of your knowledge base, they are actually part of the schema, and, as such, are added using the keyword `define`, like all the schema components.
 
-Let’s write a template to migrate oil platforms into our knowledge base. First of all have a look at how the `platfrom.csv` file looks like (TODO: ADD LINK). At its core, a CSV file is nothing more than a table: the first line contains the header, with the column names (in this case ID, DistCoast, Country and BelongsTo). The lines after the first contain the data separated by commas (or sometimes some other characters).
+From a syntax point of view, to define a new rule, you will need something like this added to your schema:
 
-A GRAQL template file looks as simple as this:
+```
+define
+RULE_LABEL sub rule,
+when {
+PRECONDITIONS
+}
+then {
+CONSEQUENCES
+}
+```
+
+The rule label is just a unique shorthand that you use to refer to the specific concept in the schema, like the names of the types and roles that you have used during [module 3](/academy/schema-elements.html).
+
+The first block of the rule, the when part, is just a list of patterns that works exactly like the `match` part of a normal query; the then part, on the other hand is a bit more restrictive: you can only use variables that have been defined in the when part and you can only have at most one single isa pattern and one single has pattern. This is what is called an atomic pattern.
+
+There are quite deep theoretical reasons for these limitations but they are out of the scope of the academy, we will briefly come back on the topic in the next lesson.
+
+If you define a rule, GRAKN checks that when you access part of the Knowledge base that are described by the when block of the rule, then it responds as the then block is satisfied as well.
+
+As I said before: the when and then blocks are roughly of analogous to the match and insert parts of an insert query, except for the fact that no new data is stored into your knowledge base.
+
+
+###ASIDE: Common terminology.
+
+There are several ways to call the when and then blocks of an inference rule. If you are coming from a programming background, for example, you might think of a rule as an If … Then statement. If you are familiar with logic and Horn clauses, you might want to call the blocks body and head respectively or left-hand-side and right-hand-side if you are more into mathematics. It doesn’t really matter how you call them as long as you know what you are referring to. During the course of the lessons, I will keep referring to them as when and then blocks for coherence, but feel free to translate it into your head with whatever suits you best.
+
+
+## Your first rule
+Enough talking, it is time to write some rule. Our objective is to build a rule that links the articles about the Italian Referendum to the bonds issued by companies that own affected oil platforms (review the topic if you need TODO: ADD LINK).
+
+We already know that we can query the knowledge base with the following:
 
 ```graql
-insert $x isa oil-platform has platform-id <ID>
-has distance-from-coast <DistCoast>;
+match
+$article isa article has subject "Italian Referendum";
+$platform isa oil-platform has distance-from-coast <= 18;
+(location: $country, located: $platform) isa located-in;
+$country isa country has name "Italy";
+(owner: $company, owned: $platform) isa owns;
+(issuer: $company, issued: $bond) isa issues;
+limit 3; get $bond, $article;
 ```
 
+But the resulting articles and bonds are disconnected.
 
-This is nothing more than a simple GRAQL statement with the added variables in angular brackets, that contain some of the column names of the CSV file.
+If you look carefully at the schema of the knowledge base (little reminder, it can be found here: TODO ADD PATH), you will notice that there is a "affects" relationship type that is not used anywhere. The reason that relationship has been added to the schema is exactly to allow you to connect the articles and the bonds.
 
-When you try and load the CSV file using this template (we’ll see how in a short while), GRAKN scans every line of the file and produces a GRAQL statement substituting the column names with the appropriate value and batch load it.
-
-For example, if the line currently being scanned reads
-
-```
-13,24,Italy,ENI
-```
-
-Our template will be produce the statement
-
-```
-insert $x isa oil-platform has platform-id "13"
-has distance-from-coast "24";
-```
+If you wanted to permanently add the relationships, you would use a match insert with the same match as the get query above and inserting an `affects` relationship between `$article` and `$bond`.
 
 
-## Flow control
-If you have looked carefully at the CSV file containing the information about the oil platform, you have probably noticed that the value of DistCoast is not always present. If we were to run our current template against the csv, GRAKN would try to add distances coast with empty values, and bad things would ensue.
-
-To avoid that, we need to introduce the second GRAQL extension used in making templates: flow control. More commonly known as "if then" statements. In our templating language, an "if" statement looks like `if (CONDITION) do { STUFF TO BE ADDED }`.
-Modify the template like the following:
-
-```graql
-insert $x isa oil-platform has platform-id <ID>
-if (<DistCoast> != "") do {
-has distance-from-coast <DistCoast>}
-;
-```
-
-Let us examine the additions one by one, it’s nothing too hard.
-
-As you know, when running this template against a CSV file, the latter is scanned line by line and each line is converted into a GRAQL statement. When you add an "if", the content of the curly braces is added to the GRAQL statement only when the condition within brackets.
-
-The condition to be evaluated is simply a check on the value of one of the columns. In this case `<DistCoast> != ""` means that the value of the column DistCoast is not (that is what `!=` stands for) empty.
-
-Every time the  DistCoast column is empty, then, the GRAQL statement sent to GRAKN will look like this:
-
-```graql
-insert $x isa oil-platform has platform-id "123";
-```
-
-Notice that the last semicolon is out of the curly braces, so it gets added every time, independently of the value of DistCoast.
-
-## Macros
-There is one more thing to add to our template before we can actually use it.
-If you read back, you will notice that the example of GRAQL statement into which the template gets translated looks like
-
-```graql
-insert $x isa oil-platform has platform-id "13"
-has distance-from-coast "24";
-```
-
-Noticed the quotes around the distance-from-coast? This is because every attribute is read as a String, but in our schema we have defined it to be an attribute of datatype long. If you try and use the template now, GRAKN will throw a validation error because you are trying to insert string values into "long" attributes. To solve the issues we need macros. A macro in GRAQL is a snippet of code that does some useful data manipulation to help migrate things into your knowledge base. Macros always look like `@MACRO_NAME(ARGUMENT)` where the specific macro is applied to whatever is in brackets. There are several macros that come with the language, but the most used ones are those needed to convert strings into other datatypes (and they are called, not surprisingly, @long, @double, @date and @boolean).
-
-Let’s add our macro to the template:
-
-```graql
-insert $x isa oil-platform has platform-id <ID>
-if (<DistCoast> != "") do {
-has distance-from-coast @long(<DistCoast>)}
-;
-```
-
-That’s all! A lot of words for what is really a slightly modified very simple GRAQL query! Save your template file as something like `oil-platform-template.gql` and you are ready to use it.
-
-
-## Migration
-To use the template you need the command
-
-`graql migration csv -k KEYSPACE -i INPUT_FILE -t TEMPLATE_FILE`
-
-Try it now in the VM using the template TODO_ADD, the input file TODO_ADD, and the keyspace you created when you loaded the schema during last lesson.
-
-After that, check that oil platforms are in your knowledge base.
-
-  ![Oil Platforms](/images/academy/4-data-loading/oil-platforms.png)
-
-### GOOD TO KNOW:
-Why aren’t you using the template file you just wrote and using one stored in the VM instead? That is because the VM is isolated from the rest of the computer (or, as it is called, the host machine). Before being able to use the gql file you created into the VM, you would have to move it from the host machine to the VM. There are many ways of doing that, but are definitely out of the scope of these lessons. Extra points if you manage to find how and to actually migrate the data using the template you have written instead of the one we provided!
-
+Using the information above, try and build a rule that does just that without storing the relationship back into the knowledge base. Remember that you don’t have to use the `match` and `insert` keywords in the when and then blocks.
+Save your result in a file called, for example. `rules.gql` and store it for future reference. You will find the solution to this exercise in the next lesson.
 
 ### What have you learned?
-In this lesson, you have learned about GRAQL templating language, macros and how to migrate CSV files into GRAKN. That was quite a lot, so be sure to have understood all the topics of this lesson before proceeding.
+You now should be able to GRAKN inference rules and know how a rule is structured. You are almost done building the example knowledge base!
 
 ## What next?
-[Next lesson](/academy/xml-migration.html) will be about migrating files with a more complex structure than the tabular one of CSV. If you want to delve deeper into the GRAQL templating language and macros, as usual, head to the [docs](/index.html)
-
+In the [next lesson](/academy/advanced-rules.html) you will discover how to improve the rule you just wrote and make it more useful for future uses and will learn more about how Reasoner works. If you want to know more about atomic patterns and what you can actually use in a then block, head over to the [docs](/index.html).
