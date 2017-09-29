@@ -252,8 +252,8 @@ public class GraqlTraversalTest {
         // 2. The role-player fragment classes
         // Both of these things should not be made public if possible, so I see this regex as the lesser evil
         assertThat(graqlTraversal, anyOf(
-                matches("\\{\\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.*]->\\$y}"),
-                matches("\\{\\$y<-\\[" + ROLE_PLAYER_EDGE + ":\\$.*]-\\$x}")
+                matches("\\{§x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§y}"),
+                matches("\\{§y<-\\[" + ROLE_PLAYER_EDGE + ":#.*]-§x}")
         ));
     }
 
@@ -264,8 +264,8 @@ public class GraqlTraversalTest {
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches("\\{\\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.*]->\\$.* \\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.*]->\\$.* \\$.*\\[neq:\\$.*]}"),
-                matches("\\{\\$.*<-\\[" + ROLE_PLAYER_EDGE + ":\\$.*]-\\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.*]->\\$.* \\$.*\\[neq:\\$.*]}")
+                matches("\\{§x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* §x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* #.*\\[neq:#.*]}"),
+                matches("\\{§.*<-\\[" + ROLE_PLAYER_EDGE + ":#.*]-§x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* #.*\\[neq:#.*]}")
         ));
     }
 
@@ -276,8 +276,8 @@ public class GraqlTraversalTest {
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches(".*\\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.* rels:marriage]->\\$.* \\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*"),
-                matches(".*\\$.*<-\\[" + ROLE_PLAYER_EDGE + ":\\$.* rels:marriage]-\\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*")
+                matches(".*§x-\\[" + ROLE_PLAYER_EDGE + ":#.* rels:marriage]->§.* §x-\\[" + ROLE_PLAYER_EDGE + ":#.* rels:marriage]->§.* #.*\\[neq:#.*].*"),
+                matches(".*§.*<-\\[" + ROLE_PLAYER_EDGE + ":#.* rels:marriage]-§x-\\[" + ROLE_PLAYER_EDGE + ":#.* rels:marriage]->§.* #.*\\[neq:#.*].*")
         ));
     }
 
@@ -288,8 +288,8 @@ public class GraqlTraversalTest {
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches(".*\\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.* roles:wife]->\\$.* \\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*"),
-                matches(".*\\$.*<-\\[" + ROLE_PLAYER_EDGE + ":\\$.* roles:wife]-\\$x-\\[" + ROLE_PLAYER_EDGE + ":\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*")
+                matches(".*§x-\\[" + ROLE_PLAYER_EDGE + ":#.* roles:wife]->§.* §x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* #.*\\[neq:#.*].*"),
+                matches(".*§.*<-\\[" + ROLE_PLAYER_EDGE + ":#.* roles:wife]-§x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* #.*\\[neq:#.*].*")
         ));
     }
 

@@ -29,6 +29,7 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class GraqlControllerTest {
 
@@ -50,13 +51,13 @@ public class GraqlControllerTest {
                                boolean materialise,
                                int limitEmbedded) {
         return RestAssured.with()
-            .queryParam(KEYSPACE, sampleKB.tx().getKeyspace().getValue())
-            .body(query)
-            .queryParam(INFER, reasonser)
-            .queryParam(MATERIALISE, materialise)
-            .queryParam(LIMIT_EMBEDDED, limitEmbedded)
-            .accept(acceptType)
-            .post(REST.WebPath.KB.ANY_GRAQL);
+                .queryParam(KEYSPACE, sampleKB.tx().getKeyspace().getValue())
+                .body(query)
+                .queryParam(INFER, reasonser)
+                .queryParam(MATERIALISE, materialise)
+                .queryParam(LIMIT_EMBEDDED, limitEmbedded)
+                .accept(acceptType)
+                .post(REST.WebPath.KB.ANY_GRAQL);
     }
 
     @ClassRule
@@ -127,7 +128,7 @@ public class GraqlControllerTest {
         resp.then().statusCode(200);
         assertEquals(Json.nil(), Json.read(resp.asString()));
     }
-    
+
     @Test
     public void wehnRunningAggregateQuery_JsonResponseIsTheSameAsJava() {
         assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", jsonPrinter, APPLICATION_JSON_GRAQL);
@@ -168,10 +169,27 @@ public class GraqlControllerTest {
     }
 
     @Test
+    public void whenMatchingSchema_NoInstancesInResponse() {
+        String queryString = "match $x sub thing; get;";
+        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, -1);
+        Json jsonResp = Json.read(resp.body().asString());
+        jsonResp.asJsonList().stream().map(map -> map.at("x")).forEach(thing -> {
+            assertNotEquals("ENTITY", thing.at("_baseType").asString());
+            if (thing.has("_embedded")) {
+                thing.at("_embedded").asJsonMap().entrySet().forEach(stringJsonEntry -> {
+                    stringJsonEntry.getValue().asJsonList().forEach(embeddedObj -> {
+                        assertNotEquals("ENTITY", embeddedObj.at("_baseType").asString());
+                    });
+                });
+            }
+        });
+    }
+
+    @Test
     public void testBadQuery() {
         sendQuery(" gibberish ads a;49 agfdgdsf").then().statusCode(400);
     }
-    
+
     @Test
     public void whenAcceptHeaderIsInvalid_Return406Code() {
         sendQuery("match $x isa movie; aggregate ask;", "application/msword", true, false, -1).then().statusCode(406);

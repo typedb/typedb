@@ -30,14 +30,16 @@ import ai.grakn.redisq.State;
 import ai.grakn.redisq.StateInfo;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 
 /**
@@ -92,7 +94,16 @@ public class RedisTaskStorage implements TaskStateStorage {
             // TODO return optional
             throw GraknBackendException.stateStorage();
         }
-        return TaskState.of(id, TaskStatus.fromState(state.get().getState()));
+
+        TaskState taskState = TaskState.of(id, TaskStatus.fromState(state.get().getState()));
+
+        //Make sure exception gets transferred across
+        if(taskState.status().equals(TaskStatus.FAILED)) {
+            String info = state.get().getInfo();
+            taskState.markFailed(info);
+        }
+
+        return taskState;
     }
 
     @Override

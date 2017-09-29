@@ -46,7 +46,7 @@ public class PutSchemaConceptFunctions extends AbstractGenerator<BiFunction> {
                 GraknTx::putRelationshipType,
                 GraknTx::putRole,
                 //TODO: Make smarter rules
-                (graph, label) -> graph.putRule(label, graph.graql().parsePattern("$x"), graph.graql().parsePattern("$x"))
+                (graph, label) -> graph.putRule(label, graph.graql().parser().parsePattern("$x"), graph.graql().parser().parsePattern("$x"))
         ));
     }
 }

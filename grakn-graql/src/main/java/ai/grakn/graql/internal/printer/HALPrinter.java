@@ -37,7 +37,7 @@ class HALPrinter extends JsonPrinter {
 
     @Override
     public Json graqlString(boolean inner, Concept concept) {
-        String json = HALBuilder.renderHALConceptData(concept, 1,keyspace,0, limitEmbedded);
+        String json = HALBuilder.renderHALConceptData(concept, 0, keyspace,0, limitEmbedded);
         return Json.read(json);
     }
 

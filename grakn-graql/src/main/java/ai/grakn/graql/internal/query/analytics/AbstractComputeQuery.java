@@ -150,7 +150,9 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             subTypes = subLabels.stream().map(label -> {
                 SchemaConcept type = graknTx.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
-                if (type.isRole() || type.isRule()) throw GraqlQueryException.roleAndRuleDoNotHaveInstance();
+                if (!type.isType()) {
+                    throw GraqlQueryException.cannotGetInstancesOfNonType(type.getLabel());
+                }
                 if (!includeAttribute && (type.isAttributeType() || type.isImplicit())) {
                     includeAttribute = true;
                 }

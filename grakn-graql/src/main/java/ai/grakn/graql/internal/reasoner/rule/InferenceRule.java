@@ -157,7 +157,7 @@ public class InferenceRule {
      *
      * @return true if the rule needs to be materialised
      */
-    public boolean requiresMaterialisation(Atom parentAtom) {
+    public boolean requiresMaterialisation(Atom parentAtom){
         if (requiresMaterialisation == null) {
             requiresMaterialisation = parentAtom.requiresMaterialisation()
                     || getHead().getAtom().requiresMaterialisation()

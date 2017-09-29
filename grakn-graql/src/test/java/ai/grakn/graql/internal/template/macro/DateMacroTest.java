@@ -137,7 +137,7 @@ public class DateMacroTest {
 
         exception.expect(GraqlQueryException.class);
 
-        Graql.parseTemplate(template, Collections.singletonMap("date", "10/09/1993"));
+        Graql.parser().parseTemplate(template, Collections.singletonMap("date", "10/09/1993"));
     }
 
     // Templating tests

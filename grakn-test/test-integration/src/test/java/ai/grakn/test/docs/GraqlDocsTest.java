@@ -159,7 +159,7 @@ public class GraqlDocsTest {
 
     private void assertGraqlTemplateValidSyntax(GraknTx graph, String fileName, String templateBlock){
         try {
-            graph.graql().parseTemplate(templateBlock, new HashMap<>());
+            graph.graql().parser().parseTemplate(templateBlock, new HashMap<>());
         } catch (GraqlSyntaxException e){
             DocTestUtil.codeBlockFail(fileName, templateBlock, e.getMessage());
         } catch (Exception e){}
@@ -170,7 +170,7 @@ public class GraqlDocsTest {
         Matcher matcher = GRAQL_COMMIT.matcher(line);
         matcher.find();
         line = matcher.group(1);
-        graph.graql().parseList(line).forEach(Query::execute);
+        graph.graql().parser().parseList(line).forEach(Query::execute);
     }
 
 }

@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
@@ -73,7 +74,11 @@ public class GraqlControllerDeleteTest {
 
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
-        when(mockQueryBuilder.parse(any()))
+
+        QueryParser mockParser = mock(QueryParser.class);
+
+        when(mockQueryBuilder.parser()).thenReturn(mockParser);
+        when(mockParser.parseQuery(any()))
                 .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
         tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);

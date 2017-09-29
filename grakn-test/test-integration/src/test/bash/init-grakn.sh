@@ -8,4 +8,4 @@ mkdir ${PACKAGE}
 
 tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C ${PACKAGE}
 
-grakn start
+grakn server start

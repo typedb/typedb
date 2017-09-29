@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.AggregateQuery;
@@ -32,17 +33,22 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -55,6 +61,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
@@ -74,8 +81,6 @@ import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.parse;
-import static ai.grakn.graql.Graql.parseList;
-import static ai.grakn.graql.Graql.parsePatterns;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.std;
@@ -508,8 +513,8 @@ public class QueryParserTest {
     public void testInsertRules() {
         String when = "$x isa movie;";
         String then = "id '123' isa movie;";
-        Pattern whenPattern = and(parsePatterns(when));
-        Pattern thenPattern = and(parsePatterns(then));
+        Pattern whenPattern = and(var("x").isa("movie"));
+        Pattern thenPattern = and(var().id(ConceptId.of("123")).isa("movie"));
 
         InsertQuery expected = insert(
                 label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").when(whenPattern).then(thenPattern)
@@ -566,7 +571,9 @@ public class QueryParserTest {
     public void testCustomAggregate() {
         QueryBuilder qb = withoutGraph();
 
-        qb.registerAggregate("get-any", args -> new GetAny((Var) args.get(0)));
+        QueryParser parser = qb.parser();
+
+        parser.registerAggregate("get-any", args -> new GetAny((Var) args.get(0)));
 
         AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(Graql.var("x")));
         AggregateQuery<Concept> parsed = qb.parse("match $x isa movie; aggregate get-any $x;");
@@ -724,7 +731,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseListEmpty() {
-        List<Query<?>> queries = parseList("").collect(toList());
+        List<Query<?>> queries = Graql.parser().parseList("").collect(toList());
         assertEquals(0, queries.size());
     }
 
@@ -732,7 +739,7 @@ public class QueryParserTest {
     public void testParseListOneMatch() {
         String getString = "match $y isa movie; limit 1; get;";
 
-        List<Query<?>> queries = parseList(getString).collect(toList());
+        List<Query<?>> queries = Graql.parser().parseList(getString).collect(toList());
 
         assertEquals(ImmutableList.of(match(var("y").isa("movie")).limit(1).get()), queries);
     }
@@ -741,7 +748,7 @@ public class QueryParserTest {
     public void testParseListOneInsert() {
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = parseList(insertString).collect(toList());
+        List<Query<?>> queries = Graql.parser().parseList(insertString).collect(toList());
 
         assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
     }
@@ -750,7 +757,7 @@ public class QueryParserTest {
     public void testParseListOneInsertWithWhitespacePrefix() {
         String insertString = " insert $x isa movie;";
 
-        List<Query<?>> queries = parseList(insertString).collect(toList());
+        List<Query<?>> queries = Graql.parser().parseList(insertString).collect(toList());
 
         assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
     }
@@ -759,7 +766,7 @@ public class QueryParserTest {
     public void testParseListOneInsertWithPrefixComment() {
         String insertString = "#hola\ninsert $x isa movie;";
 
-        List<Query<?>> queries = parseList(insertString).collect(toList());
+        List<Query<?>> queries = Graql.parser().parseList(insertString).collect(toList());
 
         assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
     }
@@ -769,7 +776,7 @@ public class QueryParserTest {
         String insertString = "insert $x isa movie;";
         String getString = "match $y isa movie; limit 1; get;";
 
-        List<Query<?>> queries = parseList(insertString + getString).collect(toList());
+        List<Query<?>> queries = Graql.parser().parseList(insertString + getString).collect(toList());
 
         assertEquals(ImmutableList.of(
                 insert(var("x").isa("movie")),
@@ -782,7 +789,7 @@ public class QueryParserTest {
         String matchString = "match $y isa movie; limit 1;";
         String insertString = "insert $x isa movie;";
 
-        List<Query<?>> queries = parseList(matchString + insertString).collect(toList());
+        List<Query<?>> queries = Graql.parser().parseList(matchString + insertString).collect(toList());
 
         assertEquals(ImmutableList.of(
                 match(var("y").isa("movie")).limit(1).insert(var("x").isa("movie"))
@@ -804,7 +811,7 @@ public class QueryParserTest {
         );
 
         options.forEach(option -> {
-            List<Query<?>> queries = parseList(option).collect(toList());
+            List<Query<?>> queries = Graql.parser().parseList(option).collect(toList());
             assertEquals(option, 2, queries.size());
         });
     }
@@ -816,7 +823,7 @@ public class QueryParserTest {
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
         Query<?> matchInsert = match(var("x")).insert(var("y"));
 
-        List<Query<?>> queries = parseList(longQueryString).collect(toList());
+        List<Query<?>> queries = Graql.parser().parseList(longQueryString).collect(toList());
 
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }
@@ -833,7 +840,7 @@ public class QueryParserTest {
 
         final int[] count = {0};
 
-        Graql.parseList(massiveQuery).forEach(q -> {
+        Graql.parser().parseList(massiveQuery).forEach(q -> {
             assertEquals(query, q);
             count[0]++;
         });
@@ -923,6 +930,27 @@ public class QueryParserTest {
     @Test
     public void regexPredicateParsesForwardSlashesCorrectly() {
         assertEquals(match(var("x").val(regex("/"))).get(), parse("match $x val /\\//; get;"));
+    }
+
+    @Test
+    public void whenParsingAQueryAndDefiningAllVars_AllVarsAreDefined() {
+        QueryParser parser = Graql.parser();
+        parser.defineAllVars(true);
+        GetQuery query = parser.parseQuery("match ($x, $y) isa foo; get;");
+
+        System.out.println(query);
+
+        Conjunction<PatternAdmin> conjunction = query.match().admin().getPattern();
+
+        Set<PatternAdmin> patterns = conjunction.getPatterns();
+
+        VarPatternAdmin pattern = Iterables.getOnlyElement(patterns).asVarPattern();
+
+        assertTrue(pattern.var().isUserDefinedName());
+
+        IsaProperty property = pattern.getProperty(IsaProperty.class).get();
+
+        assertTrue(property.type().var().isUserDefinedName());
     }
 
     private static void assertParseEquivalence(String query) {

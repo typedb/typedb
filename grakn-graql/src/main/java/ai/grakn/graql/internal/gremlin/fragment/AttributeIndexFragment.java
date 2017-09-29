@@ -31,20 +31,20 @@ import java.util.Collection;
 import static ai.grakn.util.Schema.VertexProperty.INDEX;
 
 @AutoValue
-abstract class ResourceIndexFragment extends Fragment {
+abstract class AttributeIndexFragment extends Fragment {
 
-    abstract String resourceIndex();
+    abstract String attributeIndex();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
-        return traversal.has(INDEX.name(), resourceIndex());
+        return traversal.has(INDEX.name(), attributeIndex());
     }
 
     @Override
     public String name() {
-        return "[index:" + resourceIndex() + "]";
+        return "[index:" + attributeIndex() + "]";
     }
 
     @Override

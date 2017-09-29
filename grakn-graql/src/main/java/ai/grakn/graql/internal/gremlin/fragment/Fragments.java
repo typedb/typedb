@@ -51,10 +51,6 @@ import static java.util.stream.Collectors.joining;
  */
 public class Fragments {
 
-    // TODO: Make sure these never clash with a real Graql variable
-    static final String RELATION_EDGE = "!RELATION_EDGE";
-    static final String RELATION_DIRECTION = "!RELATION_DIRECTION";
-
     private Fragments() {
     }
 
@@ -139,12 +135,12 @@ public class Fragments {
     }
 
     /**
-     * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
+     * A {@link Fragment} that uses an index stored on each attribute. Attributes are indexed by direct type and value.
      */
-    public static Fragment resourceIndex(
-            @Nullable VarProperty varProperty, Var start, Label label, Object resourceValue) {
-        String resourceIndex = Schema.generateAttributeIndex(label, resourceValue.toString());
-        return new AutoValue_ResourceIndexFragment(varProperty, start, resourceIndex);
+    public static Fragment attributeIndex(
+            @Nullable VarProperty varProperty, Var start, Label label, Object attributeValue) {
+        String attributeIndex = Schema.generateAttributeIndex(label, attributeValue.toString());
+        return new AutoValue_AttributeIndexFragment(varProperty, start, attributeIndex);
     }
 
     static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal) {
@@ -215,10 +211,10 @@ public class Fragments {
 
         // Access label ID from edge
         Var labelId = Graql.var();
-        traversal.values(edgeProperty.name()).as(labelId.getValue());
+        traversal.values(edgeProperty.name()).as(labelId.name());
 
         // Look up schema concept using ID
-        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
+        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.name())));
     }
 
 }

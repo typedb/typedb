@@ -21,8 +21,10 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
+import java.util.Map;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -37,6 +39,12 @@ import static ai.grakn.graql.internal.util.StringConverter.idToString;
 abstract class IdFragment extends Fragment {
 
     abstract ConceptId id();
+
+    public Fragment transform(Map<Var, ConceptId> transform) {
+        ConceptId toId = transform.get(start());
+        if (toId == null) return this;
+        return new AutoValue_IdFragment(IdProperty.of(toId), start(), toId);
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(

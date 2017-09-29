@@ -32,9 +32,19 @@
 
     <dependencies>
         <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-module-sdk</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
             <version>${java-jwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ro.fortsoft.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+            <version>${pf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
