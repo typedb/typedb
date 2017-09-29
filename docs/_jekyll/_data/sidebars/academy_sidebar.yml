@@ -48,6 +48,18 @@ entries:
       - title: 3.1 Schema elements
         output: web
         url: /academy/schema-elements.html
+      - title: 3.2 Conceptual modeling
+        output: web
+        url: /academy/conceptual-modeling-intro.html
+      - title: 3.3 Schema building
+        output: web
+        url: /academy/schema-building.html
+      - title: 3.4 Schema building part II
+        output: web
+        url: /academy/schema-building-continued.html
+      - title: Module Review
+        output: web
+        url: /academy/schema-review.html
 
 - items:
   - title: Documentation Portal
