@@ -97,10 +97,10 @@ def buildGrakn() {
 
 	slackGithub "Build started"
 
-	stage('Run the benchmarks') {
-	    sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-	    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-	}
+        timeout(60) {stage('Run the benchmarks') {
+            sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+            archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+        }}
 
 	for (String moduleName : integrationTests) {
 	    runIntegrationTest(workspace, moduleName)
