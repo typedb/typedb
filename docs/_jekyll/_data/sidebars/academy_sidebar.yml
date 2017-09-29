@@ -61,6 +61,22 @@ entries:
         output: web
         url: /academy/schema-review.html
 
+  - title: 4. Loading data
+    output: web
+    folderitems:
+      - title: 4.1 Loading files
+        output: web
+        url: /academy/loading-files.html
+      - title: 4.2 Data migration - CSV
+        output: web
+        url: /academy/csv-migration.html
+      - title: 4.3 Data migration - XML and JSON
+        output: web
+        url: /academy/xml-migration.html
+      - title: Module Review
+        output: web
+        url: /academy/migration-review.html
+
 - items:
   - title: Documentation Portal
     output: web
