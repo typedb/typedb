@@ -983,22 +983,57 @@ public class AtomicTest {
         );
     }
 
-    @Ignore
     @Test
     public void testUnification_IndirectRoles(){
         GraknTx graph = unificationTestSet.tx();
-        String childRelation = "{($r1: $x1, $r2: $x2) isa relation1;$r1 label 'superRole1';$r2 label 'anotherSuperRole2';}";
-        String parentRelation = "{($R1: $x, $R2: $y) isa relation1;$R1 label 'superRole1';$R2 label 'anotherSuperRole2';}";
-        testUnification(parentRelation, childRelation, true, true, graph);
+        VarPatternAdmin basePattern = var()
+                .rel(var("role1").label("superRole1"), var("y1"))
+                .rel(var("role2").label("anotherSuperRole2"), var("y2"))
+                .isa("relation1")
+                .admin();
+
+        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Patterns.conjunction(Sets.newHashSet(basePattern)), graph);
+        ReasonerAtomicQuery childQuery = ReasonerQueries
+                .atomic(conjunction(
+                                "{($r1: $x1, $r2: $x2) isa relation1;" +
+                                "$r1 label 'superRole1';" +
+                                "$r2 label 'anotherSuperRole2';}"
+                        , graph), graph);
+        ReasonerAtomicQuery parentQuery = ReasonerQueries
+                .atomic(conjunction(
+                                "{($R1: $x, $R2: $y) isa relation1;" +
+                                "$R1 label 'superRole1';" +
+                                "$R2 label 'anotherSuperRole2';}"
+                        , graph), graph);
+        testUnification(parentQuery, childQuery, true, true, graph);
+        testUnification(baseQuery, parentQuery, true, true, graph);
+        testUnification(baseQuery, childQuery, true, true, graph);
     }
 
-    @Ignore
     @Test
     public void testUnification_IndirectRoles_NoRelationType(){
         GraknTx graph = unificationTestSet.tx();
-        String childRelation = "{($r1: $x1, $r2: $x2);$r1 label 'superRole1';$r2 label 'anotherSuperRole2';}";
-        String parentRelation = "{($R2: $y, $R1: $x);$R1 label 'superRole1';$R2 label 'anotherSuperRole2';}";
-        testUnification(parentRelation, childRelation, true, true, graph);
+        VarPatternAdmin basePattern = var()
+                .rel(var("role1").label("superRole1"), var("y1"))
+                .rel(var("role2").label("anotherSuperRole2"), var("y2"))
+                .admin();
+
+        ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Patterns.conjunction(Sets.newHashSet(basePattern)), graph);
+        ReasonerAtomicQuery childQuery = ReasonerQueries
+                .atomic(conjunction(
+                                "{($r1: $x1, $r2: $x2);" +
+                                "$r1 label 'superRole1';" +
+                                "$r2 label 'anotherSuperRole2';}"
+                        , graph), graph);
+        ReasonerAtomicQuery parentQuery = ReasonerQueries
+                .atomic(conjunction(
+                                "{($R1: $x, $R2: $y);" +
+                                "$R1 label 'superRole1';" +
+                                "$R2 label 'anotherSuperRole2';}"
+                        , graph), graph);
+        testUnification(parentQuery, childQuery, true, true, graph);
+        testUnification(baseQuery, parentQuery, true, true, graph);
+        testUnification(baseQuery, childQuery, true, true, graph);
     }
 
     @Test
@@ -1009,10 +1044,7 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
     }
 
-    private void testUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, GraknTx graph){
-        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(childPatternString, graph), graph);
-        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(parentPatternString, graph), graph);
-
+    private void testUnification(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, boolean checkInverse, boolean checkEquality, GraknTx graph){
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = parentQuery.getAtom();
 
@@ -1034,6 +1066,15 @@ public class AtomicTest {
             assertEquals(parentAnswers.unify(unifier.inverse()), childAnswers);
 
         }
+    }
+
+    private void testUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, GraknTx graph){
+        testUnification(
+                ReasonerQueries.atomic(conjunction(childPatternString, graph), graph),
+                ReasonerQueries.atomic(conjunction(parentPatternString, graph), graph),
+                checkInverse,
+                checkEquality,
+                graph);
     }
 
     private QueryAnswers queryAnswers(GetQuery query) {

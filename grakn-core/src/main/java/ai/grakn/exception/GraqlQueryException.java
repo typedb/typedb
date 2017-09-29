@@ -298,6 +298,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(reasonerQuery.toString()));
     }
 
+    public static GraqlQueryException nonRoleIdAssignedToRoleVariable(VarPatternAdmin var) {
+        return new GraqlQueryException(ErrorMessage.ROLE_ID_IS_NOT_ROLE.getMessage(var.toString()));
+    }
+
     public static GraqlQueryException cannotParseDateFormat(String originalFormat) {
         return new GraqlQueryException("Cannot parse date format " + originalFormat + ". See DateTimeFormatter#ofPattern");
     }
