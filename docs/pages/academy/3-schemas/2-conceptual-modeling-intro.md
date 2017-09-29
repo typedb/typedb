@@ -45,7 +45,7 @@ Done? Let’s review them. There are a few obvious ones:
 
 There is also another one. Can you spot it?
 
-If you answered “Italy”, you are _almost_ correct: as I said before, entities tend to be represented by common nouns; Italy, in this case is the name of a country, so our missing entity type is
+If you answered "Italy", you are _almost_ correct: as I said before, entities tend to be represented by common nouns; Italy, in this case is the name of a country, so our missing entity type is
 
   * Country
 
@@ -56,7 +56,7 @@ Singling out relationships in our concepts list should be straightforward; I lik
   * Issues
   * Owns
 
-Our last task for this lesson is to identify the attributes in our schema. To find them, go over each of the concept and ask yourself: “what is this?”. If your answers sounds like “it is the X of a Y” you are likely to have found the attribute X of concept Y (and you should have already Y as an entity or relationship).
+Our last task for this lesson is to identify the attributes in our schema. To find them, go over each of the concept and ask yourself: "what is this?". If your answers sounds like "it is the X of a Y" you are likely to have found the attribute X of concept Y (and you should have already Y as an entity or relationship).
 
 In our case we have:
 

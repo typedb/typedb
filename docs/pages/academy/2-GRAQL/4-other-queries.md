@@ -19,9 +19,9 @@ Sometime you do not want to just look at the response of a get query. Sometimes 
 
 Meet aggregate queries.
 
-If you look into it, you will see that the bonds in our knowledge graph have a “risk” score attached. They are just randomly generated numbers, so do not try and look for any pattern, but let us see what we can do with them.
+If you look into it, you will see that the bonds in our knowledge graph have a "risk" score attached. They are just randomly generated numbers, so do not try and look for any pattern, but let us see what we can do with them.
 
-Imagine that you want to check what is the minimum risk of a bond issued by the company “ENI”. If you just wanted to do find those risks you would run the following query:
+Imagine that you want to check what is the minimum risk of a bond issued by the company "ENI". If you just wanted to do find those risks you would run the following query:
 
 ```graql
 match
@@ -41,7 +41,7 @@ How would you find the standard deviation of risk of all bonds?
 
 
 #### Asking things
-Answer me quick: do we have a company named “AwesomePuppies” in our knowledge base?
+Answer me quick: do we have a company named "AwesomePuppies" in our knowledge base?
 
 Let’s ask the dashboard. Literally. Run this query in the _Dashboard Console_:
 

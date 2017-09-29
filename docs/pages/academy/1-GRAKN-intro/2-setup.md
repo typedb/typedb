@@ -71,7 +71,7 @@ In order to clear both the graph and the GRAQL editor in the dashboard, just SHI
 
 
 ## Dashboard Console
-When you have too many results or in general for some type of queries that do not return results in the form of a graph, it is not advisable (or in some case not even possible) to use the graph visualiser. In those cases, you need the Console. To access it click on the “Console” tab on the left of your screen and run again the same query as before to see how the result looks like.
+When you have too many results or in general for some type of queries that do not return results in the form of a graph, it is not advisable (or in some case not even possible) to use the graph visualiser. In those cases, you need the Console. To access it click on the "Console" tab on the left of your screen and run again the same query as before to see how the result looks like.
 
 ![Visualiser screenshot](/images/academy/1-welcome/Dashboard-Console.png)
 
@@ -80,7 +80,7 @@ When you have too many results or in general for some type of queries that do no
 
 For security reasons, the dashboard does not allow you to modify the knowledge base, only to query it. In order to be able to add data or remove things, a lower level access point is needed: the GRAQL shell, which  looks very similar to the Dashboard Console, but requires the command line to be launched.
 
-In order to launch the GRAQL shell, from the command line of the VM, in the folder `grakn`, run `./graql console -k academy`. This will launch the GRAQL shell in the keyspace “academy”, that contains the data we are using during this course.
+In order to launch the GRAQL shell, from the command line of the VM, in the folder `grakn`, run `./graql console -k academy`. This will launch the GRAQL shell in the keyspace "academy", that contains the data we are using during this course.
 
 Once again, type `match $x isa company; get;` and hit return to launch the query. As you can see the results looks very similar those in the dashboard console.
 

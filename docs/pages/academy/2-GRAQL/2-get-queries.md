@@ -19,11 +19,11 @@ Let us start with a very simple example: what do you think the following query w
 
  `match $x isa company; get;`
 
-If you answered “return all companies in the knowledge base” then congratulations! You are correct! Give yourself a pat on the back and let’s go onto something very slightly more complex. What do you think the following query does?
+If you answered "return all companies in the knowledge base" then congratulations! You are correct! Give yourself a pat on the back and let’s go onto something very slightly more complex. What do you think the following query does?
 
-`match $x isa company has name “ENI”; get;`
+`match $x isa company has name "ENI"; get;`
 
-If you answered “return a company named ‘ENI’”, you were almost right: the correct answer is “return all the companies named ‘ENI’”. If there happens to be only one, all the better, but it is good to keep in mind the subtle distinction.
+If you answered "return a company named ‘ENI’", you were almost right: the correct answer is "return all the companies named ‘ENI’". If there happens to be only one, all the better, but it is good to keep in mind the subtle distinction.
 
 One thing that is maybe useful to keep in mind is that the query above is exactly the same (and in fact under the hood GRAQL is doing) as the query
 
@@ -31,7 +31,7 @@ One thing that is maybe useful to keep in mind is that the query above is exactl
 ```graql
 match
 $x isa company;
-$x has name “ENI”;
+$x has name "ENI";
 get $x;
 ```
 
@@ -39,7 +39,7 @@ Since, as you have learned in the [last lesson](/academy/graql-intro.html) the o
 
 ```graql
 match
-$x has name “ENI”;
+$x has name "ENI";
 $x isa company;
 get;
 ```
@@ -48,7 +48,7 @@ Go ahead and try these queries in your running distribution of GRAKN (need a ref
 
 
 ### Exercise: a query with an attribute
-You should by now be able to write very basic GRAQL queries with or without resources. Try to think of how to query for a country named “UK”.
+You should by now be able to write very basic GRAQL queries with or without resources. Try to think of how to query for a country named "UK".
 
 
 ## Querying for relationships
@@ -56,31 +56,31 @@ Even more fun! What do you think the following query will do? Take your time…
 
 ```graql
 match
-$x isa country has name “USA”;
+$x isa country has name "USA";
 ($x, $y) isa located-in; get;
 ```
 
-Did you answer, by any chance, answer “return everything that is in a(ny) country named ‘USA’”? If so, you are almost right.
+Did you answer, by any chance, answer "return everything that is in a(ny) country named ‘USA’"? If so, you are almost right.
 
 Try it now in the dashboard
 
   ![Relationship query](/images/academy/2-graql/relationship-query.png)
 
-You see “North America” right there? Can you guess what is happening?
+You see "North America" right there? Can you guess what is happening?
 
 Let’s break the query into small pieces
 
-`$x isa country has name “USA”;`, as you should know by know, retrieves all the countries with a name “USA” and store them (actually there happens to be only one) in a variable accessed with the name `$x`.
+`$x isa country has name "USA";`, as you should know by know, retrieves all the countries with a name "USA" and store them (actually there happens to be only one) in a variable accessed with the name `$x`.
 
 The bit `($x, $y)` tells GRAQL to create a new variable `$y` and store into it anything that is attached to `$x` via a relationship (that is what the parenthesis are for).
 
-Finally the `isa located-in` just say that the relation that links `$x` and `$y` must be of type “located-in”. The `get` part just says to return all the variables created.
+Finally the `isa located-in` just say that the relation that links `$x` and `$y` must be of type "located-in". The `get` part just says to return all the variables created.
 
 Notice that we have specified nowhere who should be located into whom, and, as I said before, in GRAQL the order does not matter. In fact you will obtain the same results if you run the following query:
 
 ```graql
 match
-$x isa country has name “USA”;
+$x isa country has name "USA";
 ($y, $x) isa located-in; get;
 ```
 
@@ -92,7 +92,7 @@ So what if you want to actually specify that we want to retrieve all the things 
 
 ```graql
 match
-$x isa country has name “USA”;
+$x isa country has name "USA";
 (location: $x, located: $y) isa located-in; get;
 ```
 
@@ -101,9 +101,9 @@ Try it in the dashboard.
 The name of the roles (in this case `location` and `located`) are user specified, I have assigned the label `location` to the container in the located-in relation and `located` for the thing which is contained. It is just then a matter of adding the role names followed by `:`.
 
 ### Exercise
-What is the query that finds all the things that _contain_ the country “USA”?
+What is the query that finds all the things that _contain_ the country "USA"?
 
-Can you write a query that finds all the bonds issued by a company named “ENI”? The names of the roles in this case are “issued” and “issuer”, the relation is called “issues”.
+Can you write a query that finds all the bonds issued by a company named "ENI"? The names of the roles in this case are "issued" and "issuer", the relation is called "issues".
 
 Try the same query without specifying the roles. Does the result change? Why do you think is that?
 
@@ -120,7 +120,7 @@ The `get` action, followed by one or more variables, limits the results to the v
 See it for yourself running this query and noticing the difference in results with the same query without the `$y` variable at the end.
 
 ```graql
-$x isa country has name “USA”;
+$x isa country has name "USA";
 (location: $x, located: $y) isa located-in;
 get $y
 ```

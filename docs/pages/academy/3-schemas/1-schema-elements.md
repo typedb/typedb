@@ -10,7 +10,7 @@ folder: overview
 toc: false
 ---
 
-You have learned the language, it is now time to put it to good use: it is time to learn about the GRAKN conceptual model. As GRAKN is, as they say, a “schema first” system, It is time to learn building GRAKN schemas.
+You have learned the language, it is now time to put it to good use: it is time to learn about the GRAKN conceptual model. As GRAKN is, as they say, a "schema first" system, It is time to learn building GRAKN schemas.
 
 ## What is a GRAKN schema
 A schema in GRAKN is a part of the knowledge base that describes how the data is structured. The data model, in other words.
