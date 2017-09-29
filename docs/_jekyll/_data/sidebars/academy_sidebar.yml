@@ -77,6 +77,22 @@ entries:
         output: web
         url: /academy/migration-review.html
 
+  - title: 5. Logic inference
+    output: web
+    folderitems:
+      - title: 5.1 Loading files
+        output: web
+        url: /academy/reasoner-intro.html
+      - title: 5.2 Data migration - CSV
+        output: web
+        url: /academy/inference-rules.html
+      - title: 5.3 Data migration - XML and JSON
+        output: web
+        url: /academy/advanced-rules.html
+      - title: Module Review
+        output: web
+        url: /academy/reasoner-review.html
+
 - items:
   - title: Documentation Portal
     output: web

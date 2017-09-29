@@ -2,11 +2,11 @@
 title: Migrating CSV files - GRAQL templates
 keywords: setup, getting started
 last_updated: September 2017
-summary: In this lesson you will learn about GRAQL templating and how to migrate data from CSV files into GRAKN.
+summary: TODO.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
-permalink: ./academy/csv-migration.html
-folder: overview
+permalink: ./academy/inference-rules.html
+folder: academy
 toc: false
 ---
 
@@ -47,7 +47,7 @@ has distance-from-coast "24";
 ```
 
 
-##Flow control
+## Flow control
 If you have looked carefully at the CSV file containing the information about the oil platform, you have probably noticed that the value of DistCoast is not always present. If we were to run our current template against the csv, GRAKN would try to add distances coast with empty values, and bad things would ensue.
 
 To avoid that, we need to introduce the second GRAQL extension used in making templates: flow control. More commonly known as "if then" statements. In our templating language, an "if" statement looks like `if (CONDITION) do { STUFF TO BE ADDED }`.

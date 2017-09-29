@@ -4,8 +4,8 @@ keywords: setup, getting started
 last_updated: September 2017
 tags: [getting-started, graql]
 sidebar: academy_sidebar
-permalink: ./academy/migration-review.html
-folder: overview
+permalink: ./academy/reasoner-review.html
+folder: academy
 toc: false
 ---
 
