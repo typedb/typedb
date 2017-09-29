@@ -1070,8 +1070,8 @@ public class AtomicTest {
 
     private void testUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, GraknTx graph){
         testUnification(
-                ReasonerQueries.atomic(conjunction(childPatternString, graph), graph),
                 ReasonerQueries.atomic(conjunction(parentPatternString, graph), graph),
+                ReasonerQueries.atomic(conjunction(childPatternString, graph), graph),
                 checkInverse,
                 checkEquality,
                 graph);
