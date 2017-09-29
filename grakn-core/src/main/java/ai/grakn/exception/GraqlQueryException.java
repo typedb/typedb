@@ -91,10 +91,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 
-    public static GraqlQueryException roleAndRuleDoNotHaveInstance() {
-        return new GraqlQueryException(ErrorMessage.ROLE_AND_RULE_DO_NOT_HAVE_INSTANCE.getMessage());
-    }
-
     public static GraqlQueryException deleteSchemaConcept(SchemaConcept schemaConcept) {
         return create("cannot delete schema concept %s. Use `undefine` instead.", schemaConcept);
     }
@@ -111,8 +107,8 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage(attributeType));
     }
 
-    public static GraqlQueryException queryInstanceOfRoleType(Label label) {
-        return new GraqlQueryException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(label));
+    public static GraqlQueryException cannotGetInstancesOfNonType(Label label) {
+        return GraqlQueryException.create("%s is not a type and so does not have instances", label);
     }
 
     public static GraqlQueryException notARelationType(Label label) {

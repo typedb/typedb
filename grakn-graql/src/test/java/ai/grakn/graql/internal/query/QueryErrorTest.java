@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
@@ -158,12 +159,17 @@ public class QueryErrorTest {
     @Test
     public void testExceptionInstanceOfRoleType() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(
-                containsString("actor"),
-                containsString("role")
-        ));
+        exception.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("actor")).getMessage());
         //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("actor")).stream();
+    }
+
+    @Test
+    public void testExceptionInstanceOfRule() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
+        //noinspection ResultOfMethodCallIgnored
+        qb.match(var("x").isa("rule")).stream();
     }
 
     @Test
