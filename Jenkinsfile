@@ -70,26 +70,26 @@ def withPath(String path, Closure closure) {
     return withEnv(["PATH+EXTRA=${path}"], closure)
 }
 
-node {
-    //Only run validation master/stable
-    if (env.BRANCH_NAME in ['master', 'stable']) {
-	properties([
-	    buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
-	])
-        String workspace = pwd()
-        checkout scm
+//Only run validation master/stable
+if (env.BRANCH_NAME in ['master', 'stable']) {
+    properties([
+	buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+    ])
+    node {
+	String workspace = pwd()
+	checkout scm
 
-        slackGithub "Build started"
+	slackGithub "Build started"
 
-        stage('Run the benchmarks') {
-            sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-            archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-        }
+	stage('Run the benchmarks') {
+	    sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+	    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+	}
 
-        for (String moduleName : integrationTests) {
-            runIntegrationTest(workspace, moduleName)
-        }
+	for (String moduleName : integrationTests) {
+	    runIntegrationTest(workspace, moduleName)
+	}
 
-        slackGithub "Periodic Build Success" "good"
+	slackGithub "Periodic Build Success" "good"
     }
 }
