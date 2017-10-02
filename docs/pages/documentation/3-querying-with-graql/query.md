@@ -27,17 +27,18 @@ concepts. In general, [answers](#answer) will contain all [variables](#variable)
 of the [query](#query).
 
 
+# Variable
+
+A [variable](#variable) is an identifier prefixed with a dollar `$`. Valid identifiers must comprise of one or
+more alphanumeric characters, dashes and underscores.
+
+
 # Variable pattern
 
 [`<variable>`](#variable) [`<property>, ...`](#property) `;`
 
 A [variable pattern](#variable-pattern) is a [variable](#variable) (the _subject_ of the pattern) followed by zero or
 more [properties](#property) (optionally separated by commas `,`) and ending in a semicolon `;`.
-
-## Variable
-
-A [variable](#variable) is an identifier prefixed with a dollar `$`. Valid identifiers must comprise of one or
-more alphanumeric characters, dashes and underscores.
 
 ## Property
 
