@@ -86,8 +86,8 @@ public class ReasonerUtils {
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(LabelProperty.class)?
-                        v.getProperties(LabelProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)) :
-                        v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)))
+                        v.getProperties(LabelProperty.class).map(np -> new IdPredicate(typeVariable, np.label(), parent)) :
+                        v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np.id(), parent)))
                 .findFirst().orElse(null);
     }
 
@@ -108,7 +108,7 @@ public class ReasonerUtils {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
             LabelProperty nameProp = typeVar.getProperty(LabelProperty.class).orElse(null);
-            if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp, parent);
+            if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp.label(), parent);
         }
         return predicate;
     }
