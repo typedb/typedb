@@ -61,7 +61,7 @@ The [variable](./query.html#variable) representing the role can optionally be om
 
 ### has (data)
 
-`$x has <identifier> $y as $r` is _satisfied_ if `$x` is a _thing_ related to an _attribute_ `$y` of _attribute type_
+`$x has <identifier> $y via $r` is _satisfied_ if `$x` is a _thing_ related to an _attribute_ `$y` of _attribute type_
 `<identifier>`, where `$r` represents the _relationship_ between them.
 
 This is equivalent to the following:
@@ -71,7 +71,7 @@ $r ($x, $y);
 $y isa <identifier>;
 ```
 
-The `as $r` is optional. Additionally, a [predicate](#predicate) can be used instead of a
+The `via $r` is optional. Additionally, a [predicate](#predicate) can be used instead of a
 [variable](./query.html#variable):
 
 ```graql-test-ignore
@@ -221,7 +221,7 @@ directly playing the _role_ `$Ai`.
 
 ## has (data)
 
-`$x has <identifier> $y as $r` will relate the _attribute_ `$y` of _attribute type_ `<identifier>` to `$x`, binding the
+`$x has <identifier> $y via $r` will relate the _attribute_ `$y` of _attribute type_ `<identifier>` to `$x`, binding the
 _relationship_ to `$r`.
 
 If `<identifier>` is a key for the direct type of `$x`, then the resulting relationship will be a key relationship.
@@ -241,7 +241,7 @@ $r (key-<identifier>-owner: $x, key-<identifier>-value: $y) isa key-<identifier>
 $y isa <identifier>;
 ```
 
-The `as $r` is optional. Additionally, a literal [value](./query.html#value) can be used instead of a
+The `via $r` is optional. Additionally, a literal [value](./query.html#value) can be used instead of a
 [variable](./query.html#variable):
 
 ```graql-test-ignore
