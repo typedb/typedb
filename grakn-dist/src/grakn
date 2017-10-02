@@ -627,6 +627,14 @@ handle_ctrl_c() {
 }
 
 # =============================================
+# misc helper methods
+# =============================================
+print_grakn_logo() {
+  # cat ASCII logo, or fail silently if it's somehow missing
+  cat "${GRAKN_HOME}"/services/grakn/grakn-ascii.txt 2> /dev/null
+}
+
+# =============================================
 # main routine
 # =============================================
 
@@ -635,8 +643,7 @@ update_classpath_global_var
 # temporarily disabling trap as it's probably not needed
 # trap handle_ctrl_c INT # run handle_ctrl_c when receiving CTRL+C
 
-echo "Grakn: Database For AI"
-echo ""
+print_grakn_logo
 
 case "$1" in
   server)
