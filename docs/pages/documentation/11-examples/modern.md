@@ -137,8 +137,8 @@ $n val "peter" isa name;
 ```
  
 In Graql, a match is formed of two parts: the `match` statement statement and any optional
-[modifiers](../graql/matches.html#modifiers) that you choose to apply to the listing of results. Only the first
-part of a match is needed: the modifiers are optional.
+[modifiers](../graql/dml.html#modifier) that you choose to apply to the listing of results. Only the first part of a
+match is needed: the modifiers are optional.
 
 In the `match $x isa person` match we are not using any modifiers, so let's add some now. We use `order by` to modify
 how the results are listed out - in this case, we order them by ascending age, so the youngest person is shown first.

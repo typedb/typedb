@@ -11,10 +11,10 @@ folder: graql
 
 # Match
 
-`match` [`<pattern> ...`](./query.html#pattern) [`(<modifier> ...)`](#modifier)
+`match` [`<pattern> ...`](#pattern) [`(<modifier> ...)`](#modifier)
 
 A [match](#match) will find all [answers](./query.html#answer) in the knowledge base that _satisfy_ all of the given
-[patterns](#patterns). Any optional [modifiers](#modifier) are applied to the [answers](./query.html#answer) to the
+[patterns](#pattern). Any optional [modifiers](#modifier) are applied to the [answers](./query.html#answer) to the
 [match](#match).
 
 The [answers](./query.html#answer) to a [match](#match) can be used with either a [get](#get-query),
@@ -194,7 +194,7 @@ The [get query](#get-query) will project each [answer](./query.html#answer) over
 
 The [insert query](#insert-query) will insert the given [variable patterns](./query.html#variable-pattern) into the
 knowledge base and return an [answer](./query.html#answer) with variables bound to concepts mentioned in the
-[variable patterns](./query.html#variable pattern).
+[variable patterns](./query.html#variable-pattern).
 
 If a [match](#match) is provided, then the [insert query](#insert-query) will operate for every
 [answer](./query.html#answer) of the [match](#match) and return one [answer](./query.html#answer) for each
@@ -287,7 +287,7 @@ An [aggregate query](#aggregate-query) is a [match](#match) followed by the keyw
 An aggregate begins with an aggregate name followed by zero or more arguments. An argument may be either a
 [variable](./query.html#variable) or another [aggregate](#aggregate).
 
-Examples of [aggregates](#aggregates) are:
+Examples of [aggregates](#aggregate) are:
 
 - `ask`
   - Return whether there are any [answers](./query.html#answer).
@@ -304,5 +304,5 @@ Examples of [aggregates](#aggregates) are:
 - `(<aggregate> as <identifier> , ...)`
   - The "product" [aggregate](#aggregate) has a special syntax: a comma-separated sequence of named
     aggregates surrounded by brackets `( )`. This [aggregate](#aggregate) will execute all comprising
-    [aggregates](#aggregates) and put the results in a map, keyed by the given identifiers.
+    [aggregates](#aggregate) and put the results in a map, keyed by the given identifiers.
 

@@ -23,8 +23,8 @@ A [query](#query) is comprised of an action (such as `get` or `delete`) with arg
 # Answer
 
 Several [queries](#query) return [answers](#answer). An [answer](#answer) is a map from [variables](#variable) to
-concepts. In general, [answers](#answer) will contain all [variables](#variable) mentioned in the [patterns](#pattern)
-of the [query](#query).
+concepts. In general, [answers](#answer) will contain all [variables](#variable) mentioned in the
+[variable patterns](#variable-pattern) of the [query](#query).
 
 
 # Variable
