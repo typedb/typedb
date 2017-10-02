@@ -75,4 +75,10 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
      */
     @Override
     PathQuery withTx(GraknTx tx);
+
+    /**
+     * Allow attributes and their relationships to be included.
+     */
+    @Override
+    PathQuery includeAttribute();
 }

@@ -25,6 +25,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.NoResultException;
@@ -61,6 +62,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         if (sourceId == null) throw GraqlQueryException.noPathSource();
         if (destinationId == null) throw GraqlQueryException.noPathDestination();
         initSubGraph();
+        getAllSubTypes();
+
         if (!verticesExistInSubgraph(sourceId, destinationId)) {
             throw GraqlQueryException.instanceDoesNotExist();
         }
@@ -95,9 +98,11 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         List<ConceptId> fullPath = new ArrayList<>();
         for (int index = 0; index < path.size() - 1; index++) {
             fullPath.add(path.get(index));
-            ConceptId resourceRelationId = getResourceEdgeId(tx.get(), path.get(index), path.get(index + 1));
-            if (resourceRelationId != null) {
-                fullPath.add(resourceRelationId);
+            if (includeAttribute) {
+                ConceptId resourceRelationId = getResourceEdgeId(tx.get(), path.get(index), path.get(index + 1));
+                if (resourceRelationId != null) {
+                    fullPath.add(resourceRelationId);
+                }
             }
         }
         fullPath.add(destinationId);
@@ -117,6 +122,11 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     public PathQuery to(ConceptId destinationId) {
         this.destinationId = destinationId;
         return this;
+    }
+
+    @Override
+    public PathQuery includeAttribute() {
+        return (PathQuery) super.includeAttribute();
     }
 
     @Override

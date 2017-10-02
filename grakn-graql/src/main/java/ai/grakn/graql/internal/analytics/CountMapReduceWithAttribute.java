@@ -20,31 +20,27 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.io.Serializable;
-import java.util.Iterator;
 
 /**
- * The MapReduce program for counting the number of instances excluding attributes and implicit relationships
+ * The MapReduce program for counting the number of instances
  *
  * @author Jason Liu
- * @author Sheldon Hall
  */
 
-public class CountMapReduce extends GraknMapReduce<Long> {
+public class CountMapReduceWithAttribute extends CountMapReduce {
 
     // Needed internally for OLAP tasks
-    public CountMapReduce() {
+    public CountMapReduceWithAttribute() {
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
+        if (vertex.property(CountVertexProgram.EDGE_COUNT).isPresent()) {
+            emitter.emit(RESERVED_TYPE_LABEL_KEY,
+                    vertex.value(CountVertexProgram.EDGE_COUNT));
+        }
         emitter.emit(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()), 1L);
-    }
-
-    @Override
-    Long reduceValues(Iterator<Long> values) {
-        return IteratorUtils.reduce(values, 0L, (a, b) -> a + b);
     }
 }

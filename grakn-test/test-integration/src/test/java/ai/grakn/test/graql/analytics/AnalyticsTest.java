@@ -75,33 +75,6 @@ public class AnalyticsTest {
         factory = context.sessionWithNewKeyspace();
     }
 
-    @Ignore
-    @Test
-    public void testImplicitResourceRelation() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
-            Label resourceLabel = Label.of("someResource");
-            AttributeType<Long> someResource = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
-            EntityType thingy = graph.putEntityType("thingy");
-            thingy.attribute(someResource);
-
-            Entity thisThing = thingy.addEntity();
-            Attribute thisAttribute = someResource.putAttribute(1L);
-            thisThing.attribute(thisAttribute);
-            graph.commit();
-        }
-
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees;
-            degrees = graph.graql().compute().degree().of("thingy").in("someResource").execute();
-            assertEquals(1, degrees.size());
-            assertEquals(1, degrees.get(1L).size());
-
-            degrees = graph.graql().compute().degree().in("thingy", "someResource").execute();
-            assertEquals(1, degrees.size());
-            assertEquals(2, degrees.get(1L).size());
-        }
-    }
-
     @Test
     public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
