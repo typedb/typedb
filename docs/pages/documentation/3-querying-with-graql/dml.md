@@ -64,13 +64,6 @@ The [variable](./query.html#variable) representing the role can optionally be om
 `$x has <identifier> $y via $r` is _satisfied_ if `$x` is a _thing_ related to an _attribute_ `$y` of _attribute type_
 `<identifier>`, where `$r` represents the _relationship_ between them.
 
-This is equivalent to the following:
-<!-- TODO: Describe without referring to relationships? -->
-```graql-test-ignore
-$r ($x, $y);
-$y isa <identifier>;
-```
-
 The `via $r` is optional. Additionally, a [predicate](#predicate) can be used instead of a
 [variable](./query.html#variable):
 
@@ -82,6 +75,14 @@ which is equivalent to:
 $x has <identifier> $_;
 $_ val <predicate>;
 ```
+
+> `has` is syntactic sugar for a particular kind of relationship.
+>
+> It is equivalent to the following:
+> ```graql-test-ignore
+> $r ($x, $y);
+> $y isa <identifier>;
+> ```
 
 ### val
 
@@ -117,39 +118,41 @@ $_ val <predicate>;
 `$A has <identifier>` is _satisfied_ if `$A` is a _type_ whose instances can have instances of _attribute type_
 `<identifier>`.
 
-<!-- TODO: Describe without referring to relationships? -->
-This is equivalent to the following:
-```graql-test-ignore
-$_R sub relationship, relates $_O, relates $_V;
-$_O sub role;
-$_V sub role;
-
-$A plays $_O;
-<identifier> plays $_V;
-
-$_O != $_V;
-```
+> `has` is syntactic sugar for a particular kind of relationship.
+>
+> It is equivalent to the following:
+> ```graql-test-ignore
+> $_R sub relationship, relates $_O, relates $_V;
+> $_O sub role;
+> $_V sub role;
+>
+> $A plays $_O;
+> <identifier> plays $_V;
+>
+> $_O != $_V;
+> ```
 
 ### key
 
 `$A has <identifier>` is _satisfied_ if `$A` is a _type_ whose instances must have keys of _attribute type_
 `<identifier>`.
 
-<!-- TODO: Describe without referring to relationships? -->
-This is equivalent to the following:
-```graql-test-ignore
-$_R sub relationship, relates $_O, relates $_V;
-$_O sub role;
-$_V sub role;
-
-$A plays<<required>> $_O;
-<identifier> plays $_V;
-
-$_O != $_V;
-```
-<!-- TODO: This is pretty bad -->
-(note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
-role exactly once).
+> `key` is syntactic sugar for a particular kind of relationship.
+>
+> It is equivalent to the following:
+> ```graql-test-ignore
+> $_R sub relationship, relates $_O, relates $_V;
+> $_O sub role;
+> $_V sub role;
+>
+> $A plays<<required>> $_O;
+> <identifier> plays $_V;
+>
+> $_O != $_V;
+> ```
+> <!-- TODO: This is pretty bad -->
+> (note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
+> role exactly once).
 
 ### datatype
 
@@ -226,21 +229,6 @@ _relationship_ to `$r`.
 
 If `<identifier>` is a key for the direct type of `$x`, then the resulting relationship will be a key relationship.
 
-<!-- TODO: Describe without referring to relationships? -->
-If `<identifier>` is not a key for the direct type of `$x`, this is equivalent to:
-
-```graql-test-ignore
-$r (has-<identifier>-owner: $x, has-<identifier>-value: $y) isa has-<identifier>;
-$y isa <identifier>;
-```
-
-Otherwise, it is equivalent to:
-
-```graql-test-ignore
-$r (key-<identifier>-owner: $x, key-<identifier>-value: $y) isa key-<identifier>;
-$y isa <identifier>;
-```
-
 The `via $r` is optional. Additionally, a literal [value](./query.html#value) can be used instead of a
 [variable](./query.html#variable):
 
@@ -254,6 +242,23 @@ which is equivalent to:
 $x has <identifier> $_;
 $_ val <value>;
 ```
+
+<!-- TODO: Describe without referring to relationships? -->
+> `has` is syntactic sugar for a particular kind of relationship.
+>
+> If `<identifier>` is not a key for the direct type of `$x`, it is equivalent to:
+>
+> ```graql-test-ignore
+> $r (has-<identifier>-owner: $x, has-<identifier>-value: $y) isa has-<identifier>;
+> $y isa <identifier>;
+> ```
+>
+> Otherwise, it is equivalent to:
+>
+> ```graql-test-ignore
+> $r (key-<identifier>-owner: $x, key-<identifier>-value: $y) isa key-<identifier>;
+> $y isa <identifier>;
+> ```
 
 ## val
 

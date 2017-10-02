@@ -63,34 +63,38 @@ one will be created.
 
 `$A has <identifier>` defines instances of the _type_ `$A` to have attributes of the _attribute type_ `<identifier>`.
 
-This is done using the following relationship structure:
-```graql-test-ignore
-has-<identifier>-owner sub has-<sup>-owner;
-has-<identifier>-value sub has-<sup>-value;
-has-<identifier> sub has-<sup>, relates has-<identifier>-owner, relates has-<identifier>-value;
-
-$A plays has-<identifier>-owner;
-<identifier> plays has-<identifier>-value;
-```
-Where `<sup>` is the direct super-concept of `<identifier>`.
+> `has` is syntactic sugar for a particular kind of relationship.
+>
+> This is done using the following relationship structure:
+> ```graql-test-ignore
+> has-<identifier>-owner sub has-<sup>-owner;
+> has-<identifier>-value sub has-<sup>-value;
+> has-<identifier> sub has-<sup>, relates has-<identifier>-owner, relates has-<identifier>-value;
+>
+> $A plays has-<identifier>-owner;
+> <identifier> plays has-<identifier>-value;
+> ```
+> Where `<sup>` is the direct super-concept of `<identifier>`.
 
 ## key (type)
 
 `$A key <identifier>` defines instances of the _type_ `$A` to have a key of _attribute type_ `<identifier>`.
 
-This is done using the following relationship structure:
-```graql-test-ignore
-key-<identifier>-owner sub key-<sup>-owner;
-key-<identifier>-value sub key-<sup>-value;
-key-<identifier> sub key-<sup>, relates key-<identifier>-owner, relates key-<identifier>-value;
-
-$A plays<<required>> has-<identifier>-owner;
-<identifier> plays has-<identifier>-value;
-```
-Where `<sup>` is the direct super-concept of `<identifier>`.
-<!-- TODO: This is pretty bad -->
-(note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
-role exactly once).
+> `key` is syntactic sugar for a particular kind of relationship.
+>
+> This is done using the following relationship structure:
+> ```graql-test-ignore
+> key-<identifier>-owner sub key-<sup>-owner;
+> key-<identifier>-value sub key-<sup>-value;
+> key-<identifier> sub key-<sup>, relates key-<identifier>-owner, relates key-<identifier>-value;
+>
+> $A plays<<required>> has-<identifier>-owner;
+> <identifier> plays has-<identifier>-value;
+> ```
+> Where `<sup>` is the direct super-concept of `<identifier>`.
+> <!-- TODO: This is pretty bad -->
+> (note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
+> role exactly once).
 
 ## datatype
 
