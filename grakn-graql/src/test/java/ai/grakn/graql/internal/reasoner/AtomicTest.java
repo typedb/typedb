@@ -878,8 +878,8 @@ public class AtomicTest {
         String resource = "{$x has res1 $r;$r val 'f';}";
         String resource2 = "{$r has res1 $x;$x val 'f';}";
         String resource3 = "{$r has res1 'f';}";
-        String resource4 = "{$x has res1 $y as $r;$y val 'f';}";
-        String resource5 = "{$y has res1 $r as $x;$r val 'f';}";
+        String resource4 = "{$x has res1 $y via $r;$y val 'f';}";
+        String resource5 = "{$y has res1 $r via $x;$r val 'f';}";
         testUnification(resource, resource2, true, true, graph);
         testUnification(resource, resource3, true, true, graph);
         testUnification(resource2, resource3, true, true, graph);
