@@ -21,10 +21,10 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,7 +57,7 @@ public class MultiUnifierImpl implements MultiUnifier{
     }
 
     @SafeVarargs
-    MultiUnifierImpl(Map<Var, Var>... maps){
+    MultiUnifierImpl(ImmutableMultimap<Var, Var>... maps){
         this.multiUnifier = ImmutableSet.<Unifier>builder()
                 .addAll(Stream.of(maps).map(UnifierImpl::new).iterator())
                 .build();

@@ -24,7 +24,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -43,6 +42,7 @@ import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Sets;
 import java.util.HashSet;
 import org.junit.BeforeClass;
@@ -88,6 +88,14 @@ public class AtomicQueryTest {
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
+    }
+
+    @Test
+    public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){
+        GraknTx graph = unificationTestSet.tx();
+        String patternString = "{$x isa someType;}";
+        exception.expect(GraqlQueryException.class);
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
     }
 
     @Test
@@ -177,7 +185,7 @@ public class AtomicQueryTest {
     }
 
     @Test
-    public void testWhenUnifiyingAtomWithItself_UnifierIsTrivial(){
+    public void testWhenUnifiyingAtomWithItself_UnifierIsIdentity(){
         GraknTx graph = unificationWithTypesSet.tx();
         String patternString = "{$x1 isa entity1;$x2 isa entity2;($x1, $x2) isa binary;}";
 
@@ -199,7 +207,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
 
         Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
-        Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
+        Unifier correctUnifier = new UnifierImpl(ImmutableMultimap.of(
                 var("y1"), var("x1"),
                 var("y2"), var("x2")
         ));
@@ -217,11 +225,261 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
 
         Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
-        Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
+        Unifier correctUnifier = new UnifierImpl(ImmutableMultimap.of(
                 var("y1"), var("x1"),
                 var("y2"), var("x2")
         ));
         assertTrue(unifier.containsAll(correctUnifier));
+    }
+
+    @Test
+    public void testExactUnification_TernaryRelation_ParentRepeatsRoles(){
+        GraknTx graph =  unificationWithTypesSet.tx();
+        String parentString = "{(role1: $x, role1: $y, role2: $z) isa ternary;}";
+        String childString = "{(role1: $u, role2: $v, role3: $q) isa ternary;}";
+        String childString2 = "{(role1: $u, role2: $v, role2: $q) isa ternary;}";
+        String childString3 = "{(role1: $u, role1: $v, role2: $q) isa ternary;}";
+        String childString4 = "{(role1: $u, role1: $u, role2: $q) isa ternary;}";
+        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString, graph);
+        Conjunction<VarPatternAdmin> childPattern = conjunction(childString, graph);
+        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2, graph);
+        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3, graph);
+        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4, graph);
+        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(parentPattern, graph);
+        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(childPattern, graph);
+        ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(childPattern2, graph);
+        ReasonerAtomicQuery childQuery3 = ReasonerQueries.atomic(childPattern3, graph);
+        ReasonerAtomicQuery childQuery4 = ReasonerQueries.atomic(childPattern4, graph);
+
+        MultiUnifier emptyUnifier = childQuery.getMultiUnifier(parentQuery);
+        MultiUnifier emptyUnifier2 = childQuery2.getMultiUnifier(parentQuery);
+
+        assertTrue(emptyUnifier.isEmpty());
+        assertTrue(emptyUnifier2.isEmpty());
+
+        MultiUnifier unifier = childQuery3.getMultiUnifier(parentQuery);
+        MultiUnifier correctUnifier = new MultiUnifierImpl(
+                ImmutableMultimap.of(
+                        var("u"), var("x"), 
+                        var("v"), var("y"), 
+                        var("q"), var("z")),
+                ImmutableMultimap.of(
+                        var("u"), var("y"),
+                        var("v"), var("x"),
+                        var("q"), var("z"))
+        );
+        assertTrue(unifier.containsAll(correctUnifier));
+        assertEquals(unifier.size(), 2);
+
+        Unifier unifier2 = childQuery4.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier2 = new UnifierImpl(ImmutableMultimap.of(
+                var("u"), var("x"),
+                var("u"), var("y"),
+                var("q"), var("z")
+        ));
+        assertTrue(unifier2.containsAll(correctUnifier2));
+    }
+
+    @Test
+    public void testExactUnification_TernaryRelation_ParentRepeatsMetaRoles(){
+        GraknTx graph =  unificationWithTypesSet.tx();
+        String parentString = "{(role: $x, role: $y, role2: $z) isa ternary;}";
+        String childString = "{(role1: $u, role2: $v, role3: $q) isa ternary;}";
+        String childString2 = "{(role1: $u, role2: $v, role2: $q) isa ternary;}";
+        String childString3 = "{(role1: $u, role1: $v, role2: $q) isa ternary;}";
+        String childString4 = "{(role1: $u, role1: $u, role2: $q) isa ternary;}";
+        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString, graph);
+        Conjunction<VarPatternAdmin> childPattern = conjunction(childString, graph);
+        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2, graph);
+        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3, graph);
+        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4, graph);
+        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(parentPattern, graph);
+        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(childPattern, graph);
+        ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(childPattern2, graph);
+        ReasonerAtomicQuery childQuery3 = ReasonerQueries.atomic(childPattern3, graph);
+        ReasonerAtomicQuery childQuery4 = ReasonerQueries.atomic(childPattern4, graph);
+
+        MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery);
+        MultiUnifier correctUnifier = new MultiUnifierImpl(
+                ImmutableMultimap.of(
+                        var("u"), var("x"),
+                        var("v"), var("z"),
+                        var("q"), var("y")),
+                ImmutableMultimap.of(
+                        var("u"), var("y"),
+                        var("v"), var("z"),
+                        var("q"), var("x"))
+        );
+        assertTrue(unifier.containsAll(correctUnifier));
+        assertEquals(unifier.size(), 2);
+
+        MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery);
+        MultiUnifier correctUnifier2 = new MultiUnifierImpl(
+                ImmutableMultimap.of(
+                        var("u"), var("x"),
+                        var("v"), var("y"),
+                        var("q"), var("z")),
+                ImmutableMultimap.of(
+                        var("u"), var("x"),
+                        var("v"), var("z"),
+                        var("q"), var("y")),
+                ImmutableMultimap.of(
+                        var("u"), var("y"),
+                        var("v"), var("z"),
+                        var("q"), var("x")),
+                ImmutableMultimap.of(
+                        var("u"), var("y"),
+                        var("v"), var("x"),
+                        var("q"), var("z"))
+        );
+        assertTrue(unifier2.containsAll(correctUnifier2));
+        assertEquals(unifier2.size(), 4);
+
+        MultiUnifier unifier3 = childQuery3.getMultiUnifier(parentQuery);
+        MultiUnifier correctUnifier3 = new MultiUnifierImpl(
+                ImmutableMultimap.of(
+                        var("u"), var("x"),
+                        var("v"), var("y"),
+                        var("q"), var("z")),
+                ImmutableMultimap.of(
+                        var("u"), var("y"),
+                        var("v"), var("x"),
+                        var("q"), var("z"))
+        );
+        assertTrue(unifier3.containsAll(correctUnifier3));
+        assertEquals(unifier3.size(), 2);
+
+        Unifier unifier4 = childQuery4.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier4 = new UnifierImpl(ImmutableMultimap.of(
+                var("u"), var("x"),
+                var("u"), var("y"),
+                var("q"), var("z")
+        ));
+        assertTrue(unifier4.containsAll(correctUnifier4));
+    }
+
+    @Test
+    public void testExactUnification_TernaryRelation_ParentRepeatsRoles_ParentRepeatsRPs(){
+        GraknTx graph =  unificationWithTypesSet.tx();
+        String parentString = "{(role1: $x, role1: $x, role2: $y) isa ternary;}";
+        String childString = "{(role1: $u, role2: $v, role3: $q) isa ternary;}";
+        String childString2 = "{(role1: $u, role2: $v, role2: $q) isa ternary;}";
+        String childString3 = "{(role1: $u, role1: $v, role2: $q) isa ternary;}";
+        String childString4 = "{(role1: $u, role1: $u, role2: $q) isa ternary;}";
+        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString, graph);
+        Conjunction<VarPatternAdmin> childPattern = conjunction(childString, graph);
+        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2, graph);
+        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3, graph);
+        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4, graph);
+        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(parentPattern, graph);
+        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(childPattern, graph);
+        ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(childPattern2, graph);
+        ReasonerAtomicQuery childQuery3 = ReasonerQueries.atomic(childPattern3, graph);
+        ReasonerAtomicQuery childQuery4 = ReasonerQueries.atomic(childPattern4, graph);
+
+        MultiUnifier emptyUnifier = childQuery.getMultiUnifier(parentQuery);
+        MultiUnifier emptyUnifier2 = childQuery2.getMultiUnifier(parentQuery);
+
+        assertTrue(emptyUnifier.isEmpty());
+        assertTrue(emptyUnifier2.isEmpty());
+
+        Unifier unifier = childQuery3.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier = new UnifierImpl(ImmutableMultimap.of(
+                var("u"), var("x"),
+                var("v"), var("x"),
+                var("q"), var("y")
+        ));
+        assertTrue(unifier.containsAll(correctUnifier));
+
+        Unifier unifier2 = childQuery4.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier2 = new UnifierImpl(ImmutableMultimap.of(
+                var("u"), var("x"),
+                var("q"), var("y")
+        ));
+        assertTrue(unifier2.containsAll(correctUnifier2));
+    }
+
+    @Test
+    public void testExactUnification_TernaryRelation_ParentRepeatsMetaRoles_ParentRepeatsRPs(){
+        GraknTx graph =  unificationWithTypesSet.tx();
+        String parentString = "{(role: $x, role: $x, role2: $y) isa ternary;}";
+        String childString = "{(role1: $u, role2: $v, role3: $q) isa ternary;}";
+        String childString2 = "{(role1: $u, role2: $v, role2: $q) isa ternary;}";
+        String childString3 = "{(role1: $u, role1: $v, role2: $q) isa ternary;}";
+        String childString4 = "{(role1: $u, role1: $u, role2: $q) isa ternary;}";
+        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString, graph);
+        Conjunction<VarPatternAdmin> childPattern = conjunction(childString, graph);
+        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2, graph);
+        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3, graph);
+        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4, graph);
+        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(parentPattern, graph);
+        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(childPattern, graph);
+        ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(childPattern2, graph);
+        ReasonerAtomicQuery childQuery3 = ReasonerQueries.atomic(childPattern3, graph);
+        ReasonerAtomicQuery childQuery4 = ReasonerQueries.atomic(childPattern4, graph);
+
+        Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier = new UnifierImpl(
+                ImmutableMultimap.of(
+                        var("q"), var("x"),
+                        var("u"), var("x"),
+                        var("v"), var("y"))
+        );
+        assertTrue(unifier.containsAll(correctUnifier));
+
+        MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery);
+        MultiUnifier correctUnifier2 = new MultiUnifierImpl(
+                ImmutableMultimap.of(
+                        var("u"), var("x"),
+                        var("q"), var("x"),
+                        var("v"), var("y")),
+                ImmutableMultimap.of(
+                        var("u"), var("x"),
+                        var("v"), var("x"),
+                        var("q"), var("y"))
+        );
+        assertTrue(unifier2.containsAll(correctUnifier2));
+        assertEquals(unifier2.size(), 2);
+
+        Unifier unifier3 = childQuery3.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier3 = new UnifierImpl(
+                ImmutableMultimap.of(
+                        var("u"), var("x"),
+                        var("v"), var("x"),
+                        var("q"), var("y"))
+        );
+        assertTrue(unifier3.containsAll(correctUnifier3));
+
+        Unifier unifier4 = childQuery4.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier4 = new UnifierImpl(ImmutableMultimap.of(
+                var("u"), var("x"),
+                var("q"), var("y")
+        ));
+        assertTrue(unifier4.containsAll(correctUnifier4));
+    }
+
+    @Test
+    public void testExactUnification_TernaryRelation_RepeatingRelationPlayers_withMetaRoles(){
+        GraknTx graph =  unificationWithTypesSet.tx();
+        String patternString = "{$x1 isa entity3;$x3 isa entity5;($x1, $x2, $x3) isa ternary;}";
+        String patternString2 = "{$y3 isa entity5;$y1 isa entity3;($y2, $y3, $y1) isa ternary;}";
+        String patternString3 = "{$y3 isa entity5;$y2 isa entity4;$y1 isa entity3;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
+        ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
+
+        Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
+        Unifier unifier2 = childQuery2.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier = new UnifierImpl(ImmutableMultimap.of(
+                var("y1"), var("x1"),
+                var("y2"), var("x2"),
+                var("y3"), var("x3")
+        ));
+        assertTrue(unifier.containsAll(correctUnifier));
+        assertTrue(unifier2.containsAll(correctUnifier));
     }
 
     @Test
@@ -239,7 +497,7 @@ public class AtomicQueryTest {
 
         Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
         Unifier unifier2 = childQuery2.getMultiUnifier(parentQuery).getUnifier();
-        Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
+        Unifier correctUnifier = new UnifierImpl(ImmutableMultimap.of(
                 var("y1"), var("x1"),
                 var("y2"), var("x2"),
                 var("y3"), var("x3")
@@ -263,7 +521,7 @@ public class AtomicQueryTest {
 
         Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
         Unifier unifier2 = childQuery2.getMultiUnifier(parentQuery).getUnifier();
-        Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
+        Unifier correctUnifier = new UnifierImpl(ImmutableMultimap.of(
                 var("y1"), var("x1"),
                 var("y2"), var("x2"),
                 var("y3"), var("x3")
@@ -289,27 +547,27 @@ public class AtomicQueryTest {
         MultiUnifier unifier = childQuery.getMultiUnifier(parentQuery);
         MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery);
         MultiUnifier correctUnifier = new MultiUnifierImpl(
-                ImmutableMap.of(
+                ImmutableMultimap.of(
                         var("y1"), var("x1"),
                         var("y2"), var("x2"),
                         var("y3"), var("x3")),
-                ImmutableMap.of(
+                ImmutableMultimap.of(
                         var("y1"), var("x1"),
                         var("y2"), var("x3"),
                         var("y3"), var("x2")),
-                ImmutableMap.of(
+                ImmutableMultimap.of(
                         var("y1"), var("x2"),
                         var("y2"), var("x1"),
                         var("y3"), var("x3")),
-                ImmutableMap.of(
+                ImmutableMultimap.of(
                         var("y1"), var("x2"),
                         var("y2"), var("x3"),
                         var("y3"), var("x1")),
-                ImmutableMap.of(
+                ImmutableMultimap.of(
                         var("y1"), var("x3"),
                         var("y2"), var("x1"),
                         var("y3"), var("x2")),
-                ImmutableMap.of(
+                ImmutableMultimap.of(
                         var("y1"), var("x3"),
                         var("y2"), var("x2"),
                         var("y3"), var("x1"))

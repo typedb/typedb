@@ -21,6 +21,8 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -46,8 +48,9 @@ public class UnifierImpl implements Unifier {
      */
     public UnifierImpl(){}
     public UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){ mappings.forEach(m -> unifier.put(m.getKey(), m.getValue()));}
-    public UnifierImpl(Map<Var, Var> map){
-        this(map.entrySet());
+    public UnifierImpl(ImmutableMap<Var, Var> map){ this(map.entrySet());}
+    public UnifierImpl(ImmutableMultimap<Var, Var> map){
+        this(map.entries());
     }
     public UnifierImpl(Unifier u){ this(u.mappings());}
 

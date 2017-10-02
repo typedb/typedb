@@ -695,7 +695,7 @@ public class RelationshipAtom extends IsaAtom {
         Set<Role> childRoles = childRoleRPMap.keySet();
 
         //establish compatible castings for each parent casting
-        List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerRP = new ArrayList<>();
+        List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
         parentAtom.getRelationPlayers().stream()
                 .filter(prp -> prp.getRole().isPresent())
                 .forEach(prp -> {
@@ -749,14 +749,14 @@ public class RelationshipAtom extends IsaAtom {
                                             .forEach(compatibleRelationPlayers::add);
                                 });
                         if (!compatibleRelationPlayers.isEmpty()) {
-                            compatibleMappingsPerRP.add(
+                            compatibleMappingsPerParentRP.add(
                                     compatibleRelationPlayers.stream()
                                             .map(crp -> new Pair<>(crp, prp))
                                             .collect(Collectors.toSet())
                             );
                         }
                     } else {
-                        compatibleMappingsPerRP.add(
+                        compatibleMappingsPerParentRP.add(
                                 getRelationPlayers().stream()
                                         .map(crp -> new Pair<>(crp, prp))
                                         .collect(Collectors.toSet())
@@ -764,13 +764,13 @@ public class RelationshipAtom extends IsaAtom {
                     }
                 });
 
-        return Sets.cartesianProduct(compatibleMappingsPerRP).stream()
+        return Sets.cartesianProduct(compatibleMappingsPerParentRP).stream()
                 .filter(list -> !list.isEmpty())
-                //check the same child rp not mapped to multiple parents
+                //check the same child rp is not mapped to multiple parent rps
                 .filter(list -> {
-                    int uniqueChildRPs = list.stream().map(Pair::getKey).collect(Collectors.toSet()).size();
-                    return uniqueChildRPs == parentAtom.getRelationPlayers().size()
-                            || uniqueChildRPs == new HashSet<>(this.getRelationPlayers()).size();
+                    List<RelationPlayer> listChildRps = list.stream().map(Pair::getKey).collect(Collectors.toList());
+                    //NB: this preserves cardinality instead of removing all occuring instances which is what we want
+                    return ReasonerUtils.subtract(listChildRps, this.getRelationPlayers()).isEmpty();
                 })
                 //check all parent rps mapped
                 .filter(list -> list.stream().map(Pair::getValue).collect(Collectors.toList()).containsAll(parentAtom.getRelationPlayers()))

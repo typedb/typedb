@@ -975,12 +975,13 @@ public class ReasoningTests {
         List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
         List<Answer> answers4 = qb.<GetQuery>parse(queryString4).execute();
         List<Answer> answers5 = qb.<GetQuery>parse(queryString5).execute();
+        List<Answer> answers6 = qb.<GetQuery>parse(queryString6).execute();
         assertEquals(answers.size(), 27);
         assertEquals(answers2.size(), 9);
         assertEquals(answers3.size(), 63);
         assertEquals(answers4.size(), 12);
         assertEquals(answers5.size(), 4);
-        System.out.println();
+        assertEquals(answers6.size(), 138);
     }
 
     @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation
