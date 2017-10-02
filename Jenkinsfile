@@ -93,3 +93,13 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
 	slackGithub "Periodic Build Success" "good"
     }
 }
+
+// TODO: remove before merge
+if (env.BRANCH_NAME == 'stable' || true) {
+    node {
+        address = '172.31.22.83'
+        sshagent(credentials: ['jenkins-aws-ssh']) {
+            sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${address} uname -a"
+        }
+    }
+}
