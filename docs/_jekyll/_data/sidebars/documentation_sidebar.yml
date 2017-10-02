@@ -38,7 +38,6 @@ entries:
   - title: Graql Queries
     output: web
     folderitems:
-      # TODO: Remove a bunch of these pages before merging
       - title: Overview
         output: web
         url: /documentation/graql/graql-overview.html
