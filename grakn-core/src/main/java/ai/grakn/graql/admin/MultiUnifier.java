@@ -25,7 +25,9 @@ import javax.annotation.CheckReturnValue;
 /**
  *
  * <p>
- * TODO
+ * Generalisation of the {@link Unifier} accounting for the possibility of existence of more than one unifier between two expressions.
+ * Corresponds to a simple set U = {u1, u2, ..., ui}, where i e N, i >= 0.
+ * The case of i = 0 corresponds to a case where no unifier exists.
  * </p>
  *
  * @author Kasper Piskorski
@@ -34,26 +36,26 @@ import javax.annotation.CheckReturnValue;
 public interface MultiUnifier extends Iterable<Unifier>, Streamable<Unifier> {
 
     /**
-     * @return true if the set of mappings is empty
+     * @return true if the multiunifier is empty
      */
     @CheckReturnValue
     boolean isEmpty();
 
 
     /**
-     *
-     * @return
+     * @return unique unifier if exists, throws an exception otherwise
      */
+    @CheckReturnValue
     Unifier getUnifier();
 
     /**
-     *
-     * @return
+     * @return the set of unifiers corresponding to this multiunifier
      */
+    @CheckReturnValue
     ImmutableSet<Unifier> unifiers();
 
     /**
-     * unifier merging by simple mapping addition (no variable clashes assumed)
+     * ultiunifier merging by simple mapping addition (no variable clashes assumed)
      * @param u unifier to be merged with this unifier
      * @return merged unifier
      */
@@ -62,29 +64,29 @@ public interface MultiUnifier extends Iterable<Unifier>, Streamable<Unifier> {
 
 
     /**
-     * @return unifier inverse - new unifier with inverted mappings
+     * @return multiunifier inverse - multiunifier built of inverses of all constituent unifiers
      */
     @CheckReturnValue
     MultiUnifier inverse();
 
+
     /**
-     *
-     * @param u
-     * @return
+     * @param u unifier to compared with
+     * @return true if any unifier of this multiunifier contains all mappings of u
      */
     @CheckReturnValue
     boolean contains(Unifier u);
 
     /**
      *
-     * @param u
-     * @return
+     * @param u multiunifier to compared with
+     * @return true if for all unifiers ui of u, there exists a unifier in this multiunifier that contains all mappings of ui
      */
     @CheckReturnValue
     boolean containsAll(MultiUnifier u);
 
     /**
-     * @return number of mappings that constitute this unifier
+     * @return number of unifiers this multiunifier holds
      */
     @CheckReturnValue
     int size();

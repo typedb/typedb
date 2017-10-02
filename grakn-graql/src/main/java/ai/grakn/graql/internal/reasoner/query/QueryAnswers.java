@@ -89,7 +89,7 @@ public class QueryAnswers implements Iterable<Answer>{
     }
 
     /**
-     * unify the answers by applying unifiers to variable set
+     * unify the answers by applying unifier to variable set
      * @param unifier map of [key: from/value: to] unifiers
      * @return unified query answers
      */
@@ -104,9 +104,9 @@ public class QueryAnswers implements Iterable<Answer>{
     }
 
     /**
-     *
-     * @param multiUnifier
-     * @return
+     * unify the answers by applying multiunifier to variable set
+     * @param multiUnifier multiunifier to be applied to the query answers
+     * @return unified query answers
      */
     public QueryAnswers unify(MultiUnifier multiUnifier){
         QueryAnswers unifiedAnswers = new QueryAnswers();
@@ -116,7 +116,6 @@ public class QueryAnswers implements Iterable<Answer>{
                 .forEach(unifiedAnswers::add);
         return unifiedAnswers;
     }
-
 
     /**
      * unify answers of childQuery with parentQuery

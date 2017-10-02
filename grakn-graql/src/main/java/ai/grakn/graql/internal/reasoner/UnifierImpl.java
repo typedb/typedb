@@ -31,7 +31,7 @@ import ai.grakn.graql.internal.reasoner.utils.Pair;
 /**
  *
  * <p>
- * Implementation of {@link Unifier} interface.
+ * Implementation of the {@link Unifier} interface.
  * </p>
  *
  * @author Kasper Piskorski

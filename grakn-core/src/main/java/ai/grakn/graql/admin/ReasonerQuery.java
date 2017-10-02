@@ -94,7 +94,7 @@ public interface ReasonerQuery{
 
     /**
      * @param parent query to unify wth
-     * @return unifier such that this and parent are equal
+     * @return multiunifier unifying this and parent query
      */
     @CheckReturnValue
     MultiUnifier getMultiUnifier(ReasonerQuery parent);

@@ -139,8 +139,8 @@ public interface Answer {
     Answer unify(Unifier unifier);
 
     /**
-     * @param multiUnifier
-     * @return
+     * @param multiUnifier set of unifiers defining variable mappings
+     * @return stream of unified answers
      */
     @CheckReturnValue
     Stream<Answer> unify(MultiUnifier multiUnifier);

@@ -177,7 +177,8 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
             Q equivalentQuery = match.getKey();
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
             QueryAnswers answers =  match.getValue().unify(multiUnifier);
-            //TODO ???
+
+            //NB: only used when checking for materialised answer duplicates
             Answer answer = answers.stream()
                     .filter(a -> a.containsAll(ans))
                     .findFirst().orElse(null);

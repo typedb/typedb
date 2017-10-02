@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 /**
  *
  * <p>
- * TODO
+ * Implementation of the {@link MultiUnifier} interface.
  * </p>
  *
  * @author Kasper Piskorski
@@ -45,7 +45,6 @@ public class MultiUnifierImpl implements MultiUnifier{
     public MultiUnifierImpl(Set<Unifier> us){
         this.multiUnifier = ImmutableSet.copyOf(us);
     }
-
     public MultiUnifierImpl(Unifier u){
         this.multiUnifier = ImmutableSet.of(u);
     }
@@ -56,7 +55,9 @@ public class MultiUnifierImpl implements MultiUnifier{
     public MultiUnifierImpl(){
         this.multiUnifier = ImmutableSet.of(new UnifierImpl());
     }
-    public MultiUnifierImpl(Map<Var, Var>... maps){
+
+    @SafeVarargs
+    MultiUnifierImpl(Map<Var, Var>... maps){
         this.multiUnifier = ImmutableSet.<Unifier>builder()
                 .addAll(Stream.of(maps).map(UnifierImpl::new).iterator())
                 .build();

@@ -96,7 +96,7 @@ public interface Unifier{
     boolean containsValue(Var value);
 
     /**
-     * @param u unifier to compare with
+     * @param u unifier to be compared with
      * @return true if this unifier contains all mappings of u
      */
     @CheckReturnValue
