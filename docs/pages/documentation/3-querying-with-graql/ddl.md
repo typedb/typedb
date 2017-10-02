@@ -39,29 +39,29 @@ Within the [variable patterns](./query.html#variable-pattern) of both [define](#
 
 ## id
 
-`$x id <identifier>` will assign `$x` to an existing concept with the given ID. It is an error if no such concept
+`$x id <identifier>` will assign `$x` to an existing _concept_ with the given ID. It is an error if no such concept
 exists.
 
 ## label
 
-`$A label <identifier>` will assign `$A` to a schema concept with the given label. If no such schema concept exists,
+`$A label <identifier>` will assign `$A` to a _schema concept_ with the given label. If no such schema concept exists,
 one will be created.
 
 ## sub
 
-`$A sub $B` defines `$A` as the direct sub-concept of `$B`.
+`$A sub $B` defines the _schema concept_ `$A` as the direct sub-concept of the _schema concept_ `$B`.
 
 ## relates
 
-`$A relates $B` define the relationship type `$A` to directly relate the role `$B`.
+`$A relates $B` define the _relationship type_ `$A` to directly relate the _role_ `$B`.
 
 ## plays
 
-`$A plays $B` defines the type `$A` to directly play the role `$B`.
+`$A plays $B` defines the _type_ `$A` to directly play the _role_ `$B`.
 
 ## has (type)
 
-`$A has <identifier>` defines the type `$A` to have attributes of type `<identifier>`.
+`$A has <identifier>` defines instances of the _type_ `$A` to have attributes of the _attribute type_ `<identifier>`.
 
 This is done using the following relationship structure:
 ```graql-test-ignore
@@ -76,7 +76,7 @@ Where `<sup>` is the direct super-concept of `<identifier>`.
 
 ## key (type)
 
-`$A key <identifier>` defines the type `$A` to have a key of attribute type `<identifier>`.
+`$A key <identifier>` defines instances of the _type_ `$A` to have a key of _attribute type_ `<identifier>`.
 
 This is done using the following relationship structure:
 ```graql-test-ignore
@@ -94,22 +94,22 @@ role exactly once).
 
 ## datatype
 
-`$A datatype <datatype>` defines the attribute type `$A` to have the specified
+`$A datatype <datatype>` defines the _attribute type_ `$A` to have the specified
 [datatype](./query.html#value).
 
 ## regex
 
-`$A regex <regex>` defines the attribute type `$A` to have the specified regex constraint.
+`$A regex <regex>` defines the _attribute type_ `$A` to have the specified regex constraint.
 
 ## is-abstract
 
-`$A is-abstract` defines the type `$A` to be abstract.
+`$A is-abstract` defines the _type_ `$A` to be abstract.
 
 ## when
 
-`$A when <pattern>` defines the rule `$A` to have the specified `when` [pattern](./dml.html#pattern).
+`$A when <pattern>` defines the _rule_ `$A` to have the specified `when` [pattern](./dml.html#pattern).
 
 ## then
 
-`$A then <pattern>` defines the rule `$A` to have the specified `then` [pattern](./dml.html#pattern).
+`$A then <pattern>` defines the _rule_ `$A` to have the specified `then` [pattern](./dml.html#pattern).
 

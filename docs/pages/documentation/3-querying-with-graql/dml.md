@@ -39,12 +39,12 @@ Within the [patterns](#pattern), the following [properties](./query.html#propert
 
 ### isa
 
-`$x isa $A` is _satisfied_ if `$x` is indirectly an instance of `$A`.
+`$x isa $A` is _satisfied_ if `$x` is indirectly an _instance_ of the _type_ `$A`.
 
 ### relationship
 
-`$r ($A1: $x1, ..., $An: $xn)` is _satisfied_ if `$r` is a relation where for each `$Ai: $xi`, `$xi` is a role-player
-in `$r` indirectly playing the role `$Ai`.
+`$r ($A1: $x1, ..., $An: $xn)` is _satisfied_ if `$r` is a _relation_ where for each `$Ai: $xi`, `$xi` is a role-player
+in `$r` indirectly playing the _role_ `$Ai`.
 
 Additionally, for all pairs `$Ai: $xi` and `$Aj: $xj` where `i != j`, `$xi` and `$xj` must be different, or directly
 playing different roles in the relationship `$r`.
@@ -54,8 +54,8 @@ The [variable](./query.html#variable) representing the role can optionally be om
 
 ### has (data)
 
-`$x has <identifier> $y as $r` is _satisfied_ if `$x` is related to an attribute `$y` of type `<identifier>`, where
-`$r` represents the relationship between them.
+`$x has <identifier> $y as $r` is _satisfied_ if `$x` is a _thing_ related to an _attribute_ `$y` of _attribute type_
+`<identifier>`, where `$r` represents the _relationship_ between them.
 
 This is equivalent to the following:
 <!-- TODO: Describe without referring to relationships? -->
@@ -78,7 +78,7 @@ $_ val <predicate>;
 
 ### val
 
-`$x val <predicate>` is _satisfied_ if `$x` is an attribute with a [value](./query.html#value) _satisfying_ the
+`$x val <predicate>` is _satisfied_ if `$x` is an _attribute_ with a [value](./query.html#value) _satisfying_ the
 [`<predicate>`](#predicate).
 
 ### id
@@ -91,23 +91,24 @@ $_ val <predicate>;
 
 ### label
 
-`$A label <identifier>` is _satisfied_ if `$A` is a schema concept with the label `<identifier>`.
+`$A label <identifier>` is _satisfied_ if `$A` is a _schema concept_ with the label `<identifier>`.
 
 ### sub
 
-`$A sub $B` is _satisfied_ if `$A` is indirectly a sub-concept of `$B`.
+`$A sub $B` is _satisfied_ if `$A` is a _schema concept_ that is indirectly a sub-concept of a _schema concept_ `$B`.
 
 ### relates
 
-`$A relates $B` is _satisfied_ if `$A` is a relationship type that directly relates a role `$B`.
+`$A relates $B` is _satisfied_ if `$A` is a _relationship type_ that directly relates a _role_ `$B`.
 
 ### plays
 
-`$A plays $B` is _satisfied_ if `$A` is a type that indirectly plays a role `$B`.
+`$A plays $B` is _satisfied_ if `$A` is a _type_ that indirectly plays a _role_ `$B`.
 
 ### has (type)
 
-`$A has <identifier>` is _satisfied_ if `$A` is a type who have attribute type `<identifier>`.
+`$A has <identifier>` is _satisfied_ if `$A` is a _type_ whose instances can have instances of _attribute type_
+`<identifier>`.
 
 <!-- TODO: Describe without referring to relationships? -->
 This is equivalent to the following:
@@ -124,7 +125,8 @@ $_O != $_V;
 
 ### key
 
-`$A has <identifier>` is _satisfied_ if `$A` is a type who have attribute type `<identifier>` as a key.
+`$A has <identifier>` is _satisfied_ if `$A` is a _type_ whose instances must have keys of _attribute type_
+`<identifier>`.
 
 <!-- TODO: Describe without referring to relationships? -->
 This is equivalent to the following:
@@ -144,16 +146,16 @@ role exactly once).
 
 ### datatype
 
-`$A dataype <datatype>` is _satisfied_ if `$A` is an attribute type with the given
+`$A dataype <datatype>` is _satisfied_ if `$A` is an _attribute type_ with the given
 [datatype](./query.html#value).
 
 ### regex
 
-`$A regex <regex>` is _satisfied_ if `$A` is an attribute type with the given regex constraint.
+`$A regex <regex>` is _satisfied_ if `$A` is an _attribute type_ with the given regex constraint.
 
 ### is-abstract
 
-`$A is-abstract;` is _satisfied_ if `$A` is an abstract type.
+`$A is-abstract;` is _satisfied_ if `$A` is an abstract _type_.
 
 ## Predicate
 
@@ -203,17 +205,17 @@ supported:
 
 ## isa
 
-`$x isa $A` creates a new direct instance of `$A` and binds it to `$x`.
+`$x isa $A` creates a new direct instance of the _type_ `$A` and binds it to `$x`.
 
 ## relationship
 
-`$r ($A1: $x1, ..., $An, $xn)` will, for each `$Ai: $xi`, add a new role-player `$xi` to `$r` directly playing the role
-`$Ai`.
+`$r ($A1: $x1, ..., $An, $xn)` will, for each `$Ai: $xi`, add a new role-player `$xi` to the _relationship_ `$r`
+directly playing the _role_ `$Ai`.
 
 ## has (data)
 
-`$x has <identifier> $y as $r` will relate the attribute `$y` of type `<identifier>` to `$x`, binding the relationship
-to `$r`.
+`$x has <identifier> $y as $r` will relate the _attribute_ `$y` of _attribute type_ `<identifier>` to `$x`, binding the
+_relationship_ to `$r`.
 
 If `<identifier>` is a key for the direct type of `$x`, then the resulting relationship will be a key relationship.
 
@@ -248,16 +250,16 @@ $_ val <value>;
 
 ## val
 
-`$x val <value>;` specifies that the attribute `$x` should have [value](./query.html#value) `<value>`.
+`$x val <value>;` specifies that the _attribute_ `$x` should have [value](./query.html#value) `<value>`.
 
 ## id
 
-`$x id <identifier>` will assign `$x` to an existing concept with the given ID. It is an error if no such concept
+`$x id <identifier>` will assign `$x` to an existing _concept_ with the given ID. It is an error if no such concept
 exists.
 
 ## label
 
-`$A label <identifier>` will assign `$A` to an existing schema concept with the given label. It is an error if no such
+`$A label <identifier>` will assign `$A` to an existing _schema concept_ with the given label. It is an error if no such
 schema concept exists.
 
 # Delete Query
