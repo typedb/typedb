@@ -22,18 +22,25 @@ The [answers](./query.html#answer) to a [match](#match) can be used with either 
 
 ## Pattern
 
-A [pattern](#pattern) is either a [variable pattern](./query.html#variable-pattern), a conjunction or a disjunction:
+A [pattern](#pattern) describes a set of constraints that an [answer](./query.html#answer) must _satisfy_.
 
-- Conjunction: `{ <pattern> ... };` - An [answer](./query.html#answer) _satisfies_ a conjunction if it _satisfies_ all
-  [patterns](#pattern) within the conjunction.
-
-- Disjunction: `<pattern> or <pattern>;` - An [answer](./query.html#answer) _satisfies_ a disjunction if it _satisfies_
-  either [pattern](#pattern) within the disjunction.
+It is either a [variable pattern](./query.html#variable-pattern), a conjunction or a disjunction:
 
 - An [answer](./query.html#answer) _satisfies_ a [variable pattern](./query.html#variable-pattern) if the concept bound
-  to the subject of the
-  [variable pattern](./query.html#variable-pattern) _satisfies_ all [properties](./query.html#property) in the
-  [variable pattern](./query.html#variable-pattern).
+  to the subject of the [variable pattern](./query.html#variable-pattern) _satisfies_ all
+  [properties](./query.html#property) in the [variable pattern](./query.html#variable-pattern).
+  e.g. `$x isa person` _satisfies_ an [answer](./query.html#answer) `$x=c1, $y=c2` if the concept `c1` satisfies the
+  [property](./query.html#property) `isa person`.
+
+- Conjunction: `{ <pattern> ... };` - An [answer](./query.html#answer) _satisfies_ a conjunction if it _satisfies_
+  **all** [patterns](#pattern) within the conjunction.
+  e.g. `{ ($x, $y); $x isa person; }` _satisfies_ an answer `$x=c1, $y=c2` if the answer _satisfies_ both `($x, $y)`
+  _and_ `$x isa person`.
+
+- Disjunction: `<pattern> or <pattern>;` - An [answer](./query.html#answer) _satisfies_ a disjunction if it _satisfies_
+  **any** [pattern](#pattern) within the disjunction.
+  e.g. `{ ($x, $y); } or { $x isa person; }` _satisfies_ an answer `$x=c1, $y=c2` if the answer _satisfies_ either
+  `($x, $y)` _or_ `$x isa person`.
 
 Within the [patterns](#pattern), the following [properties](./query.html#property) are supported:
 
