@@ -55,7 +55,9 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     public Map<Long, Set<String>> execute() {
         LOGGER.info("DegreeVertexProgram is called");
         long startTime = System.currentTimeMillis();
+
         initSubGraph();
+        getAllSubTypes();
 
         // Check if ofType is valid before returning emptyMap
         if (ofLabels.isEmpty()) {
@@ -74,19 +76,35 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
 
-        Set<Label> withResourceRelationTypes = getHasResourceRelationLabels(subTypes);
-        withResourceRelationTypes.addAll(subLabels);
-
-        Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(withResourceRelationTypes);
+        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
         Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(ofLabelIds),
                 new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
-                withResourceRelationLabelIds);
+                subLabelIds);
 
         LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());
+    }
+
+    @Override
+    void getAllSubTypes() {
+        if (!includeAttribute) {
+            if (subLabels.isEmpty()) {
+                for (Label ofLabel : ofLabels) {
+                    Type type = tx.get().getSchemaConcept(ofLabel);
+                    if (type == null) throw GraqlQueryException.labelNotFound(ofLabel);
+                    if (type.isRelationshipType()) {
+                        includeAttribute = true;
+                        break;
+                    }
+                }
+            } else {
+                subLabels.addAll(ofLabels);
+            }
+        }
+        super.getAllSubTypes();
     }
 
     @Override
@@ -137,6 +155,11 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     @Override
     public DegreeQuery withTx(GraknTx tx) {
         return (DegreeQuery) super.withTx(tx);
+    }
+
+    @Override
+    public DegreeQuery includeAttribute() {
+        return (DegreeQuery) super.includeAttribute();
     }
 
     @Override

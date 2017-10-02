@@ -39,6 +39,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,10 +52,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import static java.util.stream.Collectors.toList;
 import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Client to batch load qraql queries into Grakn that mutate the graph.
@@ -66,6 +70,12 @@ import mjson.Json;
  * @author alexandraorth
  */
 public class BatchMutatorClient {
+
+    private final Logger LOG = LoggerFactory.getLogger(BatchMutatorClient.class);
+
+
+    // TODO Make configurable
+    private static final Duration EXPIRE_TIME = Duration.ofMillis(200);
     private final int maxRetries;
     private final Set<CompletableFuture<Void>> futures;
     private final Collection<Query> queries;
@@ -77,6 +87,7 @@ public class BatchMutatorClient {
     private final Meter failureMeter;
     private final boolean debugOn;
 
+    private long lastSentTimestamp;
     private Consumer<TaskResult> onCompletionOfTask;
     private AtomicInteger batchNumber;
     private int batchSize;
@@ -98,6 +109,7 @@ public class BatchMutatorClient {
         this.batchNumber = new AtomicInteger(0);
         this.debugOn = debugOn;
         this.maxRetries = maxRetries;
+        this.lastSentTimestamp = 0L;
         // Some extra logic here since we don't provide a well formed URI by default
         if (uri.startsWith("http")) {
             try {
@@ -114,7 +126,7 @@ public class BatchMutatorClient {
         }
 
         setBatchSize(25);
-        setNumberActiveTasks(25);
+        setNumberActiveTasks(4);
 
         MetricRegistry metricRegistry = new MetricRegistry();
         batchSendToLoaderTimer = metricRegistry
@@ -128,7 +140,7 @@ public class BatchMutatorClient {
         if (reportStats) {
             final ConsoleReporter reporter = ConsoleReporter.forRegistry(metricRegistry)
                     .convertRatesTo(TimeUnit.SECONDS)
-                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .convertDurationsTo(MILLISECONDS)
                     .build();
             reporter.start(1, TimeUnit.MINUTES);
         }
@@ -202,12 +214,17 @@ public class BatchMutatorClient {
     }
 
     private void sendQueriesWhenBatchLargerThanValue(int value) {
-        if(queries.size() > value){
+        if(queries.size() > value || expired()){
             try (Context ignored = batchSendToLoaderTimer.time()) {
                 sendQueriesToLoader(new ArrayList<>(queries));
             }
             queries.clear();
         }
+    }
+
+    private boolean expired() {
+        long now = System.currentTimeMillis();
+        return Duration.ofMillis(lastSentTimestamp - now).compareTo(EXPIRE_TIME) > 0;
     }
 
     /**
@@ -238,6 +255,7 @@ public class BatchMutatorClient {
      * @param queries Queries to be inserted
      */
     void sendQueriesToLoader(Collection<Query> queries){
+        lastSentTimestamp = System.currentTimeMillis();
         Json configuration = Json.object()
                 .set(KEYSPACE_PARAM, keyspace.getValue())
                 .set(BATCH_NUMBER, batchNumber)
@@ -262,6 +280,7 @@ public class BatchMutatorClient {
                 .build();
 
         CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+            LOG.debug("Sending {} queries", queries.size());
             try {
                 TaskResult taskId = sendQueryRetry.call(callable);
                 onCompletionOfTask.accept(taskId);

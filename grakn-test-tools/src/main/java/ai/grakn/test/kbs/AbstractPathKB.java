@@ -56,11 +56,12 @@ public abstract class AbstractPathKB extends TestKB {
         RelationshipType arc = tx.getRelationshipType("arc");
         putEntity(tx, "a0", startVertex, key);
 
-        for(int i = 1 ; i <= n ;i++) {
+        int outputThreshold = 500;
+        for(int i = 1; i <= n ; i++) {
             int m = IntMath.pow(children, i);
             for (int j = 0; j < m; j++) {
                 putEntity(tx, "a" + i + "," + j, vertex, key);
-                if (j != 0 && j % 100 ==0) {
+                if (j != 0 && j % outputThreshold ==0) {
                     System.out.println(j + " entities out of " + m + " inserted");
                 }
             }
@@ -81,7 +82,7 @@ public abstract class AbstractPathKB extends TestKB {
                             .addRolePlayer(arcTo, getInstance(tx, "a" + (i + 1) + "," + (j * children + c)));
 
                 }
-                if (j!= 0 && j % 100 == 0) {
+                if (j!= 0 && j % outputThreshold == 0) {
                     System.out.println("level " + i + "/" + (n - 1) + ": " + j + " entities out of " + m + " connected");
                 }
             }

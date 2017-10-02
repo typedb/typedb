@@ -74,8 +74,6 @@ public class MatchBase extends AbstractMatch {
         this.pattern = pattern;
     }
 
-
-
     @Override
     public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
         GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noTx);
@@ -86,17 +84,52 @@ public class MatchBase extends AbstractMatch {
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
         LOG.trace("Created query plan");
         LOG.trace(graqlTraversal.toString());
+        return streamWithTraversal(this.getPattern().commonVars(), graph, graqlTraversal);
+    }
 
-        Set<Var> vars = Sets.filter(pattern.commonVars(), Var::isUserDefinedName);
+    /**
+     * @param commonVars set of variables of interest
+     * @param graph the graph to get results from
+     * @param graqlTraversal gral traversal corresponding to the provided pattern
+     * @return resulting answer stream
+     */
+    public static Stream<Answer> streamWithTraversal(Set<Var> commonVars, GraknTx graph, GraqlTraversal graqlTraversal) {
+        Set<Var> vars = Sets.filter(commonVars, Var::isUserDefinedName);
 
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph, vars);
 
         return traversal.toStream()
-                .map(elements -> makeResults(graph, elements))
+                .map(elements -> makeResults(vars, graph, elements))
                 .flatMap(CommonUtil::optionalToStream)
                 .distinct()
                 .sequential()
                 .map(QueryAnswer::new);
+    }
+
+    /**
+     * @param vars set of variables of interest
+     * @param graph the graph to get results from
+     * @param elements a map of vertices and edges where the key is the variable name
+     * @return a map of concepts where the key is the variable name
+     */
+    private static Optional<Map<Var, Concept>> makeResults(Set<Var> vars, GraknTx graph, Map<String, Element> elements) {
+        Map<Var, Concept> map = new HashMap<>();
+        for (Var var : vars) {
+            Optional<Concept> concept = buildConcept(graph.admin(), elements.get(var.name()));
+
+            if(!concept.isPresent()) return Optional.empty();
+            map.put(var, concept.get());
+        }
+
+        return Optional.of(map);
+    }
+
+    private static Optional<Concept> buildConcept(GraknAdmin graph, Element element) {
+        if (element instanceof Vertex) {
+            return graph.buildConcept((Vertex) element);
+        } else {
+            return graph.buildConcept((Edge) element);
+        }
     }
 
     @Override
@@ -136,31 +169,6 @@ public class MatchBase extends AbstractMatch {
 
     public final Match infer(boolean materialise) {
         return new MatchInfer(this, materialise);
-    }
-
-    /**
-     * @param graph the graph to get results from
-     * @param elements a map of vertices and edges where the key is the variable name
-     * @return a map of concepts where the key is the variable name
-     */
-    private Optional<Map<Var, Concept>> makeResults(GraknTx graph, Map<String, Element> elements) {
-        Map<Var, Concept> map = new HashMap<>();
-        for (Var var : pattern.commonVars()) {
-            Optional<Concept> concept = buildConcept(graph.admin(), elements.get(var.getValue()));
-
-            if(!concept.isPresent()) return Optional.empty();
-            map.put(var, concept.get());
-        }
-
-        return Optional.of(map);
-    }
-
-    private Optional<Concept> buildConcept(GraknAdmin graph, Element element) {
-        if (element instanceof Vertex) {
-            return graph.buildConcept((Vertex) element);
-        } else {
-            return graph.buildConcept((Edge) element);
-        }
     }
 
     @Override

@@ -78,7 +78,6 @@ public class ConjunctiveState extends QueryState {
                     .collect(Collectors.joining("\n"))
             );
         }
-
     }
 
     @Override

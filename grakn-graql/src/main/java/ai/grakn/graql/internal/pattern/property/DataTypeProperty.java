@@ -27,7 +27,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.internal.parser.QueryParserImpl;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -60,7 +60,7 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
 
     @Override
     public String getProperty() {
-        return QueryParser.DATA_TYPES.inverse().get(dataType());
+        return QueryParserImpl.DATA_TYPES.inverse().get(dataType());
     }
 
     @Override

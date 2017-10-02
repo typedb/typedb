@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
@@ -27,6 +28,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -94,6 +96,17 @@ public abstract class GraqlTraversal {
     //        |            |
     //        V            V
     public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
+
+    /**
+     * @param transform map defining id transform var -> new id
+     * @return graql traversal with concept id transformed according to the provided transform
+     */
+    public GraqlTraversal transform(Map<Var, ConceptId> transform){
+        ImmutableList<Fragment> fragments = ImmutableList.copyOf(
+                Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
+        );
+        return new AutoValue_GraqlTraversal(ImmutableSet.of(fragments));
+    }
 
     /**
      * @return a gremlin traversal that represents this inner query
@@ -168,12 +181,13 @@ public abstract class GraqlTraversal {
 
     private static <S, E> GraphTraversal<S, Map<String, E>> selectVars(GraphTraversal<S, ?> traversal, Set<Var> vars) {
         if (vars.isEmpty()) {
+            // Produce an empty result
             return traversal.constant(ImmutableMap.of());
         } else if (vars.size() == 1) {
-            String label = vars.iterator().next().getValue();
+            String label = vars.iterator().next().name();
             return traversal.select(label, label);
         } else {
-            String[] labelArray = vars.stream().map(Var::getValue).toArray(String[]::new);
+            String[] labelArray = vars.stream().map(Var::name).toArray(String[]::new);
             return traversal.asAdmin().addStep(new SelectStep<>(traversal.asAdmin(), null, labelArray));
         }
     }

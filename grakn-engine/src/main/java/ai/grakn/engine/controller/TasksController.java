@@ -21,18 +21,51 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.util.ConcurrencyUtil;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
+import ai.grakn.util.ConcurrencyUtil;
 import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
+import spark.Service;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
 import static ai.grakn.util.REST.Request.TASK_RUN_WAIT_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.EXCEPTION;
@@ -42,42 +75,10 @@ import static ai.grakn.util.REST.Response.Task.STATUS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
-import com.codahale.metrics.Timer;
-import com.codahale.metrics.Timer.Context;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import static java.lang.Long.parseLong;
-import java.time.Duration;
-import java.time.Instant;
 import static java.time.Instant.ofEpochMilli;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import static java.util.stream.Collectors.toList;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import mjson.Json;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Service;
 
 /**
  * <p>
@@ -104,6 +105,10 @@ public class TasksController {
     private final Timer getTasksTimer;
 
     public TasksController(Service spark, TaskManager manager, MetricRegistry metricRegistry) {
+        this(spark, manager, metricRegistry, taskExecutor());
+    }
+
+    public TasksController(Service spark, TaskManager manager, MetricRegistry metricRegistry, ExecutorService executor) {
         if (manager==null) {
             throw GraknServerException.internalError("Task manager has not been instantiated.");
         }
@@ -121,9 +126,7 @@ public class TasksController {
 
         spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
-        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("grakn-task-controller-%d").build();
-        this.executor = Executors.newFixedThreadPool(MAX_THREADS, namedThreadFactory);
+        this.executor = executor;
     }
 
     @GET
@@ -327,8 +330,9 @@ public class TasksController {
                 LOG.debug("Running task {}", state.getId());
                 manager.runTask(state, TaskConfiguration.of(taskState.getConfiguration()));
                 TaskState stateAfterRun = manager.storage().getState(id);
-                if (stateAfterRun != null &&stateAfterRun.status().equals(FAILED)) {
+                if (stateAfterRun != null && stateAfterRun.status().equals(FAILED)) {
                     singleTaskReturnJson.set("code", HttpStatus.SC_BAD_REQUEST);
+                    singleTaskReturnJson.set(EXCEPTION, stateAfterRun.exception());
                     singleTaskReturnJson.set(STACK_TRACE, stateAfterRun.stackTrace());
                 }
                 // TODO handle the case where the task returned is null
@@ -415,7 +419,7 @@ public class TasksController {
 
             return clazz;
         } catch (ClassNotFoundException e) {
-            
+
             throw GraknServerException.invalidTask(className);
 
         }
@@ -467,5 +471,10 @@ public class TasksController {
         public Json getConfiguration() {
             return configuration;
         }
+    }
+
+    public static ExecutorService taskExecutor() {
+        return Executors.newFixedThreadPool(MAX_THREADS, new ThreadFactoryBuilder()
+                .setNameFormat("grakn-task-controller-%d").build());
     }
 }

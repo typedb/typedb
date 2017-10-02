@@ -55,13 +55,18 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     @Override
+    public boolean isStatisticsQuery() {
+        return true;
+    }
+
+    @Override
     public boolean isReadOnly() {
         return true;
     }
 
     @Override
-    void initSubGraph() {
-        super.initSubGraph();
+    void getAllSubTypes() {
+        super.getAllSubTypes();
         getResourceTypes(tx.get());
     }
 
@@ -79,7 +84,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     private void getResourceTypes(GraknTx graph) {
         if (statisticsResourceLabels.isEmpty()) {
-            throw GraqlQueryException.statisticsResourceTypesNotSpecified();
+            throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
         }
 
         statisticsResourceTypes = statisticsResourceLabels.stream()

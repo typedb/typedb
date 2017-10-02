@@ -42,6 +42,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
+        getAllSubTypes();
+
         AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());

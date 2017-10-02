@@ -20,12 +20,6 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.util.EngineID;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -33,8 +27,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 import java.time.Instant;
+
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.time.Instant.now;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -202,6 +204,7 @@ public class TaskState implements Serializable {
     public TaskState markFailed(String reason){
         this.status = FAILED;
         this.exception = reason;
+        this.stackTrace = "No Stack Trace Provided";
         this.statusChangeTime = now();
         return this;
     }

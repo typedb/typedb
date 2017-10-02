@@ -100,7 +100,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
         if (hasReifiedRelationship()) {
             // TODO: Replace with actual reification syntax
-            repr.add("as").add(relationship().getPrintableName());
+            repr.add("via").add(relationship().getPrintableName());
         }
 
         return repr.build().collect(joining(" "));
