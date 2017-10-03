@@ -80,6 +80,14 @@ def withScripts(String workspace, Closure closure) {
     withPath("${workspace}/grakn-test/test-integration/src/test/bash", closure)
 }
 
+def ssh(String command) {
+    sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${LONG_RUNNING_INSTANCE_ADDRESS} ${command}"
+}
+
+def buildGrakn() {
+    sh "build-grakn.sh ${env.BRANCH_NAME}"
+}
+
 //Only run validation master/stable
 if (env.BRANCH_NAME in ['master', 'stable']) {
     properties([
@@ -102,14 +110,6 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
 
 	slackGithub "Periodic Build Success" "good"
     }
-}
-
-def ssh(String command) {
-    sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${LONG_RUNNING_INSTANCE_ADDRESS} ${command}"
-}
-
-def buildGrakn() {
-    sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
 
 // TODO: remove before merge
