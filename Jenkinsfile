@@ -118,13 +118,17 @@ if (env.BRANCH_NAME == 'stable' || true) {
         String workspace = pwd()
         checkout scm
 
-        withScripts(workspace) {
-            buildGrakn()
+        stage('Build Grakn') {
+            withScripts(workspace) {
+                buildGrakn()
+            }
         }
 
-        sshagent(credentials: ['jenkins-aws-ssh']) {
-            sh "scp grakn-dist/target/grakn-dist*.tar.gz ${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
-            ssh "'bash -s' < scripts/start-long-running-instance.sh"
+        stage('Deploy Grakn') {
+            sshagent(credentials: ['jenkins-aws-ssh']) {
+                sh "scp grakn-dist/target/grakn-dist*.tar.gz ${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                ssh "'bash -s' < scripts/start-long-running-instance.sh"
+            }
         }
     }
 }
