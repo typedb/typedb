@@ -8,7 +8,7 @@ import static Constants.*;
 def integrationTests = ["test-snb", "test-biomed"]
 
 class Constants {
-    static final LONG_RUNNING_INSTANCE_ADDRESS = '127.31.22.83'
+    static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
 }
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
