@@ -40,7 +40,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -218,33 +217,43 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public Stream<Answer> expandHierarchies(Set<Var> toExpand){
+    public Stream<Answer> expandHierarchies(Map<Var, Var> toExpand){
         if (toExpand.isEmpty()) return Stream.of(this);
-        Map<Var, Set<Concept>> conceptHierarchies = new HashMap<>();
-        toExpand.stream()
-                .filter(this::containsKey)
-                .forEach(v -> {
-                    Concept c = get(v);
-                    if (c.isSchemaConcept()) {
-                        Set<Concept> concepts = new HashSet<>();
-                        ReasonerUtils.getUpstreamHierarchy(c.asSchemaConcept()).forEach(concepts::add);
-                        conceptHierarchies.put(v, concepts);
-                    }
-        });
+        List<Concept> rolePlayerConcepts = toExpand.values().stream().map(this::get).collect(Collectors.toList());
         List<Set<Pair<Var, Concept>>> entryOptions = entrySet().stream()
                 .map(e -> {
                     Var var = e.getKey();
-                    if (conceptHierarchies.keySet().contains(var)){
-                        return conceptHierarchies.get(var).stream()
-                                .map(r -> new Pair<>(var, r))
+                    //role variable
+                    if (toExpand.keySet().contains(var)){
+                        Concept c = get(var);
+                        if (c.isSchemaConcept()) {
+                            return ReasonerUtils.getUpstreamHierarchy(c.asSchemaConcept()).stream()
+                                    .map(role -> new Pair<Var, Concept>(var, role))
+                                    .collect(Collectors.toSet());
+                        } else {
+                            return Collections.singleton(new Pair<>(var, get(var)));
+                        }
+                    }
+                    //role player variable
+                    else if (toExpand.values().contains(var)){
+                        return toExpand.values().stream()
+                                .map(conceptVar -> new Pair<>(var, get(conceptVar)))
                                 .collect(Collectors.toSet());
-                    } else {
+                    }
+                    else {
                         return Collections.singleton(new Pair<>(var, get(var)));
                     }
                 }).collect(Collectors.toList());
 
         return Sets.cartesianProduct(entryOptions).stream()
-                .map(mappingList -> new QueryAnswer(mappingList.stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue))).explain(getExplanation()));
+                //ensure no role player concept multi mapped
+                .filter(list -> ReasonerUtils.subtract(
+                        list.stream().filter(p -> toExpand.values().contains(p.getKey())).map(Pair::getValue).collect(Collectors.toList()),
+                        rolePlayerConcepts)
+                        .isEmpty()
+                )
+                .map(mappingList -> new QueryAnswer(mappingList.stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue))))
+                .map(ans -> ans.explain(getExplanation()));
     }
 
     @Override

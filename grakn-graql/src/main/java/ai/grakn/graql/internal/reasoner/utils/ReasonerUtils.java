@@ -48,6 +48,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.Collection;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -434,5 +435,20 @@ public class ReasonerUtils {
      */
     public static boolean checkDisjoint(SchemaConcept parent, SchemaConcept child) {
         return !checkCompatible(parent, child) && !checkCompatible(child, parent);
+    }
+
+    /**
+     * @param a subtraction left operand
+     * @param b subtraction right operand
+     * @param <T> collection type
+     * @return new Collection containing a minus a - b.
+     * The cardinality of each element e in the returned Collection will be the cardinality of e in a minus the cardinality of e in b, or zero, whichever is greater.
+     */
+    public static <T> Collection<T> subtract(Collection<T> a, Collection<T> b){
+        ArrayList<T> list = new ArrayList<>(a);
+        for (T aC2 : b) {
+            list.remove(aC2);
+        }
+        return list;
     }
 }

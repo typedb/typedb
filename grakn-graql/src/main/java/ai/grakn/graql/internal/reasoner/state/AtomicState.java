@@ -86,7 +86,7 @@ public class AtomicState extends QueryState{
         if (answer.isEmpty()) return null;
 
         if (currentRule != null && query.getAtom().requiresRoleExpansion()){
-            return new RoleExpansionState(answer, getUnifier(), query.getAtom().getRoleExpansionVariables(), getParentState());
+            return new RoleExpansionState(answer, getUnifier(), query.getAtom().getRoleExpansionMap(), getParentState());
         }
         return new AnswerState(answer, getUnifier(), getParentState());
     }

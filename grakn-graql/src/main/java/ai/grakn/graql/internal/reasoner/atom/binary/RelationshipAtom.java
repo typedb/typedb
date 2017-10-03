@@ -238,7 +238,14 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public boolean requiresRoleExpansion(){ return !getRoleVariables().isEmpty(); }
+    public boolean requiresRoleExpansion() {
+        return getRelationPlayers().stream()
+                .map(RelationPlayer::getRole)
+                .map(o -> o.orElse(null))
+                .filter(Objects::nonNull)
+                .filter(rp -> rp.var().isUserDefinedName() && !rp.getTypeLabel().isPresent())
+                .findFirst().isPresent();
+    }
 
     @Override
     public boolean isAllowedToFormRuleHead(){
@@ -501,14 +508,18 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public Set<Var> getRoleExpansionVariables(){
-        return getRelationPlayers().stream()
-                .map(RelationPlayer::getRole)
-                .flatMap(CommonUtil::optionalToStream)
-                .filter(p -> p.var().isUserDefinedName())
-                .filter(p -> !p.getTypeLabel().isPresent())
-                .map(VarPatternAdmin::var)
-                .collect(Collectors.toSet());
+    public Map<Var, Var> getRoleExpansionMap(){
+        Map<Var, Var> rpVarMap = new HashMap<>();
+        getRelationPlayers()
+                .forEach(rp -> {
+                    VarPatternAdmin rolePattern = rp.getRole().orElse(null);
+                    if (rolePattern != null){
+                        if (rolePattern.var().isUserDefinedName() && !rolePattern.getTypeLabel().isPresent()){
+                            rpVarMap.put(rolePattern.var(), rp.getRolePlayer().var());
+                        }
+                    }
+                });
+        return rpVarMap;
     }
 
     private Set<Var> getSpecificRolePlayers() {

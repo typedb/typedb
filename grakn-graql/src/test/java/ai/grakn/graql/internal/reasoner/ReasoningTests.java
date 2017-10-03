@@ -27,6 +27,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -936,6 +937,134 @@ public class ReasoningTests {
         answers2.stream()
                 .map(a -> a.project(Sets.newHashSet(var("x"), var("y"))))
                 .forEach(a -> assertTrue(answers3.contains(a)));
+    }
+
+    @Test
+    public void binaryRelationWithDifferentVariantsOfVariableRoles(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+
+        //9 relation1 instances with {role, role2} = 2 roles for r2 -> 18 answers
+        String queryString = "match " +
+                "(role1: $a, $r2: $b) isa relation1;" +
+                "get;";
+
+        String equivalentQueryString = "match " +
+                "($r1: $a, $r2: $b) isa relation1;" +
+                "$r1 label 'role1';" +
+                "get $a, $b, $r2;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> equivalentAnswers = qb.<GetQuery>parse(equivalentQueryString).execute();
+        assertEquals(answers.size(), 18);
+        assertTrue(CollectionUtils.isEqualCollection(answers, equivalentAnswers));
+
+        //9 relation1 instances with {role, role1, role2} = 3 roles for r2 -> 27 answers
+        String queryString2 = "match " +
+                "(role: $a, $r2: $b) isa relation1;" +
+                "get;";
+
+        String equivalentQueryString2 = "match " +
+                "($r1: $a, $r2: $b) isa relation1;" +
+                "$r1 label 'role';" +
+                "get $a, $b, $r2;";
+
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<Answer> equivalentAnswers2 = qb.<GetQuery>parse(equivalentQueryString2).execute();
+        assertEquals(answers2.size(), 27);
+        assertTrue(CollectionUtils.isEqualCollection(answers2, equivalentAnswers2));
+
+        //role variables bound hence should return original 9 instances
+        String queryString3 = "match " +
+                "($r1: $a, $r2: $b) isa relation1;" +
+                "$r1 label 'role';" +
+                "$r2 label 'role2';" +
+                "get $a, $b;";
+
+        String equivalentQueryString3 = "match " +
+                "(role1: $a, role2: $b) isa relation1;" +
+                "get;";
+
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<Answer> equivalentAnswers3 = qb.<GetQuery>parse(equivalentQueryString3).execute();
+        assertEquals(answers3.size(), 9);
+        assertTrue(CollectionUtils.isEqualCollection(answers3, equivalentAnswers3));
+
+        //9 relation instances with 7 possible permutations for each - 63 answers
+        String queryString4 = "match " +
+                "($r1: $a, $r2: $b) isa relation1;" +
+                "get;";
+
+        List<Answer> answers4 = qb.<GetQuery>parse(queryString4).execute();
+        assertEquals(answers4.size(), 63);
+    }
+
+    @Test
+    public void ternaryRelationWithVariableRoles(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        final long answerNo = 63;
+
+        /*
+         This query should yield 63 answers. As each vertex is a starting point for 9 relations, starting with a we have:
+
+         (r1: a, r2: a, r3: a), (r1: a, r2: a, r3: b), (r1: a, r2: a, r3: c)
+         (r1: a, r2: b, r3: a), (r1: a, r2: b, r3: b), (r1: a, r2: b, r3: c)
+         (r1: a, r2: c, r3: a), (r1: a, r2: c, r3: b), (r1: a. r2: c, r3: c)
+
+         If we generify two roles each of these produces 7 answers, taking (r1: a, r2: b, r3:c) we have:
+
+         (a, r2: b, r3: c)
+         (a, r: b, r3: c)
+         (a, r2: b, r: c)
+         (a, r3: c, r2: b)
+         (a, r3: c, r: b)
+         (a, r: c, r2: b)
+         (a, r: b, r: c)
+
+         plus
+         (a, r: c, r: b) but this one is counted in (r1: a, r2: c, r3:b)
+         hence 7 answers per single relation.
+         */
+        String queryString = "match " +
+                "(role1: $a, $r2: $b, $r3: $c) isa ternary;" +
+                "$a has name 'a';" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), answerNo);
+
+        //We get extra 3 degress of freedom by removing constraint on $a and the set is symmetric -> 3x answers.
+        String queryString2 = "match " +
+                "(role1: $a, $r2: $b, $r3: $c) isa ternary;" +
+                "get;";
+
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        assertEquals(answers2.size(), answerNo * 3);
+
+        /*
+        This one is bit more tricky.
+        Each role player variable can be mapped to either of the 3 concepts {a, b, c} and these can repeat:
+        Each role variable can be mapped to either of 4 roles {role, role1, role2, role3} and only meta roles can repeat.
+
+        If we consider only non-meta roles, considering each relation player we get:
+            3.3 x 3.2 x 3 = 162 combinations
+
+        If we consider single metarole - 3 possibilities of assigning them:
+        3 x 3.3 x 3.2 x 3 = 486 combinations
+
+        Two metaroles - again 3 possibilities of assigning them:
+        3 x 3.3 x 3   x 3 = 243 combinations
+
+        Three metaroles:
+            3   x 3   x 3 = 81 combinations
+
+        -> Total = 918 different answers
+         */
+        String queryString3 = "match " +
+                "($r1: $a, $r2: $b, $r3: $c) isa ternary;" +
+                "get;";
+
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        assertEquals(answers3.size(), 918);
     }
 
     @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation

@@ -202,12 +202,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Stream<Answer> getFilteredRuleAnswerStream(Stream<Answer> answers){
         Set<Var> vars = getVarNames();
-        Set<Var> expansionVars = getAtom().getRoleExpansionVariables();
+        Map<Var, Var> roleExpansionMap = getAtom().getRoleExpansionMap();
         Set<TypeAtom> mappedTypeConstraints = atom.getSpecificTypeConstraints();
         return getIdPredicateAnswerStream(answers)
                 .filter(a -> entityTypeFilter(a, mappedTypeConstraints))
                 .map(a -> a.project(vars))
-                .flatMap(a -> a.expandHierarchies(expansionVars));
+                .flatMap(a -> a.expandHierarchies(roleExpansionMap));
     }
 
     /**
