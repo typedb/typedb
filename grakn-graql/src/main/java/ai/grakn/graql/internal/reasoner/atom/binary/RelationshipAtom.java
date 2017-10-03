@@ -773,7 +773,10 @@ public class RelationshipAtom extends IsaAtom {
                     return ReasonerUtils.subtract(listChildRps, this.getRelationPlayers()).isEmpty();
                 })
                 //check all parent rps mapped
-                .filter(list -> list.stream().map(Pair::getValue).collect(Collectors.toList()).containsAll(parentAtom.getRelationPlayers()))
+                .filter(list -> {
+                    List<RelationPlayer> listParentRps = list.stream().map(Pair::getValue).collect(Collectors.toList());
+                    return listParentRps.containsAll(parentAtom.getRelationPlayers());
+                })
                 .collect(toSet());
     }
 

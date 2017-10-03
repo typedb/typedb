@@ -55,7 +55,7 @@ public interface MultiUnifier extends Iterable<Unifier>, Streamable<Unifier> {
     ImmutableSet<Unifier> unifiers();
 
     /**
-     * ultiunifier merging by simple mapping addition (no variable clashes assumed)
+     * multiunifier merging by simple mapping addition (no variable clashes assumed)
      * @param u unifier to be merged with this unifier
      * @return merged unifier
      */
