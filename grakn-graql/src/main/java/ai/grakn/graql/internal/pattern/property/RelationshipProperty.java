@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
@@ -229,9 +230,25 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
         for (RelationPlayer rp : relationPlayers()) {
-            VarPatternAdmin role = rp.getRole().orElse(null);
-            VarPatternAdmin rolePlayer = rp.getRolePlayer();
-            if (role != null) relVar = relVar.rel(role, rolePlayer);
+            VarPattern rolePattern = rp.getRole().orElse(null);
+            VarPattern rolePlayer = rp.getRolePlayer();
+            if (rolePattern != null){
+                Var roleVar = rolePattern.admin().var();
+                //look for indirect role definitions
+                IdPredicate roleId = getUserDefinedIdPredicate(roleVar, vars, parent);
+                if (roleId != null){
+                    Concept concept = parent.tx().getConcept(roleId.getPredicate());
+                    if(concept != null) {
+                        if (concept.isRole()) {
+                            Label roleLabel = concept.asSchemaConcept().getLabel();
+                            rolePattern = roleVar.label(roleLabel);
+                        } else {
+                            throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(var);
+                        }
+                    }
+                }
+                relVar = relVar.rel(rolePattern, rolePlayer);
+            }
             else relVar = relVar.rel(rolePlayer);
         }
 
@@ -247,8 +264,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             VarPatternAdmin isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
-                VarPatternAdmin idVar = typeVariable.id(parent.tx().getSchemaConcept(label).getId()).admin();
-                predicate = new IdPredicate(idVar, parent);
+                predicate = new IdPredicate(typeVariable, label, parent);
             } else {
                 typeVariable = isaVar.var();
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);

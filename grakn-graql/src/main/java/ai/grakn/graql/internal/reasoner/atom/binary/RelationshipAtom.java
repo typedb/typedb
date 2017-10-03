@@ -595,6 +595,20 @@ public class RelationshipAtom extends IsaAtom {
         return getUnifiersFromPermutations(permuteVars, varPermutations);
     }
 
+    @Override
+    public Stream<Predicate> getInnerPredicates(){
+        return Stream.concat(
+                super.getInnerPredicates(),
+                getRelationPlayers().stream()
+                        .map(RelationPlayer::getRole)
+                        .flatMap(CommonUtil::optionalToStream)
+                        .filter(vp -> vp.var().isUserDefinedName())
+                        .map(vp -> new Pair<>(vp.var(), vp.getTypeLabel().orElse(null)))
+                        .filter(p -> Objects.nonNull(p.getValue()))
+                        .map(p -> new IdPredicate(p.getKey(), p.getValue(), getParentQuery()))
+        );
+    }
+
     /**
      * attempt to infer role types of this relation and return a fresh relationship with inferred role types
      * @return either this if nothing/no roles can be inferred or fresh relation with inferred role types
