@@ -127,7 +127,7 @@ if (env.BRANCH_NAME == 'stable' || true) {
 
         stage('Deploy Grakn') {
             sshagent(credentials: ['jenkins-aws-ssh']) {
-                sh "scp -e '${SSH_COMMAND}' grakn-dist/target/grakn-dist*.tar.gz ${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
                 ssh "'bash -s' < scripts/start-long-running-instance.sh"
             }
         }
