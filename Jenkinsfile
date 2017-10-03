@@ -1,9 +1,15 @@
 #!groovy
 
+import static Constants.*;
+
 // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
 // `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
 // `validate.sh` will be passed the branch name (e.g. "master") as the first argument
 def integrationTests = ["test-snb", "test-biomed"]
+
+class Constants {
+    static final LONG_RUNNING_INSTANCE_ADDRESS = '127.31.22.83'
+}
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([pipelineTriggers([cron('H H/8 * * *')])])
@@ -99,8 +105,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
 }
 
 def ssh(String command) {
-    String address = '172.31.22.83'
-    sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${address} ${command}"
+    sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${LONG_RUNNING_INSTANCE_ADDRESS} ${command}"
 }
 
 def buildGrakn() {
@@ -119,6 +124,7 @@ if (env.BRANCH_NAME == 'stable' || true) {
 
         sshagent(credentials: ['jenkins-aws-ssh']) {
             ssh "uname -a"
+            sh "scp grakn-dist/target/grakn-dist*.tar.gz ${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
         }
     }
 }
