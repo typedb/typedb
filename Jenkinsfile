@@ -44,7 +44,7 @@ def withGrakn(String workspace, Closure closure) {
             timeout(15) {
                 //Stages allow you to organise and group things within Jenkins
                 stage('Start Grakn') {
-                    sh "build-grakn.sh ${env.BRANCH_NAME}"
+                    buildGrakn()
 
                     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 
@@ -103,6 +103,10 @@ def ssh(String command) {
     sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${address} ${command}"
 }
 
+def buildGrakn() {
+    sh "build-grakn.sh ${env.BRANCH_NAME}"
+}
+
 // TODO: remove before merge
 if (env.BRANCH_NAME == 'stable' || true) {
     node {
@@ -110,7 +114,7 @@ if (env.BRANCH_NAME == 'stable' || true) {
         checkout scm
 
         withScripts(workspace) {
-            sh 'build-grakn.sh'
+            buildGrakn()
         }
 
         sshagent(credentials: ['jenkins-aws-ssh']) {
