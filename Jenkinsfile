@@ -37,7 +37,7 @@ def runIntegrationTest(String workspace, String moduleName) {
 }
 
 def withGrakn(String workspace, Closure closure) {
-    withPath("${workspace}/grakn-test/test-integration/src/test/bash") {
+    withScripts(workspace) {
         //Everything is wrapped in a try catch so we can handle any test failures
         //If one test fails then all the others will stop. I.e. we fail fast
         try {
@@ -70,6 +70,10 @@ def withPath(String path, Closure closure) {
     return withEnv(["PATH+EXTRA=${path}"], closure)
 }
 
+def withScripts(String workspace, Closure closure) {
+    withPath("${workspace}/grakn-test/test-integration/src/test/bash", closure)
+}
+
 //Only run validation master/stable
 if (env.BRANCH_NAME in ['master', 'stable']) {
     properties([
@@ -94,12 +98,23 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
     }
 }
 
+def ssh(String command) {
+    String address = '172.31.22.83'
+    sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${address} ${command}"
+}
+
 // TODO: remove before merge
 if (env.BRANCH_NAME == 'stable' || true) {
     node {
-        address = '172.31.22.83'
+        String workspace = pwd()
+        checkout scm
+
+        withScripts(workspace) {
+            sh 'build-grakn.sh'
+        }
+
         sshagent(credentials: ['jenkins-aws-ssh']) {
-            sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${address} uname -a"
+            ssh "uname -a"
         }
     }
 }
