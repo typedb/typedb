@@ -9,6 +9,7 @@ def integrationTests = ["test-snb", "test-biomed"]
 
 class Constants {
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
+    static final SSH_COMMAND = "ssh -o StrictHostKeyChecking=no -l ubuntu"
 }
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
@@ -81,7 +82,7 @@ def withScripts(String workspace, Closure closure) {
 }
 
 def ssh(String command) {
-    sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${LONG_RUNNING_INSTANCE_ADDRESS} ${command}"
+    sh "${SSH_COMMAND} ${LONG_RUNNING_INSTANCE_ADDRESS} ${command}"
 }
 
 def buildGrakn() {
@@ -126,7 +127,7 @@ if (env.BRANCH_NAME == 'stable' || true) {
 
         stage('Deploy Grakn') {
             sshagent(credentials: ['jenkins-aws-ssh']) {
-                sh "scp grakn-dist/target/grakn-dist*.tar.gz ${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                sh "scp -e '${SSH_COMMAND}' grakn-dist/target/grakn-dist*.tar.gz ${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
                 ssh "'bash -s' < scripts/start-long-running-instance.sh"
             }
         }
