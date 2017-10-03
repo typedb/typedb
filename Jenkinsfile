@@ -58,7 +58,7 @@ def withGrakn(String workspace, Closure closure) {
         } finally { // Tears down test environment
             timeout(5) {
                 stage('Stop Grakn') {
-                    archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+                    archiveArtifacts artifacts: 'grakn-package/logs/*'
                     sh 'tear-down.sh'
                 }
             }
@@ -79,10 +79,10 @@ node {
 
         slackGithub "Build started"
 
-        stage('Run the benchmarks') {
-            sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-            archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-        }
+//        stage('Run the benchmarks') {
+//            sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+//            archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+//        }
 
         for (String moduleName : integrationTests) {
             runIntegrationTest(workspace, moduleName)
