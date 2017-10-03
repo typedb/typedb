@@ -125,6 +125,7 @@ if (env.BRANCH_NAME == 'stable' || true) {
         sshagent(credentials: ['jenkins-aws-ssh']) {
             ssh "uname -a"
             sh "scp grakn-dist/target/grakn-dist*.tar.gz ${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+            ssh "mkdir grakn"
             ssh "tar -xf grakn-dist*.tar.gz --strip=1 -C grakn"
             ssh "grakn/grakn server start"
         }
