@@ -1,9 +1,15 @@
 #!groovy
 
+import static Constants.*;
+
 // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
 // `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
 // `validate.sh` will be passed the branch name (e.g. "master") as the first argument
 def integrationTests = ["test-snb", "test-biomed"]
+
+class Constants {
+    static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
+}
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([pipelineTriggers([cron('H H/8 * * *')])])
@@ -37,14 +43,14 @@ def runIntegrationTest(String workspace, String moduleName) {
 }
 
 def withGrakn(String workspace, Closure closure) {
-    withPath("${workspace}/grakn-test/test-integration/src/test/bash") {
+    withScripts(workspace) {
         //Everything is wrapped in a try catch so we can handle any test failures
         //If one test fails then all the others will stop. I.e. we fail fast
         try {
             timeout(15) {
                 //Stages allow you to organise and group things within Jenkins
                 stage('Start Grakn') {
-                    sh "build-grakn.sh ${env.BRANCH_NAME}"
+                    buildGrakn()
 
                     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 
@@ -70,6 +76,18 @@ def withPath(String path, Closure closure) {
     return withEnv(["PATH+EXTRA=${path}"], closure)
 }
 
+def withScripts(String workspace, Closure closure) {
+    withPath("${workspace}/grakn-test/test-integration/src/test/bash", closure)
+}
+
+def ssh(String command) {
+    sh "ssh -o StrictHostKeyChecking=no -l ubuntu ${LONG_RUNNING_INSTANCE_ADDRESS} ${command}"
+}
+
+def buildGrakn() {
+    sh "build-grakn.sh ${env.BRANCH_NAME}"
+}
+
 //Only run validation master/stable
 if (env.BRANCH_NAME in ['master', 'stable']) {
     properties([
@@ -91,5 +109,26 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
 	}
 
 	slackGithub "Periodic Build Success" "good"
+    }
+}
+
+// Deploy long-running instance on stable branch
+if (env.BRANCH_NAME == 'stable') {
+    node {
+        String workspace = pwd()
+        checkout scm
+
+        stage('Build Grakn') {
+            withScripts(workspace) {
+                buildGrakn()
+            }
+        }
+
+        stage('Deploy Grakn') {
+            sshagent(credentials: ['jenkins-aws-ssh']) {
+                sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                ssh "'bash -s' < scripts/start-long-running-instance.sh"
+            }
+        }
     }
 }
