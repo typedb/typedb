@@ -1002,16 +1002,14 @@ public class ReasoningTests {
 
     @Test
     public void binaryRelationWithVariableRoles_basicSet(){
-        final int combinationsPerAnswer = 2;
         final int conceptDOF = 2;
-        ternaryNaryRelationWithVariableRoles("binary", combinationsPerAnswer, conceptDOF);
+        ternaryNaryRelationWithVariableRoles("binary", conceptDOF);
     }
 
     @Test
     public void binaryRelationWithVariableRoles_extendedSet(){
-        final int combinationsPerAnswer = 2;
         final int conceptDOF = 3;
-        ternaryNaryRelationWithVariableRoles("binary-base", combinationsPerAnswer, conceptDOF);
+        ternaryNaryRelationWithVariableRoles("binary-base", conceptDOF);
     }
 
     @Test
@@ -1037,86 +1035,97 @@ public class ReasoningTests {
         (a, r: c, r: b) but this one is counted in (r1: a, r2: c, r3:b)
         hence 7 answers per single relation.
         */
-        final int combinationsPerAnswer = 7;
         final int conceptDOF = 2;
-        ternaryNaryRelationWithVariableRoles("ternary", combinationsPerAnswer, conceptDOF);
+        ternaryNaryRelationWithVariableRoles("ternary", conceptDOF);
     }
 
     @Test
     public void ternaryRelationWithVariableRoles_extendedSet(){
-        final int combinationsPerAnswer = 7;
         final int conceptDOF = 3;
-        ternaryNaryRelationWithVariableRoles("ternary-base", combinationsPerAnswer, conceptDOF);
+        ternaryNaryRelationWithVariableRoles("ternary-base", conceptDOF);
     }
 
-    private void ternaryNaryRelationWithVariableRoles(String label, int combinationsPerAnswer, int conceptDOF){
+    @Test
+    public void quaternaryRelationWithVariableRoles_basicSet(){
+        final int conceptDOF = 2;
+        ternaryNaryRelationWithVariableRoles("quaternary", conceptDOF);
+    }
+
+    @Test
+    public void quaternaryRelationWithVariableRoles2_extendedSet(){
+        final int conceptDOF = 3;
+        ternaryNaryRelationWithVariableRoles("quaternary-base", conceptDOF);
+    }
+
+    private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
         GraknTx graph = testSet29.tx();
         QueryBuilder qb = graph.graql().infer(true);
         final int arity = (int) graph.getRelationshipType(label).relates().count();
 
-        VarPattern basePattern = var();
         VarPattern resourcePattern = var("a1").has("name", "a");
-        for(int i = 1; i <= arity ; i++) basePattern = basePattern.rel("role" + i, "a" + i);
-        basePattern = basePattern.isa(label);
 
-        //base query determines how many constrained relation instances are there
-        List<Answer> baseAnswers = qb.match(basePattern.and(resourcePattern)).get().execute();
-        final long baseAnswerNo = baseAnswers.size();
-
-        //This query generalises all roles but the first one. It should yield baseAnswerNo x combinationsPerAnswer answers.
+        //This query generalises all roles but the first one.
         VarPattern pattern = var().rel("role1", "a1");
         for(int i = 2; i <= arity ; i++) pattern = pattern.rel(var("r" + i), "a" + i);
         pattern = pattern.isa(label);
 
         List<Answer> answers = qb.match(pattern.and(resourcePattern)).get().execute();
-        assertEquals(answers.size(), baseAnswerNo * combinationsPerAnswer);
+        assertEquals(answers.size(), answerCombinations(arity-1, conceptDOF));
 
         //We get extra conceptDOF degrees of freedom by removing the resource constraint on $a1 and the set is symmetric.
         List<Answer> answers2 = qb.match(pattern).get().execute();
-        assertEquals(answers2.size(), baseAnswerNo * combinationsPerAnswer * conceptDOF);
+        assertEquals(answers2.size(), answerCombinations(arity-1, conceptDOF) * conceptDOF);
 
-        /*
-        The general case is a bit more tricky.
-        Each role player variable can be mapped to either of the conceptDOF concepts and these can repeat.
-        Each role variable can be mapped to either of arity roles and only meta roles can repeat.
 
-        For the case of conceptDOF = 3, roleDOF = 3.
-        We start by considering the number of meta roles we allow.
-        If we consider only non-meta roles, considering each relation player we get:
-        C^3_0 x 3.3 x 3.2 x 3 = 162 combinations
-
-        If we consider single metarole - C^3_1 = 3 possibilities of assigning them:
-        C^3_1 x 3.3 x 3.2 x 3 = 486 combinations
-
-        Two metaroles - again C^3_2 = 3 possibilities of assigning them:
-        C^3_2 x 3.3 x 3   x 3 = 243 combinations
-
-        Three metaroles, C^3_3 = 1 possiblity of assignment:
-        C^3_3 x 3   x 3   x 3 = 81 combinations
-
-        -> Total = 918 different answers
-        In general, for i allowed meta roles we have:
-        C^{RP}_i PRODUCT_{j = RP-i}{ (conceptDOF)x(roleDOF-j) } x PRODUCT_i{ conceptDOF} } answers.
-
-        So total number of answers is:
-        SUM_i{ C^{RP}_i PRODUCT_{j = RP-i}{ (conceptDOF)x(roleDOF-j) } x PRODUCT_i{ conceptDOF} }
-         */
+        //The general case of mapping all available Rps
         VarPattern generalPattern = var();
         for(int i = 1; i <= arity ; i++) generalPattern = generalPattern.rel(var("r" + i), "a" + i);
         generalPattern = generalPattern.isa(label);
 
-        int generalAnswers = 0;
+        List<Answer> answers3 = qb.match(generalPattern).get().execute();
+        assertEquals(answers3.size(), answerCombinations(arity, conceptDOF));
+    }
+
+    /**
+     *Each role player variable can be mapped to either of the conceptDOF concepts and these can repeat.
+     *Each role variable can be mapped to either of RPs roles and only meta roles can repeat.
+
+     *For the case of conceptDOF = 3, roleDOF = 3.
+     *We start by considering the number of meta roles we allow.
+     *If we consider only non-meta roles, considering each relation player we get:
+     *C^3_0 x 3.3 x 3.2 x 3 = 162 combinations
+     *
+     *If we consider single metarole - C^3_1 = 3 possibilities of assigning them:
+     *C^3_1 x 3.3 x 3.2 x 3 = 486 combinations
+     *
+     *Two metaroles - again C^3_2 = 3 possibilities of assigning them:
+     *C^3_2 x 3.3 x 3   x 3 = 243 combinations
+     *
+     *Three metaroles, C^3_3 = 1 possiblity of assignment:
+     *C^3_3 x 3   x 3   x 3 = 81 combinations
+     *
+     *-> Total = 918 different answers
+     *In general, for i allowed meta roles we have:
+     *C^{RP}_i PRODUCT_{j = RP-i}{ (conceptDOF)x(roleDOF-j) } x PRODUCT_i{ conceptDOF} } answers.
+     *
+     *So total number of answers is:
+     *SUM_i{ C^{RP}_i PRODUCT_{j = RP-i}{ (conceptDOF)x(roleDOF-j) } x PRODUCT_i{ conceptDOF} }
+     * @param RPS number of relation players available
+     * @param conceptDOF number of concept degrees of freedom
+     * @return number of answer combinations
+     */
+    private int answerCombinations(int RPS, int conceptDOF) {
+        int answers = 0;
         //i is the number of meta roles
-        for(int i = 0; i <= arity ; i++){
+        for (int i = 0; i <= RPS; i++) {
             int RPProduct = 1;
             //rps with non-meta roles
-            for(int j = 0; j < arity - i ; j++) RPProduct *= conceptDOF * (arity - j);
+            for (int j = 0; j < RPS - i; j++) RPProduct *= conceptDOF * (RPS - j);
             //rps with meta roles
-            for(int k = 0; k < i ; k++) RPProduct *= conceptDOF;
-            generalAnswers += CombinatoricsUtils.binomialCoefficient(arity, i) * RPProduct;
+            for (int k = 0; k < i; k++) RPProduct *= conceptDOF;
+            answers += CombinatoricsUtils.binomialCoefficient(RPS, i) * RPProduct;
         }
-        List<Answer> answers3 = qb.match(generalPattern).get().execute();
-        assertEquals(answers3.size(), generalAnswers);
+        return answers;
     }
 
     @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation
