@@ -92,7 +92,7 @@ public class RedisTaskManagerTest {
     public static final SampleKBContext sampleKB = SampleKBContext.empty();
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = new MockRedisRule();
+    public static MockRedisRule mockRedisRule = MockRedisRule.create();
 
     @BeforeClass
     public static void setupClass() {

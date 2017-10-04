@@ -36,7 +36,7 @@ import static com.jayway.restassured.RestAssured.when;
 public class UserControllerTest  {
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = new MockRedisRule(new SimpleURI(EngineTestHelper.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
 
     @ClassRule
     public static ControllerFixture fixture = ControllerFixture.INSTANCE;

@@ -18,7 +18,7 @@ public class JedisLockTest {
     private static JedisPool jedisPool;
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = new MockRedisRule();
+    public static MockRedisRule mockRedisRule = MockRedisRule.create();
 
     @BeforeClass
     public static void setupClass() {

@@ -36,20 +36,20 @@ public class MockRedisRule extends ExternalResource {
     private final Map<JedisPoolConfig, JedisPool> pools = new HashMap<>();
     private RedisServer server;
 
-    public MockRedisRule() {
-        try {
-            server = RedisServer.newRedisServer();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public MockRedisRule(int port) {
+    private MockRedisRule(int port) {
         try {
             server = RedisServer.newRedisServer(port);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static MockRedisRule create(){
+        return create(0);
+    }
+
+    public static MockRedisRule create(int port){
+        return new MockRedisRule(port);
     }
 
     @Override

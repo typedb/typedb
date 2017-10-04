@@ -40,7 +40,7 @@ public class GraknEngineConfigTest {
     private GraknEngineConfig configuration = GraknEngineConfig.create();
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = new MockRedisRule(new SimpleURI(EngineTestHelper.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

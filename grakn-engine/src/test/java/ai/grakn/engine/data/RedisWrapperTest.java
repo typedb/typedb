@@ -29,7 +29,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class RedisWrapperTest {
     @ClassRule
-    public static MockRedisRule mockRedisRule = new MockRedisRule();
+    public static MockRedisRule mockRedisRule = MockRedisRule.create();
 
     @Test
     public void whenBuildingNoSentinelWellFormed_Succeeds() {
