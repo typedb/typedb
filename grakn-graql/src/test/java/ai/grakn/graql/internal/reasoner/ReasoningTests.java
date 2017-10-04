@@ -1052,7 +1052,6 @@ public class ReasoningTests {
     private void ternaryNaryRelationWithVariableRoles(String label, int combinationsPerAnswer, int conceptDOF){
         GraknTx graph = testSet29.tx();
         QueryBuilder qb = graph.graql().infer(true);
-
         final int arity = (int) graph.getRelationshipType(label).relates().count();
 
         VarPattern basePattern = var();
@@ -1063,11 +1062,8 @@ public class ReasoningTests {
         //base query determines how many constrained relation instances are there
         List<Answer> baseAnswers = qb.match(basePattern.and(resourcePattern)).get().execute();
         final long baseAnswerNo = baseAnswers.size();
-        System.out.println(baseAnswerNo);
 
-        /*
-         This query generalises all roles but the first one. It should yield baseAnswerNo x combinationsPerAnswer answers.
-         */
+        //This query generalises all roles but the first one. It should yield baseAnswerNo x combinationsPerAnswer answers.
         VarPattern pattern = var().rel("role1", "a1");
         for(int i = 2; i <= arity ; i++) pattern = pattern.rel(var("r" + i), "a" + i);
         pattern = pattern.isa(label);
