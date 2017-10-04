@@ -31,7 +31,6 @@ import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.MockRedisRule;
 import com.codahale.metrics.MetricRegistry;
 import com.github.rholder.retry.RetryException;
@@ -115,7 +114,6 @@ public class RedisTaskManagerTest {
         taskManager.close();
         executor.awaitTermination(3, TimeUnit.SECONDS);
         jedisPool.close();
-        EmbeddedRedis.stop();
     }
 
     @Ignore // TODO: Fix (Bug #16193)

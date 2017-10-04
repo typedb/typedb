@@ -35,6 +35,7 @@ import redis.embedded.exceptions.EmbeddedRedisException;
  * @author fppt
  *
  */
+@Deprecated
 public class EmbeddedRedis {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedRedis.class);
     private static volatile RedisServer redisServer;

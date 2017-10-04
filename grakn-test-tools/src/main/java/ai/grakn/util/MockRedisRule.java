@@ -44,6 +44,14 @@ public class MockRedisRule extends ExternalResource {
         }
     }
 
+    public MockRedisRule(int port) {
+        try {
+            server = RedisServer.newRedisServer(port);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     protected void before() throws Throwable {
         server.start();
@@ -67,7 +75,7 @@ public class MockRedisRule extends ExternalResource {
 
     public JedisPool jedisPool(JedisPoolConfig config){
         if(!pools.containsKey(config)){
-            JedisPool pool = new JedisPool(config, server.getHost(), server.getBindPort());
+            JedisPool pool = new JedisPool(config, server.getHost(), server.getBindPort(), 1000000);
             pools.put(config, pool);
         }
         return pools.get(config);
