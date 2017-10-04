@@ -33,7 +33,7 @@ public class RedisWrapperTest {
 
     @Test
     public void whenBuildingNoSentinelWellFormed_Succeeds() {
-        RedisServer server = mockRedisRule.getServer();
+        RedisServer server = mockRedisRule.server();
         RedisWrapper redisWrapper = RedisWrapper.builder().setUseSentinel(false)
                 .addURI(new SimpleURI(server.getHost(), server.getBindPort()).toString())
                 .build();
@@ -58,7 +58,7 @@ public class RedisWrapperTest {
 
     @Test(expected = JedisConnectionException.class)
     public void whenBuildingSentinelWellFormed_JedisCantConnect() {
-        RedisServer server = mockRedisRule.getServer();
+        RedisServer server = mockRedisRule.server();
         RedisWrapper.builder().setUseSentinel(true)
                 .addURI(new SimpleURI(server.getHost(), server.getBindPort()).toString())
                 .setMasterName("masterName")
@@ -67,7 +67,7 @@ public class RedisWrapperTest {
 
     @Test(expected = IllegalStateException.class)
     public void whenBuildingSentinelNoMaster_Fails() {
-        RedisServer server = mockRedisRule.getServer();
+        RedisServer server = mockRedisRule.server();
         RedisWrapper.builder().setUseSentinel(true)
                 .addURI(new SimpleURI(server.getHost(), server.getBindPort()).toString())
                 .build();

@@ -54,7 +54,7 @@ public class RedisCountStorageTest {
 
     @BeforeClass
     public static void getConnection(){
-        redis = engine.redis(mockRedisRule.getServer().getHost(), mockRedisRule.getServer().getBindPort());
+        redis = engine.redis(mockRedisRule.server().getHost(), mockRedisRule.server().getBindPort());
     }
 
     @Test
