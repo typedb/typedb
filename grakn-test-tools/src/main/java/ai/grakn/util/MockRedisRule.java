@@ -22,6 +22,7 @@ import org.junit.rules.ExternalResource;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,11 +36,16 @@ public class MockRedisRule extends ExternalResource {
     private final Map<JedisPoolConfig, JedisPool> pools = new HashMap<>();
     private RedisServer server;
 
-    public MockRedisRule() {}
+    public MockRedisRule() {
+        try {
+            server = RedisServer.newRedisServer();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     protected void before() throws Throwable {
-        server = RedisServer.newRedisServer();
         server.start();
     }
 
