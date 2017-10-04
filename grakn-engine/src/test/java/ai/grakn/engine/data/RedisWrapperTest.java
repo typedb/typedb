@@ -19,13 +19,13 @@
 package ai.grakn.engine.data;
 
 import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.redismock.RedisServer;
 import ai.grakn.util.MockRedisRule;
-import com.github.zxl0714.redismock.RedisServer;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import org.junit.ClassRule;
 import org.junit.Test;
 import redis.clients.jedis.exceptions.JedisConnectionException;
+
+import static org.junit.Assert.assertNotNull;
 
 public class RedisWrapperTest {
     @ClassRule
