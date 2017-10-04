@@ -21,7 +21,6 @@ package ai.grakn.test;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.EmbeddedCassandra;
-import ai.grakn.util.EmbeddedRedis;
 
 /**
  * <p>
@@ -46,10 +45,6 @@ public class GraknTestSetup {
         if (GraknTestSetup.usingJanus()) {
             EmbeddedCassandra.start();
         }
-    }
-
-    public static void startRedisIfNeeded(int port) {
-        EmbeddedRedis.start(port);
     }
 
     /**

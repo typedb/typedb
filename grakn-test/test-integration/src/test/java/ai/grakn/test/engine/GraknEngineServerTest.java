@@ -25,9 +25,11 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.GraknVersion;
+import ai.grakn.util.MockRedisRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,6 +38,8 @@ import org.junit.rules.ExpectedException;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.util.Pool;
+
+import java.io.IOException;
 
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
@@ -102,9 +106,10 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded(){
+    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
         GraknTestSetup.startCassandraIfNeeded();
-        GraknTestSetup.startRedisIfNeeded(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
+        RedisServer redisServer = MockRedisRule.create(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort()).server();
+        redisServer.start();
 
         try (GraknEngineServer server = GraknEngineServer.create(conf)) {
             server.start();
@@ -116,6 +121,8 @@ public class GraknEngineServerTest {
 
             assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
         }
+
+        redisServer.stop();
     }
 
     @Test
