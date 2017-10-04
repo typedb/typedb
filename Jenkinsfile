@@ -77,7 +77,7 @@ def withPath(String path, Closure closure) {
 }
 
 
-    def withScripts(String workspace, Closure closure) {
+def withScripts(String workspace, Closure closure) {
     withPath("${workspace}/grakn-test/test-integration/src/test/bash", closure)
 }
 
@@ -87,10 +87,12 @@ def ssh(String command) {
 
 def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
-}//Only run validation master/stable
-    // TODO: don't merge this changeif (env.BRANCH_NAME in ['master', 'stable']|| true) {
-	properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
-    ])
+}
+
+//Only run validation master/stable
+// TODO: don't merge this change
+if (env.BRANCH_NAME in ['master', 'stable'] || true) {
+    properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
     node {
         String workspace = pwd()
         checkout scm
