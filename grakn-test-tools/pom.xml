@@ -76,7 +76,7 @@
             <version>${redis-test.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.zxl0714</groupId>
+            <groupId>ai.grakn</groupId>
             <artifactId>redis-mock</artifactId>
             <version>${redis-mock.version}</version>
         </dependency>

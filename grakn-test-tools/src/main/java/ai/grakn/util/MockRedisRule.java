@@ -17,7 +17,7 @@
  */
 package ai.grakn.util;
 
-import com.github.zxl0714.redismock.RedisServer;
+import ai.grakn.redismock.RedisServer;
 import org.junit.rules.ExternalResource;
 
 /**
