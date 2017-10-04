@@ -15,11 +15,20 @@ entity1 sub entity
 
 #Relations
 
-relation1 sub relationship
+binary-base sub relationship
+    relates role1
+    relates role2;
+
+binary sub binary-base
 	relates role1
 	relates role2;
 
-ternary sub relationship
+ternary-base sub relationship
+    relates role1,
+    relates role2,
+    relates role3;
+
+ternary sub ternary-base
 	relates role1
 	relates role2
 	relates role3;
@@ -30,17 +39,35 @@ name sub attribute datatype string;
 
 rule-1 sub rule
 	when {
-		(role1:$x, role2:$z) isa relation1;
-		(role1:$z, role2:$y) isa relation1;
+		(role1:$x, role2:$z) isa binary-base;
+		(role1:$z, role2:$y) isa binary-base;
 	}
 	then {
-		(role1:$x, role2:$y) isa relation1;
+		(role1:$x, role2:$y) isa binary-base;
 	};
 
 rule-2 sub rule
 	when {
-		(role1:$x, role2:$z) isa relation1;
-		(role1:$z, role2:$y) isa relation1;
+		(role1:$x, role2:$z) isa binary-base;
+		(role1:$z, role2:$y) isa binary-base;
+	}
+	then {
+		(role1:$x, role2:$y, role3: $z) isa ternary-base;
+	};
+
+rule-3 sub rule
+	when {
+		(role1:$x, role2:$z) isa binary;
+		(role1:$z, role2:$y) isa binary;
+	}
+	then {
+		(role1:$x, role2:$y) isa binary;
+	};
+
+rule-4 sub rule
+	when {
+		(role1:$x, role2:$z) isa binary;
+		(role1:$z, role2:$y) isa binary;
 	}
 	then {
 		(role1:$x, role2:$y, role3: $z) isa ternary;
@@ -54,7 +81,9 @@ $x isa entity1, has name 'a';
 $y isa entity1, has name 'b';
 $z isa entity1, has name 'c';
 
-(role1: $x, role2: $y) isa relation1;
-(role1: $y, role2: $x) isa relation1;
-(role1: $y, role2: $z) isa relation1;
-(role1: $z, role2: $y) isa relation1;
+(role1: $x, role2: $y) isa binary-base;
+(role1: $y, role2: $z) isa binary-base;
+(role1: $z, role2: $y) isa binary-base;
+
+(role1: $x, role2: $y) isa binary;
+(role1: $y, role2: $x) isa binary;

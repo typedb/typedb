@@ -217,41 +217,23 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public Stream<Answer> expandHierarchies(Map<Var, Var> toExpand){
+    public Stream<Answer> expandHierarchies(Set<Var> toExpand) {
         if (toExpand.isEmpty()) return Stream.of(this);
-        List<Concept> rolePlayerConcepts = toExpand.values().stream().map(this::get).collect(Collectors.toList());
         List<Set<Pair<Var, Concept>>> entryOptions = entrySet().stream()
                 .map(e -> {
                     Var var = e.getKey();
-                    //role variable
-                    if (toExpand.keySet().contains(var)){
+                    if (toExpand.contains(var)) {
                         Concept c = get(var);
                         if (c.isSchemaConcept()) {
                             return ReasonerUtils.getUpstreamHierarchy(c.asSchemaConcept()).stream()
-                                    .map(role -> new Pair<Var, Concept>(var, role))
+                                    .map(r -> new Pair<Var, Concept>(var, r))
                                     .collect(Collectors.toSet());
-                        } else {
-                            return Collections.singleton(new Pair<>(var, get(var)));
                         }
                     }
-                    //role player variable
-                    else if (toExpand.values().contains(var)){
-                        return toExpand.values().stream()
-                                .map(conceptVar -> new Pair<>(var, get(conceptVar)))
-                                .collect(Collectors.toSet());
-                    }
-                    else {
-                        return Collections.singleton(new Pair<>(var, get(var)));
-                    }
+                    return Collections.singleton(new Pair<>(var, get(var)));
                 }).collect(Collectors.toList());
 
         return Sets.cartesianProduct(entryOptions).stream()
-                //ensure no role player concept multi mapped
-                .filter(list -> ReasonerUtils.subtract(
-                        list.stream().filter(p -> toExpand.values().contains(p.getKey())).map(Pair::getValue).collect(Collectors.toList()),
-                        rolePlayerConcepts)
-                        .isEmpty()
-                )
                 .map(mappingList -> new QueryAnswer(mappingList.stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue))))
                 .map(ans -> ans.explain(getExplanation()));
     }

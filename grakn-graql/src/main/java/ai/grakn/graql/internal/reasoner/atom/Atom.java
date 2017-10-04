@@ -39,10 +39,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -105,9 +103,9 @@ public abstract class Atom extends AtomicBase {
     protected Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
 
     /**
-     * @return role-role player variable map of pairs that need to be expanded
+     * @return set of variables that need to be have their roles expanded
      */
-    public Map<Var, Var> getRoleExpansionMap(){ return new HashMap<>();}
+    public Set<Var> getRoleExpansionVariables(){ return new HashSet<>();}
 
     /**
      * compute base resolution priority of this atom

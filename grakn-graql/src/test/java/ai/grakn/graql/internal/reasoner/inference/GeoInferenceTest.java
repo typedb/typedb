@@ -145,9 +145,10 @@ public class GeoInferenceTest {
                 "$y has name 'Masovia'; get;";
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
-        assertEquals(answers.size(), 5);
+
         answers.forEach(ans -> assertEquals(ans.size(), 2));
         answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        assertEquals(answers.size(), 5);
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         assertEquals(answers.size(), answers2.size());
     }
@@ -212,11 +213,11 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
 
-        assertEquals(answers.size(), 20);
         answers.forEach(ans -> assertEquals(ans.size(), 4));
         answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
         answers2.forEach(ans -> assertEquals(ans.size(), 4));
         answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        assertEquals(answers.size(), 20);
         assertEquals(answers, answers2);
     }
 
@@ -254,8 +255,8 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
 
-        assertEquals(answers.size(), 5);
         answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        assertEquals(answers.size(), 5);
         answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
         assertEquals(answers, answers2);
     }
@@ -268,8 +269,8 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
 
-        assertEquals(answers.size(), 408);
         answers.forEach(ans -> assertEquals(ans.size(), 4));
+        assertEquals(answers.size(), 408);
         answers2.forEach(ans -> assertEquals(ans.size(), 4));
         assertEquals(answers, answers2);
     }
@@ -302,8 +303,8 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.match(rolePattern).get());
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).match(rolePattern).get());
 
-        assertEquals(answers.size(), 51);
         answers.forEach(ans -> assertEquals(ans.size(), 4));
+        assertEquals(answers.size(), 51);
         answers2.forEach(ans -> assertEquals(ans.size(), 4));
         assertEquals(answers, answers2);
     }
@@ -316,8 +317,8 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
 
-        assertEquals(answers.size(), 204);
         answers.forEach(ans -> assertEquals(ans.size(), 3));
+        assertEquals(answers.size(), 204);
         answers2.forEach(ans -> assertEquals(ans.size(), 3));
         assertEquals(answers, answers2);
     }
@@ -334,10 +335,11 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
 
-        assertEquals(answers.size(), 10);
         answers.forEach(ans -> assertEquals(ans.size(), 3));
-        answers2.forEach(ans -> assertEquals(ans.size(), 3));
         answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        assertEquals(answers.size(), 10);
+
+        answers2.forEach(ans -> assertEquals(ans.size(), 3));
         answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
         assertEquals(answers, answers2);
     }

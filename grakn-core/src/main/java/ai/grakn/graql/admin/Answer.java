@@ -147,11 +147,11 @@ public interface Answer {
     Stream<Answer> permute(Set<Unifier> unifierSet);
 
     /**
-     * @param varMap role-roleplayer variable map for which {@link Role} hierarchy should be expanded
+     * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
      * @return stream of answers with expanded role hierarchy
      */
     @CheckReturnValue
-    Stream<Answer> expandHierarchies(Map<Var, Var> varMap);
+    Stream<Answer> expandHierarchies(Set<Var> toExpand);
 
     /**
      * @return an explanation object indicating how this answer was obtained
