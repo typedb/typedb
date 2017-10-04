@@ -76,7 +76,8 @@ def withPath(String path, Closure closure) {
     return withEnv(["PATH+EXTRA=${path}"], closure)
 }
 
-def withScripts(String workspace, Closure closure) {
+
+    def withScripts(String workspace, Closure closure) {
     withPath("${workspace}/grakn-test/test-integration/src/test/bash", closure)
 }
 
@@ -86,27 +87,28 @@ def ssh(String command) {
 
 def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
-}
-    //Only run validation master/stable
-    // TODO: don't merge this changeif (env.BRANCH_NAME in ['master', 'stable']|| true) {properties([
-	buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+}//Only run validation master/stable
+    // TODO: don't merge this changeif (env.BRANCH_NAME in ['master', 'stable']|| true) {
+	properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
     ])
     node {
         String workspace = pwd()
         checkout scm
 
-	slackGithub "Build started"
+        slackGithub "Build started"
 
-        timeout(60) {stage('Run the benchmarks') {
-            sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-            archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-        }}
+        timeout(60) {
+            stage('Run the benchmarks') {
+                sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+            }
+        }
 
-	for (String moduleName : integrationTests) {
-	    runIntegrationTest(workspace, moduleName)
-	}
+        for (String moduleName : integrationTests) {
+            runIntegrationTest(workspace, moduleName)
+        }
 
-	slackGithub "Periodic Build Success" "good"
+        slackGithub "Periodic Build Success" "good"
     }
 }
 
