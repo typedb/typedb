@@ -18,26 +18,31 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.concept.SchemaConcept;
+
 /**
  *
  * <p>
- * A class defining different unifier types.
+ * Interface for defining unifier comparisons.
  * </p>
  *
  *@author Kasper Piskorski
  *
  */
-public enum UnifierType {
+public interface UnifierComparison {
+
     /**
-     * Exact unifier, requires type and id predicate bindings to match.
+     * @param parent schema concept of parent expression
+     * @param child schema concept of child expression
+     * @return schema concept comparison value
      */
-    EXACT,
+    boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child);
+
     /**
-     * Rule unifier, found between queries and rule heads, allows rule heads to be more specific than matched queries.
+     *
+     * @param parent atomic of parent expression
+     * @param child atomic of child expression
+     * @return atomic comparison value
      */
-    RULE,
-    /**
-     * Similar to rule one with addition to allowing id predicates to differ.
-     */
-    STRUCTURAL
+    boolean atomicComparison(Atomic parent, Atomic child);
 }

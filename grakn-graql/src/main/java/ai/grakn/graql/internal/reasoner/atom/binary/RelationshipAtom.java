@@ -34,7 +34,7 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierType;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
@@ -42,6 +42,7 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -75,7 +76,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSupers;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
@@ -719,7 +719,7 @@ public class RelationshipAtom extends IsaAtom {
      * @param matchType type of match to be performed
      * @return set of possible COMPLETE mappings between this (child) and parent relation players
      */
-    private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierType matchType) {
+    private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierComparison matchType) {
         Multimap<Role, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
         Map<Var, SchemaConcept> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarSchemaConceptMap();
         Map<Var, SchemaConcept> childVarSchemaConceptMap = this.getParentQuery().getVarSchemaConceptMap();
@@ -763,15 +763,7 @@ public class RelationshipAtom extends IsaAtom {
                                             //check for type compatibility
                                             .filter(crp -> {
                                                 SchemaConcept childType = childVarSchemaConceptMap.get(crp.getRolePlayer().var());
-                                                switch(matchType){
-                                                    case EXACT:
-                                                        return !areDisjointTypes(parentType, childType);
-                                                    case RULE:
-                                                    case STRUCTURAL:
-                                                        return childType == null || !areDisjointTypes(parentType, childType);
-                                                    default:
-                                                        throw GraqlQueryException.invalidUnifierType(matchType);
-                                                }
+                                                return matchType.schemaConceptComparison(parentType, childType);
                                             })
                                             //check for substitution compatibility
                                             .filter(crp -> {
@@ -781,16 +773,7 @@ public class RelationshipAtom extends IsaAtom {
                                                 IdPredicate childId = this.getPredicates(IdPredicate.class)
                                                         .filter(p -> p.getVarName().equals(crp.getRolePlayer().var()))
                                                         .findFirst().orElse(null);
-                                                switch(matchType){
-                                                    case EXACT:
-                                                        return parentId == null || parentId.isAlphaEquivalent(childId);
-                                                    case RULE:
-                                                        return childId == null || parentId == null || parentId.isAlphaEquivalent(childId);
-                                                    case STRUCTURAL:
-                                                        return true;
-                                                    default:
-                                                        throw GraqlQueryException.invalidUnifierType(matchType);
-                                                }
+                                                return matchType.atomicComparison(parentId, childId);
                                             })
                                             .forEach(compatibleRelationPlayers::add);
                                 });
@@ -832,7 +815,7 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public MultiUnifier getMultiUnifier(Atom pAtom, UnifierType unifierType) {
+    public MultiUnifier getMultiUnifier(Atom pAtom, UnifierComparison unifierType) {
         if (this.equals(pAtom))  return new MultiUnifierImpl();
 
         Unifier baseUnifier = super.getUnifier(pAtom);

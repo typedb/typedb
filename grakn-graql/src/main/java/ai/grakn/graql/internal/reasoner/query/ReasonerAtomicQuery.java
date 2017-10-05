@@ -30,7 +30,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierType;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
@@ -144,7 +144,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @throws IllegalArgumentException if passed a {@link ReasonerQuery} that is not a {@link ReasonerAtomicQuery}.
      */
     @Override
-    public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierType unifierType){
+    public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierComparison unifierType){
         if (p == this) return new MultiUnifierImpl();
         Preconditions.checkArgument(p instanceof ReasonerAtomicQuery);
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;

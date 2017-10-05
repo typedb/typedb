@@ -25,7 +25,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierType;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
@@ -291,5 +291,5 @@ public abstract class Atom extends AtomicBase {
      * @param unifierType type of unifier to be computed
      * @return multiunifier
      */
-    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType){ return new MultiUnifierImpl(getUnifier(parentAtom));}
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType){ return new MultiUnifierImpl(getUnifier(parentAtom));}
 }
