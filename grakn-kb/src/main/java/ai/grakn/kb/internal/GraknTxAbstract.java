@@ -447,6 +447,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             }
 
             VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
+
+            //Mark it as implicit here so we don't have to pass it down the constructors
+            if(isImplicit){
+                vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
+            }
+
             schemaConcept = SchemaConceptImpl.from(buildSchemaConcept(label, () -> newConceptFactory.apply(vertexElement)));
         } else if (!baseType.equals(schemaConcept.baseType())) {
             throw labelTaken(schemaConcept);
@@ -496,12 +502,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public RelationshipType putRelationshipType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
-                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
+                v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
     public RelationshipType putRelationTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, true,
-                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
+                v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
     @Override
@@ -512,12 +518,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public Role putRole(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, false,
-                v -> factory().buildRole(v, getMetaRole(), Boolean.FALSE));
+                v -> factory().buildRole(v, getMetaRole()));
     }
 
     public Role putRoleTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, true,
-                v -> factory().buildRole(v, getMetaRole(), Boolean.TRUE));
+                v -> factory().buildRole(v, getMetaRole()));
     }
 
     @Override

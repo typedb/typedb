@@ -53,16 +53,16 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         super(vertexElement);
     }
 
-    private RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type, Boolean isImplicit) {
-        super(vertexElement, type, isImplicit);
+    private RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type) {
+        super(vertexElement, type);
     }
 
     public static RelationshipTypeImpl get(VertexElement vertexElement){
         return new RelationshipTypeImpl(vertexElement);
     }
 
-    public static RelationshipTypeImpl create(VertexElement vertexElement, RelationshipType type, Boolean isImplicit){
-        RelationshipTypeImpl relationType = new RelationshipTypeImpl(vertexElement, type, isImplicit);
+    public static RelationshipTypeImpl create(VertexElement vertexElement, RelationshipType type){
+        RelationshipTypeImpl relationType = new RelationshipTypeImpl(vertexElement, type);
         vertexElement.tx().txCache().trackForValidation(relationType);
         return relationType;
     }

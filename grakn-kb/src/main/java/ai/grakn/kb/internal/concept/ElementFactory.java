@@ -100,8 +100,8 @@ public final class ElementFactory {
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------
-    public RelationshipTypeImpl buildRelationType(VertexElement vertex, RelationshipType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> RelationshipTypeImpl.create(v, type, isImplicit));
+    public RelationshipTypeImpl buildRelationType(VertexElement vertex, RelationshipType type){
+        return getOrBuildConcept(vertex, (v) -> RelationshipTypeImpl.create(v, type));
     }
 
     // -------------------------------------------- Building Relations
@@ -134,8 +134,8 @@ public final class ElementFactory {
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    public RoleImpl buildRole(VertexElement vertex, Role type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type, isImplicit));
+    public RoleImpl buildRole(VertexElement vertex, Role type){
+        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type));
     }
 
     /**
