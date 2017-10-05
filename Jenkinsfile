@@ -16,9 +16,14 @@ properties([pipelineTriggers([cron('H H/8 * * *')])])
 
 def slackGithub(String message, String color = null) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-    slackSend channel: "#github", color: color, message: """
-${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-authored by - ${user}"""
+
+    String author = "authored by - ${user}"
+    String link = "(<${env.BUILD_URL}|Open>)"
+    String branch = env.BRANCH_NAME;
+
+    String formattedMessage = "${message} on ${branch}: ${env.JOB_NAME} #${env.BUILD_NUMBER} ${link}\n${author}"
+
+    slackSend channel: "#github", color: color, message: formattedMessage
 }
 
 def runIntegrationTest(String workspace, String moduleName) {
