@@ -64,7 +64,7 @@ def withGrakn(String workspace, Closure closure) {
             }
             closure()
         } catch (error) {
-            slackGithub "Periodic Build Failed" "danger"
+            slackGithub "Periodic Build Failed", "danger"
             throw error
         } finally { // Tears down test environment
             timeout(5) {
@@ -102,7 +102,7 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
         String workspace = pwd()
         checkout scm
 
-        slackGithub "Build started" null
+        slackGithub "Build started", null
 
 //        timeout(60) {
 //            stage('Run the benchmarks') {
@@ -115,7 +115,7 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
 //            runIntegrationTest(workspace, moduleName)
 //        }
 
-        slackGithub "Periodic Build Success" "danger"
+        slackGithub "Periodic Build Success", "danger"
     }
 }
 
