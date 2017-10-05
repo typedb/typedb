@@ -43,6 +43,11 @@ public class KeyspaceTest {
         invalidKeyspace("mynameis@£$%^&");
     }
 
+    @Test
+    public void whenCreatingKeyspaceLongerThan48Characters_Throw(){
+        invalidKeyspace("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa49");
+    }
+
     private void invalidKeyspace(String keyspace) {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.invalidKeyspace(keyspace).getMessage());

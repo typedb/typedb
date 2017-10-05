@@ -263,7 +263,9 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when creating an invalid {@link ai.grakn.Keyspace}
      */
     public static GraknTxOperationException invalidKeyspace(String keyspace){
-        return new GraknTxOperationException("Keyspace [" + keyspace + "] is invalid. Grakn Keyspaces cannot start with a number and can only be lower case containing alphanumeric values and underscore characters");
+        return new GraknTxOperationException("Keyspace [" + keyspace + "] is invalid. " +
+                "Grakn Keyspaces cannot start with a number and can only be lower case containing alphanumeric values and underscore characters." +
+                "Grakn Keyspaces can also not be longer than 48 characters");
     }
 
     /**
