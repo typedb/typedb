@@ -18,15 +18,15 @@
 
 package ai.grakn.graql.internal.gremlin.spanningtree;
 
-import ai.grakn.graql.internal.util.Partition;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.graql.internal.util.Partition;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.javatuples.Pair;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -124,7 +124,7 @@ public class ChuLiuEdmonds {
                 final EdgeQueueMap.EdgeQueue<V> queue = unseenIncomingEdges.queueByDestination.get(destination);
                 // if we choose an edge in `queue`, we'll have to throw out `currentEdge` at the end
                 // (each SCC can have only one incoming edge).
-                queuesToMerge.add(Pair.of(queue, currentEdge));
+                queuesToMerge.add(Pair.with(queue, currentEdge));
                 unseenIncomingEdges.queueByDestination.remove(destination);
             }
             // Merge all SCCs on the cycle into one
