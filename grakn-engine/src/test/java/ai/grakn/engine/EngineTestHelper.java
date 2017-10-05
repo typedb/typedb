@@ -54,7 +54,6 @@ public class EngineTestHelper {
         if (server != null) {
             return;
         }
-        //GraknTestSetup.startRedisIfNeeded(new SimpleURI(config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
         server = GraknEngineServer.create(config());
         server.start();
     }
