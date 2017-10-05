@@ -26,6 +26,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
@@ -212,9 +213,8 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public Stream<Answer> permute(Set<Unifier> unifierSet){
-        if (unifierSet.isEmpty()) return Stream.of(this);
-        return unifierSet.stream().map(this::unify);
+    public Stream<Answer> unify(MultiUnifier multiUnifier) {
+        return multiUnifier.stream().map(this::unify);
     }
 
     @Override

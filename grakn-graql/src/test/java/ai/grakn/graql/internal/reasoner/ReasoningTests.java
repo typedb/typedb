@@ -187,8 +187,8 @@ public class ReasoningTests {
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
-        assertEquals(1, answers.size());
-        assertEquals(5, answers2.size());
+        assertEquals(2, answers.size());
+        assertEquals(8, answers2.size());
         assertNotEquals(answers.size() * answers2.size(), 0);
         answers.forEach(x -> assertEquals(x.size(), 1));
         answers2.forEach(x -> assertEquals(x.size(), 2));
@@ -936,6 +936,80 @@ public class ReasoningTests {
         answers2.stream()
                 .map(a -> a.project(Sets.newHashSet(var("x"), var("y"))))
                 .forEach(a -> assertTrue(answers3.contains(a)));
+    }
+
+    @Test
+    public void ternaryRelationsRequiryingDifferentMultiunifiers(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+
+        String queryString = "match " +
+                "(role1: $a, role2: $b, role3: $c) isa ternary;" +
+                "get;";
+
+        String queryString2 = "match " +
+                "(role: $a, role2: $b, role: $c) isa ternary;" +
+                "$b has name 'b';" +
+                "get;";
+
+        String queryString3 = "match " +
+                "($r: $a) isa ternary;" +
+                "get;";
+
+        String queryString4 = "match " +
+                "($r: $b) isa ternary;" +
+                "$b has name 'b';" +
+                "get;";
+
+        String queryString5 = "match " +
+                "$r($role: $x) isa ternary;" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<Answer> answers4 = qb.<GetQuery>parse(queryString4).execute();
+        List<Answer> answers5 = qb.<GetQuery>parse(queryString5).execute();
+
+        assertEquals(answers.size(), 27);
+        assertEquals(answers2.size(), 9);
+        assertEquals(answers3.size(), 12);
+        assertEquals(answers4.size(), 4);
+        assertEquals(answers5.size(), 138);
+    }
+
+    /**
+     * The query should yield 63 answers. As each vertex is a starting point for 9 relations, starting with a we have:
+     *
+     * (r1: a, r2: a, r3: a), (r1: a, r2: a, r3: b), (r1: a, r2: a, r3: c)
+     * (r1: a, r2: b, r3: a), (r1: a, r2: b, r3: b), (r1: a, r2: b, r3: c)
+     * (r1: a, r2: c, r3: a), (r1: a, r2: c, r3: b), (r1: a. r2: c, r3: c)
+     *
+     * If we generify the roles each of these produces 7 answers, taking (r1: a, r2: b, r3:c) we have:
+     *
+     * (a, r2: b, r3: c)
+     * (a, r: b, r3: c)
+     * (a, r2: b, r: c)
+     * (a, r3: c, r2: b)
+     * (a, r3: c, r: b)
+     * (a, r: c, r2: b)
+     * (a, r: b, r: c)
+     *
+     * plus
+     * (a, r: c, r: b) but this one is counted in (r1: a, r2: c, r3:b)
+     * hence 7 answers per single relation.
+     */
+    @Ignore //TODO will fix in the next PR, it's a role expansion problem not a unifier problem
+    @Test
+    public void ternaryRelationWithVariableRoles(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+
+        String queryString = "match " +
+                "(role1: $a, $r2: $b, $r3: $c) isa ternary;" +
+                "$a has name 'a';" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 63);
     }
 
     @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation
