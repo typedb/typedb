@@ -104,18 +104,18 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
 
         slackGithub "Build started"
 
-        timeout(60) {
-            stage('Run the benchmarks') {
-                sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-            }
-        }
+//        timeout(60) {
+//            stage('Run the benchmarks') {
+//                sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+//                archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+//            }
+//        }
 
-        for (String moduleName : integrationTests) {
-            runIntegrationTest(workspace, moduleName)
-        }
+//        for (String moduleName : integrationTests) {
+//            runIntegrationTest(workspace, moduleName)
+//        }
 
-        slackGithub "Periodic Build Success" "good"
+        slackGithub "Periodic Build Success" "ifYouSeeThisWordThenThatMeansSomething"
     }
 }
 
