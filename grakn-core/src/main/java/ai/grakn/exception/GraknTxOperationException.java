@@ -315,4 +315,11 @@ public class GraknTxOperationException extends GraknException{
     public static GraknTxOperationException missingType(ConceptId id) {
         return new GraknTxOperationException(String.format("Thing {%s} is missing a type", id));
     }
+
+    /**
+     * Thrown when creating a label which starts with a reserved character
+     */
+    public static GraknTxOperationException invalidLabelStart(String label){
+        return new GraknTxOperationException(String.format("Cannot create a label {%s} starting with character {@} as it is a reserved starting character", label));
+    }
 }
