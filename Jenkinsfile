@@ -23,7 +23,7 @@ def slackGithub(String message, String color = null) {
 
     String formattedMessage = "${message} on ${branch}: ${env.JOB_NAME} #${env.BUILD_NUMBER} ${link}\n${author}"
 
-    slackSend channel: "#github", color: color, message: formattedMessage
+    slackSend channel: "#github", color: "good", message: formattedMessage
 }
 
 def runIntegrationTest(String workspace, String moduleName) {
