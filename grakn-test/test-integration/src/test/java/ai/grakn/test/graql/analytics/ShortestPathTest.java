@@ -271,7 +271,7 @@ public class ShortestPathTest {
             Optional<List<Concept>> result = graph.graql().compute()
                     .path().from(startId).includeAttribute().to(endId).execute();
             assertEquals(3, result.get().size());
-            assertEquals("has-name", result.get().get(1).asRelationship().type().getLabel().getValue());
+            assertEquals("@has-name", result.get().get(1).asRelationship().type().getLabel().getValue());
         }
     }
 
@@ -294,19 +294,16 @@ public class ShortestPathTest {
         List<ConceptId> pathPower3Power1 = new ArrayList<>();
         List<ConceptId> pathPerson3Power3 = new ArrayList<>();
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
-            EntityType person = graph.putEntityType("person");
-            AttributeType<Long> power = graph.putAttributeType("power", AttributeType.DataType.LONG);
+        try (GraknTx tx = factory.open(GraknTxType.WRITE)) {
+            EntityType person = tx.putEntityType("person");
+            AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
+
+            person.attribute(power);
 
             // manually construct the attribute relation
-            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")));
-            person.plays(resourceOwner);
-            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")));
-            power.plays(resourceValue);
-            RelationshipType relationType =
-                    graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
-                            .relates(resourceOwner)
-                            .relates(resourceValue);
+            Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
+            Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")).getValue());
+            RelationshipType relationType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")).getValue());
 
             Entity person1 = person.addEntity();
             idPerson1 = person1.getId();
@@ -337,14 +334,14 @@ public class ShortestPathTest {
             person3.attribute(power3);
 
             // finally add a relation between persons to make it more interesting
-            Role role1 = graph.putRole("role1");
-            Role role2 = graph.putRole("role2");
+            Role role1 = tx.putRole("role1");
+            Role role2 = tx.putRole("role2");
             person.plays(role1).plays(role2);
-            RelationshipType relationTypePerson = graph.putRelationshipType(related).relates(role1).relates(role2);
+            RelationshipType relationTypePerson = tx.putRelationshipType(related).relates(role1).relates(role2);
             idRelationPerson1Person3 = relationTypePerson.addRelationship()
                     .addRolePlayer(role1, person1)
                     .addRolePlayer(role2, person3).getId();
-            graph.commit();
+            tx.commit();
         }
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
