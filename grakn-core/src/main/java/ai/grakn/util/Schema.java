@@ -206,32 +206,32 @@ public final class Schema {
         /**
          * The label of the generic has-{@link Attribute} relationship, used for attaching {@link Attribute}s to instances with the 'has' syntax
          */
-        HAS("has-%s"),
+        HAS("@has-%s"),
 
         /**
          * The label of a role in has-{@link Attribute}, played by the owner of the {@link Attribute}
          */
-        HAS_OWNER("has-%s-owner"),
+        HAS_OWNER("@has-%s-owner"),
 
         /**
          * The label of a role in has-{@link Attribute}, played by the {@link Attribute}
          */
-        HAS_VALUE("has-%s-value"),
+        HAS_VALUE("@has-%s-value"),
 
         /**
          * The label of the generic key relationship, used for attaching {@link Attribute}s to instances with the 'has' syntax and additionally constraining them to be unique
          */
-        KEY("key-%s"),
+        KEY("@key-%s"),
 
         /**
          * The label of a role in key, played by the owner of the key
          */
-        KEY_OWNER("key-%s-owner"),
+        KEY_OWNER("@key-%s-owner"),
 
         /**
          * The label of a role in key, played by the {@link Attribute}
          */
-        KEY_VALUE("key-%s-value");
+        KEY_VALUE("@key-%s-value");
 
         private final String label;
 
