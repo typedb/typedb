@@ -51,6 +51,12 @@
             <artifactId>halbuilder-standard</artifactId>
             <version>${halbuilder-standard.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>${commons-math.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

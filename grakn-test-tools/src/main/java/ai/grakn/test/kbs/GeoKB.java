@@ -124,7 +124,6 @@ public class GeoKB extends TestKB {
     @Override
     public void buildRelations(GraknTx tx) {
 
-
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Poland)
                 .addRolePlayer(entityLocation, Europe);
@@ -137,23 +136,22 @@ public class GeoKB extends TestKB {
                 .addRolePlayer(geoEntity, Warsaw)
                 .addRolePlayer(entityLocation, Masovia);
 
+        isLocatedIn.addRelationship()
+                .addRolePlayer(geoEntity, PW)
+                .addRolePlayer(entityLocation, Warsaw);
 
         isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, Wroclaw)
-                .addRolePlayer(entityLocation, Silesia);
+                .addRolePlayer(geoEntity, UW)
+                .addRolePlayer(entityLocation, Warsaw);
 
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Silesia)
                 .addRolePlayer(entityLocation, Poland);
 
         isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, PW)
-                .addRolePlayer(entityLocation, Warsaw);
+                .addRolePlayer(geoEntity, Wroclaw)
+                .addRolePlayer(entityLocation, Silesia);
 
-
-        isLocatedIn.addRelationship()
-                .addRolePlayer(geoEntity, UW)
-                .addRolePlayer(entityLocation, Warsaw);
 
 
         isLocatedIn.addRelationship()
@@ -201,7 +199,6 @@ public class GeoKB extends TestKB {
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, France)
                 .addRolePlayer(entityLocation, Europe);
-
     }
 
     @Override
