@@ -71,8 +71,7 @@ import static org.junit.Assume.assumeFalse;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(true);
-
+    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(false);
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;
