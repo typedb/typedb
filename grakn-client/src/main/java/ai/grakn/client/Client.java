@@ -50,6 +50,18 @@ public class Client {
 
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
+    private enum EngineStatus {
+        Running(0),
+        NotRunning(1),
+        Error(2);
+
+        private final int exitCode;
+
+        EngineStatus(int exitCode) {
+            this.exitCode = exitCode;
+        }
+    }
+
     final ResponseHandler<Json> asJsonHandler = response -> {
         try(BufferedReader reader = new BufferedReader(
                 new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))){
@@ -65,23 +77,23 @@ public class Client {
     };
 
     public static void main(String[] args) {
-        int result;
+        EngineStatus engineStatus;
         try {
-            result = checkServerRunning();
+            engineStatus = checkServerRunning();
         } catch (Exception e) {
             LOG.error("An unexpected error occurred", e);
-            result = 2;
+            engineStatus = EngineStatus.Error;
         }
-        System.exit(result);
+        System.exit(engineStatus.exitCode);
     }
 
-    private static int checkServerRunning() throws IOException {
+    private static EngineStatus checkServerRunning() throws IOException {
         String confPath = GraknSystemProperty.CONFIGURATION_FILE.value();
 
         if (confPath == null) {
             String msg = "System property `" + GraknSystemProperty.CONFIGURATION_FILE.key() + "` has not been set";
             LOG.error(msg);
-            return 2;
+            return EngineStatus.Error;
         }
 
         Properties properties = new Properties();
@@ -92,10 +104,10 @@ public class Client {
         String serverUri = properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
         if (serverIsRunning(serverUri)) {
             LOG.info("Server " + serverUri + " is running");
-            return 0;
+            return EngineStatus.Running;
         } else {
             LOG.info("Server " + serverUri + " is not running");
-            return 1;
+            return EngineStatus.NotRunning;
         }
     }
 
