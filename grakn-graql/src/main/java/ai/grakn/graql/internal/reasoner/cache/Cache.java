@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.cache;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -146,9 +146,9 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @return unified cached answers
      */
     public abstract T getAnswers(Q query);
-    public abstract Pair<T, Unifier> getAnswersWithUnifier(Q query);
+    public abstract Pair<T, MultiUnifier> getAnswersWithUnifier(Q query);
     public abstract Stream<Answer> getAnswerStream(Q query);
-    public abstract Pair<Stream<Answer>, Unifier> getAnswerStreamWithUnifier(Q query);
+    public abstract Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
     public abstract LazyIterator<Answer> getAnswerIterator(Q query);
 
     /**

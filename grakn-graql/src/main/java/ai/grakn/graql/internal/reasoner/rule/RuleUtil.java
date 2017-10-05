@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.Schema;
 
+import com.google.common.base.Equivalence;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
@@ -145,19 +146,29 @@ public class RuleUtil {
      * @return all rules that are reachable from the entry types
      */
     public static Set<InferenceRule> getDependentRules(ReasonerQueryImpl query){
+        final Equivalence<Atom> equivalence = new Equivalence<Atom>(){
+            @Override
+            protected boolean doEquivalent(Atom a1, Atom a2) {return a1.isAlphaEquivalent(a2);}
+            @Override
+            protected int doHash(Atom a) {return a.alphaEquivalenceHashCode();}
+        };
+
         Set<InferenceRule> rules = new HashSet<>();
-        Set<Atom> visitedAtoms = new HashSet<>();
-        Stack<Atom> atoms = new Stack<>();
-        query.selectAtoms().forEach(atoms::push);
+        Set<Equivalence.Wrapper<Atom>> visitedAtoms = new HashSet<>();
+        Stack<Equivalence.Wrapper<Atom>> atoms = new Stack<>();
+        query.selectAtoms().stream().map(equivalence::wrap).forEach(atoms::push);
         while(!atoms.isEmpty()) {
-            Atom atom = atoms.pop();
-            if (!visitedAtoms.contains(atom)){
+            Equivalence.Wrapper<Atom> wrappedAtom = atoms.pop();
+             Atom atom = wrappedAtom.get();
+            if (!visitedAtoms.contains(wrappedAtom) && atom != null){
                 atom.getApplicableRules()
                         .peek(rules::add)
                         .flatMap(rule -> rule.getBody().selectAtoms().stream())
-                        .filter(visitedAtoms::contains)
+                        .map(equivalence::wrap)
+                        .filter(at -> !visitedAtoms.contains(at))
+                        .filter(at -> !atoms.contains(at))
                         .forEach(atoms::add);
-                visitedAtoms.add(atom);
+                visitedAtoms.add(wrappedAtom);
             }
         }
         return rules;

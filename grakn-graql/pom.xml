@@ -42,20 +42,26 @@
             <version>${antlr.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.sharegov</groupId>
-            <artifactId>mjson</artifactId>
-            <version>${mjson.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.javatuples</groupId>
             <artifactId>javatuples</artifactId>
             <version>${java-tuples.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>org.sharegov</groupId>
+            <artifactId>mjson</artifactId>
+            <version>${mjson.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.theoryinpractise</groupId>
             <artifactId>halbuilder-standard</artifactId>
             <version>${halbuilder-standard.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>${commons-math.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

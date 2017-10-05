@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner;
 
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -27,9 +28,11 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -50,6 +53,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import org.apache.commons.math3.util.CombinatoricsUtils;
 
 /**
  * Suite of tests checking different meanders and aspects of reasoning - full reasoning cycle is being tested.
@@ -187,8 +191,8 @@ public class ReasoningTests {
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
-        assertEquals(1, answers.size());
-        assertEquals(5, answers2.size());
+        assertEquals(2, answers.size());
+        assertEquals(8, answers2.size());
         assertNotEquals(answers.size() * answers2.size(), 0);
         answers.forEach(x -> assertEquals(x.size(), 1));
         answers2.forEach(x -> assertEquals(x.size(), 2));
@@ -709,7 +713,7 @@ public class ReasoningTests {
     public void recursiveRelationWithNeqPredicate(){
         QueryBuilder qb = testSet29.tx().graql().infer(true);
         String baseQueryString = "match " +
-                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $x, role2: $y) isa binary-base;" +
                 "$x != $y;";
         String queryString = baseQueryString + "$y has name 'c'; get;";
 
@@ -721,7 +725,7 @@ public class ReasoningTests {
         });
 
         String explicitString = "match " +
-                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $x, role2: $y) isa binary-base;" +
                 "$y has name 'c';" +
                 "{$x has name 'a';} or {$x has name 'b';}; get;";
 
@@ -745,8 +749,8 @@ public class ReasoningTests {
     public void recursiveRelationsWithSharedNeqPredicate_relationsAreEquivalent(){
         QueryBuilder qb = testSet29.tx().graql().infer(true);
         String baseQueryString = "match " +
-                "(role1: $x, role2: $y) isa relation1;" +
-                "(role1: $x, role2: $z) isa relation1;" +
+                "(role1: $x, role2: $y) isa binary-base;" +
+                "(role1: $x, role2: $z) isa binary-base;" +
                 "$y != $z;";
 
         List<Answer> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
@@ -787,8 +791,8 @@ public class ReasoningTests {
     public void multipleRecursiveRelationsWithSharedNeqPredicate_neqPredicatePreventsLoops(){
         QueryBuilder qb = testSet29.tx().graql().infer(true);
         String baseQueryString = "match " +
-                "(role1: $x, role2: $y) isa relation1;" +
-                "(role1: $y, role2: $z) isa relation1;" +
+                "(role1: $x, role2: $y) isa binary-base;" +
+                "(role1: $y, role2: $z) isa binary-base;" +
                 "$x != $z;";
 
         List<Answer> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
@@ -833,10 +837,10 @@ public class ReasoningTests {
     public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates_symmetricPattern(){
         QueryBuilder qb = testSet29.tx().graql().infer(true);
         String baseQueryString = "match " +
-                "(role1: $x, role2: $y1) isa relation1;" +
-                "(role1: $x, role2: $z1) isa relation1;" +
-                "(role1: $x, role2: $y2) isa relation1;" +
-                "(role1: $x, role2: $z2) isa relation1;" +
+                "(role1: $x, role2: $y1) isa binary-base;" +
+                "(role1: $x, role2: $z1) isa binary-base;" +
+                "(role1: $x, role2: $y2) isa binary-base;" +
+                "(role1: $x, role2: $z2) isa binary-base;" +
 
                 "$y1 != $z1;" +
                 "$y2 != $z2;";
@@ -874,11 +878,11 @@ public class ReasoningTests {
     public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates(){
         QueryBuilder qb = testSet29.tx().graql().infer(true);
         String baseQueryString = "match " +
-                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $x, role2: $y) isa binary-base;" +
                 "$x != $z1;" +
                 "$y != $z2;" +
-                "(role1: $x, role2: $z1) isa relation1;" +
-                "(role1: $y, role2: $z2) isa relation1;";
+                "(role1: $x, role2: $z1) isa binary-base;" +
+                "(role1: $y, role2: $z2) isa binary-base;";
 
         List<Answer> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
         assertEquals(baseAnswers.size(), 36);
@@ -903,20 +907,20 @@ public class ReasoningTests {
     public void inferrableRelationWithRolePlayersSharingResource(){
         QueryBuilder qb = testSet29.tx().graql().infer(true);
         String queryString = "match " +
-                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $x, role2: $y) isa binary-base;" +
                 "$x has name $n;" +
                 "$y has name $n;" +
                 "get;";
 
         String queryString2 = "match " +
-                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $x, role2: $y) isa binary-base;" +
                 "$x has name $n;" +
                 "$y has name $n;" +
                 "$n val 'a';" +
                 "get;";
 
         String queryString3 = "match " +
-                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $x, role2: $y) isa binary-base;" +
                 "$x has name 'a';" +
                 "$y has name 'a';" +
                 "get;";
@@ -937,6 +941,229 @@ public class ReasoningTests {
         answers2.stream()
                 .map(a -> a.project(Sets.newHashSet(var("x"), var("y"))))
                 .forEach(a -> assertTrue(answers3.contains(a)));
+    }
+
+    @Test
+    public void ternaryRelationsRequiryingDifferentMultiunifiers(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+
+        String queryString = "match " +
+                "(role1: $a, role2: $b, role3: $c) isa ternary-base;" +
+                "get;";
+
+        String queryString2 = "match " +
+                "(role: $a, role2: $b, role: $c) isa ternary-base;" +
+                "$b has name 'b';" +
+                "get;";
+
+        String queryString3 = "match " +
+                "($r: $a) isa ternary-base;" +
+                "get;";
+
+        String queryString4 = "match " +
+                "($r: $b) isa ternary-base;" +
+                "$b has name 'b';" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 27);
+
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        assertEquals(answers2.size(), 9);
+
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        assertEquals(answers3.size(), 12);
+
+        List<Answer> answers4 = qb.<GetQuery>parse(queryString4).execute();
+        assertEquals(answers4.size(), 4);
+    }
+
+    @Test
+    public void binaryRelationWithDifferentVariantsOfVariableRoles(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+
+        //9 binary-base instances with {role, role2} = 2 roles for r2 -> 18 answers
+        String queryString = "match " +
+                "(role1: $a, $r2: $b) isa binary-base;" +
+                "get;";
+
+        String equivalentQueryString = "match " +
+                "($r1: $a, $r2: $b) isa binary-base;" +
+                "$r1 label 'role1';" +
+                "get $a, $b, $r2;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> equivalentAnswers = qb.<GetQuery>parse(equivalentQueryString).execute();
+        assertEquals(answers.size(), 18);
+        assertTrue(CollectionUtils.isEqualCollection(answers, equivalentAnswers));
+
+        //9 binary-base instances with {role, role1, role2} = 3 roles for r2 -> 27 answers
+        String queryString2 = "match " +
+                "(role: $a, $r2: $b) isa binary-base;" +
+                "get;";
+
+        String equivalentQueryString2 = "match " +
+                "($r1: $a, $r2: $b) isa binary-base;" +
+                "$r1 label 'role';" +
+                "get $a, $b, $r2;";
+
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<Answer> equivalentAnswers2 = qb.<GetQuery>parse(equivalentQueryString2).execute();
+        assertEquals(answers2.size(), 27);
+        assertTrue(CollectionUtils.isEqualCollection(answers2, equivalentAnswers2));
+
+        //role variables bound hence should return original 9 instances
+        String queryString3 = "match " +
+                "($r1: $a, $r2: $b) isa binary-base;" +
+                "$r1 label 'role';" +
+                "$r2 label 'role2';" +
+                "get $a, $b;";
+
+        String equivalentQueryString3 = "match " +
+                "(role1: $a, role2: $b) isa binary-base;" +
+                "get;";
+
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<Answer> equivalentAnswers3 = qb.<GetQuery>parse(equivalentQueryString3).execute();
+        assertEquals(answers3.size(), 9);
+        assertTrue(CollectionUtils.isEqualCollection(answers3, equivalentAnswers3));
+
+        //9 relation instances with 7 possible permutations for each - 63 answers
+        String queryString4 = "match " +
+                "($r1: $a, $r2: $b) isa binary-base;" +
+                "get;";
+
+        List<Answer> answers4 = qb.<GetQuery>parse(queryString4).execute();
+        assertEquals(answers4.size(), 63);
+    }
+
+    @Test
+    public void binaryRelationWithVariableRoles_basicSet(){
+        final int conceptDOF = 2;
+        ternaryNaryRelationWithVariableRoles("binary", conceptDOF);
+    }
+
+    @Test
+    public void binaryRelationWithVariableRoles_extendedSet(){
+        final int conceptDOF = 3;
+        ternaryNaryRelationWithVariableRoles("binary-base", conceptDOF);
+    }
+
+    @Test
+    public void ternaryRelationWithVariableRoles_basicSet(){
+        /*
+        As each vertex is a starting point for {a, b, c} x {a, b c} = 9 relations, starting with a we have:
+
+        (r1: a, r2: a, r3: a), (r1: a, r2: a, r3: b), (r1: a, r2: a, r3: c)
+        (r1: a, r2: b, r3: a), (r1: a, r2: b, r3: b), (r1: a, r2: b, r3: c)
+        (r1: a, r2: c, r3: a), (r1: a, r2: c, r3: b), (r1: a. r2: c, r3: c)
+
+        If we generify two roles each of these produces 7 answers, taking (r1: a, r2: b, r3:c) we have:
+
+        (a, r2: b, r3: c)
+        (a, r: b, r3: c)
+        (a, r2: b, r: c)
+        (a, r3: c, r2: b)
+        (a, r3: c, r: b)
+        (a, r: c, r2: b)
+        (a, r: b, r: c)
+
+        plus
+        (a, r: c, r: b) but this one is counted in (r1: a, r2: c, r3:b)
+        hence 7 answers per single relation.
+        */
+        final int conceptDOF = 2;
+        ternaryNaryRelationWithVariableRoles("ternary", conceptDOF);
+    }
+
+    @Test
+    public void ternaryRelationWithVariableRoles_extendedSet(){
+        final int conceptDOF = 3;
+        ternaryNaryRelationWithVariableRoles("ternary-base", conceptDOF);
+    }
+
+    @Test
+    public void quaternaryRelationWithVariableRoles_basicSet(){
+        final int conceptDOF = 2;
+        ternaryNaryRelationWithVariableRoles("quaternary", conceptDOF);
+    }
+
+    @Test
+    public void quaternaryRelationWithVariableRoles2_extendedSet(){
+        final int conceptDOF = 3;
+        ternaryNaryRelationWithVariableRoles("quaternary-base", conceptDOF);
+    }
+
+    private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
+        GraknTx graph = testSet29.tx();
+        QueryBuilder qb = graph.graql().infer(true);
+        final int arity = (int) graph.getRelationshipType(label).relates().count();
+
+        VarPattern resourcePattern = var("a1").has("name", "a");
+
+        //This query generalises all roles but the first one.
+        VarPattern pattern = var().rel("role1", "a1");
+        for(int i = 2; i <= arity ; i++) pattern = pattern.rel(var("r" + i), "a" + i);
+        pattern = pattern.isa(label);
+
+        List<Answer> answers = qb.match(pattern.and(resourcePattern)).get().execute();
+        assertEquals(answers.size(), answerCombinations(arity-1, conceptDOF));
+
+        //We get extra conceptDOF degrees of freedom by removing the resource constraint on $a1 and the set is symmetric.
+        List<Answer> answers2 = qb.match(pattern).get().execute();
+        assertEquals(answers2.size(), answerCombinations(arity-1, conceptDOF) * conceptDOF);
+
+
+        //The general case of mapping all available Rps
+        VarPattern generalPattern = var();
+        for(int i = 1; i <= arity ; i++) generalPattern = generalPattern.rel(var("r" + i), "a" + i);
+        generalPattern = generalPattern.isa(label);
+
+        List<Answer> answers3 = qb.match(generalPattern).get().execute();
+        assertEquals(answers3.size(), answerCombinations(arity, conceptDOF));
+    }
+
+    /**
+     *Each role player variable can be mapped to either of the conceptDOF concepts and these can repeat.
+     *Each role variable can be mapped to either of RPs roles and only meta roles can repeat.
+
+     *For the case of conceptDOF = 3, roleDOF = 3.
+     *We start by considering the number of meta roles we allow.
+     *If we consider only non-meta roles, considering each relation player we get:
+     *C^3_0 x 3.3 x 3.2 x 3 = 162 combinations
+     *
+     *If we consider single metarole - C^3_1 = 3 possibilities of assigning them:
+     *C^3_1 x 3.3 x 3.2 x 3 = 486 combinations
+     *
+     *Two metaroles - again C^3_2 = 3 possibilities of assigning them:
+     *C^3_2 x 3.3 x 3   x 3 = 243 combinations
+     *
+     *Three metaroles, C^3_3 = 1 possiblity of assignment:
+     *C^3_3 x 3   x 3   x 3 = 81 combinations
+     *
+     *-> Total = 918 different answers
+     *In general, for i allowed meta roles we have:
+     *C^{RP}_i PRODUCT_{j = RP-i}{ (conceptDOF)x(roleDOF-j) } x PRODUCT_i{ conceptDOF} } answers.
+     *
+     *So total number of answers is:
+     *SUM_i{ C^{RP}_i PRODUCT_{j = RP-i}{ (conceptDOF)x(roleDOF-j) } x PRODUCT_i{ conceptDOF} }
+     *
+     * @param RPS number of relation players available
+     * @param conceptDOF number of concept degrees of freedom
+     * @return number of answer combinations
+     */
+    private int answerCombinations(int RPS, int conceptDOF) {
+        int answers = 0;
+        //i is the number of meta roles
+        for (int i = 0; i <= RPS; i++) {
+            int RPProduct = 1;
+            //rps with non-meta roles
+            for (int j = 0; j < RPS - i; j++) RPProduct *= conceptDOF * (RPS - j);
+            //rps with meta roles
+            for (int k = 0; k < i; k++) RPProduct *= conceptDOF;
+            answers += CombinatoricsUtils.binomialCoefficient(RPS, i) * RPProduct;
+        }
+        return answers;
     }
 
     @Test //tests scenario where rules define mutually recursive relation and resource and we query for an attributed type corresponding to the relation

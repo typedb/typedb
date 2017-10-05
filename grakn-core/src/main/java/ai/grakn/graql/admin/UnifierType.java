@@ -16,32 +16,28 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.rule;
-
-import ai.grakn.graql.admin.Unifier;
+package ai.grakn.graql.admin;
 
 /**
  *
  * <p>
- * Wrapper for (rule, unifier, unifier) tuple.
+ * A class defining different unifier types.
  * </p>
  *
- * @author Kasper Piskorski
+ *@author Kasper Piskorski
  *
  */
-public class RuleTuple {
-
-    private final InferenceRule rule;
-    private final Unifier ruleUnifier;
-    private final Unifier permutationUnifier;
-
-    public RuleTuple(InferenceRule rule, Unifier u, Unifier pu){
-        this.rule = rule;
-        this.ruleUnifier = u;
-        this.permutationUnifier = pu;
-    }
-
-    public InferenceRule getRule(){ return rule;}
-    public Unifier getRuleUnifier(){ return ruleUnifier;}
-    public Unifier getPermutationUnifier(){ return permutationUnifier;}
+public enum UnifierType {
+    /**
+     * Exact unifier, requires type and id predicate bindings to match.
+     */
+    EXACT,
+    /**
+     * Rule unifier, found between queries and rule heads, allows rule heads to be more specific than matched queries.
+     */
+    RULE,
+    /**
+     * Similar to rule one with addition to allowing id predicates to differ.
+     */
+    STRUCTURAL
 }

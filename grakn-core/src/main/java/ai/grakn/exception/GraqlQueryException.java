@@ -278,6 +278,14 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.ROLE_PATTERN_ABSENT.getMessage(relation));
     }
 
+    public static GraqlQueryException invalidUnifierType(Object value) {
+        return new GraqlQueryException(ErrorMessage.INVALID_UNIFIER_TYPE.getMessage(value));
+    }
+
+    public static GraqlQueryException nonExistentUnifier(){
+        return new GraqlQueryException(ErrorMessage.NON_EXISTENT_UNIFIER.getMessage());
+    }
+
     public static GraqlQueryException ruleCreationArityMismatch() {
         return new GraqlQueryException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
     }

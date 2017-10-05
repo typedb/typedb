@@ -19,10 +19,11 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -84,9 +85,7 @@ public class ConjunctiveState extends QueryState {
     ReasonerQueryImpl getQuery(){return query;}
 
     @Override
-    Unifier getCacheUnifier() {
-        return new UnifierImpl();
-    }
+    MultiUnifier getCacheUnifier() { return new MultiUnifierImpl();}
 
     ResolutionState propagateAnswer(AnswerState state){
         Answer answer = state.getAnswer();

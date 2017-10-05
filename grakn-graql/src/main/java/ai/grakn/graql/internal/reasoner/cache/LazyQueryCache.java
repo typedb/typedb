@@ -19,10 +19,10 @@
 package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.MultiUnifier;
+import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
@@ -53,7 +53,7 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            Stream<Answer> unifiedStream = answers.unify(query.getUnifier(equivalentQuery)).stream();
+            Stream<Answer> unifiedStream = answers.unify(query.getMultiUnifier(equivalentQuery)).stream();
             this.put(match.query(), match.cachedElement().merge(unifiedStream));
             return getAnswerIterator(query);
         }
@@ -71,8 +71,8 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
         if (match!= null) {
             Q equivalentQuery = match.query();
-            Unifier u = query.getUnifier(equivalentQuery);
-            Stream<Answer> unifiedStream = answers.map(a -> a.unify(u));
+            MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery);
+            Stream<Answer> unifiedStream = answers.flatMap(a -> a.unify(multiUnifier));
             this.put(match.query(), match.cachedElement().merge(unifiedStream));
             return getAnswerIterator(query);
         }
@@ -87,19 +87,19 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
     }
 
     @Override
-    public Pair<LazyAnswerIterator, Unifier> getAnswersWithUnifier(Q query) {
+    public Pair<LazyAnswerIterator, MultiUnifier> getAnswersWithUnifier(Q query) {
         CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            Unifier unifier = equivalentQuery.getUnifier(query);
-            LazyAnswerIterator unified = match.cachedElement().unify(unifier);
-            return new Pair<>(unified, unifier);
+            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
+            LazyAnswerIterator unified = match.cachedElement().unify(multiUnifier);
+            return new Pair<>(unified, multiUnifier);
         }
         Stream<Answer> answerStream = record(
                 query,
                 query.getQuery().stream().map(a -> a.explain(new LookupExplanation(query)))
         );
-        return new Pair<>(new LazyAnswerIterator(answerStream), new UnifierImpl());
+        return new Pair<>(new LazyAnswerIterator(answerStream), new MultiUnifierImpl());
     }
 
     @Override
@@ -108,20 +108,20 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
     }
 
     @Override
-    public Pair<Stream<Answer>, Unifier> getAnswerStreamWithUnifier(Q query) {
+    public Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
         CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            Unifier unifier = equivalentQuery.getUnifier(query);
-            Stream<Answer> unified = match.cachedElement().stream().map(a -> a.unify(unifier));
-            return new Pair<>(unified, unifier);
+            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
+            Stream<Answer> unified = match.cachedElement().stream().flatMap(a -> a.unify(multiUnifier));
+            return new Pair<>(unified, multiUnifier);
         }
 
         Stream<Answer> answerStream = record(
                 query,
                 query.getQuery().stream().map(a -> a.explain(new LookupExplanation(query)))
         );
-        return new Pair<>(answerStream, new UnifierImpl());
+        return new Pair<>(answerStream, new MultiUnifierImpl());
     }
 
     @Override
