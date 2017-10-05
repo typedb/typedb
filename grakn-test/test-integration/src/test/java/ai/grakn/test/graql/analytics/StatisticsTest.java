@@ -503,15 +503,13 @@ public class StatisticsTest {
 
     @Test
     public void testHasResourceVerticesAndEdges() {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.open(GraknTxType.WRITE)) {
 
             // manually construct the relation type and instance
-            EntityType person = graph.putEntityType("person");
-            AttributeType<Long> power = graph.putAttributeType("power", AttributeType.DataType.LONG);
-            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")));
-            person.plays(resourceOwner);
-            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")));
-            power.plays(resourceValue);
+            AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
+            EntityType person = tx.putEntityType("person").attribute(power);
+            Role resourceOwner = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")).getValue());
+            Role resourceValue = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")).getValue());
 
             person.attribute(power);
 
@@ -521,7 +519,7 @@ public class StatisticsTest {
             Attribute power1 = power.putAttribute(1L);
             Attribute power2 = power.putAttribute(2L);
             Attribute power3 = power.putAttribute(3L);
-            RelationshipType relationType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
+            RelationshipType relationType = tx.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
                     .relates(resourceOwner).relates(resourceValue);
 
             relationType.addRelationship()
@@ -535,7 +533,7 @@ public class StatisticsTest {
 
             person3.attribute(power3);
 
-            graph.commit();
+            tx.commit();
         }
 
         Optional<Number> result;
