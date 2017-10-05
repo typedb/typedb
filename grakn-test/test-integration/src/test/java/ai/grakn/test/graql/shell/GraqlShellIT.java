@@ -39,7 +39,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -94,8 +93,6 @@ public class GraqlShellIT {
 
         // TODO: Get these tests working consistently on Jenkins - causes timeouts
         assumeFalse(GraknTestSetup.usingJanus());
-
-        LoggerFactory.getLogger()
     }
 
     @Before
