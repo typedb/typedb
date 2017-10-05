@@ -115,7 +115,7 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
 //            runIntegrationTest(workspace, moduleName)
 //        }
 
-        slackGithub "Periodic Build Success", "danger"
+        slackGithub "Periodic Build Success", "good"
     }
 }
 
