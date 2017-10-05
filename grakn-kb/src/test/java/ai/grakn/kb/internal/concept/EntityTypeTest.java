@@ -464,7 +464,7 @@ public class EntityTypeTest extends TxTestBase {
         String label = "@what-a-dumb-label-name";
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.invalidLabelStart(label).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.invalidLabelStart(Label.of(label)).getMessage());
 
         tx.putEntityType(label);
     }

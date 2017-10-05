@@ -317,9 +317,9 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when creating a label which starts with a reserved character
+     * Thrown when creating a label which starts with a reserved character {@link Schema.ImplicitType#RESERVED}
      */
-    public static GraknTxOperationException invalidLabelStart(String label){
-        return new GraknTxOperationException(String.format("Cannot create a label {%s} starting with character {@} as it is a reserved starting character", label));
+    public static GraknTxOperationException invalidLabelStart(Label label){
+        return new GraknTxOperationException(String.format("Cannot create a label {%s} starting with character {%s} as it is a reserved starting character", label, Schema.ImplicitType.RESERVED.getValue()));
     }
 }

@@ -204,6 +204,11 @@ public final class Schema {
      */
     public enum ImplicitType {
         /**
+         * Reserved character used by all implicit {@link Type}s
+         */
+        RESERVED("@"),
+
+        /**
          * The label of the generic has-{@link Attribute} relationship, used for attaching {@link Attribute}s to instances with the 'has' syntax
          */
         HAS("@has-%s"),
@@ -247,6 +252,11 @@ public final class Schema {
         @CheckReturnValue
         public Label getLabel(String attributeType) {
             return Label.of(String.format(label, attributeType));
+        }
+
+        @CheckReturnValue
+        public String getValue(){
+            return label;
         }
 
         /**
