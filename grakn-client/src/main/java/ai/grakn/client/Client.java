@@ -102,7 +102,7 @@ public class Client {
         }
 
         String host = properties.getProperty("server.host");
-        int port = Integer.valueOf(properties.getProperty("server.port"));
+        int port = Integer.parseInt(properties.getProperty("server.port"));
         if (serverIsRunning(host, port)) {
             LOG.info("Server " + host + ":" + port + " is running");
             return EngineStatus.Running;
@@ -114,7 +114,7 @@ public class Client {
 
     public static boolean serverIsRunning(String hostAndPort) {
         String[] split = hostAndPort.split(":", 2);
-        return serverIsRunning(split[0], Integer.valueOf(split[1]));
+        return serverIsRunning(split[0], Integer.parseInt(split[1]));
     }
 
     /**
