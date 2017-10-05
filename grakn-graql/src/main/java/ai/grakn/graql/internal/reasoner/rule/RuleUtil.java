@@ -147,7 +147,9 @@ public class RuleUtil {
      */
     public static Set<InferenceRule> getDependentRules(ReasonerQueryImpl query){
         final Equivalence<Atom> equivalence = new Equivalence<Atom>(){
+            @Override
             protected boolean doEquivalent(Atom a1, Atom a2) {return a1.isEquivalent(a2);}
+            @Override
             protected int doHash(Atom a) {return a.equivalenceHashCode();}
         };
 

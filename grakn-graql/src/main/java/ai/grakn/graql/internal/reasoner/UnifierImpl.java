@@ -21,6 +21,8 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -31,7 +33,7 @@ import ai.grakn.graql.internal.reasoner.utils.Pair;
 /**
  *
  * <p>
- * Implementation of {@link Unifier} interface.
+ * Implementation of the {@link Unifier} interface.
  * </p>
  *
  * @author Kasper Piskorski
@@ -45,12 +47,12 @@ public class UnifierImpl implements Unifier {
      * Identity unifier.
      */
     public UnifierImpl(){}
-    public UnifierImpl(Map<Var, Var> map){
-        map.entrySet().forEach(m -> unifier.put(m.getKey(), m.getValue()));
+    public UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){ mappings.forEach(m -> unifier.put(m.getKey(), m.getValue()));}
+    public UnifierImpl(ImmutableMap<Var, Var> map){ this(map.entrySet());}
+    public UnifierImpl(ImmutableMultimap<Var, Var> map){
+        this(map.entries());
     }
-    public UnifierImpl(Unifier u){
-        merge(u);
-    }
+    public UnifierImpl(Unifier u){ this(u.mappings());}
 
     @Override
     public String toString(){
@@ -86,7 +88,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Collection<Map.Entry<Var, Var>> mappings(){ return unifier.entries();}
+    public Set<Map.Entry<Var, Var>> mappings(){ return unifier.entries();}
 
     @Override
     public boolean addMapping(Var key, Var value){

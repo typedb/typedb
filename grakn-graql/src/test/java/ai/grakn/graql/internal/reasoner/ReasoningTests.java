@@ -32,6 +32,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -190,8 +191,8 @@ public class ReasoningTests {
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
-        assertEquals(1, answers.size());
-        assertEquals(5, answers2.size());
+        assertEquals(2, answers.size());
+        assertEquals(8, answers2.size());
         assertNotEquals(answers.size() * answers2.size(), 0);
         answers.forEach(x -> assertEquals(x.size(), 1));
         answers2.forEach(x -> assertEquals(x.size(), 2));
@@ -939,6 +940,41 @@ public class ReasoningTests {
         answers2.stream()
                 .map(a -> a.project(Sets.newHashSet(var("x"), var("y"))))
                 .forEach(a -> assertTrue(answers3.contains(a)));
+    }
+
+    @Test
+    public void ternaryRelationsRequiryingDifferentMultiunifiers(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+
+        String queryString = "match " +
+                "(role1: $a, role2: $b, role3: $c) isa ternary-base;" +
+                "get;";
+
+        String queryString2 = "match " +
+                "(role: $a, role2: $b, role: $c) isa ternary-base;" +
+                "$b has name 'b';" +
+                "get;";
+
+        String queryString3 = "match " +
+                "($r: $a) isa ternary-base;" +
+                "get;";
+
+        String queryString4 = "match " +
+                "($r: $b) isa ternary-base;" +
+                "$b has name 'b';" +
+                "get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 27);
+
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        assertEquals(answers2.size(), 9);
+
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        assertEquals(answers3.size(), 12);
+
+        List<Answer> answers4 = qb.<GetQuery>parse(queryString4).execute();
+        assertEquals(answers4.size(), 4);
     }
 
     @Test

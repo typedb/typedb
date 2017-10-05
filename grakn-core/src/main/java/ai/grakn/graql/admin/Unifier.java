@@ -79,7 +79,7 @@ public interface Unifier{
      * @return set of mappings constituting this unifier
      */
     @CheckReturnValue
-    Collection<Map.Entry<Var, Var>> mappings();
+    Set<Map.Entry<Var, Var>> mappings();
 
     /**
      * @param key variable to be inspected for presence
@@ -96,7 +96,7 @@ public interface Unifier{
     boolean containsValue(Var value);
 
     /**
-     * @param u unifier to compare with
+     * @param u unifier to be compared with
      * @return true if this unifier contains all mappings of u
      */
     @CheckReturnValue
@@ -110,10 +110,14 @@ public interface Unifier{
     Unifier merge(Unifier u);
 
     /**
-     * unifier combination by joining mappings
+     * Setting v = this unifier, produces a unifier u' that applied to an expression E has the following properties:
+     *
+     *  u'E = u x E' = u x (v E)
+     *
      * @param u unifier to be combined with this unifier
      * @return combined unifier
      */
+    @CheckReturnValue
     Unifier combine(Unifier u);
 
     /**

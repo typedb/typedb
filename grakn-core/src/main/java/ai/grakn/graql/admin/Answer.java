@@ -140,14 +140,18 @@ public interface Answer {
     Answer unify(Unifier unifier);
 
     /**
-     * @param unifierSet set of permutation mappings
-     * @return stream of permuted answers
+     * @param multiUnifier set of unifiers defining variable mappings
+     * @return stream of unified answers
      */
     @CheckReturnValue
-    Stream<Answer> permute(Set<Unifier> unifierSet);
+    Stream<Answer> unify(MultiUnifier multiUnifier);
 
     /**
+<<<<<<< HEAD
      * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
+=======
+     * @param vars variables for which {@link ai.grakn.concept.Role} hierarchy should be expanded
+>>>>>>> be8c7415e8ce3d78a4719076b6dfef3227b1dee2
      * @return stream of answers with expanded role hierarchy
      */
     @CheckReturnValue
