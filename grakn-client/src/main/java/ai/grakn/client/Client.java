@@ -101,14 +101,20 @@ public class Client {
             properties.load(stream);
         }
 
-        String serverUri = properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-        if (serverIsRunning(serverUri)) {
-            LOG.info("Server " + serverUri + " is running");
+        String host = properties.getProperty("server.host");
+        int port = Integer.valueOf(properties.getProperty("server.port"));
+        if (serverIsRunning(host, port)) {
+            LOG.info("Server " + host + ":" + port + " is running");
             return EngineStatus.Running;
         } else {
-            LOG.info("Server " + serverUri + " is not running");
+            LOG.info("Server " + host + ":" + port + " is not running");
             return EngineStatus.NotRunning;
         }
+    }
+
+    public static boolean serverIsRunning(String hostAndPort) {
+        String[] split = hostAndPort.split(":", 2);
+        return serverIsRunning(split[0], Integer.valueOf(split[1]));
     }
 
     /**
@@ -116,9 +122,9 @@ public class Client {
      *
      * @return true if Grakn Engine running, false otherwise
      */
-    public static boolean serverIsRunning(String uri) {
+    public static boolean serverIsRunning(String host, int port) {
         try {
-            URL url = new URL("http://" + uri + REST.WebPath.System.CONFIGURATION);
+            URL url = new URL("http", host, port, REST.WebPath.System.CONFIGURATION);
 
             HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
 
