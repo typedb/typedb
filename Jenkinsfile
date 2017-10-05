@@ -14,7 +14,7 @@ class Constants {
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([pipelineTriggers([cron('H H/8 * * *')])])
 
-def slackGithub(String message, String color = null) {
+def slackGithub(String message, String colorMe = null) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
 
     String author = "authored by - ${user}"
@@ -23,7 +23,7 @@ def slackGithub(String message, String color = null) {
 
     String formattedMessage = "${message} on ${branch}: ${env.JOB_NAME} #${env.BUILD_NUMBER} ${link}\n${author}"
 
-    slackSend channel: "#github", color: "good", message: formattedMessage
+    slackSend channel: "#github", color: colorMe, message: formattedMessage
 }
 
 def runIntegrationTest(String workspace, String moduleName) {
