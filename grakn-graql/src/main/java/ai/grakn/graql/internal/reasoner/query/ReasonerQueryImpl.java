@@ -28,13 +28,16 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
+import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -259,7 +262,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public Unifier getUnifier(ReasonerQuery parent) {
+    public MultiUnifier getMultiUnifier(ReasonerQuery parent) {
+        return getMultiUnifier(parent, UnifierType.EXACT);
+    }
+
+    /**
+     * @param parent query for which unifier to unify with should be found
+     * @param unifierType unifier type
+     * @return corresponding multiunifier
+     */
+    public MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierComparison unifierType){
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 

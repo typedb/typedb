@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.Unifier;
 
 /**
  *
@@ -33,12 +32,10 @@ import ai.grakn.graql.admin.Unifier;
 public abstract class ResolutionState {
 
     private final Answer sub;
-    private final Unifier unifier;
     private final QueryState parentState;
 
-    ResolutionState(Answer sub, Unifier u, QueryState parent){
+    ResolutionState(Answer sub, QueryState parent){
         this.sub = sub;
-        this.unifier = u;
         this.parentState = parent;
     }
 
@@ -63,11 +60,6 @@ public abstract class ResolutionState {
     public boolean isTopState(){
         return parentState == null;
     }
-
-    /**
-     * @return unifier of this state with parent state
-     */
-    Unifier getUnifier(){ return unifier;}
 
     /**
      * @return parent state of this state

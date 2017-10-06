@@ -22,12 +22,14 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -37,7 +39,6 @@ import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -45,7 +46,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatible;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
 
 /**
  *
@@ -101,7 +102,7 @@ public abstract class Atom extends AtomicBase {
         return getApplicableRules()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
                         .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                        .filter(at -> checkCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
+                        .filter(at -> typesCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
     }
@@ -118,7 +119,10 @@ public abstract class Atom extends AtomicBase {
      */
     protected Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
 
-    public Set<Var> getRoleExpansionVariables(){ return Collections.emptySet();}
+    /**
+     * @return set of variables that need to be have their roles expanded
+     */
+    public Set<Var> getRoleExpansionVariables(){ return new HashSet<>();}
 
     /**
      * compute base resolution priority of this atom
@@ -254,16 +258,6 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
 
-    /**
-     * computes a set of permutation unifiers that define swapping operation between role players
-     * NB: returns an identity unifier by default
-     * @param headAtom unification reference atom
-     * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
-     */
-    public Set<Unifier> getPermutationUnifiers(Atom headAtom){
-        return Collections.singleton(new UnifierImpl());
-    }
-
     @Override
     public Atom inferTypes(){ return this; }
 
@@ -287,9 +281,15 @@ public abstract class Atom extends AtomicBase {
     public Atom rewriteToUserDefined(Atom parentAtom){ return this;}
 
     /**
-     * find unifier with parent atom
      * @param parentAtom atom to be unified with
-     * @return unifier
+     * @return corresponding unifier
      */
     public abstract Unifier getUnifier(Atom parentAtom);
+    /**
+     * find the (multi) unifier with parent atom
+     * @param parentAtom atom to be unified with
+     * @param unifierType type of unifier to be computed
+     * @return multiunifier
+     */
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType){ return new MultiUnifierImpl(getUnifier(parentAtom));}
 }

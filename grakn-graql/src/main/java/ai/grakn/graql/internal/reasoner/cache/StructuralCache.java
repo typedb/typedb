@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.query.match.MatchBase;
+import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.query.QueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -71,7 +72,7 @@ class StructuralCache<Q extends ReasonerQueryImpl>{
         if (match != null){
             Q equivalentQuery = match.query();
             GraqlTraversal traversal = match.cachedElement();
-            Unifier unifier = equivalentQuery.getUnifier(query);
+            Unifier unifier = equivalentQuery.getMultiUnifier(query, UnifierType.STRUCTURAL).getAny();
             Map<Var, ConceptId> idTransform = equivalentQuery.idTransform(query, unifier);
 
             ReasonerQueryImpl transformedQuery = equivalentQuery.transformIds(idTransform);

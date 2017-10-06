@@ -19,6 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
@@ -139,18 +140,18 @@ public interface Answer {
     Answer unify(Unifier unifier);
 
     /**
-     * @param unifierSet set of permutation mappings
-     * @return stream of permuted answers
+     * @param multiUnifier set of unifiers defining variable mappings
+     * @return stream of unified answers
      */
     @CheckReturnValue
-    Stream<Answer> permute(Set<Unifier> unifierSet);
+    Stream<Answer> unify(MultiUnifier multiUnifier);
 
     /**
-     * @param vars variables for which {@link Role} hierarchy should be expanded
+     * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
      * @return stream of answers with expanded role hierarchy
      */
     @CheckReturnValue
-    Stream<Answer> expandHierarchies(Set<Var> vars);
+    Stream<Answer> expandHierarchies(Set<Var> toExpand);
 
     /**
      * @return an explanation object indicating how this answer was obtained
