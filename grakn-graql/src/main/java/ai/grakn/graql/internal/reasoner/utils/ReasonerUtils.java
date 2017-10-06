@@ -149,7 +149,7 @@ public class ReasonerUtils {
     public static Set<Unifier> getUnifiersFromPermutations(List<Pair<Var, Var>> originalVars, List<List<Pair<Var, Var>>> permutations){
         Set<Unifier> unifierSet = new HashSet<>();
         permutations.forEach(perm -> {
-            Unifier unifier = new UnifierImpl();
+            Multimap<Var, Var> varMappings = HashMultimap.create();
             Iterator<Pair<Var, Var>> pIt = originalVars.iterator();
             Iterator<Pair<Var, Var>> cIt = perm.iterator();
             while(pIt.hasNext() && cIt.hasNext()){
@@ -159,10 +159,10 @@ public class ReasonerUtils {
                 Var childPlayer = chPair.getKey();
                 Var parentRole = pPair.getValue();
                 Var childRole = chPair.getValue();
-                if (!parentPlayer.equals(childPlayer)) unifier.addMapping(parentPlayer, childPlayer);
-                if (parentRole != null && childRole != null && !parentRole.equals(childRole)) unifier.addMapping(parentRole, childRole);
+                if (!parentPlayer.equals(childPlayer)) varMappings.put(parentPlayer, childPlayer);
+                if (parentRole != null && childRole != null && !parentRole.equals(childRole)) varMappings.put(parentRole, childRole);
             }
-            unifierSet.add(unifier);
+            unifierSet.add(new UnifierImpl(varMappings));
         });
         return unifierSet;
     }

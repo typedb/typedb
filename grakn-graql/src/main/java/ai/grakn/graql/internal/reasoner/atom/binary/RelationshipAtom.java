@@ -56,6 +56,7 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
@@ -830,21 +831,21 @@ public class RelationshipAtom extends IsaAtom {
                     .filter(rp -> rp.var().isUserDefinedName())
                     .findFirst().isPresent();
             getRelationPlayerMappings(parentAtom, unifierType)
-                    .forEach(mappings -> {
-                        Unifier unifier = new UnifierImpl(baseUnifier);
-                        mappings.forEach(rpm -> {
+                    .forEach(mappingList -> {
+                        Multimap<Var, Var> varMappings = HashMultimap.create();
+                        mappingList.forEach(rpm -> {
                             //add role player mapping
-                            unifier.addMapping(rpm.getKey().getRolePlayer().var(), rpm.getValue().getRolePlayer().var());
+                            varMappings.put(rpm.getKey().getRolePlayer().var(), rpm.getValue().getRolePlayer().var());
 
                             //add role var mapping if needed
                             VarPattern childRolePattern = rpm.getKey().getRole().orElse(null);
                             VarPattern parentRolePattern = rpm.getValue().getRole().orElse(null);
                             if (parentRolePattern != null && childRolePattern != null && unifyRoleVariables){
-                                unifier.addMapping(childRolePattern.admin().var(), parentRolePattern.admin().var());
+                                varMappings.put(childRolePattern.admin().var(), parentRolePattern.admin().var());
                             }
 
                         });
-                        unifiers.add(unifier);
+                        unifiers.add(baseUnifier.merge(new UnifierImpl(varMappings)));
                     });
         } else {
             unifiers.add(baseUnifier);

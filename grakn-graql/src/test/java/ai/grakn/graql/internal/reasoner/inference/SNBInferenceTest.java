@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.SNBKB;
+import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -311,8 +312,7 @@ public class SNBInferenceTest {
         
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; get $x, $z;";
-        Unifier unifier = new UnifierImpl();
-        unifier.addMapping(Graql.var("z"), Graql.var("y"));
+        Unifier unifier = new UnifierImpl(ImmutableMap.of(Graql.var("z"), Graql.var("y")));
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 =  queryAnswers(iqb.materialise(false).parse(queryString2)).unify(unifier);
