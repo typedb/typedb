@@ -91,7 +91,7 @@ def buildGrakn() {
 }
 
 //Only run validation master/stable
-if (env.BRANCH_NAME in ['master', 'stable']) {
+if (env.BRANCH_NAME in ['master', 'stable'] || true) {
     properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
 
     slackGithub "Build started"
