@@ -29,7 +29,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -37,7 +36,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -52,6 +50,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -64,6 +63,7 @@ import java.util.List;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -915,15 +915,27 @@ public class AtomicTest {
         Atom parentAtom = parentQuery.getAtom();
         Atom parentAtom2 = parentQuery2.getAtom();
 
-        QueryAnswers childAnswers = queryAnswers(childQuery.getQuery());
-        QueryAnswers parentAnswers = queryAnswers(parentQuery.getQuery());
-        QueryAnswers parentAnswers2 = queryAnswers(parentQuery2.getQuery());
+        List<Answer> childAnswers = childQuery.getQuery().execute();
+        List<Answer> parentAnswers = parentQuery.getQuery().execute();
+        List<Answer> parentAnswers2 = parentQuery2.getQuery().execute();
 
         Unifier unifier = childAtom.getUnifier(parentAtom);
         Unifier unifier2 = childAtom.getUnifier(parentAtom2);
 
-        assertEquals(parentAnswers, childAnswers.unify(unifier).filterVars(parentQuery.getVarNames()));
-        assertEquals(parentAnswers2, childAnswers.unify(unifier2).filterVars(parentQuery2.getVarNames()));
+        assertCollectionsEqual(
+                parentAnswers,
+                childAnswers.stream()
+                        .map(a -> a.unify(unifier))
+                        .map(a -> a.project(parentQuery.getVarNames()))
+                        .collect(Collectors.toList())
+        );
+        assertCollectionsEqual(
+                parentAnswers2,
+                childAnswers.stream()
+                        .map(a -> a.unify(unifier2))
+                        .map(a -> a.project(parentQuery2.getVarNames()))
+                        .collect(Collectors.toList())
+        );
     }
 
     @Test
@@ -949,10 +961,10 @@ public class AtomicTest {
         Unifier unifier2 = resourceAtom2.getUnifier(typeAtom);
         Unifier unifier3 = resourceAtom3.getUnifier(typeAtom);
 
-        Answer typeAnswer = queryAnswers(typeQuery.getQuery()).iterator().next();
-        Answer resourceAnswer = queryAnswers(resourceQuery.getQuery()).iterator().next();
-        Answer resourceAnswer2 = queryAnswers(resourceQuery2.getQuery()).iterator().next();
-        Answer resourceAnswer3 = queryAnswers(resourceQuery3.getQuery()).iterator().next();
+        Answer typeAnswer = typeQuery.getQuery().execute().iterator().next();
+        Answer resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
+        Answer resourceAnswer2 = resourceQuery2.getQuery().execute().iterator().next();
+        Answer resourceAnswer3 = resourceQuery3.getQuery().execute().iterator().next();
 
         assertEquals(typeAnswer.get(var("x")), resourceAnswer.unify(unifier).get(var("x")));
         assertEquals(typeAnswer.get(var("x")), resourceAnswer2.unify(unifier2).get(var("x")));
@@ -1076,8 +1088,8 @@ public class AtomicTest {
 
         Unifier unifier = childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).getUnifier();
 
-        QueryAnswers childAnswers = queryAnswers(childQuery.getQuery());
-        QueryAnswers parentAnswers = queryAnswers(parentQuery.getQuery());
+        List<Answer> childAnswers = childQuery.getQuery().execute();
+        List<Answer> parentAnswers = parentQuery.getQuery().execute();
 
         if (checkInverse) {
             Unifier unifier2 = parentAtom.getUnifier(childAtom);
@@ -1086,11 +1098,14 @@ public class AtomicTest {
         }
 
         if (!checkEquality){
-            assertTrue(parentAnswers.containsAll(childAnswers.unify(unifier)));
+            assertTrue(parentAnswers.containsAll(childAnswers.stream().map(a -> a.unify(unifier)).collect(Collectors.toList())));
         } else {
-            assertEquals(parentAnswers, childAnswers.unify(unifier));
-            assertEquals(parentAnswers.unify(unifier.inverse()), childAnswers);
-
+            assertCollectionsEqual(
+                    parentAnswers,
+                    childAnswers.stream().map(a -> a.unify(unifier)).collect(Collectors.toList()));
+            assertCollectionsEqual(
+                    parentAnswers.stream().map(a -> a.unify(unifier.inverse())).collect(Collectors.toList()),
+                    childAnswers);
         }
     }
 
@@ -1102,12 +1117,8 @@ public class AtomicTest {
                 checkEquality);
     }
 
-    private QueryAnswers queryAnswers(GetQuery query) {
-        return new QueryAnswers(query.stream().collect(toSet()));
-    }
-
     private Concept getConcept(GraknTx graph, String typeName, Object val){
-        return graph.graql().match(var("x").has(typeName, val).admin()).get("x").findAny().get();
+        return graph.graql().match(var("x").has(typeName, val).admin()).get("x").findAny().orElse(null);
     }
 
     private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {

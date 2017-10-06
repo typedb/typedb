@@ -25,11 +25,8 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
-import tachyon.util.CommonUtils;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
