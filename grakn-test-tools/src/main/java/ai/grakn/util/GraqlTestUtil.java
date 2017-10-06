@@ -24,6 +24,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 
+import java.util.Collection;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import tachyon.util.CommonUtils;
@@ -63,8 +64,11 @@ public class GraqlTestUtil {
         assertFalse(iterable.iterator().hasNext());
     }
 
+    public static <T> void assertCollectionsEqual(Collection<T> c1, Collection<T> c2) {
+        assertTrue(CollectionUtils.isEqualCollection(c1, c2));
+    }
+
     public static void assertQueriesEqual(GetQuery q1, GetQuery q2) {
-        assertTrue(CollectionUtils.isEqualCollection(q1.execute(), q2.execute()));
-        //assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
+        assertCollectionsEqual(q1.execute(), q2.execute());
     }
 }

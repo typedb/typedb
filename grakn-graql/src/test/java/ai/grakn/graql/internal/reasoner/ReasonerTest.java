@@ -40,7 +40,6 @@ import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.SNBKB;
 import ai.grakn.util.Schema;
-import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -55,6 +54,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
@@ -802,8 +802,8 @@ public class ReasonerTest {
         List<Answer> requeriedAnswers2 = query2.execute();
         List<Answer> requeriedAnswers3 = query3.execute();
 
-        CollectionUtils.isEqualCollection(requeriedAnswers, requeriedAnswers2);
-        CollectionUtils.isEqualCollection(requeriedAnswers2, requeriedAnswers3);
+        assertCollectionsEqual(requeriedAnswers, requeriedAnswers2);
+        assertCollectionsEqual(requeriedAnswers2, requeriedAnswers3);
     }
 
     @Test
