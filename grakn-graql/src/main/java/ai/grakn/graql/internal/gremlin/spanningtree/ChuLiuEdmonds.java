@@ -18,22 +18,21 @@
 
 package ai.grakn.graql.internal.gremlin.spanningtree;
 
-import ai.grakn.graql.internal.util.Partition;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.graql.internal.util.Partition;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import org.javatuples.Pair;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
@@ -62,7 +61,7 @@ public class ChuLiuEdmonds {
         private final Map<V, Weighted<DirectedEdge<V>>> incomingEdgeByScc;
         // History of edges we've added, and for each, a list of edges it would exclude.
         // More recently added edges get priority over less recently added edges when reconstructing the final tree.
-        private final LinkedList<ExclusiveEdge<V>> edgesAndWhatTheyExclude;
+        private final Deque<ExclusiveEdge<V>> edgesAndWhatTheyExclude;
         // a priority queue of incoming edges for each SCC that we haven't chosen an incoming edge for yet.
         final EdgeQueueMap<V> unseenIncomingEdges;
         // running sum of weights.
@@ -72,7 +71,7 @@ public class ChuLiuEdmonds {
         private PartialSolution(Partition<V> stronglyConnected,
                                 Partition<V> weaklyConnected,
                                 Map<V, Weighted<DirectedEdge<V>>> incomingEdgeByScc,
-                                LinkedList<ExclusiveEdge<V>> edgesAndWhatTheyExclude,
+                                Deque<ExclusiveEdge<V>> edgesAndWhatTheyExclude,
                                 EdgeQueueMap<V> unseenIncomingEdges,
                                 double score) {
             this.stronglyConnected = stronglyConnected;
@@ -85,10 +84,10 @@ public class ChuLiuEdmonds {
 
         public static <T> PartialSolution<T> initialize(WeightedGraph<T> graph) {
             final Partition<T> stronglyConnected = Partition.singletons(graph.getNodes());
-            final HashMap<T, Weighted<DirectedEdge<T>>> incomingByScc = Maps.newHashMap();
-            final LinkedList<ExclusiveEdge<T>> exclusiveEdges = Lists.newLinkedList();
+            final HashMap<T, Weighted<DirectedEdge<T>>> incomingByScc = new HashMap<>();
+            final Deque<ExclusiveEdge<T>> exclusiveEdges = new ArrayDeque<>();
             // group edges by their destination component
-            final EdgeQueueMap<T> incomingEdges = new EdgeQueueMap<T>(stronglyConnected);
+            final EdgeQueueMap<T> incomingEdges = new EdgeQueueMap<>(stronglyConnected);
             for (T destinationNode : graph.getNodes()) {
                 for (Weighted<DirectedEdge<T>> inEdge : graph.getIncomingEdges(destinationNode)) {
                     if (inEdge.weight != Double.NEGATIVE_INFINITY) {
@@ -118,13 +117,14 @@ public class ChuLiuEdmonds {
             // Find edges connecting SCCs on the path from newEdge.destination to newEdge.source
             final List<Weighted<DirectedEdge<V>>> cycle = getCycle(newEdge);
             // build up list of queues that need to be merged, with the edge they would exclude
-            final List<Pair<EdgeQueueMap.EdgeQueue<V>, Weighted<DirectedEdge<V>>>> queuesToMerge = Lists.newLinkedList();
+            final List<Pair<EdgeQueueMap.EdgeQueue<V>, Weighted<DirectedEdge<V>>>> queuesToMerge =
+                    new ArrayList<>(cycle.size());
             for (Weighted<DirectedEdge<V>> currentEdge : cycle) {
                 final V destination = stronglyConnected.componentOf(currentEdge.val.destination);
                 final EdgeQueueMap.EdgeQueue<V> queue = unseenIncomingEdges.queueByDestination.get(destination);
                 // if we choose an edge in `queue`, we'll have to throw out `currentEdge` at the end
                 // (each SCC can have only one incoming edge).
-                queuesToMerge.add(Pair.of(queue, currentEdge));
+                queuesToMerge.add(Pair.with(queue, currentEdge));
                 unseenIncomingEdges.queueByDestination.remove(destination);
             }
             // Merge all SCCs on the cycle into one
@@ -145,7 +145,7 @@ public class ChuLiuEdmonds {
          * Gets the cycle of edges between SCCs that newEdge creates
          */
         private List<Weighted<DirectedEdge<V>>> getCycle(Weighted<DirectedEdge<V>> newEdge) {
-            final List<Weighted<DirectedEdge<V>>> cycle = Lists.newLinkedList();
+            final List<Weighted<DirectedEdge<V>>> cycle = new ArrayList<>();
             // circle around backward until you get back to where you started
             Weighted<DirectedEdge<V>> edge = newEdge;
             cycle.add(edge);
@@ -188,7 +188,7 @@ public class ChuLiuEdmonds {
          */
         private Weighted<Arborescence<V>> recoverBestArborescence() {
             final ImmutableMap.Builder<V, V> parents = ImmutableMap.builder();
-            final Set<DirectedEdge> excluded = Sets.newHashSet();
+            final Set<DirectedEdge> excluded = new HashSet<>();
             // start with the most recent
             while (!edgesAndWhatTheyExclude.isEmpty()) {
                 final ExclusiveEdge<V> edgeAndWhatItExcludes = edgesAndWhatTheyExclude.pollFirst();
@@ -234,7 +234,7 @@ public class ChuLiuEdmonds {
         final PartialSolution<V> partialSolution =
                 PartialSolution.initialize(graph.filterEdges(not(DirectedEdge.isAutoCycle())));
         // In the beginning, subgraph has no edges, so no SCC has in-edges.
-        final Queue<V> componentsWithNoInEdges = Lists.newLinkedList(partialSolution.getNodes());
+        final Deque<V> componentsWithNoInEdges = new ArrayDeque<>(partialSolution.getNodes());
 
         // Work our way through all componentsWithNoInEdges, in no particular order
         while (!componentsWithNoInEdges.isEmpty()) {
