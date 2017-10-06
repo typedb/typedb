@@ -421,7 +421,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     /**
      * This is a helper method which will either find or create a {@link SchemaConcept}.
      * When a new {@link SchemaConcept} is created it is added for validation through it's own creation method for
-     * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role, Boolean)}.
+     * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role)}.
      *
      * When an existing {@link SchemaConcept} is found it is build via it's get method such as
      * {@link ai.grakn.kb.internal.concept.RoleImpl#get(VertexElement)} and skips validation.
