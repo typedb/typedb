@@ -3,5 +3,5 @@
 source env.sh
 
 if [ -d maven ] ;  then rm -rf maven ; fi
-grakn stop
+grakn server stop
 if [ -d ${PACKAGE} ] ;  then rm -rf ${PACKAGE} ; fi
