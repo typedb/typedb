@@ -18,6 +18,9 @@
 package ai.grakn;
 
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
+import com.google.common.collect.ImmutableSet;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
 import com.ldbc.driver.ResultReporter;
@@ -35,12 +38,48 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+import static ai.grakn.SNB.birthday;
+import static ai.grakn.SNB.browserUsed;
+import static ai.grakn.SNB.classYear;
+import static ai.grakn.SNB.company;
+import static ai.grakn.SNB.creationDate;
+import static ai.grakn.SNB.email;
+import static ai.grakn.SNB.employee;
+import static ai.grakn.SNB.employer;
+import static ai.grakn.SNB.firstName;
+import static ai.grakn.SNB.gender;
+import static ai.grakn.SNB.hasInterest;
+import static ai.grakn.SNB.interest;
+import static ai.grakn.SNB.interested;
+import static ai.grakn.SNB.lastName;
+import static ai.grakn.SNB.located;
+import static ai.grakn.SNB.locatedIn;
+import static ai.grakn.SNB.locationIp;
+import static ai.grakn.SNB.organisationId;
+import static ai.grakn.SNB.person;
+import static ai.grakn.SNB.personId;
+import static ai.grakn.SNB.placeId;
+import static ai.grakn.SNB.region;
+import static ai.grakn.SNB.school;
+import static ai.grakn.SNB.speaks;
+import static ai.grakn.SNB.student;
+import static ai.grakn.SNB.studyAt;
+import static ai.grakn.SNB.tag;
+import static ai.grakn.SNB.tagId;
+import static ai.grakn.SNB.university;
+import static ai.grakn.SNB.workAt;
+import static ai.grakn.SNB.workFrom;
+import static ai.grakn.graql.Graql.var;
+
 /**
  * Implementations of the LDBC SNB Update Queries
  *
  * @author sheldon, miko
  */
 public class GraknUpdateQueryHandlers {
+
+    private static final Var $person = var("person");
+    private static final Var $city = var("city");
 
     /**
      * Update Query 1
@@ -53,57 +92,56 @@ public class GraknUpdateQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
-                StringBuilder query = new StringBuilder("match ");
-                StringBuilder interests = new StringBuilder();
-                StringBuilder workAndStudyPlaces = new StringBuilder();
+                ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
+                ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
 
-                query.append("$city has place-id " + operation.cityId() + "; ");
+                match.add($city.has(placeId, operation.cityId()));
 
-
-                for (Long tag : operation.tagIds()) {
-                    query.append("$" + tag.toString() + " isa tag has tag-id " + tag + "; ");
-                    interests.append("(interested: $x, interest: $" + tag.toString() + ") isa has-interest;");
+                for (Long theTag : operation.tagIds()) {
+                    Var $tag = var(theTag.toString());
+                    match.add($tag.isa(tag).has(tagId, theTag));
+                    insert.add(var().rel(interested, $person).rel(interest, $tag).isa(hasInterest));
                 }
 
                 for (LdbcUpdate1AddPerson.Organization org : operation.studyAt()) {
-                    query.append("$" + org.organizationId() + " isa university has organisation-id " + org.organizationId() + "; ");
-                    workAndStudyPlaces.append("(student: $x, school: $" + org.organizationId() + ") isa study-at has class-year " + org.year() + "; ");
+                    Var $org = var(Long.toString(org.organizationId()));
+                    match.add($org.isa(university).has(organisationId, org.organizationId()));
+                    insert.add(var().rel(student, $person).rel(school, $org).isa(studyAt).has(classYear, org.year()));
                 }
 
                 for (LdbcUpdate1AddPerson.Organization org : operation.workAt()) {
-                    query.append("$" + org.organizationId() + " isa company has organisation-id " + org.organizationId() + "; ");
-                    workAndStudyPlaces.append("(employee: $x, employer: $" + org.organizationId() + ") isa work-at has work-from " + org.year() + "; ");
+                    Var $org = var(Long.toString(org.organizationId()));
+                    match.add($org.isa(company).has(organisationId, org.organizationId()));
+                    insert.add(var().rel(employee, $person).rel(employer, $org).isa(workAt).has(workFrom, org.year()));
                 }
 
-                String baseInsertQuery = "insert " +
-                        "$x isa person has person-id " + operation.personId() +
-                        " has first-name '" + operation.personFirstName() + "' " +
-                        "has last-name '" + operation.personLastName() + "' " +
-                        "has birth-day " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.birthday().getTime()), ZoneOffset.UTC).toString() +
-                        " has creation-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC).toString() +
-                        " has location-ip '" + operation.locationIp() + "' " +
-                        "has browser-used '" + operation.browserUsed() + "' " +
-                        "has gender '" + operation.gender() + "' ";
+                LocalDateTime theBirthday = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(operation.birthday().getTime()), ZoneOffset.UTC);
 
-                query.append(baseInsertQuery);
+                LocalDateTime theCreationDate = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC);
+
+                insert.add($person.isa(person)
+                        .has(personId, operation.personId())
+                        .has(firstName, operation.personFirstName())
+                        .has(lastName, operation.personLastName())
+                        .has(birthday, theBirthday)
+                        .has(creationDate, theCreationDate)
+                        .has(locationIp, operation.locationIp())
+                        .has(browserUsed, operation.browserUsed())
+                        .has(gender, operation.gender()));
 
                 for (String language : operation.languages()) {
-                    query.append("has speaks '" + language + "' ");
+                    insert.add($person.has(speaks, language));
                 }
 
-                for (String email : operation.emails()) {
-                    query.append("has email '" + email + "' ");
+                for (String theEmail : operation.emails()) {
+                    insert.add($person.has(email, theEmail));
                 }
 
-                query.append("; ");
+                insert.add(var().rel(located, $person).rel(region, $city).isa(locatedIn));
 
-                query.append(interests);
-
-                query.append("(located: $x, region: $city) isa is-located-in;");
-
-                query.append(workAndStudyPlaces);
-
-                graph.graql().<InsertQuery>parse(query.toString()).execute();
+                graph.graql().match(match.build()).insert(insert.build()).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);

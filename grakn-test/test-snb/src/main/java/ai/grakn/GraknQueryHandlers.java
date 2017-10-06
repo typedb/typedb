@@ -49,6 +49,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.SNB.studyAt;
+import static ai.grakn.SNB.workAt;
 import static ai.grakn.graql.Graql.compute;
 import static ai.grakn.graql.Graql.lte;
 import static ai.grakn.graql.Graql.match;
@@ -67,8 +69,6 @@ public class GraknQueryHandlers {
     static VarPattern replyOf = var().label("reply-of");
     static VarPattern reply = var().label("reply");
     static VarPattern isLocatedIn = var().label("is-located-in");
-    static VarPattern workAt = var().label("work-at");
-    static VarPattern studyAt = var().label("study-at");
 
     static Label personID = Label.of("person-id");
     static Label creationDate = Label.of("creation-date");
