@@ -33,6 +33,8 @@ public class SNB {
     static String classYear = "class-year";
     static String workFrom = "work-from";
     static String personId = "person-id";
+    static String messageId = "message-id";
+    static String forumId = "forum-id";
     static String firstName = "first-name";
     static String lastName = "last-name";
     static String birthday = "birth-day";
@@ -42,6 +44,12 @@ public class SNB {
     static String gender = "gender";
     static String speaks = "speaks";
     static String email = "email";
+    static String title = "title";
+    static String joinDate = "join-date";
+    static String length = "length";
+    static String language = "language";
+    static String imageFile = "image-file";
+    static String content = "content";
 
     static VarPattern tag = label("tag");
     static VarPattern university = label("university");
@@ -59,4 +67,30 @@ public class SNB {
     static VarPattern located = label("located");
     static VarPattern region = label("region");
     static VarPattern locatedIn = label("located-in");
+    static VarPattern isLocatedIn = label("is-located-in");
+    static VarPattern admirer = label("admirer");
+    static VarPattern like = label("like");
+    static VarPattern likes = label("likes");
+    static VarPattern tagged = label("tagged");
+    static VarPattern topic = label("topic");
+    static VarPattern hasTag = label("has-tag");
+    static VarPattern moderator = label("moderator");
+    static VarPattern moderated = label("moderated");
+    static VarPattern hasModerator = label("has-moderator");
+    static VarPattern member = label("member");
+    static VarPattern group = label("group");
+    static VarPattern hasMember = label("has-member");
+    static VarPattern post = label("post");
+    static VarPattern product = label("product");
+    static VarPattern creator = label("creator");
+    static VarPattern hasCreator = label("has-creator");
+    static VarPattern contained = label("contained");
+    static VarPattern container = label("container");
+    static VarPattern containerOf = label("container-of");
+    static VarPattern comment = label("comment");
+    static VarPattern reply = label("reply");
+    static VarPattern original = label("original");
+    static VarPattern replyOf = label("reply-of");
+    static VarPattern friend = label("friend");
+    static VarPattern knows = label("knows");
 }
