@@ -55,10 +55,6 @@ def withGrakn(String workspace, Closure closure) {
             timeout(15) {
                 //Stages allow you to organise and group things within Jenkins
                 stage('Start Grakn') {
-                    buildGrakn()
-
-                    archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
-
                     sh 'init-grakn.sh'
                 }
             }
@@ -97,29 +93,9 @@ def buildGrakn() {
 //Only run validation master/stable
 if (env.BRANCH_NAME in ['master', 'stable']) {
     properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
-    node {
-        String workspace = pwd()
-        checkout scm
 
-        slackGithub "Build started"
+    slackGithub "Build started"
 
-        timeout(60) {
-            stage('Run the benchmarks') {
-                sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-            }
-        }
-
-        for (String moduleName : integrationTests) {
-            runIntegrationTest(workspace, moduleName)
-        }
-
-        slackGithub "Periodic Build Success", "good"
-    }
-}
-
-// Deploy long-running instance on stable branch
-if (env.BRANCH_NAME == 'stable') {
     node {
         String workspace = pwd()
         checkout scm
@@ -128,13 +104,54 @@ if (env.BRANCH_NAME == 'stable') {
             withScripts(workspace) {
                 buildGrakn()
             }
-        }
 
-        stage('Deploy Grakn') {
-            sshagent(credentials: ['jenkins-aws-ssh']) {
-                sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
-                ssh "'bash -s' < scripts/start-long-running-instance.sh"
+            archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
+
+            stash includes: 'grakn-dist/target/grakn-dist*.tar.gz', name: 'dist'
+        }
+    }
+
+    parallel benchmarks: {
+        node {
+            String workspace = pwd()
+            checkout scm
+            unstash 'dist'
+
+            timeout(60) {
+                stage('Run the benchmarks') {
+                    sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                }
+            }
+        }
+    },
+    integration: {
+        node {
+            String workspace = pwd()
+            checkout scm
+            unstash 'dist'
+
+            for (String moduleName : integrationTests) {
+                runIntegrationTest(workspace, moduleName)
+            }
+        }
+    },
+    longRunning: {
+        // Deploy long-running instance on stable branch
+        if (env.BRANCH_NAME == 'stable') {
+            node {
+                checkout scm
+                unstash 'dist'
+
+                stage('Deploy Grakn') {
+                    sshagent(credentials: ['jenkins-aws-ssh']) {
+                        sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                        ssh "'bash -s' < scripts/start-long-running-instance.sh"
+                    }
+                }
             }
         }
     }
+
+    slackGithub "Periodic Build Success", "good"
 }
