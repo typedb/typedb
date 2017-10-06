@@ -94,9 +94,9 @@ def buildGrakn() {
 if (env.BRANCH_NAME in ['master', 'stable'] || true) {
     properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
 
-    slackGithub "Build started"
-
     node {
+        slackGithub "Build started"
+
         String workspace = pwd()
         checkout scm
 
@@ -153,5 +153,7 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
         }
     }
 
-    slackGithub "Periodic Build Success", "good"
+    node {
+        slackGithub "Periodic Build Success", "good"
+    }
 }
