@@ -2,7 +2,9 @@
 
 set -e
 
-mkdir grakn-new -p
+rm -r grakn-new
+
+mkdir grakn-new
 
 tar -xf grakn-dist*.tar.gz --strip=1 -C grakn-new
 
