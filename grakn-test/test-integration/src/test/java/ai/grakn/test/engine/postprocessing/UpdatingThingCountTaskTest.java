@@ -35,7 +35,7 @@ public class UpdatingThingCountTaskTest {
     public static final EngineContext engine = EngineContext.singleQueueServer();
 
     @ClassRule
-    public static final MockRedisRule mockRedisRule = new MockRedisRule();
+    public static final MockRedisRule mockRedisRule = MockRedisRule.create();
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {

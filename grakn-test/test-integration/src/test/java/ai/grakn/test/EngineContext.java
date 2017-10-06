@@ -75,6 +75,7 @@ public class EngineContext extends ExternalResource {
         return new EngineContext( true, false);
     }
 
+    @Deprecated
     public static EngineContext inMemoryServer(){
         return new EngineContext( true, true);
     }

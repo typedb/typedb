@@ -5,6 +5,8 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
+import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.MockRedisRule;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.ClassRule;
@@ -21,6 +23,9 @@ import static org.junit.Assert.assertTrue;
  *
  */
 public class AuthControllerTest  {
+
+    @ClassRule
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
 
     @ClassRule
     public static ControllerFixture fixture = ControllerFixture.INSTANCE;

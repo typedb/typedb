@@ -21,29 +21,33 @@ package ai.grakn.test;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.client.Client;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
-import static ai.grakn.engine.GraknEngineConfig.TASKS_RETRY_DELAY;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.redismock.RedisServer;
 import ai.grakn.util.GraknVersion;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import static java.lang.System.currentTimeMillis;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Properties;
-import static java.util.stream.Collectors.joining;
-import java.util.stream.Stream;
+import ai.grakn.util.MockRedisRule;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Properties;
+import java.util.stream.Stream;
+
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
+import static ai.grakn.engine.GraknEngineConfig.TASKS_RETRY_DELAY;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
+import static java.lang.System.currentTimeMillis;
+import static java.util.stream.Collectors.joining;
 
 /**
  * Start a SingleQueueEngine from the packaged distribution.
@@ -60,6 +64,7 @@ public class DistributionContext extends ExternalResource {
     private static final String DIST_DIRECTORY = TARGET_DIRECTORY + "grakn-dist-" + GraknVersion.VERSION;
     private final Class<? extends TaskManager> taskManagerClass;
 
+    private RedisServer redisServer;
     private Process engineProcess;
     private int port = 4567;
     private boolean inheritIO = true;
@@ -108,13 +113,15 @@ public class DistributionContext extends ExternalResource {
         assertPackageBuilt();
         unzipDistribution();
         GraknTestSetup.startCassandraIfNeeded();
-        GraknTestSetup.startRedisIfNeeded(redisPort);
+        redisServer = MockRedisRule.create(redisPort).server();
+        redisServer.start();
         engineProcess = newEngineProcess(port, redisPort);
         waitForEngine(port);
     }
 
     @Override
     public void after() {
+        redisServer.stop();
         engineProcess.destroyForcibly();
     }
 

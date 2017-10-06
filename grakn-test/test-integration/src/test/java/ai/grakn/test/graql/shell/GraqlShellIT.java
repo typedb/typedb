@@ -72,7 +72,6 @@ public class GraqlShellIT {
 
     @ClassRule
     public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(true);
-
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;
