@@ -168,7 +168,7 @@ match $x has name 'Bob'; aggregate count;
 Compute queries are computationally intensive and run in parallel on a cluster (so are good for big data).
 
 ```
-compute count of person; 
+compute count in person; 
 ```
 
 Compute queries can be used to calculate the number of people in the graph very fast, but you can't filter the results to determine the number of people with a certain name.
