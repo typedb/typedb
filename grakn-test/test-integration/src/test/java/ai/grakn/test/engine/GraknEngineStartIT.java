@@ -26,11 +26,11 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.MockRedisRule;
 import com.google.common.base.StandardSystemProperty;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -48,18 +48,15 @@ import static org.junit.Assert.fail;
 public class GraknEngineStartIT {
 
     private static final int[] PORTS = {50120, 50121, 50122};
-    public static final int REDIS_PORT = 50123;
+    private static final int REDIS_PORT = 50123;
+
+    @ClassRule
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(REDIS_PORT);
 
     @BeforeClass
     public static void setUpClass() {
-        EmbeddedRedis.forceStart(REDIS_PORT);
         GraknTestSetup.startCassandraIfNeeded();
         GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-        EmbeddedRedis.stop();
     }
 
     @Test
