@@ -22,12 +22,10 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.data.RedisWrapper;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.MockRedisRule;
 import org.junit.Before;
@@ -81,28 +79,20 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEnginePropertiesIndicatesStandaloneTM_StandaloneTmIsStarted() {
-        // Should start engine with in-memory server
-        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
-
-        // Start Engine
-        try (GraknEngineServer server = GraknEngineServer.create(conf)) {
-            server.start();
-            assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
-        }
-    }
-
-    @Test
-    public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() {
+    public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() throws IOException {
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
         conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
-        EmbeddedRedis.start(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
+        MockRedisRule mock = MockRedisRule.create(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
+        mock.server().start();
+
         // Start Engine
         try (GraknEngineServer server = GraknEngineServer.create(conf)) {
             server.start();
             assertThat(server.getTaskManager(), instanceOf(RedisTaskManager.class));
         }
+
+        mock.server().stop();
     }
 
     @Test
