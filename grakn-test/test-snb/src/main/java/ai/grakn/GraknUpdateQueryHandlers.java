@@ -33,6 +33,16 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate6AddPost;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate7AddComment;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate8AddFriendship;
 
+import static ai.grakn.SNB.$author;
+import static ai.grakn.SNB.$city;
+import static ai.grakn.SNB.$comment;
+import static ai.grakn.SNB.$country;
+import static ai.grakn.SNB.$forum;
+import static ai.grakn.SNB.$message;
+import static ai.grakn.SNB.$mod;
+import static ai.grakn.SNB.$original;
+import static ai.grakn.SNB.$person;
+import static ai.grakn.SNB.$post;
 import static ai.grakn.SNB.admirer;
 import static ai.grakn.SNB.birthday;
 import static ai.grakn.SNB.browserUsed;
@@ -107,17 +117,6 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTrav
  * @author sheldon, miko
  */
 public class GraknUpdateQueryHandlers {
-
-    private static final Var $person = var("person");
-    private static final Var $city = var("city");
-    private static final Var $message = var("message");
-    private static final Var $mod = var("mod");
-    private static final Var $forum = var("forum");
-    private static final Var $author = var("author");
-    private static final Var $country = var("country");
-    private static final Var $post = var("post");
-    private static final Var $original = var("original");
-    private static final Var $comment = var("comment");
 
     /**
      * Update Query 1

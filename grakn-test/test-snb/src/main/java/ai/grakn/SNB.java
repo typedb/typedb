@@ -19,6 +19,7 @@
 
 package ai.grakn;
 
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.util.Schema;
 
@@ -28,6 +29,7 @@ import java.time.ZoneOffset;
 import java.util.Date;
 
 import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.var;
 
 /**
  * @author Felix Chapman
@@ -99,6 +101,35 @@ public class SNB {
     static VarPattern replyOf = label("reply-of");
     static VarPattern friend = label("friend");
     static VarPattern knows = label("knows");
+    static VarPattern childMessage = label("child-message");
+    static VarPattern parentMessage = label("parent-message");
+    static VarPattern originalPost = label("original-post");
+
+    static final Var $person = var("person");
+    static final Var $city = var("city");
+    static final Var $message = var("message");
+    static final Var $mod = var("mod");
+    static final Var $forum = var("forum");
+    static final Var $author = var("author");
+    static final Var $country = var("country");
+    static final Var $post = var("post");
+    static final Var $original = var("original");
+    static final Var $comment = var("comment");
+    static final Var $firstName = var("first-name");
+    static final Var $lastName = var("last-name");
+    static final Var $birthday = var("birthday");
+    static final Var $locationIp = var("location-ip");
+    static final Var $browserUsed = var("browser-used");
+    static final Var $gender = var("gender");
+    static final Var $creationDate = var("creation-date");
+    static final Var $place = var("place");
+    static final Var $placeId = var("placeID");
+    static final Var $date = var("date");
+    static final Var $messageId = var("messageId");
+    static final Var $content = var("content");
+    static final Var $originalPost = var("originalPost");
+    static final Var $opId = var("opId");
+    static final Var $authorId = var("authorId");
 
     static VarPattern has(String label) {
         return label(Schema.ImplicitType.HAS.getLabel(label));

@@ -19,6 +19,7 @@ package ai.grakn;
 
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import com.ldbc.driver.DbException;
@@ -45,24 +46,55 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static ai.grakn.SNB.$author;
+import static ai.grakn.SNB.$authorId;
+import static ai.grakn.SNB.$birthday;
+import static ai.grakn.SNB.$browserUsed;
+import static ai.grakn.SNB.$content;
+import static ai.grakn.SNB.$creationDate;
+import static ai.grakn.SNB.$date;
+import static ai.grakn.SNB.$firstName;
+import static ai.grakn.SNB.$gender;
+import static ai.grakn.SNB.$lastName;
+import static ai.grakn.SNB.$locationIp;
+import static ai.grakn.SNB.$message;
+import static ai.grakn.SNB.$messageId;
+import static ai.grakn.SNB.$opId;
+import static ai.grakn.SNB.$originalPost;
+import static ai.grakn.SNB.$person;
+import static ai.grakn.SNB.$place;
+import static ai.grakn.SNB.$placeId;
 import static ai.grakn.SNB.birthday;
 import static ai.grakn.SNB.browserUsed;
+import static ai.grakn.SNB.childMessage;
+import static ai.grakn.SNB.content;
 import static ai.grakn.SNB.creationDate;
+import static ai.grakn.SNB.creator;
 import static ai.grakn.SNB.firstName;
 import static ai.grakn.SNB.gender;
 import static ai.grakn.SNB.has;
+import static ai.grakn.SNB.hasCreator;
+import static ai.grakn.SNB.imageFile;
 import static ai.grakn.SNB.isLocatedIn;
 import static ai.grakn.SNB.key;
 import static ai.grakn.SNB.lastName;
 import static ai.grakn.SNB.located;
 import static ai.grakn.SNB.locationIp;
+import static ai.grakn.SNB.messageId;
+import static ai.grakn.SNB.originalPost;
+import static ai.grakn.SNB.parentMessage;
+import static ai.grakn.SNB.person;
 import static ai.grakn.SNB.personId;
 import static ai.grakn.SNB.placeId;
+import static ai.grakn.SNB.post;
+import static ai.grakn.SNB.product;
 import static ai.grakn.SNB.region;
 import static ai.grakn.SNB.toEpoch;
 import static ai.grakn.graql.Graql.var;
+import static java.util.Comparator.comparing;
 
 /**
  * Implementations of the LDBC SNB short queries.
@@ -70,8 +102,6 @@ import static ai.grakn.graql.Graql.var;
  * @author sheldon, miko, felix
  */
 public class GraknShortQueryHandlers {
-
-    private static final Var $person = var("person");
 
     /**
      * Short Query 1
@@ -85,16 +115,6 @@ public class GraknShortQueryHandlers {
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-
-                Var $firstName = var("first-name");
-                Var $lastName = var("last-name");
-                Var $birthday = var("birthday");
-                Var $locationIp = var("location-ip");
-                Var $browserUsed = var("browser-used");
-                Var $gender = var("gender");
-                Var $creationDate = var("creation-date");
-                Var $place = var("place");
-                Var $placeId = var("placeID");
 
                 Optional<Answer> answer = graph.graql().match(
                         $person.has(personId, operation.personId()),
@@ -146,49 +166,46 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
-                String messageQuery = "match " +
-                        "$person isa person has person-id " + operation.personId() + "; " +
-                        "(creator: $person, product: $message) isa has-creator; " +
-                        "($message, $date) isa has-creation-date ; " +
-                        "($message, $messageId) isa key-message-id; " +
-                        "order by $date desc;" +
-                        "limit " + String.valueOf(operation.limit()) + "; get;";
-
-                List<Answer> messageResults = graph.graql().<GetQuery>parse(messageQuery).execute();
+                List<Answer> messageResults = graph.graql().match(
+                        $person.isa(person).has(personId, operation.personId()),
+                        var().rel(creator, $person).rel(product, $message).isa(hasCreator),
+                        var().rel($message).rel($date).isa(has(creationDate)),
+                        var().rel($message).rel($messageId).isa(key(messageId))
+                ).orderBy($date, Order.desc).limit(operation.limit()).get().execute();
 
                 List<Answer> allResults = new ArrayList<>();
                 messageResults.forEach(a -> {
 
-                    String query = "match " +
-                            "$message id \"" + a.get("message").getId().toString() + "\"; " +
-                            "($message, $date) isa has-creation-date ; " +
-                            "($message, $messageId) isa key-message-id; " +
-                            "($message, $content) isa has-content or ($message, $content) isa has-image-file; " +
-                            "$originalPost isa post; " +
-                            "(child-message: $message, parent-message: $originalPost) isa original-post; " +
-                            "($originalPost, $opId) isa key-message-id; " +
-                            "$person2 isa person; " +
-                            "(product: $originalPost, creator: $person2) isa has-creator; " +
-                            "($person2, $authorId) isa key-person-id; " +
-                            "($person2, $fname) isa has-first-name; " +
-                            "($person2, $lname) isa has-last-name; get;";
+                    List<Answer> results = graph.graql().infer(true).match(
+                            $message.id(a.get($message).getId()),
+                            var().rel($message).rel($date).isa(has(creationDate)),
+                            var().rel($message).rel($messageId).isa(key(messageId)),
+                            (var().rel($message).rel($content).isa(has(content))).or(var().rel($message).rel($content).isa(has(imageFile))),
+                            $originalPost.isa(post),
+                            var().rel(childMessage, $message).rel(parentMessage, $originalPost).isa(originalPost),
+                            var().rel($originalPost).rel($opId).isa(key(messageId)),
+                            $author.isa(person),
+                            var().rel(product, $originalPost).rel(creator, $author).isa(hasCreator),
+                            var().rel($author).rel($authorId).isa(key(personId)),
+                            var().rel($author).rel($firstName).isa(has(firstName)),
+                            var().rel($author).rel($lastName).isa(has(lastName))
+                    ).get().execute();
 
-                    List<Answer> results = graph.graql().infer(true).<GetQuery>parse(query).execute();
                     allResults.addAll(results);
                 });
 
-                Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli())
-                        .thenComparing(map -> resource(map, "messageId")).reversed();
+                Function<Answer, Long> byDate = map -> toEpoch(resource(map, $date));
+                Function<Answer, Long> byMessageId = map -> resource(map, $messageId);
 
                 List<LdbcShortQuery2PersonPostsResult> result = allResults.stream()
-                        .sorted(ugly)
-                        .map(map -> new LdbcShortQuery2PersonPostsResult(resource(map, "messageId"),
-                                resource(map, "content"),
-                                map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli(),
-                                resource(map, "opId"),
-                                resource(map, "authorId"),
-                                resource(map, "fname"),
-                                resource(map, "lname")))
+                        .sorted(comparing(byDate).thenComparing(byMessageId).reversed())
+                        .map(map -> new LdbcShortQuery2PersonPostsResult(resource(map, $messageId),
+                                resource(map, $content),
+                                toEpoch(resource(map, $date)),
+                                resource(map, $opId),
+                                resource(map, $authorId),
+                                resource(map, $firstName),
+                                resource(map, $lastName)))
                         .collect(Collectors.toList());
 
                 resultReporter.report(0, result, operation);
@@ -197,8 +214,8 @@ public class GraknShortQueryHandlers {
 
         }
 
-        private <T> T resource(Answer result, String name) {
-            return result.get(name).<T>asAttribute().getValue();
+        private <T> T resource(Answer result, Var var) {
+            return result.get(var).<T>asAttribute().getValue();
         }
     }
 
