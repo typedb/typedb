@@ -57,7 +57,7 @@ public class ShortestPathTest {
     public GraknSession factory;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
+    public static final EngineContext context = EngineContext.singleQueueServer();
 
     @Before
     public void setUp() {

@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 public class DegreeTest {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
+    public static final EngineContext context = EngineContext.singleQueueServer();
     private GraknSession factory;
     private GraknTx tx;
 

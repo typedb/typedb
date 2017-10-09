@@ -70,7 +70,7 @@ public class ClusteringTest {
     private ConceptId entityId4;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
+    public static final EngineContext context = EngineContext.singleQueueServer();
     private GraknSession factory;
 
     @Before
