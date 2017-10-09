@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ai.grakn.SNB.$author;
@@ -220,14 +219,14 @@ public class GraknShortQueryHandlers {
                 });
 
                 List<LdbcShortQuery2PersonPostsResult> result = allResults.stream()
-                        .sorted(comparing(by($date)).thenComparing(by($messageId)).reversed())
-                        .map(map -> new LdbcShortQuery2PersonPostsResult(resource(map, $messageId),
-                                resource(map, $content),
-                                toEpoch(resource(map, $date)),
-                                resource(map, $opId),
-                                resource(map, $authorId),
-                                resource(map, $firstName),
-                                resource(map, $lastName)))
+                        .sorted(comparing(SNB.by($date)).thenComparing(SNB.by($messageId)).reversed())
+                        .map(map -> new LdbcShortQuery2PersonPostsResult(SNB.resource(map, $messageId),
+                                SNB.resource(map, $content),
+                                toEpoch(SNB.resource(map, $date)),
+                                SNB.resource(map, $opId),
+                                SNB.resource(map, $authorId),
+                                SNB.resource(map, $firstName),
+                                SNB.resource(map, $lastName)))
                         .collect(Collectors.toList());
 
                 resultReporter.report(0, result, operation);
@@ -235,14 +234,6 @@ public class GraknShortQueryHandlers {
             }
 
         }
-    }
-
-    private static <T> Function<Answer, T> by(Var var) {
-        return map -> resource(map, var);
-    }
-
-    private static <T> T resource(Answer result, Var var) {
-        return result.get(var).<T>asAttribute().getValue();
     }
 
     /**
@@ -265,12 +256,12 @@ public class GraknShortQueryHandlers {
                 ).get().execute();
 
                 List<LdbcShortQuery3PersonFriendsResult> result = results.stream()
-                        .sorted(Comparator.comparing(by($date)).reversed().thenComparing(by($friendId)))
+                        .sorted(Comparator.comparing(SNB.by($date)).reversed().thenComparing(SNB.by($friendId)))
                         .map(map -> new LdbcShortQuery3PersonFriendsResult(
-                                resource(map, $friendId),
-                                resource(map, $firstName),
-                                resource(map, $lastName),
-                                toEpoch(resource(map, $date))
+                                SNB.resource(map, $friendId),
+                                SNB.resource(map, $firstName),
+                                SNB.resource(map, $lastName),
+                                toEpoch(SNB.resource(map, $date))
                         )).collect(Collectors.toList());
 
                 resultReporter.report(0, result, operation);
@@ -302,8 +293,8 @@ public class GraknShortQueryHandlers {
                     Answer fres = results.get(0);
 
                     LdbcShortQuery4MessageContentResult result = new LdbcShortQuery4MessageContentResult(
-                            resource(fres, $content),
-                            toEpoch(resource(fres, $date))
+                            SNB.resource(fres, $content),
+                            toEpoch(SNB.resource(fres, $date))
                     );
 
                     resultReporter.report(0, result, operation);
@@ -342,9 +333,9 @@ public class GraknShortQueryHandlers {
                 if (results.size() >= 1) {
                     Answer fres = results.get(0);
                     LdbcShortQuery5MessageCreatorResult result = new LdbcShortQuery5MessageCreatorResult(
-                            resource(fres, $personId),
-                            resource(fres, $firstName),
-                            resource(fres, $lastName)
+                            SNB.resource(fres, $personId),
+                            SNB.resource(fres, $firstName),
+                            SNB.resource(fres, $lastName)
                     );
 
                     resultReporter.report(0, result, operation);
@@ -381,11 +372,11 @@ public class GraknShortQueryHandlers {
                 if (results.size() > 0) {
                     Answer fres = results.get(0);
                     LdbcShortQuery6MessageForumResult result = new LdbcShortQuery6MessageForumResult(
-                            resource(fres, $forumId),
-                            resource(fres, $title),
-                            resource(fres, $modId),
-                            resource(fres, $firstName),
-                            resource(fres, $lastName)
+                            SNB.resource(fres, $forumId),
+                            SNB.resource(fres, $title),
+                            SNB.resource(fres, $modId),
+                            SNB.resource(fres, $firstName),
+                            SNB.resource(fres, $lastName)
                     );
 
                     resultReporter.report(0, result, operation);
@@ -426,14 +417,14 @@ public class GraknShortQueryHandlers {
                 ).get().execute();
 
                 List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
-                        .sorted(Comparator.comparing(by($date)).reversed().thenComparing(by($personId)))
+                        .sorted(Comparator.comparing(SNB.by($date)).reversed().thenComparing(SNB.by($personId)))
                         .map(map -> new LdbcShortQuery7MessageRepliesResult(
-                                resource(map, $commentId),
-                                resource(map, $content),
-                                toEpoch(resource(map, $date)),
-                                resource(map, $personId),
-                                resource(map, $firstName),
-                                resource(map, $lastName),
+                                SNB.resource(map, $commentId),
+                                SNB.resource(map, $content),
+                                toEpoch(SNB.resource(map, $date)),
+                                SNB.resource(map, $personId),
+                                SNB.resource(map, $firstName),
+                                SNB.resource(map, $lastName),
                                 checkIfFriends(conceptId(map, $author1), conceptId(map, $author2), graph)))
                         .collect(Collectors.toList());
 

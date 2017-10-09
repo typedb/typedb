@@ -21,12 +21,14 @@ package ai.grakn;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.util.Schema;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
@@ -58,6 +60,7 @@ public class SNB {
     static String language = "language";
     static String imageFile = "image-file";
     static String content = "content";
+    static String name = "name";
 
     static VarPattern tag = label("tag");
     static VarPattern university = label("university");
@@ -158,5 +161,13 @@ public class SNB {
 
     static long toEpoch(LocalDateTime localDateTime) {
         return localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+    }
+
+    static <T> Function<Answer, T> by(Var var) {
+        return map -> resource(map, var);
+    }
+
+    static <T> T resource(Answer result, Var var) {
+        return result.get(var).<T>asAttribute().getValue();
     }
 }
