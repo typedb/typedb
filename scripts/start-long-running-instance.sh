@@ -2,7 +2,9 @@
 
 set -e
 
-rm -r grakn-new
+if [ -d grakn-new ]; then
+    rm -r grakn-new
+fi
 
 mkdir grakn-new
 
