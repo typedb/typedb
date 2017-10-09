@@ -533,7 +533,11 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Label visitLabel(GraqlParser.LabelContext ctx) {
-        return Label.of(visitIdentifier(ctx.identifier()));
+        GraqlParser.IdentifierContext label = ctx.identifier();
+        if(label == null){
+            return Label.of(ctx.IMPLICIT_IDENTIFIER().getText());
+        }
+        return Label.of(visitIdentifier(label));
     }
 
     @Override
