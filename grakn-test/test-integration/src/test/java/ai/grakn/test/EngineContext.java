@@ -67,10 +67,6 @@ public class EngineContext extends ExternalResource {
         this.startStandaloneEngine = startStandaloneEngine;
     }
 
-    public static EngineContext noQueue(){
-        return new EngineContext( false, false);
-    }
-
     public static EngineContext singleQueueServer(){
         return new EngineContext( true, false);
     }
