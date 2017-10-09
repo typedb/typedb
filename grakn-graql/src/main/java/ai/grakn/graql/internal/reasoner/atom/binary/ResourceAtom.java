@@ -180,7 +180,7 @@ public class ResourceAtom extends Binary{
 
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
 
-        //check types
+        //check type bindings compatiblity
         TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
         TypeAtom childTypeConstraint = childAtom.getTypeConstraints().findFirst().orElse(null);
 
@@ -188,7 +188,7 @@ public class ResourceAtom extends Binary{
         SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
         if (parentType != null && childType != null && areDisjointTypes(parentType, childType)) return false;
 
-        //check predicates
+        //check value predicate compatibility
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
         for (ValuePredicate childPredicate : childAtom.getMultiPredicate()) {
             Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();

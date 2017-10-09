@@ -77,6 +77,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTy
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSupers;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.playableRoles;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -694,10 +695,10 @@ public class RelationshipAtom extends IsaAtom {
         Map<Var, SchemaConcept> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarSchemaConceptMap();
         Map<Var, SchemaConcept> childVarSchemaConceptMap = this.getParentQuery().getVarSchemaConceptMap();
 
-        Set<Role> childRoles = childRoleRPMap.keySet();
-
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
+        ReasonerQueryImpl childQuery = (ReasonerQueryImpl) getParentQuery();
+        Set<Role> childRoles = childRoleRPMap.keySet();
         parentAtom.getRelationPlayers().stream()
                 .filter(prp -> prp.getRole().isPresent())
                 .forEach(prp -> {
@@ -708,33 +709,28 @@ public class RelationshipAtom extends IsaAtom {
                     Label parentRoleLabel = parentRolePattern.getTypeLabel().orElse(null);
 
                     if (parentRoleLabel != null) {
-                        Role parentRole = tx().getSchemaConcept(parentRoleLabel);
-                        boolean isParentRoleMeta = Schema.MetaSchema.isMetaLabel(parentRoleLabel);
                         Var parentRolePlayer = prp.getRolePlayer().var();
                         SchemaConcept parentType = parentVarSchemaConceptMap.get(parentRolePlayer);
 
-                        Set<Role> compatibleChildRoles = isParentRoleMeta? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles);
-
-                        //if parent role player has a type, constrain the allowed roles
-                        if (parentType != null && parentType.isType()){
-                            boolean isParentTypeMeta = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
-                            Set<Role> parentTypeRoles = isParentTypeMeta? childRoles : parentType.asType().plays().collect(toSet());
-
-                            compatibleChildRoles = compatibleChildRoles.stream()
-                                    .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || parentTypeRoles.contains(rc))
-                                    .collect(toSet());
-                        }
+                        Set<Role> compatibleChildRoles = playableRoles(
+                                tx().getSchemaConcept(parentRoleLabel),
+                                parentType,
+                                childRoles);
 
                         List<RelationPlayer> compatibleRelationPlayers = new ArrayList<>();
                         compatibleChildRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
                                 .forEach(role -> {
                                     childRoleRPMap.get(role).stream()
-                                            //check for type compatibility
+                                            //check for inter-type compatibility
                                             .filter(crp -> {
-                                                SchemaConcept childType = childVarSchemaConceptMap.get(crp.getRolePlayer().var());
-                                                if (exact) return !areDisjointTypes(parentType, childType);
-                                                else return childType == null || !areDisjointTypes(parentType, childType);
+                                                Var childVar = crp.getRolePlayer().var();
+                                                SchemaConcept childType = childVarSchemaConceptMap.get(childVar);
+
+                                                if (exact) return childQuery.isTypeRoleCompatible(childVar, parentType) && !areDisjointTypes(parentType, childType);
+                                                else return childQuery.isTypeRoleCompatible(childVar, parentType)
+                                                        && (childType == null || !areDisjointTypes(parentType, childType));
+
                                             })
                                             //check for substitution compatibility
                                             .filter(crp -> {

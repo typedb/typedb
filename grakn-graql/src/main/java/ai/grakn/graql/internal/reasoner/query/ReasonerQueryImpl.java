@@ -45,9 +45,10 @@ import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -241,6 +242,26 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     boolean isAtomic() {
         return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
+    }
+
+    /**
+     * @param typedVar variable of interest
+     * @param parentType to be checked
+     * @return true if typing the typeVar with type is compatible with role configuration of this query
+     */
+    public boolean isTypeRoleCompatible(Var typedVar, SchemaConcept parentType){
+        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
+
+        return !getAtoms(RelationshipAtom.class)
+                .filter(ra -> ra.getVarNames().contains(typedVar))
+                .filter(ra -> ra.getRoleVarMap().entries().stream()
+                        //get roles this type needs to play
+                        .filter(e -> e.getValue().equals(typedVar))
+                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
+                        //check if it can play it
+                        .filter(e -> !e.getKey().playedByTypes().filter(parentType::equals).findFirst().isPresent())
+                        .findFirst().isPresent())
+                .findFirst().isPresent();
     }
 
     /**
@@ -517,8 +538,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if because of the rule graph form, the resolution of this query may require reiteration
      */
     public boolean requiresReiteration() {
-        Set<InferenceRule> dependentRules = RuleUtil.getDependentRules(this);
-        return RuleUtil.subGraphHasLoops(dependentRules, tx())
-               || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
+        Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
+        return RuleUtils.subGraphHasLoops(dependentRules, tx())
+               || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 }

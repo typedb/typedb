@@ -8,39 +8,31 @@ role3 sub role;
 
 #Entities
 
-entity1 sub entity
+singleRoleEntity sub entity
 	plays role1;
 
-entity2 sub entity
+twoRoleEntity sub entity
 	plays role1
 	plays role2;
 
-entity3 sub entity
+threeRoleEntity sub entity
     plays role1
     plays role2
     plays role3;
 
-entity4 sub entity
+differentTwoRoleEntity sub entity
     plays role2
     plays role3;
 
-entity5 sub entity
-    plays role1;
-
-entity6 sub entity
-    has res1;
+noRoleEntity sub entity
+    has name;
 
 #Relations
 
-relation1 sub relationship
+ternary sub relationship
 	relates role1
 	relates role2
 	relates role3;
-
-relation2 sub relationship
-    relates role1
-    relates role2
-    relates role3;
 
 binary sub relationship
     relates role1
@@ -52,12 +44,17 @@ reified-relationship sub relationship
     plays role1
     plays role2;
 
-relation3 sub relationship
+reifying-relationship sub relationship
     relates role1
     relates role2;
 
+typed-relation sub relationship
+    relates role1
+    relates role2
+    relates role3;
+
 #Resources
-   res1 sub attribute datatype string;
+   name sub attribute datatype string;
 
 #Rules
 
@@ -67,7 +64,7 @@ rule-1 sub rule
 		(role1: $y, role2: $z) isa binary;
 	}
 	then {
-		(role1:$x, role2:$y, role3: $z) isa relation1;
+		(role1:$x, role2:$y, role3: $z) isa ternary;
 	};
 
 rule-2 sub rule
@@ -76,7 +73,7 @@ rule-2 sub rule
 		(role1: $y, role2: $z) isa binary;
 	}
 	then {
-		(role1:$x, role2:$y, role2: $z) isa relation2;
+		(role1:$x, role2:$y, role2: $z) isa ternary;
 	};
 
 rule-3 sub rule
@@ -85,15 +82,30 @@ rule-3 sub rule
     	$r2 (role1: $y, role2: $z) isa reified-relationship;
     }
     then {
-    	(role1:$r1, role2:$r2) isa relation3;
+    	(role1:$r1, role2:$r2) isa reifying-relationship;
     };
 
 rule-4 sub rule
     when {
-    	$x isa entity2;
-    	$y isa entity2;
+    	$x isa twoRoleEntity;
+    	$y isa twoRoleEntity;
     }
     then {
-    	(role1:$x, role2:$y) isa relation3;
+    	(role1:$x, role2:$y) isa reifying-relationship;
     };
 
+rule-5 sub rule
+    when {
+    	$x isa singleRoleEntity;
+    	$y isa twoRoleEntity;
+    	$z isa threeRoleEntity;
+    }
+    then {
+    	(role1:$x, role2:$y, role3: $z) isa typed-relation;
+    };
+
+insert
+
+#Data
+
+$x isa noRoleEntity, has name 'noRoleEntity';

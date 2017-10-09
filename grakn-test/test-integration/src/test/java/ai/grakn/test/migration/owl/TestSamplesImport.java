@@ -24,7 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -114,7 +114,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             final Entity work = getEntity("eHamlet");
             Assert.assertNotNull(work);
             assertRelationBetweenInstancesExists(tx, work, author, Label.of("op-wrote"));
-            Assert.assertTrue(RuleUtil.getRules(tx).findFirst().isPresent());
+            Assert.assertTrue(RuleUtils.getRules(tx).findFirst().isPresent());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -232,7 +232,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isAuntOf)));
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isUncleOf)));
 
-            assertTrue(RuleUtil.getRules(tx).findFirst().isPresent());
+            assertTrue(RuleUtils.getRules(tx).findFirst().isPresent());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
