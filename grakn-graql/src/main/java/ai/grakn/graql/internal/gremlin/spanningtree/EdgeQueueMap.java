@@ -19,12 +19,12 @@
 package ai.grakn.graql.internal.gremlin.spanningtree;
 
 import ai.grakn.graql.internal.gremlin.spanningtree.datastructure.FibonacciQueue;
-import ai.grakn.graql.internal.util.Partition;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.graql.internal.util.Partition;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.javatuples.Pair;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -114,8 +114,8 @@ class EdgeQueueMap<V> {
     public EdgeQueue merge(V component, Iterable<Pair<EdgeQueue<V>, Weighted<DirectedEdge<V>>>> queuesToMerge) {
         final EdgeQueue<V> result = EdgeQueue.create(component, partition);
         for (Pair<EdgeQueue<V>, Weighted<DirectedEdge<V>>> queueAndReplace : queuesToMerge) {
-            final EdgeQueue<V> queue = queueAndReplace.first;
-            final Weighted<DirectedEdge<V>> replace = queueAndReplace.second;
+            final EdgeQueue<V> queue = queueAndReplace.getValue0();
+            final Weighted<DirectedEdge<V>> replace = queueAndReplace.getValue1();
             for (ExclusiveEdge<V> wEdgeAndExcluded : queue.edges) {
                 final List<DirectedEdge<V>> replaces = wEdgeAndExcluded.excluded;
                 replaces.add(replace.val);

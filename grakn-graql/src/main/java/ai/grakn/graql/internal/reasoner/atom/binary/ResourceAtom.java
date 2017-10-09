@@ -357,7 +357,7 @@ public class ResourceAtom extends Binary{
         Var parentRelationVarName = parent.getRelationVariable();
         if (parentRelationVarName.isUserDefinedName()
                 && !childRelationVarName.equals(parentRelationVarName)){
-            unifier.addMapping(childRelationVarName, parentRelationVarName);
+            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
         }
         return unifier;
     }
