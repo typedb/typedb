@@ -21,8 +21,11 @@ package ai.grakn.client;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.MockRedisRule;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;
@@ -34,6 +37,8 @@ public class ClientTest {
     @Test
     public void graknEngineRunning() throws Throwable {
         EngineContext engine = EngineContext.inMemoryServer();
+        MockRedisRule mockRedis = MockRedisRule.create(new SimpleURI(engine.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
+        mockRedis.server().start();
         engine.before();
 
         boolean running = Client.serverIsRunning(engine.uri());
@@ -45,6 +50,7 @@ public class ClientTest {
         }
 
         engine.after();
+        mockRedis.server().stop();
     }
 
     @Test

@@ -28,6 +28,7 @@ import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.MockRedisRule;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
@@ -58,6 +59,7 @@ public class EngineContext extends ExternalResource {
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
     private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
+    private MockRedisRule mockRedis;
     private JedisPool jedisPool;
 
     private EngineContext(boolean startSingleQueueEngine, boolean startStandaloneEngine){
@@ -126,6 +128,8 @@ public class EngineContext extends ExternalResource {
 
         try {
             SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
+            mockRedis = MockRedisRule.create(redisURI.getPort());
+            mockRedis.server().start();
             jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
             @Nullable Class<? extends TaskManager> taskManagerClass = null;
@@ -143,6 +147,7 @@ public class EngineContext extends ExternalResource {
                 server = startEngine(config);
             }
         } catch (Exception e) {
+            if(mockRedis != null) mockRedis.server().stop();
             throw e;
         }
 
@@ -160,6 +165,7 @@ public class EngineContext extends ExternalResource {
                 noThrow(() -> stopEngine(server), "Error closing engine");
             }
             getJedisPool().close();
+            if(mockRedis != null) mockRedis.server().stop();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
