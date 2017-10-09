@@ -66,7 +66,7 @@ person sub entity
   birth-date sub "date" datatype string;
   death-date sub "date" datatype string;
   gender sub attribute datatype string;   
-```	    
+```
 
 ## Supported Resource Types
 The following attribute types are supported: `string`, `boolean`, `long`, `double`, `date`.
