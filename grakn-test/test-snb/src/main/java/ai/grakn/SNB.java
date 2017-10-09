@@ -20,6 +20,12 @@
 package ai.grakn;
 
 import ai.grakn.graql.VarPattern;
+import ai.grakn.util.Schema;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Date;
 
 import static ai.grakn.graql.Graql.label;
 
@@ -93,4 +99,20 @@ public class SNB {
     static VarPattern replyOf = label("reply-of");
     static VarPattern friend = label("friend");
     static VarPattern knows = label("knows");
+
+    static VarPattern has(String label) {
+        return label(Schema.ImplicitType.HAS.getLabel(label));
+    }
+
+    static VarPattern key(String label) {
+        return label(Schema.ImplicitType.KEY.getLabel(label));
+    }
+
+    static LocalDateTime fromDate(Date date) {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(date.getTime()), ZoneOffset.UTC);
+    }
+
+    static long toEpoch(LocalDateTime localDateTime) {
+        return localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+    }
 }

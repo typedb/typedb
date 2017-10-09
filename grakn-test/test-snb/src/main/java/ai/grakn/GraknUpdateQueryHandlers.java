@@ -33,11 +33,6 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate6AddPost;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate7AddComment;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate8AddFriendship;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Date;
-
 import static ai.grakn.SNB.admirer;
 import static ai.grakn.SNB.birthday;
 import static ai.grakn.SNB.browserUsed;
@@ -56,6 +51,7 @@ import static ai.grakn.SNB.employer;
 import static ai.grakn.SNB.firstName;
 import static ai.grakn.SNB.forumId;
 import static ai.grakn.SNB.friend;
+import static ai.grakn.SNB.fromDate;
 import static ai.grakn.SNB.gender;
 import static ai.grakn.SNB.hasCreator;
 import static ai.grakn.SNB.hasInterest;
@@ -212,11 +208,6 @@ public class GraknUpdateQueryHandlers {
             }
 
         }
-    }
-
-    private static LocalDateTime fromDate(Date date) {
-        return LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(date.getTime()), ZoneOffset.UTC);
     }
 
     /**

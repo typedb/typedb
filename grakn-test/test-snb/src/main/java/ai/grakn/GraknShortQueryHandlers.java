@@ -19,6 +19,7 @@ package ai.grakn;
 
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
@@ -43,7 +44,25 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static ai.grakn.SNB.birthday;
+import static ai.grakn.SNB.browserUsed;
+import static ai.grakn.SNB.creationDate;
+import static ai.grakn.SNB.firstName;
+import static ai.grakn.SNB.gender;
+import static ai.grakn.SNB.has;
+import static ai.grakn.SNB.isLocatedIn;
+import static ai.grakn.SNB.key;
+import static ai.grakn.SNB.lastName;
+import static ai.grakn.SNB.located;
+import static ai.grakn.SNB.locationIp;
+import static ai.grakn.SNB.personId;
+import static ai.grakn.SNB.placeId;
+import static ai.grakn.SNB.region;
+import static ai.grakn.SNB.toEpoch;
+import static ai.grakn.graql.Graql.var;
 
 /**
  * Implementations of the LDBC SNB short queries.
@@ -51,6 +70,8 @@ import java.util.stream.Collectors;
  * @author sheldon, miko, felix
  */
 public class GraknShortQueryHandlers {
+
+    private static final Var $person = var("person");
 
     /**
      * Short Query 1
@@ -65,34 +86,42 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
-                String query =
-                        "match" +
-                                "$person has person-id " +
-                                operation.personId() + "; " +
-                                "($person, $first-name) isa has-first-name; " +
-                                "($person, $last-name) isa has-last-name; " +
-                                "($person, $birth-day) isa has-birth-day; " +
-                                "($person, $location-ip) isa has-location-ip; " +
-                                "($person, $browser-used) isa has-browser-used; " +
-                                "($person, $gender) isa has-gender; " +
-                                "($person, $creation-date) isa has-creation-date; " +
-                                "(located: $person, region: $place) isa is-located-in; " +
-                                "($place, $placeID) isa key-place-id; get;";
+                Var $firstName = var("first-name");
+                Var $lastName = var("last-name");
+                Var $birthday = var("birthday");
+                Var $locationIp = var("location-ip");
+                Var $browserUsed = var("browser-used");
+                Var $gender = var("gender");
+                Var $creationDate = var("creation-date");
+                Var $place = var("place");
+                Var $placeId = var("placeID");
 
-                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
-                if (results.size() > 0) {
-                    Answer fres = results.get(0);
+                Optional<Answer> answer = graph.graql().match(
+                        $person.has(personId, operation.personId()),
+                        var().rel($person).rel($firstName).isa(has(firstName)),
+                        var().rel($person).rel($lastName).isa(has(lastName)),
+                        var().rel($person).rel($birthday).isa(has(birthday)),
+                        var().rel($person).rel($locationIp).isa(has(locationIp)),
+                        var().rel($person).rel($browserUsed).isa(has(browserUsed)),
+                        var().rel($person).rel($gender).isa(has(gender)),
+                        var().rel($person).rel($creationDate).isa(has(creationDate)),
+                        var().rel(located, $person).rel(region, $place).isa(isLocatedIn),
+                        var().rel($place).rel($placeId).isa(key(placeId))
+                ).get().stream().findAny();
+
+                if (answer.isPresent()) {
+                    Answer fres = answer.get();
 
                     LdbcShortQuery1PersonProfileResult result =
                             new LdbcShortQuery1PersonProfileResult(
-                                    (String) fres.get("first-name").asAttribute().getValue(),
-                                    (String) fres.get("last-name").asAttribute().getValue(),
-                                    ((LocalDateTime) fres.get("birth-day").asAttribute().getValue()).toInstant(ZoneOffset.UTC).toEpochMilli(),
-                                    (String) fres.get("location-ip").asAttribute().getValue(),
-                                    (String) fres.get("browser-used").asAttribute().getValue(),
-                                    (Long) fres.get("placeID").asAttribute().getValue(),
-                                    (String) fres.get("gender").asAttribute().getValue(),
-                                    ((LocalDateTime) fres.get("creation-date").asAttribute().getValue()).toInstant(ZoneOffset.UTC).toEpochMilli());
+                                    fres.get($firstName).<String>asAttribute().getValue(),
+                                    fres.get($lastName).<String>asAttribute().getValue(),
+                                    toEpoch(fres.get($birthday).<LocalDateTime>asAttribute().getValue()),
+                                    fres.get($locationIp).<String>asAttribute().getValue(),
+                                    fres.get($browserUsed).<String>asAttribute().getValue(),
+                                    fres.get($placeId).<Long>asAttribute().getValue(),
+                                    fres.get($gender).<String>asAttribute().getValue(),
+                                    toEpoch(fres.get($creationDate).<LocalDateTime>asAttribute().getValue()));
 
                     resultReporter.report(0, result, operation);
 
