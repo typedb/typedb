@@ -291,12 +291,12 @@ The above is equivalent to:
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell11">
 <pre>
-match $x plays has-firstname-owner; get;
+match $x plays @has-firstname-owner; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java11">
 <pre>
-qb.match(var("x").plays("has-firstname-owner")).get();
+qb.match(var("x").plays("@has-firstname-owner")).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

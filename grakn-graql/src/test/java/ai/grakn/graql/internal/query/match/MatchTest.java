@@ -218,7 +218,7 @@ public class MatchTest {
 
         assertThat(query, variable(x, containsInAnyOrder(
                 role("role"), role("character-being-played"),
-                role("has-name-owner")
+                role("@has-name-owner")
         )));
     }
 

@@ -155,13 +155,13 @@ public class CountTest {
             count = graph.graql().compute().count().in("name").execute();
             assertEquals(1L, count);
 
-            count = graph.graql().compute().count().in("has-name").execute();
+            count = graph.graql().compute().count().in("@has-name").execute();
             assertEquals(1L, count);
 
-            count = graph.graql().compute().count().in("has-name", "thing").execute();
+            count = graph.graql().compute().count().in("@has-name", "thing").execute();
             assertEquals(3L, count);
 
-            count = graph.graql().compute().count().in("has-name", "name").execute();
+            count = graph.graql().compute().count().in("@has-name", "name").execute();
             assertEquals(2L, count);
 
             count = graph.graql().compute().count().in("relationship").execute();
@@ -206,13 +206,13 @@ public class CountTest {
             count = graph.graql().compute().count().includeAttribute().in("name").execute();
             assertEquals(1L, count);
 
-            count = graph.graql().compute().count().in("has-name").execute();
+            count = graph.graql().compute().count().in("@has-name").execute();
             assertEquals(2L, count);
 
-            count = graph.graql().compute().count().in("has-name", "thing").execute();
+            count = graph.graql().compute().count().in("@has-name", "thing").execute();
             assertEquals(5L, count);
 
-            count = graph.graql().compute().count().in("has-name", "name").execute();
+            count = graph.graql().compute().count().in("@has-name", "name").execute();
             assertEquals(3L, count);
 
             count = graph.graql().compute().count().in("relationship").execute();
@@ -262,10 +262,10 @@ public class CountTest {
             count = graph.graql().compute().count().in("name").execute();
             assertEquals(1L, count);
 
-            count = graph.graql().compute().count().in("has-name").execute();
+            count = graph.graql().compute().count().in("@has-name").execute();
             assertEquals(1L, count);
 
-            count = graph.graql().compute().count().in("has-name", "name").execute();
+            count = graph.graql().compute().count().in("@has-name", "name").execute();
             assertEquals(2L, count);
 
             count = graph.graql().compute().count().in("relationship").execute();
@@ -290,10 +290,10 @@ public class CountTest {
             count = graph.graql().compute().count().in("name").execute();
             assertEquals(1L, count);
 
-            count = graph.graql().compute().count().in("has-name").execute();
+            count = graph.graql().compute().count().in("@has-name").execute();
             assertEquals(2L, count);
 
-            count = graph.graql().compute().count().in("has-name", "name").execute();
+            count = graph.graql().compute().count().in("@has-name", "name").execute();
             assertEquals(3L, count);
 
             count = graph.graql().compute().count().in("relationship").execute();
