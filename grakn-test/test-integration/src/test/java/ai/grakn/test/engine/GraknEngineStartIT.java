@@ -23,7 +23,6 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.MockRedisRule;
@@ -40,7 +39,6 @@ import java.util.concurrent.CompletableFuture;
 
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -111,7 +109,6 @@ public class GraknEngineStartIT {
         Properties properties = graknEngineConfig.getProperties();
         properties.setProperty(SERVER_PORT_NUMBER, port);
         properties.setProperty(REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
-        properties.setProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
         return GraknEngineServer.create(graknEngineConfig);
     }
 }

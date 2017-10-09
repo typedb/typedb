@@ -40,7 +40,6 @@ import redis.clients.util.Pool;
 import java.io.IOException;
 
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -80,9 +79,6 @@ public class GraknEngineServerTest {
 
     @Test
     public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() throws IOException {
-        // Should start engine with distributed server, which means we will get a cannot
-        // connect to Zookeeper exception (that has not been started)
-        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
         MockRedisRule mock = MockRedisRule.create(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
         mock.server().start();
 

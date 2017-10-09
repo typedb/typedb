@@ -24,7 +24,6 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.util.MockRedisRule;
@@ -35,7 +34,6 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
@@ -116,7 +114,6 @@ public class EngineContext extends ExternalResource {
             mockRedis.server().start();
             jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
-            config.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
             server = startEngine(config);
         } catch (Exception e) {
             if(mockRedis != null) mockRedis.server().stop();

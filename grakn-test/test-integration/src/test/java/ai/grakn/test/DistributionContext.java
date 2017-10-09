@@ -21,7 +21,6 @@ package ai.grakn.test;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.client.Client;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
@@ -45,7 +44,6 @@ import java.util.stream.Stream;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASKS_RETRY_DELAY;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 
@@ -76,10 +74,6 @@ public class DistributionContext extends ExternalResource {
 
     public static DistributionContext startSingleQueueEngineProcess(){
         return new DistributionContext(RedisTaskManager.class);
-    }
-
-    public static DistributionContext startInMemoryEngineProcess(){
-        return new DistributionContext(StandaloneTaskManager.class);
     }
 
     public DistributionContext port(int port) {
@@ -144,7 +138,6 @@ public class DistributionContext extends ExternalResource {
         Properties properties = GraknEngineConfig.create().getProperties();
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
         properties.setProperty(REDIS_HOST, new SimpleURI("localhost", redisPort).toString());
-        properties.setProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
         // To speed up tests of failure cases
         properties.setProperty(TASKS_RETRY_DELAY, "60");
 
