@@ -104,17 +104,25 @@ public class SNB {
     static VarPattern childMessage = label("child-message");
     static VarPattern parentMessage = label("parent-message");
     static VarPattern originalPost = label("original-post");
+    static VarPattern memberMessage = label("member-message");
+    static VarPattern groupForum = label("group-forum");
+    static VarPattern forumMember = label("forum-member");
+    static VarPattern message = label("message");
 
     static final Var $person = var("person");
     static final Var $city = var("city");
     static final Var $message = var("message");
     static final Var $mod = var("mod");
+    static final Var $modId = var("modId");
     static final Var $forum = var("forum");
     static final Var $author = var("author");
+    static final Var $author1 = var("author1");
+    static final Var $author2 = var("author2");
     static final Var $country = var("country");
     static final Var $post = var("post");
     static final Var $original = var("original");
     static final Var $comment = var("comment");
+    static final Var $commentId = var("commentId");
     static final Var $firstName = var("first-name");
     static final Var $lastName = var("last-name");
     static final Var $birthday = var("birthday");
@@ -130,6 +138,11 @@ public class SNB {
     static final Var $originalPost = var("originalPost");
     static final Var $opId = var("opId");
     static final Var $authorId = var("authorId");
+    static final Var $friend = var("friend");
+    static final Var $friendId = var("friendId");
+    static final Var $personId = var("personId");
+    static final Var $forumId = var("forumId");
+    static final Var $title = var("title");
 
     static VarPattern has(String label) {
         return label(Schema.ImplicitType.HAS.getLabel(label));

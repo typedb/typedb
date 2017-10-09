@@ -17,8 +17,7 @@
  */
 package ai.grakn;
 
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.GetQuery;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -41,7 +40,6 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageRepl
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageRepliesResult;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -50,23 +48,35 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ai.grakn.SNB.$author;
+import static ai.grakn.SNB.$author1;
+import static ai.grakn.SNB.$author2;
 import static ai.grakn.SNB.$authorId;
 import static ai.grakn.SNB.$birthday;
 import static ai.grakn.SNB.$browserUsed;
+import static ai.grakn.SNB.$comment;
+import static ai.grakn.SNB.$commentId;
 import static ai.grakn.SNB.$content;
 import static ai.grakn.SNB.$creationDate;
 import static ai.grakn.SNB.$date;
 import static ai.grakn.SNB.$firstName;
+import static ai.grakn.SNB.$forum;
+import static ai.grakn.SNB.$forumId;
+import static ai.grakn.SNB.$friend;
+import static ai.grakn.SNB.$friendId;
 import static ai.grakn.SNB.$gender;
 import static ai.grakn.SNB.$lastName;
 import static ai.grakn.SNB.$locationIp;
 import static ai.grakn.SNB.$message;
 import static ai.grakn.SNB.$messageId;
+import static ai.grakn.SNB.$mod;
+import static ai.grakn.SNB.$modId;
 import static ai.grakn.SNB.$opId;
 import static ai.grakn.SNB.$originalPost;
 import static ai.grakn.SNB.$person;
+import static ai.grakn.SNB.$personId;
 import static ai.grakn.SNB.$place;
 import static ai.grakn.SNB.$placeId;
+import static ai.grakn.SNB.$title;
 import static ai.grakn.SNB.birthday;
 import static ai.grakn.SNB.browserUsed;
 import static ai.grakn.SNB.childMessage;
@@ -74,16 +84,27 @@ import static ai.grakn.SNB.content;
 import static ai.grakn.SNB.creationDate;
 import static ai.grakn.SNB.creator;
 import static ai.grakn.SNB.firstName;
+import static ai.grakn.SNB.forumId;
+import static ai.grakn.SNB.forumMember;
+import static ai.grakn.SNB.friend;
 import static ai.grakn.SNB.gender;
+import static ai.grakn.SNB.groupForum;
 import static ai.grakn.SNB.has;
 import static ai.grakn.SNB.hasCreator;
+import static ai.grakn.SNB.hasModerator;
 import static ai.grakn.SNB.imageFile;
 import static ai.grakn.SNB.isLocatedIn;
 import static ai.grakn.SNB.key;
+import static ai.grakn.SNB.knows;
 import static ai.grakn.SNB.lastName;
 import static ai.grakn.SNB.located;
 import static ai.grakn.SNB.locationIp;
+import static ai.grakn.SNB.memberMessage;
+import static ai.grakn.SNB.message;
 import static ai.grakn.SNB.messageId;
+import static ai.grakn.SNB.moderated;
+import static ai.grakn.SNB.moderator;
+import static ai.grakn.SNB.original;
 import static ai.grakn.SNB.originalPost;
 import static ai.grakn.SNB.parentMessage;
 import static ai.grakn.SNB.person;
@@ -92,7 +113,11 @@ import static ai.grakn.SNB.placeId;
 import static ai.grakn.SNB.post;
 import static ai.grakn.SNB.product;
 import static ai.grakn.SNB.region;
+import static ai.grakn.SNB.reply;
+import static ai.grakn.SNB.replyOf;
+import static ai.grakn.SNB.title;
 import static ai.grakn.SNB.toEpoch;
+import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.var;
 import static java.util.Comparator.comparing;
 
@@ -194,11 +219,8 @@ public class GraknShortQueryHandlers {
                     allResults.addAll(results);
                 });
 
-                Function<Answer, Long> byDate = map -> toEpoch(resource(map, $date));
-                Function<Answer, Long> byMessageId = map -> resource(map, $messageId);
-
                 List<LdbcShortQuery2PersonPostsResult> result = allResults.stream()
-                        .sorted(comparing(byDate).thenComparing(byMessageId).reversed())
+                        .sorted(comparing(by($date)).thenComparing(by($messageId)).reversed())
                         .map(map -> new LdbcShortQuery2PersonPostsResult(resource(map, $messageId),
                                 resource(map, $content),
                                 toEpoch(resource(map, $date)),
@@ -213,12 +235,15 @@ public class GraknShortQueryHandlers {
             }
 
         }
-
-        private <T> T resource(Answer result, Var var) {
-            return result.get(var).<T>asAttribute().getValue();
-        }
     }
 
+    private static <T> Function<Answer, T> by(Var var) {
+        return map -> resource(map, var);
+    }
+
+    private static <T> T resource(Answer result, Var var) {
+        return result.get(var).<T>asAttribute().getValue();
+    }
 
     /**
      * Short Query 3
@@ -233,35 +258,23 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
-                String query = "match " +
-                        "$person has person-id " + operation.personId() + "; " +
-                        "$rel ($person, $friend) isa knows; " +
-                        "$rel has creation-date  $date; " +
-                        "$friend has person-id $friendId has first-name $fname has last-name $lname; get;";
+                List<Answer> results = graph.graql().match(
+                        $person.has(personId, operation.personId()),
+                        var().rel($person).rel($friend).isa(knows).has(creationDate, $date),
+                        $friend.has(personId, $friendId).has(firstName, $firstName).has(lastName, $lastName)
+                ).get().execute();
 
+                List<LdbcShortQuery3PersonFriendsResult> result = results.stream()
+                        .sorted(Comparator.comparing(by($date)).reversed().thenComparing(by($friendId)))
+                        .map(map -> new LdbcShortQuery3PersonFriendsResult(
+                                resource(map, $friendId),
+                                resource(map, $firstName),
+                                resource(map, $lastName),
+                                toEpoch(resource(map, $date))
+                        )).collect(Collectors.toList());
 
-                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
-
-
-                    Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
-                            .thenComparing(map -> resource(map, "friendId"));
-
-                    List<LdbcShortQuery3PersonFriendsResult> result = results.stream()
-                            .sorted(ugly)
-                            .map(map -> new LdbcShortQuery3PersonFriendsResult(resource(map, "friendId"),
-                                    resource(map, "fname"),
-                                    resource(map, "lname"),
-                                    map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()))
-                            .collect(Collectors.toList());
-
-                    resultReporter.report(0, result, operation);
-
-
+                resultReporter.report(0, result, operation);
             }
-        }
-
-        private <T> T resource(Answer result, String name) {
-            return result.get(name).<T>asAttribute().getValue();
         }
     }
 
@@ -279,20 +292,18 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
-                String query = "match " +
-                        "$m has message-id " + operation.messageId() + "; " +
-                        "($m, $date) isa has-creation-date; " +
-                        "($m, $content) isa has-content or ($m, $content) isa has-image-file; get;";
-
-                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
-
+                List<Answer> results = graph.graql().match(
+                        $message.has(messageId, operation.messageId()),
+                        var().rel($message).rel($date).isa(has(creationDate)),
+                        (var().rel($message).rel($content).isa(has(content))).or(var().rel($message).rel($content).isa(has(imageFile)))
+                ).get().execute();
 
                 if (results.size() > 0) {
                     Answer fres = results.get(0);
 
                     LdbcShortQuery4MessageContentResult result = new LdbcShortQuery4MessageContentResult(
-                            (String) fres.get("content").asAttribute().getValue(),
-                            ((LocalDateTime) fres.get("date").asAttribute().getValue()).toInstant(ZoneOffset.UTC).toEpochMilli()
+                            resource(fres, $content),
+                            toEpoch(resource(fres, $date))
                     );
 
                     resultReporter.report(0, result, operation);
@@ -320,28 +331,25 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
-                String query = "match " +
-                        " $m has message-id " + operation.messageId() + ";" +
-                        " (product: $m , creator: $person) isa has-creator;" +
-                        " ($person, $fname) isa has-first-name;" +
-                        " ($person, $lname) isa has-last-name;" +
-                        " ($person, $pID) isa key-person-id; get;";
-
-                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
+                List<Answer> results = graph.graql().match(
+                        $message.has(messageId, operation.messageId()),
+                        var().rel(product, $message).rel(creator, $person).isa(hasCreator),
+                        var().rel($person, $firstName).isa(has(firstName)),
+                        var().rel($person, $lastName).isa(has(lastName)),
+                        var().rel($person, $personId).isa(key(personId))
+                ).get().execute();
 
                 if (results.size() >= 1) {
                     Answer fres = results.get(0);
                     LdbcShortQuery5MessageCreatorResult result = new LdbcShortQuery5MessageCreatorResult(
-                            (Long) fres.get("pID").asAttribute().getValue(),
-                            (String) fres.get("fname").asAttribute().getValue(),
-                            (String) fres.get("lname").asAttribute().getValue()
+                            resource(fres, $personId),
+                            resource(fres, $firstName),
+                            resource(fres, $lastName)
                     );
 
                     resultReporter.report(0, result, operation);
-
                 } else {
                     resultReporter.report(0, null, operation);
-
                 }
             }
         }
@@ -362,36 +370,32 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
-                String query = "match " +
-                        "$m has message-id " + operation.messageId() + "; " +
-                        "(member-message: $m , group-forum: $forum) isa forum-member;" +
-                        "$forum has forum-id $fid has title $title; " +
-                        "(moderated: $forum, moderator: $mod) isa has-moderator; " +
-                        "$mod isa person has person-id $modid has first-name $fname has last-name $lname; get;";
-
-
-                List<Answer> results = graph.graql().infer(true).<GetQuery>parse(query).execute();
+                List<Answer> results = graph.graql().infer(true).match(
+                        $message.has(messageId, operation.messageId()),
+                        var().rel(memberMessage, $message).rel(groupForum, $forum).isa(forumMember),
+                        $forum.has(forumId, $forumId).has(title, $title),
+                        var().rel(moderated, $forum).rel(moderator, $mod).isa(hasModerator),
+                        $mod.isa(person).has(personId, $modId).has(firstName, $firstName).has(lastName, $lastName)
+                ).get().execute();
 
                 if (results.size() > 0) {
                     Answer fres = results.get(0);
                     LdbcShortQuery6MessageForumResult result = new LdbcShortQuery6MessageForumResult(
-                            (Long) fres.get("fid").asAttribute().getValue(),
-                            (String) fres.get("title").asAttribute().getValue(),
-                            (Long) fres.get("modid").asAttribute().getValue(),
-                            (String) fres.get("fname").asAttribute().getValue(),
-                            (String) fres.get("lname").asAttribute().getValue()
+                            resource(fres, $forumId),
+                            resource(fres, $title),
+                            resource(fres, $modId),
+                            resource(fres, $firstName),
+                            resource(fres, $lastName)
                     );
 
                     resultReporter.report(0, result, operation);
-
                 } else {
                     resultReporter.report(0, null, operation);
-
                 }
             }
         }
 
-        }
+    }
 
 
     /**
@@ -407,31 +411,30 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
-                String query = "match $m isa message has message-id " + operation.messageId() + " ;" +
-                        "(product: $m, creator: $author1) isa has-creator; " +
-                        "(original: $m, reply: $comment) isa reply-of; " +
-                        "($comment, $cid) isa key-message-id; " +
-                        "($comment, $content) isa has-content; " +
-                        "($comment, $date) isa has-creation-date; " +
-                        "(product: $comment, creator: $author2) isa has-creator; " +
-                        "($author2, $pid) isa key-person-id; " +
-                        "($author2, $fname) isa has-first-name; " +
-                        "($author2, $lname) isa has-last-name; get;";
 
-                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
-
-                Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
-                        .thenComparing(map -> resource(map, "pid"));
+                List<Answer> results = graph.graql().match(
+                        $message.isa(message).has(messageId, operation.messageId()),
+                        var().rel(product, $message).rel(creator, $author1).isa(hasCreator),
+                        var().rel(original, $message).rel(reply, $comment).isa(replyOf),
+                        var().rel($comment).rel($commentId).isa(key(messageId)),
+                        var().rel($comment).rel($content).isa(has(content)),
+                        var().rel($comment).rel($date).isa(has(creationDate)),
+                        var().rel(product, $comment).rel(creator, $author2).isa(hasCreator),
+                        var().rel($author2, $personId).isa(key(personId)),
+                        var().rel($author2, $firstName).isa(has(firstName)),
+                        var().rel($author2, $lastName).isa(has(lastName))
+                ).get().execute();
 
                 List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
-                        .sorted(ugly)
-                        .map(map -> new LdbcShortQuery7MessageRepliesResult(resource(map, "cid"),
-                                resource(map, "content"),
-                                map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli(),
-                                resource(map, "pid"),
-                                resource(map, "fname"),
-                                resource(map, "lname"),
-                                checkIfFriends(conceptId(map, "author1"), conceptId(map, "author2"), graph)))
+                        .sorted(Comparator.comparing(by($date)).reversed().thenComparing(by($personId)))
+                        .map(map -> new LdbcShortQuery7MessageRepliesResult(
+                                resource(map, $commentId),
+                                resource(map, $content),
+                                toEpoch(resource(map, $date)),
+                                resource(map, $personId),
+                                resource(map, $firstName),
+                                resource(map, $lastName),
+                                checkIfFriends(conceptId(map, $author1), conceptId(map, $author2), graph)))
                         .collect(Collectors.toList());
 
                 resultReporter.report(0, result, operation);
@@ -440,18 +443,14 @@ public class GraknShortQueryHandlers {
 
         }
 
-        private boolean checkIfFriends(String author1, String author2, GraknTx graph) {
-            String query = "match $x id '" + author1 + "'; $y id '" + author2 + "';" +
-                    "(friend: $x, friend:  $y) isa knows; aggregate ask;";
-            return graph.graql().<AggregateQuery<Boolean>>parse(query).execute();
+        private boolean checkIfFriends(ConceptId author1, ConceptId author2, GraknTx graph) {
+            return graph.graql().match(
+                    var().rel(friend, var().id(author1)).rel(friend, var().id(author2)).isa(knows)
+            ).aggregate(ask()).execute();
         }
 
-        private String conceptId(Answer result, String name) {
-            return result.get(name).getId().toString();
-        }
-
-        private <T> T resource(Answer result, String name) {
-            return result.get(name).<T>asAttribute().getValue();
+        private ConceptId conceptId(Answer result, Var var) {
+            return result.get(var).getId();
         }
     }
 }
