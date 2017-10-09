@@ -40,9 +40,7 @@ import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.startRedis;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 
 
@@ -128,7 +126,6 @@ public class EngineContext extends ExternalResource {
 
         try {
             SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
-            startRedis(redisURI.getPort());
             jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
             @Nullable Class<? extends TaskManager> taskManagerClass = null;
@@ -146,7 +143,6 @@ public class EngineContext extends ExternalResource {
                 server = startEngine(config);
             }
         } catch (Exception e) {
-            stopRedis();
             throw e;
         }
 
@@ -164,7 +160,6 @@ public class EngineContext extends ExternalResource {
                 noThrow(() -> stopEngine(server), "Error closing engine");
             }
             getJedisPool().close();
-            stopRedis();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
