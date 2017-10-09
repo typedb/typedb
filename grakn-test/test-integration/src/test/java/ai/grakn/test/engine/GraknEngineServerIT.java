@@ -92,7 +92,7 @@ public class GraknEngineServerIT {
         assertNotEquals(engine1.getTaskManager(), engine2.getTaskManager());
     }
 
-    @Ignore("Resnable when next version of redis mock is out")
+    @Ignore("This test needs to be revisited due to test engine having to share redis now")
     @Property(trials=10)
     public void whenSendingTasksToTwoEngines_TheyAllComplete(
             List<TaskState> tasks1, List<TaskState> tasks2) {
