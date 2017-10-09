@@ -41,7 +41,7 @@ public class KBWriterMainTest {
     private static Keyspace keyspace;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.singleQueueServer();
 
     @Rule
     public final SystemOutRule sysOut = new SystemOutRule().enableLog();
