@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
@@ -179,6 +180,7 @@ public class ResourceAtom extends Binary{
         if(!(ruleAtom.isResource())) return false;
 
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
+        ReasonerQueryImpl childQuery = (ReasonerQueryImpl) childAtom.getParentQuery();
 
         //check type bindings compatiblity
         TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
@@ -186,7 +188,8 @@ public class ResourceAtom extends Binary{
 
         SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
         SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
-        if (parentType != null && childType != null && areDisjointTypes(parentType, childType)) return false;
+        if (parentType != null && childType != null && areDisjointTypes(parentType, childType)
+                || !childQuery.isTypeRoleCompatible(getVarName(), parentType)) return false;
 
         //check value predicate compatibility
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
