@@ -17,12 +17,6 @@
  */
 package ai.grakn.engine;
 
-import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
-import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -31,12 +25,12 @@ import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
+import ai.grakn.engine.controller.api.AttributeController;
+import ai.grakn.engine.controller.api.AttributeTypeController;
 import ai.grakn.engine.controller.api.EntityController;
 import ai.grakn.engine.controller.api.EntityTypeController;
 import ai.grakn.engine.controller.api.RelationshipController;
 import ai.grakn.engine.controller.api.RelationshipTypeController;
-import ai.grakn.engine.controller.api.AttributeController;
-import ai.grakn.engine.controller.api.AttributeTypeController;
 import ai.grakn.engine.controller.api.RoleController;
 import ai.grakn.engine.controller.api.RuleController;
 import ai.grakn.engine.data.RedisWrapper;
@@ -44,10 +38,7 @@ import ai.grakn.engine.data.RedisWrapper.Builder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.session.RemoteSession;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.user.UsersHandler;
@@ -55,27 +46,15 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
-import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.REST;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.google.common.base.Stopwatch;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import javax.annotation.Nullable;
 import mjson.Json;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +64,26 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 import spark.Service;
+
+import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+
+import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
+import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
+import static com.codahale.metrics.MetricRegistry.name;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -121,13 +120,10 @@ public class GraknEngineServer implements AutoCloseable {
         // Redis connection pool
         this.redisWrapper = redisWrapper;
         // Lock provider
-        String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
-        boolean inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
-        this.lockProvider = inMemoryQueue ? new ProcessWideLockProvider()
-                : new JedisLockProvider(redisWrapper.getJedisPool());
+        this.lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
         this.factory = EngineGraknTxFactory.create(prop.getProperties());
         // Task manager
-        this.taskManager = makeTaskManager(inMemoryQueue, redisWrapper.getJedisPool(), lockProvider);
+        this.taskManager = makeTaskManager(redisWrapper.getJedisPool(), lockProvider);
         this.taskExecutor = TasksController.taskExecutor();
     }
 
@@ -215,14 +211,11 @@ public class GraknEngineServer implements AutoCloseable {
     /**
      * Check in with the properties file to decide which type of task manager should be started
      * and return the TaskManager
-     * @param inMemoryQueue         True if running in memory
      * @param jedisPool
      */
     private TaskManager makeTaskManager(
-            final boolean inMemoryQueue,
             final Pool<Jedis> jedisPool,
             final LockProvider lockProvider) {
-        TaskManager taskManager;
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "idle"), (Gauge<Integer>) jedisPool::getNumIdle);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "active"), (Gauge<Integer>) jedisPool::getNumActive);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
@@ -233,18 +226,10 @@ public class GraknEngineServer implements AutoCloseable {
         metricRegistry.register(name(GraknEngineServer.class, "System", "threads"), new CachedThreadStatesGaugeSet(15, TimeUnit.SECONDS));
         metricRegistry.register(name(GraknEngineServer.class, "System", "memory"), new MemoryUsageGaugeSet());
 
-        if (!inMemoryQueue) {
-            Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
-            taskManager = consumers
-                    .map(s -> new RedisTaskManager(engineId, prop, jedisPool, Integer.parseInt(s), factory, lockProvider, metricRegistry))
-                    .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
-        } else  {
-            LOG.info("Task queue in memory");
-            // Redis storage for counts, in the RedisTaskManager it's created in consumers
-            RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
-            taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
-        }
-        return taskManager;
+        Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
+        return consumers
+                .map(s -> new RedisTaskManager(engineId, prop, jedisPool, Integer.parseInt(s), factory, lockProvider, metricRegistry))
+                .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
     }
 
     public void startHTTP() {
