@@ -16,11 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.client;
+package ai.grakn.test.client;
 
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;

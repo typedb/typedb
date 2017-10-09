@@ -20,15 +20,9 @@ package ai.grakn.client;
 
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
-import static ai.grakn.util.ConcurrencyUtil.all;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
-import static ai.grakn.util.REST.Request.BATCH_NUMBER;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.github.rholder.retry.Retryer;
@@ -36,6 +30,10 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -52,13 +50,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+
+import static ai.grakn.util.ConcurrencyUtil.all;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.BATCH_NUMBER;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import static com.codahale.metrics.MetricRegistry.name;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Client to batch load qraql queries into Grakn that mutate the graph.
@@ -254,7 +256,7 @@ public class BatchMutatorClient {
      *
      * @param queries Queries to be inserted
      */
-    void sendQueriesToLoader(Collection<Query> queries){
+    public void sendQueriesToLoader(Collection<Query> queries){
         lastSentTimestamp = System.currentTimeMillis();
         Json configuration = Json.object()
                 .set(KEYSPACE_PARAM, keyspace.getValue())
