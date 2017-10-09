@@ -34,7 +34,7 @@ public class ClientTest {
 
     @Test
     public void graknEngineRunning() throws Throwable {
-        EngineContext engine = EngineContext.inMemoryServer();
+        EngineContext engine = EngineContext.singleQueueServer();
         engine.before();
 
         boolean running = Client.serverIsRunning(engine.uri());
