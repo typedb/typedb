@@ -52,7 +52,7 @@ public class PostProcessingTaskTest {
 
     public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
     @ClassRule
-    public static EngineContext engine = EngineContext.inMemoryServer();
+    public static EngineContext engine = EngineContext.singleQueueServer();
 
     private String mockResourceIndex;
     private Set<ConceptId> mockResourceSet;

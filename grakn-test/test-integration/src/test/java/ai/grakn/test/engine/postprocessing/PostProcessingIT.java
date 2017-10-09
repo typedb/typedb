@@ -60,7 +60,7 @@ public class PostProcessingIT {
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingIT.class);
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.singleQueueServer();
 
     @Test
     public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws InvalidKBException, ExecutionException, InterruptedException {
