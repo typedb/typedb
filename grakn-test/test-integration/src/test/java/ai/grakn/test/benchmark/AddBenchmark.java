@@ -30,7 +30,7 @@ public class AddBenchmark extends BenchmarkTest {
 
     @Setup
     public void setup() throws Throwable {
-        engine = EngineContext.inMemoryServer();
+        engine = EngineContext.singleQueueServer();
         engine.before();
         session = Grakn.session(engine.uri(), KEYSPACE);
         graph = session.open(GraknTxType.WRITE);
