@@ -152,16 +152,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         //get type unifiers
         Set<Atom> unified = new HashSet<>();
         Unifier typeUnifier = new UnifierImpl();
-        getAtom().getTypeConstraints()
-                .forEach(type -> {
-                    Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type, Atomic::isAlphaEquivalent), unified);
-                    Atom equiv = toUnify.stream().findFirst().orElse(null);
-                    //only apply if unambiguous
-                    if (equiv != null && toUnify.size() == 1){
-                        typeUnifier.merge(type.getUnifier(equiv));
-                        unified.add(equiv);
-                    }
-                });
+        Set<TypeAtom> constraints = getAtom().getTypeConstraints().collect(Collectors.toSet());
+        for(Atom type : constraints){
+            Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type, Atomic::isAlphaEquivalent), unified);
+            Atom equiv = toUnify.stream().findFirst().orElse(null);
+            //only apply if unambiguous
+            if (equiv != null && toUnify.size() == 1){
+                typeUnifier = typeUnifier.merge(type.getUnifier(equiv));
+                unified.add(equiv);
+            }
+        }
         return getAtom().getMultiUnifier(parent.getAtom(), unifierType).merge(typeUnifier);
     }
 
