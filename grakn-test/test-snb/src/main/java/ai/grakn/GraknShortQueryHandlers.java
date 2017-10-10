@@ -41,7 +41,6 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageRepl
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -256,7 +255,7 @@ public class GraknShortQueryHandlers {
                 ).get().execute();
 
                 List<LdbcShortQuery3PersonFriendsResult> result = results.stream()
-                        .sorted(Comparator.comparing(SNB.by($date)).reversed().thenComparing(SNB.by($friendId)))
+                        .sorted(comparing(SNB.by($date)).reversed().thenComparing(SNB.by($friendId)))
                         .map(map -> new LdbcShortQuery3PersonFriendsResult(
                                 SNB.resource(map, $friendId),
                                 SNB.resource(map, $firstName),
@@ -417,7 +416,7 @@ public class GraknShortQueryHandlers {
                 ).get().execute();
 
                 List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
-                        .sorted(Comparator.comparing(SNB.by($date)).reversed().thenComparing(SNB.by($personId)))
+                        .sorted(comparing(SNB.by($date)).reversed().thenComparing(SNB.by($personId)))
                         .map(map -> new LdbcShortQuery7MessageRepliesResult(
                                 SNB.resource(map, $commentId),
                                 SNB.resource(map, $content),
