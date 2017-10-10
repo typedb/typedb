@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -e
+
+PATH="/home/ubuntu/grakn:$PATH"
+
+while true; do
+        graql console -e 'match $x isa pokemon; get;';
+done
