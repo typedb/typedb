@@ -21,8 +21,6 @@ package ai.grakn.test;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.client.Client;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.util.GraknVersion;
@@ -60,7 +58,6 @@ public class DistributionContext extends ExternalResource {
     private static final String CURRENT_DIRECTORY = GraknSystemProperty.PROJECT_RELATIVE_DIR.value();
     private static final String TARGET_DIRECTORY = CURRENT_DIRECTORY + "/grakn-dist/target/";
     private static final String DIST_DIRECTORY = TARGET_DIRECTORY + "grakn-dist-" + GraknVersion.VERSION;
-    private final Class<? extends TaskManager> taskManagerClass;
 
     private RedisServer redisServer;
     private Process engineProcess;
@@ -68,12 +65,11 @@ public class DistributionContext extends ExternalResource {
     private boolean inheritIO = true;
     private int redisPort = 6379;
 
-    private DistributionContext(Class<? extends TaskManager> taskManagerClass){
-        this.taskManagerClass = taskManagerClass;
+    private DistributionContext(){
     }
 
-    public static DistributionContext startSingleQueueEngineProcess(){
-        return new DistributionContext(RedisTaskManager.class);
+    public static DistributionContext create(){
+        return new DistributionContext();
     }
 
     public DistributionContext port(int port) {

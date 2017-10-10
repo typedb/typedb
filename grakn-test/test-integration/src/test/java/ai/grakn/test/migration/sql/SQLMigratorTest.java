@@ -54,7 +54,7 @@ public class SQLMigratorTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.singleQueueServer();
+    public static final EngineContext engine = EngineContext.create();
 
     @Before
     public void setup(){

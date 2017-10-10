@@ -58,7 +58,7 @@ public class EngineContext extends ExternalResource {
     private EngineContext(){
     }
 
-    public static EngineContext singleQueueServer(){
+    public static EngineContext create(){
         return new EngineContext();
     }
 

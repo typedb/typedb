@@ -70,10 +70,10 @@ public class GraknEngineServerIT {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine1 = EngineContext.singleQueueServer();
+    public static final EngineContext engine1 = EngineContext.create();
 
     @ClassRule
-    public static final EngineContext engine2 = EngineContext.singleQueueServer();
+    public static final EngineContext engine2 = EngineContext.create();
 
     @ClassRule
     public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(engine1.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
@@ -92,6 +92,7 @@ public class GraknEngineServerIT {
         assertNotEquals(engine1.getTaskManager(), engine2.getTaskManager());
     }
 
+    //TODO: Repair this test. The test needs to be redefined
     @Ignore("This test needs to be revisited due to test engine having to share redis now")
     @Property(trials=10)
     public void whenSendingTasksToTwoEngines_TheyAllComplete(

@@ -5,6 +5,6 @@ import ai.grakn.test.EngineContext;
 
 public class MutatorTaskStandaloneTaskManagerBenchmark extends MutatorTaskBenchmark {
     protected EngineContext makeEngine() {
-        return EngineContext.singleQueueServer();
+        return EngineContext.create();
     }
 }
