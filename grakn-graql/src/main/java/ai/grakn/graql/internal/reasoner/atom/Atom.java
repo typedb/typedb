@@ -35,7 +35,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -156,7 +156,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     private Stream<Rule> getPotentialRules(){
-        return RuleUtil.getRulesWithType(getSchemaConcept(), tx());
+        return RuleUtils.getRulesWithType(getSchemaConcept(), tx());
     }
 
     /**
