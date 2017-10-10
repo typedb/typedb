@@ -199,6 +199,7 @@ public enum ErrorMessage {
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]."),
     RULE_CREATION_ARITY_ERROR("Arity mismatch when creating a rule."),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
+    ILLEGAL_ATOM_CONVERSION("Attempted illegal conversion of atom [%s]."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     NO_SOURCE("No valid source id provided"),
