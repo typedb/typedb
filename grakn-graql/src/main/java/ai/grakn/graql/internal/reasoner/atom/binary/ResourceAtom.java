@@ -198,7 +198,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if(!(ruleAtom.isResource())) return false;
+        if(!ruleAtom.isResource()) return false;
 
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
         ReasonerQueryImpl childQuery = (ReasonerQueryImpl) childAtom.getParentQuery();

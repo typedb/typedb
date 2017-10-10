@@ -344,9 +344,7 @@ public class RelationshipAtom extends IsaAtom {
     
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if(ruleAtom.isResource()){
-            return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
-        }
+        if(ruleAtom.isResource()) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
         if (!ruleAtom.isRelation()) return false;
         
         RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;

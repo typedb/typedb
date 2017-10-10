@@ -36,9 +36,11 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
@@ -48,6 +50,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -70,6 +73,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
@@ -121,6 +125,17 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(q.getAtoms().stream().map(at -> AtomicFactory.create(at, this)).iterator())
                 .build();
+    }
+
+    Set<IsaAtom> inferEntityTypes() {
+        Set<Var> typedVars = getAtoms(TypeAtom.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
+        return getAtoms(IdPredicate.class)
+                .filter(p -> !typedVars.contains(p.getVarName()))
+                .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
+                .filter(p -> p.getValue().isThing())
+                .map(p -> new IsaAtom(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this))
+                //.map(p -> new IsaAtom(p.getKey(), var(), p.getValue().asEntity().type(), this))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -308,7 +323,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public Map<Var, SchemaConcept> getVarSchemaConceptMap() {
         Map<Var, SchemaConcept> typeMap = new HashMap<>();
-        getAtoms(TypeAtom.class)
+        Stream.concat(
+                getAtoms(TypeAtom.class),
+                inferEntityTypes().stream()
+        )
                 .filter(at -> Objects.nonNull(at.getSchemaConcept()))
                 .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getSchemaConcept()));
         return typeMap;
@@ -369,6 +387,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
             // the mapping function is declared separately to please the Eclipse compiler
             Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
+            if (predicates.stream().map(AtomicBase::getVarName).distinct().count() < predicates.size()){
+                System.out.println();
+            }
             substitution = new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
         }
         return substitution;

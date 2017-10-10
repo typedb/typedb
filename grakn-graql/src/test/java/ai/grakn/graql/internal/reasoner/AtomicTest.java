@@ -487,10 +487,8 @@ public class AtomicTest {
         assertThat(type4.getApplicableRules().collect(toSet()), empty());
     }
 
-    //NB: although the rule will be triggered it will find no results
-    @Ignore
     @Test
-    public void testRuleApplicability_InstancesDoNotMatchRule_NoRoleTypes(){
+    public void testRuleApplicability_InstancesMakeRuleInapplicable_NoRoleTypes(){
         GraknTx graph = ruleApplicabilitySet.tx();
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
@@ -501,10 +499,8 @@ public class AtomicTest {
         assertThat(relation.getApplicableRules().collect(toSet()), empty());
     }
 
-    //NB: although the rule will be triggered it will find no results
-    @Ignore
     @Test
-    public void testRuleApplicability_InstancesDoNotMatchRule_NoRoleTypes_NoRelationType(){
+    public void testRuleApplicability_InstancesMakeRuleInapplicable_NoRoleTypes_NoRelationType(){
         GraknTx graph = ruleApplicabilitySet.tx();
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
@@ -545,14 +541,14 @@ public class AtomicTest {
         Atom resource7 = ReasonerQueries.atomic(conjunction(resourceString7, graph), graph).getAtom();
         Atom resource8 = ReasonerQueries.atomic(conjunction(resourceString8, graph), graph).getAtom();
 
-        assertEquals(resource.getApplicableRules().count(), 1);
+        assertEquals(1, resource.getApplicableRules().count());
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
         assertThat(resource3.getApplicableRules().collect(toSet()), empty());
-        assertEquals(resource4.getApplicableRules().count(), 1);
+        assertEquals(1, resource4.getApplicableRules().count());
         assertThat(resource5.getApplicableRules().collect(toSet()), empty());
-        assertEquals(resource6.getApplicableRules().count(), 1);
-        assertEquals(resource7.getApplicableRules().count(), 1);
-        assertEquals(resource8.getApplicableRules().count(), 1);
+        assertEquals(1, resource6.getApplicableRules().count());
+        assertEquals(1, resource7.getApplicableRules().count());
+        assertEquals(1, resource8.getApplicableRules().count());
     }
 
     @Test
@@ -576,14 +572,14 @@ public class AtomicTest {
         Atom resource7 = ReasonerQueries.atomic(conjunction(resourceString7, graph), graph).getAtom();
         Atom resource8 = ReasonerQueries.atomic(conjunction(resourceString8, graph), graph).getAtom();
 
-        assertEquals(resource.getApplicableRules().count(), 1);
+        assertEquals(1, resource.getApplicableRules().count());
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
         assertThat(resource3.getApplicableRules().collect(toSet()), empty());
-        assertEquals(resource4.getApplicableRules().count(), 1);
+        assertEquals(1, resource4.getApplicableRules().count());
         assertThat(resource5.getApplicableRules().collect(toSet()), empty());
-        assertEquals(resource6.getApplicableRules().count(), 1);
-        assertEquals(resource7.getApplicableRules().count(), 1);
-        assertEquals(resource8.getApplicableRules().count(), 1);
+        assertEquals(1, resource6.getApplicableRules().count());
+        assertEquals(1, resource7.getApplicableRules().count());
+        assertEquals(1, resource8.getApplicableRules().count());
     }
 
     @Test
@@ -599,10 +595,10 @@ public class AtomicTest {
         Atom resource3 = ReasonerQueries.atomic(conjunction(resourceString3, graph), graph).getAtom();
         Atom resource4 = ReasonerQueries.atomic(conjunction(resourceString4, graph), graph).getAtom();
 
-        assertEquals(resource.getApplicableRules().count(), 1);
+        assertEquals(1, resource.getApplicableRules().count());
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
-        assertEquals(resource3.getApplicableRules().count(), 1);
-        assertEquals(resource4.getApplicableRules().count(), 1);
+        assertEquals(1, resource3.getApplicableRules().count());
+        assertEquals(1, resource4.getApplicableRules().count());
     }
 
     @Test
@@ -613,7 +609,7 @@ public class AtomicTest {
 
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
-        assertEquals(resource.getApplicableRules().count(), 1);
+        assertEquals(1, resource.getApplicableRules().count());
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
     }
 
@@ -635,7 +631,7 @@ public class AtomicTest {
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
         Atom resource3 = ReasonerQueries.atomic(conjunction(resourceString3, graph), graph).getAtom();
-        assertEquals(resource.getApplicableRules().count(), 1);
+        assertEquals(1, resource.getApplicableRules().count());
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
         assertThat(resource3.getApplicableRules().collect(toSet()), empty());
     }
