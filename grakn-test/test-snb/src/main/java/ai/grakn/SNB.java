@@ -89,7 +89,6 @@ public class SNB {
     static VarPattern moderated = label("moderated");
     static VarPattern hasModerator = label("has-moderator");
     static VarPattern member = label("member");
-    static VarPattern group = label("group");
     static VarPattern hasMember = label("has-member");
     static VarPattern post = label("post");
     static VarPattern product = label("product");
