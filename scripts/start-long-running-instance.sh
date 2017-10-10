@@ -17,3 +17,5 @@ fi
 
 mv grakn-new grakn
 grakn/grakn server start
+
+grakn/graql console -k pokemon -f grakn/exmaples/pokemon.gql
