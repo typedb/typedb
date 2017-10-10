@@ -50,7 +50,7 @@ import static org.junit.Assume.assumeFalse;
 public class AnalyticsTest {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
+    public static final EngineContext context = EngineContext.create();
     private GraknSession factory;
 
     private static final String thingy = "thingy";

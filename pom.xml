@@ -73,7 +73,7 @@
         <jetty.version>9.3.6.v20151106</jetty.version>
         <mjson.version>1.4.0</mjson.version>
         <logback.version>1.1.7</logback.version>
-        <redis-mock.version>0.1.1</redis-mock.version>
+        <redis-mock.version>0.1.3</redis-mock.version>
         <janino.version>2.7.8</janino.version>
         <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>
@@ -93,7 +93,6 @@
         <redis.version>2.9.0</redis.version>
         <metrics.version>3.2.3</metrics.version>
         <bytebuddy.version>1.6.14</bytebuddy.version>
-        <redis-test.version>0.6</redis-test.version>
         <guava-retrying.version>2.0.0</guava-retrying.version>
         <cassandra-driver-core.version>3.1.2</cassandra-driver-core.version>
         <jackson.version>2.8.5</jackson.version>

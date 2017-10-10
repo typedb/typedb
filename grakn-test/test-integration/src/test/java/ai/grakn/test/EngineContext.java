@@ -23,26 +23,20 @@ import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.MockRedisRule;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
-import javax.annotation.Nullable;
-
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.startRedis;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 
 
@@ -57,27 +51,15 @@ public class EngineContext extends ExternalResource {
 
     private GraknEngineServer server;
 
-    private final boolean startSingleQueueEngine;
-    private final boolean startStandaloneEngine;
     private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
+    private MockRedisRule mockRedis;
     private JedisPool jedisPool;
 
-    private EngineContext(boolean startSingleQueueEngine, boolean startStandaloneEngine){
-        this.startSingleQueueEngine = startSingleQueueEngine;
-        this.startStandaloneEngine = startStandaloneEngine;
+    private EngineContext(){
     }
 
-    public static EngineContext noQueue(){
-        return new EngineContext( false, false);
-    }
-
-    public static EngineContext singleQueueServer(){
-        return new EngineContext( true, false);
-    }
-
-    @Deprecated
-    public static EngineContext inMemoryServer(){
-        return new EngineContext( true, true);
+    public static EngineContext create(){
+        return new EngineContext();
     }
 
     public int port() {
@@ -128,25 +110,13 @@ public class EngineContext extends ExternalResource {
 
         try {
             SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
-            startRedis(redisURI.getPort());
+            mockRedis = MockRedisRule.create(redisURI.getPort());
+            mockRedis.server().start();
             jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
-            @Nullable Class<? extends TaskManager> taskManagerClass = null;
-
-            if(startSingleQueueEngine){
-                taskManagerClass = RedisTaskManager.class;
-            }
-
-            if (startStandaloneEngine){
-                taskManagerClass = StandaloneTaskManager.class;
-            }
-
-            if (taskManagerClass != null) {
-                config.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
-                server = startEngine(config);
-            }
+            server = startEngine(config);
         } catch (Exception e) {
-            stopRedis();
+            if(mockRedis != null) mockRedis.server().stop();
             throw e;
         }
 
@@ -160,11 +130,9 @@ public class EngineContext extends ExternalResource {
         noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
-            if(startSingleQueueEngine | startStandaloneEngine){
-                noThrow(() -> stopEngine(server), "Error closing engine");
-            }
+            noThrow(() -> stopEngine(server), "Error closing engine");
             getJedisPool().close();
-            stopRedis();
+            if(mockRedis != null) mockRedis.server().stop();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }

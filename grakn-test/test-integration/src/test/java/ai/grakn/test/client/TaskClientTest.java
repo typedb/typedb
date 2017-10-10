@@ -14,13 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.client;
+package ai.grakn.test.client;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
+
+import ai.grakn.client.TaskClient;
 import com.codahale.metrics.MetricRegistry;
 import static java.time.Instant.now;
 import static junit.framework.TestCase.assertFalse;

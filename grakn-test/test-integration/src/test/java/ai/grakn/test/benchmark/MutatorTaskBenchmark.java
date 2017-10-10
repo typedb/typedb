@@ -31,7 +31,7 @@ public class MutatorTaskBenchmark extends BenchmarkTest {
     }
 
     protected EngineContext makeEngine() {
-        return EngineContext.singleQueueServer();
+        return EngineContext.create();
     }
 
     @TearDown

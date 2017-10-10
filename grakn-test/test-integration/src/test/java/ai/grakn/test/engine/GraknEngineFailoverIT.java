@@ -72,13 +72,13 @@ public class GraknEngineFailoverIT {
     private static SimpleURI redisURI = new SimpleURI("localhost", 5511);
 
     @ClassRule
-    public static final DistributionContext engine1 = DistributionContext.startSingleQueueEngineProcess().port(7890).redisPort(redisURI.getPort());
+    public static final DistributionContext engine1 = DistributionContext.create().port(7890).redisPort(redisURI.getPort());
 
     @ClassRule
-    public static final DistributionContext engine2 = DistributionContext.startSingleQueueEngineProcess().port(5678).redisPort(5512);
+    public static final DistributionContext engine2 = DistributionContext.create().port(5678).redisPort(5512);
 
     @ClassRule
-    public static final DistributionContext engine3 = DistributionContext.startSingleQueueEngineProcess().port(6789).redisPort(5513);
+    public static final DistributionContext engine3 = DistributionContext.create().port(6789).redisPort(5513);
 
     @Before
     public void getStorage() {

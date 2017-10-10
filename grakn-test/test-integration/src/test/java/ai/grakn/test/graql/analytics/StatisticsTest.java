@@ -52,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 public class StatisticsTest {
 
@@ -74,12 +75,13 @@ public class StatisticsTest {
     private ConceptId entityId4;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
+    public static final EngineContext context = EngineContext.create();
 
     private GraknSession factory;
 
     @Before
     public void setUp() {
+        assumeFalse(GraknTestSetup.usingTinker());
         factory = context.sessionWithNewKeyspace();
     }
 

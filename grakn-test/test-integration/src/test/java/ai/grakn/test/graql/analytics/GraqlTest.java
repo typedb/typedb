@@ -77,7 +77,7 @@ public class GraqlTest {
     private String relationId24;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
+    public static final EngineContext context = EngineContext.create();
 
     @Before
     public void setUp() {

@@ -93,7 +93,7 @@ public class TaskManagerTest {
     }
 
     @ClassRule
-    public static EngineContext engineContext = EngineContext.singleQueueServer();
+    public static EngineContext engineContext = EngineContext.create();
 
     @AfterClass
     public static void closeTaskManagers(){

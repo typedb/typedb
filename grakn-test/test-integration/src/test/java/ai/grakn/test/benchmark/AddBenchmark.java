@@ -30,13 +30,13 @@ public class AddBenchmark extends BenchmarkTest {
 
     @Setup
     public void setup() throws Throwable {
-        engine = EngineContext.inMemoryServer();
+        engine = EngineContext.create();
         engine.before();
         session = Grakn.session(engine.uri(), KEYSPACE);
         graph = session.open(GraknTxType.WRITE);
-        entityType = graph.putEntityType("benchmarkEntitytype");
         role1 = graph.putRole("benchmark_role1");
         role2 = graph.putRole("benchmark_role2");
+        entityType = graph.putEntityType("benchmarkEntitytype").plays(role1).plays(role2);
         relationshipType = graph.putRelationshipType("benchmark_relationshipType").relates(role1).relates(role2);
 
     }
