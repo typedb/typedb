@@ -189,7 +189,7 @@ public class ResourceAtom extends Binary{
         SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
         SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
         if (parentType != null && childType != null && areDisjointTypes(parentType, childType)
-                || !childQuery.isTypeRoleCompatible(getVarName(), parentType)) return false;
+                || !childQuery.isTypeRoleCompatible(ruleAtom.getVarName(), parentType)) return false;
 
         //check value predicate compatibility
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;

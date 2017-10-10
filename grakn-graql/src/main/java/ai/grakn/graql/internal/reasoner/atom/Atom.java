@@ -152,15 +152,6 @@ public abstract class Atom extends AtomicBase {
 
     protected abstract boolean isRuleApplicable(InferenceRule child);
 
-    /*
-    protected boolean isRuleBodyCompatible(InferenceRule child){
-        ReasonerQueryImpl body = child.getBody();
-        List<TypeAtom> types = this.getTypeConstraints().collect(Collectors.toList());
-
-        MultiUnifier multiUnifier = child.getMultiUnifier(this);
-    }
-    */
-
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
