@@ -51,6 +51,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -354,8 +355,28 @@ public class AtomicTest {
         assertEquals(3, resource3.getApplicableRules().count());
     }
 
-    //TODO will fix in next PR
-    @Ignore
+    @Test
+    public void testRuleApplicability_DerivedTypes(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        String typeString = "{$x isa reifying-relation;}";
+        String typeString2 = "{$x isa typed-relation;}";
+        String typeString3 = "{$x isa description;}";
+        String typeString4 = "{$x isa attribute;}";
+        String typeString5 = "{$x isa relationship;}";
+        Atom type = ReasonerQueries.atomic(conjunction(typeString, graph), graph).getAtom();
+        Atom type2 = ReasonerQueries.atomic(conjunction(typeString2, graph), graph).getAtom();
+        Atom type3 = ReasonerQueries.atomic(conjunction(typeString3, graph), graph).getAtom();
+        Atom type4 = ReasonerQueries.atomic(conjunction(typeString4, graph), graph).getAtom();
+        Atom type5 = ReasonerQueries.atomic(conjunction(typeString5, graph), graph).getAtom();
+
+        List<InferenceRule> rules = RuleUtils.getRules(graph).map(r -> new InferenceRule(r, graph)).collect(Collectors.toList());
+        assertEquals(2, type.getApplicableRules().count());
+        assertEquals(1, type2.getApplicableRules().count());
+        assertEquals(3, type3.getApplicableRules().count());
+        assertEquals(rules.stream().filter(r -> r.getHead().getAtom().isResource()).count(), type4.getApplicableRules().count());
+        assertEquals(rules.stream().filter(r -> r.getHead().getAtom().isRelation()).count(), type5.getApplicableRules().count());
+    }
+
     @Test //should assign (role: $x, role: $y) which is compatible with 3 rules
     public void testRuleApplicability_MatchAllAtom(){
         GraknTx graph = ruleApplicabilitySet.tx();

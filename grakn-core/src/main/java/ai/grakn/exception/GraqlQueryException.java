@@ -282,6 +282,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.ROLE_PATTERN_ABSENT.getMessage(relation));
     }
 
+    public static GraqlQueryException illegalAtomConversion(Atomic atom){
+        return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom));
+    }
+
     public static GraqlQueryException ruleCreationArityMismatch() {
         return new GraqlQueryException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
     }

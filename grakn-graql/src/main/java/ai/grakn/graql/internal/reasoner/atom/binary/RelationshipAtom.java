@@ -46,7 +46,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverterImpl;
@@ -120,6 +119,9 @@ public class RelationshipAtom extends IsaAtom {
         this.roleLabels = a.roleLabels;
         this.roleVarMap = a.roleVarMap;
     }
+
+    @Override
+    public RelationshipAtom toRelationshipAtom(){ return this;}
 
     @Override
     public String toString(){
@@ -341,9 +343,11 @@ public class RelationshipAtom extends IsaAtom {
     }
     
     @Override
-    public boolean isRuleApplicable(InferenceRule child) {
-        Atom ruleAtom = child.getRuleConclusionAtom();
-        if (!(ruleAtom.isRelation())) return false;
+    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
+        if(ruleAtom.isResource()){
+            return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
+        }
+        if (!ruleAtom.isRelation()) return false;
         
         RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;
         RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles(new QueryAnswer());
@@ -633,7 +637,7 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Multimap<Role, Var> computeRoleVarMap() {
         Multimap<Role, Var> roleMap = ArrayListMultimap.create();
-        if (getParentQuery() == null || getSchemaConcept() == null){ return roleMap;}
+        if (getParentQuery() == null || getSchemaConcept() == null) return roleMap;
 
         GraknTx graph = getParentQuery().tx();
         getRelationPlayers().forEach(c -> {
@@ -663,9 +667,9 @@ public class RelationshipAtom extends IsaAtom {
 
     private Multimap<Role, RelationPlayer> getRoleRelationPlayerMap(){
         Multimap<Role, RelationPlayer> roleRelationPlayerMap = ArrayListMultimap.create();
-        Multimap<Role, Var> roleVarTypeMap = getRoleVarMap();
+        Multimap<Role, Var> roleVarMap = getRoleVarMap();
         List<RelationPlayer> relationPlayers = getRelationPlayers();
-        roleVarTypeMap.asMap().entrySet()
+        roleVarMap.asMap().entrySet()
                 .forEach(e -> {
                     Role role = e.getKey();
                     Label roleLabel = role.getLabel();

@@ -17,7 +17,11 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
@@ -35,8 +39,8 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -87,6 +91,24 @@ public class ResourceAtom extends Binary{
                         .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
                         .iterator()
         ).build();
+    }
+
+    @Override
+    public RelationshipAtom toRelationshipAtom(){
+        SchemaConcept type = getSchemaConcept();
+        if (type == null) throw GraqlQueryException.illegalAtomConversion(this);
+        GraknTx tx = getParentQuery().tx();
+        Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.getLabel());
+        return new RelationshipAtom(
+                Graql.var()
+                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.getLabel()).getValue(), getVarName())
+                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.getLabel()).getValue(), getPredicateVariable())
+                        .isa(typeLabel.getValue())
+                .admin(),
+                getPredicateVariable(),
+                new IdPredicate(getPredicateVariable().id(tx.getSchemaConcept(typeLabel).getId()).admin(), getParentQuery()),
+                getParentQuery()
+        );
     }
 
     @Override
@@ -175,8 +197,7 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public boolean isRuleApplicable(InferenceRule child) {
-        Atom ruleAtom = child.getRuleConclusionAtom();
+    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         if(!(ruleAtom.isResource())) return false;
 
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
