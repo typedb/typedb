@@ -191,24 +191,24 @@ public class GraknShortQueryHandlers {
                         "$person has person-id " + operation.personId() + "; " +
                         "$rel ($person, $friend) isa knows; " +
                         "$rel has creation-date  $date; " +
-                        "$friend has person-id $friendId has first-name $fname has last-name $lname; limit 10; get;";
+                        "$friend has person-id $friendId has first-name $fname has last-name $lname; get;";
 
 
                 List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
 
 
-                Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
-                        .thenComparing(map -> resource(map, "friendId"));
+                    Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
+                            .thenComparing(map -> resource(map, "friendId"));
 
-                List<LdbcShortQuery3PersonFriendsResult> result = results.stream()
-                        .sorted(ugly)
-                        .map(map -> new LdbcShortQuery3PersonFriendsResult(resource(map, "friendId"),
-                                resource(map, "fname"),
-                                resource(map, "lname"),
-                                map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()))
-                        .collect(Collectors.toList());
+                    List<LdbcShortQuery3PersonFriendsResult> result = results.stream()
+                            .sorted(ugly)
+                            .map(map -> new LdbcShortQuery3PersonFriendsResult(resource(map, "friendId"),
+                                    resource(map, "fname"),
+                                    resource(map, "lname"),
+                                    map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()))
+                            .collect(Collectors.toList());
 
-                resultReporter.report(0, result, operation);
+                    resultReporter.report(0, result, operation);
 
 
             }
@@ -345,7 +345,7 @@ public class GraknShortQueryHandlers {
             }
         }
 
-    }
+        }
 
 
     /**
