@@ -48,7 +48,7 @@ public class CSVMigratorMainTest {
     private final String templateCorruptFile = getFile("csv", "pets/template-corrupt.gql").getAbsolutePath();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.create();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Rule
     public final SystemOutRule sysOut = new SystemOutRule().enableLog();

@@ -70,10 +70,10 @@ public class GraknEngineServerIT {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine1 = EngineContext.create();
+    public static final EngineContext engine1 = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
-    public static final EngineContext engine2 = EngineContext.create();
+    public static final EngineContext engine2 = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
     public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(engine1.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());

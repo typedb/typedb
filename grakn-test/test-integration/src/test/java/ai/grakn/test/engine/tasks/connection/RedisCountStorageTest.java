@@ -47,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 public class RedisCountStorageTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.create();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
     public static final MockRedisRule mockRedisRule = MockRedisRule.create();

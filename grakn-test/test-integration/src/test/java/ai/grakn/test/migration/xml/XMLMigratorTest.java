@@ -33,7 +33,7 @@ public class XMLMigratorTest {
     private static GraknSession session;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.create();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @BeforeClass
     public static void loadSchema(){

@@ -26,12 +26,15 @@ import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.MockRedisRule;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+
+import java.io.IOException;
 
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
@@ -52,14 +55,33 @@ public class EngineContext extends ExternalResource {
     private GraknEngineServer server;
 
     private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
+    private final boolean inMemoryRedis;
     private MockRedisRule mockRedis;
     private JedisPool jedisPool;
 
-    private EngineContext(){
+
+    private EngineContext(boolean inMemoryRedis){
+        this.inMemoryRedis = inMemoryRedis;
     }
 
-    public static EngineContext create(){
-        return new EngineContext();
+    /**
+     * Creates a {@link EngineContext} for testing which uses a real embedded redis.
+     * This should only be used for benchmark testing where performance and memory usage matters.
+     *
+     * @return a new {@link EngineContext} for testing
+     */
+    public static EngineContext createWithEmbeddedRedis(){
+        return new EngineContext(false);
+    }
+
+    /**
+     * Creates a {@link EngineContext} for testing which uses an in-memory redis mock.
+     * This is the default test environment which should be used because starting an embedded redis is a costly process.
+     *
+     * @return a new {@link EngineContext} for testing
+     */
+    public static EngineContext createWithInMemoryRedis(){
+        return new EngineContext(true);
     }
 
     public int port() {
@@ -110,8 +132,7 @@ public class EngineContext extends ExternalResource {
 
         try {
             SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
-            mockRedis = MockRedisRule.create(redisURI.getPort());
-            mockRedis.server().start();
+            redisStart(redisURI);
             jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
             server = startEngine(config);
@@ -120,6 +141,15 @@ public class EngineContext extends ExternalResource {
             throw e;
         }
 
+    }
+
+    private void redisStart(SimpleURI redisURI) throws IOException {
+        if(inMemoryRedis) {
+            mockRedis = MockRedisRule.create(redisURI.getPort());
+            mockRedis.server().start();
+        } else {
+            EmbeddedRedis.start(redisURI.getPort());
+        }
     }
 
     @Override
@@ -132,9 +162,17 @@ public class EngineContext extends ExternalResource {
         try {
             noThrow(() -> stopEngine(server), "Error closing engine");
             getJedisPool().close();
-            if(mockRedis != null) mockRedis.server().stop();
+            redisStop();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
+        }
+    }
+
+    private void redisStop(){
+        if(inMemoryRedis){
+            if(mockRedis != null) mockRedis.server().stop();
+        } else {
+            EmbeddedRedis.stop();
         }
     }
 

@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 public class UpdatingThingCountTaskTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.create();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
