@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.analytics;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -33,7 +34,6 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -48,11 +48,12 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestSetup.usingTinker;
+import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 public class StatisticsTest {
 
@@ -74,15 +75,14 @@ public class StatisticsTest {
     private ConceptId entityId3;
     private ConceptId entityId4;
 
-    @ClassRule
-    public static final EngineContext context = EngineContext.createWithInMemoryRedis();
+    public GraknSession factory;
 
-    private GraknSession factory;
+    @ClassRule
+    public static final EngineContext context = usingTinker() ? null : EngineContext.createWithInMemoryRedis();
 
     @Before
     public void setUp() {
-        assumeFalse(GraknTestSetup.usingTinker());
-        factory = context.sessionWithNewKeyspace();
+        factory = usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
     }
 
     @Test
@@ -415,7 +415,7 @@ public class StatisticsTest {
 
         List<Long> list = new ArrayList<>();
         long workerNumber = 3L;
-        if (GraknTestSetup.usingTinker()) workerNumber = 1;
+        if (usingTinker()) workerNumber = 1;
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
@@ -490,7 +490,7 @@ public class StatisticsTest {
 
         List<Long> list = new ArrayList<>();
         long workerNumber = 3L;
-        if (GraknTestSetup.usingTinker()) workerNumber = 1;
+        if (usingTinker()) workerNumber = 1;
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
