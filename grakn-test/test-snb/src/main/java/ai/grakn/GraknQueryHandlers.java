@@ -54,32 +54,32 @@ import static ai.grakn.SNB.$lastName;
 import static ai.grakn.SNB.$message;
 import static ai.grakn.SNB.$messageId;
 import static ai.grakn.SNB.$person;
-import static ai.grakn.SNB.birthday;
-import static ai.grakn.SNB.browserUsed;
+import static ai.grakn.SNB.BIRTHDAY;
+import static ai.grakn.SNB.BROWSER_USED;
 import static ai.grakn.SNB.by;
-import static ai.grakn.SNB.classYear;
-import static ai.grakn.SNB.content;
-import static ai.grakn.SNB.creationDate;
-import static ai.grakn.SNB.email;
-import static ai.grakn.SNB.firstName;
-import static ai.grakn.SNB.gender;
-import static ai.grakn.SNB.hasCreator;
-import static ai.grakn.SNB.imageFile;
-import static ai.grakn.SNB.isLocatedIn;
-import static ai.grakn.SNB.knows;
-import static ai.grakn.SNB.lastName;
-import static ai.grakn.SNB.locationIp;
-import static ai.grakn.SNB.messageId;
-import static ai.grakn.SNB.name;
-import static ai.grakn.SNB.personId;
-import static ai.grakn.SNB.reply;
-import static ai.grakn.SNB.replyOf;
+import static ai.grakn.SNB.CLASS_YEAR;
+import static ai.grakn.SNB.CONTENT;
+import static ai.grakn.SNB.CREATION_DATE;
+import static ai.grakn.SNB.EMAIL;
+import static ai.grakn.SNB.FIRST_NAME;
+import static ai.grakn.SNB.GENDER;
+import static ai.grakn.SNB.HAS_CREATOR;
+import static ai.grakn.SNB.IMAGE_FILE;
+import static ai.grakn.SNB.IS_LOCATED_IN;
+import static ai.grakn.SNB.KNOWS;
+import static ai.grakn.SNB.LAST_NAME;
+import static ai.grakn.SNB.LOCATION_IP;
+import static ai.grakn.SNB.MESSAGE_ID;
+import static ai.grakn.SNB.NAME;
+import static ai.grakn.SNB.PERSON_ID;
+import static ai.grakn.SNB.REPLY;
+import static ai.grakn.SNB.REPLY_OF;
 import static ai.grakn.SNB.resource;
-import static ai.grakn.SNB.speaks;
-import static ai.grakn.SNB.studyAt;
+import static ai.grakn.SNB.SPEAKS;
+import static ai.grakn.SNB.STUDY_AT;
 import static ai.grakn.SNB.toEpoch;
-import static ai.grakn.SNB.workAt;
-import static ai.grakn.SNB.workFrom;
+import static ai.grakn.SNB.WORK_AT;
+import static ai.grakn.SNB.WORK_FROM;
 import static ai.grakn.graql.Graql.compute;
 import static ai.grakn.graql.Graql.lte;
 import static ai.grakn.graql.Graql.match;
@@ -108,9 +108,9 @@ public class GraknQueryHandlers {
                 //     the first does the ordering
                 //     the second fetches the resources
                 Match graknLdbcQuery2 = match(
-                        var().rel($person.has(personId, ldbcQuery2.personId())).rel($friend).isa(knows),
-                        var().rel($friend).rel($message).isa(hasCreator),
-                        $message.has(creationDate, $date).has(messageId, $messageId),
+                        var().rel($person.has(PERSON_ID, ldbcQuery2.personId())).rel($friend).isa(KNOWS),
+                        var().rel($friend).rel($message).isa(HAS_CREATOR),
+                        $message.has(CREATION_DATE, $date).has(MESSAGE_ID, $messageId),
                         $date.val(lte(maxDate)));
 
                 List<Answer> rawResult = graknLdbcQuery2.orderBy($date, Order.desc)
@@ -123,11 +123,11 @@ public class GraknQueryHandlers {
                         .map(map -> {
                             // fetch the resources attached to entities in the queries
                             Match queryExtendedInfo = match(
-                                    $friend.has(firstName, $firstName).has(lastName, $lastName).has(personId, $friendId),
-                                    var().rel($friend).rel($message).isa(hasCreator),
-                                    $message.has(creationDate, $date)
-                                            .has(messageId, SNB.<Long>resource(map, $messageId)),
-                                    or($message.has(content, $content), $message.has(imageFile, $content)));
+                                    $friend.has(FIRST_NAME, $firstName).has(LAST_NAME, $lastName).has(PERSON_ID, $friendId),
+                                    var().rel($friend).rel($message).isa(HAS_CREATOR),
+                                    $message.has(CREATION_DATE, $date)
+                                            .has(MESSAGE_ID, SNB.<Long>resource(map, $messageId)),
+                                    or($message.has(CONTENT, $content), $message.has(IMAGE_FILE, $content)));
                             Answer extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
 
                             // prepare the answer from the original query and the query for extended information
@@ -159,10 +159,10 @@ public class GraknQueryHandlers {
                 Var $responder = var("responder");
                 Var $responderId = var("responderId");
                 Match orderQuery = match(
-                        $person.has(personId, ldbcQuery8.personId()),
-                        var().rel($person).rel($message).isa(hasCreator),
-                        var().rel($message).rel(reply, $reply).isa(replyOf),
-                        $reply.has(creationDate, $date).has(messageId, $messageId)
+                        $person.has(PERSON_ID, ldbcQuery8.personId()),
+                        var().rel($person).rel($message).isa(HAS_CREATOR),
+                        var().rel($message).rel(REPLY, $reply).isa(REPLY_OF),
+                        $reply.has(CREATION_DATE, $date).has(MESSAGE_ID, $messageId)
                 );
                 List<Answer> rawResult = orderQuery.withTx(graknTx)
                         .orderBy($date, Order.desc).limit(ldbcQuery8.limit()).get().execute();
@@ -175,10 +175,10 @@ public class GraknQueryHandlers {
                         .map(map -> {
                             // fetch the resources attached to entities in the queries
                             Match queryExtendedInfo = match(
-                                    $reply.has(messageId, SNB.<Long>resource(map, $messageId)),
-                                    or($reply.has(content, $content), $reply.has(imageFile, $content)),
-                                    var().rel($reply).rel($responder).isa(hasCreator),
-                                    $responder.has(personId, $responderId).has(firstName, $firstName).has(lastName, $lastName)
+                                    $reply.has(MESSAGE_ID, SNB.<Long>resource(map, $messageId)),
+                                    or($reply.has(CONTENT, $content), $reply.has(IMAGE_FILE, $content)),
+                                    var().rel($reply).rel($responder).isa(HAS_CREATOR),
+                                    $responder.has(PERSON_ID, $responderId).has(FIRST_NAME, $firstName).has(LAST_NAME, $lastName)
                             );
                             Answer extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
 
@@ -209,7 +209,7 @@ public class GraknQueryHandlers {
                 Var $anyoneElse = var("anyoneElse");
 
                 // for speed fetch the Grakn id first
-                ConceptId graknPersonId = match($person.has(personId, ldbcQuery1.personId())).withTx(graknTx).
+                ConceptId graknPersonId = match($person.has(PERSON_ID, ldbcQuery1.personId())).withTx(graknTx).
                         get().execute().iterator().next().get($person).getId();
 
                 // sort by lastname and then id
@@ -219,32 +219,32 @@ public class GraknQueryHandlers {
                 // The longer queries only need be executed if there are not enough shorter queries
                 // The last ordering by id must be done after each query has been executed
                 Match match = match($person.id(graknPersonId),
-                        var().rel($person).rel($friend).isa(knows),
-                        $friend.has(firstName, ldbcQuery1.firstName()).
-                                has(lastName, $lastName).
-                                has(personId, $friendId),
+                        var().rel($person).rel($friend).isa(KNOWS),
+                        $friend.has(FIRST_NAME, ldbcQuery1.firstName()).
+                                has(LAST_NAME, $lastName).
+                                has(PERSON_ID, $friendId),
                         $person.neq($friend));
                 List<Answer> distance1Result = match.withTx(graknTx).get().execute();
                 List<LdbcQuery1Result> distance1LdbcResult = populateResults(distance1Result.stream().sorted(byLastNameAndId), ldbcQuery1, graknTx, 1);
                 if (distance1Result.size() < ldbcQuery1.limit()) {
                     match = match($person.id(graknPersonId),
-                            var().rel($person).rel($anyone).isa(knows),
-                            var().rel($anyone).rel($friend).isa(knows),
-                            $friend.has(firstName, ldbcQuery1.firstName()).
-                                    has(lastName, $lastName).
-                                    has(personId, $friendId),
+                            var().rel($person).rel($anyone).isa(KNOWS),
+                            var().rel($anyone).rel($friend).isa(KNOWS),
+                            $friend.has(FIRST_NAME, ldbcQuery1.firstName()).
+                                    has(LAST_NAME, $lastName).
+                                    has(PERSON_ID, $friendId),
                             $person.neq($friend)
                     );
                     List<Answer> distance2Result = match.withTx(graknTx).get().execute();
                     distance1LdbcResult.addAll(populateResults(distance2Result.stream().sorted(byLastNameAndId), ldbcQuery1, graknTx, 2));
                     if (distance1Result.size() + distance2Result.size() < ldbcQuery1.limit()) {
                         match = match($person.id(graknPersonId),
-                                var().rel($person).rel($anyone).isa(knows),
-                                var().rel($anyone).rel($anyoneElse).isa(knows),
-                                var().rel($anyoneElse).rel($friend).isa(knows),
-                                $friend.has(firstName, ldbcQuery1.firstName()).
-                                        has(lastName, $lastName).
-                                        has(personId, $friendId),
+                                var().rel($person).rel($anyone).isa(KNOWS),
+                                var().rel($anyone).rel($anyoneElse).isa(KNOWS),
+                                var().rel($anyoneElse).rel($friend).isa(KNOWS),
+                                $friend.has(FIRST_NAME, ldbcQuery1.firstName()).
+                                        has(LAST_NAME, $lastName).
+                                        has(PERSON_ID, $friendId),
                                 $person.neq($friend),
                                 $friend.neq($anyone)
                         );
@@ -271,36 +271,36 @@ public class GraknQueryHandlers {
                 Var $location = var("aLocation");
                 Match locationQuery = match(
                         $friend.id(map.get($friend).getId()),
-                        var().rel($friend).rel($location).isa(isLocatedIn));
+                        var().rel($friend).rel($location).isa(IS_LOCATED_IN));
                 Answer locationResult = locationQuery.withTx(graknTx).get().execute().iterator().next();
 
                 Var $year = var("aYear");
                 Var $oganisation = var("aOrganisation");
                 Match universityQuery = match(
                         $friend.id(map.get($friend).getId()),
-                        var().rel($friend).rel($oganisation).isa(studyAt).has(classYear, $year),
-                        var().rel($oganisation).rel($location).isa(isLocatedIn)
+                        var().rel($friend).rel($oganisation).isa(STUDY_AT).has(CLASS_YEAR, $year),
+                        var().rel($oganisation).rel($location).isa(IS_LOCATED_IN)
                 );
                 List<Answer> universityResults = universityQuery.withTx(graknTx).get().execute();
                 List<List<Object>> universityProcessedResults = universityResults.stream().map(answer -> {
                     List<Object> result = new ArrayList<>();
-                    result.add(getSingleResource(answer.get($oganisation).asEntity(), name, graknTx));
+                    result.add(getSingleResource(answer.get($oganisation).asEntity(), NAME, graknTx));
                     result.add(resource(answer, $year));
-                    result.add(getSingleResource(answer.get($location).asEntity(), name, graknTx));
+                    result.add(getSingleResource(answer.get($location).asEntity(), NAME, graknTx));
                     return result;
                 }).collect(Collectors.toList());
 
                 Match workQuery = match(
                         $friend.id(map.get($friend).getId()),
-                        var().rel($friend).rel($oganisation).isa(workAt).has(workFrom, $year),
-                        var().rel($oganisation).rel($location).isa(isLocatedIn)
+                        var().rel($friend).rel($oganisation).isa(WORK_AT).has(WORK_FROM, $year),
+                        var().rel($oganisation).rel($location).isa(IS_LOCATED_IN)
                 );
                 List<Answer> workResults = workQuery.withTx(graknTx).get().execute();
                 List<List<Object>> workProcessedResults = workResults.stream().map(answer -> {
                     List<Object> result = new ArrayList<>();
-                    result.add(getSingleResource(answer.get($oganisation).asEntity(), name, graknTx));
+                    result.add(getSingleResource(answer.get($oganisation).asEntity(), NAME, graknTx));
                     result.add(resource(answer, $year));
-                    result.add(getSingleResource(answer.get($location).asEntity(), name, graknTx));
+                    result.add(getSingleResource(answer.get($location).asEntity(), NAME, graknTx));
                     return result;
                 }).collect(Collectors.toList());
 
@@ -309,14 +309,14 @@ public class GraknQueryHandlers {
                         resource(map, $friendId),
                         resource(map, $lastName),
                         distance,
-                        toEpoch(getSingleResource(map.get($friend).asEntity(), birthday, graknTx)),
-                        toEpoch(getSingleResource(map.get($friend).asEntity(), creationDate, graknTx)),
-                        getSingleResource(map.get($friend).asEntity(), gender, graknTx),
-                        getSingleResource(map.get($friend).asEntity(), browserUsed, graknTx),
-                        getSingleResource(map.get($friend).asEntity(), locationIp, graknTx),
-                        getListResources(map.get($friend).asEntity(), email, graknTx),
-                        getListResources(map.get($friend).asEntity(), speaks, graknTx),
-                        getSingleResource(locationResult.get($location).asEntity(), name, graknTx),
+                        toEpoch(getSingleResource(map.get($friend).asEntity(), BIRTHDAY, graknTx)),
+                        toEpoch(getSingleResource(map.get($friend).asEntity(), CREATION_DATE, graknTx)),
+                        getSingleResource(map.get($friend).asEntity(), GENDER, graknTx),
+                        getSingleResource(map.get($friend).asEntity(), BROWSER_USED, graknTx),
+                        getSingleResource(map.get($friend).asEntity(), LOCATION_IP, graknTx),
+                        getListResources(map.get($friend).asEntity(), EMAIL, graknTx),
+                        getListResources(map.get($friend).asEntity(), SPEAKS, graknTx),
+                        getSingleResource(locationResult.get($location).asEntity(), NAME, graknTx),
                         universityProcessedResults,
                         workProcessedResults);
             }).collect(Collectors.toList());
@@ -341,9 +341,9 @@ public class GraknQueryHandlers {
         public void executeOperation(LdbcQuery13 ldbcQuery13, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graknTx = session.open(GraknTxType.READ)) {
-                Match match = match($person.has(personId, ldbcQuery13.person1Id()));
+                Match match = match($person.has(PERSON_ID, ldbcQuery13.person1Id()));
                 Concept person1 = match.withTx(graknTx).get().execute().iterator().next().get($person);
-                match = match($person.has(personId, ldbcQuery13.person2Id()));
+                match = match($person.has(PERSON_ID, ldbcQuery13.person2Id()));
                 Concept person2 = match.withTx(graknTx).get().execute().iterator().next().get($person);
 
                 PathQuery pathQuery = compute().path().from(person1.getId()).to(person2.getId())

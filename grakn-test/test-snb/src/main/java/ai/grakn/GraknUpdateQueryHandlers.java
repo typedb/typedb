@@ -43,71 +43,71 @@ import static ai.grakn.SNB.$mod;
 import static ai.grakn.SNB.$original;
 import static ai.grakn.SNB.$person;
 import static ai.grakn.SNB.$post;
-import static ai.grakn.SNB.admirer;
-import static ai.grakn.SNB.birthday;
-import static ai.grakn.SNB.browserUsed;
-import static ai.grakn.SNB.classYear;
-import static ai.grakn.SNB.comment;
-import static ai.grakn.SNB.company;
-import static ai.grakn.SNB.contained;
-import static ai.grakn.SNB.container;
-import static ai.grakn.SNB.containerOf;
-import static ai.grakn.SNB.content;
-import static ai.grakn.SNB.creationDate;
-import static ai.grakn.SNB.creator;
-import static ai.grakn.SNB.email;
-import static ai.grakn.SNB.employee;
-import static ai.grakn.SNB.employer;
-import static ai.grakn.SNB.firstName;
-import static ai.grakn.SNB.forumId;
-import static ai.grakn.SNB.friend;
+import static ai.grakn.SNB.ADMIRER;
+import static ai.grakn.SNB.BIRTHDAY;
+import static ai.grakn.SNB.BROWSER_USED;
+import static ai.grakn.SNB.CLASS_YEAR;
+import static ai.grakn.SNB.COMMENT;
+import static ai.grakn.SNB.COMPANY;
+import static ai.grakn.SNB.CONTAINED;
+import static ai.grakn.SNB.CONTAINER;
+import static ai.grakn.SNB.CONTAINER_OF;
+import static ai.grakn.SNB.CONTENT;
+import static ai.grakn.SNB.CREATION_DATE;
+import static ai.grakn.SNB.CREATOR;
+import static ai.grakn.SNB.EMAIL;
+import static ai.grakn.SNB.EMPLOYEE;
+import static ai.grakn.SNB.EMPLOYER;
+import static ai.grakn.SNB.FIRST_NAME;
+import static ai.grakn.SNB.FORUM_ID;
+import static ai.grakn.SNB.FRIEND;
 import static ai.grakn.SNB.fromDate;
-import static ai.grakn.SNB.gender;
-import static ai.grakn.SNB.hasCreator;
-import static ai.grakn.SNB.hasInterest;
-import static ai.grakn.SNB.hasMember;
-import static ai.grakn.SNB.hasModerator;
-import static ai.grakn.SNB.hasTag;
-import static ai.grakn.SNB.imageFile;
-import static ai.grakn.SNB.interest;
-import static ai.grakn.SNB.interested;
-import static ai.grakn.SNB.isLocatedIn;
-import static ai.grakn.SNB.joinDate;
-import static ai.grakn.SNB.knows;
-import static ai.grakn.SNB.language;
-import static ai.grakn.SNB.lastName;
-import static ai.grakn.SNB.length;
-import static ai.grakn.SNB.like;
-import static ai.grakn.SNB.likes;
-import static ai.grakn.SNB.located;
-import static ai.grakn.SNB.locatedIn;
-import static ai.grakn.SNB.locationIp;
-import static ai.grakn.SNB.member;
-import static ai.grakn.SNB.messageId;
-import static ai.grakn.SNB.moderated;
-import static ai.grakn.SNB.moderator;
-import static ai.grakn.SNB.organisationId;
-import static ai.grakn.SNB.original;
-import static ai.grakn.SNB.person;
-import static ai.grakn.SNB.personId;
-import static ai.grakn.SNB.placeId;
-import static ai.grakn.SNB.post;
-import static ai.grakn.SNB.product;
-import static ai.grakn.SNB.region;
-import static ai.grakn.SNB.reply;
-import static ai.grakn.SNB.replyOf;
-import static ai.grakn.SNB.school;
-import static ai.grakn.SNB.speaks;
-import static ai.grakn.SNB.student;
-import static ai.grakn.SNB.studyAt;
-import static ai.grakn.SNB.tag;
-import static ai.grakn.SNB.tagId;
-import static ai.grakn.SNB.tagged;
-import static ai.grakn.SNB.title;
-import static ai.grakn.SNB.topic;
-import static ai.grakn.SNB.university;
-import static ai.grakn.SNB.workAt;
-import static ai.grakn.SNB.workFrom;
+import static ai.grakn.SNB.GENDER;
+import static ai.grakn.SNB.HAS_CREATOR;
+import static ai.grakn.SNB.HAS_INTEREST;
+import static ai.grakn.SNB.HAS_MEMBER;
+import static ai.grakn.SNB.HAS_MODERATOR;
+import static ai.grakn.SNB.HAS_TAG;
+import static ai.grakn.SNB.IMAGE_FILE;
+import static ai.grakn.SNB.INTEREST;
+import static ai.grakn.SNB.INTERESTED;
+import static ai.grakn.SNB.IS_LOCATED_IN;
+import static ai.grakn.SNB.JOIN_DATE;
+import static ai.grakn.SNB.KNOWS;
+import static ai.grakn.SNB.LANGUAGE;
+import static ai.grakn.SNB.LAST_NAME;
+import static ai.grakn.SNB.LENGTH;
+import static ai.grakn.SNB.LIKE;
+import static ai.grakn.SNB.LIKES;
+import static ai.grakn.SNB.LOCATED;
+import static ai.grakn.SNB.LOCATED_IN;
+import static ai.grakn.SNB.LOCATION_IP;
+import static ai.grakn.SNB.MEMBER;
+import static ai.grakn.SNB.MESSAGE_ID;
+import static ai.grakn.SNB.MODERATED;
+import static ai.grakn.SNB.MODERATOR;
+import static ai.grakn.SNB.ORGANISATION_ID;
+import static ai.grakn.SNB.ORIGINAL;
+import static ai.grakn.SNB.PERSON;
+import static ai.grakn.SNB.PERSON_ID;
+import static ai.grakn.SNB.PLACE_ID;
+import static ai.grakn.SNB.POST;
+import static ai.grakn.SNB.PRODUCT;
+import static ai.grakn.SNB.REGION;
+import static ai.grakn.SNB.REPLY;
+import static ai.grakn.SNB.REPLY_OF;
+import static ai.grakn.SNB.SCHOOL;
+import static ai.grakn.SNB.SPEAKS;
+import static ai.grakn.SNB.STUDENT;
+import static ai.grakn.SNB.STUDY_AT;
+import static ai.grakn.SNB.TAG;
+import static ai.grakn.SNB.TAG_ID;
+import static ai.grakn.SNB.TAGGED;
+import static ai.grakn.SNB.TITLE;
+import static ai.grakn.SNB.TOPIC;
+import static ai.grakn.SNB.UNIVERSITY;
+import static ai.grakn.SNB.WORK_AT;
+import static ai.grakn.SNB.WORK_FROM;
 import static ai.grakn.graql.Graql.var;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal.Symbols.group;
 
@@ -132,45 +132,45 @@ public class GraknUpdateQueryHandlers {
                 ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
                 ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
 
-                match.add($city.has(placeId, operation.cityId()));
+                match.add($city.has(PLACE_ID, operation.cityId()));
 
                 for (Long theTag : operation.tagIds()) {
                     Var $tag = var(theTag.toString());
-                    match.add($tag.isa(tag).has(tagId, theTag));
-                    insert.add(var().rel(interested, $person).rel(interest, $tag).isa(hasInterest));
+                    match.add($tag.isa(TAG).has(TAG_ID, theTag));
+                    insert.add(var().rel(INTERESTED, $person).rel(INTEREST, $tag).isa(HAS_INTEREST));
                 }
 
                 for (LdbcUpdate1AddPerson.Organization org : operation.studyAt()) {
                     Var $org = var(Long.toString(org.organizationId()));
-                    match.add($org.isa(university).has(organisationId, org.organizationId()));
-                    insert.add(var().rel(student, $person).rel(school, $org).isa(studyAt).has(classYear, org.year()));
+                    match.add($org.isa(UNIVERSITY).has(ORGANISATION_ID, org.organizationId()));
+                    insert.add(var().rel(STUDENT, $person).rel(SCHOOL, $org).isa(STUDY_AT).has(CLASS_YEAR, org.year()));
                 }
 
                 for (LdbcUpdate1AddPerson.Organization org : operation.workAt()) {
                     Var $org = var(Long.toString(org.organizationId()));
-                    match.add($org.isa(company).has(organisationId, org.organizationId()));
-                    insert.add(var().rel(employee, $person).rel(employer, $org).isa(workAt).has(workFrom, org.year()));
+                    match.add($org.isa(COMPANY).has(ORGANISATION_ID, org.organizationId()));
+                    insert.add(var().rel(EMPLOYEE, $person).rel(EMPLOYER, $org).isa(WORK_AT).has(WORK_FROM, org.year()));
                 }
 
-                insert.add($person.isa(person)
-                        .has(personId, operation.personId())
-                        .has(firstName, operation.personFirstName())
-                        .has(lastName, operation.personLastName())
-                        .has(birthday, fromDate(operation.birthday()))
-                        .has(creationDate, fromDate(operation.creationDate()))
-                        .has(locationIp, operation.locationIp())
-                        .has(browserUsed, operation.browserUsed())
-                        .has(gender, operation.gender()));
+                insert.add($person.isa(PERSON)
+                        .has(PERSON_ID, operation.personId())
+                        .has(FIRST_NAME, operation.personFirstName())
+                        .has(LAST_NAME, operation.personLastName())
+                        .has(BIRTHDAY, fromDate(operation.birthday()))
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
+                        .has(LOCATION_IP, operation.locationIp())
+                        .has(BROWSER_USED, operation.browserUsed())
+                        .has(GENDER, operation.gender()));
 
                 for (String language : operation.languages()) {
-                    insert.add($person.has(speaks, language));
+                    insert.add($person.has(SPEAKS, language));
                 }
 
                 for (String theEmail : operation.emails()) {
-                    insert.add($person.has(email, theEmail));
+                    insert.add($person.has(EMAIL, theEmail));
                 }
 
-                insert.add(var().rel(located, $person).rel(region, $city).isa(locatedIn));
+                insert.add(var().rel(LOCATED, $person).rel(REGION, $city).isa(LOCATED_IN));
 
                 graph.graql().match(match.build()).insert(insert.build()).execute();
                 graph.commit();
@@ -194,11 +194,11 @@ public class GraknUpdateQueryHandlers {
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 graph.graql().match(
-                        $person.has(personId, operation.personId()),
-                        $message.has(messageId, operation.postId())
+                        $person.has(PERSON_ID, operation.personId()),
+                        $message.has(MESSAGE_ID, operation.postId())
                 ).insert(var()
-                        .rel(admirer, $person).rel(like, $message).isa(likes)
-                        .has(creationDate, fromDate(operation.creationDate()))
+                        .rel(ADMIRER, $person).rel(LIKE, $message).isa(LIKES)
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
                 ).execute();
 
                 graph.commit();
@@ -222,11 +222,11 @@ public class GraknUpdateQueryHandlers {
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 graph.graql().match(
-                        $person.has(personId, operation.personId()),
-                        $message.has(messageId, operation.commentId())
+                        $person.has(PERSON_ID, operation.personId()),
+                        $message.has(MESSAGE_ID, operation.commentId())
                 ).insert(var()
-                        .rel(admirer, $person).rel(like, $message).isa(likes)
-                        .has(creationDate, fromDate(operation.creationDate()))
+                        .rel(ADMIRER, $person).rel(LIKE, $message).isa(LIKES)
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
                 ).execute();
 
                 graph.commit();
@@ -253,21 +253,21 @@ public class GraknUpdateQueryHandlers {
                 ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
                 ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
 
-                match.add($mod.has(personId, operation.moderatorPersonId()));
+                match.add($mod.has(PERSON_ID, operation.moderatorPersonId()));
 
                 for (long tag : operation.tagIds()) {
                     Var $tag = var(Long.toString(tag));
-                    match.add($tag.has(tagId, tag));
-                    insert.add(var().rel(tagged, $forum).rel(topic, $tag).isa(hasTag));
+                    match.add($tag.has(TAG_ID, tag));
+                    insert.add(var().rel(TAGGED, $forum).rel(TOPIC, $tag).isa(HAS_TAG));
                 }
 
                 insert.add($forum
-                        .has(forumId, operation.forumId())
-                        .has(title, operation.forumTitle())
-                        .has(creationDate, fromDate(operation.creationDate()))
+                        .has(FORUM_ID, operation.forumId())
+                        .has(TITLE, operation.forumTitle())
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
                 );
 
-                insert.add(var().rel(moderator, $mod).rel(moderated, $forum).isa(hasModerator));
+                insert.add(var().rel(MODERATOR, $mod).rel(MODERATED, $forum).isa(HAS_MODERATOR));
 
                 graph.graql().match(match.build()).insert(insert.build()).execute();
                 graph.commit();
@@ -291,11 +291,11 @@ public class GraknUpdateQueryHandlers {
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 graph.graql().match(
-                        $forum.has(forumId, operation.forumId()),
-                        $person.has(personId, operation.personId())
+                        $forum.has(FORUM_ID, operation.forumId()),
+                        $person.has(PERSON_ID, operation.personId())
                 ).insert(var()
-                        .rel(member, $person).rel(group, $forum).isa(hasMember)
-                        .has(joinDate, fromDate(operation.joinDate()))
+                        .rel(MEMBER, $person).rel(group, $forum).isa(HAS_MEMBER)
+                        .has(JOIN_DATE, fromDate(operation.joinDate()))
                 ).execute();
 
                 graph.commit();
@@ -322,35 +322,35 @@ public class GraknUpdateQueryHandlers {
                 ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
 
                 match.add(
-                        $author.has(personId, operation.authorPersonId()),
-                        $forum.has(forumId, operation.forumId()),
-                        $country.has(placeId, operation.countryId())
+                        $author.has(PERSON_ID, operation.authorPersonId()),
+                        $forum.has(FORUM_ID, operation.forumId()),
+                        $country.has(PLACE_ID, operation.countryId())
                 );
 
                 for (long tag : operation.tagIds()) {
                     Var $tag = var(Long.toString(tag));
-                    match.add($tag.has(tagId, tag));
-                    insert.add(var().rel(tagged, $post).rel(topic, $tag).isa(hasTag));
+                    match.add($tag.has(TAG_ID, tag));
+                    insert.add(var().rel(TAGGED, $post).rel(TOPIC, $tag).isa(HAS_TAG));
                 }
 
-                insert.add($post.isa(post).has(messageId, operation.postId())
-                        .has(locationIp, operation.locationIp())
-                        .has(browserUsed, operation.browserUsed())
-                        .has(length, operation.length())
-                        .has(creationDate, fromDate(operation.creationDate())));
+                insert.add($post.isa(POST).has(MESSAGE_ID, operation.postId())
+                        .has(LOCATION_IP, operation.locationIp())
+                        .has(BROWSER_USED, operation.browserUsed())
+                        .has(LENGTH, operation.length())
+                        .has(CREATION_DATE, fromDate(operation.creationDate())));
 
                 if (operation.language().length() > 0) {
-                    insert.add($post.has(language, operation.language()));
+                    insert.add($post.has(LANGUAGE, operation.language()));
                 }
                 if (operation.imageFile().length() > 0) {
-                    insert.add($post.has(imageFile, operation.imageFile()));
+                    insert.add($post.has(IMAGE_FILE, operation.imageFile()));
                 } else {
-                    insert.add($post.has(content, operation.content()));
+                    insert.add($post.has(CONTENT, operation.content()));
                 }
                 insert.add(
-                        var().rel(product, $post).rel(creator, $author).isa(hasCreator),
-                        var().rel(located, $post).rel(region, $country).isa(isLocatedIn),
-                        var().rel(contained, $post).rel(container, $forum).isa(containerOf)
+                        var().rel(PRODUCT, $post).rel(CREATOR, $author).isa(HAS_CREATOR),
+                        var().rel(LOCATED, $post).rel(REGION, $country).isa(IS_LOCATED_IN),
+                        var().rel(CONTAINED, $post).rel(CONTAINER, $forum).isa(CONTAINER_OF)
                 );
 
                 graph.graql().match(match.build()).insert(insert.build()).execute();
@@ -377,31 +377,31 @@ public class GraknUpdateQueryHandlers {
                 ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
                 ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
 
-                match.add($author.has(personId, operation.authorPersonId()));
+                match.add($author.has(PERSON_ID, operation.authorPersonId()));
                 if (operation.replyToPostId() != -1) {
-                    match.add($original.has(messageId, operation.replyToPostId()));
+                    match.add($original.has(MESSAGE_ID, operation.replyToPostId()));
                 } else {
-                    match.add($original.has(messageId, operation.replyToCommentId()));
+                    match.add($original.has(MESSAGE_ID, operation.replyToCommentId()));
                 }
-                match.add($country.has(placeId, operation.countryId()));
+                match.add($country.has(PLACE_ID, operation.countryId()));
 
                 for (long tag : operation.tagIds()) {
                     Var $tag = var(Long.toString(tag));
-                    match.add($tag.has(tagId, tag));
-                    insert.add(var().rel(tagged, $comment).rel(topic, $tag).isa(hasTag));
+                    match.add($tag.has(TAG_ID, tag));
+                    insert.add(var().rel(TAGGED, $comment).rel(TOPIC, $tag).isa(HAS_TAG));
                 }
 
                 insert.add(
-                        $comment.isa(comment).has(messageId, operation.commentId())
-                                .has(content, operation.content())
-                                .has(locationIp, operation.locationIp())
-                                .has(browserUsed, operation.browserUsed())
-                                .has(creationDate, fromDate(operation.creationDate()))
-                                .has(length, operation.length()),
+                        $comment.isa(COMMENT).has(MESSAGE_ID, operation.commentId())
+                                .has(CONTENT, operation.content())
+                                .has(LOCATION_IP, operation.locationIp())
+                                .has(BROWSER_USED, operation.browserUsed())
+                                .has(CREATION_DATE, fromDate(operation.creationDate()))
+                                .has(LENGTH, operation.length()),
 
-                        var().rel(product, $comment).rel(creator, $author).isa(hasCreator),
-                        var().rel(located, $comment).rel(region, $country).isa(isLocatedIn),
-                        var().rel(reply, $comment).rel(original, $original).isa(replyOf)
+                        var().rel(PRODUCT, $comment).rel(CREATOR, $author).isa(HAS_CREATOR),
+                        var().rel(LOCATED, $comment).rel(REGION, $country).isa(IS_LOCATED_IN),
+                        var().rel(REPLY, $comment).rel(ORIGINAL, $original).isa(REPLY_OF)
                 );
 
                 graph.graql().match(match.build()).insert(insert.build()).execute();
@@ -429,11 +429,11 @@ public class GraknUpdateQueryHandlers {
                 Var $person2 = var("person2");
 
                 graph.graql().match(
-                        $person1.has(personId, operation.person1Id()),
-                        $person2.has(personId, operation.person2Id())
+                        $person1.has(PERSON_ID, operation.person1Id()),
+                        $person2.has(PERSON_ID, operation.person2Id())
                 ).insert(var()
-                        .rel(friend, $person1).rel(friend, $person2).isa(knows)
-                        .has(creationDate, fromDate(operation.creationDate()))
+                        .rel(FRIEND, $person1).rel(FRIEND, $person2).isa(KNOWS)
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
                 ).execute();
 
                 graph.commit();
