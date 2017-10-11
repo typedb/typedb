@@ -41,7 +41,7 @@ public class KBWriterMainTest {
     private static Keyspace keyspace;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.create();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Rule
     public final SystemOutRule sysOut = new SystemOutRule().enableLog();

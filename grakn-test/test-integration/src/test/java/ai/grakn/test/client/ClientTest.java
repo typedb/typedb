@@ -34,7 +34,7 @@ public class ClientTest {
 
     @Test
     public void graknEngineRunning() throws Throwable {
-        EngineContext engine = EngineContext.create();
+        EngineContext engine = EngineContext.createWithInMemoryRedis();
         engine.before();
 
         boolean running = Client.serverIsRunning(engine.uri());

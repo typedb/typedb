@@ -54,7 +54,7 @@ public class LockTestIT {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static EngineContext engine = EngineContext.create();
+    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
     public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(engine.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());

@@ -64,7 +64,7 @@ public class PostProcessingIT {
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingIT.class);
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.create();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     //TODO: Fix this test
     @Ignore("Submitted tasks appear to be lost when using redis task manager.")

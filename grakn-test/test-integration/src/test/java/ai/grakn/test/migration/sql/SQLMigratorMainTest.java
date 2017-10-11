@@ -57,7 +57,7 @@ public class SQLMigratorMainTest {
     public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.create();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Before
     public void setup() throws SQLException {
