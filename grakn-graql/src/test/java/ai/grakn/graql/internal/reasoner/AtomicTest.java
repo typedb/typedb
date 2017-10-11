@@ -55,7 +55,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -609,6 +608,7 @@ public class AtomicTest {
 
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
+
         assertEquals(1, resource.getApplicableRules().count());
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
     }
@@ -631,6 +631,7 @@ public class AtomicTest {
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
         Atom resource3 = ReasonerQueries.atomic(conjunction(resourceString3, graph), graph).getAtom();
+
         assertEquals(1, resource.getApplicableRules().count());
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
         assertThat(resource3.getApplicableRules().collect(toSet()), empty());
@@ -1141,7 +1142,7 @@ public class AtomicTest {
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){
-        return graph.graql().match(var("x").has(typeName, val).admin()).get("x").findAny().get();
+        return graph.graql().match(var("x").has(typeName, val).admin()).get("x").findAny().orElse(null);
     }
 
     private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {

@@ -43,14 +43,14 @@ You can optionally pass arguments when starting the Graql shell, as follows:
 For example, to load some data from a file into a knowledge base:
 
 ```bash
-./graql console -f ./examples/mammal-dataset.gql
+./graql console -f ./examples/philosophers.gql
 ```
 
 
 To load data into a different knowledge base, or keyspace, you can specify the name:
 
 ```bash
-./graql console -k <knowledge-base-name> -f ./examples/reptile-dataset.gql
+./graql console -k <knowledge-base-name> -f ./examples/pokemon.gql
 ``` 
 
 The interactive shell commits to the knowledge base only when the user types `commit`.

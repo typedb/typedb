@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
@@ -92,6 +93,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final GraknTx tx;
     private final ImmutableSet<Atomic> atomSet;
     private Answer substitution = null;
+    private Map<Var, Type> varTypeMap = null;
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
         this.tx = tx;
@@ -127,15 +129,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .build();
     }
 
-    Set<IsaAtom> inferEntityTypes() {
-        Set<Var> typedVars = getAtoms(TypeAtom.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
+    private Stream<IsaAtom> inferEntityTypes() {
+        Set<Var> typedVars = getAtoms(IsaAtom.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
         return getAtoms(IdPredicate.class)
                 .filter(p -> !typedVars.contains(p.getVarName()))
                 .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
-                .filter(p -> p.getValue().isThing())
-                .map(p -> new IsaAtom(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this))
-                //.map(p -> new IsaAtom(p.getKey(), var(), p.getValue().asEntity().type(), this))
-                .collect(Collectors.toSet());
+                .filter(p -> Objects.nonNull(p.getValue()))
+                .filter(p -> p.getValue().isEntity())
+                .map(p -> new IsaAtom(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
     }
 
     /**
@@ -321,15 +322,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return map of variable name - type pairs
      */
     @Override
-    public Map<Var, SchemaConcept> getVarSchemaConceptMap() {
-        Map<Var, SchemaConcept> typeMap = new HashMap<>();
-        Stream.concat(
-                getAtoms(TypeAtom.class),
-                inferEntityTypes().stream()
-        )
-                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getSchemaConcept()));
-        return typeMap;
+    public Map<Var, Type> getVarTypeMap() {
+        if (varTypeMap == null) {
+            varTypeMap = new HashMap<>();
+            Stream.concat(
+                    getAtoms(TypeAtom.class),
+                    inferEntityTypes()
+            )
+                    .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))
+                    .filter(p -> Objects.nonNull(p.getValue()))
+                    .filter(p -> p.getValue().isType())
+                    .forEach(p -> varTypeMap.putIfAbsent(p.getKey(), p.getValue().asType()));
+        }
+        return varTypeMap;
     }
 
     /**
@@ -387,9 +392,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
             // the mapping function is declared separately to please the Eclipse compiler
             Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
-            if (predicates.stream().map(AtomicBase::getVarName).distinct().count() < predicates.size()){
-                System.out.println();
-            }
             substitution = new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
         }
         return substitution;

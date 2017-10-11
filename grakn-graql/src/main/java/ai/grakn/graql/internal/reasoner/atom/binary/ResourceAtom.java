@@ -198,7 +198,8 @@ public class ResourceAtom extends Binary{
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if(!ruleAtom.isResource()) return false;
+        //findbugs complains about cast without it
+        if(!(ruleAtom instanceof ResourceAtom)) return false;
 
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
         ReasonerQueryImpl childQuery = (ReasonerQueryImpl) childAtom.getParentQuery();
@@ -271,7 +272,7 @@ public class ResourceAtom extends Binary{
             return errors;
         }
 
-        SchemaConcept ownerType = getParentQuery().getVarSchemaConceptMap().get(getVarName());
+        SchemaConcept ownerType = getParentQuery().getVarTypeMap().get(getVarName());
 
         if (ownerType != null
                 && ownerType.isType()
@@ -344,8 +345,7 @@ public class ResourceAtom extends Binary{
     public Atom rewriteToUserDefined(Atom parentAtom){
         Var attributeVariable = getPredicateVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
-        VarPattern newVar = getVarName()
-                .has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
+        VarPattern newVar = getVarName().has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
         return new ResourceAtom(newVar.admin(), attributeVariable, relationVariable, getTypePredicate(), getMultiPredicate(), getParentQuery());
     }
 

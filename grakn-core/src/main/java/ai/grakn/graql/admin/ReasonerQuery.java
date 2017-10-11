@@ -19,7 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 
@@ -111,5 +111,5 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<Var, SchemaConcept> getVarSchemaConceptMap();
+    Map<Var, Type> getVarTypeMap();
 }
