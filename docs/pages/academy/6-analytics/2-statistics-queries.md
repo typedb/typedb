@@ -2,7 +2,7 @@
 title: Statistics queries
 keywords: getting started
 last_updated: October 2017
-summary: TODO
+summary: In this lesson you will learn the details of analytics statistics query
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/statistics-queries.html
