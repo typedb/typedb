@@ -25,7 +25,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.After;
@@ -110,7 +110,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
             final Entity work = getEntity("eHamlet");
             assertNotNull(work);
             assertRelationBetweenInstancesExists(graph, work, author, Label.of("op-wrote"));
-            assertTrue(RuleUtil.getRules(graph).findFirst().isPresent());
+            assertTrue(RuleUtils.getRules(graph).findFirst().isPresent());
         }
     }
 }

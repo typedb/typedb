@@ -282,8 +282,12 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.INVALID_UNIFIER_TYPE.getMessage(value));
     }
 
-    public static GraqlQueryException nonExistentUnifier(){
+    public static GraqlQueryException nonExistentUnifier() {
         return new GraqlQueryException(ErrorMessage.NON_EXISTENT_UNIFIER.getMessage());
+    }
+
+    public static GraqlQueryException illegalAtomConversion(Atomic atom){
+        return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom));
     }
 
     public static GraqlQueryException ruleCreationArityMismatch() {

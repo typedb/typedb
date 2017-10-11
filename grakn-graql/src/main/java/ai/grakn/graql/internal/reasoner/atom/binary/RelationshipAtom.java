@@ -48,7 +48,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverterImpl;
@@ -80,6 +79,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSupers;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.playableRoles;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -123,6 +123,9 @@ public class RelationshipAtom extends IsaAtom {
         this.roleLabels = a.roleLabels;
         this.roleVarMap = a.roleVarMap;
     }
+
+    @Override
+    public RelationshipAtom toRelationshipAtom(){ return this;}
 
     @Override
     public String toString(){
@@ -370,9 +373,10 @@ public class RelationshipAtom extends IsaAtom {
     }
     
     @Override
-    public boolean isRuleApplicable(InferenceRule child) {
-        Atom ruleAtom = child.getRuleConclusionAtom();
-        if (!(ruleAtom.isRelation())) return false;
+    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
+        if(ruleAtom.isResource()) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
+        //findbugs complains about cast without it
+        if (!(ruleAtom instanceof RelationshipAtom)) return false;
         
         RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;
         RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles(new QueryAnswer());
@@ -662,7 +666,7 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Multimap<Role, Var> computeRoleVarMap() {
         Multimap<Role, Var> roleMap = ArrayListMultimap.create();
-        if (getParentQuery() == null || getSchemaConcept() == null){ return roleMap;}
+        if (getParentQuery() == null || getSchemaConcept() == null) return roleMap;
 
         GraknTx graph = getParentQuery().tx();
         getRelationPlayers().forEach(c -> {
@@ -692,9 +696,9 @@ public class RelationshipAtom extends IsaAtom {
 
     private Multimap<Role, RelationPlayer> getRoleRelationPlayerMap(){
         Multimap<Role, RelationPlayer> roleRelationPlayerMap = ArrayListMultimap.create();
-        Multimap<Role, Var> roleVarTypeMap = getRoleVarMap();
+        Multimap<Role, Var> roleVarMap = getRoleVarMap();
         List<RelationPlayer> relationPlayers = getRelationPlayers();
-        roleVarTypeMap.asMap().entrySet()
+        roleVarMap.asMap().entrySet()
                 .forEach(e -> {
                     Role role = e.getKey();
                     Label roleLabel = role.getLabel();
@@ -725,10 +729,10 @@ public class RelationshipAtom extends IsaAtom {
         Map<Var, SchemaConcept> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarSchemaConceptMap();
         Map<Var, SchemaConcept> childVarSchemaConceptMap = this.getParentQuery().getVarSchemaConceptMap();
 
-        Set<Role> childRoles = childRoleRPMap.keySet();
-
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
+        ReasonerQueryImpl childQuery = (ReasonerQueryImpl) getParentQuery();
+        Set<Role> childRoles = childRoleRPMap.keySet();
         parentAtom.getRelationPlayers().stream()
                 .filter(prp -> prp.getRole().isPresent())
                 .forEach(prp -> {
@@ -739,32 +743,25 @@ public class RelationshipAtom extends IsaAtom {
                     Label parentRoleLabel = parentRolePattern.getTypeLabel().orElse(null);
 
                     if (parentRoleLabel != null) {
-                        Role parentRole = tx().getSchemaConcept(parentRoleLabel);
-                        boolean isParentRoleMeta = Schema.MetaSchema.isMetaLabel(parentRoleLabel);
                         Var parentRolePlayer = prp.getRolePlayer().var();
                         SchemaConcept parentType = parentVarSchemaConceptMap.get(parentRolePlayer);
 
-                        Set<Role> compatibleChildRoles = isParentRoleMeta? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles);
-
-                        //if parent role player has a type, constrain the allowed roles
-                        if (parentType != null && parentType.isType()){
-                            boolean isParentTypeMeta = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
-                            Set<Role> parentTypeRoles = isParentTypeMeta? childRoles : parentType.asType().plays().collect(toSet());
-
-                            compatibleChildRoles = compatibleChildRoles.stream()
-                                    .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || parentTypeRoles.contains(rc))
-                                    .collect(toSet());
-                        }
+                        Set<Role> compatibleChildRoles = playableRoles(
+                                tx().getSchemaConcept(parentRoleLabel),
+                                parentType,
+                                childRoles);
 
                         List<RelationPlayer> compatibleRelationPlayers = new ArrayList<>();
                         compatibleChildRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
                                 .forEach(role -> {
                                     childRoleRPMap.get(role).stream()
-                                            //check for type compatibility
+                                            //check for inter-type compatibility
                                             .filter(crp -> {
-                                                SchemaConcept childType = childVarSchemaConceptMap.get(crp.getRolePlayer().var());
-                                                return matchType.schemaConceptComparison(parentType, childType);
+                                                Var childVar = crp.getRolePlayer().var();
+                                                SchemaConcept childType = childVarSchemaConceptMap.get(childVar);
+                                                return childQuery.isTypeRoleCompatible(childVar, parentType)
+                                                        && matchType.schemaConceptComparison(parentType, childType);
                                             })
                                             //check for substitution compatibility
                                             .filter(crp -> {

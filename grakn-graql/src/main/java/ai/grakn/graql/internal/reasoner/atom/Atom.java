@@ -18,7 +18,9 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
@@ -30,12 +32,13 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -70,30 +73,17 @@ public abstract class Atom extends AtomicBase {
         this.applicableRules = a.applicableRules;
     }
 
-    public abstract boolean isRuleApplicable(InferenceRule child);
-
-    /**
-     * @return set of applicable rules - does detailed (slow) check for applicability
-     */
-    public Stream<InferenceRule> getApplicableRules() {
-        if (applicableRules == null) {
-            applicableRules = new HashSet<>();
-            return RuleUtil.getRulesWithType(getSchemaConcept(), tx())
-                    .map(rule -> new InferenceRule(rule, tx()))
-                    .filter(this::isRuleApplicable)
-                    .map(r -> r.rewriteToUserDefined(this))
-                    .peek(applicableRules::add);
-        }
-        return applicableRules.stream();
+    public RelationshipAtom toRelationshipAtom(){
+        throw GraqlQueryException.illegalAtomConversion(this);
     }
+
+    @Override
+    public boolean isAtom(){ return true;}
 
     @Override
     public boolean isRuleResolvable() {
         return getApplicableRules().findFirst().isPresent();
     }
-
-    @Override
-    public boolean isAtom(){ return true;}
 
     @Override
     public boolean isRecursive(){
@@ -165,6 +155,34 @@ public abstract class Atom extends AtomicBase {
             basePriority = computePriority();
         }
         return basePriority;
+    }
+
+    private boolean isRuleApplicable(InferenceRule child){
+        return isRuleApplicableViaAtom(child.getRuleConclusionAtom());
+    }
+
+    protected abstract boolean isRuleApplicableViaAtom(Atom headAtom);
+
+    /**
+     * @return set of potentially applicable rules - does shallow (fast) check for applicability
+     */
+    private Stream<Rule> getPotentialRules(){
+        return RuleUtils.getRulesWithType(getSchemaConcept(), tx());
+    }
+
+    /**
+     * @return set of applicable rules - does detailed (slow) check for applicability
+     */
+    public Stream<InferenceRule> getApplicableRules() {
+        if (applicableRules == null) {
+            applicableRules = new HashSet<>();
+            return getPotentialRules()
+                    .map(rule -> new InferenceRule(rule, tx()))
+                    .filter(this::isRuleApplicable)
+                    .map(r -> r.rewriteToUserDefined(this))
+                    .peek(applicableRules::add);
+        }
+        return applicableRules.stream();
     }
 
     /**

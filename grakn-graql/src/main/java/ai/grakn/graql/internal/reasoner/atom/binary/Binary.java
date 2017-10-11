@@ -34,7 +34,6 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -121,11 +120,6 @@ public abstract class Binary extends Atom {
     @Override
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
-    }
-
-    @Override
-    public boolean isRuleApplicable(InferenceRule child) {
-        return false;
     }
 
     boolean hasEquivalentPredicatesWith(Binary atom) {
