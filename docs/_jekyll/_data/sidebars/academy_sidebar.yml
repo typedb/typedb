@@ -80,7 +80,7 @@ entries:
   - title: 5. Logic inference
     output: web
     folderitems:
-      - title: 5.1 Loading files
+      - title: 5.1 Logic inference
         output: web
         url: /academy/reasoner-intro.html
       - title: 5.2 Inference rules
@@ -92,6 +92,23 @@ entries:
       - title: Module Review
         output: web
         url: /academy/reasoner-review.html
+
+  - title: 6. Large scale analytics
+    output: web
+    folderitems:
+      - title: 6.1 Distributed analytics
+        output: web
+        url: /academy/analytics-intro.html
+      - title: 6.2 Statistics queries
+        output: web
+        url: /academy/statistics-queries.html
+      - title: 6.3 Graph analytics
+        output: web
+        url: /academy/graph-analytics.html
+      - title: Module Review
+        output: web
+        url: /academy/analytics-review.html
+
 
 - items:
   - title: Documentation Portal
