@@ -128,8 +128,7 @@ public class GraqlController {
         try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
             QueryParser parser = graph.graql().materialise(materialise).infer(infer).parser();
             defineAllVars.ifPresent(parser::defineAllVars);
-            Stream<Query<?>> query = parser.parseList(queryString);
-            Object resp = respond(response, acceptType, executeQuery(graph.getKeyspace(), limitEmbedded, query, acceptType, multi));
+            Object resp = respond(response, acceptType, executeQuery(graph.getKeyspace(), limitEmbedded, queryString, acceptType, multi, parser));
             graph.commit();
             return resp;
         }
@@ -216,13 +215,14 @@ public class GraqlController {
 
     /**
      * Execute a query and return a response in the format specified by the request.
-     *  @param keyspace the keyspace the query is running on
-     * @param query read query to be executed
+     * @param keyspace the keyspace the query is running on
+     * @param queryString read query to be executed
      * @param acceptType response format that the client will accept
      * @param multi execute multiple statements
+     * @param parser
      */
-    private Object executeQuery(Keyspace keyspace, int limitEmbedded, Stream<Query<?>> query,
-            String acceptType, boolean multi){
+    private Object executeQuery(Keyspace keyspace, int limitEmbedded, String queryString,
+            String acceptType, boolean multi, QueryParser parser){
         Printer<?> printer;
 
         switch (acceptType) {
@@ -240,17 +240,14 @@ public class GraqlController {
         }
 
         if (multi) {
+            Stream<Query<?>> query = parser.parseList(queryString);
             List<?> collectedResults = query.map(Query::execute).collect(Collectors.toList());
             String formatted = printer.graqlString(collectedResults);
             return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
         } else {
-            Optional<Query<?>> first = query.findFirst();
-            if (!first.isPresent()) {
-                throw GraqlSyntaxException.parsingError("Query not present");
-            } else {
-                String formatted = printer.graqlString(first.get().execute());
-                return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
-            }
+            Query<?> query = parser.parseQuery(queryString);
+            String formatted = printer.graqlString(query.execute());
+            return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
         }
     }
 
