@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -51,6 +50,18 @@ public class Client {
 
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
+    private enum EngineStatus {
+        Running(0),
+        NotRunning(1),
+        Error(2);
+
+        private final int exitCode;
+
+        EngineStatus(int exitCode) {
+            this.exitCode = exitCode;
+        }
+    }
+
     final ResponseHandler<Json> asJsonHandler = response -> {
         try(BufferedReader reader = new BufferedReader(
                 new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))){
@@ -65,42 +76,45 @@ public class Client {
         }
     };
 
-    public static void main(String[] args) throws IOException {
-        int result;
+    public static void main(String[] args) {
+        EngineStatus engineStatus;
         try {
-            result = checkServerRunning();
+            engineStatus = checkServerRunning();
         } catch (Exception e) {
-            LOG.error("An exception has occurred", e);
-            throw e;
+            LOG.error("An unexpected error occurred", e);
+            engineStatus = EngineStatus.Error;
         }
-        System.exit(result);
+        System.exit(engineStatus.exitCode);
     }
 
-    private static int checkServerRunning() throws IOException {
+    private static EngineStatus checkServerRunning() throws IOException {
         String confPath = GraknSystemProperty.CONFIGURATION_FILE.value();
 
         if (confPath == null) {
             String msg = "System property `" + GraknSystemProperty.CONFIGURATION_FILE.key() + "` has not been set";
             LOG.error(msg);
-            return 2;
+            return EngineStatus.Error;
         }
 
         Properties properties = new Properties();
         try (FileInputStream stream = new FileInputStream(confPath)) {
             properties.load(stream);
-        } catch (FileNotFoundException e) {
-            LOG.error("Could not find config file at `" + confPath + "`");
-            return 2;
         }
 
-        String serverUri = properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-        if (serverIsRunning(serverUri)) {
-            LOG.info("Server " + serverUri + " is running");
-            return 0;
+        String host = properties.getProperty("server.host");
+        int port = Integer.parseInt(properties.getProperty("server.port"));
+        if (serverIsRunning(host, port)) {
+            LOG.info("Server " + host + ":" + port + " is running");
+            return EngineStatus.Running;
         } else {
-            LOG.info("Server " + serverUri + " is not running");
-            return 1;
+            LOG.info("Server " + host + ":" + port + " is not running");
+            return EngineStatus.NotRunning;
         }
+    }
+
+    public static boolean serverIsRunning(String hostAndPort) {
+        String[] split = hostAndPort.split(":", 2);
+        return serverIsRunning(split[0], Integer.parseInt(split[1]));
     }
 
     /**
@@ -108,24 +122,30 @@ public class Client {
      *
      * @return true if Grakn Engine running, false otherwise
      */
-    public static boolean serverIsRunning(String uri) {
+    public static boolean serverIsRunning(String host, int port) {
         try {
-            URL url = new URL("http://" + uri + REST.WebPath.System.CONFIGURATION);
+            URL url = new URL("http", host, port, REST.WebPath.System.CONFIGURATION);
 
             HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
+
             connection.setRequestMethod("GET");
-            connection.connect();
+
+            try {
+                connection.connect();
+            } catch (IOException e) {
+                // If this fails, then the server is not reachable
+                return false;
+            }
 
             InputStream inputStream = connection.getInputStream();
             if (inputStream.available() == 0) {
                 LOG.error("input stream is not available");
                 return false;
             }
+            return true;
         } catch (IOException e) {
-            LOG.error("An exception has occurred", e);
-            return false;
+            throw new RuntimeException(e);
         }
-        return true;
     }
 
     private static URL mapQuadZeroRouteToLocalhost(URL originalUrl) throws MalformedURLException {
@@ -133,9 +153,8 @@ public class Client {
 
         URL mappedUrl;
         if ((originalUrl.getProtocol() + originalUrl.getHost()).equals(QUAD_ZERO_ROUTE)) {
-            mappedUrl = new URL(originalUrl.getProtocol() + "://" +
-                "localhost" + ":" + originalUrl.getPort() +
-                REST.WebPath.System.CONFIGURATION);
+            mappedUrl = new URL(
+                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.System.CONFIGURATION);
         } else {
             mappedUrl = originalUrl;
         }

@@ -56,13 +56,13 @@ public class GraqlDocsTest {
 
     private static final Pattern TAG_GRAQL =
             Pattern.compile(
-                    "(id=\"shell[0-9]+\">\\s*<pre>|```graql\\n)" +
+                    "(id=\"shell[0-9]+\">\\s*<pre>|```graql\\s*\\n)" +
                     "\\s*(.*?)\\s*" +
                     "(</pre>|```)", Pattern.DOTALL);
 
     private static final Pattern TEMPLATE_GRAQL =
             Pattern.compile(
-                    "(id=\"shell[0-9]+\">\\s*<```graql-template\\n)" +
+                    "(id=\"shell[0-9]+\">\\s*<```graql-template\\s*\\n)" +
                             "\\s*(.*?)\\s*" +
                             "(```)", Pattern.DOTALL);
 
