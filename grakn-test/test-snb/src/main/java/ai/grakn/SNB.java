@@ -39,7 +39,7 @@ import static ai.grakn.graql.Graql.var;
 public class SNB {
     static final String PLACE_ID = "place-id";
     static final String TAG_ID = "tag-id";
-    static final String ORGANISATION_ID = "organisationId";
+    static final String ORGANISATION_ID = "organisation-id";
     static final String CLASS_YEAR = "class-year";
     static final String WORK_FROM = "work-from";
     static final String PERSON_ID = "person-id";
@@ -77,7 +77,6 @@ public class SNB {
     static final VarPattern WORK_AT = label("work-at");
     static final VarPattern LOCATED = label("located");
     static final VarPattern REGION = label("region");
-    static final VarPattern LOCATED_IN = label("located-in");
     static final VarPattern IS_LOCATED_IN = label("is-located-in");
     static final VarPattern ADMIRER = label("admirer");
     static final VarPattern LIKE = label("like");
@@ -89,6 +88,7 @@ public class SNB {
     static final VarPattern MODERATED = label("moderated");
     static final VarPattern HAS_MODERATOR = label("has-moderator");
     static final VarPattern MEMBER = label("member");
+    static final VarPattern GROUP = label("group");
     static final VarPattern HAS_MEMBER = label("has-member");
     static final VarPattern POST = label("post");
     static final VarPattern PRODUCT = label("product");

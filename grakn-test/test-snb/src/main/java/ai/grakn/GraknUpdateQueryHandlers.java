@@ -61,8 +61,8 @@ import static ai.grakn.SNB.EMPLOYER;
 import static ai.grakn.SNB.FIRST_NAME;
 import static ai.grakn.SNB.FORUM_ID;
 import static ai.grakn.SNB.FRIEND;
-import static ai.grakn.SNB.fromDate;
 import static ai.grakn.SNB.GENDER;
+import static ai.grakn.SNB.GROUP;
 import static ai.grakn.SNB.HAS_CREATOR;
 import static ai.grakn.SNB.HAS_INTEREST;
 import static ai.grakn.SNB.HAS_MEMBER;
@@ -80,7 +80,6 @@ import static ai.grakn.SNB.LENGTH;
 import static ai.grakn.SNB.LIKE;
 import static ai.grakn.SNB.LIKES;
 import static ai.grakn.SNB.LOCATED;
-import static ai.grakn.SNB.LOCATED_IN;
 import static ai.grakn.SNB.LOCATION_IP;
 import static ai.grakn.SNB.MEMBER;
 import static ai.grakn.SNB.MESSAGE_ID;
@@ -101,15 +100,15 @@ import static ai.grakn.SNB.SPEAKS;
 import static ai.grakn.SNB.STUDENT;
 import static ai.grakn.SNB.STUDY_AT;
 import static ai.grakn.SNB.TAG;
-import static ai.grakn.SNB.TAG_ID;
 import static ai.grakn.SNB.TAGGED;
+import static ai.grakn.SNB.TAG_ID;
 import static ai.grakn.SNB.TITLE;
 import static ai.grakn.SNB.TOPIC;
 import static ai.grakn.SNB.UNIVERSITY;
 import static ai.grakn.SNB.WORK_AT;
 import static ai.grakn.SNB.WORK_FROM;
+import static ai.grakn.SNB.fromDate;
 import static ai.grakn.graql.Graql.var;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal.Symbols.group;
 
 /**
  * Implementations of the LDBC SNB Update Queries
@@ -170,7 +169,7 @@ public class GraknUpdateQueryHandlers {
                     insert.add($person.has(EMAIL, theEmail));
                 }
 
-                insert.add(var().rel(LOCATED, $person).rel(REGION, $city).isa(LOCATED_IN));
+                insert.add(var().rel(LOCATED, $person).rel(REGION, $city).isa(IS_LOCATED_IN));
 
                 graph.graql().match(match.build()).insert(insert.build()).execute();
                 graph.commit();
@@ -294,7 +293,7 @@ public class GraknUpdateQueryHandlers {
                         $forum.has(FORUM_ID, operation.forumId()),
                         $person.has(PERSON_ID, operation.personId())
                 ).insert(var()
-                        .rel(MEMBER, $person).rel(group, $forum).isa(HAS_MEMBER)
+                        .rel(MEMBER, $person).rel(GROUP, $forum).isa(HAS_MEMBER)
                         .has(JOIN_DATE, fromDate(operation.joinDate()))
                 ).execute();
 
