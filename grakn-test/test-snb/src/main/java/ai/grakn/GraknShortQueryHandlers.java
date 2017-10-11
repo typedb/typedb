@@ -189,15 +189,14 @@ public class GraknShortQueryHandlers {
 
                 String query = "match " +
                         "$person has person-id " + operation.personId() + "; " +
-                        "$rel ($person, $friend) isa knows; " +
-                        "$rel has creation-date  $date; " +
+                        "(friend: $person, friend: $friend) isa knows, has creation-date $date; " +
                         "$friend has person-id $friendId has first-name $fname has last-name $lname; get;";
 
 
-                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
+                GetQuery results = graph.graql().parse(query);
 
 
-                    Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
+                    Comparator<Answer> ugly = Comparator.<Answer, LocalDateTime>comparing(map -> resource(map, "date"))
                             .thenComparing(map -> resource(map, "friendId"));
 
                     List<LdbcShortQuery3PersonFriendsResult> result = results.stream()

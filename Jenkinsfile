@@ -95,7 +95,8 @@ def buildGrakn() {
 }
 
 //Only run validation master/stable
-if (env.BRANCH_NAME in ['master', 'stable']) {
+// TODO: don't merge this
+if (env.BRANCH_NAME in ['master', 'stable'] || true) {
     properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
     node {
         String workspace = pwd()
@@ -103,12 +104,12 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
 
         slackGithub "Build started"
 
-        timeout(60) {
-            stage('Run the benchmarks') {
-                sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-            }
-        }
+//         timeout(60) {
+//             stage('Run the benchmarks') {
+//                 sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+//                 archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+//             }
+//         }
 
         for (String moduleName : integrationTests) {
             runIntegrationTest(workspace, moduleName)
