@@ -246,9 +246,25 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public boolean isAllowedToFormRuleHead(){
-        //can form a rule head if specified type and all relation players have a specified/unambiguously inferrable role type
-        return super.isAllowedToFormRuleHead()
-                && !hasMetaRoles();
+        //can form a rule head if specified type, type is not implicit and all relation players have a specified/non-implicit/unambiguously inferrable role type
+        return getSchemaConcept() != null
+                && !getSchemaConcept().asType().isImplicit()
+                && !hasMetaRoles()
+                && !hasImplicitRoles();
+    }
+
+    /**
+     * @return true if any of the relation's roles are meta roles
+     */
+    private boolean hasMetaRoles(){
+        return roleLabels.stream().filter(Schema.MetaSchema::isMetaLabel).findFirst().isPresent();
+    }
+
+    /**
+     * @return true if any of the relation's roles are implicit roles
+     */
+    private boolean hasImplicitRoles(){
+        return getRoleVarMap().keySet().stream().filter(SchemaConcept::isImplicit).findFirst().isPresent();
     }
 
     @Override
@@ -354,17 +370,6 @@ public class RelationshipAtom extends IsaAtom {
         //rule head atom is applicable if it is unifiable
         return headAtom.getRelationPlayers().size() >= atomWithType.getRelationPlayers().size()
                 && !headAtom.getRelationPlayerMappings(atomWithType).isEmpty();
-    }
-
-    /**
-     * @return true if any of the relation's role types are meta role types
-     */
-    private boolean hasMetaRoles(){
-        Set<Role> parentRoles = getRoleVarMap().keySet();
-        for(Role role : parentRoles) {
-            if (Schema.MetaSchema.isMetaLabel(role.getLabel())) return true;
-        }
-        return false;
     }
 
     private Set<Role> getExplicitRoleTypes() {
