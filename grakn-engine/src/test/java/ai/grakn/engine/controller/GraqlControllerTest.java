@@ -3,33 +3,34 @@ package ai.grakn.engine.controller;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import static ai.grakn.graql.Graql.var;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
-import com.codahale.metrics.MetricRegistry;
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.Response;
-import mjson.Json;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import java.util.function.Function;
-
-import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
+import static ai.grakn.util.REST.Request.Graql.MULTI;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import com.codahale.metrics.MetricRegistry;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.Response;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import mjson.Json;
+import org.junit.Assert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 public class GraqlControllerTest {
 
@@ -42,20 +43,22 @@ public class GraqlControllerTest {
     }
 
     private Response sendQuery(String query, String acceptType) {
-        return sendQuery(query, acceptType, true, false, -1);
+        return sendQuery(query, acceptType, true, false, -1, false);
     }
 
     private Response sendQuery(String query,
-                               String acceptType,
-                               boolean reasonser,
-                               boolean materialise,
-                               int limitEmbedded) {
+            String acceptType,
+            boolean reasonser,
+            boolean materialise,
+            int limitEmbedded,
+            boolean multi) {
         return RestAssured.with()
                 .queryParam(KEYSPACE, sampleKB.tx().getKeyspace().getValue())
                 .body(query)
                 .queryParam(INFER, reasonser)
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
+                .queryParam(MULTI, multi)
                 .accept(acceptType)
                 .post(REST.WebPath.KB.ANY_GRAQL);
     }
@@ -65,7 +68,8 @@ public class GraqlControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
+        EngineGraknTxFactory factory = EngineGraknTxFactory
+                .createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
         new GraqlController(factory, spark, new MetricRegistry());
     });
 
@@ -78,7 +82,8 @@ public class GraqlControllerTest {
 
     @Test
     public void whenRunningGetQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; get;", jsonPrinter, APPLICATION_JSON_GRAQL);
+        assertResponseSameAsJavaGraql("match $x isa movie; get;", jsonPrinter,
+                APPLICATION_JSON_GRAQL);
     }
 
     @Test
@@ -106,7 +111,8 @@ public class GraqlControllerTest {
 
     @Test
     public void whenRunningIdempotentInsertQuery_JsonResponseIsTheSameAsJavaGraql() {
-        assertResponseSameAsJavaGraql("insert $x label movie;", jsonPrinter, APPLICATION_JSON_GRAQL);
+        assertResponseSameAsJavaGraql("insert $x label movie;", jsonPrinter,
+                APPLICATION_JSON_GRAQL);
     }
 
     @Test
@@ -117,6 +123,21 @@ public class GraqlControllerTest {
     @Test
     public void whenRunningIdempotentInsertQuery_HalResponseIsTheSameAsJavaGraql() {
         assertResponseSameAsJavaGraql("insert $x label movie;", halPrinter, APPLICATION_HAL);
+    }
+
+    @Test
+    public void whenRunningMultiIdempotentInsertQuery_JsonResponseIsTheSameAsJavaGraql() {
+        String single = "insert $x label movie;";
+        String queryString = single + "\n" + single;
+        Response resp = sendQuery(queryString, APPLICATION_JSON_GRAQL, true, false, -1, true);
+        resp.then().statusCode(200);
+        sampleKB.rollback();
+        Stream<Query<?>> query = sampleKB.tx().graql().parser().parseList(queryString);
+        String graqlResult = jsonPrinter.graqlString(query.map(Query::execute).collect(
+                Collectors.toList()));
+        Json expected = Json.read(graqlResult);
+        assertEquals(expected, Json.read(resp.body().asString()));
+
     }
 
     @Test
@@ -131,39 +152,45 @@ public class GraqlControllerTest {
 
     @Test
     public void wehnRunningAggregateQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", jsonPrinter, APPLICATION_JSON_GRAQL);
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", jsonPrinter,
+                APPLICATION_JSON_GRAQL);
     }
 
     @Test
     public void whenRunningAggregateQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", graqlPrinter, APPLICATION_TEXT);
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", graqlPrinter,
+                APPLICATION_TEXT);
     }
 
     @Test
     public void whenRunningAggregateQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", halPrinter, APPLICATION_HAL);
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", halPrinter,
+                APPLICATION_HAL);
     }
 
     @Test
     public void whenRunningAskQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", jsonPrinter, APPLICATION_JSON_GRAQL);
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", jsonPrinter,
+                APPLICATION_JSON_GRAQL);
     }
 
     @Test
     public void whenRunningAskQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", graqlPrinter, APPLICATION_TEXT);
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", graqlPrinter,
+                APPLICATION_TEXT);
     }
 
     @Test
     public void whenRunningAskQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", halPrinter, APPLICATION_HAL);
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", halPrinter,
+                APPLICATION_HAL);
     }
 
     @Test
     public void whenRunningQueryWithLimitEmbedded_HalResponseIsTheSameAsJava() {
         String queryString = "match $x isa movie; get;";
         int limitEmbedded = 42;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded, false);
         Printer printer = Printers.hal(sampleKB.tx().getKeyspace(), limitEmbedded);
         assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
     }
@@ -171,7 +198,7 @@ public class GraqlControllerTest {
     @Test
     public void whenMatchingSchema_NoInstancesInResponse() {
         String queryString = "match $x sub thing; get;";
-        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, -1);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, -1, false);
         Json jsonResp = Json.read(resp.body().asString());
         jsonResp.asJsonList().stream().map(map -> map.at("x")).forEach(thing -> {
             assertNotEquals("ENTITY", thing.at("_baseType").asString());
@@ -192,15 +219,18 @@ public class GraqlControllerTest {
 
     @Test
     public void whenAcceptHeaderIsInvalid_Return406Code() {
-        sendQuery("match $x isa movie; aggregate ask;", "application/msword", true, false, -1).then().statusCode(406);
+        sendQuery("match $x isa movie; aggregate ask;", "application/msword", true, false, -1,
+                false).then().statusCode(406);
     }
 
-    private void assertResponseSameAsJavaGraql(String queryString, Printer<?> printer, String acceptType) {
+    private void assertResponseSameAsJavaGraql(String queryString, Printer<?> printer,
+            String acceptType) {
         Response resp = sendQuery(queryString, acceptType);
         assertResponseSameAsJavaGraql(resp, queryString, printer, acceptType);
     }
 
-    private void assertResponseSameAsJavaGraql(Response resp, String queryString, Printer<?> printer, String acceptType) {
+    private void assertResponseSameAsJavaGraql(Response resp, String queryString,
+            Printer<?> printer, String acceptType) {
         resp.then().statusCode(200);
 
         sampleKB.rollback();
@@ -208,7 +238,8 @@ public class GraqlControllerTest {
 
         String expectedString = printer.graqlString(query.execute());
 
-        Object expected = acceptType.equals(APPLICATION_TEXT) ? expectedString : Json.read(expectedString);
+        Object expected =
+                acceptType.equals(APPLICATION_TEXT) ? expectedString : Json.read(expectedString);
 
         assertEquals(expected.toString(), resp.body().asString());
     }

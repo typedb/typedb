@@ -24,7 +24,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.MockRedisRule;

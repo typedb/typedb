@@ -27,7 +27,7 @@ import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;

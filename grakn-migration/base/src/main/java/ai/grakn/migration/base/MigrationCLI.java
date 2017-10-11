@@ -108,7 +108,7 @@ public class MigrationCLI {
             migrator.print(template, data);
         } else {
             printInitMessage(options);
-            migrator.load(template, data, options.getBatch(), options.getNumberActiveTasks(), options.getRetry(), options.isDebug());
+            migrator.load(template, data, options.getRetry(), options.isDebug());
             printWholeCompletionMessage(options);
         }
     }

@@ -38,8 +38,6 @@ import static java.lang.Integer.parseInt;
  */
 public class MigrationOptions {
     private static final String retry = Integer.toString(Migrator.DEFAULT_MAX_RETRY);
-    private static final String batch = Integer.toString(Migrator.BATCH_SIZE);
-    private static final String active = Integer.toString(Migrator.ACTIVE_TASKS);
     private int numberOptions;
 
     protected final Options options = new Options();
@@ -119,14 +117,6 @@ public class MigrationOptions {
 
     public int getRetry(){
         return parseInt(command.getOptionValue("r", retry));
-    }
-
-    public int getBatch() {
-        return parseInt(command.getOptionValue("b", batch));
-    }
-
-    public int getNumberActiveTasks() {
-        return parseInt(command.getOptionValue("a", active));
     }
 
     protected void parse(String[] args){

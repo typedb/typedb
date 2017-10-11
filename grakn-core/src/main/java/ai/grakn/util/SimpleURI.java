@@ -16,9 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.util;
+package ai.grakn.util;
 
 import com.google.common.base.Preconditions;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * This Util class just takes care of going from host and port to string and viceversa
@@ -60,6 +62,14 @@ public class SimpleURI {
             return new SimpleURI(uri);
         } else {
             return new SimpleURI(uri, defaultPort);
+        }
+    }
+
+    public URL toURL() {
+        try {
+            return new URL("http", getHost(), String.valueOf(getPort()));
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Unexpected error while generating URL from " + this);
         }
     }
 }
