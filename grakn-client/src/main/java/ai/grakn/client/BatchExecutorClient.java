@@ -46,8 +46,9 @@ import rx.Observable;
  */
 public class BatchExecutorClient implements Closeable {
 
-    public static final int DEFAULT_TIMEOUT_MS = 60000;
     private final Logger LOG = LoggerFactory.getLogger(BatchExecutorClient.class);
+
+    static final int DEFAULT_TIMEOUT_MS = 60000;
 
     private final GraknClient graknClient;
     private final HystrixRequestContext context;

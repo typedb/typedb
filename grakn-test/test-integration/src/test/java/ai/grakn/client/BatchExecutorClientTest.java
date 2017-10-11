@@ -30,6 +30,7 @@ import ai.grakn.graql.Graql;
 import static ai.grakn.graql.Graql.var;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.GraknTestSetup;
 import static ai.grakn.util.ConcurrencyUtil.allObservable;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import com.netflix.hystrix.HystrixCommand;
@@ -150,8 +151,10 @@ public class BatchExecutorClientTest {
             int completed = allObservable(all).toBlocking().first().size();
             assertEquals(n, completed);
         }
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            assertEquals(n, graph.getEntityType("name_tag").instances().count());
+        if(GraknTestSetup.usingJanus()) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
+                assertEquals(n, graph.getEntityType("name_tag").instances().count());
+            }
         }
     }
 

@@ -32,6 +32,8 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.http.client.utils.URIBuilder;
 import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.asynchttpclient.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Grakn http client. Extend this for more http endpoint.
@@ -39,6 +41,7 @@ import org.asynchttpclient.Response;
  * @author Domenico Corapi
  */
 public class GraknClient {
+    private final Logger LOG = LoggerFactory.getLogger(GraknClient.class);
 
     private final DefaultAsyncHttpClient asyncHttpClient;
     private final URI graqlExecuteURL;
@@ -71,6 +74,7 @@ public class GraknClient {
                     .toCompletableFuture()
                     .thenApply((Response queries) -> {
                         int statusCode = queries.getStatusCode();
+                        LOG.debug("Received {}", statusCode);
                         if (statusCode != 200) {
                             throw new GraknClientException("Failed graqlExecute. Error status " + statusCode);
                         }
