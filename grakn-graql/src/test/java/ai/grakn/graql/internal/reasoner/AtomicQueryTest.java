@@ -30,13 +30,11 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.QueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -49,7 +47,9 @@ import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Sets;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -112,7 +112,7 @@ public class AtomicQueryTest {
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        QueryAnswers answers = new QueryAnswers();
+        List<Answer> answers = new ArrayList<>();
 
         answers.add(new QueryAnswer(
                 ImmutableMap.of(
@@ -122,7 +122,7 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
         assertNotExists(qb.parse(explicitQuery));
-        answers.stream().forEach(atomicQuery::materialise);
+        answers.forEach(atomicQuery::materialise);
         assertExists(qb.parse(explicitQuery));
     }
 
