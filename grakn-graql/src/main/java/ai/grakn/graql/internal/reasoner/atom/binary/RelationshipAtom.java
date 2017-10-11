@@ -48,7 +48,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
-import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverterImpl;
+import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -74,7 +74,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSupers;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.supers;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.playableRoles;
 import static java.util.stream.Collectors.toSet;
@@ -433,7 +433,7 @@ public class RelationshipAtom extends IsaAtom {
         Map<Var, SchemaConcept> varTypeMap = getParentQuery().getVarSchemaConceptMap();
 
         //explicit types
-        Set<SchemaConcept> types = getRolePlayers().stream()
+        Set<Type> types = getRolePlayers().stream()
                 .filter(varTypeMap::containsKey)
                 .map(varTypeMap::get)
                 .collect(toSet());
@@ -441,7 +441,7 @@ public class RelationshipAtom extends IsaAtom {
         //types deduced from substitution
         inferEntityTypes(sub).stream().map(Pair::getValue).forEach(types::add);
 
-        Multimap<RelationshipType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new SchemaConceptConverterImpl());
+        Multimap<RelationshipType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new TypeConverter());
 
         Multimap<RelationshipType, Role> compatibleTypes;
         //intersect relation types from roles and types
@@ -456,7 +456,7 @@ public class RelationshipAtom extends IsaAtom {
         return compatibleTypes.asMap().entrySet().stream()
                 .sorted(Comparator.comparing(e -> -e.getValue().size()))
                 .map(Map.Entry::getKey)
-                .filter(t -> Sets.intersection(getSupers(t), compatibleTypes.keySet()).isEmpty())
+                .filter(t -> Sets.intersection(supers(t), compatibleTypes.keySet()).isEmpty())
                 .collect(Collectors.toList());
     }
 

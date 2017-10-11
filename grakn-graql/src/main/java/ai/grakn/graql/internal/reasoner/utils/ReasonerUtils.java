@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.utils;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -197,7 +198,7 @@ public class ReasonerUtils {
      * @param schemaConcept input type
      * @return set of all non-meta super types of the role
      */
-    public static Set<SchemaConcept> getSupers(SchemaConcept schemaConcept){
+    public static Set<SchemaConcept> supers(SchemaConcept schemaConcept){
         Set<SchemaConcept> superTypes = new HashSet<>();
         SchemaConcept superType = schemaConcept.sup();
         while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
@@ -240,7 +241,7 @@ public class ReasonerUtils {
      */
     public static <T extends SchemaConcept> Set<T> getSchemaConcepts(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
-                .filter(rt -> Sets.intersection(getSupers(rt), schemaConcepts).isEmpty())
+                .filter(rt -> Sets.intersection(supers(rt), schemaConcepts).isEmpty())
                 .collect(toSet());
     }
 
