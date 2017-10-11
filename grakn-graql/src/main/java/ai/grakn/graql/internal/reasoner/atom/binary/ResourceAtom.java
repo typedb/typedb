@@ -49,7 +49,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 
 /**
  *
@@ -205,7 +205,7 @@ public class ResourceAtom extends Binary{
 
         SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
         SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
-        if (parentType != null && childType != null && checkDisjoint(parentType, childType)) return false;
+        if (parentType != null && childType != null && areDisjointTypes(parentType, childType)) return false;
 
         //check predicates
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
@@ -357,7 +357,7 @@ public class ResourceAtom extends Binary{
         Var parentRelationVarName = parent.getRelationVariable();
         if (parentRelationVarName.isUserDefinedName()
                 && !childRelationVarName.equals(parentRelationVarName)){
-            unifier.addMapping(childRelationVarName, parentRelationVarName);
+            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
         }
         return unifier;
     }

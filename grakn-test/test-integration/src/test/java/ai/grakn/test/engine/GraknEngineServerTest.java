@@ -22,12 +22,12 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.data.RedisWrapper;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.GraknVersion;
+import ai.grakn.util.MockRedisRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,8 +37,9 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.util.Pool;
 
+import java.io.IOException;
+
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,34 +78,24 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEnginePropertiesIndicatesStandaloneTM_StandaloneTmIsStarted() {
-        // Should start engine with in-memory server
-        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
+    public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() throws IOException {
+        MockRedisRule mock = MockRedisRule.create(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
+        mock.server().start();
 
-        // Start Engine
-        try (GraknEngineServer server = GraknEngineServer.create(conf)) {
-            server.start();
-            assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
-        }
-    }
-
-    @Test
-    public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() {
-        // Should start engine with distributed server, which means we will get a cannot
-        // connect to Zookeeper exception (that has not been started)
-        conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
-        EmbeddedRedis.start(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
         // Start Engine
         try (GraknEngineServer server = GraknEngineServer.create(conf)) {
             server.start();
             assertThat(server.getTaskManager(), instanceOf(RedisTaskManager.class));
         }
+
+        mock.server().stop();
     }
 
     @Test
-    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded(){
+    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
         GraknTestSetup.startCassandraIfNeeded();
-        GraknTestSetup.startRedisIfNeeded(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
+        RedisServer redisServer = MockRedisRule.create(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort()).server();
+        redisServer.start();
 
         try (GraknEngineServer server = GraknEngineServer.create(conf)) {
             server.start();
@@ -116,6 +107,8 @@ public class GraknEngineServerTest {
 
             assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
         }
+
+        redisServer.stop();
     }
 
     @Test

@@ -35,6 +35,8 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -180,7 +182,7 @@ public abstract class Binary extends Atom {
             throw GraqlQueryException.unificationAtomIncompatibility();
         }
 
-        Unifier unifier = new UnifierImpl();
+        Multimap<Var, Var> varMappings = HashMultimap.create();
         Var childPredicateVarName = this.getPredicateVariable();
         Var parentPredicateVarName = parentAtom.getPredicateVariable();
 
@@ -188,14 +190,14 @@ public abstract class Binary extends Atom {
             Var childVarName = this.getVarName();
             Var parentVarName = parentAtom.getVarName();
             if (!childVarName.equals(parentVarName)) {
-                unifier.addMapping(childVarName, parentVarName);
+                varMappings.put(childVarName, parentVarName);
             }
         }
         if (!childPredicateVarName.getValue().isEmpty()
                 && !parentPredicateVarName.getValue().isEmpty()
                 && !childPredicateVarName.equals(parentPredicateVarName)) {
-            unifier.addMapping(childPredicateVarName, parentPredicateVarName);
+            varMappings.put(childPredicateVarName, parentPredicateVarName);
         }
-        return unifier;
+        return new UnifierImpl(varMappings);
     }
 }

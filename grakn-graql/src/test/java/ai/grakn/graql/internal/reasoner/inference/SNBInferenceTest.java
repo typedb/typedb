@@ -21,20 +21,21 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.SNBKB;
+import java.util.List;
+import java.util.stream.Collectors;
+import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
-import static java.util.stream.Collectors.toSet;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -134,13 +135,13 @@ public class SNBInferenceTest {
                 "{$x has name 'Gary';$y has name 'Pink Floyd';}; get;";
 
         long startTime = System.nanoTime();
-        QueryAnswers limitedAnswers = queryAnswers(limitedQuery);
+        List<Answer> limitedAnswers = limitedQuery.execute();
         System.out.println("limited time: " + (System.nanoTime() - startTime)/1e6);
 
         startTime = System.nanoTime();
-        QueryAnswers answers = queryAnswers(query);
+        List<Answer> answers = query.execute();
         System.out.println("full time: " + (System.nanoTime()- startTime)/1e6);
-        assertEquals(answers, queryAnswers(qb.parse(explicitQuery)));
+        assertCollectionsEqual(answers, qb.<GetQuery>parse(explicitQuery).execute());
         assertTrue(answers.containsAll(limitedAnswers));
     }
 
@@ -311,12 +312,11 @@ public class SNBInferenceTest {
         
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; get $x, $z;";
-        Unifier unifier = new UnifierImpl();
-        unifier.addMapping(Graql.var("z"), Graql.var("y"));
+        Unifier unifier = new UnifierImpl(ImmutableMap.of(Graql.var("z"), Graql.var("y")));
 
-        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
-        QueryAnswers answers2 =  queryAnswers(iqb.materialise(false).parse(queryString2)).unify(unifier);
-        assertEquals(answers, answers2);
+        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 =  iqb.materialise(false).<GetQuery>parse(queryString2).execute().stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
+        assertCollectionsEqual(answers, answers2);
     }
 
     /**
@@ -363,13 +363,5 @@ public class SNBInferenceTest {
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-    }
-
-    private QueryAnswers queryAnswers(GetQuery query) {
-        long startTime = System.currentTimeMillis();
-        QueryAnswers answers = new QueryAnswers(query.stream().map(QueryAnswer::new).collect(toSet()));
-        System.out.println("time: " + (System.currentTimeMillis() - startTime));
-        System.out.println(answers.size());
-        return answers;
     }
 }

@@ -48,6 +48,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.Collection;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -86,8 +87,8 @@ public class ReasonerUtils {
         return  vars.stream()
                 .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(LabelProperty.class)?
-                        v.getProperties(LabelProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)) :
-                        v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)))
+                        v.getProperties(LabelProperty.class).map(np -> new IdPredicate(typeVariable, np.label(), parent)) :
+                        v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np.id(), parent)))
                 .findFirst().orElse(null);
     }
 
@@ -108,7 +109,7 @@ public class ReasonerUtils {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
             LabelProperty nameProp = typeVar.getProperty(LabelProperty.class).orElse(null);
-            if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp, parent);
+            if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp.label(), parent);
         }
         return predicate;
     }
@@ -148,7 +149,7 @@ public class ReasonerUtils {
     public static Set<Unifier> getUnifiersFromPermutations(List<Pair<Var, Var>> originalVars, List<List<Pair<Var, Var>>> permutations){
         Set<Unifier> unifierSet = new HashSet<>();
         permutations.forEach(perm -> {
-            Unifier unifier = new UnifierImpl();
+            Multimap<Var, Var> varMappings = HashMultimap.create();
             Iterator<Pair<Var, Var>> pIt = originalVars.iterator();
             Iterator<Pair<Var, Var>> cIt = perm.iterator();
             while(pIt.hasNext() && cIt.hasNext()){
@@ -158,10 +159,10 @@ public class ReasonerUtils {
                 Var childPlayer = chPair.getKey();
                 Var parentRole = pPair.getValue();
                 Var childRole = chPair.getValue();
-                if (!parentPlayer.equals(childPlayer)) unifier.addMapping(parentPlayer, childPlayer);
-                if (parentRole != null && childRole != null && !parentRole.equals(childRole)) unifier.addMapping(parentRole, childRole);
+                if (!parentPlayer.equals(childPlayer)) varMappings.put(parentPlayer, childPlayer);
+                if (parentRole != null && childRole != null && !parentRole.equals(childRole)) varMappings.put(parentRole, childRole);
             }
-            unifierSet.add(unifier);
+            unifierSet.add(new UnifierImpl(varMappings));
         });
         return unifierSet;
     }
@@ -417,8 +418,10 @@ public class ReasonerUtils {
      * @param child type
      * @return true if child is a subtype of parent
      */
-    public static boolean checkCompatible(SchemaConcept parent, SchemaConcept child) {
-        if(Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
+    public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child) {
+        if (parent == null) return true;
+        if (child == null) return false;
+        if (Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
         SchemaConcept superType = child;
         while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())){
             if (superType.equals(parent)) return true;
@@ -427,12 +430,25 @@ public class ReasonerUtils {
         return false;
     }
 
-    /**
+    /** determines disjointness of parent-child types, parent defines the bound on the child
      * @param parent type
      * @param child type
-     * @return true if types do not belong to the same type hierarchy
+     * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
      */
-    public static boolean checkDisjoint(SchemaConcept parent, SchemaConcept child) {
-        return !checkCompatible(parent, child) && !checkCompatible(child, parent);
+    public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child) {
+        return parent != null && child == null || !typesCompatible(parent, child) && !typesCompatible(child, parent);
+    }
+
+    /**
+     * @param a subtraction left operand
+     * @param b subtraction right operand
+     * @param <T> collection type
+     * @return new Collection containing a minus a - b.
+     * The cardinality of each element e in the returned Collection will be the cardinality of e in a minus the cardinality of e in b, or zero, whichever is greater.
+     */
+    public static <T> Collection<T> subtract(Collection<T> a, Collection<T> b){
+        ArrayList<T> list = new ArrayList<>(a);
+        b.forEach(list::remove);
+        return list;
     }
 }

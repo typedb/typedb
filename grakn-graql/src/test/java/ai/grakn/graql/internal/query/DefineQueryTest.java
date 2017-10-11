@@ -22,6 +22,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Graql;
@@ -408,6 +409,18 @@ public class DefineQueryTest {
         ));
 
         qb.define(var().id(id).has("title", "Bob")).execute();
+    }
+
+    @Test
+    public void whenSpecifyingLabelOfAnExistingConcept_LabelIsChanged() {
+        movies.tx().putEntityType("a-new-type");
+
+        EntityType type = movies.tx().getEntityType("a-new-type");
+        Label newLabel = Label.of("a-new-new-type");
+
+        qb.define(label(newLabel).id(type.getId())).execute();
+
+        assertEquals(newLabel, type.getLabel());
     }
 
     @Test

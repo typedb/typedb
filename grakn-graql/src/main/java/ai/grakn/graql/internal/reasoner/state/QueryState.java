@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -36,11 +37,13 @@ import java.util.Set;
  */
 public abstract class QueryState extends ResolutionState {
 
+    private final Unifier unifier;
     private final Set<ReasonerAtomicQuery> subGoals;
     private final QueryCache<ReasonerAtomicQuery> cache;
 
     QueryState(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
-        super(sub, u, parent);
+        super(sub, parent);
+        this.unifier = u;
         this.subGoals = subGoals;
         this.cache = cache;
     }
@@ -68,7 +71,12 @@ public abstract class QueryState extends ResolutionState {
     /**
      * @return cache unifier if any
      */
-    abstract Unifier getCacheUnifier();
+    abstract MultiUnifier getCacheUnifier();
+
+    /**
+     * @return unifier of this state with parent state
+     */
+    Unifier getUnifier(){ return unifier;}
 
     /**
      * propagates the answer state up the tree and acknowledges (caches) its substitution

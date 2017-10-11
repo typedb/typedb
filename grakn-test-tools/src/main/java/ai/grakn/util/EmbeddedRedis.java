@@ -83,10 +83,6 @@ public class EmbeddedRedis {
         start(port, false);
     }
 
-    public static void forceStart(int port){
-        start(port, true);
-    }
-
     /**
      * Stops the embedded redis
      */

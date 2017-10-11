@@ -19,12 +19,12 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.Collections;
@@ -45,10 +45,10 @@ public class AtomicState extends QueryState{
 
     private final ReasonerAtomicQuery query;
     private final Iterator<Answer> dbIterator;
-    private final Iterator<RuleTuple> ruleIterator;
+    private final Iterator<Pair<InferenceRule, Unifier>> ruleIterator;
 
     private InferenceRule currentRule = null;
-    private final Unifier cacheUnifier;
+    private final MultiUnifier cacheUnifier;
 
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
@@ -60,7 +60,7 @@ public class AtomicState extends QueryState{
         super(sub, u, parent, subGoals, cache);
         this.query = ReasonerQueries.atomic(q, sub);
 
-        Pair<Stream<Answer>, Unifier> streamUnifierPair = cache.getAnswerStreamWithUnifier(query);
+        Pair<Stream<Answer>, MultiUnifier> streamUnifierPair = cache.getAnswerStreamWithUnifier(query);
         this.dbIterator = streamUnifierPair.getKey()
                 .map(a -> a.explain(a.getExplanation().setQuery(query)))
                 .iterator();
@@ -88,12 +88,15 @@ public class AtomicState extends QueryState{
         if (currentRule != null && query.getAtom().requiresRoleExpansion()){
             return new RoleExpansionState(answer, getUnifier(), query.getAtom().getRoleExpansionVariables(), getParentState());
         }
+
         return new AnswerState(answer, getUnifier(), getParentState());
     }
 
     @Override
     public ResolutionState generateSubGoal() {
-        if (dbIterator.hasNext()) return new AnswerState(dbIterator.next(), getUnifier(), this);
+        if (dbIterator.hasNext()){
+            return new AnswerState(dbIterator.next(), getUnifier(), this);
+        }
         if (ruleIterator.hasNext()) return generateSubGoalFromRule(ruleIterator.next());
         return null;
     }
@@ -102,21 +105,21 @@ public class AtomicState extends QueryState{
     ReasonerAtomicQuery getQuery(){return query;}
 
     @Override
-    Unifier getCacheUnifier(){ return cacheUnifier;}
+    MultiUnifier getCacheUnifier(){ return cacheUnifier;}
 
     InferenceRule getCurrentRule(){ return currentRule;}
 
-    private ResolutionState generateSubGoalFromRule(RuleTuple ruleTuple){
-        currentRule = ruleTuple.getRule();
-        Unifier ruleUnifier = ruleTuple.getRuleUnifier();
-        Unifier permutationUnifier = ruleTuple.getPermutationUnifier();
+    private ResolutionState generateSubGoalFromRule(Pair<InferenceRule, Unifier> rulePair){
+        Unifier ruleUnifier = rulePair.getValue();
+        Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta
         Answer partialSubPrime = query.getSubstitution()
-                .unify(permutationUnifier)
-                .unify(ruleUnifier.inverse());
+                .unify(ruleUnifierInverse);
 
-        Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
-        return currentRule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache());
+        currentRule = rulePair.getKey()
+                .propagateConstraints(query.getAtom(), ruleUnifierInverse);
+
+        return currentRule.getBody().subGoal(partialSubPrime, ruleUnifier, this, getSubGoals(), getCache());
     }
 }

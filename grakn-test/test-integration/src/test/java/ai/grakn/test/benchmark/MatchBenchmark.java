@@ -31,7 +31,7 @@ public class MatchBenchmark extends BenchmarkTest {
 
     @Setup
     public void setup() throws Throwable {
-        engine = EngineContext.inMemoryServer();
+        engine = EngineContext.createWithInMemoryRedis();
         engine.before();
         session = Grakn.session(engine.uri(), KEYSPACE);
         GraknTx graphEntity = session.open(GraknTxType.WRITE);

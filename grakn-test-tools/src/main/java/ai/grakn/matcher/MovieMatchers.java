@@ -48,7 +48,7 @@ public class MovieMatchers {
     public static final Matcher<MatchableConcept> runtime = GraknMatchers.type("runtime");
     public static final Matcher<MatchableConcept> tmdbVoteAverage = GraknMatchers.type("tmdb-vote-average");
     public static final Matcher<MatchableConcept> genreOfProduction = GraknMatchers.role("genre-of-production");
-    public static final Matcher<MatchableConcept> keyNameOwner = GraknMatchers.role("key-name-owner");
+    public static final Matcher<MatchableConcept> keyNameOwner = GraknMatchers.role("@key-name-owner");
     public static final Matcher<MatchableConcept> materializeRule = GraknMatchers.rule("materialize-rule");
     public static final Matcher<MatchableConcept> expectationRule = GraknMatchers.rule("expectation-rule");
     public static final Matcher<MatchableConcept> hasTitle = GraknMatchers.type(HAS.getLabel("title"));

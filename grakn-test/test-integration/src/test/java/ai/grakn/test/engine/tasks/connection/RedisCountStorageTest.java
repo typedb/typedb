@@ -24,16 +24,18 @@ import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SampleKBLoader;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import static org.junit.Assert.assertEquals;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 /**
  * <p>
@@ -45,16 +47,16 @@ import org.junit.Test;
 public class RedisCountStorageTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
-    public static final MockRedisRule mockRedisRule = new MockRedisRule();
+    public static final MockRedisRule mockRedisRule = MockRedisRule.create();
 
     private static RedisCountStorage redis;
 
     @BeforeClass
     public static void getConnection(){
-        redis = engine.redis(mockRedisRule.getServer().getHost(), mockRedisRule.getServer().getBindPort());
+        redis = engine.redis(mockRedisRule.server().getHost(), mockRedisRule.server().getBindPort());
     }
 
     @Test

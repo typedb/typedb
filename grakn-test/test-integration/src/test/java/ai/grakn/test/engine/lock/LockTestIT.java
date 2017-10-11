@@ -18,9 +18,12 @@
 
 package ai.grakn.test.engine.lock;
 
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.JedisLock;
 import ai.grakn.engine.lock.NonReentrantLock;
+import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.MockRedisRule;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -51,7 +54,10 @@ public class LockTestIT {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static EngineContext engineContext = EngineContext.singleQueueServer();
+    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
+
+    @ClassRule
+    public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(engine.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
 
     @DataPoints
     public static Locks[] configValues = Locks.values();
@@ -63,7 +69,7 @@ public class LockTestIT {
     private Lock getLock(Locks lock, String lockName){
         switch (lock){
             case REDIS:
-                return new JedisLock(engineContext.getJedisPool(), lockName);
+                return new JedisLock(engine.getJedisPool(), lockName);
             case NONREENTRANT:
                 return new NonReentrantLock();
         }
@@ -72,7 +78,7 @@ public class LockTestIT {
 
     private Lock copy(Lock lock){
         if(lock instanceof JedisLock){
-            return new JedisLock(engineContext.getJedisPool(), ((JedisLock) lock).getLockName());
+            return new JedisLock(engine.getJedisPool(), ((JedisLock) lock).getLockName());
         } else if(lock instanceof NonReentrantLock){
             return lock;
         }

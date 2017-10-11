@@ -97,12 +97,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         createShard();
     }
 
-    TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
-        super(vertexElement, superType, isImplicit);
-        //This constructor is ONLY used when CREATING new types. Which is why we shard here
-        createShard();
-    }
-
     /**
      * Flushes the internal transaction caches so they can refresh with persisted graph
      */

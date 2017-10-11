@@ -77,7 +77,7 @@ public class GraqlTest {
     private String relationId24;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
+    public static final EngineContext context = EngineContext.createWithInMemoryRedis();
 
     @Before
     public void setUp() {
@@ -138,16 +138,15 @@ public class GraqlTest {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Label resourceTypeId = Label.of("my-resource");
 
-            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
-            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
-            RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
-                    .relates(resourceOwner)
-                    .relates(resourceValue);
+            AttributeType<Long> resource = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
+            EntityType thingy = graph.putEntityType("thingy");
+            thingy.attribute(resource);
 
-            AttributeType<Long> resource = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG)
-                    .plays(resourceValue);
-            EntityType thingy = graph.putEntityType("thingy").plays(resourceOwner);
             Entity theResourceOwner = thingy.addEntity();
+
+            Role resourceOwner = graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
+            Role resourceValue = graph.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
+            RelationshipType relationshipType = graph.getRelationshipType(Schema.ImplicitType.HAS.getLabel(resourceTypeId).getValue());
 
             relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)

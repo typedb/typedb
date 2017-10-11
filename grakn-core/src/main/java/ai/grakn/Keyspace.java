@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
  */
 @AutoValue
 public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
+    private static final int MAX_LENGTH = 48;
     private static final long serialVersionUID = 2726154016735929123L;
 
     public abstract String getValue();
@@ -54,7 +55,9 @@ public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
      */
     @CheckReturnValue
     public static Keyspace of(String value){
-        if(!Pattern.matches("[a-z_][a-z_0-9]*", value)) throw GraknTxOperationException.invalidKeyspace(value);
+        if(!Pattern.matches("[a-z_][a-z_0-9]*", value) || value.length() > MAX_LENGTH) {
+            throw GraknTxOperationException.invalidKeyspace(value);
+        }
         return new AutoValue_Keyspace(value);
     }
 

@@ -459,4 +459,14 @@ public class EntityTypeTest extends TxTestBase {
         assertThat(person.keys().collect(toSet()), empty());
     }
 
+    @Test
+    public void whenCreatingAnEntityTypeWithLabelStartingWithReservedCharachter_Throw(){
+        String label = "@what-a-dumb-label-name";
+
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.invalidLabelStart(Label.of(label)).getMessage());
+
+        tx.putEntityType(label);
+    }
+
 }

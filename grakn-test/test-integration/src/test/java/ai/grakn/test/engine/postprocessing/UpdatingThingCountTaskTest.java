@@ -13,7 +13,6 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -32,10 +31,7 @@ import static org.junit.Assert.assertEquals;
 public class UpdatingThingCountTaskTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.singleQueueServer();
-
-    @ClassRule
-    public static final MockRedisRule mockRedisRule = new MockRedisRule();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {

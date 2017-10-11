@@ -23,14 +23,12 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
 import spark.Service;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -92,14 +90,6 @@ public abstract class GraknTestEngineSetup {
         LOG.info("engine started.");
 
         return server;
-    }
-
-    static void startRedis(int port) throws URISyntaxException {
-        EmbeddedRedis.start(port);
-    }
-
-    static void stopRedis(){
-        EmbeddedRedis.stop();
     }
 
     static void stopEngine(GraknEngineServer server) throws Exception {

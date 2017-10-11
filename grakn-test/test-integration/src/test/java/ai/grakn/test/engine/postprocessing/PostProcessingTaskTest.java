@@ -24,10 +24,10 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
+import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -52,7 +52,7 @@ public class PostProcessingTaskTest {
 
     public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
     @ClassRule
-    public static EngineContext engine = EngineContext.inMemoryServer();
+    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     private String mockResourceIndex;
     private Set<ConceptId> mockResourceSet;
@@ -64,7 +64,7 @@ public class PostProcessingTaskTest {
     public void mockPostProcessing(){
         mockConsumer = mock(Consumer.class);
         mockResourceIndex = UUID.randomUUID().toString();
-        mockTaskSubmitter = mock(StandaloneTaskManager.class);
+        mockTaskSubmitter = mock(RedisTaskManager.class);
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
         String keyspace = "testing";

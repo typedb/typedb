@@ -32,7 +32,7 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
 
     @Setup
     public void setup() throws Throwable {
-        engine = EngineContext.inMemoryServer();
+        engine = EngineContext.createWithInMemoryRedis();
         engine.before();
         session = Grakn.session(engine.uri(), KEYSPACE);
         try(GraknTx tx = session.open(GraknTxType.WRITE)) {

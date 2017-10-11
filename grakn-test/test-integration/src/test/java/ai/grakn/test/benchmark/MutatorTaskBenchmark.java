@@ -6,12 +6,14 @@ import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
 import com.codahale.metrics.ConsoleReporter;
-import java.time.Instant;
-import static java.time.Instant.now;
 import mjson.Json;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
+
+import java.time.Instant;
+
+import static java.time.Instant.now;
 
 
 public class MutatorTaskBenchmark extends BenchmarkTest {
@@ -31,7 +33,7 @@ public class MutatorTaskBenchmark extends BenchmarkTest {
     }
 
     protected EngineContext makeEngine() {
-        return EngineContext.singleQueueServer();
+        return EngineContext.createWithEmbeddedRedis();
     }
 
     @TearDown

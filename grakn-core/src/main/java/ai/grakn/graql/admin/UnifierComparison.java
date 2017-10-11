@@ -16,32 +16,33 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.rule;
+package ai.grakn.graql.admin;
 
-import ai.grakn.graql.admin.Unifier;
+import ai.grakn.concept.SchemaConcept;
 
 /**
  *
  * <p>
- * Wrapper for (rule, unifier, unifier) tuple.
+ * Interface for defining unifier comparisons.
  * </p>
  *
- * @author Kasper Piskorski
+ *@author Kasper Piskorski
  *
  */
-public class RuleTuple {
+public interface UnifierComparison {
 
-    private final InferenceRule rule;
-    private final Unifier ruleUnifier;
-    private final Unifier permutationUnifier;
+    /**
+     * @param parent schema concept of parent expression
+     * @param child schema concept of child expression
+     * @return schema concept comparison value
+     */
+    boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child);
 
-    public RuleTuple(InferenceRule rule, Unifier u, Unifier pu){
-        this.rule = rule;
-        this.ruleUnifier = u;
-        this.permutationUnifier = pu;
-    }
-
-    public InferenceRule getRule(){ return rule;}
-    public Unifier getRuleUnifier(){ return ruleUnifier;}
-    public Unifier getPermutationUnifier(){ return permutationUnifier;}
+    /**
+     *
+     * @param parent atomic of parent expression
+     * @param child atomic of child expression
+     * @return atomic comparison value
+     */
+    boolean atomicComparison(Atomic parent, Atomic child);
 }

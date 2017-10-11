@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -51,14 +52,15 @@ class CumulativeState extends QueryState{
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
         this.feederStateIterator = !subQueries.isEmpty()?
-               subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() : Collections.emptyIterator();
+                subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() :
+                Collections.emptyIterator();
     }
 
     @Override
     ReasonerQueryImpl getQuery() { return getParentState().getQuery();}
 
     @Override
-    Unifier getCacheUnifier() { return getParentState().getCacheUnifier();}
+    MultiUnifier getCacheUnifier() { return getParentState().getCacheUnifier();}
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {

@@ -414,14 +414,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public EntityType putEntityType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE,
+        return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
     /**
      * This is a helper method which will either find or create a {@link SchemaConcept}.
      * When a new {@link SchemaConcept} is created it is added for validation through it's own creation method for
-     * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role, Boolean)}.
+     * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role)}.
      *
      * When an existing {@link SchemaConcept} is found it is build via it's get method such as
      * {@link ai.grakn.kb.internal.concept.RoleImpl#get(VertexElement)} and skips validation.
@@ -431,17 +431,28 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      *
      * @param label The {@link Label} of the {@link SchemaConcept} to find or create
      * @param baseType The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
+     * @param isImplicit a flag indicating if the label we are creating is for an implicit {@link Type} or not
      * @param newConceptFactory the factory to be using when creating a new {@link SchemaConcept}
      * @param <T> The type of {@link SchemaConcept} to return
      * @return a new or existing {@link SchemaConcept}
      */
-    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, Function<VertexElement, T> newConceptFactory) {
+    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
         checkSchemaMutationAllowed();
 
         //Get the type if it already exists otherwise build a new one
         SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
         if (schemaConcept == null) {
+            if(!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())){
+                throw GraknTxOperationException.invalidLabelStart(label);
+            }
+
             VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
+
+            //Mark it as implicit here so we don't have to pass it down the constructors
+            if(isImplicit){
+                vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
+            }
+
             schemaConcept = SchemaConceptImpl.from(buildSchemaConcept(label, () -> newConceptFactory.apply(vertexElement)));
         } else if (!baseType.equals(schemaConcept.baseType())) {
             throw labelTaken(schemaConcept);
@@ -490,13 +501,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE,
-                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
+        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
+                v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
     public RelationshipType putRelationTypeImplicit(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE,
-                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
+        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, true,
+                v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
     @Override
@@ -506,13 +517,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public Role putRole(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ROLE,
-                v -> factory().buildRole(v, getMetaRole(), Boolean.FALSE));
+        return putSchemaConcept(label, Schema.BaseType.ROLE, false,
+                v -> factory().buildRole(v, getMetaRole()));
     }
 
     public Role putRoleTypeImplicit(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ROLE,
-                v -> factory().buildRole(v, getMetaRole(), Boolean.TRUE));
+        return putSchemaConcept(label, Schema.BaseType.ROLE, true,
+                v -> factory().buildRole(v, getMetaRole()));
     }
 
     @Override
@@ -524,7 +535,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
-        AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE,
+        AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
                 v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
@@ -544,7 +555,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return putSchemaConcept(label, Schema.BaseType.RULE,
+        return putSchemaConcept(label, Schema.BaseType.RULE, false,
                 v -> factory().buildRule(v, getMetaRule(), when, then));
     }
 

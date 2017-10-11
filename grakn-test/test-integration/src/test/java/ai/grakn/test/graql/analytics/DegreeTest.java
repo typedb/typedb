@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 public class DegreeTest {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
+    public static final EngineContext context = EngineContext.createWithInMemoryRedis();
     private GraknSession factory;
     private GraknTx tx;
 
@@ -291,7 +291,7 @@ public class DegreeTest {
 
             // create a subgraph excluding one attribute type only
             HashSet<Label> almostFullTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
-                    Label.of("mans-best-friend"), Label.of("has-name"), Label.of("name"));
+                    Label.of("mans-best-friend"), Label.of("@has-name"), Label.of("name"));
             degrees = graph.graql().compute().degree().in(almostFullTypes).execute();
             System.out.println("degrees = " + degrees);
 

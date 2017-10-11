@@ -278,6 +278,14 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.ROLE_PATTERN_ABSENT.getMessage(relation));
     }
 
+    public static GraqlQueryException invalidUnifierType(Object value) {
+        return new GraqlQueryException(ErrorMessage.INVALID_UNIFIER_TYPE.getMessage(value));
+    }
+
+    public static GraqlQueryException nonExistentUnifier(){
+        return new GraqlQueryException(ErrorMessage.NON_EXISTENT_UNIFIER.getMessage());
+    }
+
     public static GraqlQueryException ruleCreationArityMismatch() {
         return new GraqlQueryException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
     }
@@ -292,6 +300,10 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException noAtomsSelected(ReasonerQuery reasonerQuery) {
         return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(reasonerQuery.toString()));
+    }
+
+    public static GraqlQueryException nonRoleIdAssignedToRoleVariable(VarPatternAdmin var) {
+        return new GraqlQueryException(ErrorMessage.ROLE_ID_IS_NOT_ROLE.getMessage(var.toString()));
     }
 
     public static GraqlQueryException cannotParseDateFormat(String originalFormat) {

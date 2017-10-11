@@ -18,22 +18,29 @@
 
 package ai.grakn.engine.controller;
 
-import static com.jayway.restassured.RestAssured.get;
-import static com.jayway.restassured.RestAssured.when;
-import static com.jayway.restassured.RestAssured.given;
-
+import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.user.UsersHandler;
+import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.MockRedisRule;
+import com.jayway.restassured.response.Response;
+import mjson.Json;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
-import com.jayway.restassured.response.Response;
-import ai.grakn.engine.user.UsersHandler;
-import mjson.Json;
+
+import static com.jayway.restassured.RestAssured.get;
+import static com.jayway.restassured.RestAssured.given;
+import static com.jayway.restassured.RestAssured.when;
 
 public class UserControllerTest  {
-    
+
+    @ClassRule
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
+
     @ClassRule
     public static ControllerFixture fixture = ControllerFixture.INSTANCE;
-    
+
     @Test
     public void testAddAndGetNewUser() {        
         String userName = "person";

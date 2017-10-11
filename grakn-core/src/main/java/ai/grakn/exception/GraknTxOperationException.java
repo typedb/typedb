@@ -263,7 +263,9 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when creating an invalid {@link ai.grakn.Keyspace}
      */
     public static GraknTxOperationException invalidKeyspace(String keyspace){
-        return new GraknTxOperationException("Keyspace [" + keyspace + "] is invalid. Grakn Keyspaces cannot start with a number and can only be lower case containing alphanumeric values and underscore characters");
+        return new GraknTxOperationException("Keyspace [" + keyspace + "] is invalid. " +
+                "Grakn Keyspaces cannot start with a number and can only be lower case containing alphanumeric values and underscore characters." +
+                "Grakn Keyspaces can also not be longer than 48 characters");
     }
 
     /**
@@ -314,5 +316,12 @@ public class GraknTxOperationException extends GraknException{
      */
     public static GraknTxOperationException missingType(ConceptId id) {
         return new GraknTxOperationException(String.format("Thing {%s} is missing a type", id));
+    }
+
+    /**
+     * Thrown when creating a label which starts with a reserved character {@link Schema.ImplicitType#RESERVED}
+     */
+    public static GraknTxOperationException invalidLabelStart(Label label){
+        return new GraknTxOperationException(String.format("Cannot create a label {%s} starting with character {%s} as it is a reserved starting character", label, Schema.ImplicitType.RESERVED.getValue()));
     }
 }

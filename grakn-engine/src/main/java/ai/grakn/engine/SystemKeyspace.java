@@ -76,10 +76,6 @@ public class SystemKeyspace {
     private final ConcurrentHashMap<Keyspace, Boolean> openSpaces;
     private final EngineGraknTxFactory factory;
 
-    public SystemKeyspace(EngineGraknTxFactory factory){
-        this(factory, true);
-    }
-
     public SystemKeyspace(EngineGraknTxFactory factory, boolean loadSystemSchema){
         this.factory = factory;
         this.openSpaces = new ConcurrentHashMap<>();

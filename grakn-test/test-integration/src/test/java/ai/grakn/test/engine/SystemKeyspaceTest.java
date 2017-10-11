@@ -30,7 +30,7 @@ public class SystemKeyspaceTest {
     private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(engine.uri(), k).open(GraknTxType.WRITE);
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

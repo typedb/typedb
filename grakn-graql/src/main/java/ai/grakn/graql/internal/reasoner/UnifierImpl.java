@@ -21,17 +21,24 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 /**
  *
  * <p>
- * Implementation of {@link Unifier} interface.
+ * Implementation of the {@link Unifier} interface.
  * </p>
  *
  * @author Kasper Piskorski
@@ -39,18 +46,21 @@ import ai.grakn.graql.internal.reasoner.utils.Pair;
  */
 public class UnifierImpl implements Unifier {
     
-    private final HashMultimap<Var, Var> unifier = HashMultimap.create();
+    private final ImmutableSetMultimap<Var, Var> unifier;
 
     /**
      * Identity unifier.
      */
-    public UnifierImpl(){}
-    public UnifierImpl(Map<Var, Var> map){
-        map.entrySet().forEach(m -> unifier.put(m.getKey(), m.getValue()));
+    public UnifierImpl(){
+        this.unifier = ImmutableSetMultimap.of();
     }
-    public UnifierImpl(Unifier u){
-        merge(u);
+    public UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){
+        this.unifier =  ImmutableSetMultimap.<Var, Var>builder().putAll(mappings).build();
     }
+    public UnifierImpl(ImmutableMultimap<Var, Var> map){ this(map.entries());}
+    public UnifierImpl(Multimap<Var, Var> map){ this(map.entries());}
+    public UnifierImpl(Map<Var, Var> map){ this(map.entrySet());}
+    public UnifierImpl(Unifier u){ this(u.mappings());}
 
     @Override
     public String toString(){
@@ -86,12 +96,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Collection<Map.Entry<Var, Var>> mappings(){ return unifier.entries();}
-
-    @Override
-    public boolean addMapping(Var key, Var value){
-        return unifier.put(key, value);
-    }
+    public ImmutableSet<Map.Entry<Var, Var>> mappings(){ return unifier.entries();}
 
     @Override
     public Collection<Var> get(Var key) {
@@ -113,8 +118,11 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public Unifier merge(Unifier d) {
-        d.mappings().forEach(m -> unifier.put(m.getKey(), m.getValue()));
-        return this;
+        return new UnifierImpl(
+                Sets.union(
+                        this.mappings(),
+                        d.mappings())
+        );
     }
 
     @Override
@@ -122,9 +130,9 @@ public class UnifierImpl implements Unifier {
         if (Collections.disjoint(this.values(), d.keySet())){
             return new UnifierImpl(this).merge(d);
         }
-        Unifier merged = new UnifierImpl();
+        Multimap<Var, Var> mergedMappings = HashMultimap.create();
         Unifier inverse = this.inverse();
-        this.mappings().stream().filter(m -> !d.containsKey(m.getValue())).forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
+        this.mappings().stream().filter(m -> !d.containsKey(m.getValue())).forEach(m -> mergedMappings.put(m.getKey(), m.getValue()));
         d.mappings().stream()
                 .flatMap(m -> {
                     Var lVar = m.getKey();
@@ -135,15 +143,17 @@ public class UnifierImpl implements Unifier {
                         return Stream.of(new Pair<>(m.getKey(), m.getValue()));
                     }
                 })
-                .forEach(m -> merged.addMapping(m.getKey(), m.getValue()));
-        return merged;
+                .forEach(m -> mergedMappings.put(m.getKey(), m.getValue()));
+        return new UnifierImpl(mergedMappings);
     }
 
     @Override
     public Unifier inverse() {
-        Unifier inverse = new UnifierImpl();
-        unifier.entries().forEach(e -> inverse.addMapping(e.getValue(), e.getKey()));
-        return inverse;
+        return new UnifierImpl(
+                unifier.entries().stream()
+                        .map(e -> new AbstractMap.SimpleImmutableEntry<>(e.getValue(), e.getKey()))
+                        .collect(Collectors.toSet())
+        );
     }
 
     @Override
