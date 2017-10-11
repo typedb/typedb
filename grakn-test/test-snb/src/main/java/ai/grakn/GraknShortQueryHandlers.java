@@ -194,7 +194,7 @@ public class GraknShortQueryHandlers {
                         "$friend has person-id $friendId has first-name $fname has last-name $lname; get;";
 
 
-                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
+                GetQuery results = graph.graql().<GetQuery>parse(query);
 
 
                     Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
