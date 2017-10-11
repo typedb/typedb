@@ -196,7 +196,7 @@ public class GraknShortQueryHandlers {
                 GetQuery results = graph.graql().parse(query);
 
 
-                    Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
+                    Comparator<Answer> ugly = Comparator.<Answer, LocalDateTime>comparing(map -> resource(map, "date"))
                             .thenComparing(map -> resource(map, "friendId"));
 
                     List<LdbcShortQuery3PersonFriendsResult> result = results.stream()
