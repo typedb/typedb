@@ -245,7 +245,7 @@ public class GreedyTraversalPlan {
         Set<Node> reachableNodes = Sets.newHashSet(root);
         while (!reachableNodes.isEmpty()) {
             Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
-                    branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).get();
+                    minWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).get();
 
             // add edge fragment first, then node fragments
             getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent).ifPresent(plan::add);
@@ -261,14 +261,27 @@ public class GreedyTraversalPlan {
     private static double branchWeight(Node node, Arborescence<Node> arborescence,
                                        Map<Node, Set<Node>> edgesParentToChild,
                                        Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
-        final double[] weight = {getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent)};
-        weight[0] += nodeFragmentWeight(node);
-        if (edgesParentToChild.containsKey(node)) {
-            edgesParentToChild.get(node).forEach(child -> {
-                weight[0] += branchWeight(child, arborescence, edgesParentToChild, edgeFragmentChildToParent);
-            });
+        if (!node.getNodeWeight().isPresent()) {
+            node.setNodeWeight(Optional.of(
+                    getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent) + nodeFragmentWeight(node)));
         }
-        return weight[0];
+        if (!node.getBranchWeight().isPresent()) {
+            final double[] weight = {node.getNodeWeight().get()};
+            if (edgesParentToChild.containsKey(node)) {
+                edgesParentToChild.get(node).forEach(child -> {
+                    weight[0] += branchWeight(child, arborescence, edgesParentToChild, edgeFragmentChildToParent);
+                });
+            }
+            node.setBranchWeight(Optional.of(weight[0]));
+        }
+        return node.getBranchWeight().get();
+    }
+
+    private static double minWeight(Node node, Arborescence<Node> arborescence,
+                                    Map<Node, Set<Node>> edgesParentToChild,
+                                    Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
+        return Math.min(branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent),
+                node.getNodeWeight().get());
     }
 
     private static double nodeFragmentWeight(Node node) {
@@ -276,7 +289,10 @@ public class GreedyTraversalPlan {
                 .mapToDouble(Fragment::fragmentCost).sum();
         double costFragmentsWithDependencyVisited = node.getFragmentsWithDependencyVisited().stream()
                 .mapToDouble(Fragment::fragmentCost).sum();
-        return costFragmentsWithoutDependency + costFragmentsWithDependencyVisited + node.getFixedFragmentCost();
+        double costFragmentsWithDependency = node.getFragmentsWithDependency().stream()
+                .mapToDouble(Fragment::fragmentCost).sum();
+        return costFragmentsWithoutDependency + node.getFixedFragmentCost() +
+                (costFragmentsWithDependencyVisited + costFragmentsWithDependency) / 2D;
     }
 
     private static void addNodeFragmentToPlan(Node node, List<Fragment> plan, Map<NodeId, Node> nodes,
