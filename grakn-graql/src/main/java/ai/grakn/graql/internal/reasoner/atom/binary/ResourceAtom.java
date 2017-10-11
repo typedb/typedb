@@ -17,7 +17,11 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
@@ -34,8 +38,9 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -86,6 +91,24 @@ public class ResourceAtom extends Binary{
                         .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
                         .iterator()
         ).build();
+    }
+
+    @Override
+    public RelationshipAtom toRelationshipAtom(){
+        SchemaConcept type = getSchemaConcept();
+        if (type == null) throw GraqlQueryException.illegalAtomConversion(this);
+        GraknTx tx = getParentQuery().tx();
+        Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.getLabel());
+        return new RelationshipAtom(
+                Graql.var()
+                        .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.getLabel()).getValue(), getVarName())
+                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.getLabel()).getValue(), getPredicateVariable())
+                        .isa(typeLabel.getValue())
+                .admin(),
+                getPredicateVariable(),
+                new IdPredicate(getPredicateVariable().id(tx.getSchemaConcept(typeLabel).getId()).admin(), getParentQuery()),
+                getParentQuery()
+        );
     }
 
     @Override
@@ -174,21 +197,23 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public boolean isRuleApplicable(InferenceRule child) {
-        Atom ruleAtom = child.getRuleConclusionAtom();
-        if(!(ruleAtom.isResource())) return false;
+    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
+        //findbugs complains about cast without it
+        if(!(ruleAtom instanceof ResourceAtom)) return false;
 
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
+        ReasonerQueryImpl childQuery = (ReasonerQueryImpl) childAtom.getParentQuery();
 
-        //check types
+        //check type bindings compatiblity
         TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
         TypeAtom childTypeConstraint = childAtom.getTypeConstraints().findFirst().orElse(null);
 
         SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
         SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
-        if (parentType != null && childType != null && areDisjointTypes(parentType, childType)) return false;
+        if (parentType != null && childType != null && areDisjointTypes(parentType, childType)
+                || !childQuery.isTypeRoleCompatible(ruleAtom.getVarName(), parentType)) return false;
 
-        //check predicates
+        //check value predicate compatibility
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
         for (ValuePredicate childPredicate : childAtom.getMultiPredicate()) {
             Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();

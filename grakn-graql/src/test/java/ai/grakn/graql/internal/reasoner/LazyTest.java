@@ -33,7 +33,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
@@ -133,7 +133,7 @@ public class LazyTest {
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         cache.getAnswerStream(query);
-        InferenceRule rule = new InferenceRule(RuleUtil.getRules(graph).iterator().next(), graph);
+        InferenceRule rule = new InferenceRule(RuleUtils.getRules(graph).iterator().next(), graph);
 
         Set<Var> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
         Stream<Answer> join = join(
