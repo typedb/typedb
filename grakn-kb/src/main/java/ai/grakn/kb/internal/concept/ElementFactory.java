@@ -272,7 +272,7 @@ public final class ElementFactory {
         return buildCasting(buildEdgeElement(edge));
     }
 
-    public Casting buildCasting(EdgeElement edge) {
+    Casting buildCasting(EdgeElement edge) {
         return new Casting(edge);
     }
 
