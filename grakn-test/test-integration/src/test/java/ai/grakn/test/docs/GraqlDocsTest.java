@@ -56,13 +56,13 @@ public class GraqlDocsTest {
 
     private static final Pattern TAG_GRAQL =
             Pattern.compile(
-                    "(id=\"shell[0-9]+\">\\s*<pre>|```graql\\n)" +
+                    "(id=\"shell[0-9]+\">\\s*<pre>|```graql\\s*\\n)" +
                     "\\s*(.*?)\\s*" +
                     "(</pre>|```)", Pattern.DOTALL);
 
     private static final Pattern TEMPLATE_GRAQL =
             Pattern.compile(
-                    "(id=\"shell[0-9]+\">\\s*<```graql-template\\n)" +
+                    "(id=\"shell[0-9]+\">\\s*<```graql-template\\s*\\n)" +
                             "\\s*(.*?)\\s*" +
                             "(```)", Pattern.DOTALL);
 
@@ -79,7 +79,7 @@ public class GraqlDocsTest {
     private static int numFound = 0;
 
     @ClassRule
-    public static EngineContext engine = EngineContext.inMemoryServer();
+    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Parameterized.Parameters(name = "{1}")
     public static Collection files() {

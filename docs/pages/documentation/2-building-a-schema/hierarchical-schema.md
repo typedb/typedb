@@ -96,7 +96,9 @@ We could specialise the `person` entity into `man` and `woman` for example. Howe
 
 We can model this as follows:
 
-```graql    
+```graql-test-ignore
+define
+
 event sub entity
   is-abstract
   has degree
@@ -104,8 +106,8 @@ event sub entity
   has "date"
   has identifier
   has notes
-  plays conclusion
-  plays happening;
+  has conclusion
+  has happening;
     
 wedding sub event;
  
@@ -124,7 +126,17 @@ birth sub event
     	
 death sub event
   has death-date;
-``` 	      
+
+# Resources
+  degree sub attribute datatype string;
+  confidence sub attribute datatype string;
+  "date" sub attribute datatype string;
+  identifier sub attribute datatype string;
+  notes sub attribute datatype string;
+  conclusion sub attribute datatype string;
+  happening sub attribute datatype string;
+
+```
   	    
 Notice that for the `event` entity type we added `is-abstract`, this is an optional additional restriction to ensure that we do not create any instances of `event`, but instead use the most granular definitions provided, i.e. `birth`, `death`, etc . . .  
 
@@ -141,6 +153,7 @@ relatives sub relationship
   is-abstract;
 
 marriage sub relatives
+  relates spouse
   relates spouse1
   relates spouse2
   relates husband
@@ -187,9 +200,10 @@ This is quite useful because when we ask for all relatives we will be getting re
 ## Wrapping up 
 
 We could go into far more detail regarding our genealogy knowledge base but I will leave that to you.
-For the moment here is our more complex schema to get you started on making your own deeper ontologies. You can find the schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base):
+For the moment here is our more complex schema to get you started on making your own deeper ontologies.
 
-```graql
+```graql-test-ignore
+
 define
 
 # Entities
@@ -204,8 +218,7 @@ define
     has surname
     plays spouse
     plays parent
-    plays child
-    plays sibling;
+    plays child;
         
     gender sub attribute datatype string;
     birth-date sub "date";
@@ -223,8 +236,8 @@ define
     has "date"
     has identifier
     has notes
-    plays conclusion
-    plays happening;
+    has conclusion
+    has happening;
     
   wedding sub event;
     
@@ -250,6 +263,7 @@ define
     is-abstract;
     
   marriage sub relatives
+    relates spouse
     relates spouse1
     relates spouse2
     relates husband
@@ -276,6 +290,15 @@ define
   child sub role;
   son sub child;
   daughter sub child;
+  
+## Resources
+  "date" sub attribute datatype string;
+  notes sub attribute datatype string;
+  happening sub attribute datatype string;
+  degree sub attribute datatype string;
+  conclusion sub attribute datatype string;
+  confidence sub attribute datatype string;
+
 ```
 
 {% include links.html %}

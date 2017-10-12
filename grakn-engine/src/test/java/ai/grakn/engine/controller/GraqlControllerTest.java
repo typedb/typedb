@@ -10,6 +10,19 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
+import com.codahale.metrics.MetricRegistry;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.Response;
+import mjson.Json;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import java.util.function.Function;
+
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -193,6 +206,14 @@ public class GraqlControllerTest {
         Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded, false);
         Printer printer = Printers.hal(sampleKB.tx().getKeyspace(), limitEmbedded);
         assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
+    }
+
+    @Test
+    public void whenMatchingRules_ResponseStatusIs200() {
+        String queryString = "match $x sub "+ Schema.MetaSchema.RULE.getLabel().getValue()+"; get;";
+        int limitEmbedded = 10;
+        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
+        resp.then().statusCode(200);
     }
 
     @Test

@@ -7,15 +7,17 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.EntityType;
 import ai.grakn.graql.GetQuery;
-import static ai.grakn.graql.Graql.var;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.SampleKBLoader;
-import java.util.Optional;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
+
+import java.util.Optional;
+
+import static ai.grakn.graql.Graql.var;
 
 
 public class MatchBenchmark extends BenchmarkTest {
@@ -29,7 +31,7 @@ public class MatchBenchmark extends BenchmarkTest {
 
     @Setup
     public void setup() throws Throwable {
-        engine = EngineContext.inMemoryServer();
+        engine = EngineContext.createWithInMemoryRedis();
         engine.before();
         session = Grakn.session(engine.uri(), KEYSPACE);
         GraknTx graphEntity = session.open(GraknTxType.WRITE);

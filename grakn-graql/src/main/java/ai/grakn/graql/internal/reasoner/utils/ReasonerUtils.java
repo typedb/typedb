@@ -414,6 +414,28 @@ public class ReasonerUtils {
     }
 
     /**
+     * @param parentRole
+     * @param parentType
+     * @param childRoles entry set of possible roles
+     * @return set of playable roles defined by type-role parent
+     */
+    public static Set<Role> playableRoles(Role parentRole, SchemaConcept parentType, Set<Role> childRoles) {
+        boolean isParentRoleMeta = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());
+        Set<Role> compatibleChildRoles = isParentRoleMeta ? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles);
+
+        //if parent role player has a type, constrain the allowed roles
+        if (parentType != null && parentType.isType()) {
+            boolean isParentTypeMeta = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
+            Set<Role> parentTypeRoles = isParentTypeMeta ? childRoles : parentType.asType().plays().collect(toSet());
+
+            compatibleChildRoles = compatibleChildRoles.stream()
+                    .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || parentTypeRoles.contains(rc))
+                    .collect(toSet());
+        }
+        return compatibleChildRoles;
+    }
+
+    /**
      * @param parent type
      * @param child type
      * @return true if child is a subtype of parent
@@ -448,9 +470,7 @@ public class ReasonerUtils {
      */
     public static <T> Collection<T> subtract(Collection<T> a, Collection<T> b){
         ArrayList<T> list = new ArrayList<>(a);
-        for (T aC2 : b) {
-            list.remove(aC2);
-        }
+        b.forEach(list::remove);
         return list;
     }
 }

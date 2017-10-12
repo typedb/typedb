@@ -124,7 +124,7 @@ public class HALConceptData {
             generateRelationEmbedded(halResource, concept.asRelationship(), 1);
         }
 
-        if (concept.isRule()) {
+        if (concept.isRule() && !Schema.MetaSchema.isMetaLabel(concept.asRule().getLabel())) {
             generateRuleLHS(halResource, concept.asRule());
             generateRuleRHS(halResource, concept.asRule());
         }

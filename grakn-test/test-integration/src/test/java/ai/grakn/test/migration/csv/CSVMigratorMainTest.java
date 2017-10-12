@@ -48,7 +48,7 @@ public class CSVMigratorMainTest {
     private final String templateCorruptFile = getFile("csv", "pets/template-corrupt.gql").getAbsolutePath();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Rule
     public final SystemOutRule sysOut = new SystemOutRule().enableLog();
@@ -110,7 +110,7 @@ public class CSVMigratorMainTest {
 
     @Test
     public void specifyingIncorrectURIInCSVMigratorScript_ErrorIsPrintedToSystemErr(){
-        run("csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:" + engine.uri().substring(1), "-keyspace", keyspace.getValue());
+        run("csv", "-input", dataFile, "-template", templateFile, "-uri", "192.0.2.4:4567", "-keyspace", keyspace.getValue());
 
         assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn server start'?"));
     }

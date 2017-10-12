@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.analytics;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -47,20 +48,23 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestSetup.usingTinker;
+import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class DegreeTest {
 
+    public GraknSession factory;
+
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
-    private GraknSession factory;
+    public static final EngineContext context = usingTinker() ? null : EngineContext.createWithInMemoryRedis();
     private GraknTx tx;
 
     @Before
     public void setUp() {
-        factory = context.sessionWithNewKeyspace();
+        factory = usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
         tx = factory.open(GraknTxType.WRITE);
     }
 

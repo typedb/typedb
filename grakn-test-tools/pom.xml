@@ -69,12 +69,14 @@
             </exclusions>
         </dependency>
 
-        <!-- Used for creating an embedded Redis for testing -->
+        <!-- Used for creating a embedded Redis for benchmark testing -->
         <dependency>
             <groupId>com.github.kstyrc</groupId>
             <artifactId>embedded-redis</artifactId>
             <version>${redis-test.version}</version>
         </dependency>
+
+        <!-- Used for creating a in memory mock Redis for testing -->
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>redis-mock</artifactId>

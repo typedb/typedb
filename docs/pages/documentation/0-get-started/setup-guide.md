@@ -64,7 +64,7 @@ Then type the following to start the Graql shell in its interactive (REPL) mode:
 The Graql shell starts and you see a `>>>` prompt. Graql is our knowledge-oriented query language, which allows you to interface with Grakn. We will enter a query to check that everything is working. 
 
 ```graql   
-match $x isa person, has identifier $n;
+match $x isa person, has identifier $n; get;
 ```
 
 You should see a printout of a number of lines of text, each of which includes a name, such as "William Sanford Titus" or "Elizabeth Niesz".

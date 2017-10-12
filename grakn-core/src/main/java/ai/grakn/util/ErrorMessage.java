@@ -201,6 +201,7 @@ public enum ErrorMessage {
     RULE_CREATION_ARITY_ERROR("Arity mismatch when creating a rule."),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
     NON_EXISTENT_UNIFIER("Could not proceed with unification as the unifier doesn't exist."),
+    ILLEGAL_ATOM_CONVERSION("Attempted illegal conversion of atom [%s]."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     NO_SOURCE("No valid source id provided"),

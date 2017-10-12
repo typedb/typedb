@@ -16,11 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.client;
+package ai.grakn.test.client;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.client.Client;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.test.EngineContext;
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class ClientTest {
 
     @Test
     public void graknEngineRunning() throws Throwable {
-        EngineContext engine = EngineContext.inMemoryServer();
+        EngineContext engine = EngineContext.createWithInMemoryRedis();
         engine.before();
 
         boolean running = Client.serverIsRunning(engine.uri());

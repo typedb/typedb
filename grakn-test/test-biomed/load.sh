@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Force script to exit on failed command
-set -e
+source env.sh
 
 SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
 

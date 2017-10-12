@@ -72,9 +72,6 @@ public class GraknEngineConfig {
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
 
-    // Engine Config
-    public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
-
     // Delay for the post processing task in milliseconds
     public static final String POST_PROCESSING_TASK_DELAY = "tasks.postprocessing.delay";
     public static final String TASKS_RETRY_DELAY = "tasks.retry.delay";

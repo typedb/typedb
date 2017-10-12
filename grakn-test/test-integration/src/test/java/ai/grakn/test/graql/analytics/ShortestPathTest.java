@@ -1,5 +1,6 @@
 package ai.grakn.test.graql.analytics;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -33,6 +34,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.analytics.Utility.getResourceEdgeId;
+import static ai.grakn.test.GraknTestSetup.usingTinker;
+import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -57,11 +60,11 @@ public class ShortestPathTest {
     public GraknSession factory;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
+    public static final EngineContext context = usingTinker() ? null : EngineContext.createWithInMemoryRedis();
 
     @Before
     public void setUp() {
-        factory = context.sessionWithNewKeyspace();
+        factory = usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
     }
 
     @Test(expected = GraqlQueryException.class)
