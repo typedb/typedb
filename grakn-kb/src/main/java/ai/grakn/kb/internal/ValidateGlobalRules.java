@@ -30,12 +30,12 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
 import ai.grakn.kb.internal.concept.RuleImpl;
@@ -335,11 +335,18 @@ class ValidateGlobalRules {
      * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
      */
     private static Optional<String> setRelationUnique(GraknTxAbstract<?> graph, RelationshipReified relationReified, String hash){
-        Optional<RelationshipImpl> foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
+        /*Optional<RelationshipImpl> foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
 
         if(!foundRelation.isPresent()){
             relationReified.setHash(hash);
         } else if(foundRelation.get().reified().isPresent() && !foundRelation.get().reified().get().equals(relationReified)){
+            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
+        }
+        return Optional.empty();*/
+
+        try{
+            relationReified.setHash(hash);
+        } catch(PropertyNotUniqueException e){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }
         return Optional.empty();
