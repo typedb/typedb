@@ -27,7 +27,6 @@
   </parent>
   <packaging>pom</packaging>
   <modules>
-      <module>owl</module>
       <module>csv</module>
       <module>json</module>
       <module>base</module>
