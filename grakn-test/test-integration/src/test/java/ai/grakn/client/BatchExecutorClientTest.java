@@ -61,7 +61,7 @@ public class BatchExecutorClientTest {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
     private Keyspace keyspace;
 
     @Before
