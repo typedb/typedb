@@ -17,7 +17,9 @@
  */
 package ai.grakn;
 
-import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
+import com.google.common.collect.ImmutableSet;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
 import com.ldbc.driver.ResultReporter;
@@ -31,9 +33,82 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate6AddPost;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate7AddComment;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate8AddFriendship;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import static ai.grakn.SNB.$author;
+import static ai.grakn.SNB.$city;
+import static ai.grakn.SNB.$comment;
+import static ai.grakn.SNB.$country;
+import static ai.grakn.SNB.$forum;
+import static ai.grakn.SNB.$message;
+import static ai.grakn.SNB.$mod;
+import static ai.grakn.SNB.$original;
+import static ai.grakn.SNB.$person;
+import static ai.grakn.SNB.$post;
+import static ai.grakn.SNB.ADMIRER;
+import static ai.grakn.SNB.BIRTHDAY;
+import static ai.grakn.SNB.BROWSER_USED;
+import static ai.grakn.SNB.CLASS_YEAR;
+import static ai.grakn.SNB.COMMENT;
+import static ai.grakn.SNB.COMPANY;
+import static ai.grakn.SNB.CONTAINED;
+import static ai.grakn.SNB.CONTAINER;
+import static ai.grakn.SNB.CONTAINER_OF;
+import static ai.grakn.SNB.CONTENT;
+import static ai.grakn.SNB.CREATION_DATE;
+import static ai.grakn.SNB.CREATOR;
+import static ai.grakn.SNB.EMAIL;
+import static ai.grakn.SNB.EMPLOYEE;
+import static ai.grakn.SNB.EMPLOYER;
+import static ai.grakn.SNB.FIRST_NAME;
+import static ai.grakn.SNB.FORUM_ID;
+import static ai.grakn.SNB.FRIEND;
+import static ai.grakn.SNB.GENDER;
+import static ai.grakn.SNB.GROUP;
+import static ai.grakn.SNB.HAS_CREATOR;
+import static ai.grakn.SNB.HAS_INTEREST;
+import static ai.grakn.SNB.HAS_MEMBER;
+import static ai.grakn.SNB.HAS_MODERATOR;
+import static ai.grakn.SNB.HAS_TAG;
+import static ai.grakn.SNB.IMAGE_FILE;
+import static ai.grakn.SNB.INTEREST;
+import static ai.grakn.SNB.INTERESTED;
+import static ai.grakn.SNB.IS_LOCATED_IN;
+import static ai.grakn.SNB.JOIN_DATE;
+import static ai.grakn.SNB.KNOWS;
+import static ai.grakn.SNB.LANGUAGE;
+import static ai.grakn.SNB.LAST_NAME;
+import static ai.grakn.SNB.LENGTH;
+import static ai.grakn.SNB.LIKE;
+import static ai.grakn.SNB.LIKES;
+import static ai.grakn.SNB.LOCATED;
+import static ai.grakn.SNB.LOCATION_IP;
+import static ai.grakn.SNB.MEMBER;
+import static ai.grakn.SNB.MESSAGE_ID;
+import static ai.grakn.SNB.MODERATED;
+import static ai.grakn.SNB.MODERATOR;
+import static ai.grakn.SNB.ORGANISATION_ID;
+import static ai.grakn.SNB.ORIGINAL;
+import static ai.grakn.SNB.PERSON;
+import static ai.grakn.SNB.PERSON_ID;
+import static ai.grakn.SNB.PLACE_ID;
+import static ai.grakn.SNB.POST;
+import static ai.grakn.SNB.PRODUCT;
+import static ai.grakn.SNB.REGION;
+import static ai.grakn.SNB.REPLY;
+import static ai.grakn.SNB.REPLY_OF;
+import static ai.grakn.SNB.SCHOOL;
+import static ai.grakn.SNB.SPEAKS;
+import static ai.grakn.SNB.STUDENT;
+import static ai.grakn.SNB.STUDY_AT;
+import static ai.grakn.SNB.TAG;
+import static ai.grakn.SNB.TAGGED;
+import static ai.grakn.SNB.TAG_ID;
+import static ai.grakn.SNB.TITLE;
+import static ai.grakn.SNB.TOPIC;
+import static ai.grakn.SNB.UNIVERSITY;
+import static ai.grakn.SNB.WORK_AT;
+import static ai.grakn.SNB.WORK_FROM;
+import static ai.grakn.SNB.fromDate;
+import static ai.grakn.graql.Graql.var;
 
 /**
  * Implementations of the LDBC SNB Update Queries
@@ -53,57 +128,50 @@ public class GraknUpdateQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
-                StringBuilder query = new StringBuilder("match ");
-                StringBuilder interests = new StringBuilder();
-                StringBuilder workAndStudyPlaces = new StringBuilder();
+                ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
+                ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
 
-                query.append("$city has place-id " + operation.cityId() + "; ");
+                match.add($city.has(PLACE_ID, operation.cityId()));
 
-
-                for (Long tag : operation.tagIds()) {
-                    query.append("$" + tag.toString() + " isa tag has tag-id " + tag + "; ");
-                    interests.append("(interested: $x, interest: $" + tag.toString() + ") isa has-interest;");
+                for (Long theTag : operation.tagIds()) {
+                    Var $tag = var(theTag.toString());
+                    match.add($tag.isa(TAG).has(TAG_ID, theTag));
+                    insert.add(var().rel(INTERESTED, $person).rel(INTEREST, $tag).isa(HAS_INTEREST));
                 }
 
                 for (LdbcUpdate1AddPerson.Organization org : operation.studyAt()) {
-                    query.append("$" + org.organizationId() + " isa university has organisation-id " + org.organizationId() + "; ");
-                    workAndStudyPlaces.append("(student: $x, school: $" + org.organizationId() + ") isa study-at has class-year " + org.year() + "; ");
+                    Var $org = var(Long.toString(org.organizationId()));
+                    match.add($org.isa(UNIVERSITY).has(ORGANISATION_ID, org.organizationId()));
+                    insert.add(var().rel(STUDENT, $person).rel(SCHOOL, $org).isa(STUDY_AT).has(CLASS_YEAR, org.year()));
                 }
 
                 for (LdbcUpdate1AddPerson.Organization org : operation.workAt()) {
-                    query.append("$" + org.organizationId() + " isa company has organisation-id " + org.organizationId() + "; ");
-                    workAndStudyPlaces.append("(employee: $x, employer: $" + org.organizationId() + ") isa work-at has work-from " + org.year() + "; ");
+                    Var $org = var(Long.toString(org.organizationId()));
+                    match.add($org.isa(COMPANY).has(ORGANISATION_ID, org.organizationId()));
+                    insert.add(var().rel(EMPLOYEE, $person).rel(EMPLOYER, $org).isa(WORK_AT).has(WORK_FROM, org.year()));
                 }
 
-                String baseInsertQuery = "insert " +
-                        "$x isa person has person-id " + operation.personId() +
-                        " has first-name '" + operation.personFirstName() + "' " +
-                        "has last-name '" + operation.personLastName() + "' " +
-                        "has birth-day " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.birthday().getTime()), ZoneOffset.UTC).toString() +
-                        " has creation-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC).toString() +
-                        " has location-ip '" + operation.locationIp() + "' " +
-                        "has browser-used '" + operation.browserUsed() + "' " +
-                        "has gender '" + operation.gender() + "' ";
-
-                query.append(baseInsertQuery);
+                insert.add($person.isa(PERSON)
+                        .has(PERSON_ID, operation.personId())
+                        .has(FIRST_NAME, operation.personFirstName())
+                        .has(LAST_NAME, operation.personLastName())
+                        .has(BIRTHDAY, fromDate(operation.birthday()))
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
+                        .has(LOCATION_IP, operation.locationIp())
+                        .has(BROWSER_USED, operation.browserUsed())
+                        .has(GENDER, operation.gender()));
 
                 for (String language : operation.languages()) {
-                    query.append("has speaks '" + language + "' ");
+                    insert.add($person.has(SPEAKS, language));
                 }
 
-                for (String email : operation.emails()) {
-                    query.append("has email '" + email + "' ");
+                for (String theEmail : operation.emails()) {
+                    insert.add($person.has(EMAIL, theEmail));
                 }
 
-                query.append("; ");
+                insert.add(var().rel(LOCATED, $person).rel(REGION, $city).isa(IS_LOCATED_IN));
 
-                query.append(interests);
-
-                query.append("(located: $x, region: $city) isa is-located-in;");
-
-                query.append(workAndStudyPlaces);
-
-                graph.graql().<InsertQuery>parse(query.toString()).execute();
+                graph.graql().match(match.build()).insert(insert.build()).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -124,12 +192,14 @@ public class GraknUpdateQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
-                String query = "match " +
-                        "$x has person-id " + operation.personId() + "; " +
-                        "$y has message-id " + operation.postId() + "; " +
-                        "insert (admirer: $x, like: $y) isa likes has creation-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC).toString() + ";";
+                graph.graql().match(
+                        $person.has(PERSON_ID, operation.personId()),
+                        $message.has(MESSAGE_ID, operation.postId())
+                ).insert(var()
+                        .rel(ADMIRER, $person).rel(LIKE, $message).isa(LIKES)
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
+                ).execute();
 
-                graph.graql().<InsertQuery>parse(query).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -150,12 +220,14 @@ public class GraknUpdateQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
-                String query = "match " +
-                        "$x has person-id " + operation.personId() + "; " +
-                        "$y has message-id " + operation.commentId() + "; " +
-                        "insert (admirer: $x, like: $y) isa likes has creation-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC).toString() + ";";
+                graph.graql().match(
+                        $person.has(PERSON_ID, operation.personId()),
+                        $message.has(MESSAGE_ID, operation.commentId())
+                ).insert(var()
+                        .rel(ADMIRER, $person).rel(LIKE, $message).isa(LIKES)
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
+                ).execute();
 
-                graph.graql().<InsertQuery>parse(query).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -177,26 +249,26 @@ public class GraknUpdateQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
-                StringBuilder query = new StringBuilder("match ");
-                StringBuilder tags = new StringBuilder();
+                ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
+                ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
 
-                query.append("$mod has person-id " + operation.moderatorPersonId() + "; ");
-
+                match.add($mod.has(PERSON_ID, operation.moderatorPersonId()));
 
                 for (long tag : operation.tagIds()) {
-                    query.append("$" + tag + " has tag-id " + tag + "; ");
-                    tags.append("(tagged: $forum, topic:  $" + tag + ") isa has-tag; ");
+                    Var $tag = var(Long.toString(tag));
+                    match.add($tag.has(TAG_ID, tag));
+                    insert.add(var().rel(TAGGED, $forum).rel(TOPIC, $tag).isa(HAS_TAG));
                 }
 
-                String insertQ = "insert $forum isa forum has forum-id " + operation.forumId() +
-                        " has title '" + operation.forumTitle() + "' " +
-                        "has creation-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC).toString() + "; ";
+                insert.add($forum
+                        .has(FORUM_ID, operation.forumId())
+                        .has(TITLE, operation.forumTitle())
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
+                );
 
-                query.append(insertQ);
-                query.append("(moderator: $mod, moderated: $forum) isa has-moderator; ");
-                query.append(tags);
+                insert.add(var().rel(MODERATOR, $mod).rel(MODERATED, $forum).isa(HAS_MODERATOR));
 
-                graph.graql().<InsertQuery>parse(query.toString()).execute();
+                graph.graql().match(match.build()).insert(insert.build()).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -217,11 +289,14 @@ public class GraknUpdateQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
-                String query = "match $forum has forum-id " + operation.forumId() + "; " +
-                        " $person has person-id " + operation.personId() + "; " +
-                        " insert (member: $person, group: $forum) isa has-member has join-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.joinDate().getTime()), ZoneOffset.UTC).toString() + ";";
+                graph.graql().match(
+                        $forum.has(FORUM_ID, operation.forumId()),
+                        $person.has(PERSON_ID, operation.personId())
+                ).insert(var()
+                        .rel(MEMBER, $person).rel(GROUP, $forum).isa(HAS_MEMBER)
+                        .has(JOIN_DATE, fromDate(operation.joinDate()))
+                ).execute();
 
-                graph.graql().<InsertQuery>parse(query).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -242,42 +317,42 @@ public class GraknUpdateQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
-                StringBuilder query = new StringBuilder("match ");
-                StringBuilder tags = new StringBuilder();
+                ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
+                ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
 
-                query.append("$author has person-id " + operation.authorPersonId() + "; ");
-                query.append("$forum has forum-id " + operation.forumId() + "; ");
-                query.append("$country has place-id " + operation.countryId() + "; ");
+                match.add(
+                        $author.has(PERSON_ID, operation.authorPersonId()),
+                        $forum.has(FORUM_ID, operation.forumId()),
+                        $country.has(PLACE_ID, operation.countryId())
+                );
 
                 for (long tag : operation.tagIds()) {
-                    query.append("$" + tag + " has tag-id " + tag + "; ");
-                    tags.append("(tagged: $post, topic: $" + tag + ") isa has-tag; ");
+                    Var $tag = var(Long.toString(tag));
+                    match.add($tag.has(TAG_ID, tag));
+                    insert.add(var().rel(TAGGED, $post).rel(TOPIC, $tag).isa(HAS_TAG));
                 }
 
-                String insertQ = "insert $post isa post has message-id " + operation.postId() + " " +
-                        "has location-ip '" + operation.locationIp() + "' " +
-                        "has browser-used '" + operation.browserUsed() + "' " +
-                        "has length " + operation.length() + " " +
-                        "has creation-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC).toString() + " ";
+                insert.add($post.isa(POST).has(MESSAGE_ID, operation.postId())
+                        .has(LOCATION_IP, operation.locationIp())
+                        .has(BROWSER_USED, operation.browserUsed())
+                        .has(LENGTH, operation.length())
+                        .has(CREATION_DATE, fromDate(operation.creationDate())));
 
-                query.append(insertQ);
                 if (operation.language().length() > 0) {
-                    query.append("has language '" + operation.language() + "' ");
+                    insert.add($post.has(LANGUAGE, operation.language()));
                 }
                 if (operation.imageFile().length() > 0) {
-                    query.append("has image-file '" + operation.imageFile() + "' ");
+                    insert.add($post.has(IMAGE_FILE, operation.imageFile()));
                 } else {
-                    query.append(" has content \"" + operation.content() + "\" ");
+                    insert.add($post.has(CONTENT, operation.content()));
                 }
-                query.append(";");
-                query.append("(product: $post, creator:  $author) isa has-creator; ");
-                query.append("(located: $post, region: $country) isa is-located-in; ");
-                query.append("(contained: $post, container: $forum) isa container-of; ");
+                insert.add(
+                        var().rel(PRODUCT, $post).rel(CREATOR, $author).isa(HAS_CREATOR),
+                        var().rel(LOCATED, $post).rel(REGION, $country).isa(IS_LOCATED_IN),
+                        var().rel(CONTAINED, $post).rel(CONTAINER, $forum).isa(CONTAINER_OF)
+                );
 
-                query.append(tags);
-
-
-                graph.graql().<InsertQuery>parse(query.toString()).execute();
+                graph.graql().match(match.build()).insert(insert.build()).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -298,40 +373,38 @@ public class GraknUpdateQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
-                StringBuilder query = new StringBuilder("match ");
-                StringBuilder tags = new StringBuilder();
+                ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
+                ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
 
-                query.append("$author has person-id " + operation.authorPersonId() + "; ");
+                match.add($author.has(PERSON_ID, operation.authorPersonId()));
                 if (operation.replyToPostId() != -1) {
-                    query.append("$original has message-id " + operation.replyToPostId() + "; ");
+                    match.add($original.has(MESSAGE_ID, operation.replyToPostId()));
                 } else {
-                    query.append("$original has message-id " + operation.replyToCommentId() + "; ");
+                    match.add($original.has(MESSAGE_ID, operation.replyToCommentId()));
                 }
-                query.append("$country has place-id " + operation.countryId() + "; ");
+                match.add($country.has(PLACE_ID, operation.countryId()));
 
                 for (long tag : operation.tagIds()) {
-                    query.append("$" + tag + " has tag-id " + tag + "; ");
-                    tags.append("(tagged: $comment, topic:  $" + tag + ") isa has-tag; ");
+                    Var $tag = var(Long.toString(tag));
+                    match.add($tag.has(TAG_ID, tag));
+                    insert.add(var().rel(TAGGED, $comment).rel(TOPIC, $tag).isa(HAS_TAG));
                 }
 
-                String insertQ = "insert $comment isa comment has message-id " + operation.commentId() + " " +
-                        "has content \"" + operation.content() + "\" " +
-                        "has location-ip '" + operation.locationIp() + "' " +
-                        "has browser-used '" + operation.browserUsed() + "' " +
-                        "has creation-date  " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC).toString() + "  " +
-                        "has length " + operation.length() + "; ";
+                insert.add(
+                        $comment.isa(COMMENT).has(MESSAGE_ID, operation.commentId())
+                                .has(CONTENT, operation.content())
+                                .has(LOCATION_IP, operation.locationIp())
+                                .has(BROWSER_USED, operation.browserUsed())
+                                .has(CREATION_DATE, fromDate(operation.creationDate()))
+                                .has(LENGTH, operation.length()),
 
-                query.append(insertQ);
+                        var().rel(PRODUCT, $comment).rel(CREATOR, $author).isa(HAS_CREATOR),
+                        var().rel(LOCATED, $comment).rel(REGION, $country).isa(IS_LOCATED_IN),
+                        var().rel(REPLY, $comment).rel(ORIGINAL, $original).isa(REPLY_OF)
+                );
 
+                graph.graql().match(match.build()).insert(insert.build()).execute();
 
-                query.append("(product: $comment, creator: $author) isa has-creator; ");
-                query.append("(located: $comment, region: $country) isa is-located-in; ");
-                query.append("(reply: $comment, original: $original) isa reply-of; ");
-
-                query.append(tags);
-
-
-                graph.graql().<InsertQuery>parse(query.toString()).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -351,12 +424,17 @@ public class GraknUpdateQueryHandlers {
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+                Var $person1 = var("person1");
+                Var $person2 = var("person2");
 
-                String query = "match $x has person-id " + operation.person1Id() +
-                        "; $y has person-id " + operation.person2Id() + ";" +
-                        "insert (friend: $x, friend: $y) isa knows has creation-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC).toString() + ";";
+                graph.graql().match(
+                        $person1.has(PERSON_ID, operation.person1Id()),
+                        $person2.has(PERSON_ID, operation.person2Id())
+                ).insert(var()
+                        .rel(FRIEND, $person1).rel(FRIEND, $person2).isa(KNOWS)
+                        .has(CREATION_DATE, fromDate(operation.creationDate()))
+                ).execute();
 
-                graph.graql().<InsertQuery>parse(query).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
