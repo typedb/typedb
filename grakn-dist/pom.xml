@@ -98,17 +98,6 @@
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>migration-owl</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
             <artifactId>migration-export</artifactId>
             <version>${project.version}</version>
         </dependency>
