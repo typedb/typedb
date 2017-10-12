@@ -22,16 +22,13 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.structure.AbstractElement;
-import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
@@ -270,17 +267,7 @@ public final class ElementFactory {
         return new EdgeElement(tx, edge);
     }
 
-    Casting buildCasting(EdgeElement edge) {
-        return new Casting(edge);
-    }
 
-    Casting buildCasting(EdgeElement edge, Relationship relationship) {
-        return new Casting(edge, relationship);
-    }
-
-    Casting buildCasting(EdgeElement edge, Relationship relationship, Role owner, Thing thing) {
-        return new Casting(edge, relationship, owner, thing);
-    }
 
     Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement){
         return new Shard(shardOwner, vertexElement);

@@ -29,6 +29,8 @@ import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
+import javax.annotation.Nullable;
+
 /**
  * <p>
  *     Represents An Thing Playing a Role
@@ -62,21 +64,23 @@ public class Casting {
         }
     });
 
-
-    public Casting(EdgeElement edgeElement, Relationship relationship, Role role, Thing thing){
+    private Casting(EdgeElement edgeElement, @Nullable Relationship relationship, @Nullable Role role, @Nullable Thing thing){
         this.edgeElement = edgeElement;
-        this.cachedRelationship.set(relationship);
-        this.cachedRole.set(role);
-        this.cachedInstance.set(thing);
+        if(relationship != null) this.cachedRelationship.set(relationship);
+        if(role != null) this.cachedRole.set(role);
+        if(thing != null) this.cachedInstance.set(thing);
     }
 
-    public Casting(EdgeElement edgeElement, Relationship relationship){
-        this.edgeElement = edgeElement;
-        this.cachedRelationship.set(relationship);
+    public static Casting create(EdgeElement edgeElement, Relationship relationship, Role role, Thing thing) {
+        return new Casting(edgeElement, relationship, role, thing);
     }
 
-    public Casting(EdgeElement edgeElement){
-        this.edgeElement = edgeElement;
+    public static Casting withThing(EdgeElement edgeElement, Thing thing){
+        return new Casting(edgeElement, null, null, thing);
+    }
+
+    public static Casting withRelationship(EdgeElement edgeElement, Relationship relationship) {
+        return new Casting(edgeElement, relationship, null, null);
     }
 
     private EdgeElement edge(){

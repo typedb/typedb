@@ -172,7 +172,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
         edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().getLabelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.getLabelId().getValue());
-        Casting casting = vertex().tx().factory().buildCasting(edge, owner, role, toThing);
+        Casting casting = Casting.create(edge, owner, role, toThing);
         vertex().tx().txCache().trackForValidation(casting);
 
         //Cache the new casting
@@ -263,7 +263,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     private Stream<Casting> lazyCastings(Set<Role> roles){
         if(roles.isEmpty()){
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
-                    map(edge -> vertex().tx().factory().buildCasting(edge, owner));
+                    map(edge -> Casting.withRelationship(edge, owner));
         }
 
         //Traversal is used so we can potentially optimise on the index
@@ -275,7 +275,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
                 toStream().
                 map(edge -> vertex().tx().factory().buildEdgeElement(edge)).
-                map(edge -> vertex().tx().factory().buildCasting(edge, owner));
+                map(edge -> Casting.withRelationship(edge, owner));
     }
 
     @Override
