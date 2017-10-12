@@ -158,6 +158,24 @@ public class RuleTest {
     }
 
     @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithImplicitType_Throw() throws InvalidKBException {
+        validateIllegalRule(
+                graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknTx.graql().parsePattern("(role3: $y, role3: $x) isa " + Schema.ImplicitType.HAS.getLabel("res1").getValue()),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithImplicitRole_Throw() throws InvalidKBException {
+        validateIllegalRule(
+                graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknTx.graql().parsePattern("(" + Schema.ImplicitType.HAS_OWNER.getLabel("res1").getValue() + ": $y, role3: $x) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+
+    @Test
     public void whenAddingRuleWithIllegalAtomicInHead_IllegalTypeAtoms_Throw() throws InvalidKBException {
         validateIllegalRule(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
