@@ -79,7 +79,7 @@ class Validator {
         //Validate Relationship Types
         graknGraph.txCache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
         //Validate Relations
-        graknGraph.txCache().getModifiedRelationships().forEach(relation -> validateRelation(graknGraph, relation));
+        graknGraph.txCache().getModifiedRelationships().forEach(this::validateRelation);
 
         //Validate Rule Types
         //Not Needed
@@ -112,13 +112,11 @@ class Validator {
      * Validation rules exclusive to relations
      * @param relationship The {@link Relationship} to validate
      */
-    private void validateRelation(GraknTxAbstract<?> graph, Relationship relationship){
+    private void validateRelation(Relationship relationship){
         validateThing(relationship);
         Optional<RelationshipReified> relationReified = ((RelationshipImpl) relationship).reified();
         //TODO: We need new validation mechanisms for non-reified relations
-        relationReified.ifPresent(relationReified1 -> {
-            ValidateGlobalRules.validateRelationIsUnique(graph, relationReified1).ifPresent(errorsFound::add);
-        });
+        relationReified.ifPresent(relationReified1 -> ValidateGlobalRules.validateRelationIsUnique(relationReified1).ifPresent(errorsFound::add));
     }
 
     /**

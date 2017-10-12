@@ -685,7 +685,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 
-    public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
+    public void putRolePlayerEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
         boolean exists = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
@@ -940,7 +940,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             otherRelationship.allRolePlayers().forEach((roleType, instances) -> {
                 Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
                 if (instances.contains(other) && relationReified.isPresent()) {
-                    putShortcutEdge(main, relationReified.get(), roleType);
+                    putRolePlayerEdge(main, relationReified.get(), roleType);
                 }
             });
         }
