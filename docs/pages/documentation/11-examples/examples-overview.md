@@ -48,9 +48,6 @@ There are several examples available:
 
 * We also cover SQL migration in a [blog post](https://blog.grakn.ai/populating-mindmapsdb-with-the-world-5b2445aee60c#).
 
-### OWL Migration
-
-For more information about migrating OWL to Grakn using the Java migration API, please see the [OWL migration example](./OWL-migration.html).
 
 ### Reasoning with Graql 
 

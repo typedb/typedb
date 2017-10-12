@@ -107,9 +107,6 @@ entries:
       - title: SQL Migration
         output: web
         url: /documentation/migration/SQL-migration.html
-      - title: OWL Migration
-        output: web
-        url: /documentation/migration/OWL-migration.html
   - title: Develop with Java
     output: web
     folderitems:
@@ -173,9 +170,6 @@ entries:
       - title: SQL Migration
         output: web
         url: /documentation/examples/SQL-migration.html
-      - title: OWL Migration
-        output: web
-        url: /documentation/examples/OWL-migration.html
       - title: Reasoning with Graql
         output: web
         url: /documentation/examples/graql-reasoning.html

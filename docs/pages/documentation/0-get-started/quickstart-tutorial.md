@@ -375,7 +375,7 @@ The above limits the path to blood relationships (parent/child relationships) th
 
 In this example we loaded data from *basic-genealogy.gql* directly into a knowledge base. However, data isn't often conveniently stored in .gql files and, indeed, the data that we used was originally in CSV format. Our [CSV migration example](../examples/CSV-migration.html) explains in detail the steps we took to migrate the CSV data into Grakn. 
 
-Migrating data in formats such as CSV, SQL, OWL and JSON into Grakn is a key use case. More information about each of these can be found in the [migration documentation](../migration/migration-overview.html).
+Migrating data in formats such as CSV, SQL, and JSON into Grakn is a key use case. More information about each of these can be found in the [migration documentation](../migration/migration-overview.html).
 
 ## Where Next?
 
