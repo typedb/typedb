@@ -11,6 +11,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.SampleKBLoader;
+import org.junit.Before;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -50,12 +51,13 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
         engine.after();
     }
 
-    /*public void addEntity() {
+    @Benchmark
+    public void addEntity() {
         try(GraknTx graph = session.open(GraknTxType.WRITE)) {
             entityType.addEntity();
             graph.commit();
         }
-    }*/
+    }
 
     @Benchmark
     public void addRelation() {
