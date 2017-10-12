@@ -44,8 +44,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 public class Casting {
     private final EdgeElement edgeElement;
     private final Cache<Role> cachedRoleType = new Cache<>(Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
-    private final Cache<RelationshipType> cachedRelationType = new Cache<>(Cacheable.concept(), () -> (RelationshipType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
-
     private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> edge().target().
             flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
@@ -55,6 +53,14 @@ public class Casting {
             flatMap(vertexElement -> edge().tx().factory().<Relationship>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()))
     );
+
+    private final Cache<RelationshipType> cachedRelationType = new Cache<>(Cacheable.concept(), () -> {
+        if(cachedRelation.isPresent()){
+            return cachedRelation.get().type();
+        } else {
+            return (RelationshipType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID)))
+        }
+    });
 
     public Casting(EdgeElement edgeElement){
         this.edgeElement = edgeElement;
