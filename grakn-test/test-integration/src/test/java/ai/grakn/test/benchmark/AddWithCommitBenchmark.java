@@ -50,12 +50,13 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
         engine.after();
     }
 
-    /*public void addEntity() {
+    @Benchmark
+    public void addEntity() {
         try(GraknTx graph = session.open(GraknTxType.WRITE)) {
             entityType.addEntity();
             graph.commit();
         }
-    }*/
+    }
 
     @Benchmark
     public void addRelation() {
