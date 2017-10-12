@@ -17,3 +17,7 @@ fi
 
 mv grakn-new grakn
 grakn/grakn server start
+
+grakn/graql console -k pokemon -f grakn/examples/pokemon.gql
+
+sudo systemctl restart periodic-query

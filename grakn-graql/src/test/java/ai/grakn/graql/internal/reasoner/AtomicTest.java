@@ -276,6 +276,14 @@ public class AtomicTest {
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
     }
 
+    @Test //for each role player role mapping is ambiguous so metarole has to be assigned
+    public void testRoleInference_MetaRelationType(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        String relationString = "{($x, $y) isa relationship;}";
+        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
+    }
+
     @Test //relation relates a single role so instead of assigning metarole this role should be assigned
     public void testRoleInference_RelationHasVerticalRoleHierarchy(){
         GraknTx graph = ruleApplicabilitySet.tx();
@@ -830,6 +838,13 @@ public class AtomicTest {
                 "$y id '" + conceptId(graph, "anotherSingleRoleEntity") +"';}";
 
         testTypeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
+    }
+
+    @Test
+    public void testTypeInference_metaGuards() {
+        GraknTx graph = typeInferenceSet.tx();
+        String patternString = "{($x, $y);$x isa entity; $y isa entity;}";
+        testTypeInference(allRelations(graph), patternString, graph);
     }
 
     @Test
