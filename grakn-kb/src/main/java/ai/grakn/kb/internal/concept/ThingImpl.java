@@ -114,7 +114,13 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public void delete() {
-        Set<Relationship> relationships = castingsInstance().map(Casting::getRelationship).collect(Collectors.toSet());
+        //Remove links to relationships and return them
+        Set<Relationship> relationships = castingsInstance().map(casting -> {
+            Relationship relationship = casting.getRelationship();
+            Role role = casting.getRole();
+            relationship.removeRolePlayer(role, this);
+            return relationship;
+        }).collect(Collectors.toSet());
 
         vertex().tx().txCache().removedInstance(type().getId());
         deleteNode();

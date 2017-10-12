@@ -105,6 +105,13 @@ public class Casting {
     }
 
     /**
+     * Deletes this {@link Casting} effectively removing a {@link Thing} from playing a {@link Role} in a {@link Relationship}
+     */
+    public void delete(){
+        edge().delete();
+    }
+
+    /**
      *
      * @return true if the elements equal each other
      */

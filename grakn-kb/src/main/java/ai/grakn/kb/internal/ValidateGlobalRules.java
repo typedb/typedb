@@ -326,15 +326,15 @@ class ValidateGlobalRules {
      * Checks is a {@link Relationship} is unique by searching the {@link GraknTx} for another {@link Relationship} with the same
      * hash.
      *
-     * @param relationReified The candidate unique {@link Relationship}
+     * @param relationshipReified The candidate unique {@link Relationship}
      * @param hash The hash to use to find other potential {@link Relationship}s
      * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
      */
-    private static Optional<String> setRelationUnique(RelationshipReified relationReified, String hash){
+    private static Optional<String> setRelationUnique(RelationshipReified relationshipReified, String hash){
         try{
-            relationReified.setHash(hash);
+            relationshipReified.setHash(hash);
         } catch(PropertyNotUniqueException e){
-            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
+            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationshipReified));
         }
         return Optional.empty();
     }

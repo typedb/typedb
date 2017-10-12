@@ -34,7 +34,6 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
@@ -685,21 +684,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 
-    public void putRolePlayerEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
-        boolean exists = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).inV().
-                has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
-
-        if (!exists) {
-            EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
-            edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
-            edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
-            txCache().trackForValidation(factory().buildCasting(edge));
-        }
-    }
-
     @Override
     public void delete() {
         closeSession();
@@ -937,10 +921,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelationship = otherRelationship;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-            otherRelationship.allRolePlayers().forEach((roleType, instances) -> {
+            otherRelationship.allRolePlayers().forEach((role, instances) -> {
                 Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
                 if (instances.contains(other) && relationReified.isPresent()) {
-                    putRolePlayerEdge(main, relationReified.get(), roleType);
+                    relationReified.get().putRolePlayerEdge(role, main);
                 }
             });
         }

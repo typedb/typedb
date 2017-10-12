@@ -99,6 +99,15 @@ public interface Relationship extends Thing {
     @Override
     Relationship deleteAttribute(Attribute attribute);
 
+    /**
+     * Removes the {@link Thing} which is playing a {@link Role} in this {@link Relationship}.
+     * If the {@link Thing} is not playing any {@link Role} in this {@link Relationship} nothing happens.
+     *
+     * @param role The {@link Role} being played by the {@link Thing}
+     * @param thing The {@link Thing} playing the {@link Role} in this {@link Relationship}
+     */
+    void removeRolePlayer(Role role, Thing thing);
+
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue

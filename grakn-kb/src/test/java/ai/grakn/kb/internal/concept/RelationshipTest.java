@@ -348,4 +348,30 @@ public class RelationshipTest extends TxTestBase {
 
         tx.commit();
     }
+
+    @Test
+    public void whenRemovingRolePlayerFromRelationship_EnsureRolePlayerIsRemoved(){
+        Role role1 = tx.putRole("dark");
+        Role role2 = tx.putRole("souls");
+        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relates(role1).relates(role2);
+        EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
+
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+        Entity e3 = entityType.addEntity();
+        Entity e4 = entityType.addEntity();
+        Entity e5 = entityType.addEntity();
+        Entity e6 = entityType.addEntity();
+
+        Relationship relationship = relationshipType.addRelationship().
+                addRolePlayer(role1, e1).addRolePlayer(role1, e2).addRolePlayer(role1, e3).
+                addRolePlayer(role2, e4).addRolePlayer(role2, e5).addRolePlayer(role2, e6);
+
+        assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e2, e3, e4, e5, e6));
+        relationship.removeRolePlayer(role1, e2);
+        relationship.removeRolePlayer(role2, e1);
+        assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5, e6));
+        relationship.removeRolePlayer(role2, e6);
+        assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5));
+    }
 }
