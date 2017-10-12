@@ -49,29 +49,34 @@ public class Casting {
             orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
     );
 
-    private final Cache<Relationship> cachedRelationshipType = new Cache<>(Cacheable.concept(), () -> edge().source().
+    private final Cache<Relationship> cachedRelationship = new Cache<>(Cacheable.concept(), () -> edge().source().
             flatMap(vertexElement -> edge().tx().factory().<Relationship>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()))
     );
 
-    private final Cache<RelationshipType> cachedRelationType = new Cache<>(Cacheable.concept(), () -> {
-        if(cachedRelationshipType.isPresent()){
-            return cachedRelationshipType.get().type();
+    private final Cache<RelationshipType> cachedRelationshipType = new Cache<>(Cacheable.concept(), () -> {
+        if(cachedRelationship.isPresent()){
+            return cachedRelationship.get().type();
         } else {
             return (RelationshipType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID)));
         }
     });
 
-    public Casting(EdgeElement edgeElement){
-        this.edgeElement = edgeElement;
-    }
 
-    //Use when possible to avoid DB reads
     public Casting(EdgeElement edgeElement, Relationship relationship, Role role, Thing thing){
         this.edgeElement = edgeElement;
-        this.cachedRelationshipType.set(relationship);
+        this.cachedRelationship.set(relationship);
         this.cachedRole.set(role);
         this.cachedInstance.set(thing);
+    }
+
+    public Casting(EdgeElement edgeElement, Relationship relationship){
+        this.edgeElement = edgeElement;
+        this.cachedRelationship.set(relationship);
+    }
+
+    public Casting(EdgeElement edgeElement){
+        this.edgeElement = edgeElement;
     }
 
     private EdgeElement edge(){
@@ -91,7 +96,7 @@ public class Casting {
      * @return The {@link RelationshipType} the {@link Thing} is taking part in
      */
     public RelationshipType getRelationshipType(){
-        return cachedRelationType.get();
+        return cachedRelationshipType.get();
     }
 
     /**
@@ -99,7 +104,7 @@ public class Casting {
      * @return The {@link Relationship} which is linking the {@link Role} and the instance
      */
     public Relationship getRelationship(){
-        return cachedRelationshipType.get();
+        return cachedRelationship.get();
     }
 
     /**
