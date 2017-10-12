@@ -86,14 +86,6 @@ interface RelationshipStructure extends ContainsTxCache {
     Stream<Thing> rolePlayers(Role... roles);
 
     /**
-     * Removes a {@link Thing} from this {@link Relationship}
-     *
-     * @param role the {@link Role} of the {@link Thing} in this {@link Relationship}
-     * @param thing the {@link Thing} playing a {@link Role} in this {@link Relationship}
-     */
-    void removeRolePlayer(Role role, Thing thing);
-
-    /**
      * Deletes the {@link VertexElement} or {@link EdgeElement} used to represent this {@link Relationship}
      */
     void delete();

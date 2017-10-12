@@ -173,7 +173,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
 
     @Override
     public void removeRolePlayer(Role role, Thing thing) {
-        structure().removeRolePlayer(role, thing);
+        reified().ifPresent(relationshipReified -> relationshipReified.removeRolePlayer(role, thing));
     }
 
     /**

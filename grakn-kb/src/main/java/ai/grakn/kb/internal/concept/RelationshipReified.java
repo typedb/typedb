@@ -108,8 +108,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     }
 
     //TODO: This could probably become more efficient in certain use cases
-    @Override
-    public void removeRolePlayer(Role role, Thing thing) {
+    void removeRolePlayer(Role role, Thing thing) {
         Set<Casting> castings = allCastings.get();
         Iterator<Casting> iterator = castings.iterator();
 

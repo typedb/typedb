@@ -158,11 +158,6 @@ public class RelationshipEdge implements RelationshipStructure {
     }
 
     @Override
-    public void removeRolePlayer(Role role, Thing thing) {
-        throw new UnsupportedOperationException("Cannot remove roleplayer from edge relationship");
-    }
-
-    @Override
     public void txCacheClear() {
         relationType.clear();
         ownerRole.clear();
