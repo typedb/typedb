@@ -293,7 +293,7 @@ class ValidateGlobalRules {
      * The check for if the key is actually connected to the {@link Relationship} is done in {@link #validateInstancePlaysAllRequiredRoles}
      *
      * @param relationshipReified the {@link Relationship} to check
-     * @param keys the {@link AttributeType} indicating the key which the relation must be bound to and unique to
+     * @param keys the {@link AttributeType} indicating the key which the {@link Relationship} must be bound to and unique to
      * @return An error message if the {@link Relationship} is not unique.
      */
     private static Optional<String> validateKeyControlledRelation(RelationshipReified relationshipReified, Iterator<AttributeType> keys) {
@@ -314,27 +314,27 @@ class ValidateGlobalRules {
      * Checks if {@link Relationship}s which are not bound to {@link Attribute}s as keys are unique by their
      * {@link Role}s and the {@link Thing}s which play those roles.
      *
-     * @param relationReified the {@link Relationship} to check
+     * @param relationshipReified the {@link Relationship} to check
      * @return An error message if the {@link Relationship} is not unique.
      */
-    private static Optional<String> validateNonKeyControlledRelation(RelationshipReified relationReified){
-        String hash = RelationshipReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
-        return setRelationUnique(relationReified, hash);
+    private static Optional<String> validateNonKeyControlledRelation(RelationshipReified relationshipReified){
+        String hash = RelationshipReified.generateNewHash(relationshipReified.type(), relationshipReified.allRolePlayers());
+        return setRelationUnique(relationshipReified, hash);
     }
 
     /**
      * Checks is a {@link Relationship} is unique by searching the {@link GraknTx} for another {@link Relationship} with the same
      * hash.
      *
-     * @param relationReified The candidate unique {@link Relationship}
+     * @param relationshipReified The candidate unique {@link Relationship}
      * @param hash The hash to use to find other potential {@link Relationship}s
      * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
      */
-    private static Optional<String> setRelationUnique(RelationshipReified relationReified, String hash){
+    private static Optional<String> setRelationUnique(RelationshipReified relationshipReified, String hash){
         try{
-            relationReified.setHash(hash);
+            relationshipReified.setHash(hash);
         } catch(PropertyNotUniqueException e){
-            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
+            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationshipReified));
         }
         return Optional.empty();
     }

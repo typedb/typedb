@@ -39,6 +39,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -69,14 +70,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
      * Set of {@link Casting}s which are loaded into memory. This should only be used when adding new roleplayers.
      * This is because validation requires iterating over all castings anyway.
      */
-    private Cache<Set<Casting>> allCastings = new Cache<>(Cacheable.set(), () -> {
-        return vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
-                toStream().map(edge -> vertex().tx().factory().buildCasting(edge)).
-                collect(Collectors.toSet());
-    });
+    private Cache<Set<Casting>> allCastings = new Cache(Cacheable.set(), () -> lazyCastings(Collections.EMPTY_SET).collect(Collectors.toSet()));
 
     private RelationshipReified(VertexElement vertexElement) {
         super(vertexElement);
