@@ -28,11 +28,15 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.Casting;
+import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import ai.grakn.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -129,8 +133,55 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraknTxOperationException.metaTypeImmutable(role.getLabel());
 
         //Do the actual put of the role and role player
-        Casting newCasting = vertex().tx().putRolePlayerEdge(thing, this, role);
-        allCastings.get().add(newCasting);
+        putRolePlayerEdge(role, thing);
+    }
+
+    /**
+     * If the edge does not exist then it adds a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from
+     * this {@link Relationship} to a target {@link Thing} which is playing some {@link Role}.
+     *
+     * If the edge does exist nothing is done.
+     *
+     * @param role The {@link Role} being played by the {@link Thing} in this {@link Relationship}
+     * @param toThing The {@link Thing} playing a {@link Role} in this {@link Relationship}
+     */
+    public void putRolePlayerEdge(Role role, Thing toThing) {
+        //Checking if the edge exists
+        if(allCastings.isPresent()){
+            //We use the cache if it has been loaded
+            for (Casting casting : allCastings.get()) {
+                if(casting.getRole().equals(role) && casting.getRolePlayer().equals(toThing)){
+                    return;
+                }
+            }
+        } else {
+            //If the cache has not been loaded then we are lazy and just use a traversal.
+            //We do this because we should only load the cache `allCastings` if necessary
+            //And this is only necessary if a new role player has been added
+            GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
+                    has(Schema.VertexProperty.ID.name(), this.getId().getValue()).
+                    outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                    has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), this.type().getLabelId().getValue()).
+                    has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.getLabelId().getValue()).
+                    as("edge").
+                    inV().
+                    has(Schema.VertexProperty.ID.name(), toThing.getId()).
+                    select("edge");
+
+            if(traversal.hasNext()){
+                return;
+            }
+        }
+
+        //Role player edge does not exist create a new one
+        EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
+        edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().getLabelId().getValue());
+        edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.getLabelId().getValue());
+        Casting casting = vertex().tx().factory().buildCasting(edge);
+        vertex().tx().txCache().trackForValidation(casting);
+
+        //Cache the new casting
+        allCastings.get().add(casting);
     }
 
     /**

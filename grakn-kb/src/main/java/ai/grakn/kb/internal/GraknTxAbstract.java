@@ -34,7 +34,6 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
@@ -53,7 +52,6 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.concept.TypeImpl;
-import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.EngineCommunicator;
@@ -686,28 +684,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 
-    public Casting putRolePlayerEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
-        GraphTraversal<Vertex, Edge> traversal = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).
-                as("edge").
-                inV().
-                has(Schema.VertexProperty.ID.name(), toThing.getId()).
-                select("edge");
-
-        if (!traversal.hasNext()) {
-            EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
-            edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
-            edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
-            Casting casting = factory().buildCasting(edge);
-            txCache().trackForValidation(casting);
-            return casting;
-        } else {
-            return factory().buildCasting(factory().buildEdgeElement(traversal.next()));
-        }
-    }
-
     @Override
     public void delete() {
         closeSession();
@@ -945,10 +921,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelationship = otherRelationship;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-            otherRelationship.allRolePlayers().forEach((roleType, instances) -> {
+            otherRelationship.allRolePlayers().forEach((role, instances) -> {
                 Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
                 if (instances.contains(other) && relationReified.isPresent()) {
-                    putRolePlayerEdge(main, relationReified.get(), roleType);
+                    relationReified.get().putRolePlayerEdge(role, main);
                 }
             });
         }
