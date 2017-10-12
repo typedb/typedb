@@ -171,6 +171,11 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
         return this;
     }
 
+    @Override
+    public void removeRolePlayer(Role role, Thing thing) {
+        structure().removeRolePlayer(role, thing);
+    }
+
     /**
      * When a relation is deleted this cleans up any solitary casting and resources.
      */

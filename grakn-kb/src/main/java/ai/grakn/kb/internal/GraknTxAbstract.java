@@ -53,6 +53,7 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.concept.TypeImpl;
+import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.EngineCommunicator;
@@ -685,18 +686,25 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 
-    public void putRolePlayerEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
-        boolean exists = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
+    public Casting putRolePlayerEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
+        GraphTraversal<Vertex, Edge> traversal = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).inV().
-                has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
+                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).
+                as("edge").
+                inV().
+                has(Schema.VertexProperty.ID.name(), toThing.getId()).
+                select("edge");
 
-        if (!exists) {
+        if (!traversal.hasNext()) {
             EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
             edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
-            txCache().trackForValidation(factory().buildCasting(edge));
+            Casting casting = factory().buildCasting(edge);
+            txCache().trackForValidation(casting);
+            return casting;
+        } else {
+            return factory().buildCasting(factory().buildEdgeElement(traversal.next()));
         }
     }
 

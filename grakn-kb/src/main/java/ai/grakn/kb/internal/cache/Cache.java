@@ -99,7 +99,7 @@ public class Cache<V> {
      *
      * @return true if there is anything stored in the cache
      */
-    private boolean isPresent(){
+    public boolean isPresent(){
         return valueTx.get() != null || valueGlobal.isPresent();
     }
 
