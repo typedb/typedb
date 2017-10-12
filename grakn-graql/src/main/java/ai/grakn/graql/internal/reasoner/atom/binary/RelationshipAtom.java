@@ -260,9 +260,8 @@ public class RelationshipAtom extends IsaAtom {
             return errors;
         }
 
-        //check roles are ok
-        Map<Var, SchemaConcept> varSchemaConceptMap = getParentQuery().getVarSchemaConceptMap();
-
+        //check role-tyoe compatibility
+        Map<Var, Type> varSchemaConceptMap = getParentQuery().getVarTypeMap();
         for (Map.Entry<Role, Collection<Var>> e : getRoleVarMap().asMap().entrySet() ){
             Role role = e.getKey();
             if (!Schema.MetaSchema.isMetaLabel(role.getLabel())) {
@@ -332,7 +331,7 @@ public class RelationshipAtom extends IsaAtom {
         if (roleTypeMap == null) {
             roleTypeMap = ArrayListMultimap.create();
             Multimap<Role, Var> roleMap = getRoleVarMap();
-            Map<Var, SchemaConcept> varTypeMap = getParentQuery().getVarSchemaConceptMap();
+            Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
             roleMap.entries().stream()
                     .filter(e -> varTypeMap.containsKey(e.getValue()))
@@ -409,7 +408,7 @@ public class RelationshipAtom extends IsaAtom {
         //Answer mergedSub = this.getParentQuery().getSubstitution().merge(sub);
 
         Set<Var> subbedVars = Sets.intersection(getRolePlayers(), sub.vars());
-        Set<Var> untypedVars = Sets.difference(subbedVars, getParentQuery().getVarSchemaConceptMap().keySet());
+        Set<Var> untypedVars = Sets.difference(subbedVars, getParentQuery().getVarTypeMap().keySet());
         return untypedVars.stream()
                 .map(v -> new Pair<>(v, sub.get(v)))
                 .filter(p -> p.getValue().isThing())
@@ -426,11 +425,12 @@ public class RelationshipAtom extends IsaAtom {
     public List<RelationshipType> inferPossibleRelationTypes(Answer sub) {
         if (getSchemaConcept() != null) return Collections.singletonList(getSchemaConcept().asRelationshipType());
 
-        //look at available role types
-        Multimap<RelationshipType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
+        //look at available roles
+        Set<Role> roles = getExplicitRoleTypes();
+        Multimap<RelationshipType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(roles, new RoleTypeConverter());
 
         //look at entity types
-        Map<Var, SchemaConcept> varTypeMap = getParentQuery().getVarSchemaConceptMap();
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
         //explicit types
         Set<Type> types = getRolePlayers().stream()
@@ -443,19 +443,21 @@ public class RelationshipAtom extends IsaAtom {
 
         Multimap<RelationshipType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new TypeConverter());
 
-        Multimap<RelationshipType, Role> compatibleTypes;
         //intersect relation types from roles and types
-        if (compatibleTypesFromRoles.isEmpty()){
+        Multimap<RelationshipType, Role> compatibleTypes;
+        //no types from roles -> roles correspond to mutually exclusive relations
+        if (roles.isEmpty()){
             compatibleTypes = compatibleTypesFromTypes;
-        } else if (!compatibleTypesFromTypes.isEmpty()){
-            compatibleTypes = multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
-        } else {
+        } else if(compatibleTypesFromRoles.isEmpty() || types.isEmpty()){
             compatibleTypes = compatibleTypesFromRoles;
+        } else {
+            compatibleTypes = multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
         }
 
         return compatibleTypes.asMap().entrySet().stream()
                 .sorted(Comparator.comparing(e -> -e.getValue().size()))
                 .map(Map.Entry::getKey)
+                //all supers are also compatible
                 .filter(t -> Sets.intersection(supers(t), compatibleTypes.keySet()).isEmpty())
                 .collect(Collectors.toList());
     }
@@ -578,7 +580,7 @@ public class RelationshipAtom extends IsaAtom {
 
         //possible role types for each casting based on its type
         Map<RelationPlayer, Set<Role>> mappings = new HashMap<>();
-        Map<Var, SchemaConcept> varSchemaConceptMap = getParentQuery().getVarSchemaConceptMap();
+        Map<Var, Type> varSchemaConceptMap = getParentQuery().getVarTypeMap();
 
         //types deduced from substitution
         inferEntityTypes(sub).forEach(p -> varSchemaConceptMap.put(p.getKey(), p.getValue()));
@@ -695,8 +697,8 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, boolean exact) {
         Multimap<Role, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
-        Map<Var, SchemaConcept> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarSchemaConceptMap();
-        Map<Var, SchemaConcept> childVarSchemaConceptMap = this.getParentQuery().getVarSchemaConceptMap();
+        Map<Var, Type> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarTypeMap();
+        Map<Var, Type> childVarSchemaConceptMap = this.getParentQuery().getVarTypeMap();
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();

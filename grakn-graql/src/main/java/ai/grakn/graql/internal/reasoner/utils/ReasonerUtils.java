@@ -287,7 +287,7 @@ public class ReasonerUtils {
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
         compatibleTypes.putAll(schemaConceptConverter.toRelationshipMultimap(it.next()));
-        while(it.hasNext() && compatibleTypes.size() > 1) {
+        while(it.hasNext() && !compatibleTypes.isEmpty()) {
             compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(it.next()));
         }
         return compatibleTypes;

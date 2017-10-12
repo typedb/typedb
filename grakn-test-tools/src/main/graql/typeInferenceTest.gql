@@ -12,27 +12,22 @@ subRole2 sub role2;
 #Entities
 
 #plays in rel1
-#entity1
 singleRoleEntity sub entity
 	plays role1;
 
 #plays in rel1, rel3
-#subEntity1
 twoRoleEntity sub singleRoleEntity
     plays role4;
 
 #plays in rel1, rel2
-#entity2
 anotherTwoRoleEntity sub singleRoleEntity
 	plays role2;
 
-#entity3
 #plays in rel1, rel2, rel3
 threeRoleEntity sub anotherSingleRoleEntity
     plays role2
     plays role3;
 
-#entity4
 #plays in rel3
 anotherSingleRoleEntity sub entity
     plays role4;
@@ -51,3 +46,8 @@ relation3 sub relationship
     relates subRole2
     relates role3
     relates role4;
+
+
+insert
+
+
