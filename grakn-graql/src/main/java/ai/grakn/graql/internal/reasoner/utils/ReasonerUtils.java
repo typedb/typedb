@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.utils;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -246,13 +245,13 @@ public class ReasonerUtils {
     }
 
     /**
-     * Gets roletypes a given type can play in the provided relType relation type by performing
+     * Gets roles a given type can play in the provided relType relation type by performing
      * type intersection between type's playedRoles and relation's relates.
      * @param type for which we want to obtain compatible roles it plays
      * @param relRoles relation type of interest
      * @return set of role types the type can play in relType
      */
-    public static Set<Role> getCompatibleRoleTypes(Type type, Stream<Role> relRoles) {
+    public static Set<Role> getCompatibleRoles(Type type, Stream<Role> relRoles) {
         Set<Role> typeRoles = type.plays().collect(toSet());
         return relRoles.filter(typeRoles::contains).collect(toSet());
     }
@@ -278,7 +277,7 @@ public class ReasonerUtils {
      * compute the map of compatible relation types for given types (intersection of allowed sets of relationship types for each entry type)
      * and compatible role types
      * @param types for which the set of compatible relation types is to be computed
-     //* @param typeMapper function mapping a type to the set of compatible relation types
+     * @param schemaConceptConverter converter between schema concept and relationship type-role entries
      * @param <T> type generic
      * @return map of compatible relation types and their corresponding role types
      */

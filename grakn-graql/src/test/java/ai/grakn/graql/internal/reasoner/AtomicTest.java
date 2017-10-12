@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -640,12 +641,11 @@ public class AtomicTest {
     @Test
     public void testTypeInference_singleGuard() {
         GraknTx graph = typeInferenceSet.tx();
+
         String patternString = "{$x isa singleRoleEntity; ($x, $y);}";
+        String subbedPatternString = "{$x id '" + conceptId(graph, "singleRoleEntity") + "';($x, $y);}";
         String patternString2 = "{$x isa twoRoleEntity; ($x, $y);}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom atom2 = (RelationshipAtom) query2.getAtom();
+        String subbedPatternString2 = "{$x id '" + conceptId(graph, "twoRoleEntity") + "';($x, $y);}";
 
         RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
         List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
@@ -654,13 +654,9 @@ public class AtomicTest {
                 graph.getSchemaConcept(Label.of("relation1")),
                 graph.getSchemaConcept(Label.of("relation3"))
         );
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertEquals(possibleTypes, relationshipTypes);
-        assertTrue(CollectionUtils.isEqualCollection(possibleTypes2, relationshipTypes2));
-        assertEquals(atom.getSchemaConcept(), relation1);
-        assertEquals(atom2.getSchemaConcept(), null);
+        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
+        testTypeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -669,57 +665,40 @@ public class AtomicTest {
 
         //{rel1} ^ {rel1, rel2} = {rel1}
         String patternString = "{$x isa singleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
+        String subbedPatternString = "{($x, $y);" +
+                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
         //{rel1, rel3} ^ {rel1, rel2} = {rel1}
         String patternString2 = "{$x isa twoRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
-
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom atom2 = (RelationshipAtom) query2.getAtom();
+        String subbedPatternString2 = "{($x, $y);" +
+                "$x id '" + conceptId(graph, "twoRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
 
         RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
         List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertEquals(possibleTypes, relationshipTypes);
-        assertEquals(relationshipTypes2, possibleTypes);
-        assertEquals(atom.getSchemaConcept(), relation1);
-        assertEquals(atom2.getSchemaConcept(), relation1);
-    }
-
-    private List<RelationshipType> allRelations(GraknTx tx){
-        RelationshipType metaType = tx.getRelationshipType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
-        return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
+        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
+        testTypeInference(possibleTypes, patternString2, subbedPatternString2, graph);
     }
 
     @Test
     public void testTypeInference_singleRole() {
         GraknTx graph = typeInferenceSet.tx();
         String patternString = "{(role2: $x, $y);}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
 
         List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getSchemaConcept(Label.of("relation1")),
                 graph.getSchemaConcept(Label.of("relation2"))
         );
 
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        assertTrue(CollectionUtils.isEqualCollection(possibleTypes, relationshipTypes));
-        assertEquals(atom.getSchemaConcept(), null);
+        testTypeInference(possibleTypes, patternString, graph);
     }
 
     @Test
     public void testTypeInference_singleRole_subType() {
         GraknTx graph = typeInferenceSet.tx();
         String patternString = "{(subRole2: $x, $y);}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-
-        assertTrue(CollectionUtils.isEqualCollection(allRelations(graph), relationshipTypes));
-        assertEquals(atom.getSchemaConcept(), null);
+        testTypeInference(allRelations(graph), patternString, graph);
     }
 
     @Test
@@ -728,32 +707,23 @@ public class AtomicTest {
 
         //{rel1, rel2} ^ {rel1}
         String patternString = "{(role2: $x, $y); $y isa singleRoleEntity;}";
+        String subbedPatternString = "{(role2: $x, $y);" +
+                "$y id '" + conceptId(graph, "singleRoleEntity") + "';}";
         //{rel1, rel2} ^ {rel1, rel3}
         String patternString2 = "{(role2: $x, $y); $y isa twoRoleEntity;}";
+        String subbedPatternString2 = "{(role2: $x, $y);" +
+                "$y id '" + conceptId(graph, "twoRoleEntity") + "';}";
         //{rel1,} ^ {rel1, rel3}
         String patternString3 = "{(role1: $x, $y); $y isa anotherTwoRoleEntity;}";
-
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
-        ReasonerAtomicQuery query3 = ReasonerQueries.atomic(conjunction(patternString3, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom atom2 = (RelationshipAtom) query2.getAtom();
-        RelationshipAtom atom3 = (RelationshipAtom) query3.getAtom();
+        String subbedPatternString3 = "{(role1: $x, $y);" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") + "';}";
 
         RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
         List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
 
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationshipType> relationshipTypes3 = atom3.inferPossibleRelationTypes(new QueryAnswer());
-
-        assertEquals(possibleTypes, relationshipTypes);
-        assertEquals(possibleTypes, relationshipTypes2);
-        assertEquals(possibleTypes, relationshipTypes3);
-
-        assertEquals(atom.getSchemaConcept(), relation1);
-        assertEquals(atom2.getSchemaConcept(), relation1);
-        assertEquals(atom3.getSchemaConcept(), relation1);
+        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
+        testTypeInference(possibleTypes, patternString2, subbedPatternString2, graph);
+        testTypeInference(possibleTypes, patternString3, subbedPatternString3, graph);
     }
 
     @Test
@@ -762,16 +732,13 @@ public class AtomicTest {
 
         //{rel1, rel2, rel3} ^ {rel1, rel3}
         String patternString = "{(subRole2: $x, $y); $y isa twoRoleEntity;}";
+        String subbedPatternString = "{(subRole2: $x, $y);" +
+                "$y id '" + conceptId(graph, "twoRoleEntity") + "';}";
         //{rel1, rel2, rel3} ^ {rel1, rel2}
         String patternString2 = "{(subRole2: $x, $y); $y isa anotherTwoRoleEntity;}";
+        String subbedPatternString2 = "{(subRole2: $x, $y);" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") + "';}";
 
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom atom2 = (RelationshipAtom) query2.getAtom();
-
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
         List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getSchemaConcept(Label.of("relation1")),
                 graph.getSchemaConcept(Label.of("relation3"))
@@ -781,10 +748,8 @@ public class AtomicTest {
                 graph.getSchemaConcept(Label.of("relation2"))
         );
 
-        assertTrue(CollectionUtils.isEqualCollection(possibleTypes, relationshipTypes));
-        assertTrue(CollectionUtils.isEqualCollection(possibleTypes2, relationshipTypes2));
-        assertEquals(atom.getSchemaConcept(), null);
-        assertEquals(atom2.getSchemaConcept(), null);
+        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
+        testTypeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -793,20 +758,14 @@ public class AtomicTest {
 
         //{rel1} ^ {rel3}
         String patternString = "{(role1: $x, $y); $y isa anotherSingleRoleEntity;}";
+        String subbedPatternString = "{(role1: $x, $y);" +
+                "$y id '" + conceptId(graph, "anotherSingleRoleEntity") + "';}";
         String patternString2 = "{(role1: $x, $y); $x isa anotherSingleRoleEntity;}";
+        String subbedPatternString2 = "{(role1: $x, $y);" +
+                "$x id '" + conceptId(graph, "anotherSingleRoleEntity") + "';}";
 
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom atom2 = (RelationshipAtom) query2.getAtom();
-
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
-
-        assertThat(relationshipTypes, empty());
-        assertThat(relationshipTypes2, empty());
-        assertEquals(atom.getSchemaConcept(), null);
-        assertEquals(atom2.getSchemaConcept(), null);
+        testTypeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
+        testTypeInference(Collections.emptyList(), patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -814,15 +773,13 @@ public class AtomicTest {
         GraknTx graph = typeInferenceSet.tx();
         //{rel1} ^ {rel1, rel2}
         String patternString = "{$x isa singleRoleEntity;(role2: $x, $y); $y isa anotherTwoRoleEntity;}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+        String subbedPatternString = "{(role2: $x, $y);" +
+                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
 
         RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
         List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
-
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        assertEquals(possibleTypes, relationshipTypes);
-        assertEquals(atom.getSchemaConcept(), relation1);
+        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
     }
 
     @Test
@@ -831,23 +788,20 @@ public class AtomicTest {
 
         //{rel1} ^ {rel1, rel2} ^ {rel1} ^ {rel1, rel2}
         String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity;}";
+        String subbedPatternString = "{(role1: $x, role2: $y);" +
+                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
         //{rel1, rel2, rel3} ^ {rel1, rel2} ^ {rel2, rel3} ^ {rel1, rel2}
         String patternString2 = "{$x isa threeRoleEntity;(role2: $x, role3: $y); $y isa anotherTwoRoleEntity;}";
-
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom atom2 = (RelationshipAtom) query2.getAtom();
+        String subbedPatternString2 = "{(role2: $x, role3: $y);" +
+                "$x id '" + conceptId(graph, "threeRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
 
         RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
         RelationshipType relation2 = graph.getSchemaConcept(Label.of("relation2"));
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertEquals(Collections.singletonList(relation1), relationshipTypes);
-        assertEquals(Collections.singletonList(relation2), relationshipTypes2);
-        assertEquals(atom.getSchemaConcept(), relation1);
-        assertEquals(atom2.getSchemaConcept(), relation2);
+        testTypeInference(Collections.singletonList(relation1), patternString, subbedPatternString, graph);
+        testTypeInference(Collections.singletonList(relation2), patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -855,16 +809,15 @@ public class AtomicTest {
         GraknTx graph = typeInferenceSet.tx();
         //{rel1, rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{$x isa threeRoleEntity;(subRole2: $x, role3: $y); $y isa threeRoleEntity;}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+        String subbedPatternString = "{(subRole2: $x, role3: $y);" +
+                "$x id '" + conceptId(graph, "threeRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "threeRoleEntity") + "';}";
 
         List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getSchemaConcept(Label.of("relation3")),
                 graph.getSchemaConcept(Label.of("relation2"))
         );
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        assertEquals(possibleTypes, relationshipTypes);
-        assertEquals(atom.getSchemaConcept(), null);
+        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
     }
 
     @Test
@@ -872,12 +825,18 @@ public class AtomicTest {
         GraknTx graph = typeInferenceSet.tx();
         //{rel1} ^ {rel1} ^ {rel1, rel2} ^ {rel4}
         String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherSingleRoleEntity;}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+        String subbedPatternString = "{(role1: $x, role2: $y);" +
+                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "anotherSingleRoleEntity") +"';}";
 
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        assertThat(relationshipTypes, empty());
-        assertEquals(atom.getSchemaConcept(), null);
+        testTypeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
+    }
+
+    @Test
+    public void testTypeInference_genericRelation() {
+        GraknTx graph = typeInferenceSet.tx();
+        String patternString = "{($x, $y);}";
+        testTypeInference(allRelations(graph), patternString, graph);
     }
 
     /**
@@ -1135,6 +1094,41 @@ public class AtomicTest {
         testExactUnification(baseQuery, childQuery, true, true);
     }
 
+    private void testTypeInference(List<RelationshipType> possibleTypes, String pattern, GraknTx graph){
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+
+        if (possibleTypes.size() == 1){
+            assertEquals(possibleTypes, relationshipTypes);
+            assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
+        } else {
+            assertTrue(CollectionUtils.isEqualCollection(possibleTypes, relationshipTypes));
+            assertEquals(atom.getSchemaConcept(), null);
+        }
+    }
+
+    private void testTypeInference(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, GraknTx graph){
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
+        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+        RelationshipAtom subbedAtom = (RelationshipAtom) subbedQuery.getAtom();
+
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> subbedRelationshipTypes = subbedAtom.inferPossibleRelationTypes(new QueryAnswer());
+        if (possibleTypes.size() == 1){
+            assertEquals(possibleTypes, relationshipTypes);
+            assertEquals(relationshipTypes, subbedRelationshipTypes);
+            assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
+            assertEquals(subbedAtom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
+        } else {
+            assertTrue(CollectionUtils.isEqualCollection(possibleTypes, relationshipTypes));
+            assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, subbedRelationshipTypes));
+            assertEquals(atom.getSchemaConcept(), null);
+            assertEquals(subbedAtom.getSchemaConcept(), null);
+        }
+    }
+
     private void testExactUnification(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, boolean checkInverse, boolean checkEquality){
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = parentQuery.getAtom();
@@ -1169,6 +1163,15 @@ public class AtomicTest {
 
     private QueryAnswers queryAnswers(GetQuery query) {
         return new QueryAnswers(query.stream().collect(toSet()));
+    }
+
+    private List<RelationshipType> allRelations(GraknTx tx){
+        RelationshipType metaType = tx.getRelationshipType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
+        return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
+    }
+
+    private ConceptId conceptId(GraknTx graph, String type){
+        return graph.getEntityType(type).instances().map(Concept::getId).findFirst().orElse(null);
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){

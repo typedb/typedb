@@ -419,7 +419,7 @@ public class RelationshipAtom extends IsaAtom {
     /**
      * infer relation types that this relationship atom can potentially have
      * NB: entity types and role types are treated separately as they behave differently:
-     * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role)
+     * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role) and the role inherited from parents
      * @return list of relation types this atom can have ordered by the number of compatible role types
      */
     public List<RelationshipType> inferPossibleRelationTypes(Answer sub) {
@@ -445,10 +445,12 @@ public class RelationshipAtom extends IsaAtom {
 
         //intersect relation types from roles and types
         Multimap<RelationshipType, Role> compatibleTypes;
-        //no types from roles -> roles correspond to mutually exclusive relations
+
         if (roles.isEmpty()){
             compatibleTypes = compatibleTypesFromTypes;
-        } else if(compatibleTypesFromRoles.isEmpty() || types.isEmpty()){
+        }
+        //no types from roles -> roles correspond to mutually exclusive relations
+        else if(compatibleTypesFromRoles.isEmpty() || types.isEmpty()){
             compatibleTypes = compatibleTypesFromRoles;
         } else {
             compatibleTypes = multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
@@ -591,7 +593,7 @@ public class RelationshipAtom extends IsaAtom {
                     Var varName = casting.getRolePlayer().var();
                     SchemaConcept schemaConcept = varSchemaConceptMap.get(varName);
                     if (schemaConcept != null && !Schema.MetaSchema.isMetaLabel(schemaConcept.getLabel()) && schemaConcept.isType()) {
-                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(schemaConcept.asType(), possibleRoles.stream()));
+                        mappings.put(casting, ReasonerUtils.getCompatibleRoles(schemaConcept.asType(), possibleRoles.stream()));
                     } else {
                         mappings.put(casting, ReasonerUtils.getSchemaConcepts(possibleRoles));
                     }
