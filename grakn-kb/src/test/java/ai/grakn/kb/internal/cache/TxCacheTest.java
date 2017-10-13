@@ -232,7 +232,6 @@ public class TxCacheTest extends TxTestBase {
         assertThat(cache.getConceptCache().keySet(), not(empty()));
         assertThat(cache.getSchemaConceptCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
-        assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
         assertThat(cache.getModifiedCastings(), not(empty()));
 
@@ -243,7 +242,6 @@ public class TxCacheTest extends TxTestBase {
         assertThat(cache.getConceptCache().keySet(), empty());
         assertThat(cache.getSchemaConceptCache().keySet(), empty());
         assertThat(cache.getLabelCache().keySet(), empty());
-        assertThat(cache.getRelationIndexCache().keySet(), empty());
         assertThat(cache.getShardingCount().keySet(), empty());
         assertThat(cache.getModifiedEntities(), empty());
         assertThat(cache.getModifiedRoles(), empty());

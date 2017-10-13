@@ -32,7 +32,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.concept.AttributeImpl;
-import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.structure.Casting;
 
 import java.util.HashMap;
@@ -80,9 +79,6 @@ public class TxCache {
     private final Set<Rule> modifiedRules = new HashSet<>();
 
     private final Set<Attribute> modifiedAttributes = new HashSet<>();
-
-    //We Track Relations so that we can look them up before they are completely defined and indexed on commit
-    private final Map<String, Relationship> relationIndexCache = new HashMap<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
@@ -153,10 +149,7 @@ public class TxCache {
         } else if (concept.isRelationshipType()) {
             modifiedRelationshipTypes.add(concept.asRelationshipType());
         } else if (concept.isRelationship()){
-            Relationship relationship = concept.asRelationship();
-            modifiedRelationships.add(relationship);
-            //Caching of relations in memory so they can be retrieved without needing a commit
-            relationIndexCache.put(RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers()), relationship);
+            modifiedRelationships.add(concept.asRelationship());
         } else if (concept.isRule()){
             modifiedRules.add(concept.asRule());
         } else if (concept.isAttribute()){
@@ -171,14 +164,6 @@ public class TxCache {
         if (type.isRelationshipType()) {
             modifiedRelationshipTypes.add(type.asRelationshipType());
         }
-    }
-
-    /**
-     *
-     * @return All the relations which have been affected in the transaction
-     */
-    public Map<String, Relationship> getRelationIndexCache(){
-        return relationIndexCache;
     }
 
     /**
@@ -235,15 +220,6 @@ public class TxCache {
             schemaConceptCache.remove(label);
             labelCache.remove(label);
         }
-    }
-
-    /**
-     * Gets a cached relation by index. This way we can find non committed relations quickly.
-     *
-     * @param index The current index of the relation
-     */
-    public Relationship getCachedRelation(String index){
-        return relationIndexCache.get(index);
     }
 
     /**
@@ -392,7 +368,6 @@ public class TxCache {
         modifiedAttributes.clear();
         modifiedCastings.clear();
         newAttributes.clear();
-        relationIndexCache.clear();
         shardingCount.clear();
         conceptCache.clear();
         schemaConceptCache.clear();
