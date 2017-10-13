@@ -124,7 +124,7 @@ At this point, you are ready to start investigating statistics within the data u
 
 ## `aggregate`
 
-You cannot make [`aggregate`](../graql/dml.html#aggregate) queries from within the **knowledge base** view in the Grakn
+You cannot make [`aggregate`](../graql/dml.html#aggregate) queries from within the **graph** view in the Grakn
 visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This
 shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from
 your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `./graql console` at the terminal,
