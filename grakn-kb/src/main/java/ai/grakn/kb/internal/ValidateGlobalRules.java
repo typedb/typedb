@@ -29,13 +29,11 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
 import ai.grakn.kb.internal.concept.RuleImpl;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
@@ -57,7 +55,6 @@ import java.util.stream.Stream;
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
-import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
@@ -268,23 +265,6 @@ class ValidateGlobalRules {
                 }
             }
             currentConcept = (TypeImpl) currentConcept.sup();
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Checks is a {@link Relationship} is unique by searching the {@link GraknTx} for another {@link Relationship} with the same
-     * hash.
-     *
-     * @param relationshipReified The candidate unique {@link Relationship}
-     * @param hash The hash to use to find other potential {@link Relationship}s
-     * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
-     */
-    private static Optional<String> setRelationUnique(RelationshipReified relationshipReified, String hash){
-        try{
-            relationshipReified.setHash(hash);
-        } catch(PropertyNotUniqueException e){
-            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationshipReified));
         }
         return Optional.empty();
     }

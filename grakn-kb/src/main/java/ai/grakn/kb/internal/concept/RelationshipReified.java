@@ -173,13 +173,6 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     }
 
     /**
-     * Sets the internal hash in order to perform a faster lookup
-     */
-    public void setHash(String hash){
-        vertex().propertyUnique(Schema.VertexProperty.INDEX, hash);
-    }
-
-    /**
      * Castings are retrieved from the perspective of the {@link Relationship}
      *
      * @param roles The {@link Role} which the {@link Thing}s are playing
