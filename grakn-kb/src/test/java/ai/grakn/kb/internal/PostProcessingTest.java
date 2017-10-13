@@ -158,7 +158,7 @@ public class PostProcessingTest extends TxTestBase {
 
         assertNotNull(foundR1);
         assertThat(foundR1.ownerInstances().collect(toSet()), containsInAnyOrder(e1, e2, e3));
-        assertEquals(5, tx.admin().getMetaRelationType().instances().count());
+        assertEquals(6, tx.admin().getMetaRelationType().instances().count());
     }
 
     private void addEdgeRelation(Entity entity, Attribute<?> attribute) {
