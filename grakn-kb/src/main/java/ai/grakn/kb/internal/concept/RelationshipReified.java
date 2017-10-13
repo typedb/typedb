@@ -18,8 +18,6 @@
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -31,7 +29,6 @@ import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
-import ai.grakn.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -46,9 +43,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -183,55 +177,6 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
      */
     public void setHash(String hash){
         vertex().propertyUnique(Schema.VertexProperty.INDEX, hash);
-    }
-
-    /**
-     *
-     * @param relationshipType The type of this relation
-     * @param roleMap The roles and their corresponding role players
-     * @return A unique hash identifying this {@link Relationship}
-     */
-    public static String generateNewHash(RelationshipType relationshipType, Map<Role, Set<Thing>> roleMap){
-        SortedSet<Role> sortedRoleIds = new TreeSet<>(roleMap.keySet());
-        StringBuilder hash = new StringBuilder();
-        hash.append("RelationType_").append(StringUtil.escapeString(relationshipType.getId().getValue())).append("_Relation");
-
-        for(Role role: sortedRoleIds){
-            hash.append("_").append(StringUtil.escapeString(role.getId().getValue()));
-
-            roleMap.get(role).forEach(instance -> {
-                if(instance != null){
-                    hash.append("_").append(StringUtil.escapeString(instance.getId().getValue()));
-                }
-            });
-        }
-        return hash.toString();
-    }
-
-    /**
-     * Creates a hash for a relation based on it's {@link RelationshipType} and the {@link Attribute} which serves as it's key
-     *
-     * @param relationshipType the {@link RelationshipType} of the {@link Relationship}
-     * @param resourceMap a sorted map of {@link AttributeType} Ids to {@link Attribute} Ids
-     * @return A unique hash identifying this {@link Relationship}
-     */
-    public static String generateNewHash(RelationshipType relationshipType, TreeMap<String, String> resourceMap){
-        StringBuilder hashMain = new StringBuilder();
-        hashMain.append("RelationType_").append(StringUtil.escapeString(relationshipType.getId().getValue())).append("_");
-
-        StringBuilder hashResourceTypes = new StringBuilder();
-        hashResourceTypes.append("ResourceTypes_");
-
-        StringBuilder hashResources = new StringBuilder();
-        hashResources.append("Resources_");
-
-        resourceMap.forEach((resourceTypeId, resourceId) -> {
-            hashResourceTypes.append(StringUtil.escapeString(resourceTypeId)).append("_");
-            hashResources.append(StringUtil.escapeString(resourceId)).append("_");
-        });
-
-
-        return hashMain.append(hashResourceTypes).append(hashResources).toString();
     }
 
     /**

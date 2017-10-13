@@ -30,8 +30,6 @@ import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.AttributeTypeImpl;
 import ai.grakn.kb.internal.concept.ConceptImpl;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
 import ai.grakn.kb.internal.concept.ThingImpl;
 import ai.grakn.kb.internal.structure.VertexElement;
@@ -166,9 +164,7 @@ public class PostProcessingTest extends TxTestBase {
     }
 
     private void addReifiedRelation(Role roleEntity, Role roleResource, RelationshipType relationshipType, Entity entity, Attribute<?> attribute) {
-        Relationship relationship = relationshipType.addRelationship().addRolePlayer(roleResource, attribute).addRolePlayer(roleEntity, entity);
-        String hash = RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers());
-        RelationshipImpl.from(relationship).reify().setHash(hash);
+        relationshipType.addRelationship().addRolePlayer(roleResource, attribute).addRolePlayer(roleEntity, entity);
     }
 
 
