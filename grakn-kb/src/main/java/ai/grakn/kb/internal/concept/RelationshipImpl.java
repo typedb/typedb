@@ -161,7 +161,6 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     @Override
     public Relationship addRolePlayer(Role role, Thing thing) {
         reify().addRolePlayer(role, thing);
-        vertex().tx().txCache().trackForValidation(this); //This is so we can reassign the hash if needed
         return this;
     }
 

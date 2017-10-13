@@ -24,7 +24,6 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
@@ -124,23 +123,6 @@ public class TxCacheTest extends TxTestBase {
 
         Entity i1 = t1.addEntity();
         assertThat(tx.txCache().getConceptCache().values(), hasItem(i1));
-    }
-
-    @Test
-    public void whenCreatingRelations_EnsureLogContainsRelation(){
-        Role r1 = tx.putRole("r1");
-        Role r2 = tx.putRole("r2");
-        EntityType t1 = tx.putEntityType("t1").plays(r1).plays(r2);
-        RelationshipType rt1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
-        Entity i1 = t1.addEntity();
-        Entity i2 = t1.addEntity();
-
-        tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
-
-        assertThat(tx.txCache().getModifiedThings(), is(empty()));
-        Relationship rel1 = rt1.addRelationship().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
-        assertThat(tx.txCache().getModifiedThings(), containsInAnyOrder(rel1));
     }
 
     @Test
