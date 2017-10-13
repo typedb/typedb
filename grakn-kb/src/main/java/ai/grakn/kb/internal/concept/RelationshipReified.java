@@ -38,6 +38,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,7 +72,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
      * This is because validation requires iterating over all castings anyway.
      */
     private Cache<Set<Casting>> allCastings = new Cache(Cacheable.set(), () -> lazyCastings(Collections.EMPTY_SET).collect(Collectors.toSet()));
-    private RelationshipImpl owner;
+    @Nullable private RelationshipImpl owner;
 
     private RelationshipReified(VertexElement vertexElement) {
         super(vertexElement);
