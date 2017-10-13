@@ -25,8 +25,9 @@ import ai.grakn.graql.internal.util.StringConverter;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -53,7 +54,10 @@ abstract class LabelFragment extends Fragment {
             int labelId = Iterables.getOnlyElement(labelIds);
             return traversal.has(LABEL_ID.name(), labelId);
         } else {
-            return traversal.has(LABEL_ID.name(), P.within(labelIds));
+            // We don't use P.within because Janus does not optimise it correctly
+            Traversal[] traversals =
+                    labelIds.stream().map(labelId -> __.has(LABEL_ID.name(), labelId)).toArray(Traversal[]::new);
+            return traversal.or(traversals);
         }
     }
 
