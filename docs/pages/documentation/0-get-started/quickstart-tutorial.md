@@ -134,7 +134,7 @@ Don't worry about the numbers such as `$57472`. These are variables in Graql, an
 
 ## Querying the Knowledge Base
 
-Having started Grakn engine and the Graql shell in its interactive mode, we are ready to make a number queries. First, we will make a couple of `match` queries.
+Having started Grakn engine and the Graql shell in its interactive mode, we are ready to make a number queries. First, we will make a couple of `get` queries.
 
 Find all the people in the knowledge base, and list their `identifier` attributes (a string that represents their full name):
 
@@ -142,7 +142,7 @@ Find all the people in the knowledge base, and list their `identifier` attribute
 match $p isa person, has identifier $i; get;
 ```
 
-{% include note.html content="In queries, Graql variables start with a `$`, which represent wildcards, and are returned as results in `match` queries. A variable name can contain alphanumeric characters, dashes and underscores." %}
+{% include note.html content="In queries, Graql variables start with a `$`, which represent wildcards, and are returned as results in `get` queries. A variable name can contain alphanumeric characters, dashes and underscores." %}
 
 Find all the people who are married:
 
@@ -166,7 +166,7 @@ Querying the knowledge base is more fully described in the [Graql documentation]
 
 ## Extending the Knowledge Base
 
-Besides making `match` queries, it is also possible to `insert` data
+Besides making `get` queries, it is also possible to `insert` data
 [(see further documentation)](../graql/dml.html#insert-query) and `delete` items
 [(see further documentation)](../graql/dml.html#delete-query) through the Graql shell. To illustrate inserting a
 fictional person:
