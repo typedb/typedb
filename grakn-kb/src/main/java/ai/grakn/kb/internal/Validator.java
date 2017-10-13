@@ -18,18 +18,14 @@
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.structure.Casting;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -79,7 +75,7 @@ class Validator {
         //Validate Relationship Types
         graknGraph.txCache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
         //Validate Relations
-        graknGraph.txCache().getModifiedRelationships().forEach(this::validateRelation);
+        graknGraph.txCache().getModifiedRelationships().forEach(this::validateThing);
 
         //Validate Rule Types
         //Not Needed
@@ -106,17 +102,6 @@ class Validator {
         if (labelErrors.isEmpty()){
             errorsFound.addAll(ValidateGlobalRules.validateRuleOntologically(graph, rule));
         }
-    }
-
-    /**
-     * Validation rules exclusive to relations
-     * @param relationship The {@link Relationship} to validate
-     */
-    private void validateRelation(Relationship relationship){
-        validateThing(relationship);
-        Optional<RelationshipReified> relationReified = ((RelationshipImpl) relationship).reified();
-        //TODO: We need new validation mechanisms for non-reified relations
-        relationReified.ifPresent(relationReified1 -> ValidateGlobalRules.validateRelationIsUnique(relationReified1).ifPresent(errorsFound::add));
     }
 
     /**
