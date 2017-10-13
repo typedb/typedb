@@ -138,9 +138,9 @@ public class TxCacheTest extends TxTestBase {
         tx.commit();
         tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(tx.txCache().getModifiedRelationships(), is(empty()));
+        assertThat(tx.txCache().getModifiedThings(), is(empty()));
         Relationship rel1 = rt1.addRelationship().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
-        assertThat(tx.txCache().getModifiedRelationships(), containsInAnyOrder(rel1));
+        assertThat(tx.txCache().getModifiedThings(), containsInAnyOrder(rel1));
     }
 
     @Test
@@ -151,10 +151,10 @@ public class TxCacheTest extends TxTestBase {
         tx.commit();
         tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(tx.txCache().getModifiedEntities(), is(empty()));
+        assertThat(tx.txCache().getModifiedThings(), is(empty()));
 
         i1.delete();
-        assertThat(tx.txCache().getModifiedEntities(), is(empty()));
+        assertThat(tx.txCache().getModifiedThings(), is(empty()));
     }
 
     @Test
@@ -243,10 +243,9 @@ public class TxCacheTest extends TxTestBase {
         assertThat(cache.getSchemaConceptCache().keySet(), empty());
         assertThat(cache.getLabelCache().keySet(), empty());
         assertThat(cache.getShardingCount().keySet(), empty());
-        assertThat(cache.getModifiedEntities(), empty());
+        assertThat(cache.getModifiedThings(), empty());
         assertThat(cache.getModifiedRoles(), empty());
         assertThat(cache.getModifiedRelationshipTypes(), empty());
-        assertThat(cache.getModifiedRelationships(), empty());
         assertThat(cache.getModifiedRules(), empty());
         assertThat(cache.getModifiedAttributes(), empty());
         assertThat(cache.getModifiedCastings(), empty());

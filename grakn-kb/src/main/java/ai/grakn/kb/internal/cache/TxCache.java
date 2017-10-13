@@ -22,14 +22,13 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.structure.Casting;
@@ -68,13 +67,12 @@ public class TxCache {
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
-    private final Set<Entity> modifiedEntities = new HashSet<>();
+    private final Set<Thing> modifiedThings = new HashSet<>();
 
     private final Set<Role> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
     private final Set<RelationshipType> modifiedRelationshipTypes = new HashSet<>();
-    private final Set<Relationship> modifiedRelationships = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
 
@@ -142,14 +140,12 @@ public class TxCache {
      * @param concept The element to be later validated
      */
     public void trackForValidation(Concept concept) {
-        if (concept.isEntity()) {
-            modifiedEntities.add(concept.asEntity());
+        if (concept.isThing()) {
+            modifiedThings.add(concept.asThing());
         } else if (concept.isRole()) {
             modifiedRoles.add(concept.asRole());
         } else if (concept.isRelationshipType()) {
             modifiedRelationshipTypes.add(concept.asRelationshipType());
-        } else if (concept.isRelationship()){
-            modifiedRelationships.add(concept.asRelationship());
         } else if (concept.isRule()){
             modifiedRules.add(concept.asRule());
         } else if (concept.isAttribute()){
@@ -204,10 +200,9 @@ public class TxCache {
      */
     @SuppressWarnings("SuspiciousMethodCalls")
     public void remove(Concept concept){
-        modifiedEntities.remove(concept);
+        modifiedThings.remove(concept);
         modifiedRoles.remove(concept);
         modifiedRelationshipTypes.remove(concept);
-        modifiedRelationships.remove(concept);
         modifiedRules.remove(concept);
         modifiedAttributes.remove(concept);
         if(concept.isAttribute()) {
@@ -324,8 +319,8 @@ public class TxCache {
     }
 
     //--------------------------------------- Concepts Needed For Validation -------------------------------------------
-    public Set<Entity> getModifiedEntities() {
-        return modifiedEntities;
+    public Set<Thing> getModifiedThings() {
+        return modifiedThings;
     }
 
     public Set<Role> getModifiedRoles() {
@@ -334,9 +329,6 @@ public class TxCache {
 
     public Set<RelationshipType> getModifiedRelationshipTypes() {
         return modifiedRelationshipTypes;
-    }
-    public Set<Relationship> getModifiedRelationships() {
-        return modifiedRelationships;
     }
 
     public Set<Rule> getModifiedRules() {
@@ -360,10 +352,9 @@ public class TxCache {
         conceptCache.values().forEach(concept -> ContainsTxCache.from(concept).txCacheClear());
 
         //Clear Collection Caches
-        modifiedEntities.clear();
+        modifiedThings.clear();
         modifiedRoles.clear();
         modifiedRelationshipTypes.clear();
-        modifiedRelationships.clear();
         modifiedRules.clear();
         modifiedAttributes.clear();
         modifiedCastings.clear();

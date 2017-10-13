@@ -62,10 +62,8 @@ class Validator {
      * @return True if the data and schema conforms to our concept.
      */
     public boolean validate(){
-        //Validate Entity Types
-        //Not Needed
-        //Validate Entities
-        graknGraph.txCache().getModifiedEntities().forEach(this::validateThing);
+        //Validate Things
+        graknGraph.txCache().getModifiedThings().forEach(this::validateThing);
 
         //Validate RoleTypes
         graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
@@ -74,16 +72,10 @@ class Validator {
 
         //Validate Relationship Types
         graknGraph.txCache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
-        //Validate Relations
-        graknGraph.txCache().getModifiedRelationships().forEach(this::validateThing);
 
-        //Validate Rule Types
-        //Not Needed
         //Validate Rules
         graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
 
-        //Validate Attribute Types
-        //Not Needed
         //Validate Attribute
         graknGraph.txCache().getModifiedAttributes().forEach(this::validateThing);
 
