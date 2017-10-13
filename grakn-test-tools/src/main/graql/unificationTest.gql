@@ -2,34 +2,70 @@ define
 
 #Roles
 
+# Role hierarchy
+#
+#                             role
+#             /                 |                   \
+#         role1               role2                 role3
+#       /      \             /     \                |
+# subRole1   aSubRole1   subRole2  aSubRole1      subRole3
+#       |                    |                      |
+# subSubRole1            subSubRole2             subSubRole3
+#
+
 role1 sub role;
+subRole1 sub role1;
+anotherSubRole1 sub role1;
+subSubRole1 sub subRole1;
+
 role2 sub role;
-superRole1 sub role1;
-anotherSuperRole1 sub role1;
-superRole2 sub role2;
-anotherSuperRole2 sub role2;
+subRole2 sub role2;
+anotherSubRole2 sub role2;
+subSubRole2 sub subRole2;
+
+role3 sub role;
+subRole3 sub role3;
+subSubRole3 sub role3;
 
 #Entities
 
 entity1 sub entity
     has res1
     plays role1
+    plays subRole1
+    plays anotherSubRole1
+    plays subSubRole1;
+
+subEntity1 sub entity1
     plays role2
-    plays superRole1
-    plays anotherSuperRole1
-    plays superRole2
-    plays anotherSuperRole2;
+    plays subRole2
+    plays anotherSubRole2
+    plays subSubRole2;
 
-superEntity1 sub entity1;
-
-relation1 sub relationship
+binary sub relationship
     has res1
 	relates role1
 	relates role2
-	relates superRole1
-    relates superRole2
-    relates anotherSuperRole1
-    relates anotherSuperRole2;
+	relates subRole1
+    relates subRole2
+    relates anotherSubRole1
+    relates anotherSubRole2
+    relates subSubRole1
+    relates subSubRole2;
+    
+ternary sub relationship
+    has res1
+    relates role1
+    relates role2
+    relates role3
+    relates subRole1
+    relates subRole2
+    relates subRole3
+    relates anotherSubRole1
+    relates anotherSubRole2
+    relates subSubRole1
+    relates subSubRole2
+    relates subSubRole3;
 
 #Resources
 
@@ -41,12 +77,12 @@ insert
 
 $f isa entity1, has res1 'f';
 $m isa entity1, has res1 'm';
-$d isa entity1, has res1 'd';
-$s isa entity1, has res1 's';
+$d isa subEntity1, has res1 'd';
+$s isa subEntity1, has res1 's';
 
-(superRole1: $f, superRole2: $s) isa relation1;
-(anotherSuperRole1: $m, superRole2: $s) isa relation1;
-(superRole1: $f, anotherSuperRole2: $d) isa relation1;
-(anotherSuperRole1: $m, anotherSuperRole2: $d) isa relation1;
+(subRole1: $f, subRole2: $s) isa binary;
+(subSubRole1: $m, subRole2: $s) isa binary;
+(subRole1: $f, subSubRole2: $d) isa binary;
+(subSubRole1: $m, subSubRole2: $d) isa binary;
 
 
