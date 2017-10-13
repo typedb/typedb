@@ -186,7 +186,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     Stream<Casting> castingsInstance(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER).
-                map(edge -> vertex().tx().factory().buildCasting(edge));
+                map(edge -> Casting.withThing(edge, this));
     }
 
     <X extends Thing> Stream<X> getShortcutNeighbours(){

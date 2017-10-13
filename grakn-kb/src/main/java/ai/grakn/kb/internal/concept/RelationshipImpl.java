@@ -53,6 +53,9 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
 
     private RelationshipImpl(RelationshipStructure relationshipStructure) {
         this.relationshipStructure = relationshipStructure;
+        if(relationshipStructure.isReified()){
+            relationshipStructure.reify().owner(this);
+        }
     }
 
     public static RelationshipImpl create(RelationshipStructure relationshipStructure) {

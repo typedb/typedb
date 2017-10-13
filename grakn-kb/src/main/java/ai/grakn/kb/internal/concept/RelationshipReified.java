@@ -38,6 +38,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,6 +72,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
      * This is because validation requires iterating over all castings anyway.
      */
     private Cache<Set<Casting>> allCastings = new Cache(Cacheable.set(), () -> lazyCastings(Collections.EMPTY_SET).collect(Collectors.toSet()));
+    @Nullable private RelationshipImpl owner;
 
     private RelationshipReified(VertexElement vertexElement) {
         super(vertexElement);
@@ -171,7 +173,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
         edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().getLabelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.getLabelId().getValue());
-        Casting casting = vertex().tx().factory().buildCasting(edge);
+        Casting casting = Casting.create(edge, owner, role, toThing);
         vertex().tx().txCache().trackForValidation(casting);
 
         //Cache the new casting
@@ -262,7 +264,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     private Stream<Casting> lazyCastings(Set<Role> roles){
         if(roles.isEmpty()){
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
-                    map(edge -> vertex().tx().factory().buildCasting(edge));
+                    map(edge -> Casting.withRelationship(edge, owner));
         }
 
         //Traversal is used so we can potentially optimise on the index
@@ -272,7 +274,9 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
-                toStream().map(edge -> vertex().tx().factory().buildCasting(edge));
+                toStream().
+                map(edge -> vertex().tx().factory().buildEdgeElement(edge)).
+                map(edge -> Casting.withRelationship(edge, owner));
     }
 
     @Override
@@ -292,6 +296,16 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
             }
         }
         return description.toString();
+    }
+
+    /**
+     * Sets the owner of this structure to a specific {@link RelationshipImpl}.
+     * This is so that the internal structure can use the {@link Relationship} reference;
+     *
+     * @param relationship the owner of this {@link RelationshipReified}
+     */
+    public void owner(RelationshipImpl relationship) {
+        owner = relationship;
     }
 
     @Override
