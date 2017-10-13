@@ -1,7 +1,7 @@
 ---
 title: Graql Queries
 keywords: graql, query
-last_updated: April 2017
+last_updated: October 2017
 tags: [graql]
 summary: "Graql Queries"
 sidebar: documentation_sidebar
