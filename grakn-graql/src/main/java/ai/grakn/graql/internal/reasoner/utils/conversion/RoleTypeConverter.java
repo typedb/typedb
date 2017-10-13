@@ -18,10 +18,15 @@
 
 package ai.grakn.graql.internal.reasoner.utils.conversion;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import java.util.Set;
 
 /**
  * <p>
@@ -32,12 +37,21 @@ import com.google.common.collect.Multimap;
  */
 public class RoleTypeConverter implements SchemaConceptConverter<Role> {
     @Override
-    public Multimap<RelationshipType, Role> toRelationshipMultimap(Role role) {
+    public Multimap<RelationshipType, Role> toRelationshipMultimap(Role entryRole) {
         Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
-        role.subs().forEach(roleType -> {
-                    roleType.relationshipTypes()
+
+        Set<Role> roleHierarchy = Sets.newHashSet(entryRole);
+        if (Schema.MetaSchema.isMetaLabel(entryRole.getLabel())) {
+            entryRole.subs().forEach(roleHierarchy::add);
+        } else {
+            ReasonerUtils.supers(entryRole).stream().map(Concept::asRole).forEach(roleHierarchy::add);
+        }
+
+        roleHierarchy
+                .forEach(role -> {
+                    role.relationshipTypes()
                             .filter(rel -> !rel.isImplicit())
-                            .forEach(rel -> relationMap.put(rel, roleType));
+                            .forEach(rel -> relationMap.put(rel, role));
                 });
         return relationMap;
     }

@@ -25,22 +25,27 @@ subSubRole2 sub subRole2;
 
 role3 sub role;
 subRole3 sub role3;
-subSubRole3 sub role3;
+subSubRole3 sub subRole3;
 
 #Entities
 
-entity1 sub entity
+baseRoleEntity sub entity
     has res1
     plays role1
+    plays role2
+    plays role3;
+
+subRoleEntity sub baseRoleEntity
     plays subRole1
     plays anotherSubRole1
-    plays subSubRole1;
-
-subEntity1 sub entity1
-    plays role2
     plays subRole2
     plays anotherSubRole2
-    plays subSubRole2;
+    plays subRole3;
+
+subSubRoleEntity sub subRoleEntity
+    plays subSubRole1
+    plays subSubRole2
+    plays subSubRole3;
 
 binary sub relationship
     has res1
@@ -71,18 +76,73 @@ ternary sub relationship
 
 res1 sub attribute datatype string;
 
+#Rules
+
+rule-1 sub rule
+	when {
+		(role1:$x, role2:$y, role3: $z) isa ternary;
+	}
+	then {
+		(role1:$x, role2:$x, role3: $z) isa ternary;
+	};
+
+rule-2 sub rule
+	when {
+		(role1:$x, subRole2:$y, role3: $z) isa ternary;
+	}
+	then {
+		(role1:$x, subRole2:$x, role3: $z) isa ternary;
+	};
+
+rule-3 sub rule
+	when {
+		(role1:$x, subSubRole2 :$y, role3: $z) isa ternary;
+	}
+	then {
+		(role1:$x, subSubRole2 :$x, role3: $z) isa ternary;
+	};
+
+#rule-3 sub rule
+#	when {
+ #   	($r1: $x, $r2: $y, role3: $z) isa ternary;
+  #  }
+   # then {
+    #	($r1: $x, $r2: $x, role3: $z) isa ternary;
+    #};
+
 insert
 
 #Instances
 
-$f isa entity1, has res1 'f';
-$m isa entity1, has res1 'm';
-$d isa subEntity1, has res1 'd';
-$s isa subEntity1, has res1 's';
+$b isa baseRoleEntity, has res1 'b';
+
+$f isa subRoleEntity, has res1 'f';
+$m isa subSubRoleEntity, has res1 'm';
+$d isa subSubRoleEntity, has res1 'd';
+$s isa subSubRoleEntity, has res1 's';
+
+(anotherSubRole1: $m, subRole2: $s) isa binary;
+(subRole1: $f, anotherSubRole2: $d) isa binary;
+(anotherSubRole1: $m, anotherSubRole2: $d) isa binary;
 
 (subRole1: $f, subRole2: $s) isa binary;
-(subSubRole1: $m, subRole2: $s) isa binary;
 (subRole1: $f, subSubRole2: $d) isa binary;
+(subSubRole1: $m, subRole2: $s) isa binary;
 (subSubRole1: $m, subSubRole2: $d) isa binary;
 
+#(role1: $b, role2: $f, role3: $m) isa ternary;
+#(role1: $b, role2: $b, role3: $m) isa ternary;
+#(role1: $f, role2: $f, role3: $m) isa ternary;
+
+(role1: $b, subRole2: $f, subSubRole3: $m) isa ternary;
+(role1: $f, subRole2: $f, subSubRole3: $m) isa ternary;
+
+(subRole1: $f, subRole2: $m, subSubRole3: $d) isa ternary;
+(subRole1: $f, subRole2: $f, subSubRole3: $d) isa ternary;
+
+(subRole1: $f, subSubRole2: $m, subSubRole3: $d) isa ternary;
+(subRole1: $m, subSubRole2: $m, subSubRole3: $d) isa ternary;
+
+(subSubRole1: $m, subSubRole2: $d, subSubRole3: $s) isa ternary;
+(subSubRole1: $m, subSubRole2: $m, subSubRole3: $s) isa ternary;
 

@@ -48,7 +48,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
-import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverterImpl;
+import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -74,7 +74,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getSupers;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.supers;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.playableRoles;
 import static java.util.stream.Collectors.toSet;
@@ -424,20 +424,21 @@ public class RelationshipAtom extends IsaAtom {
     /**
      * infer relation types that this relationship atom can potentially have
      * NB: entity types and role types are treated separately as they behave differently:
-     * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role)
+     * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role) and the role inherited from parents
      * @return list of relation types this atom can have ordered by the number of compatible role types
      */
     public List<RelationshipType> inferPossibleRelationTypes(Answer sub) {
         if (getSchemaConcept() != null) return Collections.singletonList(getSchemaConcept().asRelationshipType());
 
-        //look at available role types
-        Multimap<RelationshipType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
+        //look at available roles
+        Set<Role> roles = getExplicitRoleTypes();
+        Multimap<RelationshipType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(roles, new RoleTypeConverter());
 
         //look at entity types
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
         //explicit types
-        Set<SchemaConcept> types = getRolePlayers().stream()
+        Set<Type> types = getRolePlayers().stream()
                 .filter(varTypeMap::containsKey)
                 .map(varTypeMap::get)
                 .collect(toSet());
@@ -445,22 +446,26 @@ public class RelationshipAtom extends IsaAtom {
         //types deduced from substitution
         inferEntityTypes(sub).stream().map(Pair::getValue).forEach(types::add);
 
-        Multimap<RelationshipType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new SchemaConceptConverterImpl());
+        Multimap<RelationshipType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new TypeConverter());
 
-        Multimap<RelationshipType, Role> compatibleTypes;
         //intersect relation types from roles and types
-        if (compatibleTypesFromRoles.isEmpty()){
+        Multimap<RelationshipType, Role> compatibleTypes;
+
+        if (roles.isEmpty()){
             compatibleTypes = compatibleTypesFromTypes;
-        } else if (!compatibleTypesFromTypes.isEmpty()){
-            compatibleTypes = multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
-        } else {
+        }
+        //no types from roles -> roles correspond to mutually exclusive relations
+        else if(compatibleTypesFromRoles.isEmpty() || types.isEmpty()){
             compatibleTypes = compatibleTypesFromRoles;
+        } else {
+            compatibleTypes = multimapIntersection(compatibleTypesFromTypes, compatibleTypesFromRoles);
         }
 
         return compatibleTypes.asMap().entrySet().stream()
                 .sorted(Comparator.comparing(e -> -e.getValue().size()))
                 .map(Map.Entry::getKey)
-                .filter(t -> Sets.intersection(getSupers(t), compatibleTypes.keySet()).isEmpty())
+                //all supers are also compatible
+                .filter(t -> Sets.intersection(supers(t), compatibleTypes.keySet()).isEmpty())
                 .collect(Collectors.toList());
     }
 
@@ -593,7 +598,7 @@ public class RelationshipAtom extends IsaAtom {
                     Var varName = casting.getRolePlayer().var();
                     SchemaConcept schemaConcept = varSchemaConceptMap.get(varName);
                     if (schemaConcept != null && !Schema.MetaSchema.isMetaLabel(schemaConcept.getLabel()) && schemaConcept.isType()) {
-                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(schemaConcept.asType(), possibleRoles.stream()));
+                        mappings.put(casting, ReasonerUtils.getCompatibleRoles(schemaConcept.asType(), possibleRoles.stream()));
                     } else {
                         mappings.put(casting, ReasonerUtils.getSchemaConcepts(possibleRoles));
                     }
