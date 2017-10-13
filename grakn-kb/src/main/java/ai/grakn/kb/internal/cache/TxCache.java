@@ -19,7 +19,6 @@
 package ai.grakn.kb.internal.cache;
 
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -75,8 +74,6 @@ public class TxCache {
     private final Set<RelationshipType> modifiedRelationshipTypes = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
-
-    private final Set<Attribute> modifiedAttributes = new HashSet<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
@@ -148,8 +145,6 @@ public class TxCache {
             modifiedRelationshipTypes.add(concept.asRelationshipType());
         } else if (concept.isRule()){
             modifiedRules.add(concept.asRule());
-        } else if (concept.isAttribute()){
-            modifiedAttributes.add(concept.asAttribute());
         }
     }
     public void trackForValidation(Casting casting) {
@@ -204,7 +199,6 @@ public class TxCache {
         modifiedRoles.remove(concept);
         modifiedRelationshipTypes.remove(concept);
         modifiedRules.remove(concept);
-        modifiedAttributes.remove(concept);
         if(concept.isAttribute()) {
             newAttributes.remove(AttributeImpl.from(concept.asAttribute()).getIndex());
         }
@@ -335,10 +329,6 @@ public class TxCache {
         return modifiedRules;
     }
 
-    public Set<Attribute> getModifiedAttributes() {
-        return modifiedAttributes;
-    }
-
     public Set<Casting> getModifiedCastings() {
         return modifiedCastings;
     }
@@ -356,7 +346,6 @@ public class TxCache {
         modifiedRoles.clear();
         modifiedRelationshipTypes.clear();
         modifiedRules.clear();
-        modifiedAttributes.clear();
         modifiedCastings.clear();
         newAttributes.clear();
         shardingCount.clear();

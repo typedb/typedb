@@ -247,7 +247,6 @@ public class TxCacheTest extends TxTestBase {
         assertThat(cache.getModifiedRoles(), empty());
         assertThat(cache.getModifiedRelationshipTypes(), empty());
         assertThat(cache.getModifiedRules(), empty());
-        assertThat(cache.getModifiedAttributes(), empty());
         assertThat(cache.getModifiedCastings(), empty());
     }
 
