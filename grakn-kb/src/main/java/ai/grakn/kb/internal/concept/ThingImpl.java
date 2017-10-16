@@ -130,7 +130,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 relation.delete();
             } else {
                 RelationshipImpl rel = (RelationshipImpl) relation;
-                vertex().tx().txCache().trackForValidation(rel);
                 rel.cleanUp();
             }
         });

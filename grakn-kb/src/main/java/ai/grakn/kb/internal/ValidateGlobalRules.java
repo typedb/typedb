@@ -20,7 +20,6 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
@@ -30,13 +29,11 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
 import ai.grakn.kb.internal.concept.RuleImpl;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
@@ -49,18 +46,15 @@ import ai.grakn.util.Schema;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
-import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
@@ -271,70 +265,6 @@ class ValidateGlobalRules {
                 }
             }
             currentConcept = (TypeImpl) currentConcept.sup();
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * @param relationshipReified The {@link Relationship} whose hash needs to be set.
-     * @return An error message if the {@link Relationship} is not unique.
-     */
-    static Optional<String> validateRelationIsUnique(RelationshipReified relationshipReified){
-        Iterator<AttributeType> keys = relationshipReified.type().keys().iterator();
-        if(keys.hasNext()){
-            return validateKeyControlledRelation(relationshipReified, keys);
-        } else {
-            return validateNonKeyControlledRelation(relationshipReified);
-        }
-    }
-
-    /**
-     * Checks that a {@link Relationship} which is bound to a {@link Attribute} as a key actually is unique to that key.
-     * The check for if the key is actually connected to the {@link Relationship} is done in {@link #validateInstancePlaysAllRequiredRoles}
-     *
-     * @param relationshipReified the {@link Relationship} to check
-     * @param keys the {@link AttributeType} indicating the key which the {@link Relationship} must be bound to and unique to
-     * @return An error message if the {@link Relationship} is not unique.
-     */
-    private static Optional<String> validateKeyControlledRelation(RelationshipReified relationshipReified, Iterator<AttributeType> keys) {
-        TreeMap<String, String> resources = new TreeMap<>();
-        while(keys.hasNext()){
-            Optional<Attribute<?>> foundResource = relationshipReified.attributes(keys.next()).findAny();
-            //Lack of resource key is handled by another method.
-            //Handling the lack of a key here would result in duplicate error messages
-            foundResource.ifPresent(resource -> resources.put(resource.type().getId().getValue(), resource.getId().getValue()));
-        }
-
-        String hash = RelationshipReified.generateNewHash(relationshipReified.type(), resources);
-
-        return setRelationUnique(relationshipReified, hash);
-    }
-
-    /**
-     * Checks if {@link Relationship}s which are not bound to {@link Attribute}s as keys are unique by their
-     * {@link Role}s and the {@link Thing}s which play those roles.
-     *
-     * @param relationshipReified the {@link Relationship} to check
-     * @return An error message if the {@link Relationship} is not unique.
-     */
-    private static Optional<String> validateNonKeyControlledRelation(RelationshipReified relationshipReified){
-        String hash = RelationshipReified.generateNewHash(relationshipReified.type(), relationshipReified.allRolePlayers());
-        return setRelationUnique(relationshipReified, hash);
-    }
-
-    /**
-     * Checks is a {@link Relationship} is unique by searching the {@link GraknTx} for another {@link Relationship} with the same
-     * hash.
-     *
-     * @param relationshipReified The candidate unique {@link Relationship}
-     * @param hash The hash to use to find other potential {@link Relationship}s
-     * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
-     */
-    private static Optional<String> setRelationUnique(RelationshipReified relationshipReified, String hash){
-        try{
-            relationshipReified.setHash(hash);
-        } catch(PropertyNotUniqueException e){
-            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationshipReified));
         }
         return Optional.empty();
     }

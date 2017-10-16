@@ -103,9 +103,6 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         //Cache the relation type in the role
         ((RoleImpl) role).addCachedRelationType(this);
 
-        //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> vertex().tx().txCache().trackForValidation(instance));
-
         return this;
     }
 
@@ -135,9 +132,6 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
         //Remove from roleTypeCache
         ((RoleImpl) role).deleteCachedRelationType(this);
-
-        //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> vertex().tx().txCache().trackForValidation(instance));
 
         return this;
     }
