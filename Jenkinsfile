@@ -5,7 +5,8 @@ import static Constants.*;
 // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
 // `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
 // `validate.sh` will be passed the branch name (e.g. "master") as the first argument
-def integrationTests = ["test-snb", "test-biomed"]
+// TODO: revert
+def integrationTests = [ /* "test-snb", */ "test-biomed"]
 
 class Constants {
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
@@ -95,7 +96,8 @@ def buildGrakn() {
 }
 
 //Only run validation master/stable
-if (env.BRANCH_NAME in ['master', 'stable']) {
+// TODO: revert
+if (env.BRANCH_NAME in ['master', 'stable'] || true) {
     properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
     node {
         String workspace = pwd()
@@ -103,12 +105,13 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
 
         slackGithub "Build started"
 
-        timeout(60) {
-            stage('Run the benchmarks') {
-                sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-            }
-        }
+// TODO: revert
+//        timeout(60) {
+//            stage('Run the benchmarks') {
+//                sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+//                archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+//            }
+//        }
 
         for (String moduleName : integrationTests) {
             runIntegrationTest(workspace, moduleName)
