@@ -91,11 +91,6 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     }
 
     @Override
-    public void delete(){
-        super.delete();
-    }
-
-    @Override
     public Stream<Thing> rolePlayers(Role... roles) {
         return castingsRelation(roles).map(Casting::getRolePlayer);
     }
