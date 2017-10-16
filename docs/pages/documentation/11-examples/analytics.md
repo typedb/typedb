@@ -16,7 +16,7 @@ This example illustrates the use of `aggregate` and `compute` queries in Graql u
 
 For a detailed overview of calculating statistics using Graql, we recommend that you take a look at the documentation for:
 
-* [aggregate queries](../graql/aggregate-queries.html)
+* [aggregate queries](../graql/dml.html#aggregate)
 * [compute queries](../graql/compute-queries.html)
 
 ## Data
@@ -119,11 +119,16 @@ match $x isa automatic-car has model $s; $y isa european-maker; (made: $x, maker
 
 ```
 
-At this point, you are ready to start investigating statistics within the data using Graql [`aggregate`](../graql/aggregate-queries.html) and [`compute`](../graql/compute-queries.html) queries:
+At this point, you are ready to start investigating statistics within the data using Graql
+[`aggregate`](../graql/dml.html#aggregate) and [`compute`](../graql/compute-queries.html) queries:
 
 ## `aggregate`
 
-You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **knowledge base** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `./graql console` at the terminal, from within the *bin* directory of the Grakn installation.
+You cannot make [`aggregate`](../graql/dml.html#aggregate) queries from within the **graph** view in the Grakn
+visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This
+shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from
+your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `./graql console` at the terminal,
+from within the *bin* directory of the Grakn installation.
 
 Here are some example `aggregate` queries to try:
 
