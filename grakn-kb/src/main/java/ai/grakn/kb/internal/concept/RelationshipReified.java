@@ -59,10 +59,7 @@ import java.util.stream.Stream;
  *
  */
 public class RelationshipReified extends ThingImpl<Relationship, RelationshipType> implements RelationshipStructure {
-    /**
-     * Set of {@link Casting}s which are loaded into memory. This should only be used when adding new roleplayers.
-     * This is because validation requires iterating over all castings anyway.
-     */
+
     @Nullable private RelationshipImpl owner;
 
     private RelationshipReified(VertexElement vertexElement) {
