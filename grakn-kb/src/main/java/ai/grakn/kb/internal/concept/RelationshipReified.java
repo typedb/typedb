@@ -27,7 +27,6 @@ import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -84,7 +83,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         //We add the role types explicitly so we can return them when there are no roleplayers
         type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
         //All castings are used here because we need to iterate over all of them anyway
-        lazyCastings(ImmutableSet.of()).forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new HashSet<>()).add(rp.getRolePlayer()));
+        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new HashSet<>()).add(rp.getRolePlayer()));
 
         return roleMap;
     }
@@ -96,9 +95,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
     //TODO: This could probably become more efficient in certain use cases
     void removeRolePlayer(Role role, Thing thing) {
-        Stream<Casting> castings = lazyCastings(ImmutableSet.of());
-
-        castings.filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing)).
+        castingsRelation().filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing)).
                 findAny().
                 ifPresent(Casting::delete);
     }
@@ -154,23 +151,13 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
      */
     public Stream<Casting> castingsRelation(Role... roles){
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
-        return lazyCastings(roleSet);
-    }
-
-    /**
-     * Get all the {@link Casting}s for the given {@link Role}s in a lazy stream.
-     *
-     * @param roles The {@link Role} which the {@link Thing}s are playing
-     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relationship}
-     */
-    private Stream<Casting> lazyCastings(Set<Role> roles){
-        if(roles.isEmpty()){
+        if(roleSet.isEmpty()){
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
                     map(edge -> Casting.withRelationship(edge, owner));
         }
 
         //Traversal is used so we can potentially optimise on the index
-        Set<Integer> roleTypesIds = roles.stream().map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
+        Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
         return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
