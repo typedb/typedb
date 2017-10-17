@@ -290,10 +290,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom));
     }
 
-    public static GraqlQueryException ruleCreationArityMismatch() {
-        return new GraqlQueryException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
-    }
-
     public static GraqlQueryException valuePredicateAtomWithMultiplePredicates() {
         return new GraqlQueryException("Attempting creation of ValuePredicate atom with more than single predicate");
     }
