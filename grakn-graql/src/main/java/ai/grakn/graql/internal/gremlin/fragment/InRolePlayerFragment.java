@@ -68,11 +68,11 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(GraknTx graph, Collection<Var> vars) {
-        Var thePlayer = var();
-        Var theEdge = var();
+        Var edge = var();
+        Var player = var();
 
         GraphTraversal<Vertex, Edge> edgeTraversal = __
-                .<Vertex>as(thePlayer.name()).inE(ROLE_PLAYER.getLabel()).as(theEdge.name());
+                .<Vertex>as(edge.name()).inE(ROLE_PLAYER.getLabel()).as(player.name());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
@@ -82,9 +82,9 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
 
         return edgeTraversal
                 .values(ROLE_LABEL_ID.name()).as(ROLE_LABEL.name())
-                .select(theEdge.name()).inV().as(PLAYER_VAR.name()).as(thePlayer.name())
-                .select(Pop.last, ROLE_LABEL.name(), PLAYER_VAR.name()).as(edge().name())
-                .select(theEdge.name()).outV();
+                .select(player.name()).inV().as(PLAYER_VAR.name()).as(edge.name())
+                .select(Pop.last, ROLE_LABEL.name(), PLAYER_VAR.name()).as(roleAndPlayer().name())
+                .select(player.name()).outV();
     }
 
     private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
@@ -93,8 +93,10 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
         GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.ATTRIBUTE.getLabel());
 
         // Identify the relation - role-player pair by combining the relationship edge and direction into a map
-        edgeTraversal.as(RELATION_EDGE.name()).constant(direction).as(RELATION_DIRECTION.name());
-        edgeTraversal.select(Pop.last, RELATION_EDGE.name(), RELATION_DIRECTION.name()).as(edge().name()).select(RELATION_EDGE.name());
+        edgeTraversal
+                .as(RELATION_EDGE.name()).constant(direction).as(RELATION_DIRECTION.name())
+                .select(Pop.last, RELATION_EDGE.name(), RELATION_DIRECTION.name()).as(roleAndPlayer().name())
+                .select(RELATION_EDGE.name());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), graph);
