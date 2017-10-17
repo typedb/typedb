@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -98,16 +97,10 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     //TODO: This could probably become more efficient in certain use cases
     void removeRolePlayer(Role role, Thing thing) {
         Stream<Casting> castings = lazyCastings(ImmutableSet.of());
-        Iterator<Casting> iterator = castings.iterator();
 
-        while(iterator.hasNext()){
-            Casting casting = iterator.next();
-            if(casting.getRole().equals(role) && casting.getRolePlayer().equals(thing)){
-                casting.delete();
-                iterator.remove();
-                break;
-            }
-        }
+        castings.filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing)).
+                findAny().
+                ifPresent(Casting::delete);
     }
 
     public void addRolePlayer(Role role, Thing thing) {
