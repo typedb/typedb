@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
@@ -36,18 +37,22 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -69,6 +74,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
@@ -87,6 +93,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final GraknTx tx;
     private final ImmutableSet<Atomic> atomSet;
     private Answer substitution = null;
+    private Map<Var, Type> varTypeMap = null;
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
         this.tx = tx;
@@ -120,6 +127,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(q.getAtoms().stream().map(at -> AtomicFactory.create(at, this)).iterator())
                 .build();
+    }
+
+    private Stream<IsaAtom> inferEntityTypes() {
+        Set<Var> typedVars = getAtoms(IsaAtom.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
+        return getAtoms(IdPredicate.class)
+                .filter(p -> !typedVars.contains(p.getVarName()))
+                .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
+                .filter(p -> Objects.nonNull(p.getValue()))
+                .filter(p -> p.getValue().isEntity())
+                .map(p -> new IsaAtom(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
     }
 
     /**
@@ -244,6 +261,26 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
+     * @param typedVar variable of interest
+     * @param parentType to be checked
+     * @return true if typing the typeVar with type is compatible with role configuration of this query
+     */
+    public boolean isTypeRoleCompatible(Var typedVar, SchemaConcept parentType){
+        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
+
+        return !getAtoms(RelationshipAtom.class)
+                .filter(ra -> ra.getVarNames().contains(typedVar))
+                .filter(ra -> ra.getRoleVarMap().entries().stream()
+                        //get roles this type needs to play
+                        .filter(e -> e.getValue().equals(typedVar))
+                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
+                        //check if it can play it
+                        .filter(e -> !e.getKey().playedByTypes().filter(parentType::equals).findFirst().isPresent())
+                        .findFirst().isPresent())
+                .findFirst().isPresent();
+    }
+
+    /**
      * @return atom set defining this reasoner query
      */
     @Override
@@ -285,12 +322,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return map of variable name - type pairs
      */
     @Override
-    public Map<Var, SchemaConcept> getVarSchemaConceptMap() {
-        Map<Var, SchemaConcept> typeMap = new HashMap<>();
-        getAtoms(TypeAtom.class)
-                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getSchemaConcept()));
-        return typeMap;
+    public Map<Var, Type> getVarTypeMap() {
+        if (varTypeMap == null) {
+            varTypeMap = new HashMap<>();
+            Stream.concat(
+                    getAtoms(TypeAtom.class),
+                    inferEntityTypes()
+            )
+                    .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))
+                    .filter(p -> Objects.nonNull(p.getValue()))
+                    .filter(p -> p.getValue().isType())
+                    .forEach(p -> varTypeMap.putIfAbsent(p.getKey(), p.getValue().asType()));
+        }
+        return varTypeMap;
     }
 
     /**
@@ -517,8 +561,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if because of the rule graph form, the resolution of this query may require reiteration
      */
     public boolean requiresReiteration() {
-        Set<InferenceRule> dependentRules = RuleUtil.getDependentRules(this);
-        return RuleUtil.subGraphHasLoops(dependentRules, tx())
-               || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
+        Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
+        return RuleUtils.subGraphHasLoops(dependentRules, tx())
+               || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 }

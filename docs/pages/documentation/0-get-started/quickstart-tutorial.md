@@ -38,7 +38,7 @@ Then start the Graql shell in its interactive (REPL) mode:
 You will see a `>>>` prompt. Type in a query to check that everything is working: 
 
 ```graql   
-match $x isa person, has identifier $n;
+match $x isa person, has identifier $n; get;
 ```
 
 You should see a printout of a number of lines of text, each of which includes a name, such as "William Sanford Titus" or "Elizabeth Niesz".
@@ -323,7 +323,7 @@ Turning to [Graql analytics](../graql-analytics/analytics-overview.html), we can
 The mean age at death can be calculated using `compute mean` as follows, entering it into the visualiser's query form:
 
 ```graql
-compute mean of age in person; # returns 78.23 (rounded to 2 decimal places)
+compute mean of age in person; # returns 77.0 (rounded to 2 decimal places)
 ```
 
 Other statistical values can be calculated similarly, e.g. values for `count`:

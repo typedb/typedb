@@ -161,23 +161,20 @@ Here is the complete example - the code to define the schema and insert the data
 
 Then type edit, which will open up the systems default text editor where you can paste your chunk of text. Upon exiting the editor, the Graql will execute.
 
-```graql 
-insert 
+```graql
+define 
+  
 age sub attribute datatype long;
 name sub attribute datatype string;
-person sub entity;
-person has age, has name;
+define person sub entity
+  has age, has name;
 
-$marko isa person;
-$vadas isa person;
-$josh isa person;
-$peter isa person;
-$marko has age 29, has name "marko";
-$josh has age 32, has name "josh";
-$vadas has age 27, has name "vadas";
-$peter has age 35, has name "peter";
+insert $marko isa person, has age 29, has name "marko";
+insert $vadas isa person, has age 32, has name "josh";
+insert $josh isa person, has age 27, has name "vadas";
+insert $peter isa person, has age 35, has name "peter";
 
-weight sub attribute datatype double;
+define weight sub attribute datatype double;
 
 knower sub role;
 known-about sub role;
@@ -190,19 +187,18 @@ knows sub relationship
 	relates known-about
 	has weight;
 
-(knower: $marko, known-about: $josh) isa knows has weight 1.0;
-(knower: $marko, known-about: $vadas) isa knows has weight 0.5;
+match $marko has name "marko"; $josh has name "josh"; insert (knower: $marko, known-about: $josh) isa knows has weight 1.0;
+match $marko has name "marko"; $vadas has name "vadas"; insert (knower: $marko, known-about: $vadas) isa knows has weight 0.5;
 
+define
 lang sub attribute datatype string;
 software sub entity;
 software has lang, has name;
 
-$lop isa software;
-$ripple isa software;
+insert $lop isa software, has lang "java", has name "lop";
+insert $ripple isa software, has lang "java", has name "ripple";
 
-$lop has lang "java", has name "lop";
-$ripple has lang "java", has name "ripple";
-
+define
 programmer sub role;
 programmed sub role;
 
@@ -215,11 +211,12 @@ programming sub relationship
 	has weight;
 
 
-(programmer: $marko, programmed: $lop) isa programming has weight 0.4;
-(programmer: $peter, programmed: $lop) isa programming has weight 0.2;
-(programmer: $josh, programmed: $lop) isa programming has weight 0.4;
-(programmer: $josh, programmed: $ripple) isa programming has weight 1.0;
-```   
+match $marko has name "marko"; $lop has name "lop"; insert (programmer: $marko, programmed: $lop) isa programming has weight 0.4;
+match $peter has name "peter"; $lop has name "lop"; insert (programmer: $peter, programmed: $lop) isa programming has weight 0.2;
+match $josh has name "josh"; $lop has name "lop"; insert (programmer: $josh, programmed: $lop) isa programming has weight 0.4;
+match $josh has name "josh"; $ripple has name "ripple"; insert (programmer: $josh, programmed: $ripple) isa programming has weight 1.0;
+
+```
 
 
 ## Test Yourself

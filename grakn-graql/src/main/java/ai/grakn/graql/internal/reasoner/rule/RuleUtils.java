@@ -45,7 +45,7 @@ import static ai.grakn.graql.Graql.var;
  * @author Kasper Piskorski
  *
  */
-public class RuleUtil {
+public class RuleUtils {
 
     /**
      * @param graph of interest

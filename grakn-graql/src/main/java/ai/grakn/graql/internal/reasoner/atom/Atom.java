@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
@@ -30,12 +31,13 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -68,6 +70,10 @@ public abstract class Atom extends AtomicBase {
     protected Atom(Atom a) {
         super(a);
         this.applicableRules = a.applicableRules;
+    }
+
+    public RelationshipAtom toRelationshipAtom(){
+        throw GraqlQueryException.illegalAtomConversion(this);
     }
 
     @Override
@@ -150,13 +156,17 @@ public abstract class Atom extends AtomicBase {
         return basePriority;
     }
 
-    protected abstract boolean isRuleApplicable(InferenceRule child);
+    private boolean isRuleApplicable(InferenceRule child){
+        return isRuleApplicableViaAtom(child.getRuleConclusionAtom());
+    }
+
+    protected abstract boolean isRuleApplicableViaAtom(Atom headAtom);
 
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     private Stream<Rule> getPotentialRules(){
-        return RuleUtil.getRulesWithType(getSchemaConcept(), tx());
+        return RuleUtils.getRulesWithType(getSchemaConcept(), tx());
     }
 
     /**
