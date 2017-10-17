@@ -36,8 +36,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import static java.lang.Math.min;
-
 
 /**
  * Singleton class used to read config file and make all the settings available to the Grakn Engine classes.
@@ -84,7 +82,6 @@ public class GraknEngineConfig {
 
     private static final int MAX_NUMBER_OF_THREADS = 120;
     private final Properties prop = new Properties();
-    private int numOfThreads = -1;
 
     protected static final String GRAKN_ASCII = loadGraknAsciiFile();
 
@@ -107,10 +104,8 @@ public class GraknEngineConfig {
         } catch (IOException e) {
             LOG.error("Could not load engine properties from {}", path, e);
         }
-        computeThreadsNumber();
         LOG.info("Project directory in use: {}", projectPath);
         LOG.info("Configuration file in use: {}", configFilePath);
-        LOG.info("Number of threads set to: {}", numOfThreads);
     }
 
     private void setGraknVersion(){
@@ -133,31 +128,6 @@ public class GraknEngineConfig {
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
         }
-    }
-
-    /**
-     * Compute the number of threads available to determine the size of all the Grakn Engine thread pools.
-     * If the loader.threads param is set to 0 in the config file, the number of threads will be set
-     * equal to the number of available processor to the current JVM.
-     */
-    private void computeThreadsNumber() {
-        numOfThreads = Integer.parseInt(prop.getProperty(NUM_THREADS_PROPERTY));
-        if (numOfThreads == 0) {
-            int availableProcessors = Runtime.getRuntime().availableProcessors();
-            LOG.warn("Number of threads set to 0 in properties. Running with {} processors instead.", availableProcessors);
-            numOfThreads = availableProcessors;
-        }
-        numOfThreads = min(MAX_NUMBER_OF_THREADS, numOfThreads);
-    }
-
-    /**
-     * @return Number of available threads to be used to instantiate new threadpools.
-     */
-    public int getAvailableThreads() {
-        if (numOfThreads == -1) {
-            computeThreadsNumber();
-        }
-        return numOfThreads;
     }
 
     /**
