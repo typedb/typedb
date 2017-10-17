@@ -80,7 +80,6 @@ public class GraknEngineConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
 
-    private static final int MAX_NUMBER_OF_THREADS = 120;
     private final Properties prop = new Properties();
 
     protected static final String GRAKN_ASCII = loadGraknAsciiFile();
