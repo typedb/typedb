@@ -29,10 +29,12 @@ import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.UriBuilder;
 import mjson.Json;
@@ -87,7 +89,7 @@ public class GraknClient {
         }
     }
 
-    public Keyspace keyspace(String keyspace) throws GraknClientException {
+    public Optional<Keyspace> keyspace(String keyspace) throws GraknClientException {
         URI fullURI = UriBuilder.fromPath(keyspaceURL).buildFromMap(ImmutableMap.of("keyspace", keyspace));
         Response response = asyncHttpClient.target(fullURI.toString())
                 .request()
@@ -95,11 +97,14 @@ public class GraknClient {
                 .get();
         int statusCode = response.getStatus();
         LOG.debug("Received {}", statusCode);
+        if (response.getStatusInfo().getStatusCode() == Status.NOT_FOUND.getStatusCode()) {
+            return Optional.empty();
+        }
         if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
             throw new GraknClientException("Failed keyspace. Error status: " + statusCode + ", error info: " + response.readEntity(String.class), response.getStatusInfo());
         }
         String value = Json.read(response.readEntity(String.class)).at("value").asString();
         response.close();
-        return Keyspace.of(value);
+        return Optional.of(Keyspace.of(value));
     }
 }

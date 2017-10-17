@@ -41,7 +41,7 @@ public class ConcurrencyUtil {
                 );
     }
 
-    static public <T> Observable<List<T>> allObservable(List<Observable<T>> tasks) {
+    static public <T> Observable<List<T>> allObservable(Collection<Observable<T>> tasks) {
         return Observable.from(tasks)
                 //execute in parallel
                 .flatMap(task -> task.observeOn(Schedulers.computation()))

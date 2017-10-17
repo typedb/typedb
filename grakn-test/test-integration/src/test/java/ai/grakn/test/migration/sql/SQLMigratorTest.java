@@ -71,7 +71,6 @@ public class SQLMigratorTest {
 
         try(Connection connection = setupExample(factory, "pets")){
             migrator.load(template, new SQLMigrator(query, connection).convert());
-
             assertPetGraphCorrect(factory);
         }
     }

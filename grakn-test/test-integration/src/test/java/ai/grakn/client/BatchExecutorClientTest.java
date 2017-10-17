@@ -76,7 +76,7 @@ public class BatchExecutorClientTest {
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             // Load some queries
             generate(this::query).limit(1).forEach(q ->
-                    all.add(loader.add(q, keyspace.getValue()))
+                    all.add(loader.add(q, keyspace.getValue(), true))
             );
             int completed = allObservable(all).toBlocking().first().size();
             // Verify that the logger received the failed log message
@@ -90,7 +90,7 @@ public class BatchExecutorClientTest {
         List<Observable<QueryResponse>> all = new ArrayList<>();
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             generate(this::query).limit(n).forEach(q ->
-                    all.add(loader.add(q, keyspace.getValue()))
+                    all.add(loader.add(q, keyspace.getValue(), true))
             );
             int completed = allObservable(all).toBlocking().first().size();
             assertEquals(n, completed);
@@ -107,7 +107,7 @@ public class BatchExecutorClientTest {
         try (BatchExecutorClient loader = loader(MAX_DELAY * 100)) {
             int n = 100;
             generate(this::query).limit(n).forEach(q ->
-                    all.add(loader.add(q, keyspace.getValue()))
+                    all.add(loader.add(q, keyspace.getValue(), true))
             );
 
             int completed = allObservable(all).toBlocking().first().size();
@@ -136,7 +136,7 @@ public class BatchExecutorClientTest {
             for (int i = 0; i < n; i++) {
                 all.add(
                         loader
-                                .add(query(), keyspace.getValue())
+                                .add(query(), keyspace.getValue(), true)
                                 .doOnError(ex -> System.out.println("Error " + ex.getMessage())));
 
                 if (i % 5 == 0) {

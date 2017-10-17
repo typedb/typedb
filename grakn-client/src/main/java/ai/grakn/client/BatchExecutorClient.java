@@ -18,7 +18,6 @@
 
 package ai.grakn.client;
 
-import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Meter;
@@ -41,6 +40,7 @@ import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -95,22 +95,27 @@ public class BatchExecutorClient implements Closeable {
         }
     }
 
-    public Observable<QueryResponse> add(Query<?> query, String keyspace) {
+    public Observable<QueryResponse> add(Query<?> query, String keyspace, boolean keepErrors) {
         Context context = addTimer.time();
-        return new QueriesObservableCollapser(query, keyspace, graknClient, maxDelay, maxRetries, metricRegistry)
+        Observable<QueryResponse> observable = new QueriesObservableCollapser(query,
+                keyspace,
+                graknClient, maxDelay, maxRetries, metricRegistry)
                 .observe()
                 .doOnError((error) -> {
                     failureMeter.mark();
                 })
                 .doOnTerminate(context::close);
+        return keepErrors ? observable : ignoreErrors(observable);
     }
 
-    public boolean keyspaceExists(Keyspace keyspace) {
-        try {
-            return graknClient.keyspace(keyspace.getValue()).equals(keyspace);
-        } catch (GraknClientException e) {
-            return false;
-        }
+    private Observable<QueryResponse> ignoreErrors(Observable<QueryResponse> observable) {
+        observable = observable
+                .map(Optional::of)
+                .onErrorResumeNext(error -> {
+                    LOG.error("Error while executing query but skipping: {}", error.getMessage());
+                    return Observable.just(Optional.empty());
+                }).filter(Optional::isPresent).map(Optional::get);
+        return observable;
     }
 
     @Override
@@ -134,7 +139,8 @@ public class BatchExecutorClient implements Closeable {
         private int maxRetries = 5;
         private boolean reportStats = true;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         public Builder taskClient(GraknClient val) {
             graknClient = val;
@@ -174,7 +180,8 @@ public class BatchExecutorClient implements Closeable {
         private final GraknClient client;
         private int retries;
 
-        public CommandQueries(List<Query<?>> queries, String keyspace, GraknClient client, int retries) {
+        public CommandQueries(List<Query<?>> queries, String keyspace, GraknClient client,
+                int retries) {
             super(Setter
                     .withGroupKey(HystrixCommandGroupKey.Factory.asKey("BatchExecutor"))
                     .andThreadPoolPropertiesDefaults(
@@ -193,18 +200,19 @@ public class BatchExecutorClient implements Closeable {
 
         @Override
         protected List<QueryResponse> run() throws GraknClientException {
-            LOG.debug("Running queries on keyspace {}: {}",  keyspace, queries);
+            LOG.debug("Running queries on keyspace {}: {}", keyspace, queries);
 
             Retryer<List<QueryResponse>> retryer = RetryerBuilder.<List<QueryResponse>>newBuilder()
                     .retryIfException((throwable) ->
-                            throwable instanceof GraknClientException && ((GraknClientException) throwable).isRetriable())
+                            throwable instanceof GraknClientException
+                                    && ((GraknClientException) throwable).isRetriable())
                     .withWaitStrategy(WaitStrategies.exponentialWait(10, 1, TimeUnit.MINUTES))
-                    .withStopStrategy(StopStrategies.stopAfterAttempt(retries))
+                    .withStopStrategy(StopStrategies.stopAfterAttempt(retries + 1))
                     .build();
 
             try {
                 return retryer.call(() -> client.graqlExecute(queries, keyspace));
-            } catch (RetryException|ExecutionException e) {
+            } catch (RetryException | ExecutionException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof GraknClientException) {
                     throw (GraknClientException) cause;
@@ -234,7 +242,8 @@ public class BatchExecutorClient implements Closeable {
             super(Setter.withCollapserKey(
                     // It split by keyspace since we want to avoid mixing requests for different
                     // keyspaces together
-                    com.netflix.hystrix.HystrixCollapserKey.Factory.asKey("QueriesObservableCollapser_" + keyspace))
+                    com.netflix.hystrix.HystrixCollapserKey.Factory
+                            .asKey("QueriesObservableCollapser_" + keyspace))
                     .andCollapserPropertiesDefaults(
                             HystrixCollapserProperties.Setter()
                                     .withRequestCacheEnabled(false)

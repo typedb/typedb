@@ -21,8 +21,10 @@ package ai.grakn.migration.base;
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
+import ai.grakn.client.GraknClientException;
 import ai.grakn.client.QueryResponse;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
@@ -32,7 +34,6 @@ import ai.grakn.util.SimpleURI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -107,32 +108,25 @@ public class Migrator {
      * available or an exception occurs
      */
     public void load(String template, Stream<Map<String, Object>> converter, int retrySize, boolean failFast) {
+        GraknClient graknClient = new GraknClient(new SimpleURI(uri));
         try (BatchExecutorClient loader =
                 BatchExecutorClient.newBuilder()
-                        .taskClient(new GraknClient(new SimpleURI(uri)))
+                        .taskClient(graknClient)
                         .maxRetries(retrySize)
                         .build()) {
-            if (!loader.keyspaceExists(keyspace)) {
-                System.out.println("No such keyspace " + keyspace);
-                return;
-            }
-            List<Observable<Optional<QueryResponse>>> all = new ArrayList<>();
+            checkKeyspace(graknClient);
+            List<Observable<QueryResponse>> allObservables = new ArrayList<>();
             converter
                     .flatMap(d -> template(template, d, failFast))
                     .forEach(q -> {
                         LOG.debug("Adding query {}", q);
                         numberQueriesSubmitted.incrementAndGet();
-                        Observable<Optional<QueryResponse>> addObservable = loader
-                                .add(q, keyspace.getValue()).map(Optional::of);
-                        if (!failFast) {
-                            addObservable = addObservable.onErrorResumeNext(error -> {
-                                LOG.error("Found error, skipping", error);
-                                return Observable.just(Optional.empty());
-                            });
-                        }
-                        all.add(addObservable);
-                        addObservable.filter(Optional::isPresent).subscribe(
-                                        taskResult -> LOG.debug("Successfully executed: {}", taskResult),
+                        // We add get a hot observable. It starts immediately
+                        Observable<QueryResponse> addObservable = loader.add(q, keyspace.getValue(), failFast);
+                        allObservables.add(addObservable);
+                        addObservable.subscribe(
+                                        taskResult ->
+                                                LOG.debug("Successfully executed: {}", taskResult),
                                         error -> {
                                                 if (failFast) {
                                                     throw GraknBackendException.migrationFailure(error.getMessage());
@@ -140,8 +134,18 @@ public class Migrator {
                                         }
                                 );
                     });
-            int completed = allObservable(all).toBlocking().first().size();
+            int completed = allObservable(allObservables).toBlocking().first().size();
             LOG.info("Loaded {} statements", completed);
+        }
+    }
+
+    private void checkKeyspace(GraknClient graknClient) {
+        try {
+            if(!graknClient.keyspace(keyspace.getValue()).isPresent()) {
+                throw GraknBackendException.noSuchKeyspace(keyspace);
+            }
+        } catch (GraknClientException e) {
+            throw GraknServerException.internalError(e.getMessage());
         }
     }
 
