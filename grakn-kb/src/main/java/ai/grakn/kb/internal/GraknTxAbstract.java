@@ -913,7 +913,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         otherRelationship.allRolePlayers().forEach((role, instances) -> {
             Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
             if (instances.contains(other) && relationReified.isPresent()) {
-                relationReified.get().putRolePlayerEdge(role, main);
+                relationReified.get().addRolePlayerEdge(role, main);
             }
         });
     }

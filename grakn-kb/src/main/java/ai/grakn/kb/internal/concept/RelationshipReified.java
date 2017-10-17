@@ -30,10 +30,7 @@ import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -129,7 +126,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraknTxOperationException.metaTypeImmutable(role.getLabel());
 
         //Do the actual put of the role and role player
-        putRolePlayerEdge(role, thing);
+        addRolePlayerEdge(role, thing);
     }
 
     /**
@@ -141,35 +138,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
      * @param role The {@link Role} being played by the {@link Thing} in this {@link Relationship}
      * @param toThing The {@link Thing} playing a {@link Role} in this {@link Relationship}
      */
-    public void putRolePlayerEdge(Role role, Thing toThing) {
-        //Checking if the edge exists
-        if(allCastings.isPresent()){
-            //We use the cache if it has been loaded
-            for (Casting casting : allCastings.get()) {
-                if(casting.getRole().equals(role) && casting.getRolePlayer().equals(toThing)){
-                    return;
-                }
-            }
-        } else {
-            //If the cache has not been loaded then we are lazy and just use a traversal.
-            //We do this because we should only load the cache `allCastings` if necessary
-            //And this is only necessary if a new role player has been added
-            GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
-                    has(Schema.VertexProperty.ID.name(), this.getId().getValue()).
-                    outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                    has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), this.type().getLabelId().getValue()).
-                    has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.getLabelId().getValue()).
-                    as("edge").
-                    inV().
-                    has(Schema.VertexProperty.ID.name(), toThing.getId()).
-                    select("edge");
-
-            if(traversal.hasNext()){
-                return;
-            }
-        }
-
-        //Role player edge does not exist create a new one
+    public void addRolePlayerEdge(Role role, Thing toThing) {
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
         edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().getLabelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.getLabelId().getValue());
