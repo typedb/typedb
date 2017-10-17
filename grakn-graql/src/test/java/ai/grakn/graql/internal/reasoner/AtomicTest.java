@@ -663,8 +663,8 @@ public class AtomicTest {
                 graph.getSchemaConcept(Label.of("relation3"))
         );
 
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
-        testTypeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
+        typeInference(possibleTypes, patternString, subbedPatternString, graph);
+        typeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -685,8 +685,8 @@ public class AtomicTest {
         RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
         List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
 
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
-        testTypeInference(possibleTypes, patternString2, subbedPatternString2, graph);
+        typeInference(possibleTypes, patternString, subbedPatternString, graph);
+        typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -699,14 +699,14 @@ public class AtomicTest {
                 graph.getSchemaConcept(Label.of("relation2"))
         );
 
-        testTypeInference(possibleTypes, patternString, graph);
+        typeInference(possibleTypes, patternString, graph);
     }
 
     @Test
     public void testTypeInference_singleRole_subType() {
         GraknTx graph = typeInferenceSet.tx();
         String patternString = "{(subRole2: $x, $y);}";
-        testTypeInference(allRelations(graph), patternString, graph);
+        typeInference(allRelations(graph), patternString, graph);
     }
 
     @Test
@@ -729,9 +729,9 @@ public class AtomicTest {
         RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
         List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
 
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
-        testTypeInference(possibleTypes, patternString2, subbedPatternString2, graph);
-        testTypeInference(possibleTypes, patternString3, subbedPatternString3, graph);
+        typeInference(possibleTypes, patternString, subbedPatternString, graph);
+        typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
+        typeInference(possibleTypes, patternString3, subbedPatternString3, graph);
     }
 
     @Test
@@ -756,8 +756,8 @@ public class AtomicTest {
                 graph.getSchemaConcept(Label.of("relation2"))
         );
 
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
-        testTypeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
+        typeInference(possibleTypes, patternString, subbedPatternString, graph);
+        typeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -772,8 +772,8 @@ public class AtomicTest {
         String subbedPatternString2 = "{(role1: $x, $y);" +
                 "$x id '" + conceptId(graph, "anotherSingleRoleEntity") + "';}";
 
-        testTypeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
-        testTypeInference(Collections.emptyList(), patternString2, subbedPatternString2, graph);
+        typeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
+        typeInference(Collections.emptyList(), patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -787,7 +787,7 @@ public class AtomicTest {
 
         RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
         List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
+        typeInference(possibleTypes, patternString, subbedPatternString, graph);
     }
 
     @Test
@@ -808,8 +808,8 @@ public class AtomicTest {
         RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
         RelationshipType relation2 = graph.getSchemaConcept(Label.of("relation2"));
 
-        testTypeInference(Collections.singletonList(relation1), patternString, subbedPatternString, graph);
-        testTypeInference(Collections.singletonList(relation2), patternString2, subbedPatternString2, graph);
+        typeInference(Collections.singletonList(relation1), patternString, subbedPatternString, graph);
+        typeInference(Collections.singletonList(relation2), patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -825,7 +825,7 @@ public class AtomicTest {
                 graph.getSchemaConcept(Label.of("relation3")),
                 graph.getSchemaConcept(Label.of("relation2"))
         );
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
+        typeInference(possibleTypes, patternString, subbedPatternString, graph);
     }
 
     @Test
@@ -837,21 +837,21 @@ public class AtomicTest {
                 "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
                 "$y id '" + conceptId(graph, "anotherSingleRoleEntity") +"';}";
 
-        testTypeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
+        typeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
     }
 
     @Test
     public void testTypeInference_metaGuards() {
         GraknTx graph = typeInferenceSet.tx();
         String patternString = "{($x, $y);$x isa entity; $y isa entity;}";
-        testTypeInference(allRelations(graph), patternString, graph);
+        typeInference(allRelations(graph), patternString, graph);
     }
 
     @Test
     public void testTypeInference_genericRelation() {
         GraknTx graph = typeInferenceSet.tx();
         String patternString = "{($x, $y);}";
-        testTypeInference(allRelations(graph), patternString, graph);
+        typeInference(allRelations(graph), patternString, graph);
     }
 
     /**
@@ -867,7 +867,7 @@ public class AtomicTest {
         GraknTx graph = unificationTestSet.tx();
         String relation = "{(role1: $x, role2: $y) isa binary;}";
         String relation2 = "{(role1: $y, role2: $x) isa binary;}";
-        testExactUnification(relation, relation2, true, true, graph);
+        exactUnification(relation, relation2, true, true, graph);
     }
 
     @Test
@@ -875,7 +875,7 @@ public class AtomicTest {
         GraknTx graph = unificationTestSet.tx();
         String relation = "{(role1: $x, role: $y) isa binary;}";
         String relation2 = "{(role1: $y, role: $x) isa binary;}";
-        testExactUnification(relation, relation2, true, true, graph);
+        exactUnification(relation, relation2, true, true, graph);
     }
 
     @Test
@@ -883,7 +883,7 @@ public class AtomicTest {
         GraknTx graph = unificationTestSet.tx();
         String relation = "{$x (role1: $r, role2: $z) isa binary;}";
         String relation2 = "{$r (role1: $x, role2: $y) isa binary;}";
-        testExactUnification(relation, relation2, true, true, graph);
+        exactUnification(relation, relation2, true, true, graph);
     }
 
     @Test
@@ -894,9 +894,9 @@ public class AtomicTest {
         String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.getId().getValue() + "';}";
         String relation3 = "{(role: $z, role: $v) isa binary; $v id '" + instance.getId().getValue() + "';}";
 
-        testExactUnification(relation, relation2, true, true, graph);
-        testExactUnification(relation, relation3, true, true, graph);
-        testExactUnification(relation2, relation3, true, true, graph);
+        exactUnification(relation, relation2, true, true, graph);
+        exactUnification(relation, relation3, true, true, graph);
+        exactUnification(relation2, relation3, true, true, graph);
     }
 
     @Test
@@ -909,11 +909,11 @@ public class AtomicTest {
         String specialisedRelation4 = "{(subSubRole1: $y, subSubRole2: $x);}";
         String specialisedRelation5 = "{(subRole1: $u, anotherSubRole1: $v);}";
 
-        testExactUnification(parentRelation, specialisedRelation, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation2, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation3, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation4, false, false, graph);
-        testNonExistentUnifier(parentRelation, specialisedRelation5, graph);
+        exactUnification(parentRelation, specialisedRelation, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation2, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation3, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation4, false, false, graph);
+        nonExistentUnifier(parentRelation, specialisedRelation5, graph);
     }
 
     @Test
@@ -927,22 +927,13 @@ public class AtomicTest {
         String specialisedRelation5 = "{(subSubRole1: $u, role3: $v);}";
         String specialisedRelation6 = "{(role1: $u, role2: $v);}";
 
-        testExactUnification(parentRelation, specialisedRelation, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation2, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation3, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation4, false, false, graph);
-        testNonExistentUnifier(parentRelation, specialisedRelation5, graph);
-        testNonExistentUnifier(parentRelation, specialisedRelation6, graph);
+        exactUnification(parentRelation, specialisedRelation, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation2, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation3, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation4, false, false, graph);
+        nonExistentUnifier(parentRelation, specialisedRelation5, graph);
+        nonExistentUnifier(parentRelation, specialisedRelation6, graph);
     }
-
-
-    /*
-#(role1: $b, role2: $f, role3: $m) isa ternary;
-(role1: $b, subRole2: $f, subSubRole3: $m) isa ternary;
-(subRole1: $f, subRole2: $m, subSubRole3: $d) isa ternary;
-(subRole1: $f, subSubRole2: $m, subSubRole3: $d) isa ternary;
-(subSubRole1: $m, subSubRole2: $d, subSubRole3: $s) isa ternary;
-     */
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
@@ -954,11 +945,11 @@ public class AtomicTest {
         String specialisedRelation4 = "{(subRole1: $y, subRole2: $z, subSubRole3: $x);}";
         String specialisedRelation5 = "{(subRole1: $u, subRole1: $v, subSubRole3: $q);}";
 
-        testExactUnification(parentRelation, specialisedRelation, false, true, graph);
-        testExactUnification(parentRelation, specialisedRelation2, false, true, graph);
-        testExactUnification(parentRelation, specialisedRelation3, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation4, false, false, graph);
-        testNonExistentUnifier(parentRelation, specialisedRelation5, graph);
+        exactUnification(parentRelation, specialisedRelation, false, true, graph);
+        exactUnification(parentRelation, specialisedRelation2, false, true, graph);
+        exactUnification(parentRelation, specialisedRelation3, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation4, false, false, graph);
+        nonExistentUnifier(parentRelation, specialisedRelation5, graph);
     }
 
     @Test
@@ -972,12 +963,12 @@ public class AtomicTest {
         String specialisedRelation5 = "{(subSubRole1: $y, subRole2: $z, subSubRole3: $x);}";
         String specialisedRelation6 = "{(subRole1: $u, subRole1: $v, subSubRole3: $q);}";
 
-        testNonExistentUnifier(parentRelation, specialisedRelation, graph);
-        testExactUnification(parentRelation, specialisedRelation2, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation3, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation4, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation5, false, false, graph);
-        testNonExistentUnifier(parentRelation, specialisedRelation6, graph);
+        nonExistentUnifier(parentRelation, specialisedRelation, graph);
+        exactUnification(parentRelation, specialisedRelation2, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation3, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation4, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation5, false, false, graph);
+        nonExistentUnifier(parentRelation, specialisedRelation6, graph);
     }
 
     @Test
@@ -987,21 +978,35 @@ public class AtomicTest {
         String specialisedRelation = "{(role1: $u, subRole2: $u, subSubRole3: $q);}";
         String specialisedRelation2 = "{(role1: $y, subRole2: $y, subSubRole3: $x);}";
         String specialisedRelation3 = "{(subRole1: $u, subRole2: $u, subSubRole3: $q);}";
-        String specialisedRelation4 = "{(subRole1: $y, subRole2: $u, subSubRole3: $x);}";
+        String specialisedRelation4 = "{(subRole1: $y, subRole2: $y, subSubRole3: $x);}";
         String specialisedRelation5 = "{(subRole1: $u, subRole1: $u, subSubRole3: $q);}";
 
-        testExactUnification(parentRelation, specialisedRelation, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation2, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation3, false, false, graph);
-        testExactUnification(parentRelation, specialisedRelation4, false, false, graph);
-        testNonExistentUnifier(parentRelation, specialisedRelation5, graph);
+        exactUnification(parentRelation, specialisedRelation, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation2, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation3, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation4, false, false, graph);
+        nonExistentUnifier(parentRelation, specialisedRelation5, graph);
     }
 
-    //TODO repeating roles
+    @Test
+    public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles_parentRepeatRolePlayers(){
+        GraknTx graph = unificationTestSet.tx();
+        String parentRelation = "{(role1: $x, role2: $x, role3: $y);}";
+        String specialisedRelation = "{(role1: $u, subRole2: $v, subSubRole3: $q);}";
+        String specialisedRelation2 = "{(role1: $z, subRole2: $y, subSubRole3: $x);}";
+        String specialisedRelation3 = "{(subRole1: $u, subRole2: $v, subSubRole3: $q);}";
+        String specialisedRelation4 = "{(subRole1: $y, subRole2: $y, subSubRole3: $x);}";
+        String specialisedRelation5 = "{(subRole1: $u, subRole1: $v, subSubRole3: $q);}";
+
+        exactUnification(parentRelation, specialisedRelation, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation2, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation3, false, false, graph);
+        exactUnification(parentRelation, specialisedRelation4, false, false, graph);
+        nonExistentUnifier(parentRelation, specialisedRelation5, graph);
+    }
+
 
     //TODO relations with types
-
-
 
     @Test
     public void testUnification_VariousAtoms(){
@@ -1011,10 +1016,10 @@ public class AtomicTest {
         String resource3 = "{$r has res1 'f';}";
         String resource4 = "{$x has res1 $y as $r;$y val 'f';}";
         String resource5 = "{$y has res1 $r as $x;$r val 'f';}";
-        testExactUnification(resource, resource2, true, true, graph);
-        testExactUnification(resource, resource3, true, true, graph);
-        testExactUnification(resource2, resource3, true, true, graph);
-        testExactUnification(resource4, resource5, true, true, graph);
+        exactUnification(resource, resource2, true, true, graph);
+        exactUnification(resource, resource3, true, true, graph);
+        exactUnification(resource2, resource3, true, true, graph);
+        exactUnification(resource4, resource5, true, true, graph);
     }
 
     @Test
@@ -1023,9 +1028,9 @@ public class AtomicTest {
         String type = "{$x isa baseRoleEntity;}";
         String type2 = "{$y isa $x;$x label 'baseRoleEntity';}";
         String type3 = "{$y isa baseRoleEntity;}";
-        testExactUnification(type, type2, true, true, graph);
-        testExactUnification(type, type3, true, true, graph);
-        testExactUnification(type2, type3, true, true, graph);
+        exactUnification(type, type2, true, true, graph);
+        exactUnification(type, type3, true, true, graph);
+        exactUnification(type2, type3, true, true, graph);
     }
 
     @Test
@@ -1180,9 +1185,9 @@ public class AtomicTest {
                                 "$R1 label 'subRole1';" +
                                 "$R2 label 'subSubRole2';}"
                         , graph), graph);
-        testExactUnification(parentQuery, childQuery, true, true);
-        testExactUnification(baseQuery, parentQuery, true, true);
-        testExactUnification(baseQuery, childQuery, true, true);
+        exactUnification(parentQuery, childQuery, true, true);
+        exactUnification(baseQuery, parentQuery, true, true);
+        exactUnification(baseQuery, childQuery, true, true);
     }
 
     @Test
@@ -1206,12 +1211,12 @@ public class AtomicTest {
                                 "$R1 label 'subRole1';" +
                                 "$R2 label 'subSubRole2';}"
                         , graph), graph);
-        testExactUnification(parentQuery, childQuery, true, true);
-        testExactUnification(baseQuery, parentQuery, true, true);
-        testExactUnification(baseQuery, childQuery, true, true);
+        exactUnification(parentQuery, childQuery, true, true);
+        exactUnification(baseQuery, parentQuery, true, true);
+        exactUnification(baseQuery, childQuery, true, true);
     }
 
-    private void testTypeInference(List<RelationshipType> possibleTypes, String pattern, GraknTx graph){
+    private void typeInference(List<RelationshipType> possibleTypes, String pattern, GraknTx graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         RelationshipAtom atom = (RelationshipAtom) query.getAtom();
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
@@ -1225,7 +1230,7 @@ public class AtomicTest {
         }
     }
 
-    private void testTypeInference(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, GraknTx graph){
+    private void typeInference(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, GraknTx graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern, graph), graph);
         RelationshipAtom atom = (RelationshipAtom) query.getAtom();
@@ -1251,14 +1256,14 @@ public class AtomicTest {
      * @param parentQuery parent query
      * @param childQuery child query
      */
-    private void testNonExistentUnifier(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery){
+    private void nonExistentUnifier(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery){
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = parentQuery.getAtom();
         assertTrue(childAtom.getMultiUnifier(parentAtom, true).isEmpty());
     }
 
-    private void testNonExistentUnifier(String parentPatternString, String childPatternString, GraknTx graph){
-        testNonExistentUnifier(
+    private void nonExistentUnifier(String parentPatternString, String childPatternString, GraknTx graph){
+        nonExistentUnifier(
                 ReasonerQueries.atomic(conjunction(parentPatternString, graph), graph),
                 ReasonerQueries.atomic(conjunction(childPatternString, graph), graph)
         );
@@ -1271,14 +1276,17 @@ public class AtomicTest {
      * @param checkInverse flag specifying whether the inverse equality u^{-1}=u(parent, child) of the unifier u(child, parent) should be checked
      * @param checkEquality if true the parent and child answers will be checked for equality, otherwise they are checked for containment of child answers in parent
      */
-    private void testExactUnification(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, boolean checkInverse, boolean checkEquality){
+    private void exactUnification(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, boolean checkInverse, boolean checkEquality){
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = parentQuery.getAtom();
 
         Unifier unifier = childAtom.getMultiUnifier(parentAtom, true).getUnifier();
 
         List<Answer> childAnswers = childQuery.getQuery().execute();
-        List<Answer> unifiedAnswers = childAnswers.stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
+        List<Answer> unifiedAnswers = childAnswers.stream()
+                .map(a -> a.unify(unifier))
+                .filter(a -> !a.isEmpty())
+                .collect(Collectors.toList());
         List<Answer> parentAnswers = parentQuery.getQuery().execute();
 
         if (checkInverse) {
@@ -1288,6 +1296,7 @@ public class AtomicTest {
         }
 
         assertTrue(!childAnswers.isEmpty());
+        assertTrue(!unifiedAnswers.isEmpty());
         assertTrue(!parentAnswers.isEmpty());
 
         if (!checkEquality){
@@ -1300,8 +1309,8 @@ public class AtomicTest {
         }
     }
 
-    private void testExactUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, GraknTx graph){
-        testExactUnification(
+    private void exactUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, GraknTx graph){
+        exactUnification(
                 ReasonerQueries.atomic(conjunction(parentPatternString, graph), graph),
                 ReasonerQueries.atomic(conjunction(childPatternString, graph), graph),
                 checkInverse,

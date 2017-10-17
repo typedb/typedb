@@ -28,6 +28,7 @@ subRole3 sub role3;
 subSubRole3 sub subRole3;
 
 #Entities
+#simple vertical hierarchy
 
 baseRoleEntity sub entity
     has res1
@@ -76,40 +77,6 @@ ternary sub relationship
 
 res1 sub attribute datatype string;
 
-#Rules
-
-rule-1 sub rule
-	when {
-		(role1:$x, role2:$y, role3: $z) isa ternary;
-	}
-	then {
-		(role1:$x, role2:$x, role3: $z) isa ternary;
-	};
-
-rule-2 sub rule
-	when {
-		(role1:$x, subRole2:$y, role3: $z) isa ternary;
-	}
-	then {
-		(role1:$x, subRole2:$x, role3: $z) isa ternary;
-	};
-
-rule-3 sub rule
-	when {
-		(role1:$x, subSubRole2 :$y, role3: $z) isa ternary;
-	}
-	then {
-		(role1:$x, subSubRole2 :$x, role3: $z) isa ternary;
-	};
-
-#rule-3 sub rule
-#	when {
- #   	($r1: $x, $r2: $y, role3: $z) isa ternary;
-  #  }
-   # then {
-    #	($r1: $x, $r2: $x, role3: $z) isa ternary;
-    #};
-
 insert
 
 #Instances
@@ -123,16 +90,13 @@ $s isa subSubRoleEntity, has res1 's';
 
 (anotherSubRole1: $m, subRole2: $s) isa binary;
 (subRole1: $f, anotherSubRole2: $d) isa binary;
+(subRole1: $m, anotherSubRole2: $d) isa binary;
 (anotherSubRole1: $m, anotherSubRole2: $d) isa binary;
 
 (subRole1: $f, subRole2: $s) isa binary;
 (subRole1: $f, subSubRole2: $d) isa binary;
 (subSubRole1: $m, subRole2: $s) isa binary;
 (subSubRole1: $m, subSubRole2: $d) isa binary;
-
-#(role1: $b, role2: $f, role3: $m) isa ternary;
-#(role1: $b, role2: $b, role3: $m) isa ternary;
-#(role1: $f, role2: $f, role3: $m) isa ternary;
 
 (role1: $b, subRole2: $f, subSubRole3: $m) isa ternary;
 (role1: $f, subRole2: $f, subSubRole3: $m) isa ternary;
