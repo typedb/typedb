@@ -29,7 +29,7 @@ public class MutatorTaskBenchmark extends BenchmarkTest {
         SimpleURI simpleURI = new SimpleURI(engine.uri());
         client = TaskClient.of(simpleURI.getHost(), simpleURI.getPort());
         consoleReporter = ConsoleReporter
-                .forRegistry(engine.server().getMetricRegistry()).build();
+                .forRegistry(engine.getMetricRegistry()).build();
     }
 
     protected EngineContext makeEngine() {
