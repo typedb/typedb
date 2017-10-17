@@ -34,8 +34,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
+import static ai.grakn.graql.internal.pattern.Patterns.PLAYER_VAR;
 import static ai.grakn.graql.internal.pattern.Patterns.RELATION_DIRECTION;
 import static ai.grakn.graql.internal.pattern.Patterns.RELATION_EDGE;
+import static ai.grakn.graql.internal.pattern.Patterns.ROLE_LABEL;
+import static ai.grakn.graql.internal.pattern.Patterns.var;
 import static ai.grakn.util.Schema.EdgeLabel.ROLE_PLAYER;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
@@ -65,7 +68,11 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(GraknTx graph, Collection<Var> vars) {
-        GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(ROLE_PLAYER.getLabel()).as(edge().name());
+        Var thePlayer = var();
+        Var theEdge = var();
+
+        GraphTraversal<Vertex, Edge> edgeTraversal = __
+                .<Vertex>as(thePlayer.name()).inE(ROLE_PLAYER.getLabel()).as(theEdge.name());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
@@ -73,7 +80,11 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
 
         traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID, vars);
 
-        return edgeTraversal.outV();
+        return edgeTraversal
+                .values(ROLE_LABEL_ID.name()).as(ROLE_LABEL.name())
+                .select(theEdge.name()).inV().as(PLAYER_VAR.name()).as(thePlayer.name())
+                .select(Pop.last, ROLE_LABEL.name(), PLAYER_VAR.name()).as(edge().name())
+                .select(theEdge.name()).outV();
     }
 
     private GraphTraversal<Vertex, Edge> edgeRelationTraversal(

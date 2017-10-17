@@ -42,6 +42,8 @@ public class Patterns {
 
     public static final Var RELATION_EDGE = reservedVar("RELATION_EDGE");
     public static final Var RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
+    public static final Var ROLE_LABEL = reservedVar("ROLE");
+    public static final Var PLAYER_VAR = reservedVar("PLAYER");
 
     private Patterns() {}
 
