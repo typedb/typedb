@@ -28,9 +28,6 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.AttributeTypeImpl;
-import ai.grakn.kb.internal.concept.ConceptImpl;
-import ai.grakn.kb.internal.concept.EntityTypeImpl;
-import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
 import ai.grakn.kb.internal.concept.ThingImpl;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
@@ -39,9 +36,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -178,33 +173,6 @@ public class PostProcessingTest extends TxTestBase {
         resourceVertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + resourceVertex.id().toString());
 
         return AttributeImpl.get(new VertexElement(tx, resourceVertex));
-    }
-
-    @Test
-    public void whenUpdatingTheCountsOfTypes_TheTypesHaveNewCounts() {
-        Map<ConceptId, Long> types = new HashMap<>();
-        //Create Some Types;
-        EntityTypeImpl t1 = (EntityTypeImpl) tx.putEntityType("t1");
-        AttributeTypeImpl t2 = (AttributeTypeImpl)  tx.putAttributeType("t2", AttributeType.DataType.STRING);
-        RelationshipTypeImpl t3 = (RelationshipTypeImpl) tx.putRelationshipType("t3");
-
-        //Lets Set Some Counts
-        types.put(t1.getId(), 5L);
-        types.put(t2.getId(), 6L);
-        types.put(t3.getId(), 2L);
-
-        tx.admin().updateConceptCounts(types);
-        types.forEach((key, value) -> assertEquals((long) value, ((ConceptImpl) tx.getConcept(key)).getShardCount()));
-
-        //Lets Set Some Counts
-        types.put(t1.getId(), -5L);
-        types.put(t2.getId(), -2L);
-        types.put(t3.getId(), 3L);
-        tx.admin().updateConceptCounts(types);
-
-        assertEquals(0L, t1.getShardCount());
-        assertEquals(4L, t2.getShardCount());
-        assertEquals(5L, t3.getShardCount());
     }
 
     @Test
