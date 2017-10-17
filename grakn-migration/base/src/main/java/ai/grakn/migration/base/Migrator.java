@@ -114,6 +114,7 @@ public class Migrator {
                         .build()) {
             if (!loader.keyspaceExists(keyspace)) {
                 System.out.println("No such keyspace " + keyspace);
+                return;
             }
             List<Observable<Optional<QueryResponse>>> all = new ArrayList<>();
             converter
@@ -121,24 +122,26 @@ public class Migrator {
                     .forEach(q -> {
                         LOG.debug("Adding query {}", q);
                         numberQueriesSubmitted.incrementAndGet();
-                        Observable<Optional<QueryResponse>> addObservable = loader.add(q, keyspace.getValue()).map(Optional::of);
-                        all.add(addObservable);
+                        Observable<Optional<QueryResponse>> addObservable = loader
+                                .add(q, keyspace.getValue()).map(Optional::of);
                         if (!failFast) {
-                            addObservable.onErrorResumeNext(error -> {
+                            addObservable = addObservable.onErrorResumeNext(error -> {
                                 LOG.error("Found error, skipping", error);
                                 return Observable.just(Optional.empty());
                             });
                         }
+                        all.add(addObservable);
                         addObservable.filter(Optional::isPresent).subscribe(
                                         taskResult -> LOG.debug("Successfully executed: {}", taskResult),
                                         error -> {
-                                                throw GraknBackendException.migrationFailure(error.getMessage());
+                                                if (failFast) {
+                                                    throw GraknBackendException.migrationFailure(error.getMessage());
+                                                }
                                         }
                                 );
                     });
             int completed = allObservable(all).toBlocking().first().size();
             LOG.info("Loaded {} statements", completed);
-
         }
     }
 

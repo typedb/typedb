@@ -146,7 +146,6 @@ public class SystemController {
     }
 
     @DELETE
-    @Deprecated
     @Path("/deleteKeyspace")
     @ApiOperation(value = "Delete a getKeyspace from the system graph.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
@@ -218,6 +217,9 @@ public class SystemController {
         }
     }
 
+    @GET
+    @Path("/keyspaces/{keyspace}")
+    @ApiOperation(value = "Get the keyspace provided")
     private String getKeyspace(Request request, Response response) {
         String keyspace = request.params(":keyspace");
         if (keyspace == null || keyspace.isEmpty()) {
@@ -236,9 +238,6 @@ public class SystemController {
             } else {
                 throw GraknBackendException.noSuchKeyspace(Keyspace.of(keyspace));
             }
-        } catch (Exception e) {
-            LOG.error("While retrieving getKeyspace list:", e);
-            throw GraknServerException.serverException(500, e);
         }
     }
 

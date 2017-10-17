@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutionException;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.UriBuilder;
 import mjson.Json;
 import org.slf4j.Logger;
@@ -73,11 +74,13 @@ public class GraknClient {
                     .submit()
                     .get();
                 int statusCode = response.getStatus();
-                LOG.debug("Received {}", statusCode);
-                if (statusCode != 200) {
-                    throw new GraknClientException("Failed graqlExecute. Error status: " + statusCode + ", error info: " + response.readEntity(String.class));
-                }
-                return QueryResponse.from(queryList, response);
+            if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
+                throw new GraknClientException("Failed graqlExecute. Error status: " + statusCode + ", error info: " + response.readEntity(String.class), response.getStatusInfo());
+            }
+            LOG.debug("Received {}", statusCode);
+                String responseAsAString = response.readEntity(String.class);
+                response.close();
+                return QueryResponse.from(queryList, responseAsAString);
         } catch (ExecutionException | InterruptedException e) {
             LOG.error("Error while executing request", e);
             throw new GraknClientException("Execution exception while sending request");
@@ -92,9 +95,11 @@ public class GraknClient {
                 .get();
         int statusCode = response.getStatus();
         LOG.debug("Received {}", statusCode);
-        if (statusCode != 200) {
-            throw new GraknClientException("Failed keyspace. Error status: " + statusCode + ", error info: " + response.readEntity(String.class));
+        if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
+            throw new GraknClientException("Failed keyspace. Error status: " + statusCode + ", error info: " + response.readEntity(String.class), response.getStatusInfo());
         }
-        return Keyspace.of(Json.read(response.readEntity(String.class)).at("value").asString());
+        String value = Json.read(response.readEntity(String.class)).at("value").asString();
+        response.close();
+        return Keyspace.of(value);
     }
 }
