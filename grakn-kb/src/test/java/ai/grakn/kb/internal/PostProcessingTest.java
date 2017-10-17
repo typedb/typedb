@@ -257,4 +257,9 @@ public class PostProcessingTest extends TxTestBase {
         assertEquals(2, entity.attributes().count());
         assertEquals(2, tx.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
     }
+
+    @Test
+    public void whenCreatingRelationshipsWithDuplicateIncomingRolePlayerEdges_EnsureTheEdgesCanBeCleanedUp(){
+        
+    }
 }

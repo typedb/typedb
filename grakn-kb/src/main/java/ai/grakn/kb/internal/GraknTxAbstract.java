@@ -956,4 +956,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             type.createShard();
         }
     }
+
+    @Override
+    public boolean relationshipNeedsFixing(ConceptId relationId){
+        throw new UnsupportedOperationException("Not yet Implemented");
+    }
+
+    @Override
+    public boolean fixRelation(ConceptId relationId){
+        throw new UnsupportedOperationException("Not yet Implemented");
+    }
 }

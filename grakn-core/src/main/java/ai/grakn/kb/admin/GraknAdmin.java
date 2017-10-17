@@ -167,6 +167,22 @@ public interface GraknAdmin {
     boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds);
 
     /**
+     * Check if a {@link ai.grakn.concept.Relationship} needs fixing
+     *
+     * @param relationId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
+     * @return true if the {@link ai.grakn.concept.Relationship} has duplicate incoming {@link Schema.EdgeLabel#ROLE_PLAYER} edges.
+     */
+    boolean relationshipNeedsFixing(ConceptId relationId);
+
+    /**
+     * Fix a {@link ai.grakn.concept.Relationship} with duplicate incoming {@link Schema.EdgeLabel#ROLE_PLAYER} edges.
+     *
+     * @param relationId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
+     * @return true if the {@link ai.grakn.concept.Relationship} was fixed and a commit is needed
+     */
+    boolean fixRelation(ConceptId relationId);
+
+    /**
      * Updates the counts of all the types
      *
      * @param conceptCounts The concepts and the changes to put on their counts
