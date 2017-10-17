@@ -54,6 +54,7 @@ public class CSVMigratorTest {
 
     private GraknSession factory;
     private Migrator migrator;
+    private Keyspace keyspace;
 
     @Rule
     public final SystemOutRule systemOutRule = new SystemOutRule().enableLog();
@@ -63,7 +64,7 @@ public class CSVMigratorTest {
 
     @Before
     public void setup() {
-        Keyspace keyspace = SampleKBLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
         migrator = Migrator.to(engine.uri(), keyspace);
     }
@@ -113,7 +114,7 @@ public class CSVMigratorTest {
         String template = getFileAsString("csv", "pets/template.gql");
 
         try(CSVMigrator m = new CSVMigrator(getFile("csv", "pets/data/pets.empty"))) {
-            migrator.load(template, m.setNullString("").convert());
+            migrator.load(template, m.setNullString("").convert(), 0, false);
         }
 
         try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
@@ -200,7 +201,7 @@ public class CSVMigratorTest {
 
     private void declareAndLoad(String template, String file){
         try(CSVMigrator m = new CSVMigrator(getFile("csv", file))) {
-            migrator.load(template, m.convert());
+            migrator.load(template, m.convert(), 0, false);
         }
     }
 }

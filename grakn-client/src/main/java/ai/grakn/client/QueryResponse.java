@@ -20,8 +20,8 @@ package ai.grakn.client;
 import ai.grakn.graql.Query;
 import java.util.ArrayList;
 import java.util.List;
+import javax.ws.rs.core.Response;
 import mjson.Json;
-import org.asynchttpclient.Response;
 
 /**
  * Encapsulates a response. (TODO) We should migrate this away from a json
@@ -46,7 +46,7 @@ public class QueryResponse {
     }
 
     public static List<QueryResponse> from(List<Query<?>> queries, Response response) {
-        List<Json> json = Json.read(response.getResponseBody()).asJsonList();
+        List<Json> json = Json.read(response.readEntity(String.class)).asJsonList();
         ArrayList<QueryResponse> result = new ArrayList<>();
         for (int i = 0; i < queries.size(); i++) {
             result.add(new QueryResponse(queries.get(i), json.get(i)));

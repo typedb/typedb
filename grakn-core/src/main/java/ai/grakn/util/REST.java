@@ -64,6 +64,7 @@ public class REST {
             public static final String CONFIGURATION = "/configuration";
             public static final String METRICS = "/metrics";
             public static final String KEYSPACES = "/keyspaces";
+            public static final String KEYSPACE = "/keyspaces/:keyspace";
         }
 
         /**

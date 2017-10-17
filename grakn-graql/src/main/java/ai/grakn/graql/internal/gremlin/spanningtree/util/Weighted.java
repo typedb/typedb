@@ -72,8 +72,9 @@ public class Weighted<T> implements Comparable<Weighted<T>> {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
-                .add("val", val)
-                .add("weight", weight).toString();
+        return "Weighted{" +
+                "val=" + val +
+                ", weight=" + weight +
+                '}';
     }
 }

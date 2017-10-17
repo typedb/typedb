@@ -33,11 +33,10 @@ import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import static ai.grakn.util.ConcurrencyUtil.allObservable;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
+import ai.grakn.util.SimpleURI;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixEventType;
 import com.netflix.hystrix.HystrixRequestLog;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -175,15 +174,10 @@ public class BatchExecutorClientTest {
             graph.admin().commitNoLogs();
 
             String spec = "http://" + engine.uri();
-            try {
-                GraknClient graknClient = new GraknClient(new URL(spec));
-                return spy(
-                        BatchExecutorClient.newBuilder().taskClient(graknClient).maxDelay(maxDelay)
-                                .build());
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(
-                        "Bad test, make sure the engine URL " + spec + " is well formed");
-            }
+            GraknClient graknClient = new GraknClient(new SimpleURI(spec));
+            return spy(
+                    BatchExecutorClient.newBuilder().taskClient(graknClient).maxDelay(maxDelay)
+                            .build());
         }
     }
 

@@ -128,7 +128,9 @@ public class GraqlController {
         try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
             QueryParser parser = graph.graql().materialise(materialise).infer(infer).parser();
             defineAllVars.ifPresent(parser::defineAllVars);
-            Object resp = respond(response, acceptType, executeQuery(graph.getKeyspace(), limitEmbedded, queryString, acceptType, multi, parser));
+            Object responseBody = executeQuery(graph.getKeyspace(), limitEmbedded, queryString,
+                    acceptType, multi, parser);
+            Object resp = respond(response, acceptType, responseBody);
             graph.commit();
             return resp;
         }

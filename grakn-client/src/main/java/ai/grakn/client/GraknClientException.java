@@ -22,7 +22,7 @@ package ai.grakn.client;
  *
  * @author Domenico Corapi
  */
-public class GraknClientException extends RuntimeException {
+public class GraknClientException extends Exception {
 
     public GraknClientException(String s) {
         super(s);

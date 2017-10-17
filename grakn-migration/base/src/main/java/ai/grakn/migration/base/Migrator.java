@@ -23,7 +23,6 @@ import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
 import ai.grakn.client.QueryResponse;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
@@ -33,6 +32,7 @@ import ai.grakn.util.SimpleURI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -95,7 +95,7 @@ public class Migrator {
      * Template the data and print to standard out.
      */
     public void print(String template, Stream<Map<String, Object>> converter) {
-        converter.flatMap(d -> template(template, d))
+        converter.flatMap(d -> template(template, d, false))
                 .forEach(System.out::println);
     }
 
@@ -106,47 +106,56 @@ public class Migrator {
      * @param retrySize If the Loader should continue attempt to send tasks when Engine is not
      * available or an exception occurs
      */
-    public void load(String template, Stream<Map<String, Object>> converter, int retrySize, boolean debug) {
-
-        BatchExecutorClient loader =
+    public void load(String template, Stream<Map<String, Object>> converter, int retrySize, boolean failFast) {
+        try (BatchExecutorClient loader =
                 BatchExecutorClient.newBuilder()
                         .taskClient(new GraknClient(new SimpleURI(uri)))
                         .maxRetries(retrySize)
-                        .build();
-
-        List<Observable<QueryResponse>> all = new ArrayList<>();
-        converter
-                .flatMap(d -> template(template, d))
-                .forEach(q -> {
-                    numberQueriesSubmitted.incrementAndGet();
-                    loader.add(q, keyspace.getValue())
-                            .subscribe(
-                                    taskResult -> LOG.debug("Successfully executed: ", taskResult),
-                                    error -> {
-                                        if (error != null) {
-                                            if (debug) {
+                        .build()) {
+            if (!loader.keyspaceExists(keyspace)) {
+                System.out.println("No such keyspace " + keyspace);
+            }
+            List<Observable<Optional<QueryResponse>>> all = new ArrayList<>();
+            converter
+                    .flatMap(d -> template(template, d, failFast))
+                    .forEach(q -> {
+                        LOG.debug("Adding query {}", q);
+                        numberQueriesSubmitted.incrementAndGet();
+                        Observable<Optional<QueryResponse>> addObservable = loader.add(q, keyspace.getValue()).map(Optional::of);
+                        all.add(addObservable);
+                        if (!failFast) {
+                            addObservable.onErrorResumeNext(error -> {
+                                LOG.error("Found error, skipping", error);
+                                return Observable.just(Optional.empty());
+                            });
+                        }
+                        addObservable.filter(Optional::isPresent).subscribe(
+                                        taskResult -> LOG.debug("Successfully executed: {}", taskResult),
+                                        error -> {
                                                 throw GraknBackendException.migrationFailure(error.getMessage());
-                                            } else {
-                                                System.err.println("Failed: " + error);
-                                            }
                                         }
-                                    }
-                            );
-                });
-        int completed = allObservable(all).toBlocking().first().size();
-        LOG.info("Loaded {} statements", completed);
+                                );
+                    });
+            int completed = allObservable(all).toBlocking().first().size();
+            LOG.info("Loaded {} statements", completed);
+
+        }
     }
 
     /**
      * @param template a string representing a templated graql query
      * @param data data used in the template
+     * @param debug
      * @return an insert query
      */
-    protected Stream<Query> template(String template, Map<String, Object> data) {
+    protected Stream<Query> template(String template, Map<String, Object> data, boolean debug) {
         try {
             return queryParser.parseTemplate(template, data);
-        } catch (GraqlSyntaxException e) {
-            LOG.warn("Query not sent to server: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Query not sent to server: " + e.getMessage());
+            if (debug) {
+                throw e;
+            }
         }
 
         return Stream.empty();

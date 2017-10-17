@@ -57,6 +57,10 @@ public class SimpleURI {
         return String.format("%s:%d", host, port);
     }
 
+    public String toStringWithSchema() {
+        return String.format("http://%s:%d", host, port);
+    }
+
     public static SimpleURI withDefaultPort(String uri, int defaultPort) {
         if (uri.contains(":")) {
             return new SimpleURI(uri);
@@ -67,7 +71,7 @@ public class SimpleURI {
 
     public URL toURL() {
         try {
-            return new URL("http", getHost(), String.valueOf(getPort()));
+            return new URL("http", getHost(), getPort(), "");
         } catch (MalformedURLException e) {
             throw new RuntimeException("Unexpected error while generating URL from " + this);
         }

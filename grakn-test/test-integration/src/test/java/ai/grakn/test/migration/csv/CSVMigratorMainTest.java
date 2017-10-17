@@ -44,6 +44,7 @@ public class CSVMigratorMainTest {
     private Keyspace keyspace;
 
     private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();
+    private final String dataFileBroken = getFile("csv", "pets/data/petsbroken.csv").getAbsolutePath();
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
     private final String templateCorruptFile = getFile("csv", "pets/template-corrupt.gql").getAbsolutePath();
 
@@ -63,7 +64,6 @@ public class CSVMigratorMainTest {
     public void setup(){
         keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
-
         load(factory, getFile("csv", "pets/schema.gql"));
     }
 
@@ -77,6 +77,11 @@ public class CSVMigratorMainTest {
     @Test
     public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsNotSet_DontThrow(){
         run("-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
+    }
+
+    @Test
+    public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsNotSet_DontThrowAndContinue(){
+        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFileBroken, "-template", templateFile, "-keyspace", keyspace.getValue());
     }
 
     @Test
