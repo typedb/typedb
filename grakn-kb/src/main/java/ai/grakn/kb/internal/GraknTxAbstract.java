@@ -963,7 +963,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public boolean fixRelation(ConceptId relationId){
+    public boolean fixRelationship(ConceptId relationId){
         throw new UnsupportedOperationException("Not yet Implemented");
     }
 }

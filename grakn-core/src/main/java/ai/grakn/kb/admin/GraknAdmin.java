@@ -180,7 +180,7 @@ public interface GraknAdmin {
      * @param relationId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
      * @return true if the {@link ai.grakn.concept.Relationship} was fixed and a commit is needed
      */
-    boolean fixRelation(ConceptId relationId);
+    boolean fixRelationship(ConceptId relationId);
 
     /**
      * Updates the counts of all the types
