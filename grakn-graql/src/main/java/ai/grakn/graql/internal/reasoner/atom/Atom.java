@@ -226,7 +226,11 @@ public abstract class Atom extends AtomicBase {
     }
 
     public IdPredicate getIdPredicate(Var var){
-        return getPredicates(IdPredicate.class).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
+        return getPredicate(var, IdPredicate.class);
+    }
+
+    public <T extends Predicate> T getPredicate(Var var, Class<T> type){
+        return getPredicates(type).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
     }
 
     public abstract Stream<Predicate> getInnerPredicates();

@@ -1,23 +1,26 @@
-insert
+define
 
-entity1 sub entity
-	has res1
-	has res2;
+general-entity sub entity
+	has resource
+	has boolean-resource;
+
+sub-entity sub general-entity;
 
 #Resources
-res1 sub attribute datatype string;
-res2 sub res1;
+resource sub attribute datatype long;
+boolean-resource sub attribute datatype boolean;
 
 #Rules
 
 rule-1 sub rule
-	when {
-		$x isa entity1 has res1 $r1;
-	}
-	then {
-		$x has res2 $r1;
-	};
+when {
+    $x isa general-entity, has resource > 0;
+}
+then {
+    $x has boolean-resource true;
+};
+
+insert
 
 #Data
-
-$x isa entity1 has res1 "value";
+$x isa sub-entity has resource 1;

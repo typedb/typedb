@@ -215,7 +215,7 @@ public class InferenceRule {
     public InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
 
-        //only transfer value predicates if head has a user specified value variable
+        //transfer value predicates of resource if head has a user specified value variable
         Atom headAtom = head.getAtom();
         Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
         if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
@@ -235,6 +235,13 @@ public class InferenceRule {
             );
             bodyAtoms.addAll(vps);
         }
+
+        //transfer value predicates
+        /*
+        parentAtom.getPredicates(ValuePredicate.class)
+                .flatMap(vp -> vp.unify(unifier).stream())
+                .forEach(bodyAtoms::add);
+                */
 
         Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints()
                 .flatMap(type -> type.unify(unifier).stream())

@@ -71,6 +71,8 @@ public abstract class Predicate<T> extends AtomicBase {
         return this.getPredicateValue().equals(a2.getPredicateValue());
     }
 
+    public boolean isCompatibleWith(Object obj){ return isEquivalent(obj);}
+
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
