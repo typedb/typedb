@@ -496,19 +496,6 @@ public class MatchTest {
     }
 
     @Test
-    public void whenAddingDeNiroToRelationshipAgain_robertDeNiroIsStillNotRelatedToSelf() {
-        // Make robert de niro play actor again
-        qb.match(y.rel("actor", x), x.has("name", "Robert de Niro")).insert(y.rel("actor", x)).execute();
-
-        Match query = qb.match(
-                var().rel(x).rel(y).isa("has-cast"),
-                y.has("name", "Robert de Niro")
-        );
-
-        assertThat(query, variable(x, containsInAnyOrder(heat, neilMcCauley)));
-    }
-
-    @Test
     public void testRobertDeNiroNotRelatedToSelfWhenMetaRoleIsSpecified() {
         // This can go wrong because one role-player may use a shortcut edge and the other may not
         Match query = qb.match(
