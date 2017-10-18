@@ -35,7 +35,7 @@ import java.util.Set;
  *
  * @author Kasper Piskorski
  */
-public class RoleTypeConverter implements SchemaConceptConverter<Role> {
+public class RoleConverter implements SchemaConceptConverter<Role> {
     @Override
     public Multimap<RelationshipType, Role> toRelationshipMultimap(Role entryRole) {
         Multimap<RelationshipType, Role> relationMap = HashMultimap.create();

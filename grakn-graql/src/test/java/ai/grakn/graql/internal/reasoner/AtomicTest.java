@@ -699,6 +699,7 @@ public class AtomicTest {
                 graph.getSchemaConcept(Label.of("relation2"))
         );
 
+
         typeInference(possibleTypes, patternString, graph);
     }
 

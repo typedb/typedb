@@ -211,9 +211,9 @@ public class ReasonerUtils {
 
     /**
      * @param concept which hierarchy should be considered
-     * @return set of {@link SchemaConcept}s: provided concept and all its supers including meta
+     * @return set of {@link SchemaConcept}s consisting of the provided {@link SchemaConcept} and all its supers including meta
      */
-    public static Set<SchemaConcept> getUpstreamHierarchy(SchemaConcept concept){
+    public static Set<SchemaConcept> upstreamHierarchy(SchemaConcept concept){
         Set<SchemaConcept> concepts = new HashSet<>();
         SchemaConcept superType = concept;
         while(superType != null) {
@@ -228,7 +228,7 @@ public class ReasonerUtils {
      * @param type for which top type is to be found
      * @return non-meta top type of the type
      */
-    public static Type getTopType(Type type){
+    public static Type topType(Type type){
         Type superType = type;
         while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superType = superType.sup();
@@ -240,20 +240,20 @@ public class ReasonerUtils {
      * @param schemaConcepts entry set
      * @return top non-meta {@link SchemaConcept} from within the provided set of {@link Role}
      */
-    public static <T extends SchemaConcept> Set<T> getSchemaConcepts(Set<T> schemaConcepts) {
+    public static <T extends SchemaConcept> Set<T> schemaConcepts(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
                 .filter(rt -> Sets.intersection(supers(rt), schemaConcepts).isEmpty())
                 .collect(toSet());
     }
 
     /**
-     * Gets roles a given type can play in the provided relType relation type by performing
+     * Gets {@link Role} a given {@link Type} can play in the provided {@link RelationshipType} by performing
      * type intersection between type's playedRoles and relation's relates.
-     * @param type for which we want to obtain compatible roles it plays
-     * @param relRoles relation type of interest
-     * @return set of role types the type can play in relType
+     * @param type for which we want to obtain compatible {@link Role}s it plays
+     * @param relRoles entry {@link Role}s
+     * @return set of {@link Role}s the type can play from the provided {@link Role}s
      */
-    public static Set<Role> getCompatibleRoles(Type type, Stream<Role> relRoles) {
+    public static Set<Role> compatibleRoles(Type type, Stream<Role> relRoles){
         Set<Role> typeRoles = type.plays().collect(toSet());
         return relRoles.filter(typeRoles::contains).collect(toSet());
     }
@@ -276,14 +276,14 @@ public class ReasonerUtils {
     }
 
     /**
-     * compute the map of compatible relation types for given types (intersection of allowed sets of relationship types for each entry type)
-     * and compatible role types
-     * @param types for which the set of compatible relation types is to be computed
-     * @param schemaConceptConverter converter between schema concept and relationship type-role entries
+     * compute the map of compatible {@link RelationshipType}s for a given set of {@link Type}s
+     * (intersection of allowed sets of relation types for each entry type) and compatible role types
+     * @param types for which the set of compatible {@link RelationshipType}s is to be computed
+     * @param schemaConceptConverter converter between {@link SchemaConcept} and relation type-role entries
      * @param <T> type generic
-     * @return map of compatible relation types and their corresponding role types
+     * @return map of compatible {@link RelationshipType}s and their corresponding {@link Role}s
      */
-    public static <T extends SchemaConcept> Multimap<RelationshipType, Role> getCompatibleRelationTypesWithRoles(Set<T> types, SchemaConceptConverter<T> schemaConceptConverter) {
+    public static <T extends SchemaConcept> Multimap<RelationshipType, Role> compatibleRelationTypesWithRoles(Set<T> types, SchemaConceptConverter<T> schemaConceptConverter) {
         Multimap<RelationshipType, Role> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
@@ -436,10 +436,10 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param parentRole
-     * @param parentType
-     * @param childRoles entry set of possible roles
-     * @return set of playable roles defined by type-role parent
+     * @param parentRole parent {@link Role}
+     * @param parentType parent {@link SchemaConcept}
+     * @param childRoles entry set of possible {@link Role}s
+     * @return set of playable {@link Role}s defined by type-role parent
      */
     public static Set<Role> playableRoles(Role parentRole, SchemaConcept parentType, Set<Role> childRoles) {
         boolean isParentRoleMeta = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());
