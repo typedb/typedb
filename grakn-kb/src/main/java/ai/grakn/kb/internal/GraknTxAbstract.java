@@ -994,7 +994,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      * Deletes all (except one) the {@link Casting}s from the provided collection.
      * In this way we are removing all the duplicate {@link Casting}s
      *
-     * @param castings List of {@link Casting}s containing duplicates. 
+     * @param castings List of {@link Casting}s containing duplicates.
      */
     private void removeDuplicateCastings(Collection<Casting> castings){
         Iterator<Casting> itertor = castings.iterator();
