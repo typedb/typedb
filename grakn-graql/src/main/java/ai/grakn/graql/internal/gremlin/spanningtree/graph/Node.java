@@ -23,6 +23,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -35,6 +36,9 @@ public class Node {
     private final NodeId nodeId;
     private boolean isValidStartingPoint = true;
     private double fixedFragmentCost = 0;
+
+    private Optional<Double> nodeWeight = Optional.empty();
+    private Optional<Double> branchWeight = Optional.empty();
 
     private Set<Fragment> fragmentsWithoutDependency = new HashSet<>();
     private Set<Fragment> fragmentsWithDependency = new HashSet<>();
@@ -93,6 +97,22 @@ public class Node {
         if (this.fixedFragmentCost < fixedFragmentCost) {
             this.fixedFragmentCost = fixedFragmentCost;
         }
+    }
+
+    public Optional<Double> getNodeWeight() {
+        return nodeWeight;
+    }
+
+    public void setNodeWeight(Optional<Double> nodeWeight) {
+        this.nodeWeight = nodeWeight;
+    }
+
+    public Optional<Double> getBranchWeight() {
+        return branchWeight;
+    }
+
+    public void setBranchWeight(Optional<Double> branchWeight) {
+        this.branchWeight = branchWeight;
     }
 
     @Override

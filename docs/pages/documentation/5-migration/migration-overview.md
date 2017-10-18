@@ -10,7 +10,7 @@ folder: documentation
 ---
 
 ## Introduction
-This page introduces the concept of data migration into a Grakn knowledge base. We currently support migration of CSV, JSON, OWL, XML and SQL data. For each type of data, the steps to migrate to GRAKN.AI are:
+This page introduces the concept of data migration into a Grakn knowledge base. We currently support migration of CSV, JSON, XML and SQL data. For each type of data, the steps to migrate to GRAKN.AI are:
 
 - define a schema for the data in Graql
 - create templated Graql to map the data to the schema
@@ -23,7 +23,6 @@ The migration shell script can be found in *grakn-dist/bin* after it has been un
 
 + [CSV migration documentation](./CSV-migration.html)
 + [JSON migration documentation](./JSON-migration.html)
-+ [OWL migration documentation](./OWL-migration.html)
 + [SQL migration documentation](./SQL-migration.html)
 + [XML migration documentation](./XML-migration.html)
 

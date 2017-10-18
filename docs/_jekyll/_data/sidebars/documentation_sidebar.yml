@@ -41,30 +41,21 @@ entries:
       - title: Overview
         output: web
         url: /documentation/graql/graql-overview.html
+      - title: Graql Queries
+        output: web
+        url: /documentation/graql/query.html
+      - title: Data Definition Language
+        output: web
+        url: /documentation/graql/ddl.html
+      - title: Data Manipulation Language
+        output: web
+        url: /documentation/graql/dml.html
       - title: Graql Shell
         output: web
         url: /documentation/graql/graql-shell.html
-      - title: Matches
-        output: web
-        url: /documentation/graql/matches.html
-      - title: Get Queries
-        output: web
-        url: /documentation/graql/get-queries.html
-      - title: Delete Queries
-        output: web
-        url: /documentation/graql/delete-queries.html
-      - title: Insert Queries
-        output: web
-        url: /documentation/graql/insert-queries.html
-      - title: Define Queries
-        output: web
-        url: /documentation/graql/define-queries.html
       - title: Graql Rules
         output: web
         url: /documentation/graql/graql-rules.html
-      - title: Aggregate Queries
-        output: web
-        url: /documentation/graql/aggregate-queries.html
       - title: Compute Queries
         output: web
         url: /documentation/graql/compute-queries.html
@@ -107,9 +98,6 @@ entries:
       - title: SQL Migration
         output: web
         url: /documentation/migration/SQL-migration.html
-      - title: OWL Migration
-        output: web
-        url: /documentation/migration/OWL-migration.html
   - title: Develop with Java
     output: web
     folderitems:
@@ -173,9 +161,6 @@ entries:
       - title: SQL Migration
         output: web
         url: /documentation/examples/SQL-migration.html
-      - title: OWL Migration
-        output: web
-        url: /documentation/examples/OWL-migration.html
       - title: Reasoning with Graql
         output: web
         url: /documentation/examples/graql-reasoning.html

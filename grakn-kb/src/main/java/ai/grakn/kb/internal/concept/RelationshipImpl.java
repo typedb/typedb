@@ -53,6 +53,9 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
 
     private RelationshipImpl(RelationshipStructure relationshipStructure) {
         this.relationshipStructure = relationshipStructure;
+        if(relationshipStructure.isReified()){
+            relationshipStructure.reify().owner(this);
+        }
     }
 
     public static RelationshipImpl create(RelationshipStructure relationshipStructure) {
@@ -161,7 +164,6 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     @Override
     public Relationship addRolePlayer(Role role, Thing thing) {
         reify().addRolePlayer(role, thing);
-        vertex().tx().txCache().trackForValidation(this); //This is so we can reassign the hash if needed
         return this;
     }
 
@@ -169,6 +171,11 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     public Relationship deleteAttribute(Attribute attribute) {
         reified().ifPresent(rel -> rel.deleteAttribute(attribute));
         return this;
+    }
+
+    @Override
+    public void removeRolePlayer(Role role, Thing thing) {
+        reified().ifPresent(relationshipReified -> relationshipReified.removeRolePlayer(role, thing));
     }
 
     /**

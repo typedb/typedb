@@ -114,7 +114,13 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public void delete() {
-        Set<Relationship> relationships = castingsInstance().map(Casting::getRelationship).collect(Collectors.toSet());
+        //Remove links to relationships and return them
+        Set<Relationship> relationships = castingsInstance().map(casting -> {
+            Relationship relationship = casting.getRelationship();
+            Role role = casting.getRole();
+            relationship.removeRolePlayer(role, this);
+            return relationship;
+        }).collect(Collectors.toSet());
 
         vertex().tx().txCache().removedInstance(type().getId());
         deleteNode();
@@ -124,7 +130,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 relation.delete();
             } else {
                 RelationshipImpl rel = (RelationshipImpl) relation;
-                vertex().tx().txCache().trackForValidation(rel);
                 rel.cleanUp();
             }
         });
@@ -180,7 +185,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     Stream<Casting> castingsInstance(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER).
-                map(edge -> vertex().tx().factory().buildCasting(edge));
+                map(edge -> Casting.withThing(edge, this));
     }
 
     <X extends Thing> Stream<X> getShortcutNeighbours(){

@@ -34,7 +34,6 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
@@ -685,21 +684,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 
-    public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
-        boolean exists = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).inV().
-                has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
-
-        if (!exists) {
-            EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
-            edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
-            edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
-            txCache().trackForValidation(factory().buildCasting(edge));
-        }
-    }
-
     @Override
     public void delete() {
         closeSession();
@@ -915,44 +899,29 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         Optional<RelationshipReified> reifiedRelation = ((RelationshipImpl) otherRelationship).reified();
 
         if (reifiedRelation.isPresent()) {
-            copyRelation(main, other, otherRelationship, reifiedRelation.get());
+            copyRelationshipReified(main, other, otherRelationship);
         } else {
-            copyRelation(main, other, otherRelationship, (RelationshipEdge) RelationshipImpl.from(otherRelationship).structure());
+            copyRelationshipEdge(main, other, (RelationshipEdge) RelationshipImpl.from(otherRelationship).structure());
         }
     }
 
     /**
      * Copy a relation which has been reified - {@link RelationshipReified}
      */
-    private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship, RelationshipReified reifiedRelation) {
-        String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
-        Relationship foundRelationship = txCache().getCachedRelation(newIndex);
-        if (foundRelationship == null) {
-            Optional<Relationship> optional = getConcept(Schema.VertexProperty.INDEX, newIndex);
-            if(optional.isPresent()) foundRelationship = optional.get();
-        }
-
-        if (foundRelationship != null) {//If it exists delete the other one
-            reifiedRelation.deleteNode(); //Raw deletion because the castings should remain
-        } else { //If it doesn't exist transfer the edge to the relevant casting node
-            foundRelationship = otherRelationship;
-            //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-            otherRelationship.allRolePlayers().forEach((roleType, instances) -> {
-                Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
-                if (instances.contains(other) && relationReified.isPresent()) {
-                    putShortcutEdge(main, relationReified.get(), roleType);
-                }
-            });
-        }
-
-        //Explicitly track this new relation so we don't create duplicates
-        txCache().getRelationIndexCache().put(newIndex, foundRelationship);
+    private void copyRelationshipReified(Attribute main, Attribute other, Relationship otherRelationship) {
+        //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
+        otherRelationship.allRolePlayers().forEach((role, instances) -> {
+            Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
+            if (instances.contains(other) && relationReified.isPresent()) {
+                relationReified.get().putRolePlayerEdge(role, main);
+            }
+        });
     }
 
     /**
      * Copy a relation which is an edge - {@link RelationshipEdge}
      */
-    private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship, RelationshipEdge relationEdge) {
+    private void copyRelationshipEdge(Attribute main, Attribute other, RelationshipEdge relationEdge) {
         ConceptVertex newOwner;
         ConceptVertex newValue;
 
@@ -966,16 +935,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
         EdgeElement edge = newOwner.vertex().putEdge(newValue.vertex(), Schema.EdgeLabel.ATTRIBUTE);
         factory().buildRelation(edge, relationEdge.type(), relationEdge.ownerRole(), relationEdge.valueRole());
-    }
-
-    @Override
-    public void updateConceptCounts(Map<ConceptId, Long> typeCounts) {
-        typeCounts.forEach((key, value) -> {
-            if (value != 0) {
-                ConceptImpl concept = getConcept(key);
-                concept.setShardCount(concept.getShardCount() + value);
-            }
-        });
     }
 
     @Override

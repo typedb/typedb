@@ -29,7 +29,6 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.structure.AbstractElement;
-import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
@@ -268,13 +267,7 @@ public final class ElementFactory {
         return new EdgeElement(tx, edge);
     }
 
-    Casting buildCasting(Edge edge){
-        return buildCasting(buildEdgeElement(edge));
-    }
 
-    public Casting buildCasting(EdgeElement edge) {
-        return new Casting(edge);
-    }
 
     Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement){
         return new Shard(shardOwner, vertexElement);

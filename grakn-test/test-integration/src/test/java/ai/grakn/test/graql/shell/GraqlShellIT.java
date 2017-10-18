@@ -622,22 +622,6 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void testDuplicateRelation() throws Exception {
-        String err = runShell(
-                "define R sub " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue() + ", relates R1, relates R2; R1 sub role; R2 sub role;\n" +
-                        "define X sub entity, plays R1, plays R2;\n" +
-                        "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
-                        "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
-                        "commit\n"
-        ).err();
-
-        assertThat(err.toLowerCase(), allOf(
-                anyOf(containsString("exists"), containsString("one or more")),
-                containsString("relationships")
-        ));
-    }
-
-    @Test
     public void whenErrorOccurs_DoNotShowStackTrace() throws Exception {
         ShellResponse response = runShell("match fofobjiojasd\n");
 
