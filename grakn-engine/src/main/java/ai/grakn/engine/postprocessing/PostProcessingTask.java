@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -98,7 +99,21 @@ public class PostProcessingTask extends BackgroundTask {
      * @return Map of concept indices to ids that has been extracted from the provided configuration.
      */
     private static Map<String,Set<ConceptId>> getPostProcessingJobs(Schema.BaseType type, TaskConfiguration configuration) {
-        return configuration.json().at(REST.Request.COMMIT_LOG_FIXING).at(type.name()).asJsonMap().entrySet().stream().collect(Collectors.toMap(
+        Json logs = configuration.json();
+
+        //Check the logs contain a fixing section
+        if(!logs.has(REST.Request.COMMIT_LOG_FIXING)){
+            return Collections.emptyMap();
+        }
+
+        //Check the specific fixing section exists
+        logs = logs.at(REST.Request.COMMIT_LOG_FIXING);
+        if(!logs.has(type.name())){
+            return Collections.emptyMap();
+        }
+
+        logs = logs.at(type.name());
+        return logs.asJsonMap().entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
                 e -> e.getValue().asList().stream().map(o -> ConceptId.of(o.toString())).collect(Collectors.toSet())
         ));
