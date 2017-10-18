@@ -18,6 +18,7 @@
 
 package ai.grakn.generator;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
@@ -79,7 +80,7 @@ public class TaskManagers extends Generator<TaskManager> {
 
         GraknEngineConfig config = GraknEngineConfig.create();
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        SimpleURI simpleURI = new SimpleURI(config.getProperty(GraknEngineConfig.REDIS_HOST));
+        SimpleURI simpleURI = new SimpleURI(config.getProperty(GraknConfigKey.REDIS_HOST));
         Pool<Jedis> jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort());
         if (!taskManagers.containsKey(taskManagerToReturn)) {
             try {

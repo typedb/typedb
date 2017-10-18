@@ -20,6 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
@@ -36,7 +37,6 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import java.io.IOException;
 
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
@@ -85,7 +85,7 @@ public class EngineContext extends ExternalResource {
     }
 
     public int port() {
-        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
+        return config.getProperty(GraknConfigKey.SERVER_PORT_NUMBER);
     }
 
     public GraknEngineServer server() {
@@ -97,7 +97,7 @@ public class EngineContext extends ExternalResource {
     }
 
     public RedisCountStorage redis() {
-        return redis(config.getProperty(REDIS_HOST));
+        return redis(config.getProperty(GraknConfigKey.REDIS_HOST));
     }
 
     public RedisCountStorage redis(String uri) {
@@ -125,13 +125,13 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void before() throws Throwable {
-        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");
-        if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
+        RestAssured.baseURI = "http://" + config.uri();
+        if (!config.tryProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS).orElse(true)) {
             return;
         }
 
         try {
-            SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
+            SimpleURI redisURI = new SimpleURI(config.getProperty(GraknConfigKey.REDIS_HOST));
             redisStart(redisURI);
             jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
@@ -154,7 +154,7 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void after() {
-        if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
+        if (!config.tryProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS).orElse(true)) {
             return;
         }
         noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");

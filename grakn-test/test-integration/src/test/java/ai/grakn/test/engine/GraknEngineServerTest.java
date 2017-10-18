@@ -19,6 +19,7 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.Keyspace;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.data.RedisWrapper;
@@ -39,7 +40,6 @@ import redis.clients.util.Pool;
 
 import java.io.IOException;
 
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -79,7 +79,7 @@ public class GraknEngineServerTest {
 
     @Test
     public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() throws IOException {
-        MockRedisRule mock = MockRedisRule.create(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
+        MockRedisRule mock = MockRedisRule.create(new SimpleURI(conf.getProperty(GraknConfigKey.REDIS_HOST)).getPort());
         mock.server().start();
 
         // Start Engine
@@ -94,7 +94,7 @@ public class GraknEngineServerTest {
     @Test
     public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
         GraknTestSetup.startCassandraIfNeeded();
-        RedisServer redisServer = MockRedisRule.create(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort()).server();
+        RedisServer redisServer = MockRedisRule.create(new SimpleURI(conf.getProperty(GraknConfigKey.REDIS_HOST)).getPort()).server();
         redisServer.start();
 
         try (GraknEngineServer server = GraknEngineServer.create(conf)) {

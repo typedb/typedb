@@ -20,14 +20,13 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.REST;
 import com.codahale.metrics.Timer.Context;
 import mjson.Json;
@@ -58,8 +57,8 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
 
     @Override
     public boolean start() {
-        final long shardingThreshold = engineConfiguration().getPropertyAsLong(GraknTxAbstract.SHARDING_THRESHOLD);
-        final int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+        final long shardingThreshold = engineConfiguration().getProperty(GraknConfigKey.SHARDING_THRESHOLD);
+        final int maxRetry = engineConfiguration().getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
         try (Context context = metricRegistry()
                 .timer(name(UpdatingInstanceCountTask.class, "execution")).time()) {
             Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());

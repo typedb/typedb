@@ -1,5 +1,6 @@
 package ai.grakn.engine;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.test.GraknTestSetup;
 
 import java.io.IOException;
@@ -35,7 +36,7 @@ public class EngineTestHelper {
             return config;
         }
         config = GraknEngineConfig.create();
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(findAvailablePort()));
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT_NUMBER, findAvailablePort());
         return config;
     }
     

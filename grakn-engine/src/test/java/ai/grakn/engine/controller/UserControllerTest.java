@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.util.MockRedisRule;
@@ -36,7 +36,7 @@ import static com.jayway.restassured.RestAssured.when;
 public class UserControllerTest  {
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST)).getPort());
 
     @ClassRule
     public static ControllerFixture fixture = ControllerFixture.INSTANCE;

@@ -5,7 +5,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.exception.GraknTxOperationException;
@@ -28,14 +28,14 @@ import static org.junit.Assume.assumeFalse;
 public class EngineGraknSessionTest {
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST)).getPort());
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     private static EngineGraknTxFactory graknFactory;
     
-    private String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
+    private String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknConfigKey.SERVER_PORT_NUMBER);
 
     @BeforeClass
     public static void beforeClass() {

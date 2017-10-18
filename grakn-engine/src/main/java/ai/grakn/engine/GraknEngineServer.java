@@ -17,6 +17,7 @@
  */
 package ai.grakn.engine;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -75,11 +76,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
 import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static com.codahale.metrics.MetricRegistry.name;
@@ -155,8 +151,8 @@ public class GraknEngineServer implements AutoCloseable {
         taskManager.start();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
-                prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
-                prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
+                prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
+                prop.getProperty(GraknConfigKey.SERVER_PORT_NUMBER));
         synchronized (this){
             checkVersion();
             lockAndInitializeSystemSchema();
@@ -226,19 +222,19 @@ public class GraknEngineServer implements AutoCloseable {
         metricRegistry.register(name(GraknEngineServer.class, "System", "threads"), new CachedThreadStatesGaugeSet(15, TimeUnit.SECONDS));
         metricRegistry.register(name(GraknEngineServer.class, "System", "memory"), new MemoryUsageGaugeSet());
 
-        Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
+        Optional<String> consumers = prop.tryProperty(GraknConfigKey.QUEUE_CONSUMERS);
         return consumers
                 .map(s -> new RedisTaskManager(engineId, prop, jedisPool, Integer.parseInt(s), factory, lockProvider, metricRegistry))
                 .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
     }
 
     public void startHTTP() {
-        boolean passwordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
+        boolean passwordProtected = prop.tryProperty(GraknConfigKey.PASSWORD_PROTECTED_PROPERTY).orElse(false);
 
         // TODO: Make sure controllers handle the null case
-        Optional<String> secret = prop.tryProperty(GraknEngineConfig.JWT_SECRET_PROPERTY);
+        Optional<String> secret = prop.tryProperty(GraknConfigKey.JWT_SECRET_PROPERTY);
         @Nullable JWTHandler jwtHandler = secret.map(JWTHandler::create).orElse(null);
-        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY), factory);
+        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(GraknConfigKey.ADMIN_PASSWORD_PROPERTY), factory);
 
         configureSpark(spark, prop, jwtHandler);
 
@@ -246,7 +242,7 @@ public class GraknEngineServer implements AutoCloseable {
         RemoteSession graqlWebSocket = passwordProtected ? RemoteSession.passwordProtected(usersHandler) : RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
-        int postProcessingDelay = prop.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
+        int postProcessingDelay = prop.getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
 
         // Start all the controllers
         new GraqlController(factory, spark, metricRegistry);
@@ -272,11 +268,11 @@ public class GraknEngineServer implements AutoCloseable {
 
     public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler) {
         configureSpark(spark, 
-                       prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
-                       Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)),
-                       prop.getPath(GraknEngineConfig.STATIC_FILES_PATH),
-                       prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false),
-                       prop.tryIntProperty(GraknEngineConfig.WEBSERVER_THREADS, 64),
+                       prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
+                       prop.getProperty(GraknConfigKey.SERVER_PORT_NUMBER),
+                       GraknEngineConfig.extractPath(prop.getProperty(GraknConfigKey.STATIC_FILES_PATH)),
+                       prop.tryProperty(GraknConfigKey.PASSWORD_PROTECTED_PROPERTY).orElse(false),
+                       prop.tryProperty(GraknConfigKey.WEBSERVER_THREADS).orElse(64),
                        jwtHandler);
     }
     
@@ -413,21 +409,21 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     private static RedisWrapper instantiateRedis(GraknEngineConfig prop) {
-        List<String> redisUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_HOST).orElse("localhost:6379"));
-        List<String> sentinelUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
-        int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 32);
+        List<String> redisUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(GraknConfigKey.REDIS_HOST).orElse("localhost:6379"));
+        List<String> sentinelUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(GraknConfigKey.REDIS_SENTINEL_HOST).orElse(""));
+        int poolSize = prop.tryProperty(GraknConfigKey.REDIS_POOL_SIZE).orElse(32);
         boolean useSentinel = !sentinelUrl.isEmpty();
         Builder builder = RedisWrapper.builder()
                 .setUseSentinel(useSentinel)
                 .setPoolSize(poolSize)
                 .setURI((useSentinel ? sentinelUrl : redisUrl));
         if (useSentinel) {
-            builder.setMasterName(prop.tryProperty(REDIS_SENTINEL_MASTER).orElse("graknmaster"));
+            builder.setMasterName(prop.tryProperty(GraknConfigKey.REDIS_SENTINEL_MASTER).orElse("graknmaster"));
         }
         return builder.build();
     }
 
-    private void logStartMessage(String host, String port) {
+    private void logStartMessage(String host, int port) {
         String address = "http://" + host + ":" + port;
         LOG.info("\n==================================================");
         LOG.info("\n" + String.format(GraknEngineConfig.GRAKN_ASCII, address));

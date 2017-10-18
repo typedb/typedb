@@ -25,7 +25,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -175,8 +175,8 @@ public class SystemController {
         Json jsonConfig = Json.make(properties);
 
         // Remove the JWT Secret
-        if(jsonConfig.has(GraknEngineConfig.JWT_SECRET_PROPERTY)) {
-            jsonConfig.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
+        if(jsonConfig.has(GraknConfigKey.JWT_SECRET_PROPERTY.value())) {
+            jsonConfig.delAt(GraknConfigKey.JWT_SECRET_PROPERTY.value());
         }
 
         return jsonConfig.toString();

@@ -18,6 +18,7 @@
 
 package ai.grakn.engine;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
@@ -44,32 +45,7 @@ import java.util.stream.Collectors;
  */
 public class GraknEngineConfig {
 
-    public static final String GRAKN_VERSION_KEY = "grakn.version";
-
-    public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
-
-    public static final String JWT_SECRET_PROPERTY = "JWT.secret";
-    public static final String PASSWORD_PROTECTED_PROPERTY = "password.protected";
-    public static final String WEBSERVER_THREADS = "webserver.threads";
-    public static final String ADMIN_PASSWORD_PROPERTY = "admin.password";
-
-    public static final String SERVER_HOST_NAME = "server.host";
-    public static final String SERVER_PORT_NUMBER = "server.port";
-
-    public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
-
-    public static final String REDIS_HOST = "queue.host";
-    public static final String REDIS_SENTINEL_HOST = "redis.sentinel.host";
-    public static final String REDIS_SENTINEL_MASTER = "redis.sentinel.master";
-    public static final String REDIS_POOL_SIZE = "redis.pool-size";
-
-    public static final String QUEUE_CONSUMERS = "queue.consumers";
-
-    public static final String STATIC_FILES_PATH = "server.static-file-dir";
-
-    // Delay for the post processing task in milliseconds
-    public static final String POST_PROCESSING_TASK_DELAY = "tasks.postprocessing.delay";
-    public static final String TASKS_RETRY_DELAY = "tasks.retry.delay";
+    private static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
 
     public static final int WEBSOCKET_TIMEOUT = 3600000;
 
@@ -105,11 +81,11 @@ public class GraknEngineConfig {
     }
 
     private void setGraknVersion(){
-        prop.setProperty(GRAKN_VERSION_KEY, GraknVersion.VERSION);
+        setConfigProperty(GraknConfigKey.GRAKN_VERSION_KEY, GraknVersion.VERSION);
     }
 
-    public void setConfigProperty(String key, String value){
-        prop.setProperty(key,value);
+    public <T> void setConfigProperty(GraknConfigKey<T> key, T value){
+        prop.setProperty(key.value(), value.toString());
     }
 
     /**
@@ -127,16 +103,15 @@ public class GraknEngineConfig {
     }
 
     /**
-     * @param path The name of the property inside the Properties map that refers to a path
-     * @return The requested property as a full path. If it is specified as a relative path,
+     * @param path A string representing a path
+     * @return The requested string as a full path. If it is specified as a relative path,
      * this method will return the path prepended with the project path.
      */
-    public String getPath(String path) {
-        String propertyPath = prop.getProperty(path);
-        if (Paths.get(propertyPath).isAbsolute()) {
-            return propertyPath;
+    public static String extractPath(String path) {
+        if (Paths.get(path).isAbsolute()) {
+            return path;
         }
-        return getProjectPath() + propertyPath;
+        return getProjectPath() + path;
     }
 
     /**
@@ -161,37 +136,18 @@ public class GraknEngineConfig {
         return prop;
     }
 
-    public String getProperty(String property) {
-         if(prop.containsKey(property)) {
-             return prop.getProperty(property);
-         } else {
-            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configFilePath));
-         }
+    public <T> T getProperty(GraknConfigKey<T> key) {
+        return tryProperty(key).orElseThrow(() ->
+            new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.value(), configFilePath))
+        );
     }
 
-    public Optional<String> tryProperty(String property) {
-        return Optional.ofNullable(prop.getProperty(property));
-    }
-
-    public int tryIntProperty(String property, int defaultValue) {
-        return Optional.ofNullable(prop.getProperty(property)).map(Integer::parseInt).orElse(defaultValue);
-    }
-
-    public int getPropertyAsInt(String property) {
-        return Integer.parseInt(getProperty(property));
-    }
-
-    public long getPropertyAsLong(String property) {
-        return Long.parseLong(getProperty(property));
-    }
-
-    public boolean getPropertyAsBool(String property, boolean defaultValue) {
-        return prop.containsKey(property) ? Boolean.parseBoolean(prop.getProperty(property))
-                                          : defaultValue;
+    public <T> Optional<T> tryProperty(GraknConfigKey<T> key) {
+        return Optional.ofNullable(prop.getProperty(key.value())).map(key::parse);
     }
 
     public String uri() {
-        return getProperty(SERVER_HOST_NAME) + ":" + getProperty(SERVER_PORT_NUMBER);
+        return getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + getProperty(GraknConfigKey.SERVER_PORT_NUMBER);
     }
 
     static List<String> parseCSValue(String s) {

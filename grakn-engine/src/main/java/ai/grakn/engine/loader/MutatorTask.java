@@ -20,7 +20,7 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.postprocessing.GraknTxMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
@@ -29,18 +29,20 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Task that will mutate data in a graph. It uses the engine running on the
@@ -60,7 +62,7 @@ public class MutatorTask extends BackgroundTask {
         Collection<Query> inserts = getInserts(configuration());
         metricRegistry().histogram(name(MutatorTask.class, "jobs")).update(inserts.size());
         Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
-        int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+        int maxRetry = engineConfiguration().getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
 
         GraknTxMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
@@ -94,7 +96,7 @@ public class MutatorTask extends BackgroundTask {
                 if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
                     String logs = result.get();
                     addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
-                                    .getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY)),
+                                    .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
                             PostProcessingTask.createConfig(graph.getKeyspace(), logs));
                     addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
                             UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));

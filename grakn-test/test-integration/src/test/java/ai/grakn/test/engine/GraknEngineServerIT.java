@@ -20,7 +20,7 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.client.TaskClient;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
@@ -76,7 +76,7 @@ public class GraknEngineServerIT {
     public static final EngineContext engine2 = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
-    public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(engine1.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
+    public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(engine1.config().getProperty(GraknConfigKey.REDIS_HOST)).getPort());
 
     private TaskStateStorage storage;
 
