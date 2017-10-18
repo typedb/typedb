@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -67,16 +68,16 @@ public class TxCache {
 
     //Elements Tracked For Validation
     private final Set<Thing> modifiedThings = new HashSet<>();
-
     private final Set<Role> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
-
     private final Set<RelationshipType> modifiedRelationshipTypes = new HashSet<>();
-
     private final Set<Rule> modifiedRules = new HashSet<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
+
+    //We track relationships with new role players so that we can clean up duplicate role-players later
+    private final Set<Relationship> relationshipsWithNewRolePlayers = new HashSet<>();
 
     //New attributes are tracked so that we can merge any duplicate attributes in post.
     // This is a map of attribute indices to concept ids
@@ -191,6 +192,14 @@ public class TxCache {
 
     /**
      *
+     * @return {@link Relationship}s which have new role players
+     */
+    Set<Relationship> getRelationshipsWithNewRolePlayers(){
+        return relationshipsWithNewRolePlayers;
+    }
+
+    /**
+     *
      * @param concept The concept to no longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
@@ -225,6 +234,15 @@ public class TxCache {
         }
     }
 
+    /**
+     * Tracks a {@link Relationship} which has a new role player.
+     * This list is later submitted for post processing
+     *
+     * @param relationship The {@link Relationship} with a new role player.
+     */
+    public void addedNewRolePlayer(Relationship relationship) {
+        relationshipsWithNewRolePlayers.add(relationship);
+    }
 
     /**
      * Caches the mapping of a type label to a type id. This is necessary in order for ANY types to be looked up.
@@ -369,4 +387,5 @@ public class TxCache {
     public String getClosedReason(){
         return closedReason;
     }
+
 }

@@ -146,6 +146,11 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.getLabelId().getValue());
         Casting casting = Casting.create(edge, owner, role, toThing);
         vertex().tx().txCache().trackForValidation(casting);
+
+        //Track this relationship
+        if(vertex().tx().isBatchTx()){
+            vertex().tx().txCache().addedNewRolePlayer(owner);
+        }
     }
 
     /**

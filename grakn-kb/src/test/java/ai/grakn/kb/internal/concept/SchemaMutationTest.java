@@ -117,7 +117,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchTx();
         graknGraphBatch.putEntityType("This Will Fail");
     }
 
@@ -126,7 +126,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchTx();
         graknGraphBatch.putRole("This Will Fail");
     }
 
@@ -135,7 +135,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchTx();
         graknGraphBatch.putAttributeType("This Will Fail", AttributeType.DataType.STRING);
     }
 
@@ -144,7 +144,7 @@ public class SchemaMutationTest extends TxTestBase {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchTx();
         graknGraphBatch.putRelationshipType("This Will Fail");
     }
 
@@ -155,7 +155,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.putRole(roleTypeId);
         tx.putRelationshipType(relationTypeId);
 
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchTx();
         Role role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
@@ -172,7 +172,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.putRole(roleTypeId);
         tx.putEntityType(entityTypeId);
 
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchTx();
         Role role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
@@ -190,7 +190,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.putEntityType(entityTypeId1);
         tx.putEntityType(entityTypeId2);
 
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchTx();
         EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
         EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
 
@@ -208,7 +208,7 @@ public class SchemaMutationTest extends TxTestBase {
         Role role = tx.putRole(roleTypeId);
         tx.putEntityType(entityTypeId).plays(role);
 
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchTx();
         role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
@@ -226,7 +226,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.putRelationshipType(relationTypeId).relates(role);
         tx.commit();
 
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchTx();
         role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 

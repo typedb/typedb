@@ -24,6 +24,7 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
@@ -246,6 +247,33 @@ public class TxCacheTest extends TxTestBase {
         //Mutate Super Type
         e2.sup(e3);
         assertTxBoundConceptMatches(e2, Type::sup, is(e3));
+    }
+
+    @Test
+    public void whenAddingRolePlayersToRelationshipsWithBatchTransaction_EnsureTheRelationsAreTracked(){
+        Role role1 = tx.putRole("role 1");
+        Role role2 = tx.putRole("role 2");
+        EntityType entityType = tx.putEntityType("e1").plays(role1).plays(role2);
+        RelationshipType relationshipType = tx.putRelationshipType("rel type 1").relates(role1).relates(role2);
+
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+        Entity e3 = entityType.addEntity();
+
+        //Create Relationships which are not being tracked
+        relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
+        relationshipType.addRelationship().addRolePlayer(role1, e2).addRolePlayer(role2, e2);
+
+        assertThat(tx.txCache().getRelationshipsWithNewRolePlayers(), is(empty()));
+
+        //Now switch transactions and check tracking is working
+        tx.commit();
+        tx = switchToBatchTx();
+
+        relationshipType = tx.getRelationshipType("rel type 1");
+        Relationship r1 = relationshipType.addRelationship().addRolePlayer(role1, e3).addRolePlayer(role2, e3);
+        Relationship r2 = relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e3);
+        assertThat(tx.txCache().getRelationshipsWithNewRolePlayers(), containsInAnyOrder(r1, r2));
     }
 
     @Test

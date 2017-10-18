@@ -52,7 +52,7 @@ public class TxTestBase {
         session.close();
     }
 
-    protected GraknTxAbstract<?> switchToBatchGraph(){
+    protected GraknTxAbstract<?> switchToBatchTx(){
         tx.close();
         txBatch = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
         return txBatch;
