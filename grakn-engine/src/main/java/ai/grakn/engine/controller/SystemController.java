@@ -229,9 +229,7 @@ public class SystemController {
             AttributeType<String> keyspaceName = graph
                     .getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
             boolean exists = graph.<EntityType>getSchemaConcept(SystemKeyspace.KEYSPACE_ENTITY)
-                    .instances().anyMatch(
-                            k -> k.attributes(keyspaceName).map(Attribute::getValue).collect(Collectors.toSet())
-                                    .contains(keyspace));
+                    .instances().anyMatch(k -> k.attributes(keyspaceName).map(Attribute::getValue).collect(Collectors.toSet()).contains(keyspace));
             if (exists) {
                 Json result = Json.object("value", keyspace);
                 return result.toString();

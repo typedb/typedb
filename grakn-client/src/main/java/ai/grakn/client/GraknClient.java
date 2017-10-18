@@ -27,13 +27,11 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.UriBuilder;
@@ -49,12 +47,12 @@ import org.slf4j.LoggerFactory;
 public class GraknClient {
     private final Logger LOG = LoggerFactory.getLogger(GraknClient.class);
 
-    private final javax.ws.rs.client.Client asyncHttpClient;
+    private final Client asyncHttpClient;
     private final String graqlExecuteURL;
     private final String keyspaceURL;
 
     public GraknClient(SimpleURI url)  {
-        this.asyncHttpClient = ClientBuilder.newClient();
+        this.asyncHttpClient = Client.create();
         String urlWithSchema = url.toStringWithSchema();
         this.graqlExecuteURL = urlWithSchema + "/kb/graql/execute";
         this.keyspaceURL = urlWithSchema + "/keyspaces/{keyspace}";
@@ -63,47 +61,40 @@ public class GraknClient {
     public List<QueryResponse> graqlExecute(List<Query<?>> queryList, String keyspace)
             throws GraknClientException {
         String body = queryList.stream().map(Object::toString).reduce("; ", String::concat).substring(2);
-        try {
-            URI fullURI = UriBuilder.fromPath(graqlExecuteURL)
-                    .queryParam(MATERIALISE, "false")
-                    .queryParam(INFER, "false")
-                    .queryParam(MULTI, "true")
-                    .queryParam(KEYSPACE, keyspace).build();
-            Response response = asyncHttpClient.target(fullURI.toString())
-                    .request()
-                    .accept(APPLICATION_JSON_GRAQL)
-                    .buildPost(Entity.entity(body, APPLICATION_TEXT))
-                    .submit()
-                    .get();
-                int statusCode = response.getStatus();
-            if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
-                throw new GraknClientException("Failed graqlExecute. Error status: " + statusCode + ", error info: " + response.readEntity(String.class), response.getStatusInfo());
-            }
-            LOG.debug("Received {}", statusCode);
-                String responseAsAString = response.readEntity(String.class);
-                response.close();
-                return QueryResponse.from(queryList, responseAsAString);
-        } catch (ExecutionException | InterruptedException e) {
-            LOG.error("Error while executing request", e);
-            throw new GraknClientException("Execution exception while sending request");
+        URI fullURI = UriBuilder.fromPath(graqlExecuteURL)
+                .queryParam(MATERIALISE, "false")
+                .queryParam(INFER, "false")
+                .queryParam(MULTI, "true")
+                .queryParam(KEYSPACE, keyspace).build();
+        ClientResponse response = asyncHttpClient.resource(fullURI.toString())
+                .accept(APPLICATION_JSON_GRAQL)
+                .type(APPLICATION_TEXT)
+                .post(ClientResponse.class, body);
+            int statusCode = response.getStatus();
+        String entity = response.getEntity(String.class);
+        if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
+            throw new GraknClientException("Failed graqlExecute. Error status: " + statusCode + ", error info: " + entity, response.getStatusInfo());
         }
+        LOG.debug("Received {}", statusCode);
+        response.close();
+        return QueryResponse.from(queryList, entity);
     }
 
     public Optional<Keyspace> keyspace(String keyspace) throws GraknClientException {
         URI fullURI = UriBuilder.fromPath(keyspaceURL).buildFromMap(ImmutableMap.of("keyspace", keyspace));
-        Response response = asyncHttpClient.target(fullURI.toString())
-                .request()
+        ClientResponse response = asyncHttpClient.resource(fullURI.toString())
                 .accept(APPLICATION_JSON_GRAQL)
-                .get();
+                .get(ClientResponse.class);
         int statusCode = response.getStatus();
         LOG.debug("Received {}", statusCode);
         if (response.getStatusInfo().getStatusCode() == Status.NOT_FOUND.getStatusCode()) {
             return Optional.empty();
         }
+        String entity = response.getEntity(String.class);
         if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
-            throw new GraknClientException("Failed keyspace. Error status: " + statusCode + ", error info: " + response.readEntity(String.class), response.getStatusInfo());
+            throw new GraknClientException("Failed keyspace. Error status: " + statusCode + ", error info: " + entity, response.getStatusInfo());
         }
-        String value = Json.read(response.readEntity(String.class)).at("value").asString();
+        String value = Json.read(entity).at("value").asString();
         response.close();
         return Optional.of(Keyspace.of(value));
     }
