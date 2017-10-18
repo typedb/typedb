@@ -65,7 +65,7 @@ public class BatchExecutorClient implements Closeable {
     private final static Logger LOG = LoggerFactory.getLogger(BatchExecutorClient.class);
 
     static final int DEFAULT_TIMEOUT_MS = 60000;
-    static final int THREAD_POOL_CORE_SIZE = 64;
+    static final int THREAD_POOL_CORE_SIZE = 128;
     static final int MAX_QUEUE = THREAD_POOL_CORE_SIZE * 8;
     static final int REJECTION_THRESHOLD = MAX_QUEUE;
 
@@ -75,6 +75,7 @@ public class BatchExecutorClient implements Closeable {
     // Config
     private final int maxDelay;
     private final int maxRetries;
+    private final int threadPoolCoreSize;
 
     // Metrics
     private final MetricRegistry metricRegistry;
@@ -87,6 +88,7 @@ public class BatchExecutorClient implements Closeable {
         maxDelay = builder.maxDelay;
         maxRetries = builder.maxRetries;
         metricRegistry = new MetricRegistry();
+        threadPoolCoreSize = builder.threadPoolCoreSize;
         addTimer = metricRegistry
                 .timer(name(BatchExecutorClient.class, "add"));
         failureMeter = metricRegistry
@@ -103,7 +105,7 @@ public class BatchExecutorClient implements Closeable {
     public Observable<QueryResponse> add(Query<?> query, String keyspace, boolean keepErrors) {
         Context context = addTimer.time();
         Observable<QueryResponse> observable = new QueriesObservableCollapser(query,
-                keyspace, graknClient, maxDelay, maxRetries, metricRegistry)
+                keyspace, graknClient, maxDelay, maxRetries, threadPoolCoreSize, metricRegistry)
                 .observe()
                 .doOnError((error) -> failureMeter.mark())
                 .doOnTerminate(context::close);
@@ -144,6 +146,7 @@ public class BatchExecutorClient implements Closeable {
         private int maxDelay = 500;
         private int maxRetries = 5;
         private boolean reportStats = true;
+        private int threadPoolCoreSize = THREAD_POOL_CORE_SIZE;
 
         private Builder() {
         }
@@ -165,6 +168,12 @@ public class BatchExecutorClient implements Closeable {
 
         public void reportStats(boolean val) {
             this.reportStats = val;
+        }
+
+
+        public Builder threadPoolCoreSize(int val) {
+            threadPoolCoreSize = val;
+            return this;
         }
 
         public BatchExecutorClient build() {
@@ -226,13 +235,13 @@ public class BatchExecutorClient implements Closeable {
         private int retries;
 
         public CommandQueries(List<QueryWithId<?>> queries, String keyspace, GraknClient client,
-                int retries) {
+                int retries, int threadPoolCoreSize) {
             super(Setter
                     .withGroupKey(HystrixCommandGroupKey.Factory.asKey("BatchExecutor"))
                     .andThreadPoolPropertiesDefaults(
                             HystrixThreadPoolProperties.Setter()
                                     .withQueueSizeRejectionThreshold(REJECTION_THRESHOLD)
-                                    .withCoreSize(THREAD_POOL_CORE_SIZE)
+                                    .withCoreSize(threadPoolCoreSize)
                                     .withMaxQueueSize(MAX_QUEUE))
                     .andCommandPropertiesDefaults(
                             HystrixCommandProperties.Setter()
@@ -281,10 +290,11 @@ public class BatchExecutorClient implements Closeable {
         private String keyspace;
         private final GraknClient client;
         private final int retries;
+        private int threadPoolCoreSize;
         private final MetricRegistry metricRegistry;
 
         public QueriesObservableCollapser(Query<?> query, String keyspace,
-                GraknClient client, int delay, int retries, MetricRegistry metricRegistry) {
+                GraknClient client, int delay, int retries, int threadPoolCoreSize, MetricRegistry metricRegistry) {
             super(Setter.withCollapserKey(
                     // It split by keyspace since we want to avoid mixing requests for different
                     // keyspaces together
@@ -298,6 +308,7 @@ public class BatchExecutorClient implements Closeable {
             this.keyspace = keyspace;
             this.client = client;
             this.retries = retries;
+            this.threadPoolCoreSize = threadPoolCoreSize;
             this.metricRegistry = metricRegistry;
         }
 
@@ -310,7 +321,7 @@ public class BatchExecutorClient implements Closeable {
         protected HystrixCommand<List<QueryResponse>> createCommand(
                 Collection<CollapsedRequest<QueryResponse, QueryWithId<?>>> collapsedRequests) {
             return new CommandQueries(collapsedRequests.stream().map(CollapsedRequest::getArgument)
-                    .collect(Collectors.toList()), keyspace, client, retries);
+                    .collect(Collectors.toList()), keyspace, client, retries, threadPoolCoreSize);
         }
 
         @Override

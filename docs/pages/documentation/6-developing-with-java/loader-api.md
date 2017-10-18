@@ -36,7 +36,7 @@ import ai.grakn.client.BatchExecutorClient;
 The loader client can be instantiated by giving the engine URI. 
 
 ```java
-BatchExecutorClient loader = BatchExecutorClient.newBuilderforURI(uri);
+BatchExecutorClient loader = BatchExecutorClient.newBuilderforURI(uri).build();
 ```
 
 The loader client can be thought of as an empty bucket in which to dump insert queries that will be batch-loaded into the specified knowledge base. Batching, blocking and callbacks are all executed based on how the user has configured the client, which simplifies usage. The following code will load 100 insert queries into the knowledge base.

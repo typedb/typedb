@@ -29,12 +29,15 @@ import java.net.URL;
  * @author pluraliseseverythings
  */
 public class SimpleURI {
+
     private final int port;
     private final String host;
 
     public SimpleURI(String uri) {
         String[] uriSplit = uri.split(":");
-        Preconditions.checkArgument(uriSplit.length == 2 || (uriSplit.length == 3 && uriSplit[1].contains("//")), "Malformed URI " + uri);
+        Preconditions.checkArgument(
+                uriSplit.length == 2 || (uriSplit.length == 3 && uriSplit[1].contains("//")),
+                "Malformed URI " + uri);
         // if it has the schema, we start parsing from after
         int bias = uriSplit.length == 3 ? 1 : 0;
         this.host = uriSplit[bias].replace("/", "").trim();

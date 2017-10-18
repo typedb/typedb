@@ -68,13 +68,6 @@ public class CSVMigratorMainTest {
     }
 
     @Test
-    public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsSet_Throw(){
-        expectedException.expect(RuntimeException.class);
-
-        run("-d", "-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
-    }
-
-    @Test
     public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsNotSet_DontThrow(){
         run("-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
     }
