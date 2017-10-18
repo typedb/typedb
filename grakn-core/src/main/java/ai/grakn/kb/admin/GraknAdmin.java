@@ -36,7 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -181,13 +180,6 @@ public interface GraknAdmin {
      * @return true if the {@link ai.grakn.concept.Relationship} was fixed and a commit is needed
      */
     boolean fixRelationship(ConceptId relationshipId);
-
-    /**
-     * Updates the counts of all the types
-     *
-     * @param conceptCounts The concepts and the changes to put on their counts
-     */
-    void updateConceptCounts(Map<ConceptId, Long> conceptCounts);
 
     /**
      * Creates a new shard for the concept

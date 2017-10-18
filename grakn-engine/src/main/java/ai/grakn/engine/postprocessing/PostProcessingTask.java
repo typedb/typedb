@@ -123,16 +123,18 @@ public class PostProcessingTask extends BackgroundTask {
 
             try {
                 // execute the provided post processing method
-                graph.admin().fixDuplicateResources(conceptIndex, conceptIds);
+                boolean commitNeeded = graph.admin().fixDuplicateResources(conceptIndex, conceptIds);
 
                 // ensure post processing was correctly executed
-                validateMerged(graph, conceptIndex, conceptIds).
-                        ifPresent(message -> {
-                            throw new RuntimeException(message);
-                        });
+                if(commitNeeded) {
+                    validateMerged(graph, conceptIndex, conceptIds).
+                            ifPresent(message -> {
+                                throw new RuntimeException(message);
+                            });
 
-                // persist merged concepts
-                graph.admin().commitNoLogs();
+                    // persist merged concepts
+                    graph.admin().commitNoLogs();
+                }
             } finally {
                 indexLock.unlock();
             }

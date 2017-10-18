@@ -220,14 +220,4 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     public Shard currentShard(){
         return currentShard.get();
     }
-
-    public long getShardCount(){
-        Long value = vertex().property(Schema.VertexProperty.SHARD_COUNT);
-        if(value == null) return 0L;
-        return value;
-    }
-
-    public void setShardCount(Long instanceCount){
-        vertex().property(Schema.VertexProperty.SHARD_COUNT, instanceCount);
-    }
 }
