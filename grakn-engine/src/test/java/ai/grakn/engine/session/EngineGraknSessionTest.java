@@ -35,7 +35,7 @@ public class EngineGraknSessionTest {
 
     private static EngineGraknTxFactory graknFactory;
     
-    private String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknConfigKey.SERVER_PORT_NUMBER);
+    private String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknConfigKey.SERVER_PORT);
 
     @BeforeClass
     public static void beforeClass() {

@@ -33,7 +33,7 @@ public class AuthControllerTest  {
     private static final JWTHandler jwtHandler = JWTHandler.create("secret token");
 
     private UsersHandler usersHandler = UsersHandler.create(
-            EngineTestHelper.config().getProperty(GraknConfigKey.ADMIN_PASSWORD_PROPERTY),
+            EngineTestHelper.config().getProperty(GraknConfigKey.ADMIN_PASSWORD),
                                                   EngineGraknTxFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties()));
 
     @Test

@@ -129,7 +129,7 @@ public class DistributionContext extends ExternalResource {
     private Process newEngineProcess(Integer port, Integer redisPort) throws IOException {
         // Set correct port & task manager
         GraknEngineConfig config = GraknEngineConfig.create();
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT_NUMBER, port);
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         config.setConfigProperty(GraknConfigKey.REDIS_HOST, new SimpleURI("localhost", redisPort).toString());
         // To speed up tests of failure cases
         config.setConfigProperty(GraknConfigKey.TASKS_RETRY_DELAY, 60);

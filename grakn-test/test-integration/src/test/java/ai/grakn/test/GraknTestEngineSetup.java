@@ -60,7 +60,7 @@ public abstract class GraknTestEngineSetup {
 
         Integer serverPort = getEphemeralPort();
 
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT_NUMBER, serverPort);
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, serverPort);
 
         return config;
     }
@@ -108,7 +108,7 @@ public abstract class GraknTestEngineSetup {
         LOG.info("starting spark on port " + config.uri());
 
         Service spark = Service.ignite();
-        configureSpark(spark, config, JWTHandler.create(config.getProperty(GraknConfigKey.JWT_SECRET_PROPERTY)));
+        configureSpark(spark, config, JWTHandler.create(config.getProperty(GraknConfigKey.JWT_SECRET)));
         setRestAssuredUri(config);
         return spark;
     }

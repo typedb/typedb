@@ -152,7 +152,7 @@ public class GraknEngineServer implements AutoCloseable {
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
                 prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
-                prop.getProperty(GraknConfigKey.SERVER_PORT_NUMBER));
+                prop.getProperty(GraknConfigKey.SERVER_PORT));
         synchronized (this){
             checkVersion();
             lockAndInitializeSystemSchema();
@@ -229,12 +229,12 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void startHTTP() {
-        boolean passwordProtected = prop.tryProperty(GraknConfigKey.PASSWORD_PROTECTED_PROPERTY).orElse(false);
+        boolean passwordProtected = prop.tryProperty(GraknConfigKey.PASSWORD_PROTECTED).orElse(false);
 
         // TODO: Make sure controllers handle the null case
-        Optional<String> secret = prop.tryProperty(GraknConfigKey.JWT_SECRET_PROPERTY);
+        Optional<String> secret = prop.tryProperty(GraknConfigKey.JWT_SECRET);
         @Nullable JWTHandler jwtHandler = secret.map(JWTHandler::create).orElse(null);
-        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(GraknConfigKey.ADMIN_PASSWORD_PROPERTY), factory);
+        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(GraknConfigKey.ADMIN_PASSWORD), factory);
 
         configureSpark(spark, prop, jwtHandler);
 
@@ -269,9 +269,9 @@ public class GraknEngineServer implements AutoCloseable {
     public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler) {
         configureSpark(spark, 
                        prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
-                       prop.getProperty(GraknConfigKey.SERVER_PORT_NUMBER),
+                       prop.getProperty(GraknConfigKey.SERVER_PORT),
                        GraknEngineConfig.extractPath(prop.getProperty(GraknConfigKey.STATIC_FILES_PATH)),
-                       prop.tryProperty(GraknConfigKey.PASSWORD_PROTECTED_PROPERTY).orElse(false),
+                       prop.tryProperty(GraknConfigKey.PASSWORD_PROTECTED).orElse(false),
                        prop.tryProperty(GraknConfigKey.WEBSERVER_THREADS).orElse(64),
                        jwtHandler);
     }

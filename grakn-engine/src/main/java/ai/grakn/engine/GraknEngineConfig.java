@@ -81,7 +81,7 @@ public class GraknEngineConfig {
     }
 
     private void setGraknVersion(){
-        setConfigProperty(GraknConfigKey.GRAKN_VERSION_KEY, GraknVersion.VERSION);
+        setConfigProperty(GraknConfigKey.VERSION, GraknVersion.VERSION);
     }
 
     public <T> void setConfigProperty(GraknConfigKey<T> key, T value){
@@ -147,7 +147,7 @@ public class GraknEngineConfig {
     }
 
     public String uri() {
-        return getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + getProperty(GraknConfigKey.SERVER_PORT_NUMBER);
+        return getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + getProperty(GraknConfigKey.SERVER_PORT);
     }
 
     static List<String> parseCSValue(String s) {

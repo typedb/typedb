@@ -60,6 +60,6 @@ public class GraknEngineConfigTest {
 
     @Test
     public void whenGettingExistingProperty_PropertyIsReturned(){
-        assertNotNull(configuration.getProperty(GraknConfigKey.SERVER_PORT_NUMBER));
+        assertNotNull(configuration.getProperty(GraknConfigKey.SERVER_PORT));
     }
 }

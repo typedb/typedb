@@ -85,7 +85,7 @@ public class EngineContext extends ExternalResource {
     }
 
     public int port() {
-        return config.getProperty(GraknConfigKey.SERVER_PORT_NUMBER);
+        return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
     public GraknEngineServer server() {

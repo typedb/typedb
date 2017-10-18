@@ -49,7 +49,7 @@ public class SparkContext extends ExternalResource {
         this.createControllers = createControllers;
 
         int port = EngineTestHelper.findAvailablePort();
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT_NUMBER, port);
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
 
         if ("0.0.0.0".equals(config.getProperty(GraknConfigKey.SERVER_HOST_NAME))) {
             config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, "localhost");
@@ -61,10 +61,10 @@ public class SparkContext extends ExternalResource {
 
         String hostName = config.getProperty(GraknConfigKey.SERVER_HOST_NAME);
 
-        Optional<String> jwtProperty = config.tryProperty(GraknConfigKey.JWT_SECRET_PROPERTY);
+        Optional<String> jwtProperty = config.tryProperty(GraknConfigKey.JWT_SECRET);
 
         configureSpark(spark, hostName, port(), GraknEngineConfig.extractPath(config.getProperty(GraknConfigKey.STATIC_FILES_PATH)),
-                        config.tryProperty(GraknConfigKey.PASSWORD_PROTECTED_PROPERTY).orElse(false), 64,
+                        config.tryProperty(GraknConfigKey.PASSWORD_PROTECTED).orElse(false), 64,
                         jwtProperty.isPresent() ? JWTHandler.create(jwtProperty.get()) : null);
 
         RestAssured.baseURI = "http://" + hostName + ":" + port();
@@ -83,12 +83,12 @@ public class SparkContext extends ExternalResource {
     }
 
     public SparkContext port(int port) {
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT_NUMBER, port);
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         return this;
     }
 
     public int port() {
-        return config.getProperty(GraknConfigKey.SERVER_PORT_NUMBER);
+        return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
     public String uri() {

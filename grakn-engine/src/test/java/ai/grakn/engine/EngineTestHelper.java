@@ -36,7 +36,7 @@ public class EngineTestHelper {
             return config;
         }
         config = GraknEngineConfig.create();
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT_NUMBER, findAvailablePort());
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, findAvailablePort());
         return config;
     }
     

@@ -104,7 +104,7 @@ public class GraknEngineStartIT {
 
     private GraknEngineServer makeEngine(int port) {
         GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
-        graknEngineConfig.setConfigProperty(GraknConfigKey.SERVER_PORT_NUMBER, port);
+        graknEngineConfig.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         graknEngineConfig.setConfigProperty(GraknConfigKey.REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
         return GraknEngineServer.create(graknEngineConfig);
     }

@@ -51,12 +51,12 @@ public class SparkContext extends ExternalResource {
     }
 
     public SparkContext port(int port) {
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT_NUMBER, port);
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         return this;
     }
 
     public int port() {
-        return config.getProperty(GraknConfigKey.SERVER_PORT_NUMBER);
+        return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
     public String uri() {

@@ -68,7 +68,7 @@ public class ControllerFixture implements TestRule {
     public static final ControllerFixture INSTANCE = new ControllerFixture(); 
     
     public static String baseURI() {
-        return "http://localhost:" + EngineTestHelper.config().getProperty(GraknConfigKey.SERVER_PORT_NUMBER);
+        return "http://localhost:" + EngineTestHelper.config().getProperty(GraknConfigKey.SERVER_PORT);
     }
     
     private void restAssuredSetup() {
