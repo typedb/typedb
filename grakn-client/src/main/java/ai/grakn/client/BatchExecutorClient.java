@@ -187,6 +187,7 @@ public class BatchExecutorClient implements Closeable {
                     .andThreadPoolPropertiesDefaults(
                             HystrixThreadPoolProperties.Setter()
                                     .withQueueSizeRejectionThreshold(500)
+                                    .withCoreSize(64)
                                     .withMaxQueueSize(500))
                     .andCommandPropertiesDefaults(
                             HystrixCommandProperties.Setter()

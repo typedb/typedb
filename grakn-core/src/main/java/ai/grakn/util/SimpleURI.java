@@ -34,9 +34,11 @@ public class SimpleURI {
 
     public SimpleURI(String uri) {
         String[] uriSplit = uri.split(":");
-        Preconditions.checkArgument(uriSplit.length == 2, "Malformed URI " + uri);
-        this.host = uriSplit[0].trim();
-        this.port = Integer.parseInt(uriSplit[1].trim());
+        Preconditions.checkArgument(uriSplit.length == 2 || uriSplit.length == 3, "Malformed URI " + uri);
+        // if it has the schema, we start parsing from after
+        int bias = uriSplit.length == 3 ? 1 : 0;
+        this.host = uriSplit[bias].replace("/", "").trim();
+        this.port = Integer.parseInt(uriSplit[1 + bias].trim());
     }
 
     public SimpleURI(String host, int port) {
