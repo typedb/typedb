@@ -772,7 +772,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
         Map<ConceptId, Long> newInstances = txCache().getShardingCount();
         Map<String, ConceptId> newAttributes = txCache().getNewAttributes();
-        boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
+        Set<ConceptId> relationshipsWithNewRolePlayers = txCache().getRelationshipsWithNewRolePlayers();
+        boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty() || ! relationshipsWithNewRolePlayers.isEmpty();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
@@ -784,8 +785,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             if(trackingNeeded) {
                 commitLog().addNewInstances(newInstances);
                 commitLog().addNewAttributes(newAttributes);
+                commitLog().addRelationshipsWithNewRolePlayers(relationshipsWithNewRolePlayers);
+
             } else {
-                return Optional.of(CommitLog.formatTxLog(newInstances, newAttributes).toString());
+                return Optional.of(CommitLog.formatTxLog(newInstances, newAttributes, relationshipsWithNewRolePlayers).toString());
             }
         }
 

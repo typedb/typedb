@@ -19,7 +19,10 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -34,7 +37,9 @@ public class CommitLogTest extends TxTestBase {
     @Test
     public void whenNoOp_EnsureLogWellFormed() {
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
-        assertEquals("Unexpected graph logs", expected, tx.commitLog().getFormattedLog());
+        Json log = tx.commitLog().getFormattedLog();
+        assertEquals("Unexpected graph logs", expected, log);
+        assertFalse(log.has(REST.Request.COMMIT_LOG_FIXING));
     }
 
     @Test
@@ -70,5 +75,35 @@ public class CommitLogTest extends TxTestBase {
         assertTrue("Does not contain fixing section when it should", logs.has(REST.Request.COMMIT_LOG_FIXING));
         assertTrue("Does not contain count section when it should", logs.has(REST.Request.COMMIT_LOG_COUNTING));
         assertTrue(logs.at(REST.Request.COMMIT_LOG_FIXING).has(Schema.BaseType.ATTRIBUTE.name()));
+        assertFalse(logs.at(REST.Request.COMMIT_LOG_FIXING).has(Schema.BaseType.RELATIONSHIP.name()));
+    }
+
+    @Test
+    public void whenAddingRolePlayerToRelationship_EnsureRelationshipSectionOfLogIsFilled(){
+        Role role1 = tx.putRole("role 1");
+        Role role2 = tx.putRole("role 2");
+        tx.putEntityType("An entity Type").plays(role1).plays(role2);
+        tx.putRelationshipType("Relationship Type Thing").relates(role1).relates(role2);
+
+        tx.commit();
+
+        Json logs = tx.commitLog().getFormattedLog();
+        assertFalse("Contains fixing section when it should not", logs.has(REST.Request.COMMIT_LOG_FIXING));
+
+
+        //Switch to batch which should result in the logs filling
+        tx = switchToBatchTx();
+        EntityType entityType = tx.getEntityType("An entity Type");
+        RelationshipType relationshipType = tx.getRelationshipType("Relationship Type Thing");
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+        relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
+
+        tx.commit();
+        logs = tx.commitLog().getFormattedLog();
+        assertTrue("Does not contain fixing section when it should", logs.has(REST.Request.COMMIT_LOG_FIXING));
+        assertTrue("Does not contain count section when it should", logs.has(REST.Request.COMMIT_LOG_COUNTING));
+        assertTrue(logs.at(REST.Request.COMMIT_LOG_FIXING).has(Schema.BaseType.RELATIONSHIP.name()));
+        assertFalse(logs.at(REST.Request.COMMIT_LOG_FIXING).has(Schema.BaseType.ATTRIBUTE.name()));
     }
 }

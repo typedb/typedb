@@ -77,7 +77,7 @@ public class TxCache {
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
 
     //We track relationships with new role players so that we can clean up duplicate role-players later
-    private final Set<Relationship> relationshipsWithNewRolePlayers = new HashSet<>();
+    private final Set<ConceptId> relationshipsWithNewRolePlayers = new HashSet<>();
 
     //New attributes are tracked so that we can merge any duplicate attributes in post.
     // This is a map of attribute indices to concept ids
@@ -194,7 +194,7 @@ public class TxCache {
      *
      * @return {@link Relationship}s which have new role players
      */
-    Set<Relationship> getRelationshipsWithNewRolePlayers(){
+    public Set<ConceptId> getRelationshipsWithNewRolePlayers(){
         return relationshipsWithNewRolePlayers;
     }
 
@@ -241,7 +241,7 @@ public class TxCache {
      * @param relationship The {@link Relationship} with a new role player.
      */
     public void addedNewRolePlayer(Relationship relationship) {
-        relationshipsWithNewRolePlayers.add(relationship);
+        relationshipsWithNewRolePlayers.add(relationship.getId());
     }
 
     /**

@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -49,6 +50,7 @@ public class CommitLog {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Map<ConceptId, Long> newInstanceCount = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> newAttributes = new ConcurrentHashMap<>();
+    private final Set<ConceptId> relationshipsWithNewRolePlayers = ConcurrentHashMap.newKeySet();
 
 
     void addNewAttributes(Map<String, ConceptId> attributes){
@@ -64,6 +66,10 @@ public class CommitLog {
         lockDataAddition(() -> instances.forEach((key, value) -> newInstanceCount.merge(key, value, (v1, v2) -> v1 + v2)));
     }
 
+    void addRelationshipsWithNewRolePlayers(Set<ConceptId> relationships) {
+        lockDataAddition(() -> relationshipsWithNewRolePlayers.addAll(relationships));
+    }
+
     /**
      * Read locks are used when acquiring the data.
      * This is to ensure we are not busy clearing the data during a commit log submission.
@@ -74,6 +80,12 @@ public class CommitLog {
         try{
             lock.readLock().lock();
             dataAdder.run();
+
+            System.out.println("---------------------------------");
+            System.out.println("New Instance Count: " + newInstanceCount.size());
+            System.out.println("New Attribute Count: " + newAttributes.size());
+            System.out.println("New Relationship Count: " + relationshipsWithNewRolePlayers.size());
+
         } finally {
             lock.readLock().unlock();
         }
@@ -85,7 +97,7 @@ public class CommitLog {
     }
 
     public Json getFormattedLog(){
-        return formatLog(newInstanceCount, newAttributes);
+        return formatLog(newInstanceCount, newAttributes, relationshipsWithNewRolePlayers);
     }
 
     /**
@@ -114,25 +126,33 @@ public class CommitLog {
         return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
-    static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes){
+    static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes, Set<ConceptId> relationships){
         Map<String, Set<String>> newAttributes = new ConcurrentHashMap<>();
         attributes.forEach((key, value) -> {
             newAttributes.put(key, Sets.newHashSet(value.getValue()));
         });
-        return formatLog(instances, newAttributes);
+        return formatLog(instances, newAttributes, relationships);
     }
 
     /**
      * Returns the Formatted Log which is uploaded to the server.
      * @return a formatted Json log
      */
-    private static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<String>> attributes){
+    private static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<String>> attributes, Set<ConceptId> relationships){
         Json formattedLog = Json.object();
 
         //Concepts In Need of Inspection
-        if(!attributes.isEmpty()) {
+        if(!relationships.isEmpty() || !attributes.isEmpty()){
             Json conceptsForInspection = Json.object();
-            conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(attributes));
+            if(!attributes.isEmpty()){
+                conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(attributes));
+            }
+
+            if(!relationships.isEmpty()){
+                Set<String> relIds = relationships.stream().map(ConceptId::getValue).collect(Collectors.toSet());
+                conceptsForInspection.set(Schema.BaseType.RELATIONSHIP.name(), Json.make(relIds));
+            }
+
             formattedLog.set(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
         }
 

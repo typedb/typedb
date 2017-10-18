@@ -243,7 +243,7 @@ public class TxCacheTest extends TxTestBase {
         Relationship r1 = relationshipType.addRelationship().addRolePlayer(role1, e3).addRolePlayer(role2, e3);
         Relationship r2 = relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e3);
         Relationship r3 = relationshipType.addRelationship(); //Not added because no role players
-        assertThat(tx.txCache().getRelationshipsWithNewRolePlayers(), containsInAnyOrder(r1, r2));
+        assertThat(tx.txCache().getRelationshipsWithNewRolePlayers(), containsInAnyOrder(r1.getId(), r2.getId()));
     }
 
     @Test
