@@ -21,6 +21,8 @@ package ai.grakn;
 
 import com.google.auto.value.AutoValue;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.function.Function;
 
 /**
@@ -51,7 +53,7 @@ public abstract class GraknConfigKey<T> {
 
     public static final GraknConfigKey<String> QUEUE_CONSUMERS = create("queue.consumers");
 
-    public static final GraknConfigKey<String> STATIC_FILES_PATH = create("server.static-file-dir");
+    public static final GraknConfigKey<Path> STATIC_FILES_PATH = create("server.static-file-dir", Paths::get);
 
     // Delay for the post processing task in milliseconds
     public static final GraknConfigKey<Integer> POST_PROCESSING_TASK_DELAY =

@@ -32,7 +32,6 @@ import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -137,9 +136,7 @@ public class DistributionContext extends ExternalResource {
         // Write new properties to disk
         File propertiesFile = new File("grakn-engine-" + port + ".properties");
         propertiesFile.deleteOnExit();
-        try(FileOutputStream os = new FileOutputStream(propertiesFile)) {
-            config.getProperties().store(os, null);
-        }
+        config.write(propertiesFile);
 
         // Java commands to start Engine process
         String[] commands = {"java",

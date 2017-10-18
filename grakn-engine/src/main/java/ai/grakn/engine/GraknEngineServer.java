@@ -67,6 +67,7 @@ import spark.Response;
 import spark.Service;
 
 import javax.annotation.Nullable;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -279,7 +280,7 @@ public class GraknEngineServer implements AutoCloseable {
     public static void configureSpark(Service spark, 
                                       String hostName, 
                                       int port, 
-                                      String staticFolder,
+                                      Path staticFolder,
                                       boolean passwordProtected,
                                       int maxThreads,
                                       @Nullable JWTHandler jwtHandler){
@@ -290,7 +291,7 @@ public class GraknEngineServer implements AutoCloseable {
         spark.port(port);
 
         // Set the external static files folder
-        spark.staticFiles.externalLocation(staticFolder);
+        spark.staticFiles.externalLocation(staticFolder.toString());
 
         spark.threadPool(maxThreads);
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);

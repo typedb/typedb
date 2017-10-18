@@ -29,7 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -45,14 +47,15 @@ import java.util.stream.Collectors;
  */
 public class GraknEngineConfig {
 
-    private static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
-
     /**
-     * The path to the config file currently in use. Default: /conf/main/grakn.properties
+     * The path to the config file currently in use. Default: ../conf/main/grakn.properties
      */
+    private static final Path DEFAULT_CONFIG_FILE = Paths.get("..", "conf", "main", "grakn.properties");
+
     public static final int WEBSOCKET_TIMEOUT = 3600000;
 
-    public static final String CONFIG_FILE_PATH = calcConfigFilePath();
+    public static final Path CONFIG_FILE_PATH = getConfigFilePath();
+    public static final Path PROJECT_PATH = getProjectPath();
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
 
@@ -60,26 +63,31 @@ public class GraknEngineConfig {
 
     protected static final String GRAKN_ASCII = loadGraknAsciiFile();
 
-    private static final String GRAKN_ASCII_PATH = "/grakn/grakn-ascii.txt";
+    private static final Path GRAKN_ASCII_PATH = Paths.get("grakn", "grakn-ascii.txt");
 
     public static GraknEngineConfig create() {
-        return GraknEngineConfig.read(CONFIG_FILE_PATH);
+        return GraknEngineConfig.read(CONFIG_FILE_PATH.toFile());
     }
 
-    public static GraknEngineConfig read(String path) {
+    public static GraknEngineConfig read(File path) {
         return new GraknEngineConfig(path);
     }
 
-    private GraknEngineConfig(String path) {
-        String projectPath = getProjectPath();
+    private GraknEngineConfig(File path) {
         setConfigProperty(GraknConfigKey.VERSION, GraknVersion.VERSION);
         try (FileInputStream inputStream = new FileInputStream(path)) {
             prop.load(inputStream);
         } catch (IOException e) {
             LOG.error("Could not load engine properties from {}", path, e);
         }
-        LOG.info("Project directory in use: {}", projectPath);
+        LOG.info("Project directory in use: {}", PROJECT_PATH);
         LOG.info("Configuration file in use: {}", CONFIG_FILE_PATH);
+    }
+
+    public void write(File path) throws IOException {
+        try(FileOutputStream os = new FileOutputStream(path)) {
+            prop.store(os, null);
+        }
     }
 
     public <T> void setConfigProperty(GraknConfigKey<T> key, T value) {
@@ -90,15 +98,15 @@ public class GraknEngineConfig {
      * Check if the JVM argument "-Dgrakn.conf" (which represents the path to the config file to use) is set.
      * If it is not set, it sets it to the default one.
      */
-    private static String calcConfigFilePath() {
-        String configFilePath = GraknSystemProperty.CONFIGURATION_FILE.value();
-        if (configFilePath == null) {
-            configFilePath = DEFAULT_CONFIG_FILE;
+    private static Path getConfigFilePath() {
+        String pathString = GraknSystemProperty.CONFIGURATION_FILE.value();
+        Path path;
+        if (pathString == null) {
+            path = DEFAULT_CONFIG_FILE;
+        } else {
+            path = Paths.get(pathString);
         }
-        if (!Paths.get(configFilePath).isAbsolute()) {
-            configFilePath = getProjectPath() + configFilePath;
-        }
-        return configFilePath;
+        return PROJECT_PATH.resolve(path);
     }
 
     /**
@@ -106,22 +114,19 @@ public class GraknEngineConfig {
      * @return The requested string as a full path. If it is specified as a relative path,
      * this method will return the path prepended with the project path.
      */
-    public static String extractPath(String path) {
-        if (Paths.get(path).isAbsolute()) {
-            return path;
-        }
-        return getProjectPath() + path;
+    public static Path extractPath(Path path) {
+        return PROJECT_PATH.resolve(path);
     }
 
     /**
      * @return The project path. If it is not specified as a JVM parameter it will be set equal to
      * user.dir folder.
      */
-    private static String getProjectPath() {
+    private static Path getProjectPath() {
         if (GraknSystemProperty.CURRENT_DIRECTORY.value() == null) {
             GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
         }
-        return GraknSystemProperty.CURRENT_DIRECTORY.value() + "/";
+        return Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
     }
 
     public Properties getProperties() {
@@ -147,9 +152,9 @@ public class GraknEngineConfig {
     }
 
     private static String loadGraknAsciiFile() {
-        String asciiPath = getProjectPath() + GRAKN_ASCII_PATH;
+        Path asciiPath = PROJECT_PATH.resolve(GRAKN_ASCII_PATH);
         try {
-            File asciiFile = Paths.get(asciiPath).toFile();
+            File asciiFile = asciiPath.toFile();
             return FileUtils.readFileToString(asciiFile);
         } catch (IOException e) {
             // couldn't find Grakn ASCII art. Let's just fail gracefully
