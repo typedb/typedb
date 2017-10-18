@@ -47,9 +47,12 @@ public class GraknEngineConfig {
 
     private static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
 
+    /**
+     * The path to the config file currently in use. Default: /conf/main/grakn.properties
+     */
     public static final int WEBSOCKET_TIMEOUT = 3600000;
 
-    private static String configFilePath = null;
+    public static final String CONFIG_FILE_PATH = calcConfigFilePath();
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
 
@@ -60,8 +63,7 @@ public class GraknEngineConfig {
     private static final String GRAKN_ASCII_PATH = "/grakn/grakn-ascii.txt";
 
     public static GraknEngineConfig create() {
-        setConfigFilePath();
-        return GraknEngineConfig.read(getConfigFilePath());
+        return GraknEngineConfig.read(CONFIG_FILE_PATH);
     }
 
     public static GraknEngineConfig read(String path) {
@@ -70,21 +72,17 @@ public class GraknEngineConfig {
 
     private GraknEngineConfig(String path) {
         String projectPath = getProjectPath();
-        setGraknVersion();
-        try (FileInputStream inputStream = new FileInputStream(path)){
+        setConfigProperty(GraknConfigKey.VERSION, GraknVersion.VERSION);
+        try (FileInputStream inputStream = new FileInputStream(path)) {
             prop.load(inputStream);
         } catch (IOException e) {
             LOG.error("Could not load engine properties from {}", path, e);
         }
         LOG.info("Project directory in use: {}", projectPath);
-        LOG.info("Configuration file in use: {}", configFilePath);
+        LOG.info("Configuration file in use: {}", CONFIG_FILE_PATH);
     }
 
-    private void setGraknVersion(){
-        setConfigProperty(GraknConfigKey.VERSION, GraknVersion.VERSION);
-    }
-
-    public <T> void setConfigProperty(GraknConfigKey<T> key, T value){
+    public <T> void setConfigProperty(GraknConfigKey<T> key, T value) {
         prop.setProperty(key.value(), value.toString());
     }
 
@@ -92,14 +90,15 @@ public class GraknEngineConfig {
      * Check if the JVM argument "-Dgrakn.conf" (which represents the path to the config file to use) is set.
      * If it is not set, it sets it to the default one.
      */
-    private static void setConfigFilePath() {
-        if (configFilePath != null && !configFilePath.isEmpty()) {
-            return;
+    private static String calcConfigFilePath() {
+        String configFilePath = GraknSystemProperty.CONFIGURATION_FILE.value();
+        if (configFilePath == null) {
+            configFilePath = DEFAULT_CONFIG_FILE;
         }
-       configFilePath = (GraknSystemProperty.CONFIGURATION_FILE.value() != null) ? GraknSystemProperty.CONFIGURATION_FILE.value() : GraknEngineConfig.DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
         }
+        return configFilePath;
     }
 
     /**
@@ -125,20 +124,13 @@ public class GraknEngineConfig {
         return GraknSystemProperty.CURRENT_DIRECTORY.value() + "/";
     }
 
-    /**
-     * @return The path to the config file currently in use. Default: /conf/main/grakn.properties
-     */
-    static public String getConfigFilePath() {
-        return configFilePath;
-    }
-
     public Properties getProperties() {
         return prop;
     }
 
     public <T> T getProperty(GraknConfigKey<T> key) {
         return tryProperty(key).orElseThrow(() ->
-            new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.value(), configFilePath))
+                new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.value(), CONFIG_FILE_PATH))
         );
     }
 
