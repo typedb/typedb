@@ -193,10 +193,15 @@ public class PostProcessingTask extends BackgroundTask {
      * @param config The config which contains the concepts to post process
      * @return The task configuration encapsulating the above details in a manner executable by the task runner
      */
-    public static TaskConfiguration createConfig(Keyspace keyspace, String config){
+    public static Optional<TaskConfiguration> createConfig(Keyspace keyspace, String config){
+        Json jsonConfig = Json.read(config);
+        if(!jsonConfig.has(REST.Request.COMMIT_LOG_FIXING)){
+            return Optional.empty();
+        }
+
         Json postProcessingConfiguration = Json.object();
         postProcessingConfiguration.set(REST.Request.KEYSPACE, keyspace.getValue());
         postProcessingConfiguration.set(REST.Request.COMMIT_LOG_FIXING, Json.read(config).at(REST.Request.COMMIT_LOG_FIXING));
-        return TaskConfiguration.of(postProcessingConfiguration);
+        return Optional.of(TaskConfiguration.of(postProcessingConfiguration));
     }
 }

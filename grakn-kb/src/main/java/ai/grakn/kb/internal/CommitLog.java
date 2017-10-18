@@ -126,10 +126,15 @@ public class CommitLog {
      * Returns the Formatted Log which is uploaded to the server.
      * @return a formatted Json log
      */
-    static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<String>> attributes){
+    private static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<String>> attributes){
+        Json formattedLog = Json.object();
+
         //Concepts In Need of Inspection
-        Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(attributes));
+        if(!attributes.isEmpty()) {
+            Json conceptsForInspection = Json.object();
+            conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(attributes));
+            formattedLog.set(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
+        }
 
         //Types with instance changes
         Json typesWithInstanceChanges = Json.array();
@@ -141,9 +146,6 @@ public class CommitLog {
             typesWithInstanceChanges.add(jsonObject);
         });
 
-        //Final Commit Log
-        Json formattedLog = Json.object();
-        formattedLog.set(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
         formattedLog.set(REST.Request.COMMIT_LOG_COUNTING, typesWithInstanceChanges);
 
         return formattedLog;
