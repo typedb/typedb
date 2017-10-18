@@ -90,7 +90,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
     @Override
     public Stream<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getRolePlayer).distinct();
+        return castingsRelation(roles).map(Casting::getRolePlayer);
     }
 
     //TODO: This could probably become more efficient in certain use cases
