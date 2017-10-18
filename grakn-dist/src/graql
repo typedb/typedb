@@ -48,7 +48,6 @@ update_classpath() {
 }
 
 graql_console() {
-  echo "Starting Graql console..."
   java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell "${@:1}"
 }
 
@@ -70,9 +69,6 @@ help     Print this message"
 # =============================================
 
 update_classpath
-
-echo "Grakn: Database For AI"
-echo ""
 
 case "$1" in
   console)
