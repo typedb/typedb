@@ -97,7 +97,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 32);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -105,7 +105,7 @@ public class GenealogyTest {
         String queryString = "match $x isa person has gender $gender; get;";
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
         assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa person; get;").execute().size());
     }
 
@@ -114,7 +114,7 @@ public class GenealogyTest {
         String queryString = "match $x isa person, has firstname $n; get;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertEquals(answers.size(), 60);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -122,7 +122,7 @@ public class GenealogyTest {
         String queryString = "match $x has identifier $i has middlename $mn; get;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertEquals(answers.size(), 60);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -130,7 +130,7 @@ public class GenealogyTest {
         String queryString = "match $x isa person has surname $srn; get;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertEquals(answers.size(), 60);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -151,7 +151,7 @@ public class GenealogyTest {
         QueryAnswers answers2 = queryAnswers(iqb.parse(queryString2));
         answers.forEach(answer -> assertEquals(answer.size(), 1));
         assertEquals(answers, answers2);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -279,7 +279,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         GetQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers2 = queryAnswers(query2);
-        assertEquals(answers2, queryAnswers(qb.<GetQuery>parse(queryString2)));
+        assertEquals(answers2, queryAnswers(qb.parse(queryString2)));
         QueryAnswers answers = queryAnswers(query);
         assertTrue(!answers.isEmpty());
         assertEquals(answers, answers2);
@@ -299,7 +299,7 @@ public class GenealogyTest {
         QueryAnswers answers = new QueryAnswers(query.stream().collect(Collectors.toSet()));
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -310,7 +310,7 @@ public class GenealogyTest {
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 192);
         assertTrue(!hasDuplicates(answers));
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -357,7 +357,7 @@ public class GenealogyTest {
         assertEquals(answers.size(), 8);
         assertEquals(answers, answers2);
         assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -371,7 +371,7 @@ public class GenealogyTest {
         assertEquals(answers.size(), 9);
         assertEquals(answers, answers2);
         assertTrue(checkResource(answers, "g", "male"));
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -380,7 +380,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 11);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -389,7 +389,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 14);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     /*
@@ -405,7 +405,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 18);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
         assertTrue(checkResource(answers, "g", "male"));
     }
 
@@ -415,7 +415,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 20);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
         assertTrue(checkResource(answers, "g", "female"));
     }
 
@@ -425,7 +425,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 38);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -434,7 +434,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 10);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -443,7 +443,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 9);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -452,7 +452,7 @@ public class GenealogyTest {
         GetQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 19);
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -472,7 +472,7 @@ public class GenealogyTest {
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 4);
         assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -482,7 +482,7 @@ public class GenealogyTest {
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 18);
         assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     @Test
@@ -493,7 +493,7 @@ public class GenealogyTest {
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 18);
         assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, queryAnswers(qb.<GetQuery>parse(queryString)));
+        assertEquals(answers, queryAnswers(qb.parse(queryString)));
     }
 
     private boolean checkResource(QueryAnswers answers, String var, String value){

@@ -454,12 +454,11 @@ public class ReasonerUtils {
     }
 
     /**
-     *
-     * @param parent
-     * @param child
-     * @param exact
-     * @param <T>
-     * @return
+     * @param parent predicate
+     * @param child predicate
+     * @param exact whether compatibility criterion should be exact
+     * @param <T> type generic
+     * @return true if predicates compatible
      */
     public static <T extends Predicate> boolean predicatesCompatible(T parent, T child, boolean exact){
         if (exact) return parent == null || parent.isCompatibleWith(child);

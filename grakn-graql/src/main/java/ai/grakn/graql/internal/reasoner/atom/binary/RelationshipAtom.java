@@ -740,7 +740,6 @@ public class RelationshipAtom extends IsaAtom {
                                             .filter(crp -> {
                                                 Var childVar = crp.getRolePlayer().var();
                                                 SchemaConcept childType = childVarSchemaConceptMap.get(childVar);
-
                                                 if (exact) return childQuery.isTypeRoleCompatible(childVar, parentType) && !areDisjointTypes(parentType, childType);
                                                 else return childQuery.isTypeRoleCompatible(childVar, parentType)
                                                         && (childType == null || !areDisjointTypes(parentType, childType));

@@ -15,6 +15,10 @@ resource-relation sub relationship
     relates resource-value
     relates resource-owner;
 
+another-resource-relation sub relationship
+    relates resource-value
+    relates resource-owner;
+
 no-flag sub rule
 when{
     $x has detailed-resource >= 400;
@@ -52,6 +56,15 @@ when{
 }
 then{ 
     (resource-owner: $x, resource-value: $y) isa resource-relation;
+};
+
+flag-generic sub rule
+when{
+    $x has detailed-resource $r;
+    $y isa resource;
+}
+then{
+    (resource-owner: $x, resource-value: $y) isa another-resource-relation;
 };
 
 insert

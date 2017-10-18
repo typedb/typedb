@@ -445,12 +445,12 @@ public class ReasoningTests {
     public void resourcesAsRolePlayers() {
         QueryBuilder qb = testSet17.tx().graql().infer(true);
 
-        String queryString = "match $x isa resource val 'partial bad flag'; ($x, resource-owner: $y); get;";
-        String queryString2 = "match $x isa resource val 'partial bad flag 2'; ($x, resource-owner: $y); get;";
-        String queryString3 = "match $x isa resource val 'bad flag' ; ($x, resource-owner: $y); get;";
-        String queryString4 = "match $x isa resource val 'no flag' ; ($x, resource-owner: $y); get;";
-        String queryString5 = "match $x isa resource; ($x, resource-owner: $y); get;";
-        String queryString6 = "match $x isa resource; $x val contains 'bad flag';($x, resource-owner: $y); get;";
+        String queryString = "match $x isa resource val 'partial bad flag'; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString2 = "match $x isa resource val 'partial bad flag 2'; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString3 = "match $x isa resource val 'bad flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString4 = "match $x isa resource val 'no flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString5 = "match $x isa resource; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString6 = "match $x isa resource; $x val contains 'bad flag';($x, resource-owner: $y) isa resource-relation; get;";
 
         GetQuery query = qb.parse(queryString);
         GetQuery query2 = qb.parse(queryString2);
@@ -472,7 +472,39 @@ public class ReasoningTests {
         assertEquals(answers4.size(), 1);
         assertEquals(answers5.size(), answers.size() + answers2.size() + answers3.size() + answers4.size());
         assertEquals(answers6.size(), answers5.size() - answers4.size());
+    }
 
+    @Test
+    public void resourcesAsRolePlayers_vpPropagationTest() {
+        QueryBuilder qb = testSet17.tx().graql().infer(true);
+
+        String queryString = "match $x isa resource val 'partial bad flag'; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString2 = "match $x isa resource val 'partial bad flag 2'; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString3 = "match $x isa resource val 'bad flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString4 = "match $x isa resource val 'no flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString5 = "match $x isa resource; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString6 = "match $x isa resource; $x val contains 'bad flag';($x, resource-owner: $y) isa another-resource-relation; get;";
+
+        GetQuery query = qb.parse(queryString);
+        GetQuery query2 = qb.parse(queryString2);
+        GetQuery query3 = qb.parse(queryString3);
+        GetQuery query4 = qb.parse(queryString4);
+        GetQuery query5 = qb.parse(queryString5);
+        GetQuery query6 = qb.parse(queryString6);
+
+        List<Answer> answers = query.execute();
+        List<Answer> answers2 = query2.execute();
+        List<Answer> answers3 = query3.execute();
+        List<Answer> answers4 = query4.execute();
+        List<Answer> answers5 = query5.execute();
+        List<Answer> answers6 = query6.execute();
+
+        assertEquals(answers.size(), 3);
+        assertEquals(answers2.size(), 3);
+        assertEquals(answers3.size(), 3);
+        assertEquals(answers4.size(), 3);
+        assertEquals(answers5.size(), answers.size() + answers2.size() + answers3.size() + answers4.size());
+        assertEquals(answers6.size(), answers5.size() - answers4.size());
     }
 
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
