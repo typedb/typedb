@@ -967,7 +967,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public boolean fixRelationship(ConceptId relationshipId){
+    public boolean fixRelationshipWihtDuplicateRolePlayers(ConceptId relationshipId){
         boolean commitRequired = false;
 
         Multimap<Pair<Role, Thing>, Casting> rolePlayersToCastings = getRolePlayersToCastings(relationshipId);

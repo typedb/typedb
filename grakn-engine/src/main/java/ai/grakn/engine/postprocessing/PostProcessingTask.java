@@ -29,7 +29,6 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.Timer.Context;
-import com.google.common.base.Preconditions;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +57,8 @@ import static com.codahale.metrics.MetricRegistry.name;
 public class PostProcessingTask extends BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private static final String JOB_FINISHED = "Post processing Job [{}] completed for indeces and ids: [{}]";
-    private static final String LOCK_KEY = "/post-processing-lock";
+    private static final String ATTRIBUTE_LOCK_KEY = "/post-processing-attribute-lock";
+    private static final String RELATIONSHIP_LOCK_KEY = "/post-processing-relationship-lock";
 
     /**
      * Apply {@link ai.grakn.concept.Attribute} post processing jobs the concept ids in the provided configuration
@@ -68,46 +68,85 @@ public class PostProcessingTask extends BackgroundTask {
     @Override
     public boolean start() {
         try (Context context = metricRegistry().timer(name(PostProcessingTask.class, "execution")).time()) {
-            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.ATTRIBUTE, configuration());
+            Json logs = configuration().json();
+            if(logs.has(REST.Request.COMMIT_LOG_FIXING)){
+                logs = logs.at(REST.Request.COMMIT_LOG_FIXING);
+                Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
+                int fixingRetries = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-            allToPostProcess.forEach((conceptIndex, conceptIds) -> {
-                Context contextSingle = metricRegistry()
-                        .timer(name(PostProcessingTask.class, "execution-single")).time();
+                Context contextSingle = metricRegistry().timer(name(PostProcessingTask.class, "execution-single")).time();
                 try {
-                    Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
-                    int maxRetry = engineConfiguration()
-                            .getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+                    //Merge duplicate attributes if there are any
+                    fixDuplicateAttributes(keyspace, logs, fixingRetries);
 
-                    GraknTxMutators.runMutationWithRetry(factory(), keyspace, maxRetry,
-                            (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
+                    //Merge Duplicate Role Players if there are any
+                    fixDuplicateRolePlayers(keyspace, logs, fixingRetries);
                 } finally {
                     contextSingle.stop();
                 }
-            });
-
-            LOG.debug(JOB_FINISHED, Schema.BaseType.ATTRIBUTE.name(), allToPostProcess);
-
+            }
             return true;
         }
     }
 
-    /**
-     * Extract a map of concept indices to concept ids from the provided configuration
-     *
-     * @param type Type of concept to extract. This correlates to the key in the provided configuration.
-     * @param configuration Configuration from which to extract the configuration.
-     * @return Map of concept indices to ids that has been extracted from the provided configuration.
-     */
-    private static Map<String,Set<ConceptId>> getPostProcessingJobs(Schema.BaseType type, TaskConfiguration configuration) {
-        Json logs = configuration.json();
+    private void fixDuplicateRolePlayers(Keyspace keyspace, Json logs, int retries) {
+        Set<ConceptId> relationshipIds = extractRolePlayerMergingJobs(Schema.BaseType.RELATIONSHIP, logs);
 
-        //Check the logs contain a fixing section
-        if(!logs.has(REST.Request.COMMIT_LOG_FIXING)){
-            return Collections.emptyMap();
+        relationshipIds.forEach(relationshipId ->{
+            GraknTxMutators.runBatchMutationWithRetry(factory(), keyspace, retries, (tx) -> mergeDuplicateRolePlayers(tx, relationshipId));
+        });
+    }
+
+    private void mergeDuplicateRolePlayers(GraknTx tx, ConceptId relationshipId) {
+        if(tx.admin().relationshipHasDuplicateRolePlayers(relationshipId)){
+
+            // Acquire a lock to make sure we don't have a race condition on deleting duplicate role players
+            // and accidentally delete to many.
+            Lock indexLock = this.getLockProvider().getLock(PostProcessingTask.RELATIONSHIP_LOCK_KEY + "/" + relationshipId.getValue());
+            indexLock.lock();
+
+            try {
+                boolean commitNeeded = tx.admin().fixRelationshipWihtDuplicateRolePlayers(relationshipId);
+
+                if(commitNeeded){
+                    tx.admin().commitNoLogs();
+                }
+            } finally {
+                indexLock.unlock();
+            }
+        }
+    }
+
+    /**
+     * Gets the list of {@link ai.grakn.concept.Relationship}s which have recently gotten new role players
+     */
+    private Set<ConceptId> extractRolePlayerMergingJobs(Schema.BaseType type, Json logs) {
+        if(!logs.has(type.name())){
+            return Collections.emptySet();
         }
 
-        //Check the specific fixing section exists
-        logs = logs.at(REST.Request.COMMIT_LOG_FIXING);
+        logs = logs.at(type.name());
+        return logs.asList().stream().map(conceptId -> ConceptId.of((String) conceptId)).collect(Collectors.toSet());
+    }
+
+    private void fixDuplicateAttributes(Keyspace keyspace, Json logs, int retries){
+        Map<String, Set<ConceptId>> attributesToMerge = extractAttributeMergingJobs(Schema.BaseType.ATTRIBUTE, logs);
+
+        attributesToMerge.forEach((conceptIndex, conceptIds) -> {
+            GraknTxMutators.runMutationWithRetry(factory(), keyspace, retries,
+                    (tx) -> mergeDuplicateAttributes(tx, conceptIndex, conceptIds));
+        });
+
+        LOG.debug(JOB_FINISHED, Schema.BaseType.ATTRIBUTE.name(), attributesToMerge);
+    }
+
+    /**
+     * Gets a map of indices to ids representing new {@link ai.grakn.concept.Attribute}s.
+     * Using this map we can merge any potential duplicate attributes
+     *
+     * @return Map of concept indices to ids that has been extracted from the provided configuration.
+     */
+    private static Map<String,Set<ConceptId>> extractAttributeMergingJobs(Schema.BaseType type, Json logs) {
         if(!logs.has(type.name())){
             return Collections.emptyMap();
         }
@@ -121,39 +160,35 @@ public class PostProcessingTask extends BackgroundTask {
 
     /**
      * Apply the given post processing method to the provided concept index and set of ids.
-     *
-     * @param graph
-     * @param conceptIndex
-     * @param conceptIds
      */
-    private void runPostProcessingMethod(GraknTx graph, String conceptIndex, Set<ConceptId> conceptIds){
-        Preconditions.checkNotNull(this.getLockProvider(), "Lock provider was null, possible race condition in initialisation");
-        if(graph.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
+    private void mergeDuplicateAttributes(GraknTx tx, String conceptIndex, Set<ConceptId> conceptIds){
+        if(tx.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
 
             // Acquire a lock when you post process on an index to prevent race conditions
             // Lock is acquired after checking for duplicates to reduce runtime
-            Lock indexLock = this.getLockProvider().getLock(PostProcessingTask.LOCK_KEY + "/" + conceptIndex);
+            Lock indexLock = this.getLockProvider().getLock(PostProcessingTask.ATTRIBUTE_LOCK_KEY + "/" + conceptIndex);
             indexLock.lock();
 
             try {
                 // execute the provided post processing method
-                boolean commitNeeded = graph.admin().fixDuplicateResources(conceptIndex, conceptIds);
+                boolean commitNeeded = tx.admin().fixDuplicateResources(conceptIndex, conceptIds);
 
                 // ensure post processing was correctly executed
                 if(commitNeeded) {
-                    validateMerged(graph, conceptIndex, conceptIds).
+                    validateMerged(tx, conceptIndex, conceptIds).
                             ifPresent(message -> {
                                 throw new RuntimeException(message);
                             });
 
                     // persist merged concepts
-                    graph.admin().commitNoLogs();
+                    tx.admin().commitNoLogs();
                 }
             } finally {
                 indexLock.unlock();
             }
         }
     }
+
 
     /**
      * Checks that post processing was done successfully by doing two things:

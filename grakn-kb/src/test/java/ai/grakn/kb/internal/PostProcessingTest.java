@@ -272,7 +272,7 @@ public class PostProcessingTest extends TxTestBase {
 
         //Check that we need to fix it and do so
         assertTrue(tx.admin().relationshipHasDuplicateRolePlayers(r.getId()));
-        assertTrue(tx.admin().fixRelationship(r.getId()));
+        assertTrue(tx.admin().fixRelationshipWihtDuplicateRolePlayers(r.getId()));
 
         //Get the new number of incoming edges
         count = RelationshipImpl.from(r).vertex().
