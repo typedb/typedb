@@ -68,12 +68,12 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Element, Vertex> reifiedRelationTraversal(GraknTx graph, Collection<Var> vars) {
-        Var edge = var();
-        Var player = var();
-
         GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
 
-        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge.name());
+        Var theEdge = var();
+        Var thePlayer = var();
+
+        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(theEdge.name());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
@@ -81,12 +81,11 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
         traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID, vars);
 
-        // Identify the role - role-player pair by combining the
         return edgeTraversal
                 .values(ROLE_LABEL_ID.name()).as(ROLE_LABEL.name())
-                .select(edge.name()).inV().as(PLAYER_VAR.name()).as(player.name())
-                .select(Pop.last, ROLE_LABEL.name(), PLAYER_VAR.name()).as(roleAndPlayer().name())
-                .select(player.name());
+                .select(theEdge.name()).inV().as(PLAYER_VAR.name()).as(thePlayer.name())
+                .select(Pop.last, ROLE_LABEL.name(), PLAYER_VAR.name()).as(edge().name())
+                .select(thePlayer.name());
     }
 
     private GraphTraversal<Element, Vertex> edgeRelationTraversal(
@@ -100,11 +99,10 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         traverseToRole(edgeTraversal, role(), roleProperty, vars);
 
         // Identify the relation - role-player pair by combining the relationship edge and direction into a map
-        return edgeTraversal
-                .as(RELATION_EDGE.name()).constant(direction).as(RELATION_DIRECTION.name())
-                .select(Pop.last, RELATION_EDGE.name(), RELATION_DIRECTION.name()).as(roleAndPlayer().name())
-                .select(RELATION_EDGE.name())
-                .toV(direction);
+        edgeTraversal.as(RELATION_EDGE.name()).constant(direction).as(RELATION_DIRECTION.name());
+        edgeTraversal.select(Pop.last, RELATION_EDGE.name(), RELATION_DIRECTION.name()).as(edge().name()).select(RELATION_EDGE.name());
+
+        return edgeTraversal.toV(direction);
     }
 
     @Override

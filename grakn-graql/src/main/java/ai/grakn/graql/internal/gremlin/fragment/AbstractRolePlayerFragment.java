@@ -53,10 +53,7 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     @Override
     public abstract Var end();
 
-    /**
-     * A {@link Var} that links to something that uniquely represents a {@link Role} and role-player combination.
-     */
-    abstract Var roleAndPlayer();
+    abstract Var edge();
 
     abstract @Nullable Var role();
 
@@ -69,13 +66,12 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
         String roleString = role != null ? " role:" + role.shortName() : "";
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
         String roles = displayOptionalTypeLabels("roles", roleLabels());
-        String name = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
-        return "[" + name + ":" + roleAndPlayer().shortName() + roleString + rels + roles + "]";
+        return "[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":" + edge().shortName() + roleString + rels + roles + "]";
     }
 
     @Override
     final ImmutableSet<Var> otherVars() {
-        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(roleAndPlayer());
+        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(edge());
         Var role = role();
         if (role != null) builder.add(role);
         return builder.build();
@@ -84,7 +80,7 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     @Override
     public final Set<Weighted<DirectedEdge<Node>>> directedEdges(
             Map<NodeId, Node> nodes, Map<Node, Map<Node, Fragment>> edges) {
-        return directedEdges(roleAndPlayer(), nodes, edges);
+        return directedEdges(edge(), nodes, edges);
     }
 
     static void applyLabelsToTraversal(
@@ -101,7 +97,7 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     /**
      * Optionally traverse from a {@link Schema.EdgeLabel#ROLE_PLAYER} edge to the {@link Role} it mentions, plus any super-types.
      *
-     * @param traversal the traversal, starting from the {@link Schema.EdgeLabel#ROLE_PLAYER} edge
+     * @param traversal the traversal, starting from the {@link Schema.EdgeLabel#ROLE_PLAYER}  edge
      * @param role the variable to assign to the role. If not present, do nothing
      * @param edgeProperty the edge property to look up the role label ID
      */
