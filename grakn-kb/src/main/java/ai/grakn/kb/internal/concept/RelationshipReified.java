@@ -28,7 +28,10 @@ import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -111,10 +114,33 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
      * Adds a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from this {@link Relationship} to a target {@link Thing}
      * which is playing some {@link Role}.
      *
+     * If the {@link ai.grakn.GraknTxType} mode is {@link ai.grakn.GraknTxType#BATCH} then the edge is added without
+     * checking if it already exists. This makes writing faster at the cost of consistency.
+     *
+     * If the {@link ai.grakn.GraknTxType} mode is {@link ai.grakn.GraknTxType#WRITE} then the edge is only added if
+     * it does not already exist.This makes writing slower at the benefit of consistency.
+     *
      * @param role The {@link Role} being played by the {@link Thing} in this {@link Relationship}
      * @param toThing The {@link Thing} playing a {@link Role} in this {@link Relationship}
      */
     public void addRolePlayerEdge(Role role, Thing toThing) {
+        if(!vertex().tx().isBatchTx()){
+            //Checking if the edge exists
+            GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
+                    has(Schema.VertexProperty.ID.name(), this.getId().getValue()).
+                    outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                    has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), this.type().getLabelId().getValue()).
+                    has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.getLabelId().getValue()).
+                    as("edge").
+                    inV().
+                    has(Schema.VertexProperty.ID.name(), toThing.getId().getValue()).
+                    select("edge");
+
+            if(traversal.hasNext()){
+                return;
+            }
+        }
+
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
         edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().getLabelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.getLabelId().getValue());

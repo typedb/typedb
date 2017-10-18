@@ -234,10 +234,16 @@ public class PostProcessingTest extends TxTestBase {
     public void whenCreatingRelationshipsWithDuplicateIncomingRolePlayerEdges_EnsureTheEdgesCanBeCleanedUp(){
         Role role1 = tx.putRole("My miserable role 1");
         Role role2 = tx.putRole("My miserable role 2");
-        EntityType entityType = tx.putEntityType("My Happy EntityType").plays(role1).plays(role2);
-        RelationshipType relationshipType = tx.putRelationshipType("My Miserable RelationshipType").relates(role1).relates(role2);
+        tx.putEntityType("My Happy EntityType").plays(role1).plays(role2);
+        tx.putRelationshipType("My Miserable RelationshipType").relates(role1).relates(role2);
+
+        //Switch to batch
+        tx.commit();
+        tx = switchToBatchGraph();
 
         //Create some data instances
+        EntityType entityType = tx.getEntityType("My Happy EntityType");
+        RelationshipType relationshipType = tx.getRelationshipType("My Miserable RelationshipType");
         Relationship r = relationshipType.addRelationship();
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();

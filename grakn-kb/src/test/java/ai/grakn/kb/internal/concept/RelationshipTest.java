@@ -33,6 +33,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.TxTestBase;
+import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -288,5 +289,44 @@ public class RelationshipTest extends TxTestBase {
         assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5, e6));
         relationship.removeRolePlayer(role2, e6);
         assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5));
+    }
+
+    @Test
+    public void whenUsingBatchTransaction_DuplicateRolePlayersCanBeCreated(){
+        Role role1 = tx.putRole("dark");
+        Role role2 = tx.putRole("souls");
+        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relates(role1).relates(role2);
+        EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
+
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+
+        //Create normal relationships
+        Relationship relationship = relationshipType.addRelationship().
+                addRolePlayer(role1, e1).
+                addRolePlayer(role1, e1). //dup
+                addRolePlayer(role1, e1). //dup
+                addRolePlayer(role1, e2).
+                addRolePlayer(role2, e1).
+                addRolePlayer(role2, e2);
+
+        List<Casting> list = RelationshipImpl.from(relationship).reify().castingsRelation().collect(Collectors.toList());
+        assertEquals("Created relationship with duplicates when not batch loading",4, list.size());
+
+        tx.commit();
+        tx = switchToBatchGraph();
+
+        //Create relationship with dups
+        relationshipType = tx.getRelationshipType("Dark Souls");
+        relationship = relationshipType.addRelationship().
+                addRolePlayer(role1, e1).
+                addRolePlayer(role1, e1). //dup
+                addRolePlayer(role1, e1). //dup
+                addRolePlayer(role1, e2).
+                addRolePlayer(role2, e1).
+                addRolePlayer(role2, e2);
+
+        list = RelationshipImpl.from(relationship).reify().castingsRelation().collect(Collectors.toList());
+        assertEquals("Failed to create duplicate relations during batch loading",6, list.size());
     }
 }
