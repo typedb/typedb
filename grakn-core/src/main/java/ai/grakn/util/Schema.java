@@ -156,7 +156,7 @@ public final class Schema {
 
         //Other Properties
         THING_TYPE_LABEL_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
-        REGEX(String.class), DATA_TYPE(String.class), SHARD_COUNT(Long.class), CURRENT_LABEL_ID(Integer.class),
+        REGEX(String.class), DATA_TYPE(String.class), CURRENT_LABEL_ID(Integer.class),
         RULE_WHEN(String.class), RULE_THEN(String.class), CURRENT_SHARD(String.class),
 
         //Supported Data Types
