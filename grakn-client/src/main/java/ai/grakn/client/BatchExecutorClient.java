@@ -19,6 +19,7 @@
 package ai.grakn.client;
 
 import ai.grakn.graql.Query;
+import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
@@ -63,6 +64,9 @@ public class BatchExecutorClient implements Closeable {
     private final static Logger LOG = LoggerFactory.getLogger(BatchExecutorClient.class);
 
     static final int DEFAULT_TIMEOUT_MS = 60000;
+    static final int THREAD_POOL_CORE_SIZE = 64;
+    static final int MAX_QUEUE = THREAD_POOL_CORE_SIZE * 8;
+    static final int REJECTION_THRESHOLD = MAX_QUEUE;
 
     private final GraknClient graknClient;
     private final HystrixRequestContext context;
@@ -98,12 +102,9 @@ public class BatchExecutorClient implements Closeable {
     public Observable<QueryResponse> add(Query<?> query, String keyspace, boolean keepErrors) {
         Context context = addTimer.time();
         Observable<QueryResponse> observable = new QueriesObservableCollapser(query,
-                keyspace,
-                graknClient, maxDelay, maxRetries, metricRegistry)
+                keyspace, graknClient, maxDelay, maxRetries, metricRegistry)
                 .observe()
-                .doOnError((error) -> {
-                    failureMeter.mark();
-                })
+                .doOnError((error) -> failureMeter.mark())
                 .doOnTerminate(context::close);
         return keepErrors ? observable : ignoreErrors(observable);
     }
@@ -125,6 +126,10 @@ public class BatchExecutorClient implements Closeable {
 
     public static Builder newBuilder() {
         return new Builder();
+    }
+
+    public static Builder newBuilderforURI(SimpleURI simpleURI) {
+        return new Builder().taskClient(new GraknClient(simpleURI));
     }
 
     /**
@@ -186,9 +191,9 @@ public class BatchExecutorClient implements Closeable {
                     .withGroupKey(HystrixCommandGroupKey.Factory.asKey("BatchExecutor"))
                     .andThreadPoolPropertiesDefaults(
                             HystrixThreadPoolProperties.Setter()
-                                    .withQueueSizeRejectionThreshold(500)
-                                    .withCoreSize(64)
-                                    .withMaxQueueSize(500))
+                                    .withQueueSizeRejectionThreshold(REJECTION_THRESHOLD)
+                                    .withCoreSize(THREAD_POOL_CORE_SIZE)
+                                    .withMaxQueueSize(MAX_QUEUE))
                     .andCommandPropertiesDefaults(
                             HystrixCommandProperties.Setter()
                                     .withExecutionTimeoutEnabled(false)
