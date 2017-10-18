@@ -95,7 +95,6 @@ public class PostProcessingTest {
         session.close();
     }
 
-    @Ignore("Get this test working")
     @Test
     public void whenCreatingRelationshipsWithDuplicateRolePlayers_EnsureTheyAreMergedInPost(){
         final int NUM_RELATIONSHIPS = 10;

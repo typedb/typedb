@@ -80,12 +80,6 @@ public class CommitLog {
         try{
             lock.readLock().lock();
             dataAdder.run();
-
-            System.out.println("---------------------------------");
-            System.out.println("New Instance Count: " + newInstanceCount.size());
-            System.out.println("New Attribute Count: " + newAttributes.size());
-            System.out.println("New Relationship Count: " + relationshipsWithNewRolePlayers.size());
-
         } finally {
             lock.readLock().unlock();
         }
