@@ -265,7 +265,7 @@ public class PostProcessingTest extends TxTestBase {
     @Test
     public void whenCreatingRelationshipsWithDuplicateIncomingRolePlayerEdges_EnsureTheEdgesCanBeCleanedUp(){
         Role role1 = tx.putRole("My miserable role 1");
-        Role role2 = tx.putRole("My miserable role 1");
+        Role role2 = tx.putRole("My miserable role 2");
         EntityType entityType = tx.putEntityType("My Happy EntityType").plays(role1).plays(role2);
         RelationshipType relationshipType = tx.putRelationshipType("My Miserable RelationshipType").relates(role1).relates(role2);
 
@@ -297,13 +297,18 @@ public class PostProcessingTest extends TxTestBase {
         assertEquals(11, count);
 
         //Check that we need to fix it and do so
-        assertTrue(tx.admin().relationshipNeedsFixing(r.getId()));
+        assertTrue(tx.admin().relationshipHasDuplicateRolePlayers(r.getId()));
         assertTrue(tx.admin().fixRelationship(r.getId()));
+
+        //Get the new number of incoming edges
+        count = RelationshipImpl.from(r).vertex().
+                getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
+                collect(Collectors.toList()).size();
 
         //Check that it is fixed
         assertEquals(7, count);
-        assertFalse(tx.admin().relationshipNeedsFixing(r.getId()));
-        assertFalse(tx.admin().relationshipNeedsFixing(r.getId()));
+        assertFalse(tx.admin().relationshipHasDuplicateRolePlayers(r.getId()));
+        assertFalse(tx.admin().relationshipHasDuplicateRolePlayers(r.getId()));
 
         //Check we can access all the instances
         assertThat(r.rolePlayers(role1).collect(Collectors.toList()), containsInAnyOrder(e1, e2, e3));

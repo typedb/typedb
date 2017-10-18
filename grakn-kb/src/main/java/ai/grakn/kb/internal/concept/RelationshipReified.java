@@ -87,7 +87,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
     @Override
     public Stream<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getRolePlayer);
+        return castingsRelation(roles).map(Casting::getRolePlayer).distinct();
     }
 
     //TODO: This could probably become more efficient in certain use cases
@@ -124,6 +124,8 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
     /**
      * Castings are retrieved from the perspective of the {@link Relationship}
+     *
+     * WARNING: Returns duplicate {@link Casting}s if their are duplicate {@link Schema.EdgeLabel#ROLE_PLAYER} edges.
      *
      * @param roles The {@link Role} which the {@link Thing}s are playing
      * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relationship}

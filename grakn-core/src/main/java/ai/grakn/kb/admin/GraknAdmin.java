@@ -169,18 +169,18 @@ public interface GraknAdmin {
     /**
      * Check if a {@link ai.grakn.concept.Relationship} needs fixing
      *
-     * @param relationId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
+     * @param relationshipId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
      * @return true if the {@link ai.grakn.concept.Relationship} has duplicate incoming {@link Schema.EdgeLabel#ROLE_PLAYER} edges.
      */
-    boolean relationshipNeedsFixing(ConceptId relationId);
+    boolean relationshipHasDuplicateRolePlayers(ConceptId relationshipId);
 
     /**
      * Fix a {@link ai.grakn.concept.Relationship} with duplicate incoming {@link Schema.EdgeLabel#ROLE_PLAYER} edges.
      *
-     * @param relationId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
+     * @param relationshipId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
      * @return true if the {@link ai.grakn.concept.Relationship} was fixed and a commit is needed
      */
-    boolean fixRelationship(ConceptId relationId);
+    boolean fixRelationship(ConceptId relationshipId);
 
     /**
      * Updates the counts of all the types
