@@ -756,13 +756,13 @@ public class RelationshipAtom extends IsaAtom {
                         Var parentRolePlayer = prp.getRolePlayer().var();
                         SchemaConcept parentType = parentVarSchemaConceptMap.get(parentRolePlayer);
 
-                        Set<Role> compatibleChildRoles = playableRoles(
+                        Set<Role> compatibleRoles = playableRoles(
                                 tx().getSchemaConcept(parentRoleLabel),
                                 parentType,
                                 childRoles);
 
                         List<RelationPlayer> compatibleRelationPlayers = new ArrayList<>();
-                        compatibleChildRoles.stream()
+                        compatibleRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
                                 .forEach(role -> {
                                     childRoleRPMap.get(role).stream()
@@ -770,17 +770,13 @@ public class RelationshipAtom extends IsaAtom {
                                             .filter(crp -> {
                                                 Var childVar = crp.getRolePlayer().var();
                                                 SchemaConcept childType = childVarSchemaConceptMap.get(childVar);
-                                                return childQuery.isTypeRoleCompatible(childVar, parentType)
+                                                return matchType.typeCompatibility(childQuery, childVar, parentType)
                                                         && matchType.schemaConceptComparison(parentType, childType);
                                             })
                                             //check for substitution compatibility
                                             .filter(crp -> {
-                                                IdPredicate parentId = parentAtom.getPredicates(IdPredicate.class)
-                                                        .filter(p -> p.getVarName().equals(prp.getRolePlayer().var()))
-                                                        .findFirst().orElse(null);
-                                                IdPredicate childId = this.getPredicates(IdPredicate.class)
-                                                        .filter(p -> p.getVarName().equals(crp.getRolePlayer().var()))
-                                                        .findFirst().orElse(null);
+                                                IdPredicate parentId = parentAtom.getIdPredicate(prp.getRolePlayer().var());
+                                                IdPredicate childId = this.getIdPredicate(crp.getRolePlayer().var());
                                                 return matchType.atomicComparison(parentId, childId);
                                             })
                                             .forEach(compatibleRelationPlayers::add);

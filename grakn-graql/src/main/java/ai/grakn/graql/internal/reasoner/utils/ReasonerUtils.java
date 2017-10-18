@@ -230,18 +230,24 @@ public class ReasonerUtils {
      */
     public static Set<Role> playableRoles(Role parentRole, SchemaConcept parentType, Set<Role> childRoles) {
         boolean isParentRoleMeta = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());
-        Set<Role> compatibleChildRoles = isParentRoleMeta ? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles);
+        Set<Role> compatibleRoles = Sets.union(
+                Sets.newHashSet(parentRole),
+                isParentRoleMeta? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles)
+        );
 
         //if parent role player has a type, constrain the allowed roles
         if (parentType != null && parentType.isType()) {
             boolean isParentTypeMeta = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
             Set<Role> parentTypeRoles = isParentTypeMeta ? childRoles : parentType.asType().plays().collect(toSet());
 
-            compatibleChildRoles = compatibleChildRoles.stream()
+            compatibleRoles = compatibleRoles.stream()
                     .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || parentTypeRoles.contains(rc))
                     .collect(toSet());
+
+            //parent role also possible
+            compatibleRoles.add(parentRole);
         }
-        return compatibleChildRoles;
+        return compatibleRoles;
     }
 
     /**
