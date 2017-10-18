@@ -169,10 +169,11 @@ public class CWKB extends TestKB {
     @Override
     protected void buildRules(GraknTx tx) {
         //R1: "It is a crime for an American to sell weapons to hostile nations"
-        Pattern R1_LHS = tx.graql().parser().parsePattern("{$x isa person;$x has nationality 'American';" +
-                "$y isa weapon;" +
-                "$z isa country;$z has alignment 'hostile';" +
-                "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;}");
+        Pattern R1_LHS = tx.graql().parser().parsePattern("{" +
+                        "$x isa person;$x has nationality 'American';" +
+                        "$y isa weapon;" +
+                        "$z isa country;$z has alignment 'hostile';" +
+                        "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;}");
 
         Pattern R1_RHS = tx.graql().parser().parsePattern("{$x isa criminal;}");
         tx.putRule("R1: It is a crime for an American to sell weapons to hostile nations" , R1_LHS, R1_RHS);
