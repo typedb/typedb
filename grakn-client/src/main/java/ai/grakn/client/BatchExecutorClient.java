@@ -42,6 +42,7 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -172,6 +173,45 @@ public class BatchExecutorClient implements Closeable {
 
     }
 
+    // Used to make queries with the same text different
+    // We need this because we don't want to cache inserts
+    private static class QueryWithId<T> {
+        private Query<T> query;
+        private UUID id;
+
+        public QueryWithId(Query<T> query) {
+            this.query = query;
+            this.id = UUID.randomUUID();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            QueryWithId<?> that = (QueryWithId<?>) o;
+
+            if (query != null ? !query.equals(that.query) : that.query != null) {
+                return false;
+            }
+            return id != null ? id.equals(that.id) : that.id == null;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = query != null ? query.hashCode() : 0;
+            result = 31 * result + (id != null ? id.hashCode() : 0);
+            return result;
+        }
+
+        public Query<T> getQuery() {
+            return query;
+        }
+    }
 
     /**
      * This is the hystrix command for the batch
@@ -180,12 +220,12 @@ public class BatchExecutorClient implements Closeable {
      */
     private static class CommandQueries extends HystrixCommand<List<QueryResponse>> {
 
-        private final List<Query<?>> queries;
+        private final List<QueryWithId<?>> queries;
         private String keyspace;
         private final GraknClient client;
         private int retries;
 
-        public CommandQueries(List<Query<?>> queries, String keyspace, GraknClient client,
+        public CommandQueries(List<QueryWithId<?>> queries, String keyspace, GraknClient client,
                 int retries) {
             super(Setter
                     .withGroupKey(HystrixCommandGroupKey.Factory.asKey("BatchExecutor"))
@@ -217,7 +257,7 @@ public class BatchExecutorClient implements Closeable {
                     .build();
 
             try {
-                return retryer.call(() -> client.graqlExecute(queries, keyspace));
+                return retryer.call(() -> client.graqlExecute(queries.stream().map(QueryWithId::getQuery).collect(Collectors.toList()), keyspace));
             } catch (RetryException | ExecutionException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof GraknClientException) {
@@ -235,9 +275,9 @@ public class BatchExecutorClient implements Closeable {
      * @author Domenico Corapi
      */
     private static class QueriesObservableCollapser extends
-            HystrixCollapser<List<QueryResponse>, QueryResponse, Query<?>> {
+            HystrixCollapser<List<QueryResponse>, QueryResponse, QueryWithId<?>> {
 
-        private final Query<?> query;
+        private final QueryWithId<?> query;
         private String keyspace;
         private final GraknClient client;
         private final int retries;
@@ -254,7 +294,7 @@ public class BatchExecutorClient implements Closeable {
                             HystrixCollapserProperties.Setter()
                                     .withRequestCacheEnabled(false)
                                     .withTimerDelayInMilliseconds(delay)));
-            this.query = query;
+            this.query = new QueryWithId<>(query);
             this.keyspace = keyspace;
             this.client = client;
             this.retries = retries;
@@ -262,22 +302,22 @@ public class BatchExecutorClient implements Closeable {
         }
 
         @Override
-        public Query<?> getRequestArgument() {
+        public QueryWithId<?> getRequestArgument() {
             return query;
         }
 
         @Override
         protected HystrixCommand<List<QueryResponse>> createCommand(
-                Collection<CollapsedRequest<QueryResponse, Query<?>>> collapsedRequests) {
+                Collection<CollapsedRequest<QueryResponse, QueryWithId<?>>> collapsedRequests) {
             return new CommandQueries(collapsedRequests.stream().map(CollapsedRequest::getArgument)
                     .collect(Collectors.toList()), keyspace, client, retries);
         }
 
         @Override
         protected void mapResponseToRequests(List<QueryResponse> batchResponse,
-                Collection<CollapsedRequest<QueryResponse, Query<?>>> collapsedRequests) {
+                Collection<CollapsedRequest<QueryResponse, QueryWithId<?>>> collapsedRequests) {
             int count = 0;
-            for (CollapsedRequest<QueryResponse, Query<?>> request : collapsedRequests) {
+            for (CollapsedRequest<QueryResponse, QueryWithId<?>> request : collapsedRequests) {
                 request.setResponse(batchResponse.get(count++));
             }
             metricRegistry.histogram(name(QueriesObservableCollapser.class, "batch", "size"))

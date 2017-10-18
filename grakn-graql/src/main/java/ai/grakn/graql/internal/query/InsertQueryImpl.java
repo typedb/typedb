@@ -31,15 +31,16 @@ import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.CommonUtil;
-import static ai.grakn.util.CommonUtil.toImmutableList;
 import com.google.common.collect.ImmutableCollection;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static ai.grakn.util.CommonUtil.toImmutableList;
 
 /**
  * A query that will insert a collection of variables into a graph
@@ -50,7 +51,6 @@ class InsertQueryImpl implements InsertQueryAdmin {
     private final Optional<GraknTx> tx;
     private final ImmutableCollection<VarPatternAdmin> originalVars;
     private final ImmutableCollection<VarPatternAdmin> vars;
-    private final String id;
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
@@ -69,10 +69,6 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
         this.match = match;
         this.tx = tx;
-
-        // This is used so we can differentiate two insert queries that contain the same text
-        // They are not equals for most interpretations
-        this.id = UUID.randomUUID().toString();
 
         this.originalVars = vars;
 
@@ -170,7 +166,6 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
         if (!match.equals(maps.match)) return false;
         if (!tx.equals(maps.tx)) return false;
-        if (!id.equals(maps.id)) return false;
         return originalVars.equals(maps.originalVars);
     }
 
@@ -178,7 +173,6 @@ class InsertQueryImpl implements InsertQueryAdmin {
     public int hashCode() {
         int result = match.hashCode();
         result = 31 * result + tx.hashCode();
-        result = 31 * result + id.hashCode();
         result = 31 * result + originalVars.hashCode();
         return result;
     }
