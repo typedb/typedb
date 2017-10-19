@@ -106,7 +106,7 @@ public class PostProcessingTask extends BackgroundTask {
             indexLock.lock();
 
             try {
-                boolean commitNeeded = tx.admin().fixRelationshipWihtDuplicateRolePlayers(relationshipId);
+                boolean commitNeeded = tx.admin().fixRelationshipWithDuplicateRolePlayers(relationshipId);
 
                 if(commitNeeded){
                     tx.admin().commitNoLogs();

@@ -179,7 +179,7 @@ public interface GraknAdmin {
      * @param relationshipId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
      * @return true if the {@link ai.grakn.concept.Relationship} was fixed and a commit is needed
      */
-    boolean fixRelationshipWihtDuplicateRolePlayers(ConceptId relationshipId);
+    boolean fixRelationshipWithDuplicateRolePlayers(ConceptId relationshipId);
 
     /**
      * Creates a new shard for the concept

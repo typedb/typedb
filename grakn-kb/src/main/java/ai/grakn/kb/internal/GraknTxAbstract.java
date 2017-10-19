@@ -967,7 +967,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public boolean fixRelationshipWihtDuplicateRolePlayers(ConceptId relationshipId){
+    public boolean fixRelationshipWithDuplicateRolePlayers(ConceptId relationshipId){
         boolean commitRequired = false;
 
         Multimap<Pair<Role, Thing>, Casting> rolePlayersToCastings = getRolePlayersToCastings(relationshipId);
@@ -976,30 +976,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
             if(castings.size() > 1){
                 commitRequired = true;
-                removeDuplicateCastings(castings);
+
+                //Remove Castings skipping the first one so we don't completely disconnect the role player
+                castings.stream().skip(1).forEach(Casting::delete);
             }
         }
 
         return commitRequired;
-    }
-
-    /**
-     * Deletes all (except one) the {@link Casting}s from the provided collection.
-     * In this way we are removing all the duplicate {@link Casting}s
-     *
-     * @param castings List of {@link Casting}s containing duplicates.
-     */
-    private void removeDuplicateCastings(Collection<Casting> castings){
-        Iterator<Casting> itertor = castings.iterator();
-
-        //Ignore the first one. We don't want to delete all of them after all
-        if(itertor.hasNext()){
-            itertor.next();
-        }
-
-        while (itertor.hasNext()){
-            itertor.next().delete();
-        }
     }
 
     /**
