@@ -52,8 +52,8 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean atomicComparison(Atomic parent, Atomic child) {
-            return parent == null || parent.isAlphaEquivalent(child);
+        public boolean atomicCompatibility(Atomic parent, Atomic child) {
+            return parent == null || parent.isCompatibleWith(child);
         }
     },
 
@@ -72,8 +72,8 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean atomicComparison(Atomic parent, Atomic child) {
-            return child == null || parent == null || parent.isAlphaEquivalent(child);
+        public boolean atomicCompatibility(Atomic parent, Atomic child) {
+            return child == null || parent == null || parent.isCompatibleWith(child);
         }
     },
 
@@ -92,7 +92,7 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean atomicComparison(Atomic parent, Atomic child) {
+        public boolean atomicCompatibility(Atomic parent, Atomic child) {
             return (parent == null) == (child == null);
         }
     }

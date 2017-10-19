@@ -48,6 +48,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
@@ -133,7 +134,7 @@ public class RelationshipAtom extends IsaAtom {
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") +
                 getRelationPlayers().toString();
-        return relationString + getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
+        return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
     }
     
     private ImmutableSet<Label> getRoleLabels() { return roleLabels;}
@@ -441,7 +442,6 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Set<Pair<Var, Type>> inferEntityTypes(Answer sub) {
         if (sub.isEmpty()) return Collections.emptySet();
-        //Answer mergedSub = this.getParentQuery().getSubstitution().merge(sub);
 
         Set<Var> subbedVars = Sets.intersection(getRolePlayers(), sub.vars());
         Set<Var> untypedVars = Sets.difference(subbedVars, getParentQuery().getVarTypeMap().keySet());
@@ -676,7 +676,6 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Multimap<Role, Var> computeRoleVarMap() {
         Multimap<Role, Var> roleMap = ArrayListMultimap.create();
-        if (getParentQuery() == null || getSchemaConcept() == null) return roleMap;
 
         GraknTx graph = getParentQuery().tx();
         getRelationPlayers().forEach(c -> {
@@ -735,9 +734,9 @@ public class RelationshipAtom extends IsaAtom {
      * @return set of possible COMPLETE mappings between this (child) and parent relation players
      */
     private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierComparison matchType) {
-        Multimap<Role, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
-        Map<Var, Type> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarTypeMap();
+        Multimap<Role, RelationPlayer> childRoleRPMap = this.getRoleRelationPlayerMap();
         Map<Var, Type> childVarSchemaConceptMap = this.getParentQuery().getVarTypeMap();
+        Map<Var, Type> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarTypeMap();
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
@@ -777,7 +776,13 @@ public class RelationshipAtom extends IsaAtom {
                                             .filter(crp -> {
                                                 IdPredicate parentId = parentAtom.getIdPredicate(prp.getRolePlayer().var());
                                                 IdPredicate childId = this.getIdPredicate(crp.getRolePlayer().var());
-                                                return matchType.atomicComparison(parentId, childId);
+                                                return matchType.atomicCompatibility(parentId, childId);
+                                            })
+                                            //check for value predicate compatibility
+                                            .filter(crp -> {
+                                                ValuePredicate parentVP = parentAtom.getPredicate(prp.getRolePlayer().var(), ValuePredicate.class);
+                                                ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
+                                                return matchType.atomicCompatibility(parentVP, childVP);
                                             })
                                             .forEach(compatibleRelationPlayers::add);
                                 });
