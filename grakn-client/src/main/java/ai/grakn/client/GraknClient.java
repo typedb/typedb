@@ -24,7 +24,6 @@ import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
 import com.sun.jersey.api.client.Client;
@@ -45,6 +44,8 @@ import org.slf4j.LoggerFactory;
  * @author Domenico Corapi
  */
 public class GraknClient {
+
+    public static final int CONNECT_TIMEOUT_MS = 60 * 1000;
     private final Logger LOG = LoggerFactory.getLogger(GraknClient.class);
 
     private final Client asyncHttpClient;
@@ -53,6 +54,8 @@ public class GraknClient {
 
     public GraknClient(SimpleURI url)  {
         this.asyncHttpClient = Client.create();
+        this.asyncHttpClient.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        this.asyncHttpClient.setReadTimeout(CONNECT_TIMEOUT_MS * 10);
         String urlWithSchema = url.toStringWithSchema();
         this.graqlExecuteURL = urlWithSchema + "/kb/graql/execute";
         this.keyspaceURL = urlWithSchema + "/keyspaces/{keyspace}";
@@ -68,16 +71,18 @@ public class GraknClient {
                 .queryParam(KEYSPACE, keyspace).build();
         ClientResponse response = asyncHttpClient.resource(fullURI.toString())
                 .accept(APPLICATION_JSON_GRAQL)
-                .type(APPLICATION_TEXT)
                 .post(ClientResponse.class, body);
+        try {
             int statusCode = response.getStatus();
-        String entity = response.getEntity(String.class);
-        if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
-            throw new GraknClientException("Failed graqlExecute. Error status: " + statusCode + ", error info: " + entity, response.getStatusInfo());
+            String entity = response.getEntity(String.class);
+            if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
+                throw new GraknClientException("Failed graqlExecute. Error status: " + statusCode + ", error info: " + entity, response.getStatusInfo());
+            }
+            LOG.debug("Received {}", statusCode);
+            return QueryResponse.from(queryList, entity);
+        } finally {
+            response.close();
         }
-        LOG.debug("Received {}", statusCode);
-        response.close();
-        return QueryResponse.from(queryList, entity);
     }
 
     public Optional<Keyspace> keyspace(String keyspace) throws GraknClientException {
