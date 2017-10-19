@@ -250,7 +250,7 @@ public class InferenceRule {
                     SchemaConcept subType = allTypes.stream()
                             .map(Atom::getSchemaConcept)
                             .filter(Objects::nonNull)
-                            .filter(t -> ReasonerUtils.getSupers(t).contains(schemaConcept))
+                            .filter(t -> ReasonerUtils.supers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
                 }).forEach(t -> bodyAtoms.add(AtomicFactory.create(t, body)));

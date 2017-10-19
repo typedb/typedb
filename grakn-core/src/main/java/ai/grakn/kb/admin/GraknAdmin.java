@@ -36,7 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -165,13 +164,6 @@ public interface GraknAdmin {
      * @return True if a commit is required.
      */
     boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds);
-
-    /**
-     * Updates the counts of all the types
-     *
-     * @param conceptCounts The concepts and the changes to put on their counts
-     */
-    void updateConceptCounts(Map<ConceptId, Long> conceptCounts);
 
     /**
      * Creates a new shard for the concept

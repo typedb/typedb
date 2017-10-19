@@ -938,16 +938,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public void updateConceptCounts(Map<ConceptId, Long> typeCounts) {
-        typeCounts.forEach((key, value) -> {
-            if (value != 0) {
-                ConceptImpl concept = getConcept(key);
-                concept.setShardCount(concept.getShardCount() + value);
-            }
-        });
-    }
-
-    @Override
     public void shard(ConceptId conceptId) {
         ConceptImpl type = getConcept(conceptId);
         if (type == null) {

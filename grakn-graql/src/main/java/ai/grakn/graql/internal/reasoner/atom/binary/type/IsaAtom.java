@@ -49,13 +49,11 @@ public class IsaAtom extends TypeAtom {
 
     public IsaAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}
+    public IsaAtom(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery par) {
+        this(var, predicateVar, new IdPredicate(predicateVar, type.getLabel(), par), par);
+    }
     private IsaAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
-        this(
-                var.isa(predicateVar).admin(),
-                predicateVar,
-                p,
-                par
-        );
+        this(var.isa(predicateVar).admin(), predicateVar, p, par);
     }
     protected IsaAtom(TypeAtom a) { super(a);}
 
