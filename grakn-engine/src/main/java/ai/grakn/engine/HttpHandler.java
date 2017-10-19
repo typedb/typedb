@@ -68,7 +68,7 @@ import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
  */
 public class HttpHandler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpHandler.class);
 
     private final GraknEngineConfig prop;
     private final Service spark;

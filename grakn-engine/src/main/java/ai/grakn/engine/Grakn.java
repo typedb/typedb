@@ -28,9 +28,9 @@ import org.slf4j.LoggerFactory;
  * @author Michele Orsi
  *
  */
-public class GraknApplication {
+public class Grakn {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
 
     public static void main(String[] args) {
         try {

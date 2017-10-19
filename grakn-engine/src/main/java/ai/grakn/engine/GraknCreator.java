@@ -54,18 +54,35 @@ import static com.codahale.metrics.MetricRegistry.name;
  */
 public class GraknCreator {
 
-    private final static EngineID ENGINE_ID = EngineID.me();
-    private final static Service SPARK_SERVICE = Service.ignite();
-    private final static GraknEngineStatus GRAKN_ENGINE_STATUS = new GraknEngineStatus();
-    private final static MetricRegistry METRIC_REGISTRY = new MetricRegistry();
-    private final static ExecutorService EXECUTOR_SERVICE = TasksController.taskExecutor();
-    private final static GraknEngineConfig GRAKN_ENGINE_CONFIG = GraknEngineConfig.create();
+    private final static EngineID ENGINE_ID = engineId();
+    private final static Service SPARK_SERVICE = sparkService();
+    private final static GraknEngineStatus GRAKN_ENGINE_STATUS = graknEngineStatus();
+    private final static MetricRegistry METRIC_REGISTRY = metricRegistry();
+    private final static ExecutorService EXECUTOR_SERVICE = executorService();
+    private final static GraknEngineConfig GRAKN_ENGINE_CONFIG = graknEngineConfig();
 
     private static GraknEngineServer graknEngineServer;
     private static RedisWrapper redisWrapper;
     private static LockProvider lockProvider;
     private static EngineGraknTxFactory engineGraknTxFactory;
     private static TaskManager taskManager;
+
+    protected static EngineID engineId() {
+        return EngineID.me();
+    }
+    protected static Service sparkService() {
+        return Service.ignite();
+    }
+    protected static GraknEngineStatus graknEngineStatus() {
+        return new GraknEngineStatus();
+    }
+    protected static MetricRegistry metricRegistry() { return new MetricRegistry(); }
+    protected static ExecutorService executorService() {
+        return TasksController.taskExecutor();
+    }
+    protected static GraknEngineConfig graknEngineConfig() {
+        return GraknEngineConfig.create();
+    }
 
     static synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime) {
         if (graknEngineServer == null) {
@@ -75,43 +92,55 @@ public class GraknCreator {
             LockProvider lockProvider = instantiateLock(jedisPool);
             TaskManager taskManager = instantiateTaskManager(METRIC_REGISTRY, GRAKN_ENGINE_CONFIG, ENGINE_ID, factory, jedisPool, lockProvider);
             HttpHandler httpHandler = new HttpHandler(GRAKN_ENGINE_CONFIG, SPARK_SERVICE, factory, METRIC_REGISTRY, GRAKN_ENGINE_STATUS, taskManager, EXECUTOR_SERVICE);
-            graknEngineServer = new GraknEngineServer(GRAKN_ENGINE_CONFIG, taskManager, factory, lockProvider, GRAKN_ENGINE_STATUS, redisWrapper, EXECUTOR_SERVICE, httpHandler);
+            graknEngineServer = new GraknEngineServer(GRAKN_ENGINE_CONFIG, taskManager, factory, lockProvider, GRAKN_ENGINE_STATUS, redisWrapper, EXECUTOR_SERVICE, httpHandler, ENGINE_ID);
             Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
             runtime.addShutdownHook(thread);
         }
         return graknEngineServer;
     }
 
-    static synchronized RedisWrapper instantiateRedis(GraknEngineConfig prop) {
+    private static synchronized RedisWrapper instantiateRedis(GraknEngineConfig config) {
         if (redisWrapper == null) {
-            List<String> redisUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_HOST).orElse("localhost:6379"));
-            List<String> sentinelUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
-            int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 32);
-            boolean useSentinel = !sentinelUrl.isEmpty();
-            RedisWrapper.Builder builder = RedisWrapper.builder()
-                    .setUseSentinel(useSentinel)
-                    .setPoolSize(poolSize)
-                    .setURI((useSentinel ? sentinelUrl : redisUrl));
-            if (useSentinel) {
-                builder.setMasterName(prop.tryProperty(REDIS_SENTINEL_MASTER).orElse("graknmaster"));
-            }
-            redisWrapper = builder.build();
+            redisWrapper = redisWrapper(config);
         }
         return redisWrapper;
     }
 
-    static synchronized LockProvider instantiateLock(Pool<Jedis> jedisPool) {
+    protected static RedisWrapper redisWrapper(GraknEngineConfig config) {
+        List<String> redisUrl = GraknEngineConfig.parseCSValue(config.tryProperty(REDIS_HOST).orElse("localhost:6379"));
+        List<String> sentinelUrl = GraknEngineConfig.parseCSValue(config.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
+        int poolSize = config.tryIntProperty(REDIS_POOL_SIZE, 32);
+        boolean useSentinel = !sentinelUrl.isEmpty();
+        RedisWrapper.Builder builder = RedisWrapper.builder()
+                .setUseSentinel(useSentinel)
+                .setPoolSize(poolSize)
+                .setURI((useSentinel ? sentinelUrl : redisUrl));
+        if (useSentinel) {
+            builder.setMasterName(config.tryProperty(REDIS_SENTINEL_MASTER).orElse("graknmaster"));
+        }
+        return builder.build();
+    }
+
+    private static synchronized LockProvider instantiateLock(Pool<Jedis> jedisPool) {
         if (lockProvider == null) {
-            lockProvider = new JedisLockProvider(jedisPool);
+            lockProvider = lockProvider(jedisPool);
         }
         return lockProvider;
     }
 
-    static synchronized EngineGraknTxFactory instantiateGraknTxFactory(GraknEngineConfig prop) {
+    protected static JedisLockProvider lockProvider(Pool<Jedis> jedisPool) {
+        return new JedisLockProvider(jedisPool);
+    }
+
+    static synchronized EngineGraknTxFactory instantiateGraknTxFactory(GraknEngineConfig config) {
         if (engineGraknTxFactory == null) {
-            engineGraknTxFactory = EngineGraknTxFactory.create(prop.getProperties());
+            engineGraknTxFactory = engineGraknTxFactory(config);
         }
         return engineGraknTxFactory;
+    }
+
+    protected static EngineGraknTxFactory engineGraknTxFactory(GraknEngineConfig config) {
+        return EngineGraknTxFactory.create(config.getProperties());
     }
 
     /**
@@ -120,32 +149,37 @@ public class GraknCreator {
      *
      * @param jedisPool
      */
-    static synchronized TaskManager instantiateTaskManager(MetricRegistry metricRegistry, GraknEngineConfig prop, EngineID engineId, EngineGraknTxFactory factory,
+    private static synchronized TaskManager instantiateTaskManager(MetricRegistry metricRegistry, GraknEngineConfig config, EngineID engineId, EngineGraknTxFactory factory,
                                                            final Pool<Jedis> jedisPool,
                                                            final LockProvider lockProvider) {
         if (taskManager == null) {
-            TaskManager result;
-            metricRegistry.register(name(GraknEngineServer.class, "jedis", "idle"), (Gauge<Integer>) jedisPool::getNumIdle);
-            metricRegistry.register(name(GraknEngineServer.class, "jedis", "active"), (Gauge<Integer>) jedisPool::getNumActive);
-            metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
-            metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "max"), (Gauge<Long>) jedisPool::getMaxBorrowWaitTimeMillis);
-            metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "mean"), (Gauge<Long>) jedisPool::getMeanBorrowWaitTimeMillis);
-
-            metricRegistry.register(name(GraknEngineServer.class, "System", "gc"), new GarbageCollectorMetricSet());
-            metricRegistry.register(name(GraknEngineServer.class, "System", "threads"), new CachedThreadStatesGaugeSet(15, TimeUnit.SECONDS));
-            metricRegistry.register(name(GraknEngineServer.class, "System", "memory"), new MemoryUsageGaugeSet());
-
-            Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
-            if (consumers.isPresent()) {
-                Integer threads = Integer.parseInt(consumers.get());
-                result = new RedisTaskManager(engineId, prop, jedisPool, threads, factory, lockProvider, metricRegistry);
-            } else {
-                result = new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry);
-            }
-            taskManager = result;
+            taskManager = taskManager(config, factory, jedisPool, lockProvider, engineId, metricRegistry);
         }
         return taskManager;
     }
+
+    protected static TaskManager taskManager(GraknEngineConfig config, EngineGraknTxFactory factory, Pool<Jedis> jedisPool, LockProvider lockProvider, EngineID engineId, MetricRegistry metricRegistry) {
+        TaskManager result;
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "idle"), (Gauge<Integer>) jedisPool::getNumIdle);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "active"), (Gauge<Integer>) jedisPool::getNumActive);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "max"), (Gauge<Long>) jedisPool::getMaxBorrowWaitTimeMillis);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "mean"), (Gauge<Long>) jedisPool::getMeanBorrowWaitTimeMillis);
+
+        metricRegistry.register(name(GraknEngineServer.class, "System", "gc"), new GarbageCollectorMetricSet());
+        metricRegistry.register(name(GraknEngineServer.class, "System", "threads"), new CachedThreadStatesGaugeSet(15, TimeUnit.SECONDS));
+        metricRegistry.register(name(GraknEngineServer.class, "System", "memory"), new MemoryUsageGaugeSet());
+
+        Optional<String> consumers = config.tryProperty(QUEUE_CONSUMERS);
+        if (consumers.isPresent()) {
+            Integer threads = Integer.parseInt(consumers.get());
+            result = new RedisTaskManager(engineId, config, jedisPool, threads, factory, lockProvider, metricRegistry);
+        } else {
+            result = new RedisTaskManager(engineId, config, jedisPool, factory, lockProvider, metricRegistry);
+        }
+        return result;
+    }
+
 
 }
 

@@ -21,6 +21,7 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
@@ -54,9 +55,9 @@ public class GraknEngineServer implements AutoCloseable {
     private final RedisWrapper redisWrapper;
     private final ExecutorService taskExecutor;
     private final HttpHandler httpHandler;
+    private final EngineID engineId;
 
-
-    public GraknEngineServer(GraknEngineConfig prop, TaskManager taskManager, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, ExecutorService taskExecutor, HttpHandler httpHandler) {
+    protected GraknEngineServer(GraknEngineConfig prop, TaskManager taskManager, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, ExecutorService taskExecutor, HttpHandler httpHandler, EngineID engineId) {
         this.prop = prop;
         this.graknEngineStatus = graknEngineStatus;
         // Redis connection pool
@@ -68,6 +69,7 @@ public class GraknEngineServer implements AutoCloseable {
         this.taskManager = taskManager;
         this.taskExecutor = taskExecutor;
         this.httpHandler = httpHandler;
+        this.engineId = engineId;
     }
 
     public void start() {
@@ -117,16 +119,16 @@ public class GraknEngineServer implements AutoCloseable {
             if (lock.tryLock(60, TimeUnit.SECONDS)) {
                 loadAndUnlock(lock);
             } else {
-                LOG.info("{} found system schema lock already acquired by other engine");
+                LOG.info("{} found system schema lock already acquired by other engine", this.engineId);
             }
         } catch (InterruptedException e) {
-            LOG.warn("{} was interrupted while initializing system schema");
+            LOG.warn("{} was interrupted while initializing system schema", this.engineId);
         }
     }
 
     private void loadAndUnlock(Lock lock) {
         try {
-            LOG.info("{} is checking the system schema");
+            LOG.info("{} is checking the system schema", this.engineId);
             factory.systemKeyspace().loadSystemSchema();
         } finally {
             lock.unlock();

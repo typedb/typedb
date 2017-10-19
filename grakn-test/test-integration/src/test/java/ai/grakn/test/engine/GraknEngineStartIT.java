@@ -110,6 +110,6 @@ public class GraknEngineStartIT {
         Properties properties = graknEngineConfig.getProperties();
         properties.setProperty(SERVER_PORT_NUMBER, port);
         properties.setProperty(REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
-        return EngineTestHelper.graknEngineServer(graknEngineConfig);
+        return EngineTestHelper.cleanGraknEngineServer(graknEngineConfig);
     }
 }
