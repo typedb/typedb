@@ -44,7 +44,6 @@ import java.util.concurrent.locks.Lock;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@Ignore("Ignored due to failing randomly on travis because of redis failures")
 @RunWith(Theories.class)
 public class LockTestIT {
 

@@ -62,7 +62,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-@Ignore("Ignored due to failing randomly on travis because of redis failures")
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
 
