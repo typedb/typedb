@@ -114,7 +114,7 @@ public class CSVMigratorTest {
         String template = getFileAsString("csv", "pets/template.gql");
 
         try(CSVMigrator m = new CSVMigrator(getFile("csv", "pets/data/pets.empty"))) {
-            migrator.load(template, m.setNullString("").convert(), 0, false);
+            migrator.load(template, m.setNullString("").convert(), 0, false, 500);
         }
 
         try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
@@ -201,7 +201,7 @@ public class CSVMigratorTest {
 
     private void declareAndLoad(String template, String file){
         try(CSVMigrator m = new CSVMigrator(getFile("csv", file))) {
-            migrator.load(template, m.convert(), 0, false);
+            migrator.load(template, m.convert(), 0, false, 500);
         }
     }
 }

@@ -55,7 +55,7 @@ public class GraknClient {
     public GraknClient(SimpleURI url)  {
         this.asyncHttpClient = Client.create();
         this.asyncHttpClient.setConnectTimeout(CONNECT_TIMEOUT_MS);
-        this.asyncHttpClient.setReadTimeout(CONNECT_TIMEOUT_MS * 10);
+        this.asyncHttpClient.setReadTimeout(CONNECT_TIMEOUT_MS * 2);
         String urlWithSchema = url.toStringWithSchema();
         this.graqlExecuteURL = urlWithSchema + "/kb/graql/execute";
         this.keyspaceURL = urlWithSchema + "/keyspaces/{keyspace}";

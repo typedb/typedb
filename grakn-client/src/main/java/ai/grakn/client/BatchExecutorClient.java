@@ -64,10 +64,10 @@ public class BatchExecutorClient implements Closeable {
 
     private final static Logger LOG = LoggerFactory.getLogger(BatchExecutorClient.class);
 
-    static final int DEFAULT_TIMEOUT_MS = 60000;
-    static final int THREAD_POOL_CORE_SIZE = 128;
-    static final int MAX_QUEUE = THREAD_POOL_CORE_SIZE * 8;
-    static final int REJECTION_THRESHOLD = MAX_QUEUE;
+    public static final int DEFAULT_TIMEOUT_MS = 60000;
+    public static final int THREAD_POOL_CORE_SIZE = 16;
+    public static final int MAX_QUEUE = THREAD_POOL_CORE_SIZE * 8;
+    public static final int REJECTION_THRESHOLD = MAX_QUEUE;
 
     private final GraknClient graknClient;
     private final HystrixRequestContext context;

@@ -20,17 +20,16 @@ package ai.grakn.migration.base;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
+import ai.grakn.client.BatchExecutorClient;
+import static java.lang.Integer.parseInt;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import javax.annotation.Nullable;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-
-import javax.annotation.Nullable;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static java.lang.Integer.parseInt;
 
 /**
  * Configure the default migration options and access arguments passed by the user
@@ -42,12 +41,14 @@ public class MigrationOptions {
 
     protected final Options options = new Options();
     protected CommandLine command;
+    private int maxDelay;
 
     public MigrationOptions(){
         options.addOption("v", "verbose", false, "Print counts of migrated data.");
         options.addOption("h", "help", false, "Print usage message.");
         options.addOption("k", "keyspace", true, "Grakn graph. Required.");
         options.addOption("u", "uri", true, "Location of Grakn Engine.");
+        options.addOption("m", "maxdelay", true, "Max delay before a request is batched.");
         options.addOption("n", "no", false, "Write to standard out.");
         options.addOption("c", "config", true, "Configuration file.");
         options.addOption("r", "retry", true, "Number of times to retry sending tasks if engine is not available");
@@ -127,6 +128,11 @@ public class MigrationOptions {
         } catch (ParseException e){
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public int getMaxDelay() {
+        String value = command.getOptionValue("m");
+        return value == null ? BatchExecutorClient.DEFAULT_TIMEOUT_MS : Integer.parseInt(value);
     }
 
     private String resolvePath(String path){

@@ -224,7 +224,7 @@ public class JsonMigratorTest {
 
     private void declareAndLoad(String template, String file){
         try(JsonMigrator m = new JsonMigrator(getFile("json", file))){
-            migrator.load(template, m.convert(), 0, false);
+            migrator.load(template, m.convert(), 0, false, 500);
         }
     }
 }

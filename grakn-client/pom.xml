@@ -48,12 +48,12 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>1.19</version>
+            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-core</artifactId>
-            <version>1.19</version>
+            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.http-client</groupId>

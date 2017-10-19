@@ -116,8 +116,8 @@ do
         echo "Loading ${DATA_FILE} with ${TEMPLATE_FILE}"
 
         tail -n +2 $CSV_DATA/${DATA_FILE} | wc -l
-        echo graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE} -a ${ACTIVE_TASKS:-25} -b 32
-        time graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE} -a ${ACTIVE_TASKS:-25} -b 32
+        echo graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE}
+        time graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE}
 done < ${SCRIPTPATH}/migrationsToRun.txt
 
 # confirm there were no errors

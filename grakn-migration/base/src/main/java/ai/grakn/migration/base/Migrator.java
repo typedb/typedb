@@ -55,7 +55,7 @@ public class Migrator {
 
     private final static Logger LOG = LoggerFactory.getLogger(Migrator.class);
     private final QueryParser queryParser = Graql.withoutGraph().infer(false).parser();
-    static final int DEFAULT_MAX_RETRY = 1;
+    static final int DEFAULT_MAX_RETRY = 3;
 
     private final String uri;
     private final Keyspace keyspace;
@@ -90,7 +90,7 @@ public class Migrator {
      * NOTE: Currently only used for testing purposes
      */
     public void load(String template, Stream<Map<String, Object>> converter) {
-        load(template, converter, Migrator.DEFAULT_MAX_RETRY, true);
+        load(template, converter, Migrator.DEFAULT_MAX_RETRY, true, BatchExecutorClient.DEFAULT_TIMEOUT_MS);
     }
 
     /**
@@ -107,13 +107,16 @@ public class Migrator {
      *
      * @param retrySize If the Loader should continue attempt to send tasks when Engine is not
      * available or an exception occurs
+     * @param maxDelayMs
      */
-    public void load(String template, Stream<Map<String, Object>> converter, int retrySize, boolean failFast) {
+    public void load(String template, Stream<Map<String, Object>> converter, int retrySize,
+            boolean failFast, int maxDelayMs) {
         GraknClient graknClient = new GraknClient(new SimpleURI(uri));
         try (BatchExecutorClient loader =
                 BatchExecutorClient.newBuilder()
                         .taskClient(graknClient)
                         .maxRetries(retrySize)
+                        .maxDelay(maxDelayMs)
                         .build()) {
             checkKeyspace(graknClient);
             List<Observable<QueryResponse>> allObservables = new ArrayList<>();

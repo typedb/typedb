@@ -109,7 +109,7 @@ public class MigrationCLI {
         } else {
             printInitMessage(options);
             try {
-                migrator.load(template, data, options.getRetry(), options.isDebug());
+                migrator.load(template, data, options.getRetry(), options.isDebug(), options.getMaxDelay());
             } catch (Exception e) {
                 // This is to catch migration exceptions and return intelligible output messages
                 System.out.println("Error while loading data: " + e.getMessage());
