@@ -225,7 +225,7 @@ public class QueryAnswer implements Answer {
                     if (toExpand.contains(var)) {
                         Concept c = get(var);
                         if (c.isSchemaConcept()) {
-                            return ReasonerUtils.upstreamHierarchy(c.asSchemaConcept()).stream()
+                            return ReasonerUtils.getUpstreamHierarchy(c.asSchemaConcept()).stream()
                                     .map(r -> new Pair<Var, Concept>(var, r))
                                     .collect(Collectors.toSet());
                         }
