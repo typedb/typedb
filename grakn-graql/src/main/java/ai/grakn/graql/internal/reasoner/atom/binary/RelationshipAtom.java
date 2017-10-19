@@ -46,6 +46,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
@@ -75,6 +76,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.compatibleRelationTypesWithRoles;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.predicatesCompatible;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.supers;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.playableRoles;
@@ -129,7 +131,7 @@ public class RelationshipAtom extends IsaAtom {
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") +
                 getRelationPlayers().toString();
-        return relationString + getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
+        return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
     }
     
     private Set<Label> getRoleLabels() { return roleLabels;}
@@ -411,7 +413,6 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Set<Pair<Var, Type>> inferEntityTypes(Answer sub) {
         if (sub.isEmpty()) return Collections.emptySet();
-        //Answer mergedSub = this.getParentQuery().getSubstitution().merge(sub);
 
         Set<Var> subbedVars = Sets.intersection(getRolePlayers(), sub.vars());
         Set<Var> untypedVars = Sets.difference(subbedVars, getParentQuery().getVarTypeMap().keySet());
@@ -739,24 +740,25 @@ public class RelationshipAtom extends IsaAtom {
                                             .filter(crp -> {
                                                 Var childVar = crp.getRolePlayer().var();
                                                 SchemaConcept childType = childVarSchemaConceptMap.get(childVar);
-
                                                 if (exact) return childQuery.isTypeRoleCompatible(childVar, parentType) && !areDisjointTypes(parentType, childType);
                                                 else return childQuery.isTypeRoleCompatible(childVar, parentType)
                                                         && (childType == null || !areDisjointTypes(parentType, childType));
 
                                             })
                                             //check for substitution compatibility
-                                            .filter(crp -> {
-                                                IdPredicate parentId = parentAtom.getPredicates(IdPredicate.class)
-                                                        .filter(p -> p.getVarName().equals(prp.getRolePlayer().var()))
-                                                        .findFirst().orElse(null);
-                                                IdPredicate childId = this.getPredicates(IdPredicate.class)
-                                                        .filter(p -> p.getVarName().equals(crp.getRolePlayer().var()))
-                                                        .findFirst().orElse(null);
-
-                                                if (exact) return parentId == null || parentId.isEquivalent(childId);
-                                                else return childId == null || parentId == null || parentId.isEquivalent(childId);
-                                            })
+                                            .filter(crp ->
+                                                predicatesCompatible(
+                                                        parentAtom.getIdPredicate(prp.getRolePlayer().var()),
+                                                        this.getIdPredicate(crp.getRolePlayer().var()),
+                                                        exact)
+                                            )
+                                            //check for value predicate compatibility
+                                            .filter(crp ->
+                                                predicatesCompatible(
+                                                        parentAtom.getPredicate(prp.getRolePlayer().var(), ValuePredicate.class),
+                                                        this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class),
+                                                        exact)
+                                            )
                                             .forEach(compatibleRelationPlayers::add);
                                 });
                         if (!compatibleRelationPlayers.isEmpty()) {

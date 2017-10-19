@@ -40,6 +40,7 @@ import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.util.CommonUtil;
@@ -472,6 +473,18 @@ public class ReasonerUtils {
             superType = superType.sup();
         }
         return false;
+    }
+
+    /**
+     * @param parent predicate
+     * @param child predicate
+     * @param exact whether compatibility criterion should be exact
+     * @param <T> type generic
+     * @return true if predicates compatible
+     */
+    public static <T extends Predicate> boolean predicatesCompatible(T parent, T child, boolean exact){
+        if (exact) return parent == null || parent.isCompatibleWith(child);
+        else return child == null || parent == null || parent.isCompatibleWith(child);
     }
 
     /** determines disjointness of parent-child types, parent defines the bound on the child

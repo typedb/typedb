@@ -86,6 +86,9 @@ public class AtomicTest {
     public static final SampleKBContext resourceApplicabilitySet = SampleKBContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
+    public static final SampleKBContext reifiedResourceApplicabilitySet = SampleKBContext.preLoad("reifiedResourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+
+    @ClassRule
     public static final SampleKBContext unificationTestSet = SampleKBContext.preLoad("unificationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
@@ -617,7 +620,7 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_TypeResource(){
         GraknTx graph = resourceApplicabilitySet.tx();
-        String typeString = "{$x isa res1;}";
+        String typeString = "{$x isa resource;}";
         Atom type = ReasonerQueries.atomic(conjunction(typeString, graph), graph).getAtom();
         assertEquals(1, type.getApplicableRules().count());
     }
@@ -625,9 +628,9 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_Resource_TypeMismatch(){
         GraknTx graph = resourceApplicabilitySet.tx();
-        String resourceString = "{$x isa entity1, has res1 $r;}";
-        String resourceString2 = "{$x isa entity2, has res1 $r;}";
-        String resourceString3 = "{$x isa entity2, has res1 'test';}";
+        String resourceString = "{$x isa entity1, has resource $r;}";
+        String resourceString2 = "{$x isa entity2, has resource $r;}";
+        String resourceString3 = "{$x isa entity2, has resource 'test';}";
 
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
@@ -636,6 +639,100 @@ public class AtomicTest {
         assertEquals(1, resource.getApplicableRules().count());
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
         assertThat(resource3.getApplicableRules().collect(toSet()), empty());
+    }
+
+    @Test
+    public void testRuleApplicability_ReifiedResourceDouble(){
+        GraknTx graph = reifiedResourceApplicabilitySet.tx();
+        String queryString = "{$x isa res-double val > 3.0;($x, $y);}";
+        String queryString2 = "{$x isa res-double val > 4.0;($x, $y);}";
+        String queryString3 = "{$x isa res-double val < 3.0;($x, $y);}";
+        String queryString4 = "{$x isa res-double val < 4.0;($x, $y);}";
+        String queryString5 = "{$x isa res-double val >= 5;($x, $y);}";
+        String queryString6 = "{$x isa res-double val <= 5;($x, $y);}";
+        String queryString7 = "{$x isa res-double val = 3.14;($x, $y);}";
+        String queryString8 = "{$x isa res-double val != 5;($x, $y);}";
+
+        Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
+        Atom atom3 = ReasonerQueries.atomic(conjunction(queryString3, graph), graph).getAtom();
+        Atom atom4 = ReasonerQueries.atomic(conjunction(queryString4, graph), graph).getAtom();
+        Atom atom5 = ReasonerQueries.atomic(conjunction(queryString5, graph), graph).getAtom();
+        Atom atom6 = ReasonerQueries.atomic(conjunction(queryString6, graph), graph).getAtom();
+        Atom atom7 = ReasonerQueries.atomic(conjunction(queryString7, graph), graph).getAtom();
+        Atom atom8 = ReasonerQueries.atomic(conjunction(queryString8, graph), graph).getAtom();
+
+        assertEquals(1, atom.getApplicableRules().count());
+        assertThat(atom2.getApplicableRules().collect(toSet()), empty());
+        assertThat(atom3.getApplicableRules().collect(toSet()), empty());
+        assertEquals(1, atom4.getApplicableRules().count());
+        assertThat(atom5.getApplicableRules().collect(toSet()), empty());
+        assertEquals(1, atom6.getApplicableRules().count());
+        assertEquals(1, atom7.getApplicableRules().count());
+        assertEquals(1, atom8.getApplicableRules().count());
+    }
+
+    @Test
+    public void testRuleApplicability_ReifiedResourceLong(){
+        GraknTx graph = reifiedResourceApplicabilitySet.tx();
+        String queryString = "{$x isa res-long val > 100;($x, $y);}";
+        String queryString2 = "{$x isa res-long val > 150;($x, $y);}";
+        String queryString3 = "{$x isa res-long val < 100;($x, $y);}";
+        String queryString4 = "{$x isa res-long val < 200;($x, $y);}";
+        String queryString5 = "{$x isa res-long val >= 130;($x, $y);}";
+        String queryString6 = "{$x isa res-long val <= 130;($x, $y);}";
+        String queryString7 = "{$x isa res-long val = 123;($x, $y);}";
+        String queryString8 = "{$x isa res-long val != 200;($x, $y);}";
+
+        Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
+        Atom atom3 = ReasonerQueries.atomic(conjunction(queryString3, graph), graph).getAtom();
+        Atom atom4 = ReasonerQueries.atomic(conjunction(queryString4, graph), graph).getAtom();
+        Atom atom5 = ReasonerQueries.atomic(conjunction(queryString5, graph), graph).getAtom();
+        Atom atom6 = ReasonerQueries.atomic(conjunction(queryString6, graph), graph).getAtom();
+        Atom atom7 = ReasonerQueries.atomic(conjunction(queryString7, graph), graph).getAtom();
+        Atom atom8 = ReasonerQueries.atomic(conjunction(queryString8, graph), graph).getAtom();
+
+        assertEquals(1, atom.getApplicableRules().count());
+        assertThat(atom2.getApplicableRules().collect(toSet()), empty());
+        assertThat(atom3.getApplicableRules().collect(toSet()), empty());
+        assertEquals(1, atom4.getApplicableRules().count());
+        assertThat(atom5.getApplicableRules().collect(toSet()), empty());
+        assertEquals(1, atom6.getApplicableRules().count());
+        assertEquals(1, atom7.getApplicableRules().count());
+        assertEquals(1, atom8.getApplicableRules().count());
+    }
+
+    @Test
+    public void testRuleApplicability_ReifiedResourceString(){
+        GraknTx graph = reifiedResourceApplicabilitySet.tx();
+        String queryString = "{$x isa res-string val contains 'val';($x, $y);}";
+        String queryString2 = "{$x isa res-string val 'test';($x, $y);}";
+        String queryString3 = "{$x isa res-string val /.*(fast|value).*/;($x, $y);}";
+        String queryString4 = "{$x isa res-string val /.*/;($x, $y);}";
+
+        Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
+        Atom atom3 = ReasonerQueries.atomic(conjunction(queryString3, graph), graph).getAtom();
+        Atom atom4 = ReasonerQueries.atomic(conjunction(queryString4, graph), graph).getAtom();
+
+        assertEquals(1, atom.getApplicableRules().count());
+        assertThat(atom2.getApplicableRules().collect(toSet()), empty());
+        assertEquals(1, atom3.getApplicableRules().count());
+        assertEquals(1, atom4.getApplicableRules().count());
+    }
+
+    @Test
+    public void testRuleApplicability_ReifiedResourceBoolean(){
+        GraknTx graph = reifiedResourceApplicabilitySet.tx();
+        String queryString = "{$x isa res-boolean val 'true';($x, $y);}";
+        String queryString2 = "{$x isa res-boolean val 'false';($x, $y);}";
+
+        Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
+
+        assertEquals(1, atom.getApplicableRules().count());
+        assertThat(atom2.getApplicableRules().collect(toSet()), empty());
     }
 
     /**

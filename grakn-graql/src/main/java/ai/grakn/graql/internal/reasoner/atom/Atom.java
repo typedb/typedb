@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
 
@@ -225,8 +226,24 @@ public abstract class Atom extends AtomicBase {
         return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
     }
 
+    /**
+     * @param var variable of interest
+     * @return id predicate referring to prescribed variable
+     */
+    @Nullable
     public IdPredicate getIdPredicate(Var var){
-        return getPredicates(IdPredicate.class).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
+        return getPredicate(var, IdPredicate.class);
+    }
+
+    /**
+     * @param var variable the predicate refers to
+     * @param type predicate type
+     * @param <T> predicate type generic
+     * @return specific predicate referring to provided variable
+     */
+    @Nullable
+    public <T extends Predicate> T getPredicate(Var var, Class<T> type){
+        return getPredicates(type).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
     }
 
     public abstract Stream<Predicate> getInnerPredicates();

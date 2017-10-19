@@ -220,7 +220,7 @@ public class ResourceAtom extends Binary{
             boolean predicateCompatible = false;
             while (parentIt.hasNext() && !predicateCompatible) {
                 ValuePredicate parentPredicate = parentIt.next();
-                predicateCompatible = parentPredicate.getPredicate().isCompatibleWith(childPredicate.getPredicate());
+                predicateCompatible = parentPredicate.isCompatibleWith(childPredicate);
             }
             if (!predicateCompatible) return false;
         }

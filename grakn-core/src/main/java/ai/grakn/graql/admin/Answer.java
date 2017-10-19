@@ -147,11 +147,7 @@ public interface Answer {
     Stream<Answer> unify(MultiUnifier multiUnifier);
 
     /**
-<<<<<<< HEAD
      * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
-=======
-     * @param vars variables for which {@link ai.grakn.concept.Role} hierarchy should be expanded
->>>>>>> be8c7415e8ce3d78a4719076b6dfef3227b1dee2
      * @return stream of answers with expanded role hierarchy
      */
     @CheckReturnValue
