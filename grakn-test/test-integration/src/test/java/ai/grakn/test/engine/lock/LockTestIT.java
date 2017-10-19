@@ -25,7 +25,6 @@ import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.MockRedisRule;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
