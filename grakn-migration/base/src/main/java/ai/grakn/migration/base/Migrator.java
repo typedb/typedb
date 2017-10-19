@@ -29,11 +29,12 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.macro.Macro;
-import static ai.grakn.util.ConcurrencyUtil.allObservable;
+import static ai.grakn.util.ConcurrencyUtil.allObservableWithTimeout;
 import ai.grakn.util.SimpleURI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -134,7 +135,7 @@ public class Migrator {
                                         }
                                 );
                     });
-            int completed = allObservable(allObservables).toBlocking().first().size();
+            int completed = allObservableWithTimeout(allObservables, 2, TimeUnit.MINUTES).toBlocking().first().size();
             LOG.info("Loaded {} statements", completed);
         }
     }

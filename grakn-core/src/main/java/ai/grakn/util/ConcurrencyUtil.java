@@ -21,6 +21,7 @@ package ai.grakn.util;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import static java.util.stream.Collectors.toList;
 import rx.Observable;
 import rx.schedulers.Schedulers;
@@ -48,6 +49,13 @@ public class ConcurrencyUtil {
                 //wait, until all task are executed
                 //be aware, all your observable should emit onComplemete event
                 //otherwise you will wait forever
+                .toList();
+    }
+
+    static public <T> Observable<List<T>> allObservableWithTimeout(Collection<Observable<T>> tasks, int time, TimeUnit timeUnit) {
+        return Observable.from(tasks)
+                .timeout(time, timeUnit)
+                .flatMap(task -> task.observeOn(Schedulers.computation()))
                 .toList();
     }
 }

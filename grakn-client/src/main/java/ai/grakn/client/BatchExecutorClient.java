@@ -112,6 +112,7 @@ public class BatchExecutorClient implements Closeable {
                 keyspace, graknClient, maxDelay, maxRetries, threadPoolCoreSize, metricRegistry)
                 .observe()
                 .doOnError((error) -> failureMeter.mark())
+                .doOnEach(a -> LOG.debug("Executed {}", a.getValue()))
                 .doOnTerminate(context::close);
         return keepErrors ? observable : ignoreErrors(observable);
     }

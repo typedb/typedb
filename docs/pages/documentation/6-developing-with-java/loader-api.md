@@ -47,7 +47,6 @@ InsertQuery insert = insert(var().isa("person"));
 for(int i = 0; i < 100; i++){
 	loader.add(insert, keyspace.getValue()).toBlocking();
 }
-loader.close;
 ```
 
 Note that the output is a Java RX Observable that needs subscription or blocking.
