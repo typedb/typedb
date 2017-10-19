@@ -147,7 +147,7 @@ public class BatchExecutorClient implements Closeable {
     public static final class Builder {
 
         private GraknClient graknClient;
-        private int maxDelay = 500;
+        private int maxDelay = 50;
         private int maxRetries = 5;
         private boolean reportStats = true;
         private int threadPoolCoreSize = THREAD_POOL_CORE_SIZE;
