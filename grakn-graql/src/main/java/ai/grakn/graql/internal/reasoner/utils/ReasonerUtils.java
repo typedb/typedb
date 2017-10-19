@@ -38,12 +38,14 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -251,7 +253,7 @@ public class ReasonerUtils {
      * @param relRoles entry {@link Role}s
      * @return set of {@link Role}s the type can play from the provided {@link Role}s
      */
-    public static Set<Role> compatibleRoles(Type type, Stream<Role> relRoles) {
+    public static Set<Role> compatibleRoles(Type type, Stream<Role> relRoles){
         Set<Role> typeRoles = type.plays().collect(toSet());
         return relRoles.filter(typeRoles::contains).collect(toSet());
     }
@@ -411,6 +413,26 @@ public class ReasonerUtils {
 
         VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), varNames.peek());
         return tx.putRule(label, Patterns.conjunction(bodyVars), headVar);
+    }
+
+    /**
+     *
+     * @param childTypes type atoms of child query
+     * @param parentTypes type atoms of parent query
+     * @param childParentUnifier unifier to unify child with parent
+     * @return combined unifier for type atoms
+     */
+    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier){
+        Unifier unifier = childParentUnifier;
+        for(TypeAtom childType : childTypes){
+            Var childVarName = childType.getVarName();
+            Var parentVarName = unifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
+
+            //types are unique so getting one is fine
+            TypeAtom parentType = parentTypes.stream().filter(pt -> pt.getVarName().equals(parentVarName)).findFirst().orElse(null);
+            if (parentType != null) unifier = unifier.merge(childType.getUnifier(parentType));
+        }
+        return unifier;
     }
 
     /**
