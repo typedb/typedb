@@ -73,18 +73,22 @@ public class GlobalCache {
     }
 
     void populateSchemaTxCache(TxCache txCache){
-        lock.writeLock().lock();
-        Map<Label, SchemaConcept> cachedSchemaSnapshot = getCachedTypes();
-        Map<Label, LabelId> cachedLabelsSnapshot = getCachedLabels();
+        try {
+            lock.writeLock().lock();
 
-        //Read central cache into txCache cloning only base concepts. Sets clones later
-        for (SchemaConcept type : cachedSchemaSnapshot.values()) {
-            txCache.cacheConcept(type);
+            Map<Label, SchemaConcept> cachedSchemaSnapshot = getCachedTypes();
+            Map<Label, LabelId> cachedLabelsSnapshot = getCachedLabels();
+
+            //Read central cache into txCache cloning only base concepts. Sets clones later
+            for (SchemaConcept type : cachedSchemaSnapshot.values()) {
+                txCache.cacheConcept(type);
+            }
+
+            //Load Labels Separately. We do this because the TypeCache may have expired.
+            cachedLabelsSnapshot.forEach(txCache::cacheLabel);
+        } finally {
+            lock.writeLock().unlock();
         }
-
-        //Load Labels Separately. We do this because the TypeCache may have expired.
-        cachedLabelsSnapshot.forEach(txCache::cacheLabel);
-        lock.writeLock().unlock();
     }
 
     /**
@@ -117,18 +121,20 @@ public class GlobalCache {
      */
     void readTxCache(TxCache txCache) {
         //Check if the ontology has been changed and should be flushed into this cache
-        if(!cachedLabels.equals(txCache.getLabelCache())){
-            lock.readLock().lock();
+        if(!cachedLabels.equals(txCache.getLabelCache())) {
+            try {
+                lock.readLock().lock();
 
-            //Clear the cache
-            cachedLabels.clear();
-            cachedTypes.invalidateAll();
+                //Clear the cache
+                cachedLabels.clear();
+                cachedTypes.invalidateAll();
 
-            //Add a new one
-            cachedLabels.putAll(txCache.getLabelCache());
-            cachedTypes.putAll(txCache.getSchemaConceptCache());
-
-            lock.readLock().unlock();
+                //Add a new one
+                cachedLabels.putAll(txCache.getLabelCache());
+                cachedTypes.putAll(txCache.getSchemaConceptCache());
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         //Flush All The Internal Transaction Caches
