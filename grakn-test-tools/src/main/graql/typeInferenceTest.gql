@@ -2,6 +2,13 @@ define
 
 #Roles
 
+# Entity hierarchy
+#
+#                             role
+#         role1       role2           role3          role4
+#                       |
+#                    subRole2
+
 role1 sub role;
 role2 sub role;
 role3 sub role;
@@ -11,25 +18,37 @@ subRole2 sub role2;
 
 #Entities
 
+# Entity hierarchy
+#
+#                  entity
+#                     |
+#               noRoleEntity
+#              /            \
+#  singleRoleEntity    anotherSingleRoleEntity
+#         |                     |
+#  twoRoleEntity        anotherTwoRoleEntity
+#                               |
+#                         threeRoleEntity
+
 #plays in rel1
-entity1 sub entity
+singleRoleEntity sub entity
 	plays role1;
 
-#plays in rel3
-subEntity1 sub entity1
+#plays in rel1, rel3
+twoRoleEntity sub singleRoleEntity
     plays role4;
 
 #plays in rel1, rel2
-entity2 sub entity
-	plays role1
+anotherTwoRoleEntity sub singleRoleEntity
 	plays role2;
 
-entity3 sub entity
+#plays in rel1, rel2, rel3
+threeRoleEntity sub anotherSingleRoleEntity
     plays role2
-    plays role3
-    plays role4;
+    plays role3;
 
-entity4 sub entity
+#plays in rel3
+anotherSingleRoleEntity sub entity
     plays role4;
 
 #Relations
@@ -46,3 +65,12 @@ relation3 sub relationship
     relates subRole2
     relates role3
     relates role4;
+
+insert
+$x isa singleRoleEntity;
+$y isa twoRoleEntity;
+$z isa anotherTwoRoleEntity;
+$u isa threeRoleEntity;
+$v isa anotherSingleRoleEntity;
+
+

@@ -20,10 +20,14 @@ package ai.grakn.graql.internal.reasoner.utils.conversion;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import java.util.Set;
 
 /**
  * <p>
@@ -32,13 +36,21 @@ import com.google.common.collect.Multimap;
  *
  * @author Kasper Piskorski
  */
-public class SchemaConceptConverterImpl implements SchemaConceptConverter<SchemaConcept> {
+public class TypeConverter implements SchemaConceptConverter<Type> {
 
     @Override
-    public Multimap<RelationshipType, Role> toRelationshipMultimap(SchemaConcept schemaConcept) {
+    public Multimap<RelationshipType, Role> toRelationshipMultimap(Type entryType) {
         Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
-        schemaConcept.subs().filter(Concept::isType)
-                .flatMap(t -> t.asType().plays())
+
+        Set<Type> typeHierarchy = Sets.newHashSet(entryType);
+        if (Schema.MetaSchema.isMetaLabel(entryType.getLabel())) {
+            entryType.subs().forEach(typeHierarchy::add);
+        } else {
+            ReasonerUtils.supers(entryType).stream().map(Concept::asType).forEach(typeHierarchy::add);
+        }
+
+        typeHierarchy.stream()
+                .flatMap(Type::plays)
                 .forEach(roleType -> {
                     roleType.relationshipTypes()
                             .filter(rel -> !rel.isImplicit())
