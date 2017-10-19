@@ -19,7 +19,9 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UnifierComparison;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
@@ -40,6 +42,11 @@ public enum UnifierType implements UnifierComparison {
      */
     EXACT {
         @Override
+        public boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type) {
+            return true;
+        }
+
+        @Override
         public boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child) {
             return !areDisjointTypes(parent, child);
         }
@@ -55,6 +62,11 @@ public enum UnifierType implements UnifierComparison {
      */
     RULE {
         @Override
+        public boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type) {
+            return query.isTypeRoleCompatible(var, type);
+        }
+
+        @Override
         public boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child) {
             return child == null || !areDisjointTypes(parent, child);
         }
@@ -69,6 +81,11 @@ public enum UnifierType implements UnifierComparison {
      * Similar to rule one with addition to allowing id predicates to differ.
      */
     STRUCTURAL {
+        @Override
+        public boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type) {
+            return true;
+        }
+
         @Override
         public boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child) {
             return child == null || !areDisjointTypes(parent, child);
