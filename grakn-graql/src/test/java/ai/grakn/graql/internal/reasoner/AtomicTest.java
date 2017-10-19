@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -55,6 +54,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -86,6 +86,12 @@ public class AtomicTest {
     public static final SampleKBContext resourceApplicabilitySet = SampleKBContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
+    public static final SampleKBContext ruleApplicabilityInstanceTypesSet = SampleKBContext.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
+
+    @ClassRule
+    public static final SampleKBContext ruleApplicabilitySingleRoleSet = SampleKBContext.preLoad("testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
+
+    @ClassRule
     public static final SampleKBContext unificationTestSet = SampleKBContext.preLoad("unificationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
@@ -95,9 +101,9 @@ public class AtomicTest {
 
     @Test
     public void testAtomsAreCorrectlyIdentifiedAsRecursive(){
-        GraknTx graph = ruleApplicabilitySet.tx();
-        String recRelString = "{($x, $y) isa binary;}";
-        String nrecRelString = "{($x, $y) isa ternary;}";
+        GraknTx graph = ruleApplicabilitySingleRoleSet.tx();
+        String recRelString = "{($x, $y) isa knows-trans;}";
+        String nrecRelString = "{($x, $y) isa knows;}";
         ReasonerAtomicQuery recQuery = ReasonerQueries.atomic(conjunction(recRelString, graph), graph);
         ReasonerAtomicQuery nrecQuery = ReasonerQueries.atomic(conjunction(nrecRelString, graph), graph);
         assertTrue(recQuery.getAtom().isRecursive());
@@ -263,7 +269,7 @@ public class AtomicTest {
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
     public void testRoleInference_AllRolePlayersHaveAmbiguousRoles(){
         GraknTx graph = ruleApplicabilitySet.tx();
-        String relationString = "{($x, $y, $z) isa ternary;$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity;}";
+        String relationString = "{($x, $y, $z) isa ternary;$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa differentTwoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
     }
@@ -276,22 +282,14 @@ public class AtomicTest {
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
     }
 
-    @Test //for each role player role mapping is ambiguous so metarole has to be assigned
-    public void testRoleInference_MetaRelationType(){
-        GraknTx graph = ruleApplicabilitySet.tx();
-        String relationString = "{($x, $y) isa relationship;}";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
-    }
-
     @Test //relation relates a single role so instead of assigning metarole this role should be assigned
-    public void testRoleInference_RelationHasVerticalRoleHierarchy(){
-        GraknTx graph = ruleApplicabilitySet.tx();
-        String relationString = "{($x, $y) isa reifying-relation;}";
+    public void testRoleInference_RelationHasSingleRole(){
+        GraknTx graph = ruleApplicabilitySingleRoleSet.tx();
+        String relationString = "{($x, $y) isa knows;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
-                graph.getRole("role1"), var("x"),
-                graph.getRole("role1"), var("y"));
+                graph.getRole("friend"), var("x"),
+                graph.getRole("friend"), var("y"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
     }
 
@@ -303,63 +301,39 @@ public class AtomicTest {
      * ##################################
      */
 
-    @Test //should assign (role1: $x, role {role1, role2} : $y, role {role2, role3} : $z) which taking into account types is compatible with 3 ternary rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
+    @Test //should assign (role1: $x, role: $y, role: $z) which is compatible with 3 rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRuleApplicability_AmbiguousRoleMapping(){
-        GraknTx graph = ruleApplicabilitySet.tx();
-        String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa anotherTwoRoleEntity;}";
-        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        assertEquals(3, relation.getApplicableRules().count());
-    }
-
-    @Test //should assign (role1: $x, role {role1, role2}: $y, role {role1, role2, role3}: $z) which taking into account types is compatible with 2 ternary rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
-    public void testRuleApplicability_AmbiguousRoleMapping_RolePlayerTypeMismatch(){
         GraknTx graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity;}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        assertEquals(2, relation.getApplicableRules().count());
-    }
-
-    @Test //threeRoleEntity subs twoRoleEntity
-    public void testRuleApplicability_AmbiguousRoleMapping_TypeHierarchyEnablesExtraRule(){
-        GraknTx graph = ruleApplicabilitySet.tx();
-        String relationString = "{($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity;}";
-        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertEquals(3, relation.getApplicableRules().count());
     }
 
     @Test
-    public void testRuleApplicability_MissingRelationPlayers(){
+    public void testRuleApplicability_AmbiguousRoleMapping_TypeContradiction(){
         GraknTx graph = ruleApplicabilitySet.tx();
-
-        //inferred relation (role {role1, role2} : $x, role {role2, role3} : $y)
-        String relationString = "{($x, $y);$x isa twoRoleEntity; $y isa anotherTwoRoleEntity;}";
-
-        //inferred relation: (role1: $x, role1: $y)
-        String relationString2 = "{($x, $y);$x isa singleRoleEntity; $y isa singleRoleEntity;}";
-
-        //inferred relation: (role1: $x, role {role2, role3}: $y)
-        String relationString3 = "{($x, $y);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity;}";
-
-        //inferred relation: (role1: $x, role {role1, role2, role3}: $y)
-        String relationString4 = "{($x, $y);$x isa singleRoleEntity; $y isa threeRoleEntity;}";
-
-        //inferred relation: (role {role2, role3}: $x, role {role2, role3}: $y)
-        String relationString5 = "{($x, $y);$x isa anotherTwoRoleEntity; $y isa anotherTwoRoleEntity;}";
-
-        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        Atom relation2 = ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
-        Atom relation3 = ReasonerQueries.atomic(conjunction(relationString3, graph), graph).getAtom();
-        Atom relation4 = ReasonerQueries.atomic(conjunction(relationString4, graph), graph).getAtom();
-        Atom relation5 = ReasonerQueries.atomic(conjunction(relationString5, graph), graph).getAtom();
-
-        assertEquals(4, relation.getApplicableRules().count());
-        assertThat(relation2.getApplicableRules().collect(toSet()), empty());
-        assertEquals(4, relation3.getApplicableRules().count());
-        assertEquals(4, relation4.getApplicableRules().count());
-        assertThat(relation5.getApplicableRules().collect(toSet()), empty());
+        String relationString = "{($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa differentTwoRoleEntity;}";
+        RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(2, relation.getApplicableRules().count());
     }
 
-    @Test //should assign (role1: $x, role1: $y, role: $z) which is compatible with 3 ternary rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
+    @Test //should assign (role1: $x, role: $y, role: $z) which is compatible with 2 rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
+    public void testRuleApplicability_AmbiguousRoleMapping2(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa differentTwoRoleEntity;}";
+        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(2, relation.getApplicableRules().count());
+    }
+
+    @Test //should assign (role: $x, role: $y, role: $z) which is compatible with 2 rules
+    public void testRuleApplicability_RoleMappingAmbiguous(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        String relationString = "{($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa differentTwoRoleEntity;}";
+        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(2, relation.getApplicableRules().count());
+    }
+
+    @Test //should assign (role: $x, role1: $y, role: $z) which is compatible with 3 rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRuleApplicability_WithWildcard(){
         GraknTx graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity;}";
@@ -422,18 +396,36 @@ public class AtomicTest {
         assertThat(relation.getApplicableRules().collect(toSet()), empty());
     }
 
-    @Test //NB: role2 sub role1
+    @Test //should assign (role: $x, role: $y) which matches two rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
+    public void testRuleApplicability_MissingRelationPlayers(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        String relationString = "{($x, $y);$x isa twoRoleEntity; $y isa differentTwoRoleEntity;}";
+        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(2, relation.getApplicableRules().count());
+    }
+
+    @Test //should assign (role1: $x, role1: $y) which is inadequate for any of the rules
+    public void testRuleApplicability_MissingRelationPlayers2(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        String relationString = "{($x, $y);$x isa singleRoleEntity; $y isa singleRoleEntity;}";
+        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        assertThat(relation.getApplicableRules().collect(toSet()), empty());
+    }
+
+    @Test
     public void testRuleApplicability_RepeatingRoleTypes(){
         GraknTx graph = ruleApplicabilitySet.tx();
         String relationString = "{(role1: $x1, role1: $x2, role2: $x3);}";
-        String relationString2 = "{(role1: $x1, role2: $x2, role2: $x3);}";
-        String relationString3 = "{(role2: $x1, role2: $x2, role2: $x3);}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        Atom relation2 = ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
-        Atom relation3 = ReasonerQueries.atomic(conjunction(relationString3, graph), graph).getAtom();
+        assertThat(relation.getApplicableRules().collect(toSet()), empty());
+    }
+
+    @Test
+    public void testRuleApplicability_RepeatingRoleTypes2(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        String relationString = "{(role1: $x1, role2: $x2, role2: $x3);}";
+        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertEquals(1, relation.getApplicableRules().count());
-        assertEquals(1, relation2.getApplicableRules().count());
-        assertThat(relation3.getApplicableRules().collect(toSet()), empty());
     }
 
     @Test
@@ -462,7 +454,7 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_TypePlayabilityInRuleBodyNeedsChecking(){
         GraknTx graph = ruleApplicabilitySet.tx();
-        String relationString = "{$y isa anotherTwoRoleEntity;(role1:$x, role2:$y, role3: $z) isa ternary;}";
+        String relationString = "{$y isa differentTwoRoleEntity;(role1:$x, role2:$y, role3: $z) isa ternary;}";
         String relationString2 = "{$y isa entity;(role1:$x, role2:$y, role3: $z) isa ternary;}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         Atom relation2 = ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
@@ -495,8 +487,10 @@ public class AtomicTest {
         assertThat(type4.getApplicableRules().collect(toSet()), empty());
     }
 
+    //NB: although the rule will be triggered it will find no results
+    @Ignore
     @Test
-    public void testRuleApplicability_InstancesMakeRuleInapplicable_NoRoleTypes(){
+    public void testRuleApplicability_InstancesDoNotMatchRule_NoRoleTypes(){
         GraknTx graph = ruleApplicabilitySet.tx();
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
@@ -507,8 +501,10 @@ public class AtomicTest {
         assertThat(relation.getApplicableRules().collect(toSet()), empty());
     }
 
+    //NB: although the rule will be triggered it will find no results
+    @Ignore
     @Test
-    public void testRuleApplicability_InstancesMakeRuleInapplicable_NoRoleTypes_NoRelationType(){
+    public void testRuleApplicability_InstancesDoNotMatchRule_NoRoleTypes_NoRelationType(){
         GraknTx graph = ruleApplicabilitySet.tx();
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
@@ -518,6 +514,14 @@ public class AtomicTest {
 
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertThat(relation.getApplicableRules().collect(toSet()), empty());
+    }
+
+    @Test
+    public void testRuleApplicability_InstanceSubTypeMatchesRule(){
+        GraknTx graph = ruleApplicabilityInstanceTypesSet.tx();
+        String relationString = "{$x isa entity1;(role1: $x, role2: $y) isa relation1;}";
+        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(1, relation.getApplicableRules().count());
     }
 
     @Test
@@ -541,14 +545,14 @@ public class AtomicTest {
         Atom resource7 = ReasonerQueries.atomic(conjunction(resourceString7, graph), graph).getAtom();
         Atom resource8 = ReasonerQueries.atomic(conjunction(resourceString8, graph), graph).getAtom();
 
-        assertEquals(1, resource.getApplicableRules().count());
+        assertEquals(resource.getApplicableRules().count(), 1);
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
         assertThat(resource3.getApplicableRules().collect(toSet()), empty());
-        assertEquals(1, resource4.getApplicableRules().count());
+        assertEquals(resource4.getApplicableRules().count(), 1);
         assertThat(resource5.getApplicableRules().collect(toSet()), empty());
-        assertEquals(1, resource6.getApplicableRules().count());
-        assertEquals(1, resource7.getApplicableRules().count());
-        assertEquals(1, resource8.getApplicableRules().count());
+        assertEquals(resource6.getApplicableRules().count(), 1);
+        assertEquals(resource7.getApplicableRules().count(), 1);
+        assertEquals(resource8.getApplicableRules().count(), 1);
     }
 
     @Test
@@ -572,14 +576,14 @@ public class AtomicTest {
         Atom resource7 = ReasonerQueries.atomic(conjunction(resourceString7, graph), graph).getAtom();
         Atom resource8 = ReasonerQueries.atomic(conjunction(resourceString8, graph), graph).getAtom();
 
-        assertEquals(1, resource.getApplicableRules().count());
+        assertEquals(resource.getApplicableRules().count(), 1);
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
         assertThat(resource3.getApplicableRules().collect(toSet()), empty());
-        assertEquals(1, resource4.getApplicableRules().count());
+        assertEquals(resource4.getApplicableRules().count(), 1);
         assertThat(resource5.getApplicableRules().collect(toSet()), empty());
-        assertEquals(1, resource6.getApplicableRules().count());
-        assertEquals(1, resource7.getApplicableRules().count());
-        assertEquals(1, resource8.getApplicableRules().count());
+        assertEquals(resource6.getApplicableRules().count(), 1);
+        assertEquals(resource7.getApplicableRules().count(), 1);
+        assertEquals(resource8.getApplicableRules().count(), 1);
     }
 
     @Test
@@ -595,10 +599,10 @@ public class AtomicTest {
         Atom resource3 = ReasonerQueries.atomic(conjunction(resourceString3, graph), graph).getAtom();
         Atom resource4 = ReasonerQueries.atomic(conjunction(resourceString4, graph), graph).getAtom();
 
-        assertEquals(1, resource.getApplicableRules().count());
+        assertEquals(resource.getApplicableRules().count(), 1);
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
-        assertEquals(1, resource3.getApplicableRules().count());
-        assertEquals(1, resource4.getApplicableRules().count());
+        assertEquals(resource3.getApplicableRules().count(), 1);
+        assertEquals(resource4.getApplicableRules().count(), 1);
     }
 
     @Test
@@ -609,8 +613,7 @@ public class AtomicTest {
 
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
-
-        assertEquals(1, resource.getApplicableRules().count());
+        assertEquals(resource.getApplicableRules().count(), 1);
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
     }
 
@@ -632,8 +635,7 @@ public class AtomicTest {
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
         Atom resource3 = ReasonerQueries.atomic(conjunction(resourceString3, graph), graph).getAtom();
-
-        assertEquals(1, resource.getApplicableRules().count());
+        assertEquals(resource.getApplicableRules().count(), 1);
         assertThat(resource2.getApplicableRules().collect(toSet()), empty());
         assertThat(resource3.getApplicableRules().collect(toSet()), empty());
     }
@@ -649,209 +651,206 @@ public class AtomicTest {
     @Test
     public void testTypeInference_singleGuard() {
         GraknTx graph = typeInferenceSet.tx();
+        String patternString = "{$x isa entity1; ($x, $y);}";
+        String patternString2 = "{$x isa subEntity1; ($x, $y);}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+        RelationshipAtom atom2 = (RelationshipAtom) query2.getAtom();
 
-        String patternString = "{$x isa singleRoleEntity; ($x, $y);}";
-        String subbedPatternString = "{$x id '" + conceptId(graph, "singleRoleEntity") + "';($x, $y);}";
-        String patternString2 = "{$x isa twoRoleEntity; ($x, $y);}";
-        String subbedPatternString2 = "{$x id '" + conceptId(graph, "twoRoleEntity") + "';($x, $y);}";
-
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
-
-        List<RelationshipType> possibleTypes2 = Lists.newArrayList(
+        List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getSchemaConcept(Label.of("relation1")),
                 graph.getSchemaConcept(Label.of("relation3"))
         );
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
-        testTypeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, possibleTypes));
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes2, possibleTypes));
+
+        assertEquals(atom.getSchemaConcept(), null);
+        assertEquals(atom2.getSchemaConcept(), null);
     }
 
     @Test
     public void testTypeInference_doubleGuard() {
         GraknTx graph = typeInferenceSet.tx();
+        String patternString = "{$x isa entity1; ($x, $y); $y isa entity2;}";
+        String patternString2 = "{$x isa subEntity1; ($x, $y); $y isa entity2;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+        RelationshipAtom atom2 = (RelationshipAtom) query2.getAtom();
 
-        //{rel1} ^ {rel1, rel2} = {rel1}
-        String patternString = "{$x isa singleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString = "{($x, $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-        //{rel1, rel3} ^ {rel1, rel2} = {rel1}
-        String patternString2 = "{$x isa twoRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString2 = "{($x, $y);" +
-                "$x id '" + conceptId(graph, "twoRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
+        List<RelationshipType> possibleTypes = Collections.singletonList(
+                graph.getSchemaConcept(Label.of("relation1"))
+        );
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
-
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
-        testTypeInference(possibleTypes, patternString2, subbedPatternString2, graph);
+        assertEquals(relationshipTypes, possibleTypes);
+        assertEquals(relationshipTypes2, possibleTypes);
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation1")));
+        assertEquals(atom2.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation1")));
     }
 
     @Test
     public void testTypeInference_singleRole() {
         GraknTx graph = typeInferenceSet.tx();
         String patternString = "{(role2: $x, $y);}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
 
         List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getSchemaConcept(Label.of("relation1")),
-                graph.getSchemaConcept(Label.of("relation2"))
+                graph.getSchemaConcept(Label.of("relation2")),
+                graph.getSchemaConcept(Label.of("relation3"))
         );
 
-        testTypeInference(possibleTypes, patternString, graph);
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, possibleTypes));
+        assertEquals(atom.getSchemaConcept(), null);
     }
 
     @Test
     public void testTypeInference_singleRole_subType() {
         GraknTx graph = typeInferenceSet.tx();
         String patternString = "{(subRole2: $x, $y);}";
-        testTypeInference(allRelations(graph), patternString, graph);
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+
+        List<RelationshipType> possibleTypes = Collections.singletonList(
+                graph.getSchemaConcept(Label.of("relation3"))
+        );
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+
+        assertEquals(relationshipTypes, possibleTypes);
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation3")));
     }
 
     @Test
     public void testTypeInference_singleRole_singleGuard() {
         GraknTx graph = typeInferenceSet.tx();
-
-        //{rel1, rel2} ^ {rel1}
-        String patternString = "{(role2: $x, $y); $y isa singleRoleEntity;}";
-        String subbedPatternString = "{(role2: $x, $y);" +
-                "$y id '" + conceptId(graph, "singleRoleEntity") + "';}";
-        //{rel1, rel2} ^ {rel1, rel3}
-        String patternString2 = "{(role2: $x, $y); $y isa twoRoleEntity;}";
-        String subbedPatternString2 = "{(role2: $x, $y);" +
-                "$y id '" + conceptId(graph, "twoRoleEntity") + "';}";
-        //{rel1,} ^ {rel1, rel3}
-        String patternString3 = "{(role1: $x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString3 = "{(role1: $x, $y);" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") + "';}";
-
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
-
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
-        testTypeInference(possibleTypes, patternString2, subbedPatternString2, graph);
-        testTypeInference(possibleTypes, patternString3, subbedPatternString3, graph);
-    }
-
-    @Test
-    public void testTypeInference_singleRole_singleGuard_bothConceptsAreSubConcepts() {
-        GraknTx graph = typeInferenceSet.tx();
-
-        //{rel1, rel2, rel3} ^ {rel1, rel3}
-        String patternString = "{(subRole2: $x, $y); $y isa twoRoleEntity;}";
-        String subbedPatternString = "{(subRole2: $x, $y);" +
-                "$y id '" + conceptId(graph, "twoRoleEntity") + "';}";
-        //{rel1, rel2, rel3} ^ {rel1, rel2}
-        String patternString2 = "{(subRole2: $x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString2 = "{(subRole2: $x, $y);" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") + "';}";
+        String patternString = "{(role2: $x, $y); $y isa entity1;}";
+        String patternString2 = "{(role2: $x, $y); $y isa subEntity1;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+        RelationshipAtom atom2 = (RelationshipAtom) query2.getAtom();
 
         List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getSchemaConcept(Label.of("relation1")),
                 graph.getSchemaConcept(Label.of("relation3"))
         );
-        List<RelationshipType> possibleTypes2 = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation1")),
-                graph.getSchemaConcept(Label.of("relation2"))
-        );
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
-        testTypeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, possibleTypes));
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes2, possibleTypes));
+
+        assertEquals(atom.getSchemaConcept(), null);
+        assertEquals(atom2.getSchemaConcept(), null);
     }
 
     @Test
-    public void testTypeInference_singleRole_singleGuard_typeContradiction() {
+    public void testTypeInference_singleRole_singleGuard_bothAreSuperTypes() {
         GraknTx graph = typeInferenceSet.tx();
+        String patternString = "{(subRole2: $x, $y); $y isa subEntity1;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
 
-        //{rel1} ^ {rel3}
-        String patternString = "{(role1: $x, $y); $y isa anotherSingleRoleEntity;}";
-        String subbedPatternString = "{(role1: $x, $y);" +
-                "$y id '" + conceptId(graph, "anotherSingleRoleEntity") + "';}";
-        String patternString2 = "{(role1: $x, $y); $x isa anotherSingleRoleEntity;}";
-        String subbedPatternString2 = "{(role1: $x, $y);" +
-                "$x id '" + conceptId(graph, "anotherSingleRoleEntity") + "';}";
+        List<RelationshipType> possibleTypes = Collections.singletonList(
+                graph.getSchemaConcept(Label.of("relation3"))
+        );
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
-        testTypeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
-        testTypeInference(Collections.emptyList(), patternString2, subbedPatternString2, graph);
+        assertEquals(relationshipTypes, possibleTypes);
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation3")));
+    }
+
+    @Test
+    public void testTypeInference_singleRole_singleGuard_contradictionOnDifferentRelationPlayers() {
+        GraknTx graph = typeInferenceSet.tx();
+        String patternString = "{(role1: $x, $y); $y isa entity4;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+
+        assertThat(relationshipTypes, empty());
+        assertEquals(atom.getSchemaConcept(), null);
+    }
+
+    @Test
+    public void testTypeInference_singleRole_singleGuard_contradictionOnSameRelationPlayer() {
+        GraknTx graph = typeInferenceSet.tx();
+        String patternString = "{(role1: $x, $y); $x isa entity4;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
+
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+
+        assertThat(relationshipTypes, empty());
+        assertEquals(atom.getSchemaConcept(), null);
     }
 
     @Test
     public void testTypeInference_singleRole_doubleGuard() {
         GraknTx graph = typeInferenceSet.tx();
-        //{rel1} ^ {rel1, rel2}
-        String patternString = "{$x isa singleRoleEntity;(role2: $x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString = "{(role2: $x, $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
+        String patternString = "{$x isa entity1;(role2: $x, $y); $y isa entity2;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
 
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
+        List<RelationshipType> possibleTypes = Collections.singletonList(
+                graph.getSchemaConcept(Label.of("relation1"))
+        );
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        assertEquals(relationshipTypes, possibleTypes);
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation1")));
     }
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard() {
         GraknTx graph = typeInferenceSet.tx();
+        String patternString = "{$x isa entity1;(role1: $x, role2: $y); $y isa entity2;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
 
-        //{rel1} ^ {rel1, rel2} ^ {rel1} ^ {rel1, rel2}
-        String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString = "{(role1: $x, role2: $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-        //{rel1, rel2, rel3} ^ {rel1, rel2} ^ {rel2, rel3} ^ {rel1, rel2}
-        String patternString2 = "{$x isa threeRoleEntity;(role2: $x, role3: $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString2 = "{(role2: $x, role3: $y);" +
-                "$x id '" + conceptId(graph, "threeRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
+        List<RelationshipType> possibleTypes = Collections.singletonList(
+                graph.getSchemaConcept(Label.of("relation1"))
+        );
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        RelationshipType relation2 = graph.getSchemaConcept(Label.of("relation2"));
-
-        testTypeInference(Collections.singletonList(relation1), patternString, subbedPatternString, graph);
-        testTypeInference(Collections.singletonList(relation2), patternString2, subbedPatternString2, graph);
+        assertEquals(relationshipTypes, possibleTypes);
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation1")));
     }
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard_multipleRelationsPossible() {
         GraknTx graph = typeInferenceSet.tx();
-        //{rel1, rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString = "{$x isa threeRoleEntity;(subRole2: $x, role3: $y); $y isa threeRoleEntity;}";
-        String subbedPatternString = "{(subRole2: $x, role3: $y);" +
-                "$x id '" + conceptId(graph, "threeRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "threeRoleEntity") + "';}";
+        String patternString = "{$x isa entity3;(role2: $x, role3: $y); $y isa entity3;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
 
         List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getSchemaConcept(Label.of("relation3")),
                 graph.getSchemaConcept(Label.of("relation2"))
         );
-        testTypeInference(possibleTypes, patternString, subbedPatternString, graph);
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        assertEquals(relationshipTypes, possibleTypes);
+        assertEquals(atom.getSchemaConcept(), null);
     }
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard_contradiction() {
         GraknTx graph = typeInferenceSet.tx();
-        //{rel1} ^ {rel1} ^ {rel1, rel2} ^ {rel4}
-        String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherSingleRoleEntity;}";
-        String subbedPatternString = "{(role1: $x, role2: $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherSingleRoleEntity") +"';}";
+        String patternString = "{$x isa entity1;(role1: $x, role2: $y); $y isa entity4;}";
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
 
-        testTypeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
-    }
-
-    @Test
-    public void testTypeInference_metaGuards() {
-        GraknTx graph = typeInferenceSet.tx();
-        String patternString = "{($x, $y);$x isa entity; $y isa entity;}";
-        testTypeInference(allRelations(graph), patternString, graph);
-    }
-
-    @Test
-    public void testTypeInference_genericRelation() {
-        GraknTx graph = typeInferenceSet.tx();
-        String patternString = "{($x, $y);}";
-        testTypeInference(allRelations(graph), patternString, graph);
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        assertThat(relationshipTypes, empty());
+        assertEquals(atom.getSchemaConcept(), null);
     }
 
     /**
@@ -1121,41 +1120,6 @@ public class AtomicTest {
         testExactUnification(baseQuery, childQuery, true, true);
     }
 
-    private void testTypeInference(List<RelationshipType> possibleTypes, String pattern, GraknTx graph){
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-
-        if (possibleTypes.size() == 1){
-            assertEquals(possibleTypes, relationshipTypes);
-            assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
-        } else {
-            assertTrue(CollectionUtils.isEqualCollection(possibleTypes, relationshipTypes));
-            assertEquals(atom.getSchemaConcept(), null);
-        }
-    }
-
-    private void testTypeInference(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, GraknTx graph){
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
-        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom subbedAtom = (RelationshipAtom) subbedQuery.getAtom();
-
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationshipType> subbedRelationshipTypes = subbedAtom.inferPossibleRelationTypes(new QueryAnswer());
-        if (possibleTypes.size() == 1){
-            assertEquals(possibleTypes, relationshipTypes);
-            assertEquals(relationshipTypes, subbedRelationshipTypes);
-            assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
-            assertEquals(subbedAtom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
-        } else {
-            assertTrue(CollectionUtils.isEqualCollection(possibleTypes, relationshipTypes));
-            assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, subbedRelationshipTypes));
-            assertEquals(atom.getSchemaConcept(), null);
-            assertEquals(subbedAtom.getSchemaConcept(), null);
-        }
-    }
-
     private void testExactUnification(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, boolean checkInverse, boolean checkEquality){
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = parentQuery.getAtom();
@@ -1189,15 +1153,6 @@ public class AtomicTest {
                 ReasonerQueries.atomic(conjunction(childPatternString, graph), graph),
                 checkInverse,
                 checkEquality);
-    }
-
-    private List<RelationshipType> allRelations(GraknTx tx){
-        RelationshipType metaType = tx.getRelationshipType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
-        return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
-    }
-
-    private ConceptId conceptId(GraknTx graph, String type){
-        return graph.getEntityType(type).instances().map(Concept::getId).findFirst().orElse(null);
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){

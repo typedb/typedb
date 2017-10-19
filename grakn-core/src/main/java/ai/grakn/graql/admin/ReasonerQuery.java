@@ -20,7 +20,6 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 
@@ -94,14 +93,6 @@ public interface ReasonerQuery{
     boolean isRuleResolvable();
 
     /**
-     * @param typedVar variable of interest
-     * @param parentType to be checked
-     * @return true if typing the typeVar with type is compatible with role configuration of this query
-     */
-    @CheckReturnValue
-    boolean isTypeRoleCompatible(Var typedVar, SchemaConcept parentType);
-
-    /**
      * @param parent query to unify wth
      * @return multiunifier unifying this and parent query
      */
@@ -120,5 +111,5 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<Var, Type> getVarTypeMap();
+    Map<Var, SchemaConcept> getVarSchemaConceptMap();
 }
