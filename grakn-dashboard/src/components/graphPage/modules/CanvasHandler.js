@@ -24,7 +24,6 @@ import * as API from '../../../js/util/HALTerms';
 import { EventHub } from '../../../js/state/graphPageState';
 import CanvasEvents from './CanvasEvents';
 
-
 function clearGraph() {
   visualiser.clearGraph();
 }
@@ -72,7 +71,8 @@ function flatten<T>(array: T[][]): T[] {
 }
 
 function filterNodesToRender(responseObject: Object | Object[], parsedResponse: Object, showAttributes: boolean) {
-  const dataArray = (Array.isArray(responseObject)) ? responseObject : [responseObject];
+  let dataArray = (Array.isArray(responseObject)) ? responseObject : [responseObject];
+  dataArray = dataArray.flatMap(Object.values);
   // Populate map containing all the first level objects returned in the response, they MUST be added to the graph.
   const firstLevelNodes = dataArray.reduce((accumulator, current) => Object.assign(accumulator, { [current._id]: true }), {});
 

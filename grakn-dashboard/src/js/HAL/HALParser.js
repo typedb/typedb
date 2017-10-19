@@ -23,10 +23,6 @@ import * as Utils from './APIUtils';
 import _ from 'underscore';
 
 
-Array.prototype.flatMap = function (lambda) {
-  return Array.prototype.concat.apply([], this.map(lambda));
-};
-
 /**
  * Regular expression used to match URIs contained in attributes values
  */
@@ -127,6 +123,9 @@ function parseHalObject(obj:Object, showIsa:boolean, nodes:Object[], edges:Objec
   }
 }
 
+function flat(array){
+  return array.flatMap(x => Object.values(x).reduce((array, current) => array.concat(current), []));
+}
 
 export default {
    /**
@@ -141,9 +140,9 @@ export default {
     const edges = [];
 
     try {
-      const dataArray = (Array.isArray(data)) ? data : [data];
+      let dataArray = (Array.isArray(data)) ? flat(data) : [data];
+
       dataArray
-      .flatMap(x => Object.keys(x).map(k => x[k]).reduce((array, current) => array.concat(current), []))
       .forEach((x) => {
         parseHalObject(x, showIsa, nodes, edges);
       });
