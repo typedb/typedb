@@ -48,7 +48,6 @@ import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +62,7 @@ import java.util.stream.StreamSupport;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typeUnifier;
 
 /**
  *
@@ -155,21 +155,19 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         if (p == this) return new MultiUnifierImpl();
         Preconditions.checkArgument(p instanceof ReasonerAtomicQuery);
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
+        MultiUnifier multiUnifier = this.getAtom().getMultiUnifier(parent.getAtom(), true);
 
-        //get type unifiers
-        Set<Atom> unified = new HashSet<>();
-        Unifier typeUnifier = new UnifierImpl();
-        getAtom().getTypeConstraints()
-                .forEach(type -> {
-                    Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
-                    Atom equiv = toUnify.stream().findFirst().orElse(null);
-                    //only apply if unambiguous
-                    if (equiv != null && toUnify.size() == 1){
-                        typeUnifier.merge(type.getUnifier(equiv));
-                        unified.add(equiv);
-                    }
-                });
-        return getAtom().getMultiUnifier(parent.getAtom(), true).merge(typeUnifier);
+        Set<TypeAtom> childTypes = this.getAtom().getTypeConstraints().collect(Collectors.toSet());
+        if (childTypes.isEmpty()) return multiUnifier;
+
+        //get corresponding type unifiers
+        Set<TypeAtom> parentTypes = parent.getAtom().getTypeConstraints().collect(Collectors.toSet());
+        if (multiUnifier.isEmpty()) return new MultiUnifierImpl(typeUnifier(childTypes, parentTypes, new UnifierImpl()));
+
+        Set<Unifier> unifiers = multiUnifier.unifiers().stream()
+                .map(unifier -> typeUnifier(childTypes, parentTypes, unifier))
+                .collect(Collectors.toSet());
+        return new MultiUnifierImpl(unifiers);
     }
 
     /**

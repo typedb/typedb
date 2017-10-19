@@ -647,7 +647,6 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Multimap<Role, Var> computeRoleVarMap() {
         Multimap<Role, Var> roleMap = ArrayListMultimap.create();
-        if (getParentQuery() == null || getSchemaConcept() == null) return roleMap;
 
         GraknTx graph = getParentQuery().tx();
         getRelationPlayers().forEach(c -> {
@@ -705,9 +704,10 @@ public class RelationshipAtom extends IsaAtom {
      * @return set of possible COMPLETE mappings between this (child) and parent relation players
      */
     private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, boolean exact) {
-        Multimap<Role, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
-        Map<Var, Type> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarTypeMap();
+        Multimap<Role, RelationPlayer> childRoleRPMap = this.getRoleRelationPlayerMap();
         Map<Var, Type> childVarSchemaConceptMap = this.getParentQuery().getVarTypeMap();
+        Map<Var, Type> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarTypeMap();
+
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
