@@ -102,6 +102,10 @@ public class BatchExecutorClient implements Closeable {
         }
     }
 
+    public Observable<QueryResponse> add(Query<?> query, String keyspace) {
+        return add(query, keyspace, true);
+    }
+
     public Observable<QueryResponse> add(Query<?> query, String keyspace, boolean keepErrors) {
         Context context = addTimer.time();
         Observable<QueryResponse> observable = new QueriesObservableCollapser(query,
