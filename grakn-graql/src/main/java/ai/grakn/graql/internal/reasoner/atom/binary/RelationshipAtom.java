@@ -446,7 +446,9 @@ public class RelationshipAtom extends IsaAtom {
                 .collect(toSet());
 
         //types deduced from substitution
-        inferEntityTypes(sub).stream().map(Pair::getValue).forEach(types::add);
+        inferEntityTypes(sub).stream()
+                .map(Pair::getValue)
+                .forEach(types::add);
 
         Multimap<RelationshipType, Role> compatibleTypesFromTypes = compatibleRelationTypesWithRoles(types, new TypeConverter());
 
@@ -743,7 +745,6 @@ public class RelationshipAtom extends IsaAtom {
                                                 if (exact) return childQuery.isTypeRoleCompatible(childVar, parentType) && !areDisjointTypes(parentType, childType);
                                                 else return childQuery.isTypeRoleCompatible(childVar, parentType)
                                                         && (childType == null || !areDisjointTypes(parentType, childType));
-
                                             })
                                             //check for substitution compatibility
                                             .filter(crp ->

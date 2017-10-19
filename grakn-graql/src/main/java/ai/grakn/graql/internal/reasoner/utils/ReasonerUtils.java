@@ -287,10 +287,11 @@ public class ReasonerUtils {
     public static <T extends SchemaConcept> Multimap<RelationshipType, Role> compatibleRelationTypesWithRoles(Set<T> types, SchemaConceptConverter<T> schemaConceptConverter) {
         Multimap<RelationshipType, Role> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
-        Iterator<T> it = types.iterator();
-        compatibleTypes.putAll(schemaConceptConverter.toRelationshipMultimap(it.next()));
-        while(it.hasNext() && !compatibleTypes.isEmpty()) {
-            compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(it.next()));
+        Iterator<T> typeIterator = types.iterator();
+        compatibleTypes.putAll(schemaConceptConverter.toRelationshipMultimap(typeIterator.next()));
+
+        while(typeIterator.hasNext() && compatibleTypes.size() > 1) {
+            compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(typeIterator.next()));
         }
         return compatibleTypes;
     }
