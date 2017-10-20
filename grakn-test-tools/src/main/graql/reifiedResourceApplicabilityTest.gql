@@ -1,0 +1,64 @@
+define
+
+entity1 sub entity
+    plays resource-owner
+	has res-string
+	has res-double
+	has res-long
+	has res-boolean;
+
+
+#Resources
+res-string sub attribute datatype string
+    plays resource-value;
+res-double sub attribute datatype double
+    plays resource-value;
+res-long sub attribute datatype long
+    plays resource-value;
+res-boolean sub attribute datatype boolean
+    plays resource-value;
+
+resource-owner sub role;
+resource-value sub role;
+
+resource-relation sub relationship
+    relates resource-owner
+    relates resource-value;
+
+#Rules
+
+rule-1 sub rule
+when {
+    $x isa entity1;
+    $y isa res-string val 'value';
+}
+then {
+    (resource-owner: $x, resource-value: $y) isa resource-relation;
+};
+
+rule-2 sub rule
+when {
+    $x isa entity1;
+    $y isa res-double val 3.14;
+}
+then {
+    (resource-owner: $x, resource-value: $y) isa resource-relation;
+};
+
+rule-3 sub rule
+when {
+    $x isa entity1;
+    $y isa res-long val 123;
+}
+then {
+    (resource-owner: $x, resource-value: $y) isa resource-relation;
+};
+
+rule-4 sub rule
+when {
+    $x isa entity1;
+    $y isa res-boolean val 'true';
+}
+then {
+    (resource-owner: $x, resource-value: $y) isa resource-relation;
+};

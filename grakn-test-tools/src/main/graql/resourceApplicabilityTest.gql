@@ -5,12 +5,12 @@ entity1 sub entity
 	has res-double
 	has res-long
 	has res-boolean
-	has res1;
+	has resource;
 entity2 sub entity
-    has res1;
+    has resource;
 
 #Resources
-res1 sub attribute datatype string;
+resource sub attribute datatype string;
 res-string sub attribute datatype string;
 res-double sub attribute datatype double;
 res-long sub attribute datatype long;
@@ -55,5 +55,5 @@ when {
     $x isa entity1;
 }
 then {
-    $x has res1 'test';
+    $x has resource 'test';
 };

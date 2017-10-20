@@ -58,6 +58,7 @@ public class EngineContext extends ExternalResource {
     private final boolean inMemoryRedis;
     private MockRedisRule mockRedis;
     private JedisPool jedisPool;
+    private MetricRegistry metricRegistry;
 
 
     private EngineContext(boolean inMemoryRedis){
@@ -108,7 +109,8 @@ public class EngineContext extends ExternalResource {
     public RedisCountStorage redis(String host, int port) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         this.jedisPool = new JedisPool(poolConfig, host, port);
-        return RedisCountStorage.create(jedisPool, new MetricRegistry());
+        this.metricRegistry = new MetricRegistry();
+        return RedisCountStorage.create(jedisPool, metricRegistry);
     }
 
     public TaskManager getTaskManager(){
@@ -178,5 +180,9 @@ public class EngineContext extends ExternalResource {
 
     public JedisPool getJedisPool() {
         return jedisPool;
+    }
+
+    public MetricRegistry getMetricRegistry() {
+        return metricRegistry;
     }
 }

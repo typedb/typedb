@@ -72,7 +72,6 @@ update_classpath
 
 case "$1" in
   console)
-    echo "Starting Graql console..."
     graql_console "${@:2}"
   ;;
   migrate)

@@ -19,6 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Var;
 
 /**
  *
@@ -39,10 +40,17 @@ public interface UnifierComparison {
     boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child);
 
     /**
-     *
-     * @param parent atomic of parent expression
-     * @param child atomic of child expression
-     * @return atomic comparison value
+     * @param parent predicate of parent expression
+     * @param child predicate of child expression
+     * @return true if predicates compatible
      */
-    boolean atomicComparison(Atomic parent, Atomic child);
+    boolean atomicCompatibility(Atomic parent, Atomic child);
+
+    /**
+     * @param query query to be checked
+     * @param var variable of interest
+     * @param type to be checked
+     * @return true if typing the typeVar with type is compatible with role configuration of provided quer
+     */
+    boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type);
 }

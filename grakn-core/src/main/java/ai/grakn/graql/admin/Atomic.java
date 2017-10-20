@@ -80,6 +80,12 @@ public interface Atomic {
     boolean isStructurallyEquivalent(Object obj);
 
     /**
+     * @return true if obj compatible
+     */
+    @CheckReturnValue
+    default boolean isCompatibleWith(Object obj){return isAlphaEquivalent(obj);}
+
+    /**
      * @return alpha-equivalence hash code
      */
     @CheckReturnValue

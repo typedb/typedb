@@ -32,7 +32,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import static ai.grakn.engine.HttpHandler.configureSpark;
 
 /**
  * Context that starts spark

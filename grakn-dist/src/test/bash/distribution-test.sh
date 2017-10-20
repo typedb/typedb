@@ -13,7 +13,7 @@ must_properly_start() {
   "${GRAKN_DIST_TMP}"/grakn server start
   local count_running_cassandra_process=`ps -ef | grep 'CassandraDaemon' | grep -v grep | awk '{ print $2}' | wc -l`
   local count_running_redis_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
-  local count_running_grakn_process=`ps -ef | grep 'GraknEngineServer' | grep -v grep | awk '{ print $2}' | wc -l`
+  local count_running_grakn_process=`ps -ef | grep 'Grakn' | grep -v grep | awk '{ print $2}' | wc -l`
 
   if [[ $count_running_cassandra_process -ne 1 ]]; then
     echo "Error in starting Cassandra: Expected to find 1 running Cassandra process. Found " $count_running_cassandra_process
@@ -100,7 +100,7 @@ must_properly_stop() {
 
   local count_running_cassandra_process=`ps -ef | grep 'CassandraDaemon' | grep -v grep | awk '{ print $2}' | wc -l`
   local count_running_redis_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
-  local count_running_grakn_process=`ps -ef | grep 'GraknEngineServer' | grep -v grep | awk '{ print $2}' | wc -l`
+  local count_running_grakn_process=`ps -ef | grep 'Grakn' | grep -v grep | awk '{ print $2}' | wc -l`
 
   if [[ $count_running_cassandra_process -ne 0 ]]; then
     echo "Error in stopping Cassandra: Expected to find 0 running Cassandra process. Found " $count_running_cassandra_process
@@ -135,7 +135,7 @@ force_kill() {
   echo "Force kill initiated - attempting to clean up any running processes..."
   local cassandra_pid=`ps -ef | grep 'CassandraDaemon' | grep -v grep | awk '{ print $2}'`
   local redis_pid=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}'`
-  local grakn_pid=`ps -ef | grep 'GraknEngineServer' | grep -v grep | awk '{ print $2}'`
+  local grakn_pid=`ps -ef | grep 'Grakn' | grep -v grep | awk '{ print $2}'`
 
   if [[ ! -z $grakn_pid ]]; then
     echo "Force killing Grakn (pid=$grakn_pid)"

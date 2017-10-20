@@ -21,6 +21,7 @@ package ai.grakn.test.engine;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.util.SimpleURI;
@@ -109,6 +110,6 @@ public class GraknEngineStartIT {
         Properties properties = graknEngineConfig.getProperties();
         properties.setProperty(SERVER_PORT_NUMBER, port);
         properties.setProperty(REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
-        return GraknEngineServer.create(graknEngineConfig);
+        return EngineTestHelper.cleanGraknEngineServer(graknEngineConfig);
     }
 }
