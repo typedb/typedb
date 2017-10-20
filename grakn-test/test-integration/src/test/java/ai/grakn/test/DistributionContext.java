@@ -27,6 +27,7 @@ import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.MockRedisRule;
+import com.google.common.collect.ImmutableList;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import org.junit.Assert;
@@ -130,7 +131,7 @@ public class DistributionContext extends ExternalResource {
         // Set correct port & task manager
         GraknEngineConfig config = GraknEngineConfig.create();
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
-        config.setConfigProperty(GraknConfigKey.REDIS_HOST, new SimpleURI("localhost", redisPort).toString());
+        config.setConfigProperty(GraknConfigKey.REDIS_HOST, ImmutableList.of(new SimpleURI("localhost", redisPort).toString()));
         // To speed up tests of failure cases
         config.setConfigProperty(GraknConfigKey.TASKS_RETRY_DELAY, 60);
 

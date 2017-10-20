@@ -53,7 +53,7 @@ public class GraknEngineConfigTest {
 
         exception.expect(RuntimeException.class);
         exception.expectMessage(
-                ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.value(), GraknEngineConfig.CONFIG_FILE_PATH)
+                ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.name(), GraknEngineConfig.CONFIG_FILE_PATH)
         );
 
         configuration.getProperty(key);

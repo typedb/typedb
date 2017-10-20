@@ -28,20 +28,22 @@ import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.Iterables;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.util.Pool;
+
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * TaskManagers
@@ -80,7 +82,7 @@ public class TaskManagers extends Generator<TaskManager> {
 
         GraknEngineConfig config = GraknEngineConfig.create();
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        SimpleURI simpleURI = new SimpleURI(config.getProperty(GraknConfigKey.REDIS_HOST));
+        SimpleURI simpleURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         Pool<Jedis> jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort());
         if (!taskManagers.containsKey(taskManagerToReturn)) {
             try {

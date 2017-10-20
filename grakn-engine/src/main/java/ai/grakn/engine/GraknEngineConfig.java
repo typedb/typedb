@@ -32,11 +32,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 
 /**
@@ -90,7 +87,7 @@ public class GraknEngineConfig {
     }
 
     public <T> void setConfigProperty(GraknConfigKey<T> key, T value) {
-        prop.setProperty(key.value(), value.toString());
+        prop.setProperty(key.name(), key.valueToString(value));
     }
 
     /**
@@ -109,12 +106,12 @@ public class GraknEngineConfig {
     }
 
     /**
-     * @param path A string representing a path
+     * @param pathKey A config key for a path
      * @return The requested string as a full path. If it is specified as a relative path,
      * this method will return the path prepended with the project path.
      */
-    public static Path extractPath(Path path) {
-        return PROJECT_PATH.resolve(path);
+    public Path getPath(GraknConfigKey<Path> pathKey) {
+        return PROJECT_PATH.resolve(getProperty(pathKey));
     }
 
     /**
@@ -133,15 +130,11 @@ public class GraknEngineConfig {
     }
 
     public <T> T getProperty(GraknConfigKey<T> key) {
-        return key.parse(Optional.ofNullable(prop.getProperty(key.value())), CONFIG_FILE_PATH);
+        return key.parse(Optional.ofNullable(prop.getProperty(key.name())), CONFIG_FILE_PATH);
     }
 
     public String uri() {
         return getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + getProperty(GraknConfigKey.SERVER_PORT);
-    }
-
-    static List<String> parseCSValue(String s) {
-        return Arrays.stream(s.split(",")).map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
     }
 
     private static String loadGraknAsciiFile() {

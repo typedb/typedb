@@ -19,8 +19,8 @@
 package ai.grakn.test;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
@@ -30,6 +30,7 @@ import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.MockRedisRule;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.Iterables;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
 import redis.clients.jedis.JedisPool;
@@ -98,7 +99,7 @@ public class EngineContext extends ExternalResource {
     }
 
     public RedisCountStorage redis() {
-        return redis(config.getProperty(GraknConfigKey.REDIS_HOST));
+        return redis(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
     }
 
     public RedisCountStorage redis(String uri) {
@@ -133,7 +134,7 @@ public class EngineContext extends ExternalResource {
         }
 
         try {
-            SimpleURI redisURI = new SimpleURI(config.getProperty(GraknConfigKey.REDIS_HOST));
+            SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
             redisStart(redisURI);
             jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 

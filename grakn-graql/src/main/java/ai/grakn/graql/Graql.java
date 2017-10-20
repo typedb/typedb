@@ -353,7 +353,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value equals the specified value
+     * @return a predicate that is true when a value equals the specified name
      */
     @CheckReturnValue
     public static ValuePredicate eq(Object value) {
@@ -363,7 +363,7 @@ public class Graql {
 
     /**
      * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value equals the specified value
+     * @return a predicate that is true when a value equals the specified name
      */
     @CheckReturnValue
     public static ValuePredicate eq(VarPattern varPattern) {
@@ -373,7 +373,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value does not equal the specified value
+     * @return a predicate that is true when a value does not equal the specified name
      */
     @CheckReturnValue
     public static ValuePredicate neq(Object value) {
@@ -383,7 +383,7 @@ public class Graql {
 
     /**
      * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value does not equal the specified value
+     * @return a predicate that is true when a value does not equal the specified name
      */
     @CheckReturnValue
     public static ValuePredicate neq(VarPattern varPattern) {
@@ -393,7 +393,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value is strictly greater than the specified value
+     * @return a predicate that is true when a value is strictly greater than the specified name
      */
     @CheckReturnValue
     public static ValuePredicate gt(Comparable value) {
@@ -403,7 +403,7 @@ public class Graql {
 
     /**
      * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value is strictly greater than the specified value
+     * @return a predicate that is true when a value is strictly greater than the specified name
      */
     @CheckReturnValue
     public static ValuePredicate gt(VarPattern varPattern) {
@@ -413,7 +413,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value is greater or equal to the specified value
+     * @return a predicate that is true when a value is greater or equal to the specified name
      */
     @CheckReturnValue
     public static ValuePredicate gte(Comparable value) {
@@ -423,7 +423,7 @@ public class Graql {
 
     /**
      * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value is greater or equal to the specified value
+     * @return a predicate that is true when a value is greater or equal to the specified name
      */
     @CheckReturnValue
     public static ValuePredicate gte(VarPattern varPattern) {
@@ -433,7 +433,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value is strictly less than the specified value
+     * @return a predicate that is true when a value is strictly less than the specified name
      */
     @CheckReturnValue
     public static ValuePredicate lt(Comparable value) {
@@ -443,7 +443,7 @@ public class Graql {
 
     /**
      * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value is strictly less than the specified value
+     * @return a predicate that is true when a value is strictly less than the specified name
      */
     @CheckReturnValue
     public static ValuePredicate lt(VarPattern varPattern) {
@@ -453,7 +453,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value is less or equal to the specified value
+     * @return a predicate that is true when a value is less or equal to the specified name
      */
     @CheckReturnValue
     public static ValuePredicate lte(Comparable value) {
@@ -463,7 +463,7 @@ public class Graql {
 
     /**
      * @param varPattern the variable pattern representing a resource
-     * @return a predicate that is true when a value is less or equal to the specified value
+     * @return a predicate that is true when a value is less or equal to the specified name
      */
     @CheckReturnValue
     public static ValuePredicate lte(VarPattern varPattern) {

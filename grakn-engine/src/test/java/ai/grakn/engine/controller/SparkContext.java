@@ -63,7 +63,7 @@ public class SparkContext extends ExternalResource {
 
         Optional<String> jwtProperty = config.getProperty(GraknConfigKey.JWT_SECRET);
 
-        configureSpark(spark, hostName, port(), GraknEngineConfig.extractPath(config.getProperty(GraknConfigKey.STATIC_FILES_PATH)),
+        configureSpark(spark, hostName, port(), config.getPath(GraknConfigKey.STATIC_FILES_PATH),
                         config.getProperty(GraknConfigKey.PASSWORD_PROTECTED), 64,
                         jwtProperty.isPresent() ? JWTHandler.create(jwtProperty.get()) : null);
 

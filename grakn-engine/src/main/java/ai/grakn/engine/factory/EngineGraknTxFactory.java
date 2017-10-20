@@ -59,7 +59,7 @@ public class EngineGraknTxFactory {
     private EngineGraknTxFactory(Properties properties, boolean loadSchema) {
         this.properties = new Properties();
         this.properties.putAll(properties);
-        this.engineURI = properties.getProperty(GraknConfigKey.SERVER_HOST_NAME.value()) + ":" + properties.getProperty(GraknConfigKey.SERVER_PORT.value());
+        this.engineURI = properties.getProperty(GraknConfigKey.SERVER_HOST_NAME.name()) + ":" + properties.getProperty(GraknConfigKey.SERVER_PORT.name());
         this.systemKeyspace = new SystemKeyspace(this, loadSchema);
     }
 

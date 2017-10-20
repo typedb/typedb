@@ -71,7 +71,7 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonMapStringString() {
-        assertJsonEquals(Json.object("key", "value"), ImmutableMap.of("key", "value"));
+        assertJsonEquals(Json.object("key", "value"), ImmutableMap.of("key", "name"));
     }
 
     @Test

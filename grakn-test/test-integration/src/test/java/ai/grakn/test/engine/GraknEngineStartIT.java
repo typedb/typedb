@@ -29,6 +29,7 @@ import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.MockRedisRule;
 import com.google.common.base.StandardSystemProperty;
+import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -106,7 +107,7 @@ public class GraknEngineStartIT {
     private GraknEngineServer makeEngine(int port) {
         GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
         graknEngineConfig.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
-        graknEngineConfig.setConfigProperty(GraknConfigKey.REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
+        graknEngineConfig.setConfigProperty(GraknConfigKey.REDIS_HOST, ImmutableList.of(new SimpleURI("localhost", REDIS_PORT).toString()));
         return EngineTestHelper.cleanGraknEngineServer(graknEngineConfig);
     }
 }

@@ -139,7 +139,7 @@ public class HttpHandler {
         configureSpark(spark,
                 prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
                 prop.getProperty(GraknConfigKey.SERVER_PORT),
-                GraknEngineConfig.extractPath(prop.getProperty(GraknConfigKey.STATIC_FILES_PATH)),
+                prop.getPath(GraknConfigKey.STATIC_FILES_PATH),
                 prop.getProperty(GraknConfigKey.PASSWORD_PROTECTED),
                 prop.getProperty(GraknConfigKey.WEBSERVER_THREADS),
                 jwtHandler);
