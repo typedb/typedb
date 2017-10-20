@@ -55,8 +55,6 @@ task :test do
           %r{https://javadoc.io/.*},
           'https://docs.docker.com/docker-for-windows/'
       ],
-      # TODO: fix missing alt attributes
-      :alt_ignore => [/.*/],
       # avoid SSL errors: https://github.com/gjtorikian/html-proofer/issues/376
       :typhoeus => {
         :ssl_verifypeer => false,
