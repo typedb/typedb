@@ -50,16 +50,14 @@ public class GraknEngineConfig {
 
     public static final int WEBSOCKET_TIMEOUT = 3600000;
 
-    public static final Path CONFIG_FILE_PATH = getConfigFilePath();
     public static final Path PROJECT_PATH = getProjectPath();
+    public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
 
     private final Properties prop = new Properties();
 
-    protected static final String GRAKN_ASCII = loadGraknAsciiFile();
-
-    private static final Path GRAKN_ASCII_PATH = Paths.get("grakn", "grakn-ascii.txt");
+    protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get("grakn", "grakn-ascii.txt"));
 
     public static GraknEngineConfig create() {
         return GraknEngineConfig.read(CONFIG_FILE_PATH.toFile());
@@ -94,7 +92,7 @@ public class GraknEngineConfig {
      * Check if the JVM argument "-Dgrakn.conf" (which represents the path to the config file to use) is set.
      * If it is not set, it sets it to the default one.
      */
-    private static Path getConfigFilePath() {
+    private static Path getConfigFilePath(Path projectPath) {
         String pathString = GraknSystemProperty.CONFIGURATION_FILE.value();
         Path path;
         if (pathString == null) {
@@ -102,7 +100,7 @@ public class GraknEngineConfig {
         } else {
             path = Paths.get(pathString);
         }
-        return PROJECT_PATH.resolve(path);
+        return projectPath.resolve(path);
     }
 
     /**
@@ -137,8 +135,8 @@ public class GraknEngineConfig {
         return getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + getProperty(GraknConfigKey.SERVER_PORT);
     }
 
-    private static String loadGraknAsciiFile() {
-        Path asciiPath = PROJECT_PATH.resolve(GRAKN_ASCII_PATH);
+    private static String loadGraknAsciiFile(Path projectPath, Path graknAsciiPath) {
+        Path asciiPath = projectPath.resolve(graknAsciiPath);
         try {
             File asciiFile = asciiPath.toFile();
             return FileUtils.readFileToString(asciiFile);

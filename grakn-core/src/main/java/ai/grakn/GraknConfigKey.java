@@ -109,7 +109,7 @@ public abstract class GraknConfigKey<T> {
      */
     public final T parse(Optional<String> value, Path configFilePath) {
         return parseFunction().apply(value).orElseThrow(() ->
-                new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(value, configFilePath))
+                new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name(), configFilePath))
         );
     }
 
