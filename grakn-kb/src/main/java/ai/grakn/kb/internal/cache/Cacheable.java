@@ -87,7 +87,7 @@ public class Cacheable<V> {
     }
 
     /**
-     * Copies the old value into a new name. How this copying is done is dictated by {@link Cacheable#copier}
+     * Copies the old value into a new value. How this copying is done is dictated by {@link Cacheable#copier}
      *
      * @param oldValue The old value
      * @return the new value as defined by {@link Cacheable#copier}

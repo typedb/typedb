@@ -31,7 +31,7 @@ import javax.annotation.CheckReturnValue;
  * <p>
  *     This class facilitates the construction of Grakn Graphs by determining which session should be built.
  *     The graphs produced by a session are singletons bound to a specific keyspace.
- *     To create graphs bound to a different keyspace you must createRequired another session
+ *     To create graphs bound to a different keyspace you must create another session
  *     using {@link Grakn#session(String, String)}
  *
  * </p>

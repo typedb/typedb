@@ -72,7 +72,7 @@ public interface VarPattern extends Pattern {
     VarPattern label(Label label);
 
     /**
-     * @param value a value that this variable's name must exactly match
+     * @param value a value that this variable's value must exactly match
      * @return this
      */
     @CheckReturnValue
