@@ -28,14 +28,19 @@ import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.graql.macro.Macro;
 import static ai.grakn.util.ConcurrencyUtil.allObservableWithTimeout;
 import ai.grakn.util.SimpleURI;
+import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,101 +56,114 @@ import rx.Observable;
  */
 public class Migrator {
 
-    private final static AtomicInteger numberQueriesSubmitted = new AtomicInteger(0);
-
     private final static Logger LOG = LoggerFactory.getLogger(Migrator.class);
-    private final QueryParser queryParser = Graql.withoutGraph().infer(false).parser();
-    static final int DEFAULT_MAX_RETRY = 3;
 
+    private final static int MAX_DELAY_MS = 500;
+    public static final int OBSERVABLE_TIMEOUT_MINUTES = 2;
+
+    private final QueryParser queryParser = Graql.withoutGraph().infer(false).parser();
     private final String uri;
     private final Keyspace keyspace;
+    private final MetricRegistry metricRegistry;
+    private final ConsoleReporter reporter;
+    private final Meter totalMeter;
+    private final Meter successMeter;
+    private final Timer parseTemplate;
 
     /**
      * @param uri Uri where one instance of Grakn Engine is running
      * @param keyspace The {@link Keyspace} where the data should be persisted
      */
-    private Migrator(String uri, Keyspace keyspace) {
+    public Migrator(String uri, Keyspace keyspace) {
         this.uri = uri;
         this.keyspace = keyspace;
-    }
-
-    public static Migrator to(String uri, Keyspace keyspace) {
-        return new Migrator(uri, keyspace);
+        this.metricRegistry = new MetricRegistry();
+        this.totalMeter = metricRegistry.meter(name(this.getClass(), "total"));
+        this.successMeter = metricRegistry.meter(name(this.getClass(), "success"));
+        this.parseTemplate = metricRegistry.timer(name(this.getClass(), "parse", "template"));
+        this.reporter = ConsoleReporter.forRegistry(metricRegistry)
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(MILLISECONDS)
+                .build();
     }
 
     /**
-     * Register a macro to use in templating
+     * Migrate data passed in data parameter using the given template
+     *
+     * @param template Used to transform the data
+     * @param data Data being migrated
      */
-    public Migrator registerMacro(Macro macro) {
-        queryParser.registerMacro(macro);
-        return this;
+    public void load(String template, Stream<Map<String, Object>> data) {
+        load(template, data, GraknClient.DEFAULT_MAX_RETRY, true, MAX_DELAY_MS);
+    }
+
+    /**
+     * Print data passed in data parameter using the given template
+     *
+     * @param template Used to transform the data
+     * @param data Data being migrated
+     */
+    public void print(String template, Stream<Map<String, Object>> data) {
+        data.flatMap(d -> template(template, d, false)).forEach(System.out::println);
     }
 
     /**
      * Migrate data constrained by this migrator using a loader configured
      * by the provided parameters.
      *
-     * Uses the default batch size and number of active tasks.
-     *
-     * NOTE: Currently only used for testing purposes
+     * @param template Template used to extract the data
+     * @param data Data being migrated
+     * @param retries Number of retries before giving up
+     * @param failFast If the loader should stop after an error
+     * @param maxDelayMs Max delay before a batch is cut and sent
      */
-    public void load(String template, Stream<Map<String, Object>> converter) {
-        load(template, converter, Migrator.DEFAULT_MAX_RETRY, true, BatchExecutorClient.DEFAULT_TIMEOUT_MS);
-    }
-
-    /**
-     * Template the data and print to standard out.
-     */
-    public void print(String template, Stream<Map<String, Object>> converter) {
-        converter.flatMap(d -> template(template, d, false))
-                .forEach(System.out::println);
-    }
-
-    /**
-     * Migrate data constrained by this migrator using a loader configured
-     * by the provided parameters.
-     *
-     * @param retrySize If the Loader should continue attempt to send tasks when Engine is not
-     * available or an exception occurs
-     * @param maxDelayMs
-     */
-    public void load(String template, Stream<Map<String, Object>> converter, int retrySize,
+    public void load(String template, Stream<Map<String, Object>> data, int retries,
             boolean failFast, int maxDelayMs) {
         GraknClient graknClient = new GraknClient(new SimpleURI(uri));
         try (BatchExecutorClient loader =
                 BatchExecutorClient.newBuilder()
                         .taskClient(graknClient)
-                        .maxRetries(retrySize)
+                        .maxRetries(retries)
                         .maxDelay(maxDelayMs)
+                        .metricRegistry(metricRegistry)
                         .build()) {
             checkKeyspace(graknClient);
             List<Observable<QueryResponse>> allObservables = new ArrayList<>();
-            converter
-                    .flatMap(d -> template(template, d, failFast))
+            data.flatMap(d -> template(template, d, failFast))
                     .forEach(q -> {
                         LOG.debug("Adding query {}", q);
-                        numberQueriesSubmitted.incrementAndGet();
+                        totalMeter.mark();
                         // We add get a hot observable. It starts immediately
-                        Observable<QueryResponse> addObservable = loader.add(q, keyspace.getValue(), failFast);
+                        Observable<QueryResponse> addObservable =
+                                loader.add(q, keyspace.getValue(), failFast);
                         allObservables.add(addObservable);
-                        addObservable.subscribe(
-                                        taskResult ->
-                                                LOG.debug("Successfully executed: {}", taskResult),
-                                        error -> {
-                                                if (failFast) {
-                                                    throw GraknBackendException.migrationFailure(error.getMessage());
-                                                }
-                                        }
-                                );
+                        subscribeToReportOutcome(failFast, addObservable);
                     });
-            int completed = allObservableWithTimeout(allObservables, 2, TimeUnit.MINUTES).toBlocking().first().size();
+            int completed = allObservableWithTimeout(allObservables, OBSERVABLE_TIMEOUT_MINUTES,
+                    TimeUnit.MINUTES).toBlocking().first().size();
             LOG.info("Loaded {} statements", completed);
         }
     }
 
+    private void subscribeToReportOutcome(boolean failFast, Observable<QueryResponse> addObservable) {
+        addObservable.subscribe(
+                taskResult -> {
+                    LOG.debug("Successfully executed: {}", taskResult);
+                    successMeter.mark();
+                },
+                error -> {
+                    LOG.debug("Error in execution", error);
+                    if (failFast) {
+                        throw GraknBackendException
+                                .migrationFailure(error.getMessage());
+                    }
+                }
+        );
+    }
+
     private void checkKeyspace(GraknClient graknClient) {
         try {
-            if(!graknClient.keyspace(keyspace.getValue()).isPresent()) {
+            if (!graknClient.keyspace(keyspace.getValue()).isPresent()) {
                 throw GraknBackendException.noSuchKeyspace(keyspace);
             }
         } catch (GraknClientException e) {
@@ -156,19 +174,21 @@ public class Migrator {
     /**
      * @param template a string representing a templated graql query
      * @param data data used in the template
-     * @param debug
      * @return an insert query
      */
-    protected Stream<Query> template(String template, Map<String, Object> data, boolean debug) {
-        try {
+    protected Stream<Query> template(String template, Map<String, Object> data, boolean failFast) {
+        try (Context c = parseTemplate.time()){
             return queryParser.parseTemplate(template, data);
         } catch (Exception e) {
             System.out.println("Query not sent to server: " + e.getMessage());
-            if (debug) {
+            if (failFast) {
                 throw e;
             }
         }
-
         return Stream.empty();
+    }
+
+    ConsoleReporter getReporter() {
+        return reporter;
     }
 }

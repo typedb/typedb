@@ -24,6 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
 import ai.grakn.graql.QueryBuilder;
 import com.google.common.io.Files;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.HelpFormatter;
 import org.yaml.snakeyaml.Yaml;
 
@@ -102,17 +103,19 @@ public class MigrationCLI {
 
     public static void loadOrPrint(File templateFile, Stream<Map<String, Object>> data, MigrationOptions options){
         String template = fileAsString(templateFile);
-        Migrator migrator = Migrator.to(options.getUri(), options.getKeyspace());
-
+        Migrator migrator = new Migrator(options.getUri(), options.getKeyspace());
         if(options.isNo()){
             migrator.print(template, data);
         } else {
             printInitMessage(options);
+            migrator.getReporter().start(1, TimeUnit.MINUTES);
             try {
                 migrator.load(template, data, options.getRetry(), options.isDebug(), options.getMaxDelay());
             } catch (Exception e) {
                 // This is to catch migration exceptions and return intelligible output messages
                 System.out.println("Error while loading data: " + e.getMessage());
+            } finally {
+                migrator.getReporter().stop();
             }
             printWholeCompletionMessage(options);
         }

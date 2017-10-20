@@ -241,16 +241,16 @@ public class GraqlController {
                 throw GraknServerException.unsupportedContentType(acceptType);
         }
 
+        String formatted;
         if (multi) {
             Stream<Query<?>> query = parser.parseList(queryString);
             List<?> collectedResults = query.map(Query::execute).collect(Collectors.toList());
-            String formatted = printer.graqlString(collectedResults);
-            return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
+            formatted = printer.graqlString(collectedResults);
         } else {
             Query<?> query = parser.parseQuery(queryString);
-            String formatted = printer.graqlString(query.execute());
-            return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
+            formatted = printer.graqlString(query.execute());
         }
+        return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
     }
 
     static String getAcceptType(Request request) {

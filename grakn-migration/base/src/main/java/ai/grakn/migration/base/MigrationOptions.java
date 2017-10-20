@@ -20,7 +20,6 @@ package ai.grakn.migration.base;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchExecutorClient;
 import static java.lang.Integer.parseInt;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,7 +35,9 @@ import org.apache.commons.cli.ParseException;
  * @author alexandraorth
  */
 public class MigrationOptions {
-    private static final String retry = Integer.toString(Migrator.DEFAULT_MAX_RETRY);
+
+    public static final String MAX_DELAY_DEFAULT_VALUE = "1000";
+    public static final String RETRY_DEFAULT_VALUE = "5";
     private int numberOptions;
 
     protected final Options options = new Options();
@@ -116,7 +117,7 @@ public class MigrationOptions {
     }
 
     public int getRetry(){
-        return parseInt(command.getOptionValue("r", retry));
+        return parseInt(command.getOptionValue("r", RETRY_DEFAULT_VALUE));
     }
 
     protected void parse(String[] args){
@@ -130,8 +131,7 @@ public class MigrationOptions {
     }
 
     public int getMaxDelay() {
-        String value = command.getOptionValue("m");
-        return value == null ? BatchExecutorClient.DEFAULT_TIMEOUT_MS : parseInt(value);
+        return parseInt(command.getOptionValue("m", MAX_DELAY_DEFAULT_VALUE));
     }
 
     private String resolvePath(String path){

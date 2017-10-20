@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 public class GraknClient {
 
     public static final int CONNECT_TIMEOUT_MS = 60 * 1000;
+    public static final int DEFAULT_MAX_RETRY = 3;
     private final Logger LOG = LoggerFactory.getLogger(GraknClient.class);
 
     private final Client asyncHttpClient;
