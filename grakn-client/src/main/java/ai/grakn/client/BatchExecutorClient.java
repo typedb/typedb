@@ -198,10 +198,8 @@ public class BatchExecutorClient implements Closeable {
                 return false;
             }
             QueryWithId<?> that = (QueryWithId<?>) o;
-            if (query != null ? !query.equals(that.query) : that.query != null) {
-                return false;
-            }
-            return id != null ? id.equals(that.id) : that.id == null;
+            return (query != null ? query.equals(that.query) : that.query == null) && (id != null
+                    ? id.equals(that.id) : that.id == null);
         }
 
         @Override
@@ -223,7 +221,7 @@ public class BatchExecutorClient implements Closeable {
      */
     private static class CommandQueries extends HystrixCommand<List<QueryResponse>> {
 
-        static final int QUEUE_MULTIPLIER = 8;
+        static final int QUEUE_MULTIPLIER = 16;
 
         private final List<QueryWithId<?>> queries;
         private final String keyspace;

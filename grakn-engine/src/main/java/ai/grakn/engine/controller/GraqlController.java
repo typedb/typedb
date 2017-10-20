@@ -40,7 +40,6 @@ import ai.grakn.graql.analytics.PathQuery;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.util.REST;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
@@ -51,6 +50,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import ai.grakn.util.REST.WebPath.KB;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
@@ -93,15 +93,17 @@ public class GraqlController {
     private final EngineGraknTxFactory factory;
     private final Timer executeGraqlGetTimer;
     private final Timer executeGraqlPostTimer;
+    private final Timer singleExecutionTimer;
 
     public GraqlController(EngineGraknTxFactory factory, Service spark,
                            MetricRegistry metricRegistry) {
         this.factory = factory;
         this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
         this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
+        this.singleExecutionTimer = metricRegistry.timer(name(GraqlController.class, "single", "execution"));
 
-        spark.post(REST.WebPath.KB.ANY_GRAQL, this::executeGraql);
-        spark.get(REST.WebPath.KB.GRAQL,    this::executeGraqlGET);
+        spark.post(KB.ANY_GRAQL, this::executeGraql);
+        spark.get(KB.GRAQL,    this::executeGraqlGET);
 
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
@@ -244,13 +246,17 @@ public class GraqlController {
         String formatted;
         if (multi) {
             Stream<Query<?>> query = parser.parseList(queryString);
-            List<?> collectedResults = query.map(Query::execute).collect(Collectors.toList());
+            List<?> collectedResults = query.map(this::executeAndMonitor).collect(Collectors.toList());
             formatted = printer.graqlString(collectedResults);
         } else {
             Query<?> query = parser.parseQuery(queryString);
-            formatted = printer.graqlString(query.execute());
+            formatted = printer.graqlString(executeAndMonitor(query));
         }
         return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
+    }
+
+    private Object executeAndMonitor(Query<?> query) {
+        return query.execute();
     }
 
     static String getAcceptType(Request request) {
