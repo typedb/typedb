@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * <p>
@@ -52,8 +53,8 @@ import java.util.concurrent.TimeUnit;
  *
  */
 public class GlobalCache {
-
-    public static final int DEFAULT_CACHE_TIMEOUT_MS = 600_000;
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private static final int DEFAULT_CACHE_TIMEOUT_MS = 600_000;
 
     //Caches
     private final Cache<Label, SchemaConcept> cachedTypes;
@@ -69,6 +70,25 @@ public class GlobalCache {
                 .maximumSize(1000)
                 .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
                 .build();
+    }
+
+    void populateSchemaTxCache(TxCache txCache){
+        try {
+            lock.writeLock().lock();
+
+            Map<Label, SchemaConcept> cachedSchemaSnapshot = getCachedTypes();
+            Map<Label, LabelId> cachedLabelsSnapshot = getCachedLabels();
+
+            //Read central cache into txCache cloning only base concepts. Sets clones later
+            for (SchemaConcept type : cachedSchemaSnapshot.values()) {
+                txCache.cacheConcept(type);
+            }
+
+            //Load Labels Separately. We do this because the TypeCache may have expired.
+            cachedLabelsSnapshot.forEach(txCache::cacheLabel);
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -100,9 +120,22 @@ public class GlobalCache {
      * @param txCache The transaction cache
      */
     void readTxCache(TxCache txCache) {
-        //TODO: The difference between the caches need to be taken into account. For example if a type is delete then it should be removed from the cachedLabels
-        cachedLabels.putAll(txCache.getLabelCache());
-        cachedTypes.putAll(txCache.getSchemaConceptCache());
+        //Check if the ontology has been changed and should be flushed into this cache
+        if(!cachedLabels.equals(txCache.getLabelCache())) {
+            try {
+                lock.readLock().lock();
+
+                //Clear the cache
+                cachedLabels.clear();
+                cachedTypes.invalidateAll();
+
+                //Add a new one
+                cachedLabels.putAll(txCache.getLabelCache());
+                cachedTypes.putAll(txCache.getSchemaConceptCache());
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
 
         //Flush All The Internal Transaction Caches
         txCache.getSchemaConceptCache().values().forEach(schemaConcept
@@ -114,7 +147,7 @@ public class GlobalCache {
      *
      * @return an immutable copy of the cached labels.
      */
-    Map<Label, LabelId> getCachedLabels() {
+    private Map<Label, LabelId> getCachedLabels() {
         return ImmutableMap.copyOf(cachedLabels);
     }
 

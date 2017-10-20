@@ -30,13 +30,16 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redisq.Redisq;
 import ai.grakn.redisq.RedisqBuilder;
-import static ai.grakn.redisq.State.DONE;
-import static ai.grakn.redisq.State.FAILED;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
 import ai.grakn.redisq.exceptions.WaitException;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
+import redis.clients.util.Pool;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -45,10 +48,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
+
+import static ai.grakn.redisq.State.DONE;
+import static ai.grakn.redisq.State.FAILED;
 
 /**
  * Handle the lifecycle of tasks in Redis. Given a jedis pool
@@ -145,14 +147,9 @@ public class RedisTaskManager implements TaskManager {
 
     public Future<Void> subscribeToTask(TaskId taskId)
             throws StateFutureInitializationException, ExecutionException, InterruptedException {
-        return redisq
-                .getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue());
+        return redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue());
     }
 
-    public void waitForTask(TaskId taskId)
-            throws StateFutureInitializationException, ExecutionException, InterruptedException {
-        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue()).get();
-    }
 
     public void waitForTask(TaskId taskId, long timeout, TimeUnit timeUnit)
             throws StateFutureInitializationException, ExecutionException, InterruptedException, TimeoutException {

@@ -78,6 +78,13 @@ abstract class SubFragmentSet extends EquivalentFragmentSet {
 
             LabelFragmentSet newLabelSet = labelSet.tryExpandSubs(subSet.subConcept(), tx);
 
+            // Disable this optimisation if there isn't exactly one possible label.
+            // This is because JanusGraph doesn't optimise P.within correctly when the property is indexed.
+            // TODO: Remove this if JanusGraph fixes this issue
+            if (newLabelSet != null && newLabelSet.labels().size() != 1) {
+                continue;
+            }
+
             if (newLabelSet != null) {
                 fragmentSets.remove(subSet);
                 fragmentSets.add(newLabelSet);

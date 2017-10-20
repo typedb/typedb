@@ -239,7 +239,7 @@ public class ResourceAtom extends Binary{
             boolean predicateCompatible = false;
             while (parentIt.hasNext() && !predicateCompatible) {
                 ValuePredicate parentPredicate = parentIt.next();
-                predicateCompatible = parentPredicate.getPredicate().isCompatibleWith(childPredicate.getPredicate());
+                predicateCompatible = parentPredicate.isCompatibleWith(childPredicate);
             }
             if (!predicateCompatible) return false;
         }
@@ -291,7 +291,7 @@ public class ResourceAtom extends Binary{
             return errors;
         }
 
-        SchemaConcept ownerType = getParentQuery().getVarSchemaConceptMap().get(getVarName());
+        SchemaConcept ownerType = getParentQuery().getVarTypeMap().get(getVarName());
 
         if (ownerType != null
                 && ownerType.isType()
@@ -364,8 +364,7 @@ public class ResourceAtom extends Binary{
     public Atom rewriteToUserDefined(Atom parentAtom){
         Var attributeVariable = getPredicateVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
-        VarPattern newVar = getVarName()
-                .has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
+        VarPattern newVar = getVarName().has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
         return new ResourceAtom(newVar.admin(), attributeVariable, relationVariable, getTypePredicate(), getMultiPredicate(), getParentQuery());
     }
 

@@ -121,16 +121,7 @@ public class TxCache {
      *
      */
     public void refreshSchemaCache(){
-        Map<Label, SchemaConcept> cachedSchemaSnapshot = globalCache.getCachedTypes();
-        Map<Label, LabelId> cachedLabelsSnapshot = globalCache.getCachedLabels();
-
-        //Read central cache into txCache cloning only base concepts. Sets clones later
-        for (SchemaConcept type : cachedSchemaSnapshot.values()) {
-            cacheConcept(type);
-        }
-
-        //Load Labels Separately. We do this because the TypeCache may have expired.
-        cachedLabelsSnapshot.forEach(this::cacheLabel);
+        globalCache.populateSchemaTxCache(this);
     }
 
     /**
@@ -250,7 +241,7 @@ public class TxCache {
      * @param label The type label to cache
      * @param id Its equivalent id which can be looked up quickly in the graph
      */
-    private void cacheLabel(Label label, LabelId id){
+    void cacheLabel(Label label, LabelId id){
         labelCache.put(label, id);
     }
 

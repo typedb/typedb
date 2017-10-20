@@ -24,6 +24,7 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -47,6 +48,8 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -244,6 +247,27 @@ public class TxCacheTest extends TxTestBase {
         Relationship r2 = relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e3);
         Relationship r3 = relationshipType.addRelationship(); //Not added because no role players
         assertThat(tx.txCache().getRelationshipsWithNewRolePlayers(), containsInAnyOrder(r1.getId(), r2.getId()));
+    }
+
+    @Test
+    public void whenDeletingType_EnsureItIsRemovedFromTheCache(){
+        String label = "e1";
+        tx.putEntityType(label);
+        tx.commit();
+
+        tx = tx();
+        EntityType entityType = tx.getEntityType(label);
+        assertNotNull(entityType);
+        assertTrue(tx.txCache().isTypeCached(Label.of(label)));
+        entityType.delete();
+
+        assertNull(tx.getEntityType(label));
+        assertFalse(tx.txCache().isTypeCached(Label.of(label)));
+        tx.commit();
+
+        tx = tx();
+        assertNull(tx.getEntityType(label));
+        assertFalse(tx.txCache().isTypeCached(Label.of(label)));
     }
 
     @Test
