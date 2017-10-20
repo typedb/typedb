@@ -7,6 +7,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -22,6 +23,7 @@ import org.junit.Test;
 import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -43,26 +45,39 @@ public class GraqlControllerTest {
     }
 
     private Response sendQuery(String query, String acceptType) {
-        return sendQuery(query, acceptType, true, false, -1);
+        return sendQuery(query, acceptType, true, false, -1, sampleKB.tx().getKeyspace().getValue());
     }
 
     private Response sendQuery(String query,
                                String acceptType,
-                               boolean reasonser,
+                               boolean reasoner,
                                boolean materialise,
                                int limitEmbedded) {
+        return sendQuery(query, acceptType, reasoner, materialise, limitEmbedded, sampleKB.tx().getKeyspace().getValue());
+    }
+
+
+    private Response sendQuery(String query,
+                               String acceptType,
+                               boolean reasoner,
+                               boolean materialise,
+                               int limitEmbedded,
+                               String keyspace) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, sampleKB.tx().getKeyspace().getValue())
+                .queryParam(KEYSPACE, keyspace)
                 .body(query)
-                .queryParam(INFER, reasonser)
+                .queryParam(INFER, reasoner)
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
+                .queryParam(DEFINE_ALL_VARS, true)
                 .accept(acceptType)
                 .post(REST.WebPath.KB.ANY_GRAQL);
     }
 
     @ClassRule
     public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+
+    public static SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -171,9 +186,17 @@ public class GraqlControllerTest {
 
     @Test
     public void whenMatchingRules_ResponseStatusIs200() {
-        String queryString = "match $x sub "+ Schema.MetaSchema.RULE.getLabel().getValue()+"; get;";
+        String queryString = "match $x sub " + Schema.MetaSchema.RULE.getLabel().getValue() + "; get;";
         int limitEmbedded = 10;
         Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
+        resp.then().statusCode(200);
+    }
+
+    @Test
+    public void whenMatchingInferredRelation_HALResponseContainsInferredRelation() {
+        String queryString = "match ($x,$y) isa marriage; offset 0; limit 5; get;";
+        int limitEmbedded = 10;
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, genealogyKB.tx().getKeyspace().getValue());
         resp.then().statusCode(200);
     }
 
