@@ -59,7 +59,6 @@ public class EngineContext extends ExternalResource {
     private MockRedisRule mockRedis;
     private JedisPool jedisPool;
 
-
     private EngineContext(boolean inMemoryRedis){
         this.inMemoryRedis = inMemoryRedis;
     }
@@ -133,6 +132,7 @@ public class EngineContext extends ExternalResource {
         try {
             SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
             redisStart(redisURI);
+
             jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
             server = startEngine(config);

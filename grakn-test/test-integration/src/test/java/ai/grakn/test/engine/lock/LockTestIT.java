@@ -18,12 +18,9 @@
 
 package ai.grakn.test.engine.lock;
 
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.JedisLock;
 import ai.grakn.engine.lock.NonReentrantLock;
-import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.MockRedisRule;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.experimental.theories.DataPoints;
@@ -53,9 +50,6 @@ public class LockTestIT {
 
     @ClassRule
     public static EngineContext engine = EngineContext.createWithInMemoryRedis();
-
-    @ClassRule
-    public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(engine.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
 
     @DataPoints
     public static Locks[] configValues = Locks.values();
