@@ -24,15 +24,19 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
@@ -181,7 +185,7 @@ public class ReasonerUtils {
      * @param relRoles entry {@link Role}s
      * @return set of {@link Role}s the type can play from the provided {@link Role}s
      */
-    public static Set<Role> compatibleRoles(Type type, Stream<Role> relRoles) {
+    public static Set<Role> compatibleRoles(Type type, Stream<Role> relRoles){
         Set<Role> typeRoles = type.plays().collect(toSet());
         return relRoles.filter(typeRoles::contains).collect(toSet());
     }
@@ -220,6 +224,26 @@ public class ReasonerUtils {
             compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(it.next()));
         }
         return compatibleTypes;
+    }
+
+    /**
+     *
+     * @param childTypes type atoms of child query
+     * @param parentTypes type atoms of parent query
+     * @param childParentUnifier unifier to unify child with parent
+     * @return combined unifier for type atoms
+     */
+    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier){
+        Unifier unifier = childParentUnifier;
+        for(TypeAtom childType : childTypes){
+            Var childVarName = childType.getVarName();
+            Var parentVarName = unifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
+
+            //types are unique so getting one is fine
+            TypeAtom parentType = parentTypes.stream().filter(pt -> pt.getVarName().equals(parentVarName)).findFirst().orElse(null);
+            if (parentType != null) unifier = unifier.merge(childType.getUnifier(parentType));
+        }
+        return unifier;
     }
 
     /**
@@ -265,6 +289,18 @@ public class ReasonerUtils {
             superType = superType.sup();
         }
         return false;
+    }
+
+    /**
+     * @param parent predicate
+     * @param child predicate
+     * @param exact whether compatibility criterion should be exact
+     * @param <T> type generic
+     * @return true if predicates compatible
+     */
+    public static <T extends Predicate> boolean predicatesCompatible(T parent, T child, boolean exact){
+        if (exact) return parent == null || parent.isCompatibleWith(child);
+        else return child == null || parent == null || parent.isCompatibleWith(child);
     }
 
     /** determines disjointness of parent-child types, parent defines the bound on the child

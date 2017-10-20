@@ -107,44 +107,56 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraknTxOperationException.metaTypeImmutable(role.getLabel());
 
         //Do the actual put of the role and role player
-        putRolePlayerEdge(role, thing);
+        addRolePlayerEdge(role, thing);
     }
 
     /**
-     * If the edge does not exist then it adds a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from
-     * this {@link Relationship} to a target {@link Thing} which is playing some {@link Role}.
+     * Adds a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from this {@link Relationship} to a target {@link Thing}
+     * which is playing some {@link Role}.
      *
-     * If the edge does exist nothing is done.
+     * If the {@link ai.grakn.GraknTxType} mode is {@link ai.grakn.GraknTxType#BATCH} then the edge is added without
+     * checking if it already exists. This makes writing faster at the cost of consistency.
+     *
+     * If the {@link ai.grakn.GraknTxType} mode is {@link ai.grakn.GraknTxType#WRITE} then the edge is only added if
+     * it does not already exist.This makes writing slower at the benefit of consistency.
      *
      * @param role The {@link Role} being played by the {@link Thing} in this {@link Relationship}
      * @param toThing The {@link Thing} playing a {@link Role} in this {@link Relationship}
      */
-    public void putRolePlayerEdge(Role role, Thing toThing) {
-        //Checking if the edge exists
-        GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), this.getId().getValue()).
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), this.type().getLabelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.getLabelId().getValue()).
-                as("edge").
-                inV().
-                has(Schema.VertexProperty.ID.name(), toThing.getId()).
-                select("edge");
+    public void addRolePlayerEdge(Role role, Thing toThing) {
+        if(!vertex().tx().isBatchTx()){
+            //Checking if the edge exists
+            GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
+                    has(Schema.VertexProperty.ID.name(), this.getId().getValue()).
+                    outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                    has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), this.type().getLabelId().getValue()).
+                    has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.getLabelId().getValue()).
+                    as("edge").
+                    inV().
+                    has(Schema.VertexProperty.ID.name(), toThing.getId().getValue()).
+                    select("edge");
 
-        if(traversal.hasNext()){
-            return;
+            if(traversal.hasNext()){
+                return;
+            }
         }
 
-        //Role player edge does not exist create a new one
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
         edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().getLabelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.getLabelId().getValue());
         Casting casting = Casting.create(edge, owner, role, toThing);
         vertex().tx().txCache().trackForValidation(casting);
+
+        //Track this relationship
+        if(vertex().tx().isBatchTx()){
+            vertex().tx().txCache().addedNewRolePlayer(owner);
+        }
     }
 
     /**
      * Castings are retrieved from the perspective of the {@link Relationship}
+     *
+     * WARNING: Returns duplicate {@link Casting}s if their are duplicate {@link Schema.EdgeLabel#ROLE_PLAYER} edges.
      *
      * @param roles The {@link Role} which the {@link Thing}s are playing
      * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relationship}

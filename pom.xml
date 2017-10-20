@@ -48,6 +48,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.resource.encoding>UTF-8</project.resource.encoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
         <tinkerpop.version>3.2.5-grakn-SNAPSHOT</tinkerpop.version>
         <junit.version>4.12</junit.version>

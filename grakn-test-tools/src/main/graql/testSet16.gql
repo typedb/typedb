@@ -1,35 +1,23 @@
 define
 
-role1 sub role;
-role2 sub role;
-
 entity1 sub entity
-	has res1
-	plays role2
-	plays role1;
-
-relation1 sub relationship
-	relates role1
-	relates role2
-	has res1;
+	has resource;
 
 #Resources
-res1 sub attribute datatype string;
+resource sub attribute datatype string;
 
 #Rules
 
 rule-1 sub rule
 when {
-    $x isa entity1, has res1 $y;
-    $z isa relation1;
+    $x isa entity1;
 }
 then {
-    $z has res1 $y;
+    $x has resource 'value';
 };
 
 insert
 
 #Data
-
-$x isa entity1 has res1 "value1";
-(role1:$x, role2:$x) isa relation1;
+$x isa entity1;
+$y isa entity1;

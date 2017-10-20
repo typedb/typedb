@@ -5,7 +5,7 @@ import static Constants.*;
 // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
 // `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
 // `validate.sh` will be passed the branch name (e.g. "master") as the first argument
-def integrationTests = ["test-snb"]
+def integrationTests = ["test-snb", "test-biomed"]
 
 class Constants {
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
