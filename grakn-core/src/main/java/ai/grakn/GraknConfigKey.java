@@ -19,11 +19,17 @@
 
 package ai.grakn;
 
+import ai.grakn.util.ErrorMessage;
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @param <T> the type of the values of the key
@@ -32,53 +38,70 @@ import java.util.function.Function;
 @AutoValue
 public abstract class GraknConfigKey<T> {
 
-    public static final GraknConfigKey<String> VERSION = create("grakn.version");
+    private static final Function<Optional<String>, Optional<Integer>> INT = required(Integer::parseInt);
+    private static final Function<Optional<String>, Optional<Boolean>> BOOL = required(Boolean::parseBoolean);
+    private static final Function<Optional<String>, Optional<Long>> LONG = required(Long::parseLong);
+    private static final Function<Optional<String>, Optional<Path>> PATH = required(Paths::get);
 
-    public static final GraknConfigKey<String> JWT_SECRET = create("JWT.secret");
-    public static final GraknConfigKey<Boolean> PASSWORD_PROTECTED =
-            create("password.protected", Boolean::parseBoolean);
-    public static final GraknConfigKey<Integer> WEBSERVER_THREADS = create("webserver.threads", Integer::parseInt);
-    public static final GraknConfigKey<String> ADMIN_PASSWORD = create("admin.password");
+    public static final GraknConfigKey<String> VERSION = key("grakn.version");
 
-    public static final GraknConfigKey<String> SERVER_HOST_NAME = create("server.host");
-    public static final GraknConfigKey<Integer> SERVER_PORT = create("server.port", Integer::parseInt);
+    public static final GraknConfigKey<Optional<String>> JWT_SECRET = key("JWT.secret", Optional::of);
+    public static final GraknConfigKey<Boolean> PASSWORD_PROTECTED = key("password.protected", BOOL);
+    public static final GraknConfigKey<Integer> WEBSERVER_THREADS = key("webserver.threads", INT);
+    public static final GraknConfigKey<String> ADMIN_PASSWORD = key("admin.password");
 
-    public static final GraknConfigKey<Integer> LOADER_REPEAT_COMMITS =
-            create("loader.repeat-commits", Integer::parseInt);
+    public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
+    public static final GraknConfigKey<Integer> SERVER_PORT = key("server.port", INT);
 
-    public static final GraknConfigKey<String> REDIS_HOST = create("queue.host");
-    public static final GraknConfigKey<String> REDIS_SENTINEL_HOST = create("redis.sentinel.host");
-    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = create("redis.sentinel.master");
-    public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = create("redis.pool-size", Integer::parseInt);
+    public static final GraknConfigKey<Integer> LOADER_REPEAT_COMMITS = key("loader.repeat-commits", INT);
 
-    public static final GraknConfigKey<Integer> QUEUE_CONSUMERS = create("queue.consumers", Integer::parseInt);
+    public static final GraknConfigKey<List<String>> REDIS_HOST =
+            key("queue.host", required(GraknConfigKey::parseCSValue));
+    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST =
+            key("redis.sentinel.host", withDefault(GraknConfigKey::parseCSValue, ImmutableList.of()));
+    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER =
+            key("redis.sentinel.master", withDefault(Function.identity(), "graknmaster"));
+    public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("redis.pool-size", INT);
+    public static final GraknConfigKey<Integer> QUEUE_CONSUMERS = key("queue.consumers", INT);
 
-    public static final GraknConfigKey<Path> STATIC_FILES_PATH = create("server.static-file-dir", Paths::get);
+    public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", PATH);
 
     // Delay for the post processing task in milliseconds
-    public static final GraknConfigKey<Integer> POST_PROCESSING_TASK_DELAY =
-            create("tasks.postprocessing.delay", Integer::parseInt);
-    public static final GraknConfigKey<Integer> TASKS_RETRY_DELAY = create("tasks.retry.delay", Integer::parseInt);
+    public static final GraknConfigKey<Integer> POST_PROCESSING_TASK_DELAY = key("tasks.postprocessing.delay", INT);
+    public static final GraknConfigKey<Integer> TASKS_RETRY_DELAY = key("tasks.retry.delay", INT);
 
-    public static final GraknConfigKey<Long> SHARDING_THRESHOLD =
-            create("knowledge-base.sharding-threshold", Long::parseLong);
+    public static final GraknConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);
 
     public static final GraknConfigKey<Boolean> TEST_START_EMBEDDED_COMPONENTS =
-            create("test.start.embedded.components", Boolean::parseBoolean);
+            key("test.start.embedded.components", BOOL);
 
-    public static GraknConfigKey<String> create(String value) {
-        return create(value, Function.identity());
+    public static GraknConfigKey<String> key(String value) {
+        return key(value, Function.identity());
     }
 
-    public static <T> GraknConfigKey<T> create(String value, Function<String, T> parseFunction) {
+    public static <T> GraknConfigKey<T> key(String value, Function<Optional<String>, Optional<T>> parseFunction) {
         return new AutoValue_GraknConfigKey<>(value, parseFunction);
+    }
+
+    private static <T> Function<Optional<String>, Optional<T>> required(Function<String, T> parseFunction) {
+        return opt -> opt.map(parseFunction);
+    }
+
+    private static <T> Function<Optional<String>, Optional<T>> withDefault(Function<String, T> parseFunction, T def) {
+        return opt -> Optional.of(opt.map(parseFunction).orElse(def));
     }
 
     public abstract String value();
 
-    abstract Function<String, T> parseFunction();
+    abstract Function<Optional<String>, Optional<T>> parseFunction();
 
-    public final T parse(String value) {
-        return parseFunction().apply(value);
+    public final T parse(Optional<String> value, Path configFilePath) {
+        return parseFunction().apply(value).orElseThrow(() ->
+                new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(value, configFilePath))
+        );
+    }
+
+    private static List<String> parseCSValue(String s) {
+        return Arrays.stream(s.split(",")).map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
     }
 }

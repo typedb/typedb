@@ -128,7 +128,7 @@ public class EngineContext extends ExternalResource {
     @Override
     public void before() throws Throwable {
         RestAssured.baseURI = "http://" + config.uri();
-        if (!config.tryProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS).orElse(true)) {
+        if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
 
@@ -156,7 +156,7 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void after() {
-        if (!config.tryProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS).orElse(true)) {
+        if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
         noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");

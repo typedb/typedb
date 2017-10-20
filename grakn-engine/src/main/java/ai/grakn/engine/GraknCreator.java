@@ -37,7 +37,6 @@ import redis.clients.util.Pool;
 import spark.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -107,16 +106,16 @@ public class GraknCreator {
     }
 
     protected static RedisWrapper redisWrapper(GraknEngineConfig config) {
-        List<String> redisUrl = GraknEngineConfig.parseCSValue(config.tryProperty(REDIS_HOST).orElse("localhost:6379"));
-        List<String> sentinelUrl = GraknEngineConfig.parseCSValue(config.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
-        int poolSize = config.tryProperty(REDIS_POOL_SIZE).orElse(32);
+        List<String> redisUrl = config.getProperty(REDIS_HOST);
+        List<String> sentinelUrl = config.getProperty(REDIS_SENTINEL_HOST);
+        int poolSize = config.getProperty(REDIS_POOL_SIZE);
         boolean useSentinel = !sentinelUrl.isEmpty();
         RedisWrapper.Builder builder = RedisWrapper.builder()
                 .setUseSentinel(useSentinel)
                 .setPoolSize(poolSize)
                 .setURI((useSentinel ? sentinelUrl : redisUrl));
         if (useSentinel) {
-            builder.setMasterName(config.tryProperty(REDIS_SENTINEL_MASTER).orElse("graknmaster"));
+            builder.setMasterName(config.getProperty(REDIS_SENTINEL_MASTER));
         }
         return builder.build();
     }
@@ -170,13 +169,8 @@ public class GraknCreator {
         metricRegistry.register(name(GraknEngineServer.class, "System", "threads"), new CachedThreadStatesGaugeSet(15, TimeUnit.SECONDS));
         metricRegistry.register(name(GraknEngineServer.class, "System", "memory"), new MemoryUsageGaugeSet());
 
-        Optional<Integer> consumers = config.tryProperty(GraknConfigKey.QUEUE_CONSUMERS);
-        if (consumers.isPresent()) {
-            result = new RedisTaskManager(engineId, config, jedisPool, consumers.get(), factory, lockProvider, metricRegistry);
-        } else {
-            result = new RedisTaskManager(engineId, config, jedisPool, factory, lockProvider, metricRegistry);
-        }
-        return result;
+        int consumers = config.getProperty(GraknConfigKey.QUEUE_CONSUMERS);
+        return new RedisTaskManager(engineId, config, jedisPool, consumers, factory, lockProvider, metricRegistry);
     }
 
 

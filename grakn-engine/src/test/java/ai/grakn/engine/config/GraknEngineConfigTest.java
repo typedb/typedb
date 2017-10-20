@@ -24,6 +24,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.MockRedisRule;
+import com.google.common.collect.Iterables;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,14 +42,14 @@ public class GraknEngineConfigTest {
     private GraknEngineConfig configuration = GraknEngineConfig.create();
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST)).getPort());
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void whenGettingPropertyAndPropertyIsUndefinedInConfigurationFile_ExceptionIsThrown() {
-        GraknConfigKey<String> key = GraknConfigKey.create("undefined");
+        GraknConfigKey<String> key = GraknConfigKey.key("undefined");
 
         exception.expect(RuntimeException.class);
         exception.expectMessage(

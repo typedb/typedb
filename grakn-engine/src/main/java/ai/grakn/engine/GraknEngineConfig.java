@@ -20,7 +20,6 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
 import org.apache.commons.io.FileUtils;
@@ -134,13 +133,7 @@ public class GraknEngineConfig {
     }
 
     public <T> T getProperty(GraknConfigKey<T> key) {
-        return tryProperty(key).orElseThrow(() ->
-                new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.value(), CONFIG_FILE_PATH))
-        );
-    }
-
-    public <T> Optional<T> tryProperty(GraknConfigKey<T> key) {
-        return Optional.ofNullable(prop.getProperty(key.value())).map(key::parse);
+        return key.parse(Optional.ofNullable(prop.getProperty(key.value())), CONFIG_FILE_PATH);
     }
 
     public String uri() {

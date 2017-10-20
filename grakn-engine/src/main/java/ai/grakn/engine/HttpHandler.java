@@ -98,10 +98,10 @@ public class HttpHandler {
 
 
     public void startHTTP() {
-        boolean passwordProtected = prop.tryProperty(GraknConfigKey.PASSWORD_PROTECTED).orElse(false);
+        boolean passwordProtected = prop.getProperty(GraknConfigKey.PASSWORD_PROTECTED);
 
         // TODO: Make sure controllers handle the null case
-        Optional<String> secret = prop.tryProperty(GraknConfigKey.JWT_SECRET);
+        Optional<String> secret = prop.getProperty(GraknConfigKey.JWT_SECRET);
         @Nullable JWTHandler jwtHandler = secret.map(JWTHandler::create).orElse(null);
         UsersHandler usersHandler = UsersHandler.create(prop.getProperty(GraknConfigKey.ADMIN_PASSWORD), factory);
 
@@ -140,8 +140,8 @@ public class HttpHandler {
                 prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
                 prop.getProperty(GraknConfigKey.SERVER_PORT),
                 GraknEngineConfig.extractPath(prop.getProperty(GraknConfigKey.STATIC_FILES_PATH)),
-                prop.tryProperty(GraknConfigKey.PASSWORD_PROTECTED).orElse(false),
-                prop.tryProperty(GraknConfigKey.WEBSERVER_THREADS).orElse(64),
+                prop.getProperty(GraknConfigKey.PASSWORD_PROTECTED),
+                prop.getProperty(GraknConfigKey.WEBSERVER_THREADS),
                 jwtHandler);
     }
 

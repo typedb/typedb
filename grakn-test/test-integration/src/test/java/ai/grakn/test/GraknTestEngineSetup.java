@@ -109,7 +109,8 @@ public abstract class GraknTestEngineSetup {
         LOG.info("starting spark on port " + config.uri());
 
         Service spark = Service.ignite();
-        configureSpark(spark, config, JWTHandler.create(config.getProperty(GraknConfigKey.JWT_SECRET)));
+        // TODO: Make sure JWTHandler manages the null case
+        configureSpark(spark, config, JWTHandler.create(config.getProperty(GraknConfigKey.JWT_SECRET).orElse(null)));
         setRestAssuredUri(config);
         return spark;
     }
