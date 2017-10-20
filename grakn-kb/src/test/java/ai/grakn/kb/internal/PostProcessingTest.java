@@ -239,7 +239,7 @@ public class PostProcessingTest extends TxTestBase {
 
         //Switch to batch
         tx.commit();
-        tx = switchToBatchTx();
+        tx = batchTx();
 
         //Create some data instances
         EntityType entityType = tx.getEntityType("My Happy EntityType");

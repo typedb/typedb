@@ -240,7 +240,7 @@ public class TxCacheTest extends TxTestBase {
 
         //Now switch transactions and check tracking is working
         tx.commit();
-        tx = switchToBatchTx();
+        tx = batchTx();
 
         relationshipType = tx.getRelationshipType("rel type 1");
         Relationship r1 = relationshipType.addRelationship().addRolePlayer(role1, e3).addRolePlayer(role2, e3);

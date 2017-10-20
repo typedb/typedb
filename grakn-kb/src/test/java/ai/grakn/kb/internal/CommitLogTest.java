@@ -92,7 +92,7 @@ public class CommitLogTest extends TxTestBase {
 
 
         //Switch to batch which should result in the logs filling
-        tx = switchToBatchTx();
+        tx = batchTx();
         EntityType entityType = tx.getEntityType("An entity Type");
         RelationshipType relationshipType = tx.getRelationshipType("Relationship Type Thing");
         Entity e1 = entityType.addEntity();

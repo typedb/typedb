@@ -314,7 +314,7 @@ public class RelationshipTest extends TxTestBase {
         assertEquals("Created relationship with duplicates when not batch loading",4, list.size());
 
         tx.commit();
-        tx = switchToBatchTx();
+        tx = batchTx();
 
         //Create relationship with dups
         relationshipType = tx.getRelationshipType("Dark Souls");
