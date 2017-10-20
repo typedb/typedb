@@ -20,8 +20,6 @@ package ai.grakn.generator;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
@@ -40,10 +38,6 @@ import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.util.Pool;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * TaskManagers
@@ -54,21 +48,15 @@ public class TaskManagers extends Generator<TaskManager> {
 
     private static final Logger LOG = LoggerFactory.getLogger(TaskManagers.class);
 
-    @SuppressWarnings("unchecked")
-    private Class<? extends TaskManager>[] taskManagerClasses = new Class[]{
-            RedisTaskManager.class, RedisTaskManager.class
-    };
+    private static TaskManager taskManager = null;
 
-    private static Map<Class<? extends TaskManager>, TaskManager> taskManagers = new HashMap<>();
-    public static void closeAndClear() {
-        for (TaskManager taskManager : taskManagers.values()) {
-            try {
-                taskManager.close();
-            } catch (IOException e) {
-                LOG.error("Could not close task manager cleanly, some resources might be left open");
-            }
+    public static void close() {
+        try {
+            taskManager.close();
+        } catch (IOException e) {
+            LOG.error("Could not close task manager cleanly, some resources might be left open");
         }
-        taskManagers.clear();
+        taskManager = null;
     }
 
     public TaskManagers() {
@@ -77,29 +65,16 @@ public class TaskManagers extends Generator<TaskManager> {
 
     @Override
     public TaskManager generate(SourceOfRandomness random, GenerationStatus status) {
-        // TODO restore the use of taskManagerClasses
-        Class<? extends TaskManager> taskManagerToReturn = random.choose(taskManagerClasses);
-
         GraknEngineConfig config = GraknEngineConfig.create();
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         SimpleURI simpleURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         Pool<Jedis> jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort());
-        if (!taskManagers.containsKey(taskManagerToReturn)) {
-            try {
-                Constructor<? extends TaskManager> constructor =
-                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class,
-                                Pool.class, EngineGraknTxFactory.class,
-                                LockProvider.class, MetricRegistry.class);
-                // TODO this doesn't take a Redis connection. Make sure this is what we expect
-                taskManagers.put(taskManagerToReturn,
-                        constructor.newInstance(EngineID.me(), config, jedisPool, null,
-                                new ProcessWideLockProvider(), new MetricRegistry()));
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                LOG.error("Could not instantiate task manager", e);
-                throw new RuntimeException(e);
-            }
+        if (taskManager == null) {
+            // TODO this doesn't take a Redis connection. Make sure this is what we expect
+            taskManager = new RedisTaskManager(EngineID.me(), config, jedisPool, 32, null,
+                            new ProcessWideLockProvider(), new MetricRegistry());
         }
 
-        return taskManagers.get(taskManagerToReturn);
+        return taskManager;
     }
 }
