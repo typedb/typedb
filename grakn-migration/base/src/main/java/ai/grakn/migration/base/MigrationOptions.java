@@ -131,7 +131,7 @@ public class MigrationOptions {
 
     public int getMaxDelay() {
         String value = command.getOptionValue("m");
-        return value == null ? BatchExecutorClient.DEFAULT_TIMEOUT_MS : Integer.parseInt(value);
+        return value == null ? BatchExecutorClient.DEFAULT_TIMEOUT_MS : parseInt(value);
     }
 
     private String resolvePath(String path){
