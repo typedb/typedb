@@ -51,7 +51,7 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = create("redis.sentinel.master");
     public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = create("redis.pool-size", Integer::parseInt);
 
-    public static final GraknConfigKey<String> QUEUE_CONSUMERS = create("queue.consumers");
+    public static final GraknConfigKey<Integer> QUEUE_CONSUMERS = create("queue.consumers", Integer::parseInt);
 
     public static final GraknConfigKey<Path> STATIC_FILES_PATH = create("server.static-file-dir", Paths::get);
 

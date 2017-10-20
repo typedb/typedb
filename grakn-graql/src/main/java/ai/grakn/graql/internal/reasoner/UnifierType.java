@@ -19,7 +19,9 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UnifierComparison;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
@@ -40,13 +42,18 @@ public enum UnifierType implements UnifierComparison {
      */
     EXACT {
         @Override
+        public boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type) {
+            return true;
+        }
+
+        @Override
         public boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child) {
             return !areDisjointTypes(parent, child);
         }
 
         @Override
-        public boolean atomicComparison(Atomic parent, Atomic child) {
-            return parent == null || parent.isAlphaEquivalent(child);
+        public boolean atomicCompatibility(Atomic parent, Atomic child) {
+            return parent == null || parent.isCompatibleWith(child);
         }
     },
 
@@ -55,13 +62,18 @@ public enum UnifierType implements UnifierComparison {
      */
     RULE {
         @Override
+        public boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type) {
+            return query.isTypeRoleCompatible(var, type);
+        }
+
+        @Override
         public boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child) {
             return child == null || !areDisjointTypes(parent, child);
         }
 
         @Override
-        public boolean atomicComparison(Atomic parent, Atomic child) {
-            return child == null || parent == null || parent.isAlphaEquivalent(child);
+        public boolean atomicCompatibility(Atomic parent, Atomic child) {
+            return child == null || parent == null || parent.isCompatibleWith(child);
         }
     },
 
@@ -70,12 +82,17 @@ public enum UnifierType implements UnifierComparison {
      */
     STRUCTURAL {
         @Override
+        public boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type) {
+            return true;
+        }
+
+        @Override
         public boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child) {
             return child == null || !areDisjointTypes(parent, child);
         }
 
         @Override
-        public boolean atomicComparison(Atomic parent, Atomic child) {
+        public boolean atomicCompatibility(Atomic parent, Atomic child) {
             return (parent == null) == (child == null);
         }
     }

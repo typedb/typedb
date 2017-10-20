@@ -139,8 +139,8 @@ public class BatchMutatorClientTest {
             loader.add(query());
 
             if(i%10 == 0) {
-                engine.server().stopHTTP();
-                engine.server().startHTTP();
+                engine.server().getHttpHandler().stopHTTP();
+                engine.server().getHttpHandler().startHTTP();
             }
         }
 

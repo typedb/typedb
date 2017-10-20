@@ -48,7 +48,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -215,26 +214,29 @@ public class InferenceRule {
      */
     public InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
-
-        //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
         Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
-        if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
-            Set<ValuePredicate> vps  = Stream.concat(
-                    parentAtom.getPredicates(ValuePredicate.class),
-                    parentAtom.getInnerPredicates(ValuePredicate.class)
-            )
+
+        //transfer value predicates
+        parentAtom.getPredicates(ValuePredicate.class)
+                .flatMap(vp -> vp.unify(unifier).stream())
+                .forEach(bodyAtoms::add);
+
+        //if head is a resource merge vps into head
+        if (headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()) {
+            ResourceAtom resourceHead = (ResourceAtom) headAtom;
+            Set<ValuePredicate> innerVps = parentAtom.getInnerPredicates(ValuePredicate.class)
                     .flatMap(vp -> vp.unify(unifier).stream())
+                    .peek(bodyAtoms::add)
                     .collect(toSet());
             headAtom = new ResourceAtom(
                     headAtom.getPattern().asVarPattern(),
                     headAtom.getPredicateVariable(),
-                    ((ResourceAtom) headAtom).getRelationVariable(),
-                    ((ResourceAtom) headAtom).getTypePredicate(),
-                    vps,
+                    resourceHead.getRelationVariable(),
+                    resourceHead.getTypePredicate(),
+                    innerVps,
                     headAtom.getParentQuery()
             );
-            bodyAtoms.addAll(vps);
         }
 
         Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints()
@@ -250,7 +252,7 @@ public class InferenceRule {
                     SchemaConcept subType = allTypes.stream()
                             .map(Atom::getSchemaConcept)
                             .filter(Objects::nonNull)
-                            .filter(t -> ReasonerUtils.getSupers(t).contains(schemaConcept))
+                            .filter(t -> ReasonerUtils.supers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
                 }).forEach(t -> bodyAtoms.add(AtomicFactory.create(t, body)));

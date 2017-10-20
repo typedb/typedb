@@ -1,25 +1,56 @@
 define
 
+role1 sub role;
+role2 sub role;
+
 entity1 sub entity
-	has res1;
+    plays role1
+    plays role2
+	has resource;
+
+relation sub relationship
+	relates role1
+	relates role2
+	has resource;
 
 #Resources
-res1 sub attribute datatype string;
+resource sub attribute datatype string;
 
 #Rules
 
 rule-1 sub rule
 	when {
-		$x isa entity1 has res1 $r1;
+		$x isa entity1 has resource $r1;
 		$y isa entity1;
 	}
 	then {
-		$y has res1 $r1;
+		$y has resource $r1;
 	};
+
+#needed for reusingResources_copyingResourceValueToResourceOfDifferentType test
+#subResource sub resource;
+
+#rule-2 sub rule
+#	when {
+#		$x isa entity1 has resource $r1;
+#	}
+#	then {
+#		$x has subResource $r1;
+#	};
+
+rule-3 sub rule
+    when {
+        $x isa entity1, has resource $y;
+        $z isa relation;
+    }
+    then {
+        $z has resource $y;
+    };
 
 insert
 
 #Data
 
-$x isa entity1 has res1 "value";
+$x isa entity1 has resource "value";
 $y isa entity1;
+(role1:$x, role2:$x) isa relation;

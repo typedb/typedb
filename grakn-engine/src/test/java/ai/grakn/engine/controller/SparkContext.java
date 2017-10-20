@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import static ai.grakn.engine.HttpHandler.configureSpark;
 
 /**
  * Context that starts spark

@@ -40,21 +40,50 @@ public class TxTestBase {
 
 
     @Before
-    public void setUpGraph() {
+    public void setUpTx() {
         session = Grakn.session(Grakn.IN_MEMORY, keyspace);
-        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        getTx(false);
     }
 
     @After
     public void closeSession() throws Exception {
-        tx.close();
-        if(txBatch != null) txBatch.close();
+        closeTxIfOpen(tx);
+        closeTxIfOpen(txBatch);
         session.close();
     }
 
-    protected GraknTxAbstract<?> switchToBatchGraph(){
-        tx.close();
-        txBatch = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
-        return txBatch;
+    protected GraknTxAbstract<?> tx(){
+        return getTx(false);
     }
+
+    protected GraknTxAbstract<?> batchTx(){
+       return getTx(true);
+    }
+
+    private GraknTxAbstract<?> getTx(boolean isBatch){
+        if(isBatch){
+            if(newTxNeeded(txBatch)){
+                closeTxIfOpen(tx);
+                return txBatch = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+            } else {
+                return txBatch;
+            }
+        } else {
+            if(newTxNeeded(tx)){
+                closeTxIfOpen(txBatch);
+                return tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+            } else {
+                return tx;
+            }
+        }
+    }
+
+    private boolean newTxNeeded(GraknTxAbstract<?> tx){
+        return tx == null || tx.isClosed();
+    }
+
+    private void closeTxIfOpen(GraknTxAbstract<?> tx){
+        if(tx != null && !tx.isClosed()) tx.close();
+    }
+
 }

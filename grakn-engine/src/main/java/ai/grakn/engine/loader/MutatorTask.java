@@ -73,11 +73,11 @@ public class MutatorTask extends BackgroundTask {
 
     /**
      * Execute the given queries against the given graph. Return if the operation was successfully completed.
-     * @param graph grakn graph in which to insert the data
+     * @param tx grakn graph in which to insert the data
      * @param inserts graql queries to insert into the graph
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknTx graph, Collection<Query> inserts) {
+    private boolean insertQueriesInOneTransaction(GraknTx tx, Collection<Query> inserts) {
         try(Context context = metricRegistry().timer(name(MutatorTask.class, "execution")).time()) {
             if (inserts.isEmpty()) {
                 metricRegistry().meter(name(MutatorTask.class, "empty")).mark();
@@ -85,21 +85,25 @@ public class MutatorTask extends BackgroundTask {
             } else {
                 inserts.forEach(q -> {
                     try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
-                        q.withTx(graph).execute();
+                        q.withTx(tx).execute();
                     } catch (Exception e) {
                         LOG.error("Error while executing insert for query: \n{}\nError: {}", q, e.getMessage());
                         throw e;
                     }
                 });
 
-                Optional<String> result = graph.admin().commitNoLogs();
+                Optional<String> result = tx.admin().commitNoLogs();
                 if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
                     String logs = result.get();
-                    addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
-                                    .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
-                            PostProcessingTask.createConfig(graph.getKeyspace(), logs));
+
+                    Optional<TaskConfiguration> configPP = PostProcessingTask.createConfig(tx.getKeyspace(), logs);
+                    if(configPP.isPresent()) {
+                        addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
+                                        .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
+                                configPP.get());
+                    }
                     addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
-                            UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
+                            UpdatingInstanceCountTask.createConfig(tx.getKeyspace(), logs));
                 }
                 return true;
             }

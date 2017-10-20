@@ -21,6 +21,7 @@ package ai.grakn.test;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.client.Client;
+import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
@@ -143,7 +144,7 @@ public class DistributionContext extends ExternalResource {
                 "-cp", getClassPath(),
                 "-Dgrakn.dir=" + DIST_DIRECTORY + "/services",
                 "-Dgrakn.conf=" + propertiesFile.getAbsolutePath(),
-                "ai.grakn.engine.GraknEngineServer", "&"};
+                Grakn.class.getName(), "&"};
 
         // Start process
         ProcessBuilder processBuilder = new ProcessBuilder(commands);
