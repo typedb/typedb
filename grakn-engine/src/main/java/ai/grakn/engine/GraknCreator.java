@@ -158,7 +158,6 @@ public class GraknCreator {
     }
 
     protected static TaskManager taskManager(GraknEngineConfig config, EngineGraknTxFactory factory, Pool<Jedis> jedisPool, LockProvider lockProvider, EngineID engineId, MetricRegistry metricRegistry) {
-        TaskManager result;
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "idle"), (Gauge<Integer>) jedisPool::getNumIdle);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "active"), (Gauge<Integer>) jedisPool::getNumActive);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
