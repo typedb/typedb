@@ -25,10 +25,8 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
-import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.MockRedisRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
@@ -63,7 +61,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-@Ignore("Ignored due to failing randomly on travis because of redis failures")
+@Ignore("Ignored due to redis related failiures")
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
 
@@ -75,9 +73,6 @@ public class GraknEngineServerIT {
 
     @ClassRule
     public static final EngineContext engine2 = EngineContext.createWithInMemoryRedis();
-
-    @ClassRule
-    public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(engine1.config().getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
     private TaskStateStorage storage;
 

@@ -18,15 +18,10 @@
 
 package ai.grakn.test.engine.lock;
 
-import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.lock.JedisLock;
 import ai.grakn.engine.lock.NonReentrantLock;
-import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.MockRedisRule;
-import com.google.common.collect.Iterables;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
@@ -45,7 +40,6 @@ import java.util.concurrent.locks.Lock;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@Ignore("Ignored due to failing randomly on travis because of redis failures")
 @RunWith(Theories.class)
 public class LockTestIT {
 
@@ -56,9 +50,6 @@ public class LockTestIT {
 
     @ClassRule
     public static EngineContext engine = EngineContext.createWithInMemoryRedis();
-
-    @ClassRule
-    public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(engine.config().getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
     @DataPoints
     public static Locks[] configValues = Locks.values();
