@@ -142,9 +142,9 @@ public class BatchExecutorClientTest {
                 if (i % 5 == 0) {
                     Thread.sleep(200);
                     System.out.println("Restarting engine");
-                    engine.server().stopHTTP();
+                    engine.server().getHttpHandler().stopHTTP();
                     Thread.sleep(200);
-                    engine.server().startHTTP();
+                    engine.server().getHttpHandler().startHTTP();
                 }
             }
             int completed = allObservable(all).toBlocking().first().size();
