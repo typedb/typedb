@@ -40,11 +40,11 @@ public interface UnifierComparison {
     boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child);
 
     /**
-     * @param parent atomic of parent expression
-     * @param child atomic of child expression
-     * @return atomic comparison value
+     * @param parent predicate of parent expression
+     * @param child predicate of child expression
+     * @return true if predicates compatible
      */
-    boolean atomicComparison(Atomic parent, Atomic child);
+    boolean atomicCompatibility(Atomic parent, Atomic child);
 
     /**
      * @param query query to be checked
