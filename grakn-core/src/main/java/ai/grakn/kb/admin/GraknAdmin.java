@@ -166,22 +166,6 @@ public interface GraknAdmin {
     boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds);
 
     /**
-     * Check if a {@link ai.grakn.concept.Relationship} needs fixing
-     *
-     * @param relationshipId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
-     * @return true if the {@link ai.grakn.concept.Relationship} has duplicate incoming {@link Schema.EdgeLabel#ROLE_PLAYER} edges.
-     */
-    boolean relationshipHasDuplicateRolePlayers(ConceptId relationshipId);
-
-    /**
-     * Fix a {@link ai.grakn.concept.Relationship} with duplicate incoming {@link Schema.EdgeLabel#ROLE_PLAYER} edges.
-     *
-     * @param relationshipId The {@link ConceptId} of the {@link ai.grakn.concept.Relationship} which may need fixing.
-     * @return true if the {@link ai.grakn.concept.Relationship} was fixed and a commit is needed
-     */
-    boolean fixRelationshipWithDuplicateRolePlayers(ConceptId relationshipId);
-
-    /**
      * Creates a new shard for the concept
      * @param conceptId the id of the concept to shard
      */
