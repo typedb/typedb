@@ -41,7 +41,6 @@ public class MigrationOptions {
 
     protected final Options options = new Options();
     protected CommandLine command;
-    private int maxDelay;
 
     public MigrationOptions(){
         options.addOption("v", "verbose", false, "Print counts of migrated data.");
