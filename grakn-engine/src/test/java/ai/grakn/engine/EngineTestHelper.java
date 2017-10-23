@@ -1,5 +1,6 @@
 package ai.grakn.engine;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
@@ -13,8 +14,6 @@ import redis.clients.util.Pool;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.ExecutorService;
-
-import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * <p>
@@ -46,7 +45,7 @@ public class EngineTestHelper extends GraknCreator {
             return config;
         }
         config = GraknEngineConfig.create();
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(findAvailablePort()));
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, findAvailablePort());
         return config;
     }
     
@@ -92,7 +91,7 @@ public class EngineTestHelper extends GraknCreator {
             server = null;
         }
     }
-    
+
     public static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config) {
         return EngineTestHelper.cleanGraknEngineServer(config,redisWrapper(config));
     }

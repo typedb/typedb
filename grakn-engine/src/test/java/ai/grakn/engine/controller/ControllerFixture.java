@@ -17,17 +17,15 @@
  */
 package ai.grakn.engine.controller;
 
-import java.util.ArrayList;
-
+import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.GraknConfigKey;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.builder.RequestSpecBuilder;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.builder.RequestSpecBuilder;
-
-import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.GraknEngineConfig;
+import java.util.ArrayList;
 
 /**
  * Setup and cleanup for controller tests. 
@@ -70,7 +68,7 @@ public class ControllerFixture implements TestRule {
     public static final ControllerFixture INSTANCE = new ControllerFixture(); 
     
     public static String baseURI() {
-        return "http://localhost:" + EngineTestHelper.config().getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);        
+        return "http://localhost:" + EngineTestHelper.config().getProperty(GraknConfigKey.SERVER_PORT);
     }
     
     private void restAssuredSetup() {

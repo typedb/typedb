@@ -18,10 +18,10 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
@@ -75,8 +75,7 @@ public class PostProcessingTask extends BackgroundTask {
                         .timer(name(PostProcessingTask.class, "execution-single")).time();
                 try {
                     Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
-                    int maxRetry = engineConfiguration()
-                            .getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+                    int maxRetry = engineConfiguration().getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
 
                     GraknTxMutators.runMutationWithRetry(factory(), keyspace, maxRetry,
                             (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
