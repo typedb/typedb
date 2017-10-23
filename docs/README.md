@@ -1,7 +1,5 @@
 # GRAKN.AI Documentation
 
-[![Code Triagers Badge](https://www.codetriage.com/graknlabs/docs/badges/users.svg)](https://www.codetriage.com/graknlabs/docs)
-
 ## TL;DR
 
 **How to update and build the docs**
