@@ -18,10 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.utils.conversion;
 
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -31,16 +29,9 @@ import com.google.common.collect.Multimap;
  * @author Kasper Piskorski
  */
 public class RoleConverter implements SchemaConceptConverter<Role> {
-    @Override
-    public Multimap<RelationshipType, Role> toRelationshipMultimap(Role entryRole) {
-        Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
 
-        entryRole.subs()
-                .forEach(role -> {
-                    role.relationshipTypes()
-                            .filter(rel -> !rel.isImplicit())
-                            .forEach(rel -> relationMap.put(rel, role));
-                });
-        return relationMap;
+    @Override
+    public Stream<Role> toCompatibleRoles(Role entryRole) {
+        return entryRole.subs();
     }
 }

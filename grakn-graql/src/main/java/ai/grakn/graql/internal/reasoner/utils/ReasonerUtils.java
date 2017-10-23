@@ -42,7 +42,9 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
+import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
@@ -225,41 +227,6 @@ public class ReasonerUtils {
     }
 
     /**
-     *
-     * @param type for which top type is to be found
-     * @return non-meta top type of the type
-     */
-    public static Type topType(Type type){
-        Type superType = type;
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
-            superType = superType.sup();
-        }
-        return superType;
-    }
-
-    /**
-     * @param schemaConcepts entry set
-     * @return top non-meta {@link SchemaConcept} from within the provided set of {@link Role}
-     */
-    public static <T extends SchemaConcept> Set<T> schemaConcepts(Set<T> schemaConcepts) {
-        return schemaConcepts.stream()
-                .filter(rt -> Sets.intersection(supers(rt), schemaConcepts).isEmpty())
-                .collect(toSet());
-    }
-
-    /**
-     * Gets {@link Role} a given {@link Type} can play in the provided {@link RelationshipType} by performing
-     * type intersection between type's playedRoles and relation's relates.
-     * @param type for which we want to obtain compatible {@link Role}s it plays
-     * @param relRoles entry {@link Role}s
-     * @return set of {@link Role}s the type can play from the provided {@link Role}s
-     */
-    public static Set<Role> compatibleRoles(Type type, Stream<Role> relRoles){
-        Set<Role> typeRoles = type.plays().collect(toSet());
-        return relRoles.filter(typeRoles::contains).collect(toSet());
-    }
-
-    /**
      * calculates map intersection by doing an intersection on key sets and accumulating the keys
      * @param m1 first operand
      * @param m2 second operand
@@ -277,6 +244,7 @@ public class ReasonerUtils {
     }
 
     /**
+     * NB: assumes MATCH semantics - all types and their subs are considered
      * compute the map of compatible {@link RelationshipType}s for a given set of {@link Type}s
      * (intersection of allowed sets of relation types for each entry type) and compatible role types
      * @param types for which the set of compatible {@link RelationshipType}s is to be computed
@@ -294,6 +262,55 @@ public class ReasonerUtils {
             compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(typeIterator.next()));
         }
         return compatibleTypes;
+    }
+
+    /**
+     * NB: assumes MATCH semantics - all types and their subs are considered
+     * @param parentRole parent {@link Role}
+     * @param parentType parent {@link Type}
+     * @param entryRoles entry set of possible {@link Role}s
+     * @return set of playable {@link Role}s defined by type-role parent combination
+     */
+    public static Set<Role> compatibleRoles(Role parentRole, Type parentType, Set<Role> entryRoles) {
+        Set<Role> compatibleRoles = parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ?
+                Sets.intersection(new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()), entryRoles) :
+                entryRoles;
+
+        if (parentType != null && !Schema.MetaSchema.isMetaLabel(parentType.getLabel())) {
+            Set<Role> compatibleRolesFromTypes = new TypeConverter().toCompatibleRoles(parentType).collect(toSet());
+
+            //do set intersection meta role
+            compatibleRoles = compatibleRoles.stream()
+                    .filter(role -> Schema.MetaSchema.isMetaLabel(role.getLabel()) || compatibleRolesFromTypes.contains(role))
+                    .collect(toSet());
+        }
+        return compatibleRoles;
+    }
+
+    public static Set<Role> compatibleRoles(Type type, Set<Role> relRoles){
+        return compatibleRoles(null, type, relRoles);
+    }
+
+    /**
+     * @param schemaConcepts entry set
+     * @return top non-meta {@link SchemaConcept}s from within the provided set of {@link Role}
+     */
+    public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
+        return schemaConcepts.stream()
+                .filter(rt -> Sets.intersection(supers(rt), schemaConcepts).isEmpty())
+                .collect(toSet());
+    }
+
+    /**
+     * @param type for which top type is to be found
+     * @return non-meta top type of the type
+     */
+    public static Type top(Type type){
+        Type superType = type;
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+            superType = superType.sup();
+        }
+        return superType;
     }
 
     /**
@@ -435,28 +452,6 @@ public class ReasonerUtils {
             if (parentType != null) unifier = unifier.merge(childType.getUnifier(parentType));
         }
         return unifier;
-    }
-
-    /**
-     * @param parentRole parent {@link Role}
-     * @param parentType parent {@link SchemaConcept}
-     * @param childRoles entry set of possible {@link Role}s
-     * @return set of playable {@link Role}s defined by type-role parent
-     */
-    public static Set<Role> playableRoles(Role parentRole, SchemaConcept parentType, Set<Role> childRoles) {
-        boolean isParentRoleMeta = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());
-        Set<Role> compatibleChildRoles = isParentRoleMeta ? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles);
-
-        //if parent role player has a type, constrain the allowed roles
-        if (parentType != null && parentType.isType()) {
-            boolean isParentTypeMeta = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
-            Set<Role> parentTypeRoles = isParentTypeMeta ? childRoles : parentType.asType().plays().collect(toSet());
-
-            compatibleChildRoles = compatibleChildRoles.stream()
-                    .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || parentTypeRoles.contains(rc))
-                    .collect(toSet());
-        }
-        return compatibleChildRoles;
     }
 
     /**
