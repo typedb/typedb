@@ -18,13 +18,18 @@
 
 package ai.grakn.test.engine.lock;
 
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.JedisLock;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.MockRedisRule;
-import ai.grakn.util.SimpleURI;
 import java.util.UUID;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.experimental.theories.DataPoints;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -33,16 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.experimental.theories.DataPoints;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 
-@Ignore("Ignored due to failing randomly on travis because of redis failures")
 @RunWith(Theories.class)
 public class LockTestIT {
 
@@ -53,9 +49,6 @@ public class LockTestIT {
 
     @ClassRule
     public static EngineContext engine = EngineContext.createWithInMemoryRedis();
-
-    @ClassRule
-    public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(engine.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
 
     @DataPoints
     public static Locks[] configValues = Locks.values();

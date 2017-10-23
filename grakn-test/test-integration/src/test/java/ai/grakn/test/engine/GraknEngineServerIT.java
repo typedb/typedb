@@ -20,7 +20,6 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.client.TaskClient;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
@@ -37,8 +36,6 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTask
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
-import ai.grakn.util.MockRedisRule;
-import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multiset;
 import com.pholser.junit.quickcheck.Property;
@@ -60,7 +57,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-@Ignore("Ignored due to failing randomly on travis because of redis failures")
+@Ignore("Ignored due to redis related failiures")
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
 
@@ -72,9 +69,6 @@ public class GraknEngineServerIT {
 
     @ClassRule
     public static final EngineContext engine2 = EngineContext.createWithInMemoryRedis();
-
-    @ClassRule
-    public static final MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(engine1.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
 
     private TaskStateStorage storage;
 

@@ -112,6 +112,8 @@
         <pf4j.version>1.3.0</pf4j.version>
         <redisq.version>0.0.5</redisq.version>
       <jersey.version>1.19</jersey.version>
+        <hystrix-core.version>1.5.12</hystrix-core.version>
+        <failsafe.version>1.0.4</failsafe.version>
     </properties>
 
     <organization>

@@ -131,7 +131,7 @@ public class SystemController {
 
     @GET
     @Path("/initialise")
-    @ApiOperation(value = "Initialise a grakn session - add the getKeyspace to the system graph and return configured properties.")
+    @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private String initialiseSession(Request request, Response response) {
         Keyspace keyspace = Keyspace.of(request.queryParams(KEYSPACE_PARAM));
@@ -142,12 +142,12 @@ public class SystemController {
         }
 
         throw GraknServerException
-                .internalError("Unable to instantiate system getKeyspace " + keyspace);
+                .internalError("Unable to instantiate system keyspace " + keyspace);
     }
 
     @DELETE
     @Path("/deleteKeyspace")
-    @ApiOperation(value = "Delete a getKeyspace from the system graph.")
+    @ApiOperation(value = "Delete a keyspace from the system graph.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private boolean deleteKeyspace(Request request, Response response) {
         Keyspace keyspace = Keyspace.of(request.queryParams(KEYSPACE_PARAM));
@@ -205,7 +205,7 @@ public class SystemController {
                         if (names.size() != 1) {
                             throw GraknServerException.internalError(
                                     ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(
-                                            " getKeyspace " + keyspace.getId()
+                                            " keyspace " + keyspace.getId()
                                                     + " has no unique name."));
                         }
                         result.add(names.iterator().next().getValue());

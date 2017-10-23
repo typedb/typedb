@@ -214,6 +214,19 @@ public class BatchExecutorClient implements Closeable {
         }
     }
 
+    // Internal commands
+
+    /*
+     * The Batch Executor client uses Hystrix to batch requests. As a positive side effect
+     * we get the Hystrix circuit breaker too.
+     * Hystrix wraps every thing that it does inside a Command. A Command defines what happens
+     * when it's run, and optionally a fallback. Here in CommandQueries, we just define the run.
+     * The batching is implemented using a Collapser, in our case
+     * it's the QueriesObservableCollapser.
+     * See the classes Javadocs for more info.
+     */
+
+
     /**
      * This is the hystrix command for the batch
      *
