@@ -740,6 +740,8 @@ public class AtomicTest {
      *
      *      TYPE INFERENCE Tests
      *
+     * NB: Type inference has strictly MATCH semantics
+     *
      * ##################################
      */
 
@@ -747,128 +749,140 @@ public class AtomicTest {
     public void testTypeInference_singleGuard() {
         GraknTx graph = typeInferenceSet.tx();
 
-        String patternString = "{$x isa singleRoleEntity; ($x, $y);}";
-        String subbedPatternString = "{$x id '" + conceptId(graph, "singleRoleEntity") + "';($x, $y);}";
-        String patternString2 = "{$x isa twoRoleEntity; ($x, $y);}";
-        String subbedPatternString2 = "{$x id '" + conceptId(graph, "twoRoleEntity") + "';($x, $y);}";
+        //parent of all roles so all relations possible
+        String patternString = "{$x isa noRoleEntity; ($x, $y);}";
+        String subbedPatternString = "{$x id '" + conceptId(graph, "noRoleEntity") + "';($x, $y);}";
 
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
+        //SRE -> rel2
+        //sub(SRE)=TRE -> rel3
+        String patternString2 = "{$x isa singleRoleEntity; ($x, $y);}";
+        String subbedPatternString2 = "{$x id '" + conceptId(graph, "singleRoleEntity") + "';($x, $y);}";
 
-        List<RelationshipType> possibleTypes2 = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation1")),
+        //TRE -> rel3
+        String patternString3 = "{$x isa twoRoleEntity; ($x, $y);}";
+        String subbedPatternString3 = "{$x id '" + conceptId(graph, "twoRoleEntity") + "';($x, $y);}";
+
+        List<RelationshipType> possibleTypes = Lists.newArrayList(
+                graph.getSchemaConcept(Label.of("relation2")),
                 graph.getSchemaConcept(Label.of("relation3"))
         );
 
-        typeInference(possibleTypes, patternString, subbedPatternString, graph);
-        typeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
+        typeInference(allRelations(graph), patternString, subbedPatternString, graph);
+        typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
+        typeInference(possibleTypes, patternString3, subbedPatternString3, graph);
     }
 
     @Test
     public void testTypeInference_doubleGuard() {
         GraknTx graph = typeInferenceSet.tx();
 
-        //{rel1} ^ {rel1, rel2} = {rel1}
+        //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
         String patternString = "{$x isa singleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
         String subbedPatternString = "{($x, $y);" +
                 "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
                 "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-        //{rel1, rel3} ^ {rel1, rel2} = {rel1}
+
+        //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
         String patternString2 = "{$x isa twoRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
         String subbedPatternString2 = "{($x, $y);" +
                 "$x id '" + conceptId(graph, "twoRoleEntity") + "';" +
                 "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
 
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
+        //{rel1} ^ {rel1, rel2, rel3} = {rel1}
+        String patternString3 = "{$x isa yetAnotherSingleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
+        String subbedPatternString3 = "{($x, $y);" +
+                "$x id '" + conceptId(graph, "yetAnotherSingleRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
+
+        List<RelationshipType> possibleTypes = Lists.newArrayList(
+                graph.getSchemaConcept(Label.of("relation2")),
+                graph.getSchemaConcept(Label.of("relation3"))
+        );
 
         typeInference(possibleTypes, patternString, subbedPatternString, graph);
         typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
+        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation1"))), patternString3, subbedPatternString3, graph);
     }
 
     @Test
     public void testTypeInference_singleRole() {
         GraknTx graph = typeInferenceSet.tx();
-        String patternString = "{(role2: $x, $y);}";
+        String patternString = "{(role1: $x, $y);}";
+        String patternString2 = "{(role2: $x, $y);}";
+        String patternString3 = "{(role3: $x, $y);}";
+
+        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation1"))), patternString, graph);
+        typeInference(allRelations(graph), patternString2, graph);
 
         List<RelationshipType> possibleTypes = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation1")),
-                graph.getSchemaConcept(Label.of("relation2"))
+                graph.getSchemaConcept(Label.of("relation2")),
+                graph.getSchemaConcept(Label.of("relation3"))
         );
-
-
-        typeInference(possibleTypes, patternString, graph);
+        typeInference(possibleTypes, patternString3, graph);
     }
 
     @Test
     public void testTypeInference_singleRole_subType() {
         GraknTx graph = typeInferenceSet.tx();
         String patternString = "{(subRole2: $x, $y);}";
-        typeInference(allRelations(graph), patternString, graph);
+        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation3"))), patternString, graph);
     }
 
     @Test
     public void testTypeInference_singleRole_singleGuard() {
         GraknTx graph = typeInferenceSet.tx();
 
-        //{rel1, rel2} ^ {rel1}
+        //{rel1, rel2, rel3} ^ {rel2, rel3}
         String patternString = "{(role2: $x, $y); $y isa singleRoleEntity;}";
         String subbedPatternString = "{(role2: $x, $y);" +
                 "$y id '" + conceptId(graph, "singleRoleEntity") + "';}";
-        //{rel1, rel2} ^ {rel1, rel3}
+        //{rel1, rel2, rel3} ^ {rel2, rel3}
         String patternString2 = "{(role2: $x, $y); $y isa twoRoleEntity;}";
         String subbedPatternString2 = "{(role2: $x, $y);" +
                 "$y id '" + conceptId(graph, "twoRoleEntity") + "';}";
-        //{rel1,} ^ {rel1, rel3}
+        //{rel1} ^ {rel1, rel2, rel3}
         String patternString3 = "{(role1: $x, $y); $y isa anotherTwoRoleEntity;}";
         String subbedPatternString3 = "{(role1: $x, $y);" +
                 "$y id '" + conceptId(graph, "anotherTwoRoleEntity") + "';}";
 
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
+        List<RelationshipType> possibleTypes = Lists.newArrayList(
+                graph.getSchemaConcept(Label.of("relation2")),
+                graph.getSchemaConcept(Label.of("relation3"))
+        );
 
         typeInference(possibleTypes, patternString, subbedPatternString, graph);
         typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
-        typeInference(possibleTypes, patternString3, subbedPatternString3, graph);
+        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation1"))), patternString3, subbedPatternString3, graph);
     }
 
     @Test
     public void testTypeInference_singleRole_singleGuard_bothConceptsAreSubConcepts() {
         GraknTx graph = typeInferenceSet.tx();
 
-        //{rel1, rel2, rel3} ^ {rel1, rel3}
+        //{rel3} ^ {rel2, rel3}
         String patternString = "{(subRole2: $x, $y); $y isa twoRoleEntity;}";
         String subbedPatternString = "{(subRole2: $x, $y);" +
                 "$y id '" + conceptId(graph, "twoRoleEntity") + "';}";
-        //{rel1, rel2, rel3} ^ {rel1, rel2}
+        //{rel3} ^ {rel1, rel2, rel3}
         String patternString2 = "{(subRole2: $x, $y); $y isa anotherTwoRoleEntity;}";
         String subbedPatternString2 = "{(subRole2: $x, $y);" +
                 "$y id '" + conceptId(graph, "anotherTwoRoleEntity") + "';}";
 
-        List<RelationshipType> possibleTypes = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation1")),
-                graph.getSchemaConcept(Label.of("relation3"))
-        );
-        List<RelationshipType> possibleTypes2 = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation1")),
-                graph.getSchemaConcept(Label.of("relation2"))
-        );
-
-        typeInference(possibleTypes, patternString, subbedPatternString, graph);
-        typeInference(possibleTypes2, patternString2, subbedPatternString2, graph);
+        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation3"))), patternString, subbedPatternString, graph);
+        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation3"))), patternString2, subbedPatternString2, graph);
     }
 
     @Test
     public void testTypeInference_singleRole_singleGuard_typeContradiction() {
         GraknTx graph = typeInferenceSet.tx();
 
-        //{rel1} ^ {rel3}
-        String patternString = "{(role1: $x, $y); $y isa anotherSingleRoleEntity;}";
+        //{rel1} ^ {rel2}
+        String patternString = "{(role1: $x, $y); $y isa singleRoleEntity;}";
         String subbedPatternString = "{(role1: $x, $y);" +
-                "$y id '" + conceptId(graph, "anotherSingleRoleEntity") + "';}";
-        String patternString2 = "{(role1: $x, $y); $x isa anotherSingleRoleEntity;}";
+                "$y id '" + conceptId(graph, "singleRoleEntity") + "';}";
+        String patternString2 = "{(role1: $x, $y); $x isa singleRoleEntity;}";
         String subbedPatternString2 = "{(role1: $x, $y);" +
-                "$x id '" + conceptId(graph, "anotherSingleRoleEntity") + "';}";
+                "$x id '" + conceptId(graph, "singleRoleEntity") + "';}";
 
         typeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
         typeInference(Collections.emptyList(), patternString2, subbedPatternString2, graph);
@@ -877,14 +891,16 @@ public class AtomicTest {
     @Test
     public void testTypeInference_singleRole_doubleGuard() {
         GraknTx graph = typeInferenceSet.tx();
-        //{rel1} ^ {rel1, rel2}
+        //{rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{$x isa singleRoleEntity;(role2: $x, $y); $y isa anotherTwoRoleEntity;}";
         String subbedPatternString = "{(role2: $x, $y);" +
                 "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
                 "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
 
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        List<RelationshipType> possibleTypes = Collections.singletonList(relation1);
+        List<RelationshipType> possibleTypes = Lists.newArrayList(
+                graph.getSchemaConcept(Label.of("relation2")),
+                graph.getSchemaConcept(Label.of("relation3"))
+        );
         typeInference(possibleTypes, patternString, subbedPatternString, graph);
     }
 
@@ -892,50 +908,45 @@ public class AtomicTest {
     public void testTypeInference_doubleRole_doubleGuard() {
         GraknTx graph = typeInferenceSet.tx();
 
-        //{rel1} ^ {rel1, rel2} ^ {rel1} ^ {rel1, rel2}
-        String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString = "{(role1: $x, role2: $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-        //{rel1, rel2, rel3} ^ {rel1, rel2} ^ {rel2, rel3} ^ {rel1, rel2}
-        String patternString2 = "{$x isa threeRoleEntity;(role2: $x, role3: $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString2 = "{(role2: $x, role3: $y);" +
-                "$x id '" + conceptId(graph, "threeRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-
-        RelationshipType relation1 = graph.getSchemaConcept(Label.of("relation1"));
-        RelationshipType relation2 = graph.getSchemaConcept(Label.of("relation2"));
-
-        typeInference(Collections.singletonList(relation1), patternString, subbedPatternString, graph);
-        typeInference(Collections.singletonList(relation2), patternString2, subbedPatternString2, graph);
-    }
-
-    @Test
-    public void testTypeInference_doubleRole_doubleGuard_multipleRelationsPossible() {
-        GraknTx graph = typeInferenceSet.tx();
-        //{rel1, rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
+        //{rel1, rel2, rel3} ^ {rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{$x isa threeRoleEntity;(subRole2: $x, role3: $y); $y isa threeRoleEntity;}";
         String subbedPatternString = "{(subRole2: $x, role3: $y);" +
                 "$x id '" + conceptId(graph, "threeRoleEntity") + "';" +
                 "$y id '" + conceptId(graph, "threeRoleEntity") + "';}";
 
+        //{rel1, rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
+        String patternString2 = "{$x isa threeRoleEntity;(role2: $x, role3: $y); $y isa anotherTwoRoleEntity;}";
+        String subbedPatternString2 = "{(role2: $x, role3: $y);" +
+                "$x id '" + conceptId(graph, "threeRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
+
+        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation3"))), patternString, subbedPatternString, graph);
+
         List<RelationshipType> possibleTypes = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation3")),
-                graph.getSchemaConcept(Label.of("relation2"))
+                graph.getSchemaConcept(Label.of("relation2")),
+                graph.getSchemaConcept(Label.of("relation3"))
         );
-        typeInference(possibleTypes, patternString, subbedPatternString, graph);
+        typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
     }
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard_contradiction() {
         GraknTx graph = typeInferenceSet.tx();
-        //{rel1} ^ {rel1} ^ {rel1, rel2} ^ {rel4}
-        String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherSingleRoleEntity;}";
+
+        //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
+        String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity;}";
         String subbedPatternString = "{(role1: $x, role2: $y);" +
+                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
+                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
+
+        //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
+        String patternString2 = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherSingleRoleEntity;}";
+        String subbedPatternString2 = "{(role1: $x, role2: $y);" +
                 "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
                 "$y id '" + conceptId(graph, "anotherSingleRoleEntity") +"';}";
 
         typeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
+        typeInference(Collections.emptyList(), patternString2, subbedPatternString2, graph);
     }
 
     @Test
@@ -1102,9 +1113,6 @@ public class AtomicTest {
         exactUnification(parentRelation, specialisedRelation4, false, false, graph);
         nonExistentUnifier(parentRelation, specialisedRelation5, graph);
     }
-
-
-    //TODO relations with types
 
     @Test
     public void testUnification_VariousAtoms(){
