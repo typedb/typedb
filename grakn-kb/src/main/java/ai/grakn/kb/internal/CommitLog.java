@@ -32,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -50,7 +49,6 @@ public class CommitLog {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Map<ConceptId, Long> newInstanceCount = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> newAttributes = new ConcurrentHashMap<>();
-    private final Set<ConceptId> relationshipsWithNewRolePlayers = ConcurrentHashMap.newKeySet();
 
 
     void addNewAttributes(Map<String, ConceptId> attributes){
@@ -64,10 +62,6 @@ public class CommitLog {
 
     void addNewInstances(Map<ConceptId, Long> instances){
         lockDataAddition(() -> instances.forEach((key, value) -> newInstanceCount.merge(key, value, (v1, v2) -> v1 + v2)));
-    }
-
-    void addRelationshipsWithNewRolePlayers(Set<ConceptId> relationships) {
-        lockDataAddition(() -> relationshipsWithNewRolePlayers.addAll(relationships));
     }
 
     /**
@@ -91,7 +85,7 @@ public class CommitLog {
     }
 
     public Json getFormattedLog(){
-        return formatLog(newInstanceCount, newAttributes, relationshipsWithNewRolePlayers);
+        return formatLog(newInstanceCount, newAttributes);
     }
 
     /**
@@ -120,35 +114,22 @@ public class CommitLog {
         return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
-    static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes, Set<ConceptId> relationships){
+    static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes){
         Map<String, Set<String>> newAttributes = new ConcurrentHashMap<>();
         attributes.forEach((key, value) -> {
             newAttributes.put(key, Sets.newHashSet(value.getValue()));
         });
-        return formatLog(instances, newAttributes, relationships);
+        return formatLog(instances, newAttributes);
     }
 
     /**
      * Returns the Formatted Log which is uploaded to the server.
      * @return a formatted Json log
      */
-    private static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<String>> attributes, Set<ConceptId> relationships){
-        Json formattedLog = Json.object();
-
+    static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<String>> attributes){
         //Concepts In Need of Inspection
-        if(!relationships.isEmpty() || !attributes.isEmpty()){
-            Json conceptsForInspection = Json.object();
-            if(!attributes.isEmpty()){
-                conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(attributes));
-            }
-
-            if(!relationships.isEmpty()){
-                Set<String> relIds = relationships.stream().map(ConceptId::getValue).collect(Collectors.toSet());
-                conceptsForInspection.set(Schema.BaseType.RELATIONSHIP.name(), Json.make(relIds));
-            }
-
-            formattedLog.set(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
-        }
+        Json conceptsForInspection = Json.object();
+        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(attributes));
 
         //Types with instance changes
         Json typesWithInstanceChanges = Json.array();
@@ -160,6 +141,9 @@ public class CommitLog {
             typesWithInstanceChanges.add(jsonObject);
         });
 
+        //Final Commit Log
+        Json formattedLog = Json.object();
+        formattedLog.set(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
         formattedLog.set(REST.Request.COMMIT_LOG_COUNTING, typesWithInstanceChanges);
 
         return formattedLog;
