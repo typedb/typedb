@@ -281,4 +281,18 @@ public class GraknTxJanusTest extends JanusTestBase {
         assertThat(murderer.relationshipTypes().toArray(), emptyArray());
         assertThat(victim.relationshipTypes().toArray(), emptyArray());
     }
+
+    @Test
+    public void whenDefiningAndUndefiningType_EnsureTransactionAfterCommitCanBeReopened(){
+        String label = "My Entity Type";
+        graknTx.putEntityType(label);
+        graknTx.commit();
+
+        graknTx = janusGraphFactory.open(GraknTxType.WRITE);
+        graknTx.getEntityType(label).delete();
+        graknTx.commit();
+
+        graknTx = janusGraphFactory.open(GraknTxType.WRITE);
+        assertNull(graknTx.getEntityType(label));
+    }
 }

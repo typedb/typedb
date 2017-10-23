@@ -78,7 +78,7 @@ public class SampleKBContext extends SampleKBLoader implements TestRule {
     }
 
     public static void loadFromFile(GraknTx graph, String file) {
-        SampleKBLoader.loadFromFile(graph, GraknSystemProperty.PROJECT_RELATIVE_DIR.value()+"/grakn-test-tools/src/main/graql/" + file);
+        SampleKBLoader.loadFromFile(graph, GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + file);
     }
 
     @Override

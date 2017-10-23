@@ -53,6 +53,9 @@ public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
         return new ValuePredicate(this);
     }
 
+    @Override
+    public String toString(){ return "[" + getVarName() + " val " + getPredicate() + "]"; }
+
     public Set<ValuePredicate> unify(Unifier u){
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
@@ -86,9 +89,18 @@ public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
     public boolean isEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        ValuePredicate a2 = (ValuePredicate) obj;
-        return this.getPredicate().getClass().equals(a2.getPredicate().getClass()) &&
-                this.getPredicateValue().equals(a2.getPredicateValue());
+        ValuePredicate p2 = (ValuePredicate) obj;
+        return this.getPredicate().getClass().equals(p2.getPredicate().getClass()) &&
+                this.getPredicateValue().equals(p2.getPredicateValue());
+    }
+
+    @Override
+    public boolean isCompatibleWith(Object obj) {
+        if (this.isEquivalent(obj)) return true;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        ValuePredicate p2 = (ValuePredicate) obj;
+        return getPredicate().isCompatibleWith(p2.getPredicate());
     }
 
     @Override

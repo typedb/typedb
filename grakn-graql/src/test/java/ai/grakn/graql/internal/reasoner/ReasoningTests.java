@@ -114,9 +114,6 @@ public class ReasoningTests {
     public static final SampleKBContext testSet17 = SampleKBContext.preLoad("testSet17.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final SampleKBContext testSet18 = SampleKBContext.preLoad("testSet18.gql").assumeTrue(GraknTestSetup.usingTinker());
-
-    @ClassRule
     public static final SampleKBContext testSet19 = SampleKBContext.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
@@ -329,25 +326,46 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources() {
+    public void reusingResources_usingExistingResourceToDefineResource() {
         QueryBuilder qb = testSet14.tx().graql().infer(true);
 
-        String queryString = "match $x isa entity1, has res1 $y; get;";
+        String queryString = "match $x isa entity1, has resource $y; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        String queryString2 = "match $x isa res1; get;";
+        String queryString2 = "match $x isa resource; get;";
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
         assertEquals(answers.size(), 2);
         assertEquals(answers2.size(), 1);
     }
 
+    //TODO potentially a graql bug when executing match insert on shared resources
+    @Ignore
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void reusingResources_usingExistingResourceToDefineSubResource() {
+        QueryBuilder qb = testSet14.tx().graql().infer(true);
+        String queryString = "match $x isa entity1, has subResource $y;";
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 1);
+
+        String queryString2 = "match $x isa subResource;";
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        assertEquals(answers2.size(), 1);
+        assertTrue(answers2.iterator().next().get(var("x")).isAttribute());
+        String queryString3 = "match $x isa resource; $y isa subResource;";
+        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        assertEquals(answers3.size(), 1);
+
+        assertTrue(answers3.iterator().next().get(var("x")).isAttribute());
+        assertTrue(answers3.iterator().next().get(var("y")).isAttribute());
+    }
+
     @Test
     public void whenReasoningWithResourcesWithRelationVar_ResultsAreComplete() {
         QueryBuilder qb = testSet14.tx().graql().infer(true);
 
-        VarPattern has = var("x").has(Label.of("res1"), var("y"), var("r"));
+        VarPattern has = var("x").has(Label.of("resource"), var("y"), var("r"));
         List<Answer> answers = qb.match(has).get().execute();
-        assertEquals(answers.size(), 2);
+        assertEquals(answers.size(), 3);
         answers.forEach(a -> assertTrue(a.vars().contains(var("r"))));
     }
 
@@ -356,50 +374,30 @@ public class ReasoningTests {
         QueryBuilder withInference = testSet14.tx().graql().infer(true);
         QueryBuilder withoutInference = testSet14.tx().graql().infer(false);
 
-        VarPattern owner = label(HAS_OWNER.getLabel("res1"));
-        VarPattern value = label(HAS_VALUE.getLabel("res1"));
-        VarPattern hasRes = label(HAS.getLabel("res1"));
+        VarPattern owner = label(HAS_OWNER.getLabel("resource"));
+        VarPattern value = label(HAS_VALUE.getLabel("resource"));
+        VarPattern hasRes = label(HAS.getLabel("resource"));
 
         Function<QueryBuilder, GetQuery> query = qb -> qb.match(
                 var().rel(owner, "x").rel(value, "y").isa(hasRes),
-                var("a").has("res1", var("b"))  // This pattern is added only to encourage reasoning to activate
+                var("a").has("resource", var("b"))  // This pattern is added only to encourage reasoning to activate
         ).get();
 
-        Set<Answer> resultsWithInference = query.apply(withInference).stream().collect(toSet());
+
         Set<Answer> resultsWithoutInference = query.apply(withoutInference).stream().collect(toSet());
+        Set<Answer> resultsWithInference = query.apply(withInference).stream().collect(toSet());
 
         assertThat(resultsWithoutInference, not(empty()));
         assertThat(Sets.difference(resultsWithoutInference, resultsWithInference), empty());
     }
 
-    //TODO potentially a graql bug when executing match insert on shared resources
-    @Ignore
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources2() {
-        QueryBuilder qb = testSet15.tx().graql().infer(true);
-        String queryString = "match $x isa entity1, has res2 $y;";
+    public void reusingResources_attachingExistingResourceToARelation() {
+        QueryBuilder qb = testSet14.tx().graql().infer(true);
+
+        String queryString = "match $x isa entity1, has resource $y; $z isa relation; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), 1);
-
-        String queryString2 = "match $x isa res2;";
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
-        assertEquals(answers2.size(), 1);
-        assertTrue(answers2.iterator().next().get(var("x")).isAttribute());
-        String queryString3 = "match $x isa res1; $y isa res2;";
-        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
-        assertEquals(answers3.size(), 1);
-
-        assertTrue(answers3.iterator().next().get(var("x")).isAttribute());
-        assertTrue(answers3.iterator().next().get(var("y")).isAttribute());
-    }
-
-    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources3() {
-        QueryBuilder qb = testSet16.tx().graql().infer(true);
-
-        String queryString = "match $x isa entity1, has res1 $y; $z isa relation1; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), 1);
+        assertEquals(answers.size(), 2);
         answers.forEach(ans ->
                 {
                     assertTrue(ans.get(var("x")).isEntity());
@@ -408,7 +406,7 @@ public class ReasoningTests {
                 }
         );
 
-        String queryString2 = "match $x isa relation1, has res1 $y; get;";
+        String queryString2 = "match $x isa relation, has resource $y; get;";
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers2.size(), 1);
         answers2.forEach(ans ->
@@ -420,18 +418,18 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources4() {
-        QueryBuilder qb = testSet17.tx().graql().infer(true);
-        String queryString = "match $x has res2 $r; get;";
+    public void reusingResources_definingResourceThroughOtherResourceWithConditionalValue() {
+        QueryBuilder qb = testSet15.tx().graql().infer(true);
+        String queryString = "match $x has boolean-resource $r; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void inferringSpecificResourceValue() {
-        QueryBuilder qb = testSet18.tx().graql().infer(true);
-        String queryString = "match $x has res1 'value'; get;";
-        String queryString2 = "match $x has res1 $r; get;";
+        QueryBuilder qb = testSet16.tx().graql().infer(true);
+        String queryString = "match $x has resource 'value'; get;";
+        String queryString2 = "match $x has resource $r; get;";
         GetQuery query = qb.parse(queryString);
         GetQuery query2 = qb.parse(queryString2);
         List<Answer> answers = query.execute();
@@ -441,6 +439,72 @@ public class ReasoningTests {
         assertEquals(answers.size(), answers2.size());
         assertEquals(answers.size(), requeriedAnswers.size());
         assertTrue(answers.containsAll(requeriedAnswers));
+    }
+
+    @Test
+    public void resourcesAsRolePlayers() {
+        QueryBuilder qb = testSet17.tx().graql().infer(true);
+
+        String queryString = "match $x isa resource val 'partial bad flag'; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString2 = "match $x isa resource val 'partial bad flag 2'; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString3 = "match $x isa resource val 'bad flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString4 = "match $x isa resource val 'no flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString5 = "match $x isa resource; ($x, resource-owner: $y) isa resource-relation; get;";
+        String queryString6 = "match $x isa resource; $x val contains 'bad flag';($x, resource-owner: $y) isa resource-relation; get;";
+
+        GetQuery query = qb.parse(queryString);
+        GetQuery query2 = qb.parse(queryString2);
+        GetQuery query3 = qb.parse(queryString3);
+        GetQuery query4 = qb.parse(queryString4);
+        GetQuery query5 = qb.parse(queryString5);
+        GetQuery query6 = qb.parse(queryString6);
+
+        List<Answer> answers = query.execute();
+        List<Answer> answers2 = query2.execute();
+        List<Answer> answers3 = query3.execute();
+        List<Answer> answers4 = query4.execute();
+        List<Answer> answers5 = query5.execute();
+        List<Answer> answers6 = query6.execute();
+
+        assertEquals(answers.size(), 2);
+        assertEquals(answers2.size(), 1);
+        assertEquals(answers3.size(), 1);
+        assertEquals(answers4.size(), 1);
+        assertEquals(answers5.size(), answers.size() + answers2.size() + answers3.size() + answers4.size());
+        assertEquals(answers6.size(), answers5.size() - answers4.size());
+    }
+
+    @Test
+    public void resourcesAsRolePlayers_vpPropagationTest() {
+        QueryBuilder qb = testSet17.tx().graql().infer(true);
+
+        String queryString = "match $x isa resource val 'partial bad flag'; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString2 = "match $x isa resource val 'partial bad flag 2'; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString3 = "match $x isa resource val 'bad flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString4 = "match $x isa resource val 'no flag' ; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString5 = "match $x isa resource; ($x, resource-owner: $y) isa another-resource-relation; get;";
+        String queryString6 = "match $x isa resource; $x val contains 'bad flag';($x, resource-owner: $y) isa another-resource-relation; get;";
+
+        GetQuery query = qb.parse(queryString);
+        GetQuery query2 = qb.parse(queryString2);
+        GetQuery query3 = qb.parse(queryString3);
+        GetQuery query4 = qb.parse(queryString4);
+        GetQuery query5 = qb.parse(queryString5);
+        GetQuery query6 = qb.parse(queryString6);
+
+        List<Answer> answers = query.execute();
+        List<Answer> answers2 = query2.execute();
+        List<Answer> answers3 = query3.execute();
+        List<Answer> answers4 = query4.execute();
+        List<Answer> answers5 = query5.execute();
+        List<Answer> answers6 = query6.execute();
+
+        assertEquals(answers.size(), 3);
+        assertEquals(answers2.size(), 3);
+        assertEquals(answers3.size(), 3);
+        assertEquals(answers4.size(), 3);
+        assertEquals(answers5.size(), answers.size() + answers2.size() + answers3.size() + answers4.size());
+        assertEquals(answers6.size(), answers5.size() - answers4.size());
     }
 
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.

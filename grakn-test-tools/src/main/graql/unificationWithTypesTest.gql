@@ -8,31 +8,31 @@ role3 sub role;
 
 #Entities
 
-entity1 sub entity
+twoRoleEntity sub entity
 	plays role1
 	plays role2;
 
-entity2 sub entity
-	plays role1
+twoRoleEntity2 sub entity
+    plays role1
 	plays role2;
 
-entity3 sub entity
+threeRoleEntity sub entity
     plays role1
     plays role2
     plays role3;
 
-entity4 sub entity
+threeRoleEntity2 sub entity
     plays role1
     plays role2
     plays role3;
 
-entity5 sub entity
+threeRoleEntity3 sub entity
     plays role1
     plays role2
     plays role3;
 
-entity6 sub entity5;
-entity7 sub entity6;
+subThreeRoleEntity sub threeRoleEntity;
+subSubThreeRoleEntity sub subThreeRoleEntity;
 
 #Relations
 
