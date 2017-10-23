@@ -19,6 +19,7 @@
 
 package ai.grakn.test.engine;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.client.TaskClient;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -27,6 +28,7 @@ import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;

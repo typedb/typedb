@@ -19,6 +19,7 @@
 package ai.grakn.engine;
 
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.DashboardController;
@@ -47,6 +48,12 @@ import org.slf4j.LoggerFactory;
 import spark.Response;
 import spark.Service;
 
+import javax.annotation.Nullable;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
@@ -85,7 +92,7 @@ public class HttpHandler {
         RemoteSession graqlWebSocket = RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
-        int postProcessingDelay = prop.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
+        int postProcessingDelay = prop.getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
 
         // Start all the controllers
         new GraqlController(factory, spark, metricRegistry);
@@ -109,16 +116,16 @@ public class HttpHandler {
 
     public static void configureSpark(Service spark, GraknEngineConfig prop) {
         configureSpark(spark,
-                prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
-                Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)),
-                prop.getPath(GraknEngineConfig.STATIC_FILES_PATH),
-                prop.tryIntProperty(GraknEngineConfig.WEBSERVER_THREADS, 64));
+                prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
+                prop.getProperty(GraknConfigKey.SERVER_PORT),
+                prop.getPath(GraknConfigKey.STATIC_FILES_PATH),
+                prop.getProperty(GraknConfigKey.WEBSERVER_THREADS));
     }
 
     public static void configureSpark(Service spark,
                                       String hostName,
                                       int port,
-                                      String staticFolder,
+                                      Path staticFolder,
                                       int maxThreads){
         // Set host name
         spark.ipAddress(hostName);
@@ -127,7 +134,7 @@ public class HttpHandler {
         spark.port(port);
 
         // Set the external static files folder
-        spark.staticFiles.externalLocation(staticFolder);
+        spark.staticFiles.externalLocation(staticFolder.toString());
 
         spark.threadPool(maxThreads);
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);

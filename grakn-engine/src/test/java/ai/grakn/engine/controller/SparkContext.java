@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 
 import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.builder.RequestSpecBuilder;
@@ -47,19 +48,19 @@ public class SparkContext extends ExternalResource {
         this.createControllers = createControllers;
 
         int port = EngineTestHelper.findAvailablePort();
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, Integer.toString(port));
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
 
-        if ("0.0.0.0".equals(config.getProperty(GraknEngineConfig.SERVER_HOST_NAME))) {
-            config.setConfigProperty(GraknEngineConfig.SERVER_HOST_NAME, "localhost");
+        if ("0.0.0.0".equals(config.getProperty(GraknConfigKey.SERVER_HOST_NAME))) {
+            config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, "localhost");
         }
     }
 
     private Service startSparkCopyOnNewPort() {
         Service spark = Service.ignite();
 
-        String hostName = config.getProperty(GraknEngineConfig.SERVER_HOST_NAME);
+        String hostName = config.getProperty(GraknConfigKey.SERVER_HOST_NAME);
 
-        configureSpark(spark, hostName, port(), config.getPath(GraknEngineConfig.STATIC_FILES_PATH),
+        configureSpark(spark, hostName, port(), config.getPath(GraknConfigKey.STATIC_FILES_PATH),
                 64);
 
         RestAssured.baseURI = "http://" + hostName + ":" + port();
@@ -78,12 +79,12 @@ public class SparkContext extends ExternalResource {
     }
 
     public SparkContext port(int port) {
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(port));
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         return this;
     }
 
     public int port() {
-        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
+        return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
     public String uri() {
