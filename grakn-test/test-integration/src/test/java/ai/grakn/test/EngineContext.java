@@ -60,7 +60,6 @@ public class EngineContext extends ExternalResource {
     private JedisPool jedisPool;
     private MetricRegistry metricRegistry;
 
-
     private EngineContext(boolean inMemoryRedis){
         this.inMemoryRedis = inMemoryRedis;
     }
@@ -135,6 +134,7 @@ public class EngineContext extends ExternalResource {
         try {
             SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
             redisStart(redisURI);
+
             jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
             server = startEngine(config);
