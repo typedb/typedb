@@ -124,6 +124,9 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         //Add the Role Type itself
         vertex().tx().txCache().trackForValidation(roleTypeImpl);
 
+        //Add the Relationship Type
+        vertex().tx().txCache().trackForValidation(roleTypeImpl);
+
         //Remove from internal cache
         cachedRelates.ifPresent(set -> set.remove(role));
 
