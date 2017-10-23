@@ -143,10 +143,11 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
                 checkout scm
                 unstash 'dist'
 
-        stage('Deploy Grakn') {
-            sshagent(credentials: ['jenkins-aws-ssh']) {
-                sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
-                sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"ssh "'bash -s' < scripts/start-long-running-instance.sh"}
+                stage('Deploy Grakn') {
+                    sshagent(credentials: ['jenkins-aws-ssh']) {
+                        sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                        sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"ssh "'bash -s' < scripts/start-long-running-instance.sh"
+                    }
                 }
             }
         }
