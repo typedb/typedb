@@ -43,6 +43,7 @@ Let’s do it step by step. The first stage is to rewrite the rule above so that
 
 ```graql
 define
+
 article-platform  sub rule
 
   when {
@@ -62,6 +63,8 @@ The rule above will link the articles about the Italian referendum to the releva
 Once again it is very easy:
 
 ```graql
+define
+
 article-bond  sub rule
 
   when {
@@ -93,6 +96,8 @@ There are multiple reasons, in fact. The first one is that this way you will hav
 The second reason can become evident if you modify the second rule like so:
 
 ```graql
+define
+
 article-bond  sub rule
 
   when {
