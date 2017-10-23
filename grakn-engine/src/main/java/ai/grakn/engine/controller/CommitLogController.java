@@ -36,9 +36,6 @@ import spark.Service;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
@@ -84,34 +81,25 @@ public class CommitLogController {
     })
     private Json submitConcepts(Request req, Response res) {
         Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(req, KEYSPACE_PARAM));
-        String config = req.body();
 
-        Set<CompletableFuture> futures = new HashSet<>();
+        // Instances to post process
+        TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
+        TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
-        // Task to Post Process some concept (NOTE: This is optional because we don't always post process)
-        Optional<TaskConfiguration> postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, config);
-        Optional<TaskState> postProcessingTaskState = Optional.empty();
-        if(postProcessingTaskConfiguration.isPresent()) {
-            TaskState state = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
-            postProcessingTaskState = Optional.of(state);
-            futures.add(CompletableFuture.runAsync(() -> manager.addTask(state, postProcessingTaskConfiguration.get())));
-        }
-
-        // Task to update Instance Count
+        //Instances to count
         TaskState countingTaskState = UpdatingInstanceCountTask.createTask(this.getClass());
-        TaskConfiguration countingTaskConfiguration = UpdatingInstanceCountTask.createConfig(keyspace, config);
-        futures.add(CompletableFuture.runAsync(() -> manager.addTask(countingTaskState, countingTaskConfiguration)));
+        TaskConfiguration countingTaskConfiguration = UpdatingInstanceCountTask.createConfig(keyspace, req.body());
 
         // TODO Use an engine wide executor here
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture [futures.size()])).join();
+        CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration)),
+                CompletableFuture.runAsync(() -> manager.addTask(countingTaskState, countingTaskConfiguration)))
+                .join();
 
-        Json response = Json.object(
+        return Json.object(
+                "postProcessingTaskId", postProcessingTaskState.getId().getValue(),
                 "countingTaskId", countingTaskState.getId().getValue(),
                 "keyspace", keyspace.getValue()
         );
-
-        postProcessingTaskState.ifPresent(taskState -> response.set("postProcessingTaskId", taskState.getId().getValue()));
-
-        return response;
     }
 }
