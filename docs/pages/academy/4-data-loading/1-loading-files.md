@@ -23,9 +23,9 @@ In the VM, from the directory  `/grakn` you will  have to use the command
 
 `./graql console -k KEYSPACE -f FILE_TO_LOAD`
 
-You can pick whatever name for the KEYSPACE as long as it is not there. Try something like `exercise`, `mydataset` or whatever you prefer. The `-f` option just stands or "file".
+You can pick whatever name for the KEYSPACE as long as it does not already exist. Try something like `exercise`, `mydataset` or whatever you prefer. The `-f` option just stands or "file".
 
-The schema file you want to load can be found in in the VM at `academy/short-training/schema.gql`.
+The schema file for to be loaded can be found in the VM in the directory `academy/short-training/schema.gql`.
 
 Go ahead and try and load the schema in your VM in a new keyspace.
 
@@ -47,9 +47,15 @@ match $x isa company; get;
 
 
 ## Batch loading
-What the `-f` command you learned about does is, basically, execute all the queries that are in the file one at a time. This is not particularly efficient especially when you want to load a lot of data. When the file you have to load contains queries that can be executed in parallel (i.e. when the order in which the query are executed does not matter), you want to "batch load the file". To do so, just use the option `-b` instead of `-f`. The rest of the command is the same and the file will be loaded much faster. Two things to keep in mind:
-You cannot batch load a schema file. For that you need the normal file loading.
-Just to reiterate: when batch loading, you cannot guarantee the order in which the queries in the file will be executed, so if the order matters, you have to use `-f`
+
+What the `-f` command you learned about does is, basically, execute all the queries that are in the file one at a time. This is not particularly efficient especially when you want to load a lot of data.
+
+When the file you have to load contains queries that can be executed in parallel (i.e. when the order in which the query are executed does not matter), you want to "batch load the file". To do so, just use the option `-b` instead of `-f`. The rest of the command is the same and the file will be loaded much faster.
+
+Two things to keep in mind:
+
+  * You cannot batch load a schema file. For that you need the normal file loading.
+  * Just to reiterate: when batch loading, you cannot guarantee the order in which the queries in the file will be executed, so if the order matters, you have to use `-f`
 
 As an exercise, batch load the file `countries.gql` (you can see how it looks like [here](https://github.com/graknlabs/academy/blob/master/short-training/data/countries.gql) and you can find it as well in the VM in the directory `academy/short-training/data`). To check that it has loaded, run in the dashboard the query
 
@@ -63,4 +69,4 @@ You have learned how to load Graql files, both with the simple loader and as a b
 Isn’t it exciting?
 
 ## What next?
-The knowledge base is far from complete yet. In the [next lesson](/academy/csv-migration.html) you will start learning about the GRAQL templating language and how to load structured data files into GRAKN. It is a good idea at this point to have a look at how the various file that we are using look like you can either find them into the VM, if you are confident enough with the command line or you can download them from [github](https://github.com/graknlabs/academy.git) and open them with your favourite text editor.
+The knowledge base is far from complete yet. In the [next lesson](/academy/csv-migration.html) you will start learning about the GRAQL [templating language](https://en.wikipedia.org/wiki/Template_processor) and how to load structured data files into GRAKN. It is a good idea at this point to have a look at how the various file that we are using look like you can either find them into the VM, if you are confident enough with the command line or you can download them from [github](https://github.com/graknlabs/academy.git) and open them with your favourite text editor.

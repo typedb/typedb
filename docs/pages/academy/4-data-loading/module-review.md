@@ -9,7 +9,7 @@ folder: overview
 toc: false
 ---
 
-Another module of the Academy has gone, so it is time to review what you have learned about loading data into GRAKN. Notice that the following assumes that you have followed the lessons of this module and done all the exercises.
+Another module of the Academy has gone, so it is time to review what you have learned about loading data into GRAKN and migrating CSV and XML files. Notice that the following assumes that you have followed the lessons of this module and done all the exercises.
 
 ### Exercise 1: Loading files
 Load the file `articles.gql` to your knowledge dataset and check that the two articles about the Italian Referendum have been loaded.
