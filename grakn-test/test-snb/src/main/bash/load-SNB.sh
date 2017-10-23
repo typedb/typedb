@@ -120,5 +120,3 @@ do
         time graql migrate csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -r 5 -k ${KEYSPACE} -u ${ENGINE} -d
 done < ${SCRIPTPATH}/migrationsToRun.txt
 
-# confirm there were no errors
-${SCRIPTPATH}/check-errors.sh fail
