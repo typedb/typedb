@@ -111,31 +111,34 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
         }
     }
 
-    parallel benchmarks: {
-        node {
-            String workspace = pwd()
-            checkout scm
-            unstash 'dist'
+    jobs = [
+        benchmarks: {
+            node {
+                String workspace = pwd()
+                checkout scm
+                unstash 'dist'
 
-            timeout(60) {
-                stage('Run the benchmarks') {
-                    sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                timeout(60) {
+                    stage('Run the benchmarks') {
+                        sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                        archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                    }
                 }
             }
         }
-    },
-    integration: {
-        node {
+    ];
+
+    for (String moduleName : integrationTests) {
+        jobs[moduleName] = {
             String workspace = pwd()
             checkout scm
             unstash 'dist'
 
-            for (String moduleName : integrationTests) {
-                runIntegrationTest(workspace, moduleName)
-            }
+            runIntegrationTest(workspace, moduleName)
         }
     }
+
+    parallel(jobs);
 
     node {
         // only deploy long-running instance on stable branch if all tests pass
