@@ -130,11 +130,13 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
 
     for (String moduleName : integrationTests) {
         jobs[moduleName] = {
-            String workspace = pwd()
-            checkout scm
-            unstash 'dist'
+            node {
+                String workspace = pwd()
+                checkout scm
+                unstash 'dist'
 
-            runIntegrationTest(workspace, moduleName)
+                runIntegrationTest(workspace, moduleName)
+            }
         }
     }
 
