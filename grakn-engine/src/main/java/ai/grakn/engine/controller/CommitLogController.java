@@ -33,7 +33,6 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.util.concurrent.CompletableFuture;
@@ -48,7 +47,6 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  *
  * @author Filipe Teixeira
  */
-//TODO Implement delete
 public class CommitLogController {
     private final TaskManager manager;
     private final int postProcessingDelay;
@@ -58,18 +56,7 @@ public class CommitLogController {
         this.manager = manager;
 
         spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
-        spark.delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
     }
-
-
-    @DELETE
-    @Path("/commit_log")
-    @ApiOperation(value = "Delete all the post processing jobs for a specific keyspace")
-    @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path")
-    private String deleteConcepts(Request req, Response res){
-        return "Delete not implemented";
-    }
-
 
     @GET
     @Path("/commit_log")
