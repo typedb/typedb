@@ -115,7 +115,7 @@ public class HttpHandler {
                 prop.tryIntProperty(GraknEngineConfig.WEBSERVER_THREADS, 64));
     }
 
-    private static void configureSpark(Service spark,
+    public static void configureSpark(Service spark,
                                       String hostName,
                                       int port,
                                       String staticFolder,
