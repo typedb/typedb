@@ -135,9 +135,10 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
                 runIntegrationTest(workspace, moduleName)
             }
         }
-    },
-    longRunning: {
-        // Deploy long-running instance on stable branch
+    }
+
+    node {
+        # only deploy long-running instance on stable branch if all tests pass
         if (env.BRANCH_NAME == 'stable') {
             node {
                 checkout scm
@@ -151,9 +152,7 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
                 }
             }
         }
-    }
 
-    node {
         slackGithub "Periodic Build Success", "good"
     }
 }
