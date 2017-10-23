@@ -56,10 +56,6 @@ public class RemoteSession extends WebSocketAdapter {
         return new RemoteSession(null);
     }
 
-    public static RemoteSession passwordProtected(UsersHandler usersHandler) {
-        return new RemoteSession(usersHandler);
-    }
-
     @Override
     public void onWebSocketClose(int statusCode, String reason) {
         String message = "Websocket closed, code: " + statusCode + ", reason: " + reason;

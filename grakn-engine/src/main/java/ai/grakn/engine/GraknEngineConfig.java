@@ -48,10 +48,7 @@ public class GraknEngineConfig {
 
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
 
-    public static final String JWT_SECRET_PROPERTY = "JWT.secret";
-    public static final String PASSWORD_PROTECTED_PROPERTY = "password.protected";
     public static final String WEBSERVER_THREADS = "webserver.threads";
-    public static final String ADMIN_PASSWORD_PROPERTY = "admin.password";
 
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";

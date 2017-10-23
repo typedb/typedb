@@ -23,7 +23,6 @@ import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.util.JWTHandler;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
 import spark.Service;
@@ -33,7 +32,6 @@ import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
 
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import static ai.grakn.engine.HttpHandler.configureSpark;
 import static ai.grakn.graql.Graql.var;
 
@@ -109,7 +107,7 @@ public abstract class GraknTestEngineSetup {
         LOG.info("starting spark on port " + config.uri());
 
         Service spark = Service.ignite();
-        configureSpark(spark, config, JWTHandler.create(config.getProperty(JWT_SECRET_PROPERTY)));
+        configureSpark(spark, config);
         setRestAssuredUri(config);
         return spark;
     }

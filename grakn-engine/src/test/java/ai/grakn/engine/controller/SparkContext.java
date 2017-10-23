@@ -21,7 +21,6 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.util.JWTHandler;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.builder.RequestSpecBuilder;
 import org.junit.rules.ExternalResource;
@@ -31,7 +30,6 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import static ai.grakn.engine.HttpHandler.configureSpark;
 
 /**
@@ -61,11 +59,8 @@ public class SparkContext extends ExternalResource {
 
         String hostName = config.getProperty(GraknEngineConfig.SERVER_HOST_NAME);
 
-        Optional<String> jwtProperty = config.tryProperty(JWT_SECRET_PROPERTY);
-
         configureSpark(spark, hostName, port(), config.getPath(GraknEngineConfig.STATIC_FILES_PATH),
-                        config.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false), 64,
-                        jwtProperty.isPresent() ? JWTHandler.create(jwtProperty.get()) : null);
+                64);
 
         RestAssured.baseURI = "http://" + hostName + ":" + port();
 
