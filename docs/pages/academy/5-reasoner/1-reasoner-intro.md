@@ -14,7 +14,7 @@ If you have followed the Academy lessons up to this point, you should have loade
 
 First of all: well done!
 
-But you are not done yet: we now need to start using this knowledge base and add a pinch of GRAKN magic and turn what is essentially a glorified database into a true knowledge base ready for development of cognitive systems.
+But you are not done yet: we now need to start using this knowledge base and add a pinch of GRAKN magic and turn what is essentially a powerful database into a true knowledge base ready for development of cognitive systems.
 
 It is time for some logic inference.
 
@@ -39,7 +39,7 @@ In this module, we will use GRAKN inference engine to make so that GRAKN fixes t
 ## Introduction to logic inference
 Let us start this section with a small puzzle:
 
-In a small almost desert island, there is one small hut on the beach. Alice is currently in the hut, while Bob is somewhere else on the island. There is nobody else.
+In a small almost deserted island, there is one small hut on the beach. Alice is currently in the hut, while Bob is somewhere else on the island. There is nobody else.
 
 Who is on the island? Notice that this is not a trick question.
 
@@ -59,7 +59,7 @@ Let us try to break the question in smaller steps:
 
 This is all the information I gave you. What your brain did in answering the question is adding the information that if a person is somewhere that is on the island, then that person is on the island as well.
 
-A computer would not know that, and if you asked the same question to a database, you would only get Bob as a response (because we know that Bob is on the island).
+A computer would not know that, and if you asked the same question to a regular database, you would only get Bob as a response (because we know that Bob is on the island).
 
 Unless you ask explicitly for all the people that are on the island OR somewhere which is on the island (but what happens if Charlie is in the kitchen of the hut then?).
 

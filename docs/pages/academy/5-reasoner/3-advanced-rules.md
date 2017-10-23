@@ -14,18 +14,21 @@ In the last session you have built a Reasoner rule to connect the articles in yo
 
 ```graql
 define
+
 referendum-bond isa rule
-when {
-$article isa article has subject "Italian Referendum";
-$platform isa oil-platform has distance-from-coast <= 18;
-$italy isa country has name "Italy";
-(located: $platform, location: $country) isa located-in;
-(owned: $platform, owner: $company) isa owns;
-(issued: $bond, issuer: $company) isa issues;
-}
-then {
-(information: $article, affected: $bond) isa affects;
-};
+
+  when {
+        $article isa article has subject "Italian Referendum";
+        $platform isa oil-platform has distance-from-coast <= 18;
+        $italy isa country has name "Italy";
+        (located: $platform, location: $country) isa located-in;
+        (owned: $platform, owner: $company) isa owns;
+        (issued: $bond, issuer: $company) isa issues;
+      }
+
+  then {
+        (information: $article, affected: $bond) isa affects;
+      };
 ```
 
 This rule alone would work, but it is very specific. Besides, it would not link, for example, the articles to the oil platform, but only to the bonds. And the latter connection is definitely an indirect one.
@@ -41,34 +44,42 @@ Let’s do it step by step. The first stage is to rewrite the rule above so that
 ```graql
 define
 article-platform  isa rule
-when {
-$article isa article has subject "Italian Referendum";
-$platform isa oil-platform has distance-from-coast <= 18;
-$italy isa country has name "Italy";
-(located: $platform, location: $country) isa located-in;
-}
-then {
-(information: $article, affected: $platform) isa affects;
-};
+
+  when {
+        $article isa article has subject "Italian Referendum";
+        $platform isa oil-platform has distance-from-coast <= 18;
+        $italy isa country has name "Italy";
+        (located: $platform, location: $country) isa located-in;
+    }
+
+  then {
+        (information: $article, affected: $platform) isa affects;
+    };
 ```
 
 The rule above will link the articles about the Italian referendum to the relevant oil platform instead of the bond. What should be done next? How we translate the question "What are the bonds issued by companies owning those platforms?" into a rule?
 
 Once again it is very easy:
 
-```
+```graql
 article-bond  isa rule
-when {
-$article isa article has subject "Italian Referendum";
-$platform isa oil-platform;
-(information: $article, affected: $platform) isa affects;
-(owned: $platform, owner: $company) isa owns;
-(issued: $bond, issuer: $company) isa issues;
 
-}
-then {
-(information: $article, affected: $bond) isa affects;
-};
+  when {
+        $article isa article has subject "Italian Referendum";
+        $platform isa oil-platform;
+
+        # The following relationship is not in the data
+        # This rule needs the rule above to
+
+        (information: $article, affected: $platform) isa affects;
+
+        (owned: $platform, owner: $company) isa owns;
+        (issued: $bond, issuer: $company) isa issues;
+      }
+
+  then {
+        (information: $article, affected: $bond) isa affects;
+    };
 ```
 
 This new rule checks for the articles about the Italian referendum linked to a platform and then links the same articles to bonds issued by companies owning those platforms.
@@ -83,14 +94,16 @@ The second reason can become evident if you modify the second rule like so:
 
 ```graql
 article-bond  isa rule
-when {
-(information: $article, affected: $platform) isa affects;
-(owned: $platform, owner: $company) isa owns;
-(issued: $bond, issuer: $company) isa issues;
-}
-then {
-(information: $article, affected: $bond) isa affects;
-};
+
+  when {
+        (information: $article, affected: $platform) isa affects;
+        (owned: $platform, owner: $company) isa owns;
+        (issued: $bond, issuer: $company) isa issues;
+      }
+
+  then {
+        (information: $article, affected: $bond) isa affects;
+      };
 ```
 
 This new rule is much more generic: it brings whatever is affects whatever is linked to an oil platform and connect it to the bonds issued by companies owning that platform. So it still work in our case, but it is more powerful. If we find, for example articles about an oil spills in a specific platform and we add the link to the platform in our knowledge base, the article will also show up with the relevant bonds.
@@ -99,7 +112,7 @@ So this new rule is much more useful: it is telling us that everything that affe
 
 
 ## Can you explain that?
-Save the two rules in their latest version in your `rules.gql` file and load them into your knowledge base as you have learned in the [last module](/academy/loading-files.html.
+Save the two rules in their latest version in your `rules.gql` file and load them into your knowledge base as you have learned in the [last module](/academy/loading-files.html).
 
 Making sure that the GRAKN distribution in the VM is running, open the dashboard and make sure that the inference is turned on as shown below
 

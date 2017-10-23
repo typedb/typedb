@@ -24,35 +24,40 @@ Since rules add to the knowledge model of your knowledge base, they are actually
 
 From a syntax point of view, to define a new rule, you will need something like this added to your schema:
 
-```
+```graql
 define
 RULE_LABEL sub rule,
-when {
-PRECONDITIONS
-}
-then {
-CONSEQUENCES
-}
+
+  when {
+        PRECONDITIONS
+      }
+
+  then {
+        CONSEQUENCES
+      }
 ```
 
 The rule label is just a unique shorthand that you use to refer to the specific concept in the schema, like the names of the types and roles that you have used during [module 3](/academy/schema-elements.html).
 
-The first block of the rule, the when part, is just a list of patterns that works exactly like the `match` part of a normal query; the then part, on the other hand is a bit more restrictive: you can only use variables that have been defined in the when part and you can only have at most one single isa pattern and one single has pattern. This is what is called an atomic pattern.
+The first block of the rule, the WHEN part or block, is just a list of patterns that works exactly like the `match` part of a normal query; the THEN part, on the other hand, is a bit more restrictive: you can only use variables that have been defined in the when part and you can only have at most one single `isa` pattern and one single `has` pattern. This is what is called an _atomic pattern_.
 
 There are quite deep theoretical reasons for these limitations but they are out of the scope of the academy, we will briefly come back on the topic in the next lesson.
 
-If you define a rule, GRAKN checks that when you access part of the Knowledge base that are described by the when block of the rule, then it responds as the then block is satisfied as well.
+If you define a rule, each time you run a query, GRAKN
 
-As I said before: the when and then blocks are roughly of analogous to the match and insert parts of an insert query, except for the fact that no new data is stored into your knowledge base.
+  * checks whether you are accessing part of the Knowledge base described by the _WHEN_ block of the rule,
+  * and it responds as if the _THEN_ block were satisfied as well
+
+As I said before: the WHEN and THEN blocks are roughly analogous to the match and insert parts of an insert query, except for the fact that no new data is stored into your knowledge base.
 
 
-###ASIDE: Common terminology.
+### ASIDE: Common terminology.
 
 There are several ways to call the when and then blocks of an inference rule. If you are coming from a programming background, for example, you might think of a rule as an If … Then statement. If you are familiar with logic and Horn clauses, you might want to call the blocks body and head respectively or left-hand-side and right-hand-side if you are more into mathematics. It doesn’t really matter how you call them as long as you know what you are referring to. During the course of the lessons, I will keep referring to them as when and then blocks for coherence, but feel free to translate it into your head with whatever suits you best.
 
 
 ## Your first rule
-Enough talking, it is time to write some rule. Our objective is to build a rule that links the articles about the Italian Referendum to the bonds issued by companies that own affected oil platforms (review the topic if you need TODO: ADD LINK).
+Enough talking, it is time to write some rules. Our objective is to build a rule that links the articles about the Italian Referendum to the bonds issued by companies that own affected oil platforms (review the topic if you need TODO: ADD LINK).
 
 We already know that we can query the knowledge base with the following:
 
@@ -64,7 +69,7 @@ $platform isa oil-platform has distance-from-coast <= 18;
 $country isa country has name "Italy";
 (owner: $company, owned: $platform) isa owns;
 (issuer: $company, issued: $bond) isa issues;
-limit 3; get $bond, $article;
+get $bond, $article;
 ```
 
 But the resulting articles and bonds are disconnected.
