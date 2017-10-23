@@ -28,11 +28,9 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.AttributeTypeImpl;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.ThingImpl;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,12 +38,10 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -228,64 +224,5 @@ public class PostProcessingTest extends TxTestBase {
         assertEquals(2, entity.attributes().count());
         assertEquals(2, entity.attributes().count());
         assertEquals(2, tx.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
-    }
-
-    @Test
-    public void whenCreatingRelationshipsWithDuplicateIncomingRolePlayerEdges_EnsureTheEdgesCanBeCleanedUp(){
-        Role role1 = tx.putRole("My miserable role 1");
-        Role role2 = tx.putRole("My miserable role 2");
-        tx.putEntityType("My Happy EntityType").plays(role1).plays(role2);
-        tx.putRelationshipType("My Miserable RelationshipType").relates(role1).relates(role2);
-
-        //Switch to batch
-        tx.commit();
-        tx = batchTx();
-
-        //Create some data instances
-        EntityType entityType = tx.getEntityType("My Happy EntityType");
-        RelationshipType relationshipType = tx.getRelationshipType("My Miserable RelationshipType");
-        Relationship r = relationshipType.addRelationship();
-        Entity e1 = entityType.addEntity();
-        Entity e2 = entityType.addEntity();
-        Entity e3 = entityType.addEntity();
-        Entity e4 = entityType.addEntity();
-
-        //Create a relationship with dup edges
-        r.addRolePlayer(role1, e1);
-        r.addRolePlayer(role1, e1); //dup
-        r.addRolePlayer(role1, e2);
-        r.addRolePlayer(role1, e3);
-        r.addRolePlayer(role1, e3); //dup
-        r.addRolePlayer(role1, e3); //dup
-        r.addRolePlayer(role2, e1);
-        r.addRolePlayer(role2, e1); //dup
-        r.addRolePlayer(role2, e2);
-        r.addRolePlayer(role2, e3);
-        r.addRolePlayer(role2, e4);
-
-        //Get the number of incoming edges
-        int count = RelationshipImpl.from(r).vertex().
-                getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
-                collect(Collectors.toList()).size();
-
-        assertEquals(11, count);
-
-        //Check that we need to fix it and do so
-        assertTrue(tx.admin().relationshipHasDuplicateRolePlayers(r.getId()));
-        assertTrue(tx.admin().fixRelationshipWithDuplicateRolePlayers(r.getId()));
-
-        //Get the new number of incoming edges
-        count = RelationshipImpl.from(r).vertex().
-                getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
-                collect(Collectors.toList()).size();
-
-        //Check that it is fixed
-        assertEquals(7, count);
-        assertFalse(tx.admin().relationshipHasDuplicateRolePlayers(r.getId()));
-        assertFalse(tx.admin().relationshipHasDuplicateRolePlayers(r.getId()));
-
-        //Check we can access all the instances
-        assertThat(r.rolePlayers(role1).collect(Collectors.toList()), containsInAnyOrder(e1, e2, e3));
-        assertThat(r.rolePlayers(role2).collect(Collectors.toList()), containsInAnyOrder(e1, e2, e3, e4));
     }
 }
