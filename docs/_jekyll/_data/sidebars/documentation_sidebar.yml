@@ -207,6 +207,7 @@ entries:
   - title: Contribute to GRAKN.AI
     output: web
     url: /contributors/index.html
-  - title: GRAKN Academy
-    output: web
-    url: /academy/index.html
+  # TODO: Uncomment the following lines to add the Academy link
+  #- title: GRAKN Academy
+  #  output: web
+  #  url: /academy/index.html
