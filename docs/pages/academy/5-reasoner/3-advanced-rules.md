@@ -15,7 +15,7 @@ In the last session you have built a Reasoner rule to connect the articles in yo
 ```graql
 define
 
-referendum-bond isa rule
+referendum-bond sub rule
 
   when {
         $article isa article has subject "Italian Referendum";
@@ -43,7 +43,7 @@ Let’s do it step by step. The first stage is to rewrite the rule above so that
 
 ```graql
 define
-article-platform  isa rule
+article-platform  sub rule
 
   when {
         $article isa article has subject "Italian Referendum";
@@ -62,7 +62,7 @@ The rule above will link the articles about the Italian referendum to the releva
 Once again it is very easy:
 
 ```graql
-article-bond  isa rule
+article-bond  sub rule
 
   when {
         $article isa article has subject "Italian Referendum";
@@ -93,7 +93,7 @@ There are multiple reasons, in fact. The first one is that this way you will hav
 The second reason can become evident if you modify the second rule like so:
 
 ```graql
-article-bond  isa rule
+article-bond  sub rule
 
   when {
         (information: $article, affected: $platform) isa affects;
