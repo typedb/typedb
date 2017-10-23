@@ -19,6 +19,7 @@
 
 package ai.grakn.test.engine;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.client.TaskClient;
 import ai.grakn.engine.TaskId;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -37,6 +38,7 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;

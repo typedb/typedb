@@ -19,6 +19,7 @@
 package ai.grakn.engine;
 
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -54,6 +55,7 @@ import spark.Response;
 import spark.Service;
 
 import javax.annotation.Nullable;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -96,12 +98,12 @@ public class HttpHandler {
 
 
     public void startHTTP() {
-        boolean passwordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false);
+        boolean passwordProtected = prop.getProperty(GraknConfigKey.PASSWORD_PROTECTED);
 
         // TODO: Make sure controllers handle the null case
-        Optional<String> secret = prop.tryProperty(GraknEngineConfig.JWT_SECRET_PROPERTY);
+        Optional<String> secret = prop.getProperty(GraknConfigKey.JWT_SECRET);
         @Nullable JWTHandler jwtHandler = secret.map(JWTHandler::create).orElse(null);
-        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY), factory);
+        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(GraknConfigKey.ADMIN_PASSWORD), factory);
 
         configureSpark(spark, prop, jwtHandler);
 
@@ -109,7 +111,7 @@ public class HttpHandler {
         RemoteSession graqlWebSocket = passwordProtected ? RemoteSession.passwordProtected(usersHandler) : RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
-        int postProcessingDelay = prop.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
+        int postProcessingDelay = prop.getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
 
         // Start all the controllers
         new GraqlController(factory, spark, metricRegistry);
@@ -135,18 +137,18 @@ public class HttpHandler {
 
     public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler) {
         configureSpark(spark,
-                prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
-                Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)),
-                prop.getPath(GraknEngineConfig.STATIC_FILES_PATH),
-                prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false),
-                prop.tryIntProperty(GraknEngineConfig.WEBSERVER_THREADS, 64),
+                prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
+                prop.getProperty(GraknConfigKey.SERVER_PORT),
+                prop.getPath(GraknConfigKey.STATIC_FILES_PATH),
+                prop.getProperty(GraknConfigKey.PASSWORD_PROTECTED),
+                prop.getProperty(GraknConfigKey.WEBSERVER_THREADS),
                 jwtHandler);
     }
 
     public static void configureSpark(Service spark,
                                       String hostName,
                                       int port,
-                                      String staticFolder,
+                                      Path staticFolder,
                                       boolean passwordProtected,
                                       int maxThreads,
                                       @Nullable JWTHandler jwtHandler){
@@ -157,7 +159,7 @@ public class HttpHandler {
         spark.port(port);
 
         // Set the external static files folder
-        spark.staticFiles.externalLocation(staticFolder);
+        spark.staticFiles.externalLocation(staticFolder.toString());
 
         spark.threadPool(maxThreads);
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);

@@ -19,6 +19,7 @@
 package ai.grakn.test;
 
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import org.junit.rules.ExternalResource;
 import spark.Service;
@@ -50,12 +51,12 @@ public class SparkContext extends ExternalResource {
     }
 
     public SparkContext port(int port) {
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(port));
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         return this;
     }
 
     public int port() {
-        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
+        return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
     public String uri() {
