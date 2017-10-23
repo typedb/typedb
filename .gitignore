@@ -38,3 +38,7 @@ grakn-test/*.txt
 
 # Sample Date Files #
 grakn-test/test-biomed/data/*
+
+# Dashboard e2e files #
+grakn-dashboard/reports/
+grakn-dashboard/selenium-debug.log

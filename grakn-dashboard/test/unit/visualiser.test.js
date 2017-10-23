@@ -17,15 +17,31 @@
  */
 
 
-import Visualiser from '../src/js/visualiser/Visualiser';
+import Visualiser from '../../src/js/visualiser/Visualiser';
 import * as GlobalMocks from './modules/GlobalMocks';
+import vis from 'vis';
 
+function connectedEdgesMock(nodeId) {
+  return Object.keys(v.edges._data)
+  .map(x => v.edges._data[x])
+  .filter(x=> (x.to === nodeId || x.from === nodeId))
+  .reduce((array, current) => array.concat(current.id), []);
+}
+
+// Mock newtwork module from Vis - since it needs a canvas element 
+vis.Network = function () {
+  return {
+    on() {},
+    canvas: { frame: { canvas: { getContext() { return {}; } } } },
+    setData() {},
+    getConnectedEdges: connectedEdgesMock,
+  };
+};
 
 let v;
 
 beforeAll(() => {
   GlobalMocks.MockLocalStorage();
-  GlobalMocks.requestAnimationFramePolyFill();
   v = new Visualiser(10);
   const tempDiv = document.createElement('div');
   v.render(tempDiv);
