@@ -22,7 +22,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
@@ -57,6 +56,7 @@ import static ai.grakn.graql.internal.hal.HALUtils.INFERRED_RELATIONSHIP;
 import static ai.grakn.graql.internal.hal.HALUtils.LINKS_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.buildInferredRelationshipsMap;
+import static ai.grakn.graql.internal.hal.HALUtils.computeHrefInferred;
 import static ai.grakn.graql.internal.hal.HALUtils.computeRoleTypesFromQuery;
 import static java.util.stream.Collectors.toSet;
 
@@ -69,13 +69,7 @@ public class HALBuilder {
 
     private final static Logger LOG = LoggerFactory.getLogger(HALBuilder.class);
     private final static int MATCH_QUERY_FIXED_DEGREE = 0;
-    private final static String ASSERTION_URL = "?keyspace=%s&query=match %s %s %s %s; %s &limitEmbedded=%s&infer=false&materialise=false";
 
-
-    public static Json renderHALArrayData(GetQuery getQuery, int offset, int limit) {
-        Collection<Answer> answers = getQuery.execute();
-        return renderHALArrayData(getQuery, answers, offset, limit, false);
-    }
 
     public static Json renderHALArrayData(GetQuery getQuery, Collection<Answer> results, int offset, int limit, boolean filterInstances) {
         Keyspace keyspace = getQuery.tx().get().getKeyspace();
@@ -92,8 +86,8 @@ public class HALBuilder {
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }
 
-    public static String renderHALConceptData(Concept concept, int separationDegree, Keyspace keyspace, int offset, int limit) {
-        return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset, limit).render();
+    public static String renderHALConceptData(Concept concept, boolean inferred, int separationDegree, Keyspace keyspace, int offset, int limit) {
+        return new HALConceptData(concept, inferred, separationDegree, false, new HashSet<>(), keyspace, offset, limit).render();
     }
 
     @Nullable
@@ -140,7 +134,7 @@ public class HALBuilder {
                 Concept currentConcept = currentMapEntry.getValue();
 
                 LOG.trace("Building HAL resource for concept with id {}", currentConcept.getId().getValue());
-                Representation currentHal = new HALConceptData(currentConcept, MATCH_QUERY_FIXED_DEGREE, true,
+                Representation currentHal = new HALConceptData(currentConcept, false, MATCH_QUERY_FIXED_DEGREE, true,
                         typesAskedInQuery, keyspace, offset, limit).getRepresentation();
 
 
@@ -163,28 +157,6 @@ public class HALBuilder {
                     lines.add(Json.read(generatedRelationship.toString(RepresentationFactory.HAL_JSON))));
         });
         return lines;
-    }
-
-    private static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit){
-        Set<Thing> thingSet = new HashSet<>();
-        currentConcept.asRelationship().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
-        String isaString =  "isa " + currentConcept.asRelationship().type().getLabel();
-        StringBuilder stringBuilderVarsWithIds = new StringBuilder();
-        StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
-        char currentVarLetter = 'a';
-        for (Thing var : thingSet) {
-            stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(var.getId().getValue()).append("';");
-            stringBuilderParenthesis.append("$").append(currentVarLetter++).append(",");
-        }
-        String varsWithIds = stringBuilderVarsWithIds.toString();
-        String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
-
-        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, "", parenthesis, isaString, "get;", limit);
-
-        String URL = REST.WebPath.Dashboard.EXPLAIN;
-
-        return URL + withoutUrl;
-
     }
 
     private static Collection<Representation> loopThroughRelationships(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Map<Var, Representation> mapFromVarNameToHALObject, Map<Var, Concept> resultLine, Keyspace keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelationships) {
@@ -216,6 +188,8 @@ public class HALBuilder {
         String isaString = (!relationshipType.equals("")) ? "isa " + relationshipType : "";
         StringBuilder stringBuilderVarsWithIds = new StringBuilder();
         StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
+        String ASSERTION_URL = "?keyspace=%s&query=match %s %s %s %s; %s &limitEmbedded=%s&infer=false&materialise=false";
+
         char currentVarLetter = 'a';
         for (Var varName : varNamesInCurrentRelationship) {
             String id = resultLine.get(varName).getId().getValue();

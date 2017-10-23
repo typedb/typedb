@@ -26,20 +26,14 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -49,24 +43,19 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import java.util.ArrayList;
 import java.util.Optional;
 
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -99,7 +88,6 @@ public class GraqlController {
         this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
 
         spark.post(REST.WebPath.KB.ANY_GRAQL, this::executeGraql);
-        spark.get(REST.WebPath.KB.GRAQL,    this::executeGraqlGET);
 
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
@@ -132,36 +120,6 @@ public class GraqlController {
         }
     }
     
-    @GET
-    @Path("/")
-    @ApiOperation(
-            value = "Executes graql query on the server and build a representation for each concept in the query result. " +
-                    "Return type is determined by the provided accept type: application/graql+json, application/hal+json or application/text")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Get query to execute", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = INFER,       value = "Should reasoner with the current query.", required = true, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = MATERIALISE, value = "Should reasoner materialise results with the current query.", required = true, dataType = "boolean", paramType = "query")
-    })
-    private Object executeGraqlGET(Request request, Response response) {
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        String queryString = mandatoryQueryParameter(request, QUERY);
-        boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
-        boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
-        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        String acceptType = getAcceptType(request);
-
-        try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlGetTimer.time()) {
-            Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
-
-            if(!query.isReadOnly()) throw GraknServerException.invalidQuery("\"read-only\"");
-
-            if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
-
-            Object responseBody = executeGET(graph.getKeyspace(), limitEmbedded, query, acceptType);
-            return respond(response, acceptType, responseBody);
-        }
-    }
 
     /**
      * Handle any {@link Exception} that are thrown by the server. Configures and returns
@@ -177,25 +135,6 @@ public class GraqlController {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
-    /**
-     * Check if the supported combinations of query type and content type are true
-     * @param acceptType provided accept type of the request
-     * @param query provided query from the request
-     * @return if the combination of query and accept type is valid
-     */
-    private boolean validContentType(String acceptType, Query<?> query){
-
-        // If compute other than path and not TEXT invalid
-        if (query instanceof ComputeQuery && !(query instanceof PathQuery) && acceptType.equals(APPLICATION_HAL)) {
-            return false;
-        }
-        // If aggregate and HAL invalid
-        else if(query instanceof AggregateQuery && acceptType.equals(APPLICATION_HAL)) {
-            return false;
-        }
-
-        return true;
-    }
 
     /**
      * Format the response with the correct content type based on the request.
@@ -247,61 +186,4 @@ public class GraqlController {
         return header == null ? "" : request.headers("Accept").split(",")[0];
     }
 
-    /**
-     * Execute a read query and return a response in the format specified by the request.
-     *
-     * @param keyspace the {@link Keyspace} the query is running on
-     * @param query read query to be executed
-     * @param acceptType response format that the client will accept
-     */
-    private Object executeGET(Keyspace keyspace, int limitEmbedded, Query<?> query, String acceptType){
-        switch (acceptType){
-            case APPLICATION_TEXT:
-                return formatGETAsGraql(Printers.graql(false), query);
-            case APPLICATION_JSON_GRAQL:
-                return formatGETAsGraql(Printers.json(), query);
-            case APPLICATION_HAL:
-                return formatGETAsHAL(query, keyspace, limitEmbedded);
-            default:
-                throw GraknServerException.unsupportedContentType(acceptType);
-        }
-    }
-
-    /**
-     * Format a query as HAL
-     *
-     * @param query query to format
-     * @param numberEmbeddedComponents the number of embedded components for the HAL format, taken from the request
-     * @param keyspace the {@link Keyspace} from the request //TODO only needed because HAL does not support admin interface
-     * @return HAL representation
-     */
-    private Json formatGETAsHAL(Query<?> query, Keyspace keyspace, int numberEmbeddedComponents) {
-        // This ugly instanceof business needs to be done because the HAL array renderer does not
-        // support Compute queries and because Compute queries do not have the "admin" interface
-
-        if(query instanceof GetQuery) {
-            return renderHALArrayData((GetQuery) query, 0, numberEmbeddedComponents);
-        } else if(query instanceof PathQuery) {
-            Json array = Json.array();
-            // The below was taken line-for-line from previous way of rendering
-            ((PathQuery) query).execute()
-                    .orElse(new ArrayList<>())
-                    .forEach(c -> array.add(
-                            Json.read(renderHALConceptData(c, 0, keyspace, 0, numberEmbeddedComponents))));
-
-            return array;
-        }
-
-        throw new RuntimeException("Unsupported query type in HAL formatter");
-    }
-
-    /**
-     * Format query results as Graql based on the provided printer
-     *
-     * @param query query to format
-     * @return Graql representation
-     */
-    private Object formatGETAsGraql(Printer printer, Query<?> query) {
-        return printer.graqlString(query.execute());
-    }
 }

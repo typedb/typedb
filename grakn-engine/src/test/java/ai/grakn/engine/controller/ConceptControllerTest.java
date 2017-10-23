@@ -129,7 +129,7 @@ public class ConceptControllerTest {
 
         Response response = sendRequest(concept, 1);
 
-        String expectedResponse = renderHALConceptData(concept, 1, SampleKBLoader.randomKeyspace(), 0, 1);
+        String expectedResponse = renderHALConceptData(concept, false,1, SampleKBLoader.randomKeyspace(), 0, 1);
         assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 
@@ -140,7 +140,7 @@ public class ConceptControllerTest {
 
         Response response = sendRequest(concept, 1);
 
-        String expectedResponse = renderHALConceptData(concept, 1, SampleKBLoader.randomKeyspace(), 0, 1);
+        String expectedResponse = renderHALConceptData(concept,  false,1, SampleKBLoader.randomKeyspace(), 0, 1);
         assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 

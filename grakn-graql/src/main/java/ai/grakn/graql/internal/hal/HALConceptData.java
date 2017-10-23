@@ -48,12 +48,14 @@ import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.VALUE_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.computeHrefInferred;
 import static ai.grakn.graql.internal.hal.HALUtils.generateConceptState;
 import static ai.grakn.util.REST.WebPath.Dashboard.EXPLORE;
 
 
 /**
  * Class used to build the HAL representation of a given concept.
+ *
  * @author Marco Scoppetta
  */
 
@@ -71,15 +73,17 @@ public class HALConceptData {
 
     private final int offset;
     private final int limit;
+    private final boolean inferred;
 
 
-    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, Keyspace keyspace, int offset, int limit){
+    public HALConceptData(Concept concept, boolean inferred, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, Keyspace keyspace, int offset, int limit) {
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
         this.offset = offset;
         this.limit = limit;
         this.keyspace = keyspace;
+        this.inferred = inferred;
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = REST.WebPath.Concept.CONCEPT;
 
@@ -87,8 +91,8 @@ public class HALConceptData {
 
         //If we will include embedded nodes and limit is >=0 we increase the offset to prepare URI for next request
         int uriOffset = (separationDegree > 0 && limit >= 0) ? (offset + limit) : offset;
-
-        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId() + getURIParams(uriOffset));
+        String selfHrefURL = inferred ? computeHrefInferred(concept, keyspace, limit): resourceLinkPrefix + concept.getId() + getURIParams(uriOffset);
+        halResource = factory.newRepresentation(selfHrefURL);
 
         handleConcept(halResource, concept, separationDegree);
 
@@ -96,9 +100,9 @@ public class HALConceptData {
 
     private String getURIParams(int offset) {
         // If limit -1, we don't append the limit parameter to the URI string
-        String limitParam = (this.limit >= 0) ? "&"+REST.Request.Concept.LIMIT_EMBEDDED+"=" + this.limit : "";
+        String limitParam = (this.limit >= 0) ? "&" + REST.Request.Concept.LIMIT_EMBEDDED + "=" + this.limit : "";
 
-        return "?"+REST.Request.KEYSPACE+"=" + this.keyspace + "&"+REST.Request.Concept.OFFSET_EMBEDDED+"=" + offset + limitParam;
+        return "?" + REST.Request.KEYSPACE + "=" + this.keyspace + "&" + REST.Request.Concept.OFFSET_EMBEDDED + "=" + offset + limitParam;
     }
 
 
@@ -203,7 +207,7 @@ public class HALConceptData {
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
         resource.withLink(EXPLORE_CONCEPT_LINK, EXPLORE + concept.getId() + getURIParams(0));
-        generateConceptState(resource, concept);
+        generateConceptState(resource, concept, this.inferred);
     }
 
     // ======================================= _embedded ================================================//

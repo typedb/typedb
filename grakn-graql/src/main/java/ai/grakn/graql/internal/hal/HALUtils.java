@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
@@ -34,11 +35,13 @@ import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.util.CommonUtil;
+import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import com.theoryinpractise.halbuilder.api.Representation;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -63,6 +66,8 @@ public class HALUtils {
     final static String HAS_EDGE = "has";
     final static String PLAYS_EDGE = Schema.EdgeLabel.PLAYS.getLabel();
     final static String HAS_EMPTY_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
+    final static String ASSERTION_URL = "?keyspace=%s&query=match %s %s %s %s; %s &limitEmbedded=%s&infer=false&materialise=false";
+
 
 
     // - State properties
@@ -111,9 +116,18 @@ public class HALUtils {
         }
     }
 
-    static void generateConceptState(Representation resource, Concept concept) {
+    static void generateConceptState(Representation resource, Concept concept, boolean inferred) {
 
         resource.withProperty(ID_PROPERTY, concept.getId().getValue());
+
+        // TO-CLEAN
+        if(inferred){
+            Thing thing = concept.asThing();
+            resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
+                    .withProperty(BASETYPE_PROPERTY, "inferred-relationship");
+            return;
+        }
+
 
         if (concept.isThing()) {
             Thing thing = concept.asThing();
@@ -136,6 +150,10 @@ public class HALUtils {
                 resource.withProperty(DATATYPE_PROPERTY, dataType);
             }
         }
+    }
+
+    static void generateConceptState(Representation resource, Concept concept){
+        generateConceptState(resource, concept, false);
     }
 
     static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQuery(GetQuery getQuery, Answer firstAnswer) {
@@ -236,6 +254,28 @@ public class HALUtils {
         }
 
         return inferredRelationships;
+    }
+
+    static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit){
+        Set<Thing> thingSet = new HashSet<>();
+        currentConcept.asRelationship().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
+        String isaString =  "isa " + currentConcept.asRelationship().type().getLabel();
+        StringBuilder stringBuilderVarsWithIds = new StringBuilder();
+        StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
+        char currentVarLetter = 'a';
+        for (Thing var : thingSet) {
+            stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(var.getId().getValue()).append("';");
+            stringBuilderParenthesis.append("$").append(currentVarLetter++).append(",");
+        }
+        String varsWithIds = stringBuilderVarsWithIds.toString();
+        String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
+
+        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, "", parenthesis, isaString, "get;", limit);
+
+        String URL = REST.WebPath.Dashboard.EXPLAIN;
+
+        return URL + withoutUrl;
+
     }
 
 }
