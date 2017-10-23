@@ -29,7 +29,10 @@ In Grakn, the [schema](https://en.wikipedia.org/wiki/Database_schema) is the for
 - Regex - Optional. Can be used to constrain string data types to specific regex patterns.
 - Unique - A boolean which indicates if the attribute should be unique across the knowledge base.   
 
-<br /> <img src="/images/knowledge-model1.png" style="width: 600px;"/> <br />
+<br /> <img src="/images/knowledge-model1.png" style="width: 600px;" alt="
+Image showing a schema where an entity 'person' has an attribute 'name' and plays the roles 'wife' and 'husband' in
+a 'marriage' relationship"
+/> <br />
 
 ### Building a Schema
 
@@ -49,7 +52,9 @@ define
   
 ```
 
-<br /> <img src="/images/knowledge-model2.png" style="width: 400px;"/> <br />
+<br /> <img src="/images/knowledge-model2.png" style="width: 400px;" alt="
+Image showing a schema where types 'person' and 'company' have an attribute 'name'
+"/> <br />
 
 <br />
 
@@ -74,7 +79,9 @@ define
   funding sub attribute, datatype long;
 ```
 
-<br /> <img src="/images/knowledge-model3.png" style="width: 400px;"/> <br />
+<br /> <img src="/images/knowledge-model3.png" style="width: 400px;" alt="
+Image showing the above schema, but with additional types 'customer' which subs 'person' and 'startup' subs 'company'
+"/> <br />
 
 <br />
 
@@ -106,7 +113,10 @@ define
   employer sub role;
 ``` 
 
-<br /> <img src="/images/knowledge-model4.png" style="width: 400px;"/> <br />
+<br /> <img src="/images/knowledge-model4.png" style="width: 400px;" alt="
+Image showing the same schema with an 'employment' relationship comprising the roles 'employee' and 'employer'. 'person'
+plays 'employee' and 'company' plays 'employer'
+"/> <br />
 
 <br /> 
 
@@ -153,8 +163,9 @@ define
   employer sub role;
 ```
 
-<br /> <img src="/images/knowledge-model6.png" style="width: 400px;"/> <br />
-
+<br /> <img src="/images/knowledge-model6.png" style="width: 400px;" alt="
+An image showing the schema where the relationship 'employment' now has the attribute 'date'.
+"/> <br />
 <br />
 
 N-ary relationships are also allowed by Grakn. For example, a three way `employment` relationship that has `employer`, `employee` and `office` roles:
@@ -171,7 +182,9 @@ define
   office sub role;
 ```
 
-<br /> <img src="/images/knowledge-model8.png" style="width: 400px;"/> <br />
+<br /> <img src="/images/knowledge-model8.png" style="width: 400px;" alt="
+An image showing a relationship 'employment' relating three roles: 'employee', 'employer' and 'office'
+"/> <br />
 
 ### Inheritance
 
@@ -181,7 +194,9 @@ As in object-oriented programming, the inheritance mechanism in Grakn enables su
 
 Likewise, the `startup` entity type inherits `relates name` and `plays employer` from the `company` supertype.
 
-<br /> <img src="/images/knowledge-model5.png" style="width: 400px;"/> <br />
+<br /> <img src="/images/knowledge-model5.png" style="width: 400px;" alt="
+An image showing that 'customer' inherits the property of playing 'employee' from its super-type 'person'.
+"/> <br />
 
 <br />
 
@@ -218,7 +233,9 @@ commit
 
 {% include note.html content="`commit` is useful only when you interact with graql console, do not use it when you import data from terminal" %}
 
-<br /> <img src="/images/knowledge-model7.png" style="width: 400px;"/> <br />
+<br /> <img src="/images/knowledge-model7.png" style="width: 400px;" alt="
+An image showing the same schema as before, containing 'person', 'company', 'name' and 'employment'.
+"/> <br />
 
 
 ### Data Validation
@@ -379,7 +396,10 @@ define
 
 ```
 
-<br /> <img src="/images/knowledge-model9.png" style="width: 600px;"/> <br />
+<br /> <img src="/images/knowledge-model9.png" style="width: 600px;" alt="
+An image showing that King's Cross is 'located-in' London and London is 'located-in' the UK - therefore King's Cross is
+'located-in' the UK
+"/> <br />
 
 <br />
 
