@@ -24,7 +24,7 @@ Since rules add to the knowledge model of your knowledge base, they are actually
 
 From a syntax point of view, to define a new rule, you will need something like this added to your schema:
 
-```graql
+```
 define
 RULE_LABEL sub rule,
 
