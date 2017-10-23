@@ -228,7 +228,10 @@ public class BatchExecutorClient implements Closeable {
 
 
     /**
-     * This is the hystrix command for the batch
+     * This is the hystrix command for the batch. If collapsing weren't performed
+     * we would call this command directly passing a set of queries.
+     * Within the collapsing logic, this command is called after a certain timeout
+     * expires to batch requests together.
      *
      * @author Domenico Corapi
      */
@@ -300,7 +303,8 @@ public class BatchExecutorClient implements Closeable {
     }
 
     /**
-     * This is the hystrix collapser
+     * This is the hystrix collapser. It's instantiated with a single query but
+     * internally it waits until a timeout expires to batch the requests together.
      *
      * @author Domenico Corapi
      */
@@ -340,6 +344,11 @@ public class BatchExecutorClient implements Closeable {
             return query;
         }
 
+        /**
+         * Logic to collapse requests into into CommandQueries
+         * @param   collapsedRequests Set of requests being collapsed
+         * @return  returns a command that executed all the requests
+         */
         @Override
         protected HystrixCommand<List<QueryResponse>> createCommand(
                 Collection<CollapsedRequest<QueryResponse, QueryWithId<?>>> collapsedRequests) {
