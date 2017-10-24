@@ -68,9 +68,6 @@ public class GraqlDocsTest {
 
     private static final Pattern SHELL_GRAQL = Pattern.compile("^*>>>(.*?)$", Pattern.MULTILINE);
 
-    private static final Pattern KEYSPACE_HEADER =
-            Pattern.compile("---.*KB:\\s*(.*?)\\n.*---", Pattern.DOTALL + Pattern.CASE_INSENSITIVE);
-
     @Parameterized.Parameter(0)
     public File file;
 

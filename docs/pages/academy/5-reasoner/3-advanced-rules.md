@@ -99,7 +99,7 @@ The second reason can become evident if you modify the second rule like so:
 ```graql
 define
 
-article-bond  sub rule
+article-bond-new  sub rule
 
   when {
         (information: $article, affected: $platform) isa affects;

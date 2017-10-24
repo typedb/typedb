@@ -65,12 +65,16 @@ public class DocTestUtil {
 
                 AttributeType<String> subject = tx.putAttributeType("subject", AttributeType.DataType.STRING);
                 AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+                AttributeType<String> platformId = tx.putAttributeType("platform-id", AttributeType.DataType.STRING);
                 AttributeType<Long> distanceFromCoast = tx.putAttributeType("distance-from-coast", AttributeType.DataType.LONG);
+                AttributeType<Double> risk = tx.putAttributeType("risk", AttributeType.DataType.DOUBLE);
 
                 company.attribute(name);
                 country.attribute(name);
                 article.attribute(subject);
-                oilPlatform.attribute(distanceFromCoast);
+                region.attribute(name);
+                oilPlatform.attribute(distanceFromCoast).attribute(platformId);
+                bond.attribute(risk);
 
                 tx.putRelationshipType("located-in")
                         .relates(tx.putRole("location")).relates(tx.putRole("located"));

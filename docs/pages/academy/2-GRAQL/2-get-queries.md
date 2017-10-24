@@ -124,7 +124,7 @@ See it for yourself running this query and noticing the difference in results wi
 match
 $x isa country has name "USA";
 (location: $x, located: $y) isa located-in;
-get $y
+get $y;
 ```
 
 
