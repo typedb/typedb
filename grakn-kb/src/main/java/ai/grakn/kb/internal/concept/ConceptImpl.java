@@ -63,7 +63,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         return shard.orElseThrow(() -> GraknTxOperationException.missingShard(getId()));
     });
     private final Cache<Long> shardCount = Cache.createSessionCache(this, Cacheable.number(), () -> shards().count());
-    private final Cache<ConceptId> conceptId = Cache.createTxCache(this, Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
+    private final Cache<ConceptId> conceptId = Cache.createPersistentCache(this, Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
     ConceptImpl(VertexElement vertexElement){
@@ -197,7 +197,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
             return innerToString();
         } else {
             // Vertex is broken somehow. Most likely deleted.
-            return "Id [" + getId() + "]";
+            return "Id [" + vertex().id() + "]";
         }
     }
 
