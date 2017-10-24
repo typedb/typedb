@@ -111,7 +111,9 @@ public class GraqlDocsTest {
 
         String contents = new String(encoded, StandardCharsets.UTF_8);
 
-        try (GraknTx graph = DocTestUtil.getTestGraph(engine.uri()).open(GraknTxType.WRITE)) {
+        String knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
+
+        try (GraknTx graph = DocTestUtil.getTestGraph(engine.uri(), knowledgeBaseName).open(GraknTxType.WRITE)) {
             executeAssertionOnContents(graph, TAG_GRAQL, file, contents, this::assertGraqlCodeblockValidSyntax);
             executeAssertionOnContents(graph, TEMPLATE_GRAQL, file, contents, this::assertGraqlTemplateValidSyntax);
         }

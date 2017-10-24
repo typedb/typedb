@@ -68,6 +68,8 @@ public class JavaDocsTest {
     @ClassRule
     public static EngineContext engine = EngineContext.inMemoryServer();
 
+    public static String knowledgeBaseName;
+
     @Parameterized.Parameters(name = "{1}")
     public static Collection files() {
         return allMarkdownFiles().stream()
@@ -93,6 +95,8 @@ public class JavaDocsTest {
         byte[] encoded = Files.readAllBytes(file.toPath());
 
         String contents = new String(encoded, StandardCharsets.UTF_8);
+
+        knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
 
         Matcher matcher = TAG_JAVA.matcher(contents);
 

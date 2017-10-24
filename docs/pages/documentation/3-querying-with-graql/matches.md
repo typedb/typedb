@@ -7,6 +7,7 @@ summary: "Graql Matches"
 sidebar: documentation_sidebar
 permalink: /documentation/graql/matches.html
 folder: documentation
+KB: genealogy-plus
 ---
 
 A match describes a pattern to find in the knowledge base. The results of the match can be modified with various
