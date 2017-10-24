@@ -107,12 +107,10 @@ public interface QueryBuilder {
     /**
      * Enable or disable inference
      */
-    @CheckReturnValue
     QueryBuilder infer(boolean infer);
 
     /**
      * Enable or disable materialisation
      */
-    @CheckReturnValue
     QueryBuilder materialise(boolean materialise);
 }

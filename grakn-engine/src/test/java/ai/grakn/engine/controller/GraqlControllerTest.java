@@ -25,7 +25,6 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
@@ -52,13 +51,12 @@ public class GraqlControllerTest {
                                boolean materialise,
                                int limitEmbedded) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, sampleKB.tx().getKeyspace().getValue())
                 .body(query)
                 .queryParam(INFER, reasonser)
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, sampleKB.tx().getKeyspace().getValue()));
     }
 
     @ClassRule

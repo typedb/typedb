@@ -110,6 +110,7 @@
         <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
         <pf4j.version>1.3.0</pf4j.version>
         <redisq.version>0.0.5</redisq.version>
+        <httpclient.version>4.5.1</httpclient.version>
     </properties>
 
     <organization>

@@ -18,6 +18,11 @@
 
 package ai.grakn.util;
 
+import org.apache.http.client.utils.URIBuilder;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
 
 /**
@@ -26,6 +31,21 @@ import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
  * @author Marco Scoppetta
  */
 public class REST {
+
+    public static URI makeURI(String host, String pathTemplate, String... pathParams) {
+        String path = resolveTemplate(pathTemplate, pathParams);
+        try {
+            return new URIBuilder().setHost(host).setPath(path).build();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    public static String resolveTemplate(String pathTemplate, String... pathParams) {
+        // e.g. `/kb/:keyspace/commit_log` -> `/kb/%s/commit_log`
+        String format = pathTemplate.replaceAll(":[^/]+", "%s");
+        return String.format(format, (Object[]) pathParams);
+    }
 
     /**
      * Class containing URIs to REST endpoints.
@@ -42,7 +62,7 @@ public class REST {
         public static class KB {
             @Deprecated
             public static final String GRAQL = "/kb/graql";
-            public static final String ANY_GRAQL = "/kb/graql/execute";
+            public static final String ANY_GRAQL = "/kb/:keyspace/graql";
         }
 
         /**

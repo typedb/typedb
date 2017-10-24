@@ -48,7 +48,6 @@ import java.util.Collections;
 import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
@@ -175,33 +174,23 @@ public class GraqlControllerReadOnlyTest {
     }
 
     @Test
-    public void GETGraqlMatchWithNoKeyspace_ResponseStatusIs400() {
-        Response response = RestAssured.with().body("match $x isa movie;").post(REST.WebPath.KB.ANY_GRAQL);
-
-        assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
-    }
-
-    @Test
     public void GETGraqlMatchWithNoQuery_ResponseStatusIs400() {
         Response response = RestAssured.with()
-                .queryParam(KEYSPACE, mockTx.getKeyspace())
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage(QUERY)));
     }
 
     @Test
-    public void GETGraqlMatchNoMaterialise_ResponseStatusIs400() {
-        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-                .body("match $x isa movie;")
+    public void GETGraqlMatchNoMaterialise_ResponseStatusIs200() {
+        Response response = RestAssured.with()
+                .body("match $x isa movie; get;")
                 .queryParam(INFER, true)
                 .accept(APPLICATION_TEXT)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
 
-        assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(MATERIALISE)));
+        assertThat(response.statusCode(), equalTo(200));
     }
 
     @Test
@@ -219,14 +208,13 @@ public class GraqlControllerReadOnlyTest {
     }
 
     @Test
-    public void GETGraqlMatchWithNoInfer_ResponseStatusIs400() {
-        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-                .body("match $x isa movie;")
+    public void GETGraqlMatchWithNoInfer_ResponseStatusIs200() {
+        Response response = RestAssured.with()
+                .body("match $x isa movie; get;")
                 .accept(APPLICATION_TEXT)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
 
-        assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(INFER)));
+        assertThat(response.statusCode(), equalTo(200));
     }
 
     @Test
@@ -483,7 +471,7 @@ public class GraqlControllerReadOnlyTest {
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
     }
 
     protected static String exception(Response response) {
