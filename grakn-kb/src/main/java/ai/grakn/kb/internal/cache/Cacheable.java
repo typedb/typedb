@@ -58,6 +58,10 @@ public class Cacheable<V> {
         return new Cacheable<>((o) -> o);
     }
 
+    public static Cacheable<ConceptId> integer(){
+        return new Cacheable<>((o) -> o);
+    }
+
     public static Cacheable<Label> label(){
         return new Cacheable<>((o) -> o);
     }
