@@ -5,7 +5,6 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
 import ai.grakn.engine.config.GraknEngineConfigTest;
-import ai.grakn.engine.controller.AuthControllerTest;
 import ai.grakn.engine.controller.ConceptControllerTest;
 import ai.grakn.engine.controller.GraqlControllerDeleteTest;
 import ai.grakn.engine.controller.GraqlControllerInsertTest;
@@ -23,7 +22,6 @@ public class DebugTestsRunner {
     public static void main(String[] argv) {
         Class<?> [] torun = new Class[] { 
                 GraknEngineConfigTest.class,
-                AuthControllerTest.class,
                 ConceptControllerTest.class,
                 GraqlControllerDeleteTest.class,
                 ProcessWideLockProvider.class,
