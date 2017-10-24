@@ -98,11 +98,27 @@ public class TxCache {
      * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
     public void writeToGraphCache(boolean isSafe){
-        //When a commit has occurred or a graph is read only all types can be overridden this is because we know they are valid.
-        if(isSafe) globalCache.readTxCache(this);
+        //When a commit has occurred or a transaction is read only all types can be overridden this is because we know they are valid.
+        //When it is not safe to simply flush we have to check that no mutations were made
+        if(isSafe || !writeOccured()){
+            globalCache.readTxCache(this);
+        }
+    }
 
-        //When a commit has not occurred some checks are required
-        //TODO: Fill our cache when not committing and when not read only graph.
+    /**
+     * Checks if the Grakn Database has been mutated.
+     * This is done via checking specific caches.
+     *
+     * @return true if the database has been mutated in anyway.
+     */
+    private boolean writeOccured(){
+        return !(modifiedThings.isEmpty() &&
+                modifiedRoles.isEmpty() &&
+                modifiedCastings.isEmpty() &&
+                modifiedRelationshipTypes.isEmpty() &&
+                modifiedRules.isEmpty() &&
+                newAttributes.isEmpty() &&
+                shardingCount.isEmpty());
     }
 
     /**
