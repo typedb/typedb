@@ -57,6 +57,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         Optional<Shard> shard = vertex().tx().factory().buildShard(shardVertex);
         return shard.orElseThrow(() -> GraknTxOperationException.missingShard(getId()));
     });
+    private final Cache<Long> shardCount = new Cache(Cacheable.number(), () -> shards().count());
     private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
@@ -129,7 +130,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         return vertex().putEdge(to.vertex(), label);
     }
 
-    public EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
+    EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
         return vertex().addEdge(to.vertex(), label);
     }
 
@@ -197,6 +198,21 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         return message;
     }
 
+    /**
+     * Flushes the internal transaction caches so they can refresh with persisted graph
+     */
+    public void txCacheFlush(){
+        shardCount.flush();
+    }
+
+    /**
+     * Clears the internal transaction caches
+     */
+    @Override
+    public void txCacheClear(){
+        shardCount.clear();
+    }
+
     @Override
     public int compareTo(Concept o) {
         return this.getId().compareTo(o.getId());
@@ -208,6 +224,11 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
+
+        //Updated the cached shard count if needed
+        if(shardCount.isPresent()){
+            shardCount.set(shardCount() + 1);
+        }
     }
 
     public Stream<Shard> shards(){
@@ -215,6 +236,10 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
                 map(EdgeElement::source).
                 flatMap(CommonUtil::optionalToStream).
                 map(edge -> vertex().tx().factory().buildShard(edge));
+    }
+
+    public Long shardCount(){
+        return shardCount.get();
     }
 
     public Shard currentShard(){
