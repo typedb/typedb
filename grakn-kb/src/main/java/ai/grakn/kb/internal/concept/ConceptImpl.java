@@ -224,6 +224,11 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
+
+        //Updated the cached shard count if needed
+        if(shardCount.isPresent()){
+            shardCount.set(shardCount() + 1);
+        }
     }
 
     public Stream<Shard> shards(){
