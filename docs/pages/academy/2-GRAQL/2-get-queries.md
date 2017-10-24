@@ -120,6 +120,7 @@ The `get` action, followed by one or more variables, limits the results to the v
 See it for yourself running this query and noticing the difference in results with the same query without the `$y` variable at the end.
 
 ```graql
+match
 $x isa country has name "USA";
 (location: $x, located: $y) isa located-in;
 get $y

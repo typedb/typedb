@@ -23,7 +23,7 @@ Let’s write a template to migrate oil platforms into our knowledge base. First
 
 A GRAQL template file looks as simple as this:
 
-```graql
+```graql-template
 insert $x isa oil-platform has platform-id <ID>
 has distance-from-coast <DistCoast>;
 ```
