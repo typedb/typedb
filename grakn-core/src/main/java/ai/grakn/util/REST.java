@@ -32,7 +32,7 @@ public class REST {
      */
     public static class WebPath{
 
-        public static final String COMMIT_LOG_URI = "/commit_log";
+        public static final String COMMIT_LOG_URI = "/kb/:keyspace/commit_log";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 

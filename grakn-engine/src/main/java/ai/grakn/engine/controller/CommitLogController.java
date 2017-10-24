@@ -37,7 +37,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.util.concurrent.CompletableFuture;
 
-import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
@@ -59,15 +59,15 @@ public class CommitLogController {
     }
 
     @GET
-    @Path("/commit_log")
+    @Path("/kb/{keyspace}/commit_log")
     @ApiOperation(value = "Submits post processing jobs for a specific keyspace")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path"),
+        @ApiImplicitParam(name = KEYSPACE_PARAM, value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path"),
         @ApiImplicitParam(name = COMMIT_LOG_FIXING, value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body"),
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private Json submitConcepts(Request req, Response res) {
-        Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(req, KEYSPACE_PARAM));
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, KEYSPACE_PARAM));
 
         // Instances to post process
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);

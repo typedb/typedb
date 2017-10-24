@@ -26,7 +26,10 @@ import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import mjson.Json;
+import org.apache.http.client.utils.URIBuilder;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -111,7 +114,19 @@ public class CommitLog {
         if (Grakn.IN_MEMORY.equals(engineUri)) {
             return Grakn.IN_MEMORY;
         }
-        return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+        return makeURI(engineUri, REST.WebPath.COMMIT_LOG_URI, keyspace.getValue()).toString();
+    }
+
+    private static URI makeURI(String host, String pathTemplate, String... pathParams) {
+        // e.g. `/kb/:keyspace/commit_log` -> `/kb/%s/commit_log`
+        String format = pathTemplate.replaceAll(":[^/]+", "%s");
+        String path = String.format(format, (Object[]) pathParams);
+
+        try {
+            return new URIBuilder().setHost(host).setPath(path).build();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes){
