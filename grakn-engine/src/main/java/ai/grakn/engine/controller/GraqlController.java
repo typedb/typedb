@@ -110,25 +110,25 @@ public class GraqlController {
 
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
-        try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
+        try (GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
             QueryParser parser = graph.graql().materialise(materialise).infer(infer).parser();
             defineAllVars.ifPresent(parser::defineAllVars);
             Query<?> query = parser.parseQuery(queryString);
             Object resp = respond(response, acceptType, executeQuery(graph.getKeyspace(), limitEmbedded, query, acceptType));
-            graph.commit();
+            if (!query.isReadOnly()) graph.commit();
             return resp;
         }
     }
-    
+
 
     /**
      * Handle any {@link Exception} that are thrown by the server. Configures and returns
      * the correct JSON response with the given status.
      *
      * @param exception exception thrown by the server
-     * @param response response to the client
+     * @param response  response to the client
      */
-    private static void handleError(int status, Exception exception, Response response){
+    private static void handleError(int status, Exception exception, Response response) {
         LOG.error("REST error", exception);
         response.status(status);
         response.body(Json.object("exception", exception.getMessage()).toString());
@@ -140,10 +140,10 @@ public class GraqlController {
      * Format the response with the correct content type based on the request.
      *
      * @param contentType content type being provided in the response
-     * @param response response to the client
+     * @param response    response to the client
      * @return formatted result of the executed query
      */
-    private Object respond(Response response, String contentType, Object responseBody){
+    private Object respond(Response response, String contentType, Object responseBody) {
         response.type(contentType);
         response.body(responseBody.toString());
         response.status(200);
@@ -154,11 +154,11 @@ public class GraqlController {
     /**
      * Execute a query and return a response in the format specified by the request.
      *
-     * @param keyspace the keyspace the query is running on
-     * @param query read query to be executed
+     * @param keyspace   the keyspace the query is running on
+     * @param query      read query to be executed
      * @param acceptType response format that the client will accept
      */
-    private Object executeQuery(Keyspace keyspace, int limitEmbedded, Query<?> query, String acceptType){
+    private Object executeQuery(Keyspace keyspace, int limitEmbedded, Query<?> query, String acceptType) {
         Printer<?> printer;
 
         switch (acceptType) {

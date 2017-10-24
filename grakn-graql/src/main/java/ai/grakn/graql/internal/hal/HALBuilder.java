@@ -24,10 +24,19 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.UnifierType;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import mjson.Json;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -62,6 +71,22 @@ public class HALBuilder {
             if (expl.isLookupExplanation()) {
                 conceptsArray.add(halPrinter.graqlString(false, answer));
             } else if (expl.isRuleExplanation()) {
+                Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
+                Atom headAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
+
+                List<Answer> list = ReasonerQueries.atomic(atom.rewriteWithRelationVariableMock()).getQuery().execute();
+                Answer fake;
+                if(list.isEmpty())
+                    fake = new ReasonerAtomicQuery(headAtom.rewriteWithRelationVariableMock())
+                            .materialise(answer.unify(headAtom.getMultiUnifier(atom, UnifierType.RULE).getUnifier().inverse()))
+                            .iterator().next();
+                else
+                    fake = list.get(0);
+
+                //TODO: handle case innerAtom isa resource
+                if (atom.isRelation()) {
+                    conceptsArray.add(halPrinter.graqlString(false, fake));
+                }
                 explanationAnswersToHAL(expl.getAnswers().stream(), halPrinter).asJsonList().forEach(conceptsArray::add);
             }
         });

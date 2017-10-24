@@ -102,21 +102,11 @@ public class HALUtils {
 
         resource.withProperty(ID_PROPERTY, concept.getId().getValue());
 
-        // TO-CLEAN
-        if (inferred) {
-            Thing thing = concept.asThing();
-            resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
-                    .withProperty(BASETYPE_PROPERTY, INFERRED_RELATIONSHIP);
-            return;
-        }
-
-
         if (concept.isThing()) {
             Thing thing = concept.asThing();
-            resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
-                    .withProperty(BASETYPE_PROPERTY, getBaseType(thing).name());
-        } else {
-            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asSchemaConcept()).name());
+            resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue());
+            String baseType = (inferred) ? INFERRED_RELATIONSHIP : getBaseType(thing).name();
+            resource.withProperty(BASETYPE_PROPERTY, baseType);
         }
 
         if (concept.isAttribute()) {
@@ -125,6 +115,7 @@ public class HALUtils {
         }
 
         if (concept.isSchemaConcept()) {
+            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asSchemaConcept()).name());
             resource.withProperty(NAME_PROPERTY, concept.asSchemaConcept().getLabel().getValue());
             resource.withProperty(IMPLICIT_PROPERTY, ((SchemaConcept) concept).isImplicit());
             if (concept.isAttributeType()) {
@@ -134,17 +125,13 @@ public class HALUtils {
         }
     }
 
-    static void generateConceptState(Representation resource, Concept concept) {
-        generateConceptState(resource, concept, false);
-    }
-
 
     static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit) {
         Set<Thing> thingSet = new HashSet<>();
         currentConcept.asRelationship().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
         String isaString = "isa " + currentConcept.asRelationship().type().getLabel();
         StringBuilder stringBuilderVarsWithIds = new StringBuilder();
-        StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
+        StringBuilder stringBuilderParenthesis = new StringBuilder().append("$rel (");
         char currentVarLetter = 'a';
         for (Thing var : thingSet) {
             stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(var.getId().getValue()).append("';");

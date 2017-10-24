@@ -327,4 +327,7 @@ public abstract class Atom extends AtomicBase {
      * @return multiunifier
      */
     public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType){ return new MultiUnifierImpl(getUnifier(parentAtom));}
+
+    public Atom rewriteWithRelationVariableMock(){return this;};
+
 }

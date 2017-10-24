@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static ai.grakn.GraknTxType.READ;
+import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.ConceptController.mandatoryRequestParameter;
 import static ai.grakn.engine.controller.ConceptController.retrieveExistingConcept;
 import static ai.grakn.engine.controller.ConceptController.validateRequest;
@@ -171,7 +172,7 @@ public class DashboardController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         Json body = Json.object();
 
-        try (GraknTx graph = factory.tx(keyspace, READ)) {
+        try (GraknTx graph = factory.tx(keyspace, WRITE)) {
             Query<?> query = graph.graql().infer(true).parse(queryString);
             body.set(ORIGINAL_QUERY, query.toString());
 

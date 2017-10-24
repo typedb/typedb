@@ -909,9 +909,29 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
+    public RelationshipAtom rewriteWithRelationVariableMock(){
+
+        VarPattern newVar = Graql.var().asUserDefined();
+        VarPattern relVar = getPattern().asVarPattern().getProperty(IsaProperty.class)
+                .map(prop -> newVar.isa(prop.type()))
+                .orElse(newVar);
+
+        for (RelationPlayer c: getRelationPlayers()) {
+            VarPatternAdmin roleType = c.getRole().orElse(null);
+            if (roleType != null) {
+                relVar = relVar.rel(roleType, c.getRolePlayer());
+            } else {
+                relVar = relVar.rel(c.getRolePlayer());
+            }
+        }
+        return new RelationshipAtom(relVar.admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
+    }
+
+    @Override
     public Atom rewriteToUserDefined(Atom parentAtom){
         return this
                 .rewriteWithRelationVariable(parentAtom)
                 .rewriteWithVariableRoles(parentAtom);
     }
+
 }

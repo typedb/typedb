@@ -194,7 +194,7 @@ public class GraqlControllerTest {
 
     @Test
     public void whenMatchingRuleExplanation_HALResponseContainsInferredRelation() {
-        String queryString = "match ($x,$y) isa marriage; offset 0; limit 25; get;";
+        String queryString = "match ($x,$y) isa marriage; offset 0; limit 1; get;";
         int limitEmbedded = 10;
         Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, genealogyKB.tx().getKeyspace().getValue());
         resp.then().statusCode(200);
@@ -206,6 +206,9 @@ public class GraqlControllerTest {
                 .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("marriage"))
                 .forEach(thing -> {
                     assertEquals("INFERRED_RELATIONSHIP",thing.at("_baseType").asString());
+                    thing.at("_embedded").at("spouse").asJsonList().forEach(spouse->{
+                        assertEquals("ENTITY", spouse.at("_baseType").asString());
+                    });
                 });
 
     }
