@@ -105,22 +105,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         return cachedLabel.get();
     }
 
-    @Override
-    public void txCacheFlush(){
-        super.txCacheFlush();
-        cachedSuperType.flush();
-        cachedDirectSubTypes.flush();
-        cachedIsImplicit.flush();
-    }
-
-    @Override
-    public void txCacheClear(){
-        super.txCacheClear();
-        cachedSuperType.clear();
-        cachedDirectSubTypes.clear();
-        cachedIsImplicit.clear();
-    }
-
     /**
      *
      * @return The super of this {@link SchemaConcept}
@@ -171,11 +155,11 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             //noinspection unchecked
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
 
-            //Clear internal caching
-            txCacheClear();
-
             //Clear Global Cache
             vertex().tx().txCache().remove(this);
+
+            //Clear internal caching
+            txCacheClear();
         } else {
             throw GraknTxOperationException.cannotBeDeleted(this);
         }

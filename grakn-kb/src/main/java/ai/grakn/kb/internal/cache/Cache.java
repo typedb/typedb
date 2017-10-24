@@ -151,7 +151,7 @@ public class Cache<V> {
      * that it can be accessed via all transactions.
      */
     public void flush(){
-        if(isPresent()) {
+        if(shouldFlush && isPresent()) {
             V newValue = get();
             if(!valueGlobal.isPresent() || !valueGlobal.get().equals(newValue)) valueGlobal = Optional.of(get());
         }

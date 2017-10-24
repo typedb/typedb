@@ -96,20 +96,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         createShard();
     }
 
-    @Override
-    public void txCacheFlush(){
-        super.txCacheFlush();
-        cachedIsAbstract.flush();
-        cachedDirectPlays.flush();
-    }
-
-    @Override
-    public void txCacheClear(){
-        super.txCacheClear();
-        cachedIsAbstract.clear();
-        cachedDirectPlays.clear();
-    }
-
     /**
      * Utility method used to create or find an instance of this type
      *

@@ -70,21 +70,6 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
         return role;
     }
 
-
-    @Override
-    public void txCacheFlush(){
-        super.txCacheFlush();
-        cachedDirectPlayedByTypes.flush();
-        cachedRelationTypes.flush();
-    }
-
-    @Override
-    public void txCacheClear(){
-        super.txCacheClear();
-        cachedDirectPlayedByTypes.clear();
-        cachedRelationTypes.clear();
-    }
-
     @Override
     public Stream<RelationshipType> relationshipTypes() {
         return cachedRelationTypes.get().stream();

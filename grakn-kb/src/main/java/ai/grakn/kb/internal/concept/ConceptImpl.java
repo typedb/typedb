@@ -213,16 +213,16 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     /**
      * Flushes the internal transaction caches so they can refresh with persisted graph
      */
-    public void txCacheFlush(){
-        shardCount.flush();
+    public final void txCacheFlush(){
+        registeredCaches.forEach(Cache::flush);
     }
 
     /**
      * Clears the internal transaction caches
      */
     @Override
-    public void txCacheClear(){
-        shardCount.clear();
+    public final void txCacheClear(){
+        registeredCaches.forEach(Cache::clear);
     }
 
     @Override
@@ -256,5 +256,9 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
 
     public Shard currentShard(){
         return currentShard.get();
+    }
+
+    public static ConceptImpl from(Concept concept) {
+        return (ConceptImpl) concept;
     }
 }
