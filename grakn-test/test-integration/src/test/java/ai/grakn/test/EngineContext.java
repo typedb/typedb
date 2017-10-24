@@ -26,7 +26,7 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.MockRedisRule;
 import com.codahale.metrics.MetricRegistry;

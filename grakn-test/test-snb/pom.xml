@@ -13,11 +13,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.ldbc.driver</groupId>
-            <artifactId>jeeves</artifactId>
-            <version>${ldbc-driver.version}</version>
-        </dependency>
-        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>janus-factory</artifactId>
             <version>${project.version}</version>
@@ -26,6 +21,21 @@
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-nop</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.ldbc.driver</groupId>
+            <artifactId>jeeves</artifactId>
+            <version>${ldbc-driver.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava-collections</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

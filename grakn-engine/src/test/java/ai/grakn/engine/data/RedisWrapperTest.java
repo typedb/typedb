@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.data;
 
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.util.MockRedisRule;
 import org.junit.ClassRule;

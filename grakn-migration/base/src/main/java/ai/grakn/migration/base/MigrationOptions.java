@@ -20,26 +20,24 @@ package ai.grakn.migration.base;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
+import static java.lang.Integer.parseInt;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import javax.annotation.Nullable;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import javax.annotation.Nullable;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static java.lang.Integer.parseInt;
-
 /**
  * Configure the default migration options and access arguments passed by the user
  * @author alexandraorth
  */
 public class MigrationOptions {
-    private static final String retry = Integer.toString(Migrator.DEFAULT_MAX_RETRY);
-    private static final String batch = Integer.toString(Migrator.BATCH_SIZE);
-    private static final String active = Integer.toString(Migrator.ACTIVE_TASKS);
+
+    public static final String MAX_DELAY_DEFAULT_VALUE = "1000";
+    public static final String RETRY_DEFAULT_VALUE = "5";
     private int numberOptions;
 
     protected final Options options = new Options();
@@ -50,6 +48,7 @@ public class MigrationOptions {
         options.addOption("h", "help", false, "Print usage message.");
         options.addOption("k", "keyspace", true, "Grakn graph. Required.");
         options.addOption("u", "uri", true, "Location of Grakn Engine.");
+        options.addOption("m", "maxdelay", true, "Max delay before a request is batched.");
         options.addOption("n", "no", false, "Write to standard out.");
         options.addOption("c", "config", true, "Configuration file.");
         options.addOption("r", "retry", true, "Number of times to retry sending tasks if engine is not available");
@@ -118,15 +117,7 @@ public class MigrationOptions {
     }
 
     public int getRetry(){
-        return parseInt(command.getOptionValue("r", retry));
-    }
-
-    public int getBatch() {
-        return parseInt(command.getOptionValue("b", batch));
-    }
-
-    public int getNumberActiveTasks() {
-        return parseInt(command.getOptionValue("a", active));
+        return parseInt(command.getOptionValue("r", RETRY_DEFAULT_VALUE));
     }
 
     protected void parse(String[] args){
@@ -137,6 +128,10 @@ public class MigrationOptions {
         } catch (ParseException e){
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public int getMaxDelay() {
+        return parseInt(command.getOptionValue("m", MAX_DELAY_DEFAULT_VALUE));
     }
 
     private String resolvePath(String path){

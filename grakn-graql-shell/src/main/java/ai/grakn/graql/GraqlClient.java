@@ -19,14 +19,15 @@
 package ai.grakn.graql;
 
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.Client;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-
+import ai.grakn.client.GraknClient;
+import ai.grakn.util.SimpleURI;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Future;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 /**
  * Connects a Graql websocket to a remote URI
@@ -65,8 +66,11 @@ class GraqlClient {
         }
     }
 
-    public BatchMutatorClient loaderClient(Keyspace keyspace, String uriString) {
-        return new BatchMutatorClient(keyspace, uriString, true, DEFAULT_MAX_RETRY);
+    public BatchExecutorClient loaderClient(Keyspace keyspace, String uriString) {
+        return BatchExecutorClient.newBuilder()
+                .taskClient(new GraknClient(new SimpleURI(uriString)))
+                .maxRetries(DEFAULT_MAX_RETRY)
+                .build();
     }
 
     public boolean serverIsRunning(String uri) {

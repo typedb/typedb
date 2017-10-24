@@ -7,7 +7,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.ErrorMessage;

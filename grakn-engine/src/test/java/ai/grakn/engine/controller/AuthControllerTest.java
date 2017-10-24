@@ -5,7 +5,7 @@ import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.util.MockRedisRule;
 import com.google.common.collect.Iterables;
 import com.jayway.restassured.response.Response;
