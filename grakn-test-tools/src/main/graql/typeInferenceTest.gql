@@ -23,33 +23,36 @@ subRole2 sub role2;
 #                  entity
 #                     |
 #               noRoleEntity
-#              /            \
-#  singleRoleEntity    anotherSingleRoleEntity
-#         |                     |
-#  twoRoleEntity        anotherTwoRoleEntity
+#              /            \                                   \
+#  singleRoleEntity(R3)   anotherSingleRoleEntity(R2)    yetAnotherSingleRoleEntity(R1)
+#           |                   |
+#   twoRoleEntity(R4)     anotherTwoRoleEntity(R3)
 #                               |
-#                         threeRoleEntity
+#                         threeRoleEntity(R4)
 
-#plays in rel1
-singleRoleEntity sub entity
-	plays role1;
+noRoleEntity sub entity;
 
-#plays in rel1, rel3
+#plays in rel2, rel3
+singleRoleEntity sub noRoleEntity
+	plays role3;
+#plays in rel2, rel3
 twoRoleEntity sub singleRoleEntity
     plays role4;
 
 #plays in rel1, rel2
-anotherTwoRoleEntity sub singleRoleEntity
-	plays role2;
-
+anotherSingleRoleEntity sub noRoleEntity
+    plays role2;
 #plays in rel1, rel2, rel3
-threeRoleEntity sub anotherSingleRoleEntity
-    plays role2
+anotherTwoRoleEntity sub anotherSingleRoleEntity
     plays role3;
-
-#plays in rel3
-anotherSingleRoleEntity sub entity
+#plays in rel1, rel2, rel3
+threeRoleEntity sub anotherTwoRoleEntity
     plays role4;
+
+#plays in rel1
+yetAnotherSingleRoleEntity sub noRoleEntity
+	plays role1;
+
 
 #Relations
 
@@ -67,10 +70,12 @@ relation3 sub relationship
     relates role4;
 
 insert
+$e isa noRoleEntity;
 $x isa singleRoleEntity;
 $y isa twoRoleEntity;
 $z isa anotherTwoRoleEntity;
 $u isa threeRoleEntity;
 $v isa anotherSingleRoleEntity;
+$q isa yetAnotherSingleRoleEntity;
 
 

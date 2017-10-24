@@ -18,16 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.utils.conversion;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
-import ai.grakn.util.Schema;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -39,23 +32,7 @@ import java.util.Set;
 public class TypeConverter implements SchemaConceptConverter<Type> {
 
     @Override
-    public Multimap<RelationshipType, Role> toRelationshipMultimap(Type entryType) {
-        Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
-
-        Set<Type> typeHierarchy = Sets.newHashSet(entryType);
-        if (Schema.MetaSchema.isMetaLabel(entryType.getLabel())) {
-            entryType.subs().forEach(typeHierarchy::add);
-        } else {
-            ReasonerUtils.supers(entryType).stream().map(Concept::asType).forEach(typeHierarchy::add);
-        }
-
-        typeHierarchy.stream()
-                .flatMap(Type::plays)
-                .forEach(roleType -> {
-                    roleType.relationshipTypes()
-                            .filter(rel -> !rel.isImplicit())
-                            .forEach(rel -> relationMap.put(rel, roleType));
-                });
-        return relationMap;
+    public Stream<Role> toCompatibleRoles(Type entryType) {
+        return entryType.subs().flatMap(Type::plays);
     }
 }

@@ -268,6 +268,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public boolean isTypeRoleCompatible(Var typedVar, SchemaConcept parentType){
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
 
+        Set<SchemaConcept> parentTypes = parentType.subs().collect(Collectors.toSet());
         return !getAtoms(RelationshipAtom.class)
                 .filter(ra -> ra.getVarNames().contains(typedVar))
                 .filter(ra -> ra.getRoleVarMap().entries().stream()
@@ -275,7 +276,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                         .filter(e -> e.getValue().equals(typedVar))
                         .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
                         //check if it can play it
-                        .filter(e -> !e.getKey().playedByTypes().filter(parentType::equals).findFirst().isPresent())
+                        .filter(e -> !e.getKey().playedByTypes().filter(parentTypes::contains).findFirst().isPresent())
                         .findFirst().isPresent())
                 .findFirst().isPresent();
     }
