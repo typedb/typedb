@@ -20,6 +20,7 @@ package ai.grakn.kb.internal.cache;
 
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.kb.internal.concept.ConceptImpl;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -55,9 +56,40 @@ public class Cache<V> {
     //Globally bound value which has already been persisted and acts as a shared component cache
     private Optional<V> valueGlobal = Optional.empty();
 
-    public Cache(Cacheable<V> cacheable, Supplier<V> databaseReader){
+    //Flag indicating if this Cache should be flushed into the Session cache upon being disposed of
+    private final boolean shouldFlush;
+
+    private Cache(Cacheable<V> cacheable, boolean shouldFlush, Supplier<V> databaseReader){
+        this.shouldFlush = shouldFlush;
         this.cacheable = cacheable;
         this.databaseReader = databaseReader;
+    }
+
+    private Cache(ConceptImpl owner, Cacheable<V> cacheable, boolean shouldFlush, Supplier<V> databaseReader){
+        this(cacheable, shouldFlush, databaseReader);
+        owner.registerCahce(this);
+    }
+
+    /**
+     * Creates a {@link Cache} that will only exist within the context of a Transaction which does not belong to any
+     * {@link ai.grakn.concept.Concept}
+     */
+    public static Cache createTxCache(Cacheable cacheable, Supplier databaseReader){
+        return new Cache(cacheable, false, databaseReader);
+    }
+
+    /**
+     * Creates a {@link Cache} that will only exist within the context of a Transaction
+     */
+    public static Cache createTxCache(ConceptImpl owner, Cacheable cacheable, Supplier databaseReader){
+        return new Cache(owner, cacheable, false, databaseReader);
+    }
+
+    /**
+     * Creates a {@link Cache} that will only flush to a central shared cache then the Transaction is disposed off
+     */
+    public static Cache createSessionCache(ConceptImpl owner, Cacheable cacheable, Supplier databaseReader){
+        return new Cache(owner, cacheable, true, databaseReader);
     }
 
     /**

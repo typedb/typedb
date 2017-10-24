@@ -59,11 +59,11 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *           For example an {@link EntityType} or {@link RelationshipType} or {@link Role}
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
-    private final Cache<Label> cachedLabel = new Cache<>(Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
-    private final Cache<LabelId> cachedLabelId = new Cache<>(Cacheable.labelId(), () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
-    private final Cache<T> cachedSuperType = new Cache<>(Cacheable.concept(), () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private final Cache<Boolean> cachedIsImplicit = new Cache<>(Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private final Cache<Label> cachedLabel = Cache.createSessionCache(this, Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
+    private final Cache<LabelId> cachedLabelId = Cache.createSessionCache(this, Cacheable.labelId(), () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
+    private final Cache<T> cachedSuperType = Cache.createSessionCache(this, Cacheable.concept(), () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private final Cache<Set<T>> cachedDirectSubTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsImplicit = Cache.createSessionCache(this, Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     SchemaConceptImpl(VertexElement vertexElement) {
         super(vertexElement);

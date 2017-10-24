@@ -32,7 +32,9 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 
@@ -50,14 +52,17 @@ import java.util.stream.Stream;
  *
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxCache {
+    //This contains all the caches which this concept has
+    private final Set<Cache> registeredCaches = new HashSet<>();
+
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
-    private final Cache<Shard> currentShard = new Cache<>(Cacheable.shard(), () -> {
+    private final Cache<Shard> currentShard = Cache.createTxCache(this, Cacheable.shard(), () -> {
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
         Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
         Optional<Shard> shard = vertex().tx().factory().buildShard(shardVertex);
         return shard.orElseThrow(() -> GraknTxOperationException.missingShard(getId()));
     });
-    private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
+    private final Cache<ConceptId> conceptId = Cache.createTxCache(this, Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
     ConceptImpl(VertexElement vertexElement){
@@ -81,6 +86,13 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     @Override
     public void delete() throws GraknTxOperationException {
         deleteNode();
+    }
+
+    /**
+     * Registers a {@link Cache} so that later it can be cleaned up
+     */
+    public void registerCahce(Cache cache){
+        registeredCaches.add(cache);
     }
 
     @Override
