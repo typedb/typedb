@@ -6,6 +6,7 @@ summary: "This page introduces the statistics functionality of analytics."
 sidebar: documentation_sidebar
 permalink: /documentation/graql-analytics/analytics-statistics.html
 folder: documentation
+KB: genealogy-plus
 ---
 
 Computing simple statistics, such as the mean and standard deviations of datasets, is an easy task when considering a few

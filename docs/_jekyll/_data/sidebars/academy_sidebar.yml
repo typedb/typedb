@@ -1,0 +1,118 @@
+# This is your sidebar TOC. The sidebar code loops through sections here and provides the appropriate formatting.
+
+entries:
+- title: Sidebar
+  product: Grakn Academy
+
+  items:
+  - title: Academy home
+    output: web
+    url: /academy/index.html
+
+- title: Academy toc
+  product: Academy lessons
+
+
+  folders:
+  - title: 1. Welcome to the Academy
+    output: web
+    folderitems:
+      - title: 1.1 What is Grakn
+        output: web
+        url: /academy/grakn-intro.html
+      - title: 1.2 Academy Setup
+        output: web
+        url: /academy/setup.html
+  - title: 2. GRAQL language
+    output: web
+    folderitems:
+      - title: 2.1 GRAQL introduction
+        output: web
+        url: /academy/graql-intro.html
+      - title: 2.2 Get Queries
+        output: web
+        url: /academy/get-queries.html
+      - title: 2.3 Insert and Delete queries
+        output: web
+        url: /academy/insert-delete-queries.html
+      - title: 2.4 Other queries
+        output: web
+        url: /academy/other-queries.html
+      - title: Module Review
+        output: web
+        url: /academy/graql-review.html
+
+  - title: 3. GRAKN schemas
+    output: web
+    folderitems:
+      - title: 3.1 Schema elements
+        output: web
+        url: /academy/schema-elements.html
+      - title: 3.2 Conceptual modeling
+        output: web
+        url: /academy/conceptual-modeling-intro.html
+      - title: 3.3 Schema building
+        output: web
+        url: /academy/schema-building.html
+      - title: 3.4 Schema building part II
+        output: web
+        url: /academy/schema-building-continued.html
+      - title: Module Review
+        output: web
+        url: /academy/schema-review.html
+
+  - title: 4. Loading data
+    output: web
+    folderitems:
+      - title: 4.1 Loading files
+        output: web
+        url: /academy/loading-files.html
+      - title: 4.2 Data migration - CSV
+        output: web
+        url: /academy/csv-migration.html
+      - title: 4.3 Data migration - XML and JSON
+        output: web
+        url: /academy/xml-migration.html
+      - title: Module Review
+        output: web
+        url: /academy/migration-review.html
+
+  - title: 5. Logic inference
+    output: web
+    folderitems:
+      - title: 5.1 Logic inference
+        output: web
+        url: /academy/reasoner-intro.html
+      - title: 5.2 Inference rules
+        output: web
+        url: /academy/inference-rules.html
+      - title: 5.3 Advanced reasoning
+        output: web
+        url: /academy/advanced-rules.html
+      - title: Module Review
+        output: web
+        url: /academy/reasoner-review.html
+
+  - title: 6. Large scale analytics
+    output: web
+    folderitems:
+      - title: 6.1 Distributed analytics
+        output: web
+        url: /academy/analytics-intro.html
+      - title: 6.2 Statistics queries
+        output: web
+        url: /academy/statistics-queries.html
+      - title: 6.3 Graph analytics
+        output: web
+        url: /academy/graph-analytics.html
+      - title: Module Review
+        output: web
+        url: /academy/analytics-review.html
+
+
+- items:
+  - title: Documentation Portal
+    output: web
+    url: /index.html
+
+

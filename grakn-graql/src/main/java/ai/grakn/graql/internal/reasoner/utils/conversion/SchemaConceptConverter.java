@@ -20,23 +20,43 @@ package ai.grakn.graql.internal.reasoner.utils.conversion;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import java.util.stream.Stream;
 
 /**
  * <p>
- *      {@link SchemaConceptConverter} interface for conversion between compatible {@link SchemaConcept}.
+ * Interface for conversion between compatible {@link SchemaConcept}s.
+ * NB: assumes MATCH semantics - all types and their subs are considered.
  * </p>
- * @param <T> type to convert from
+ * @param <T> {@link SchemaConcept} type to convert from
  *
  * @author Kasper Piskorski
  */
 public interface SchemaConceptConverter<T extends SchemaConcept>{
+
     /**
      * convert a given type to a map of relation types in which it can play roles
      * and the corresponding role types including entity type hierarchy
-     * @param schemaConcept to be converted
+     * @param entryConcept to be converted
      * @return map of relation types in which it can play roles and the corresponding role types
      */
-    Multimap<RelationshipType, Role> toRelationshipMultimap(T schemaConcept);
+    default Multimap<RelationshipType, Role> toRelationshipMultimap(T entryConcept){
+        Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
+
+        toCompatibleRoles(entryConcept)
+                .forEach(role -> {
+                    role.relationshipTypes()
+                            .filter(rel -> !rel.isImplicit())
+                            .forEach(rel -> relationMap.put(rel, role));
+                });
+        return relationMap;
+    }
+
+    /**
+     * @param entryConcept to be converted
+     * @return {@link Role}s that are compatible with this {@link SchemaConcept}
+     */
+    Stream<Role> toCompatibleRoles(T entryConcept);
 }
 
