@@ -20,32 +20,16 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
 import com.theoryinpractise.halbuilder.api.Representation;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Utils class used by HALBuilders
@@ -65,9 +49,7 @@ public class HALUtils {
     final static String RELATES_EDGE = Schema.EdgeLabel.RELATES.getLabel();
     final static String HAS_EDGE = "has";
     final static String PLAYS_EDGE = Schema.EdgeLabel.PLAYS.getLabel();
-    final static String HAS_EMPTY_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
     final static String ASSERTION_URL = "?keyspace=%s&query=match %s %s %s %s; %s &limitEmbedded=%s&infer=false&materialise=false";
-
 
 
     // - State properties
@@ -81,7 +63,7 @@ public class HALUtils {
     public final static String NAME_PROPERTY = "_name";
     public final static String LINKS_PROPERTY = "_links";
 
-    public final static String INFERRED_RELATIONSHIP = "inferred-relationship";
+    public final static String INFERRED_RELATIONSHIP = "INFERRED_RELATIONSHIP";
     public final static String GENERATED_RELATIONSHIP = "generated-relationship";
     public final static String IMPLICIT_PROPERTY = "_implicit";
 
@@ -121,10 +103,10 @@ public class HALUtils {
         resource.withProperty(ID_PROPERTY, concept.getId().getValue());
 
         // TO-CLEAN
-        if(inferred){
+        if (inferred) {
             Thing thing = concept.asThing();
             resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
-                    .withProperty(BASETYPE_PROPERTY, "inferred-relationship");
+                    .withProperty(BASETYPE_PROPERTY, INFERRED_RELATIONSHIP);
             return;
         }
 
@@ -144,122 +126,23 @@ public class HALUtils {
 
         if (concept.isSchemaConcept()) {
             resource.withProperty(NAME_PROPERTY, concept.asSchemaConcept().getLabel().getValue());
-            resource.withProperty(IMPLICIT_PROPERTY, ((SchemaConcept)concept).isImplicit());
-            if(concept.isAttributeType()){
-                String dataType = Optional.ofNullable(concept.asAttributeType().getDataType()).map(x->x.getName()).orElse("");
+            resource.withProperty(IMPLICIT_PROPERTY, ((SchemaConcept) concept).isImplicit());
+            if (concept.isAttributeType()) {
+                String dataType = Optional.ofNullable(concept.asAttributeType().getDataType()).map(x -> x.getName()).orElse("");
                 resource.withProperty(DATATYPE_PROPERTY, dataType);
             }
         }
     }
 
-    static void generateConceptState(Representation resource, Concept concept){
+    static void generateConceptState(Representation resource, Concept concept) {
         generateConceptState(resource, concept, false);
     }
 
-    static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQuery(GetQuery getQuery, Answer firstAnswer) {
-        final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
-        AnswerExplanation firstExplanation = firstAnswer.getExplanation();
-        if (firstExplanation.isEmpty()) {
-            return computeRoleTypesFromQueryNoReasoner(getQuery);
-        } else {
-            if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
-                updateRoleTypesFromAnswer(roleTypes, firstAnswer, getQuery);
-            } else {
-                firstAnswer.getExplanation().getAnswers().forEach(answer -> updateRoleTypesFromAnswer(roleTypes, answer, getQuery));
-            }
-            return roleTypes;
-        }
-    }
 
-    private static void updateRoleTypesFromAnswer(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Answer answer, GetQuery getQuery) {
-        Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
-        if (atom.isRelation()) {
-            Optional<VarPatternAdmin> var = atom.getPattern().varPatterns().stream().filter(x -> x.hasProperty(RelationshipProperty.class)).findFirst();
-            VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
-            if (var.isPresent() && !var.get().var().isUserDefinedName() && bothRolePlayersAreSelected(atom, getQuery)) {
-                roleTypes.put(varAdmin, pairVarNamesRelationshipType(atom));
-            }
-        }
-    }
-
-    private static boolean bothRolePlayersAreSelected(Atom atom, GetQuery getQuery) {
-        RelationshipAtom reasonerRel = ((RelationshipAtom) atom);
-        Set<Var> rolePlayersInAtom = reasonerRel.getRolePlayers().stream().collect(Collectors.toSet());
-        Set<Var> selectedVars = getQuery.vars();
-        //If all the role players contained in the current relationship are also selected in the user query
-        return Sets.intersection(rolePlayersInAtom, selectedVars).equals(rolePlayersInAtom);
-    }
-
-    private static boolean bothRolePlayersAreSelectedNoReasoner(VarPatternAdmin var, GetQuery getQuery) {
-        Set<Var> rolePlayersInVar =  var.getProperty(RelationshipProperty.class).get().relationPlayers().stream().map(x->x.getRolePlayer().var()).collect(Collectors.toSet());
-        Set<Var> selectedVars = getQuery.vars();
-        //If all the role players contained in the current relationship are also selected in the user query
-        return Sets.intersection(rolePlayersInVar, selectedVars).equals(rolePlayersInVar);
-    }
-
-    private static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQueryNoReasoner(GetQuery getQuery) {
-        final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
-        getQuery.match().admin().getPattern().varPatterns().forEach(var -> {
-            if (var.getProperty(RelationshipProperty.class).isPresent() && !var.var().isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,getQuery)) {
-                Map<Var, String> tempMap = new HashMap<>();
-                var.getProperty(RelationshipProperty.class).get()
-                        .relationPlayers().forEach(x -> {
-                            tempMap.put(x.getRolePlayer().var(),
-                                    (x.getRole().isPresent()) ? x.getRole().get().getPrintableName() : HAS_EMPTY_ROLE_EDGE);
-                        }
-                );
-                String relationshipType = null;
-                if (var.getProperty(IsaProperty.class).isPresent()) {
-                    Optional<Label> relOptional = var.getProperty(IsaProperty.class).get().type().getTypeLabel();
-                    relationshipType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
-                } else {
-                    relationshipType = "";
-                }
-
-                roleTypes.put(var, new Pair<>(tempMap, relationshipType));
-            }
-        });
-        return roleTypes;
-    }
-
-    private static Pair<Map<Var, String>, String> pairVarNamesRelationshipType(Atom atom) {
-        RelationshipAtom reasonerRel = ((RelationshipAtom) atom);
-        Map<Var, String> varNamesToRole = new HashMap<>();
-        // Put all the varNames in the map with EMPTY-ROLE role
-        reasonerRel.getRolePlayers().forEach(varName -> varNamesToRole.put(varName, HAS_EMPTY_ROLE_EDGE));
-        // Overrides the varNames that have roles in the previous map
-        reasonerRel.getRoleVarMap().entries().stream().filter(entry -> !Schema.MetaSchema.isMetaLabel(entry.getKey().getLabel())).forEach(entry -> varNamesToRole.put(entry.getValue(), entry.getKey().getLabel().getValue()));
-
-        String relationshipType = (reasonerRel.getSchemaConcept() != null) ? reasonerRel.getSchemaConcept().getLabel().getValue() : "";
-        return new Pair<>(varNamesToRole, relationshipType);
-    }
-
-    static Map<VarPatternAdmin, Boolean> buildInferredRelationshipsMap(Answer firstAnswer) {
-        final Map<VarPatternAdmin, Boolean> inferredRelationships = new HashMap<>();
-        AnswerExplanation firstExplanation = firstAnswer.getExplanation();
-        if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
-            Atom atom = ((ReasonerAtomicQuery) firstAnswer.getExplanation().getQuery()).getAtom();
-            if (atom.isRelation()) {
-                VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
-                inferredRelationships.put(varAdmin, firstAnswer.getExplanation().isRuleExplanation());
-            }
-        } else {
-            firstAnswer.getExplanation().getAnswers().forEach(answer -> {
-                Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
-                if (atom.isRelation()) {
-                    VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
-                    inferredRelationships.put(varAdmin, answer.getExplanation().isRuleExplanation());
-                }
-            });
-        }
-
-        return inferredRelationships;
-    }
-
-    static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit){
+    static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit) {
         Set<Thing> thingSet = new HashSet<>();
         currentConcept.asRelationship().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
-        String isaString =  "isa " + currentConcept.asRelationship().type().getLabel();
+        String isaString = "isa " + currentConcept.asRelationship().type().getLabel();
         StringBuilder stringBuilderVarsWithIds = new StringBuilder();
         StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
         char currentVarLetter = 'a';

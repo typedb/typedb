@@ -44,7 +44,7 @@ class HALPrinter extends JsonPrinter {
     }
 
 
-    public Json graqlString(boolean inner, Concept concept, boolean inferred) {
+    public Json graqlString(Concept concept, boolean inferred) {
         String json = HALBuilder.renderHALConceptData(concept, inferred, 0, keyspace, 0, limitEmbedded);
         return Json.read(json);
     }
@@ -56,14 +56,14 @@ class HALPrinter extends JsonPrinter {
 
         answer.map().forEach((Var key, Concept value) -> {
             String keyString = key.getValue();
-            json.set(keyString, graqlString(true, value, isInferred(key, value, answer)));
+            json.set(keyString, graqlString(value, isInferred(key, value, answer)));
         });
 
         return json;
     }
 
     private boolean isInferred(Var key, Concept concept, Answer answer) {
-        if (key == null || answer.getExplanation().isEmpty() ) return false;
+        if (key == null || answer.getExplanation().isEmpty()) return false;
 
         //TO-DO add support for attributes
         if (!concept.isRelationship()) return false;

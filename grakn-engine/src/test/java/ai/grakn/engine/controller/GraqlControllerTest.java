@@ -193,8 +193,8 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void whenMatchingInferredRelation_HALResponseContainsInferredRelation() {
-        String queryString = "match ($x,$y) isa marriage; $z isa person; offset 0; limit 25; get;";
+    public void whenMatchingRuleExplanation_HALResponseContainsInferredRelation() {
+        String queryString = "match ($x,$y) isa marriage; offset 0; limit 25; get;";
         int limitEmbedded = 10;
         Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, genealogyKB.tx().getKeyspace().getValue());
         resp.then().statusCode(200);
@@ -203,9 +203,27 @@ public class GraqlControllerTest {
                 .flatMap(x -> x.asJsonMap().entrySet().stream())
                 .filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y")))
                 .map(entry -> entry.getValue())
-                .filter(thing -> !thing.at("_baseType").asString().equals("RELATIONSHIP_TYPE"))
+                .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("marriage"))
                 .forEach(thing -> {
-                    System.out.println(thing.at("_baseType").asString());
+                    assertEquals("INFERRED_RELATIONSHIP",thing.at("_baseType").asString());
+                });
+
+    }
+
+    @Test
+    public void whenMatchingJoinExplanation_HALResponseContainsInferredRelation() {
+        String queryString = "match ($x,$y) isa marriage; $z isa person; offset 0; limit 25; get;";
+        int limitEmbedded = 10;
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, genealogyKB.tx().getKeyspace().getValue());
+        resp.then().statusCode(200);
+        Json jsonResp = Json.read(resp.body().asString());
+        jsonResp.asJsonList().stream()
+                .flatMap(x -> x.asJsonMap().entrySet().stream())
+                .filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y") && !entry.getKey().equals("z")))
+                .map(entry -> entry.getValue())
+                .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("marriage"))
+                .forEach(thing -> {
+                    assertEquals("INFERRED_RELATIONSHIP",thing.at("_baseType").asString());
                 });
 
     }
@@ -221,9 +239,9 @@ public class GraqlControllerTest {
                 .flatMap(x -> x.asJsonMap().entrySet().stream())
                 .filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y")))
                 .map(entry -> entry.getValue())
-                .filter(thing -> !thing.at("_baseType").asString().equals("RELATIONSHIP_TYPE"))
+                .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("directed-by"))
                 .forEach(thing -> {
-                    System.out.println(thing.at("_baseType").asString());
+                    assertEquals("RELATIONSHIP",thing.at("_baseType").asString());
                 });
 
     }
