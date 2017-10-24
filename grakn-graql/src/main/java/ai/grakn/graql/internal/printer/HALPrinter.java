@@ -51,9 +51,7 @@ class HALPrinter extends JsonPrinter {
 
     @Override
     public Json graqlString(boolean inner, Answer answer) {
-        /**
-         * How to identify concept inferred among the onoes in the answer.map()?
-         */
+
         Json json = Json.object();
 
         answer.map().forEach((Var key, Concept value) -> {
@@ -65,7 +63,7 @@ class HALPrinter extends JsonPrinter {
     }
 
     private boolean isInferred(Var key, Concept concept, Answer answer) {
-        if (key == null) return false;
+        if (key == null || answer.getExplanation().isEmpty() ) return false;
 
         //TO-DO add support for attributes
         if (!concept.isRelationship()) return false;
