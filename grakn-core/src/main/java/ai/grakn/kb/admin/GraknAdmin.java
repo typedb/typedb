@@ -192,6 +192,15 @@ public interface GraknAdmin {
     void delete();
 
     /**
+     * Returns the current number of shards the provided {@link Concept} has. This is used in creating more
+     * efficient query plans.
+     *
+     * @param concept The {@link Concept} which may contain some shards.
+     * @return the number of Shards the {@link Concept} currently has.
+     */
+    int getShardCount(Concept concept);
+
+    /**
      * Get the URL where the graph is located
      * @return the URL where the graph is located
      */

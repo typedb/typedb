@@ -945,4 +945,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             type.createShard();
         }
     }
+
+    public int getShardCount(Concept concept){
+        return 0;
+    }
 }

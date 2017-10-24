@@ -129,7 +129,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         return vertex().putEdge(to.vertex(), label);
     }
 
-    public EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
+    EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
         return vertex().addEdge(to.vertex(), label);
     }
 
