@@ -20,14 +20,12 @@ package ai.grakn.engine;
 
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.DashboardController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.controller.api.AttributeController;
 import ai.grakn.engine.controller.api.AttributeTypeController;
 import ai.grakn.engine.controller.api.EntityController;
@@ -39,8 +37,6 @@ import ai.grakn.engine.controller.api.RuleController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
@@ -49,8 +45,6 @@ import mjson.Json;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.HaltException;
-import spark.Request;
 import spark.Response;
 import spark.Service;
 
@@ -80,12 +74,6 @@ public class HttpHandler {
     private final TaskManager taskManager;
     private final ExecutorService taskExecutor;
 
-    private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
-            REST.WebPath.NEW_SESSION_URI,
-            REST.WebPath.REMOTE_SHELL_URI,
-            REST.WebPath.System.CONFIGURATION,
-            REST.WebPath.IS_PASSWORD_PROTECTED_URI));
-
     public HttpHandler(GraknEngineConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, ExecutorService taskExecutor) {
         this.prop = prop;
         this.spark = spark;
@@ -98,17 +86,10 @@ public class HttpHandler {
 
 
     public void startHTTP() {
-        boolean passwordProtected = prop.getProperty(GraknConfigKey.PASSWORD_PROTECTED);
-
-        // TODO: Make sure controllers handle the null case
-        Optional<String> secret = prop.getProperty(GraknConfigKey.JWT_SECRET);
-        @Nullable JWTHandler jwtHandler = secret.map(JWTHandler::create).orElse(null);
-        UsersHandler usersHandler = UsersHandler.create(prop.getProperty(GraknConfigKey.ADMIN_PASSWORD), factory);
-
-        configureSpark(spark, prop, jwtHandler);
+        configureSpark(spark, prop);
 
         // Start the websocket for Graql
-        RemoteSession graqlWebSocket = passwordProtected ? RemoteSession.passwordProtected(usersHandler) : RemoteSession.create();
+        RemoteSession graqlWebSocket = RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
         int postProcessingDelay = prop.getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
@@ -118,8 +99,6 @@ public class HttpHandler {
         new ConceptController(factory, spark, metricRegistry);
         new DashboardController(factory, spark);
         new SystemController(factory, spark, graknEngineStatus, metricRegistry);
-        new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
-        new UserController(spark, usersHandler);
         new CommitLogController(spark, postProcessingDelay, taskManager);
         new TasksController(spark, taskManager, metricRegistry, taskExecutor);
         new EntityController(factory, spark);
@@ -135,23 +114,19 @@ public class HttpHandler {
         spark.awaitInitialization();
     }
 
-    public static void configureSpark(Service spark, GraknEngineConfig prop, @Nullable JWTHandler jwtHandler) {
+    public static void configureSpark(Service spark, GraknEngineConfig prop) {
         configureSpark(spark,
                 prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
                 prop.getProperty(GraknConfigKey.SERVER_PORT),
                 prop.getPath(GraknConfigKey.STATIC_FILES_PATH),
-                prop.getProperty(GraknConfigKey.PASSWORD_PROTECTED),
-                prop.getProperty(GraknConfigKey.WEBSERVER_THREADS),
-                jwtHandler);
+                prop.getProperty(GraknConfigKey.WEBSERVER_THREADS));
     }
 
     public static void configureSpark(Service spark,
                                       String hostName,
                                       int port,
                                       Path staticFolder,
-                                      boolean passwordProtected,
-                                      int maxThreads,
-                                      @Nullable JWTHandler jwtHandler){
+                                      int maxThreads){
         // Set host name
         spark.ipAddress(hostName);
 
@@ -163,11 +138,6 @@ public class HttpHandler {
 
         spark.threadPool(maxThreads);
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
-
-        // Register filter to check authentication token in each request
-        if (passwordProtected) {
-            spark.before((req, res) -> checkAuthorization(spark, req, jwtHandler));
-        }
 
         //Register exception handlers
         spark.exception(GraknServerException.class, (e, req, res) -> {
@@ -192,39 +162,6 @@ public class HttpHandler {
             catch(IllegalStateException e){
                 LOG.debug("Spark server has been stopped");
                 running = false;
-            }
-        }
-    }
-
-
-    /**
-     * If authorization is enabled, check the client has correct JWT Token before allowing
-     * access to specific endpoints.
-     * @param request request information from the client
-     */
-    private static void checkAuthorization(Service spark, Request request, JWTHandler jwtHandler) throws HaltException {
-        //we dont check authorization token if the path requested is one of the unauthenticated ones
-        if (!unauthenticatedEndPoints.contains(request.pathInfo())) {
-            //add check to see if string contains substring "Bearer ", for now a lot of optimism here
-            boolean authenticated;
-            try {
-                if (request.headers("Authorization") == null || !request.headers("Authorization").startsWith("Bearer ")) {
-                    throw GraknServerException.authenticationFailure();
-                }
-
-                String token = request.headers("Authorization").substring(7);
-                authenticated = jwtHandler.verifyJWT(token);
-                request.attribute(REST.Request.USER_ATTR, jwtHandler.extractUserFromJWT(token));
-            }
-            catch (GraknBackendException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                //request is malformed, return 400
-                throw GraknServerException.serverException(400, e);
-            }
-            if (!authenticated) {
-                throw spark.halt(401, "User not authenticated.");
             }
         }
     }
