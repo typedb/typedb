@@ -14,11 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.engine.util;
+package ai.grakn.util;
 
 import com.google.common.base.Preconditions;
+import org.apache.http.HttpHost;
+import org.apache.http.client.utils.URIBuilder;
 
 /**
  * This Util class just takes care of going from host and port to string and viceversa
@@ -48,6 +51,10 @@ public class SimpleURI {
 
     public String getHost() {
         return host;
+    }
+
+    public URIBuilder builder() {
+        return new URIBuilder().setScheme(HttpHost.DEFAULT_SCHEME_NAME).setHost(host).setPort(port);
     }
 
     @Override

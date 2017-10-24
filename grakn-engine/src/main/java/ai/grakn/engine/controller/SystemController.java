@@ -28,6 +28,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.ErrorMessage;
@@ -52,6 +53,7 @@ import spark.Service;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -68,9 +70,8 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
-import static ai.grakn.util.REST.WebPath.System.DELETE_KEYSPACE;
-import static ai.grakn.util.REST.WebPath.System.INITIALISE;
-import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
+import static ai.grakn.util.REST.WebPath.System.KB;
+import static ai.grakn.util.REST.WebPath.System.KB_KEYSPACE;
 import static ai.grakn.util.REST.WebPath.System.METRICS;
 import static ai.grakn.util.REST.WebPath.System.STATUS;
 import static org.apache.http.HttpHeaders.CACHE_CONTROL;
@@ -112,12 +113,12 @@ public class SystemController {
         DropwizardExports prometheusMetricWrapper = new DropwizardExports(metricRegistry);
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
-        spark.get(KEYSPACES,     this::getKeyspaces);
+        spark.get(KB, this::getKeyspaces);
+        spark.put(KB_KEYSPACE, this::putKeyspace);
+        spark.delete(KB_KEYSPACE, this::deleteKeyspace);
         spark.get(CONFIGURATION, this::getConfiguration);
         spark.get(METRICS, this::getMetrics);
-        spark.get(INITIALISE, this::initialiseSession);
         spark.get(STATUS, this::getStatus);
-        spark.delete(DELETE_KEYSPACE, this::deleteKeyspace);
 
         final TimeUnit rateUnit = TimeUnit.SECONDS;
         final TimeUnit durationUnit = TimeUnit.SECONDS;
@@ -132,11 +133,34 @@ public class SystemController {
     }
 
     @GET
-    @Path("/initialise")
+    @Path(KB)
+    @ApiOperation(value = "Get all the key spaces that have been opened")
+    private String getKeyspaces(Request request, Response response) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+
+            AttributeType<String> keyspaceName = graph.getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
+            Json result = Json.array();
+
+            graph.<EntityType>getSchemaConcept(SystemKeyspace.KEYSPACE_ENTITY).instances().forEach(keyspace -> {
+                Collection<Attribute<?>> names = keyspace.attributes(keyspaceName).collect(Collectors.toSet());
+                if (names.size() != 1) {
+                    throw GraknServerException.internalError(ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
+                }
+                result.add(names.iterator().next().getValue());
+            });
+            return result.toString();
+        } catch (Exception e) {
+            LOG.error("While retrieving keyspace list:", e);
+            throw GraknServerException.serverException(500, e);
+        }
+    }
+
+    @PUT
+    @Path("/kb/{keyspace}")
     @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
-    @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
-    private String initialiseSession(Request request, Response response){
-        Keyspace keyspace = Keyspace.of(request.queryParams(KEYSPACE_PARAM));
+    @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "path")
+    private String putKeyspace(Request request, Response response){
+        Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         boolean keyspaceInitialised = factory.systemKeyspace().ensureKeyspaceInitialised(keyspace);
 
         if(keyspaceInitialised) {
@@ -147,11 +171,11 @@ public class SystemController {
     }
 
     @DELETE
-    @Path("/deleteKeyspace")
+    @Path("/kb/{keyspace}")
     @ApiOperation(value = "Delete a keyspace from the system graph.")
-    @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
+    @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "path")
     private boolean deleteKeyspace(Request request, Response response){
-        Keyspace keyspace = Keyspace.of(request.queryParams(KEYSPACE_PARAM));
+        Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
         if(deletionComplete){
             LOG.info("Keyspace {} deleted", keyspace);
@@ -187,29 +211,6 @@ public class SystemController {
     @ApiOperation(value = "Return the status of the engine: READY, INITIALIZING")
     private String getStatus(Request request, Response response) {
         return graknEngineStatus.isReady() ? "READY" : "INITIALIZING";
-    }
-
-    @GET
-    @Path("/keyspaces")
-    @ApiOperation(value = "Get all the key spaces that have been opened")
-    private String getKeyspaces(Request request, Response response) {
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
-
-            AttributeType<String> keyspaceName = graph.getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
-            Json result = Json.array();
-
-            graph.<EntityType>getSchemaConcept(SystemKeyspace.KEYSPACE_ENTITY).instances().forEach(keyspace -> {
-                Collection<Attribute<?>> names = keyspace.attributes(keyspaceName).collect(Collectors.toSet());
-                if (names.size() != 1) {
-                    throw GraknServerException.internalError(ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
-                }
-                result.add(names.iterator().next().getValue());
-            });
-            return result.toString();
-        } catch (Exception e) {
-            LOG.error("While retrieving keyspace list:", e);
-            throw GraknServerException.serverException(500, e);
-        }
     }
 
     @GET

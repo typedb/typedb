@@ -18,8 +18,6 @@
 
 package ai.grakn.util;
 
-import org.apache.http.client.utils.URIBuilder;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -32,10 +30,10 @@ import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
  */
 public class REST {
 
-    public static URI makeURI(String host, String pathTemplate, String... pathParams) {
+    public static URI makeURI(SimpleURI uri, String pathTemplate, String... pathParams) {
         String path = resolveTemplate(pathTemplate, pathParams);
         try {
-            return new URIBuilder().setHost(host).setPath(path).build();
+            return uri.builder().setPath(path).build();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }
@@ -69,28 +67,30 @@ public class REST {
          * URIs to Tasks Controller endpoints
          */
         public static class Tasks {
-            public static final String TASKS = "/tasks";
-            public static final String GET = "/tasks/:id";
-            public static final String STOP = "/tasks/:id/stop";
+            public static final String TASK = "/task";
+            public static final String GET = "/task/:id";
+            public static final String STOP = "/task/:id/stop";
         }
 
         /**
          * URIs to System Controller endpoints
          */
         public static class System {
-            public static final String DELETE_KEYSPACE = "/deleteKeyspace";
-            public static final String INITIALISE = "/initialise";
+            public static final String KB = "/kb";
+            public static final String KB_KEYSPACE = "/kb/:keyspace";
             public static final String STATUS = "/status";
             public static final String CONFIGURATION = "/configuration";
             public static final String METRICS = "/metrics";
-            public static final String KEYSPACES = "/keyspaces";
         }
 
         /**
          * URIs to concept controller endpoints
          */
+        @Deprecated
         public static class Concept {
+            @Deprecated
             public static final String CONCEPT = "/kb/concept/";
+            @Deprecated
             public static final String SCHEMA = "/kb/schema";
         }
 
@@ -98,7 +98,7 @@ public class REST {
          * URIs to api endpoints
          */
         public static class Api {
-            public static final String API_PREFIX = "/api";
+            public static final String API_PREFIX = System.KB_KEYSPACE;
 
             public static final String ATTRIBUTE_TYPE = API_PREFIX + "/attributeType";
             public static final String ENTITY_TYPE = API_PREFIX + "/entityType";
@@ -227,6 +227,7 @@ public class REST {
      */
     public static class HttpConn{
         public static final String POST_METHOD = "POST";
+        public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
         public static final String GET_METHOD = "GET";
     }

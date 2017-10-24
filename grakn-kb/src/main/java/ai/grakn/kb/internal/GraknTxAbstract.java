@@ -58,6 +58,7 @@ import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import ai.grakn.util.SimpleURI;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -70,6 +71,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -803,11 +806,21 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
     }
 
-    private String getDeleteKeyspaceEndpoint() {
+    private Optional<URI> getDeleteKeyspaceEndpoint() {
         if (Grakn.IN_MEMORY.equals(engineUri)) {
-            return Grakn.IN_MEMORY;
+            return Optional.empty();
         }
-        return engineUri + REST.WebPath.System.DELETE_KEYSPACE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+
+        URI uri;
+        try {
+            uri = new SimpleURI(engineUri)
+                    .builder()
+                    .setPath(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue()))
+                    .build();
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
+        }
+        return Optional.of(uri);
     }
 
     public boolean validElement(Element element) {

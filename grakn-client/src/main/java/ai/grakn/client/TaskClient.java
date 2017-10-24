@@ -54,7 +54,7 @@ import static ai.grakn.util.REST.Response.Task.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static ai.grakn.util.REST.WebPath.Tasks.TASK;
 import static java.lang.String.format;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
@@ -103,7 +103,7 @@ public class TaskClient extends Client {
     TaskResult sendTask(String taskClass, String creator, Instant runAt, Duration interval,
             Json configuration, long limit, boolean wait) {
         try {
-            URIBuilder uri = new URIBuilder(TASKS)
+            URIBuilder uri = new URIBuilder(TASK)
                     .setScheme(DEFAULT_SCHEME_NAME)
                     .setHost(host)
                     .setPort(port);

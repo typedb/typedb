@@ -22,7 +22,7 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.client.Client;
 import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.MockRedisRule;

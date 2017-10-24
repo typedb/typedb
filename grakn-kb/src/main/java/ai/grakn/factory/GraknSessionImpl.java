@@ -28,21 +28,25 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
-import static ai.grakn.util.EngineCommunicator.contactEngine;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.WebPath.System.INITIALISE;
+import ai.grakn.util.SimpleURI;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static mjson.Json.read;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -97,10 +101,18 @@ public class GraknSessionImpl implements GraknSession {
      * @return the properties needed to build a {@link GraknTx}
      */
     private static Properties getTxRemoteProperties(String engineUrl, Keyspace keyspace){
-        String restFactoryUri = engineUrl + INITIALISE + "?" + KEYSPACE_PARAM + "=" + keyspace;
+        URI restFactoryUri;
+        try {
+            restFactoryUri = new SimpleURI(engineUrl).builder()
+                    .setPath(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue()))
+                    .build();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+
         Properties properties = new Properties();
         //Get Specific Configs
-        properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
+        properties.putAll(read(contactEngine(Optional.of(restFactoryUri), REST.HttpConn.PUT_METHOD)).asMap());
         return properties;
     }
 

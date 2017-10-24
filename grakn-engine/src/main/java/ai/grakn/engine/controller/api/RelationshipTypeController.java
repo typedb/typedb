@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
-import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
@@ -69,7 +68,7 @@ public class RelationshipTypeController {
     private Json getRelationshipType(Request request, Response response) {
         LOG.debug("getRelationshipType - request received.");
         String relationshipTypeLabel = mandatoryPathParameter(request, RELATIONSHIP_TYPE_LABEL_PARAMETER);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("getRelationshipType - attempting to find role " + relationshipTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<RelationshipType> relationshipType = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
@@ -93,7 +92,7 @@ public class RelationshipTypeController {
         Json requestBody = Json.read(mandatoryBody(request));
         String relationshipTypeLabel = extractJsonField(requestBody, RELATIONSHIP_TYPE_OBJECT_JSON_FIELD, LABEL_JSON_FIELD).asString();
         Stream<String> roleLabels = extractJsonField(requestBody, RELATIONSHIP_TYPE_OBJECT_JSON_FIELD, ROLE_ARRAY_JSON_FIELD).asList().stream().map(e -> (String) e);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
 
         LOG.debug("postRelationshipType - attempting to add a new relationshipType " + relationshipTypeLabel + " on keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
