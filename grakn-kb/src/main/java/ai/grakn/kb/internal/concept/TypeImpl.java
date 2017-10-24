@@ -96,9 +96,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         createShard();
     }
 
-    /**
-     * Flushes the internal transaction caches so they can refresh with persisted graph
-     */
     @Override
     public void txCacheFlush(){
         super.txCacheFlush();
@@ -106,9 +103,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         cachedDirectPlays.flush();
     }
 
-    /**
-     * Clears the internal transaction caches
-     */
     @Override
     public void txCacheClear(){
         super.txCacheClear();

@@ -105,10 +105,9 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         return cachedLabel.get();
     }
 
-    /**
-     * Flushes the internal transaction caches so they can refresh with persisted graph
-     */
+    @Override
     public void txCacheFlush(){
+        super.txCacheFlush();
         cachedSuperType.flush();
         cachedDirectSubTypes.flush();
         cachedIsImplicit.flush();
@@ -116,6 +115,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     @Override
     public void txCacheClear(){
+        super.txCacheClear();
         cachedSuperType.clear();
         cachedDirectSubTypes.clear();
         cachedIsImplicit.clear();
