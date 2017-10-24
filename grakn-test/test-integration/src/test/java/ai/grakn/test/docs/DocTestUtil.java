@@ -26,12 +26,14 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.SampleKBLoader;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
+import org.apache.http.entity.EntityTemplate;
 
 import java.io.File;
 import java.util.Collection;
@@ -80,6 +82,32 @@ public class DocTestUtil {
 
             pokemonType.attribute(typeId).attribute(description);
             pokemon.attribute(weight).attribute(height).attribute(pokedexNo).attribute(description);
+
+            // TODO: Remove academy schema when not used
+            EntityType bond = tx.putEntityType("bond");
+            EntityType oilPlatform = tx.putEntityType("oil-platform");
+            EntityType company = tx.putEntityType("company");
+            EntityType article = tx.putEntityType("article");
+            EntityType country = tx.putEntityType("country");
+            EntityType region = tx.putEntityType("region");
+
+            AttributeType<String> subject = tx.putAttributeType("subject", AttributeType.DataType.STRING);
+            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+            AttributeType<Long> distanceFromCoast = tx.putAttributeType("distance-from-coast", AttributeType.DataType.LONG);
+
+            company.attribute(name);
+            country.attribute(name);
+            article.attribute(subject);
+            oilPlatform.attribute(distanceFromCoast);
+
+            tx.putRelationshipType("located-in")
+                    .relates(tx.putRole("location")).relates(tx.putRole("located"));
+
+            tx.putRelationshipType("issues")
+                    .relates(tx.putRole("issuer")).relates(tx.putRole("issued"));
+
+            tx.putRelationshipType("owns")
+                    .relates(tx.putRole("owner")).relates(tx.putRole("owned"));
 
             // TODO: Remove these random types when not used
             tx.putEntityType("cluster");
