@@ -22,7 +22,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.kb.internal.GraknTxAbstract;
-import ai.grakn.kb.internal.concept.ConceptImpl;
+import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
@@ -139,7 +139,7 @@ public class GlobalCache {
 
         //Flush All The Internal Transaction Caches
         txCache.getSchemaConceptCache().values().forEach(schemaConcept
-                -> ConceptImpl.from(schemaConcept).txCacheFlush());
+                -> SchemaConceptImpl.from(schemaConcept).txCacheFlush());
     }
 
     /**

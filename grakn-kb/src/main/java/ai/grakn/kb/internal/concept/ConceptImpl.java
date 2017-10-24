@@ -258,7 +258,4 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         return currentShard.get();
     }
 
-    public static ConceptImpl from(Concept concept) {
-        return (ConceptImpl) concept;
-    }
 }
