@@ -58,7 +58,7 @@ public class Cacheable<V> {
         return new Cacheable<>((o) -> o);
     }
 
-    public static Cacheable<ConceptId> integer(){
+    public static Cacheable<Long> number(){
         return new Cacheable<>((o) -> o);
     }
 

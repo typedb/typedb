@@ -57,7 +57,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         Optional<Shard> shard = vertex().tx().factory().buildShard(shardVertex);
         return shard.orElseThrow(() -> GraknTxOperationException.missingShard(getId()));
     });
-    private final Cache<Integer> shardCount = new Cache(Cacheable.integer(), () -> new Long(shards().count()).intValue());
+    private final Cache<Long> shardCount = new Cache(Cacheable.number(), () -> shards().count());
     private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
@@ -238,15 +238,11 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
                 map(edge -> vertex().tx().factory().buildShard(edge));
     }
 
-    public int shardCount(){
+    public Long shardCount(){
         return shardCount.get();
     }
 
     public Shard currentShard(){
         return currentShard.get();
-    }
-
-    public static ConceptImpl from(Concept concept) {
-        return (ConceptImpl) concept;
     }
 }
