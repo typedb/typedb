@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/grakn-intro.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 If you are reading this, you probably want to learn how to use GRAKN.

@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/schema-building.html
 folder: overview
 toc: false
+KB: academy
 ---
 In the [last lesson](/academy/conceptual-modeling-intro.html), we have built, using an entity-relationship modeling process, the sketch of a conceptual model for our data. In this lesson, we will see how to translate that sketch into a working GRAKN schema. As you will see, the whole thing will be quite straightforward.
 

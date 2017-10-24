@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/xml-migration.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 Data stored into CSV files is particularly easy to migrate, because it has a nice and clean tabular format. In this lesson, we will have a quick glance at how it is possible to migrate into GRAKN more structured data files, like XML or JSON files.

@@ -7,6 +7,7 @@ summary: "Graql Define Queries"
 sidebar: documentation_sidebar
 permalink: /documentation/graql/define-queries.html
 folder: documentation
+KB: genealogy-plus
 ---
 
 The page documents use of the Graql `define` query, which will define a specified [variable pattern](./matches.html#variable-patterns)

@@ -7,6 +7,7 @@ sidebar: academy_sidebar
 permalink: ./academy/graql-review.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 Wow! This was intense! We have gone through all the basic of the GRAQL. Let us review them with a few extra exercises.

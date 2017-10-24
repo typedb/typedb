@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/loading-files.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 Following the lessons of the Academy you should be by now at a point where you have a solid grasp on the basics of GRAQL, the GRAKN object model, you should be able to understand what a GRAKN schema is and how to build one.

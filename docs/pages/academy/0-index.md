@@ -7,6 +7,7 @@ sidebar: academy_sidebar
 permalink: ./academy/index.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 Welcome to the Grakn Academy. In this series of tutorials you will learn step by step all the basics of GRAKN, the database for AI.

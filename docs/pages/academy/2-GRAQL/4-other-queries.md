@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/other-queries.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 You have learned to query and manipulate data with GRAQL, and that will probably constitute the bulk of the language you need for a while, but before we go on to other topics, you might want to know that there are also other kind of queries than get, insert and delete queries.

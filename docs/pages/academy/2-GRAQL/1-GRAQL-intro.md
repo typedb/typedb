@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/graql-intro.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 During the course of the Academy lessons, you will learn step by step how to reproduce the academy dataset that comes preloaded into the GRAKN distribution in the VM that you should have installe by now (if you have not, head back to [last lesson](/academy/setup.html) and make sure you do so.)

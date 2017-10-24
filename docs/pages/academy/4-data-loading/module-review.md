@@ -7,6 +7,7 @@ sidebar: academy_sidebar
 permalink: ./academy/migration-review.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 Another module of the Academy has gone, so it is time to review what you have learned about loading data into GRAKN and migrating CSV and XML files. Notice that the following assumes that you have followed the lessons of this module and done all the exercises.

@@ -7,6 +7,7 @@ sidebar: academy_sidebar
 permalink: ./academy/schema-review.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 As usual, the last lesson of the module is just a bunch of exercises to check whether you remember what you have learned. Understanding GRAKN data model and schema is particularly important, so be sure of going back to review the relevant lesson if you are struggling with some of the exercises.

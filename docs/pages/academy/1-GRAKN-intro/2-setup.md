@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/setup.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 ## What you need to know (and where to learn it)

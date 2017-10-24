@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/insert-delete-queries.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 Let us kick off this lesson with an exercise: open the dashboard and write a query to get a company named "GRAKN".

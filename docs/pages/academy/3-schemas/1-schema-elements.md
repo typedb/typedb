@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/schema-elements.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 You have learned the language, it is now time to put it to good use: it is time to learn about the GRAKN conceptual model. As GRAKN is, as they say, a "schema first" system, It is time to learn building GRAKN schemas.

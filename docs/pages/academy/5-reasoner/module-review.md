@@ -7,6 +7,7 @@ sidebar: academy_sidebar
 permalink: ./academy/reasoner-review.html
 folder: academy
 toc: false
+KB: academy
 ---
 
 What you have learned in this module is not a lot in terms of notions but has great importance. Together with the type system and data model, Reasoner is one of the most defining characteristic of GRAKN that makes it different from other databases, so what you have learned in this module really brings your GRAKN game to a different level.

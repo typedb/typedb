@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/analytics-intro.html
 folder: academy
 toc: false
+KB: academy
 ---
 
 In this module you will learn the details of the GRAKN distributed analytics capabilities, that allow to perform distributed computation at scale.

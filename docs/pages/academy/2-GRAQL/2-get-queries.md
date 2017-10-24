@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/get-queries.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 GRAQL, the language used to query and manipulate data in a GRAKN knowledge graph (and much more, as you will discover if you follow the whole GRAKN Academy) that has been built to be readable, easy to learn and use. In this lesson you will learn the basics of the language and, at the end of it you will be able to query data in your knowledge base.

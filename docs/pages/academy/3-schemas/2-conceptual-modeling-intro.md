@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/conceptual-modeling-intro.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 Just to restate something we have seen a few lessons ago,  when we have to deal with data modeling it is always a good idea to start with a question. In our context (if you want to review our problem context you will find it [here](/academy/graql-intro.html)) the question we want to model our knowledge around is:

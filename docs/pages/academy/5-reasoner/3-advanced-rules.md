@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/advanced-rules.html
 folder: academy
 toc: false
+KB: academy
 ---
 
 In the last session you have built a Reasoner rule to connect the articles in your knowledge base to the relevant bonds according to the query you have been examining since the start of module 2. If everything went right, you should then have a file called `rules.gql` that looks like this:

@@ -7,6 +7,7 @@ sidebar: academy_sidebar
 permalink: ./academy/analytics-review.html
 folder: academy
 toc: false
+KB: academy
 ---
 
 You have almost completed the GRAKN Academy. Only a bunch of exercises left to do!

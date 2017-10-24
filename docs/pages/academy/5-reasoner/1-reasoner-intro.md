@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/reasoner-intro.html
 folder: academy
 toc: false
+KB: academy
 ---
 
 If you have followed the Academy lessons up to this point, you should have loaded all the example dataset into a new knowledge base, which is now exactly the same as the one that came preloaded with the GRAKN distribution in the VM.

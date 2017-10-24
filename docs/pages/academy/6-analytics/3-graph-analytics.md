@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/graph-analytics.html
 folder: academy
 toc: false
+KB: academy
 ---
 
 At this point in the academy it should be somewhat clear that GRAKN is not a graph database. So why a lesson about graph analytics?

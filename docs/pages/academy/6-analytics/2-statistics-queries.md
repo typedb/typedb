@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/statistics-queries.html
 folder: academy
 toc: false
+KB: academy
 ---
 
 In the last lesson you have learned about the differences between OLTP and OLAP queries and you have been introduced to the GRAKN Analytics component. In this lesson you will get deeper into the details of the Analytics component, starting with the statistics queries.

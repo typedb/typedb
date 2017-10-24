@@ -26,17 +26,18 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.SampleKBLoader;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
-import org.apache.http.entity.EntityTemplate;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,73 +45,97 @@ import static org.junit.Assert.fail;
 
 public class DocTestUtil {
 
-    public static final File PAGES = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value()+"/docs/pages/");
+    public static final File PAGES = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/docs/pages/");
 
-    public static GraknSession getTestGraph(String uri) {
+    private static final Pattern KEYSPACE_HEADER =
+            Pattern.compile("---.*KB:\\s*(.*?)\\n.*---", Pattern.DOTALL + Pattern.CASE_INSENSITIVE);
+
+    private static final Map<String, Consumer<GraknTx>> loaders = ImmutableMap.<String, Consumer<GraknTx>>builder()
+
+            .put("default", GenealogyKB.get())
+
+            .put("academy", tx -> {
+                // TODO: Remove academy schema when not used
+                EntityType bond = tx.putEntityType("bond");
+                EntityType oilPlatform = tx.putEntityType("oil-platform");
+                EntityType company = tx.putEntityType("company");
+                EntityType article = tx.putEntityType("article");
+                EntityType country = tx.putEntityType("country");
+                EntityType region = tx.putEntityType("region");
+
+                AttributeType<String> subject = tx.putAttributeType("subject", AttributeType.DataType.STRING);
+                AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+                AttributeType<Long> distanceFromCoast = tx.putAttributeType("distance-from-coast", AttributeType.DataType.LONG);
+
+                company.attribute(name);
+                country.attribute(name);
+                article.attribute(subject);
+                oilPlatform.attribute(distanceFromCoast);
+
+                tx.putRelationshipType("located-in")
+                        .relates(tx.putRole("location")).relates(tx.putRole("located"));
+
+                tx.putRelationshipType("issues")
+                        .relates(tx.putRole("issuer")).relates(tx.putRole("issued"));
+
+                tx.putRelationshipType("owns")
+                        .relates(tx.putRole("owner")).relates(tx.putRole("owned"));
+            })
+
+            .put("plants", tx -> {
+                // TODO: Remove plant schema when not used
+                EntityType plant = tx.putEntityType("plant");
+                AttributeType<String> common = tx.putAttributeType("common", AttributeType.DataType.STRING);
+                AttributeType<String> botanical = tx.putAttributeType("botanical", AttributeType.DataType.STRING);
+                AttributeType<String> zone = tx.putAttributeType("zone", AttributeType.DataType.STRING);
+                AttributeType<String> light = tx.putAttributeType("light", AttributeType.DataType.STRING);
+                AttributeType<Long> availability = tx.putAttributeType("availability", AttributeType.DataType.LONG);
+                plant.attribute(common).attribute(botanical).attribute(zone).attribute(light).attribute(availability);
+            })
+
+            .put("pokemon", tx -> {
+                // TODO: Remove pokemon schema when not used
+                EntityType pokemon = tx.putEntityType("pokemon");
+                EntityType pokemonType = tx.putEntityType("pokemon-type");
+
+                AttributeType<String> typeId = tx.putAttributeType("type-id", AttributeType.DataType.STRING);
+                AttributeType<String> description = tx.putAttributeType("description", AttributeType.DataType.STRING);
+                AttributeType<Long> pokedexNo = tx.putAttributeType("pokedex-no", AttributeType.DataType.LONG);
+                AttributeType<Double> weight = tx.putAttributeType("weight", AttributeType.DataType.DOUBLE);
+                AttributeType<Double> height = tx.putAttributeType("height", AttributeType.DataType.DOUBLE);
+
+                tx.putRelationshipType("has-type")
+                        .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
+
+                pokemonType.attribute(typeId).attribute(description);
+                pokemon.attribute(weight).attribute(height).attribute(pokedexNo).attribute(description);
+            })
+
+            .put("genealogy-plus", GenealogyKB.get().andThen(tx -> {
+                // TODO: Remove custom genealogy schema when not used
+                AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
+                tx.getEntityType("person").attribute(age);
+                tx.putAttributeType("nickname", AttributeType.DataType.STRING);
+            }))
+
+            .put("genealogy-with-cluster", GenealogyKB.get().andThen(tx -> {
+                        // TODO: Remove these random types when not used
+                        tx.putEntityType("cluster");
+                    })
+            ).build();
+
+    public static GraknSession getTestGraph(String uri, String knowledgeBaseName) {
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
         GraknSession session = Grakn.session(uri, keyspace);
 
         try (GraknTx tx = session.open(GraknTxType.WRITE)) {
-            GenealogyKB.get().accept(tx);
+            Consumer<GraknTx> loader = loaders.get(knowledgeBaseName);
 
-            // TODO: Remove custom genealogy schema when not used
-            AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
-            tx.getEntityType("person").attribute(age);
-            tx.putAttributeType("nickname", AttributeType.DataType.STRING);
+            if (loader == null) {
+                throw new IllegalArgumentException("Unknown knowledge base '" + knowledgeBaseName + "'");
+            }
 
-            // TODO: Remove plant schema when not used
-            EntityType plant = tx.putEntityType("plant");
-            AttributeType<String> common = tx.putAttributeType("common", AttributeType.DataType.STRING);
-            AttributeType<String> botanical = tx.putAttributeType("botanical", AttributeType.DataType.STRING);
-            AttributeType<String> zone = tx.putAttributeType("zone", AttributeType.DataType.STRING);
-            AttributeType<String> light = tx.putAttributeType("light", AttributeType.DataType.STRING);
-            AttributeType<Long> availability = tx.putAttributeType("availability", AttributeType.DataType.LONG);
-            plant.attribute(common).attribute(botanical).attribute(zone).attribute(light).attribute(availability);
-
-            // TODO: Remove pokemon schema when not used
-            EntityType pokemon = tx.putEntityType("pokemon");
-            EntityType pokemonType = tx.putEntityType("pokemon-type");
-
-            AttributeType<String> typeId = tx.putAttributeType("type-id", AttributeType.DataType.STRING);
-            AttributeType<String> description = tx.putAttributeType("description", AttributeType.DataType.STRING);
-            AttributeType<Long> pokedexNo = tx.putAttributeType("pokedex-no", AttributeType.DataType.LONG);
-            AttributeType<Double> weight = tx.putAttributeType("weight", AttributeType.DataType.DOUBLE);
-            AttributeType<Double> height = tx.putAttributeType("height", AttributeType.DataType.DOUBLE);
-
-            tx.putRelationshipType("has-type")
-                    .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
-
-            pokemonType.attribute(typeId).attribute(description);
-            pokemon.attribute(weight).attribute(height).attribute(pokedexNo).attribute(description);
-
-            // TODO: Remove academy schema when not used
-            EntityType bond = tx.putEntityType("bond");
-            EntityType oilPlatform = tx.putEntityType("oil-platform");
-            EntityType company = tx.putEntityType("company");
-            EntityType article = tx.putEntityType("article");
-            EntityType country = tx.putEntityType("country");
-            EntityType region = tx.putEntityType("region");
-
-            AttributeType<String> subject = tx.putAttributeType("subject", AttributeType.DataType.STRING);
-            AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-            AttributeType<Long> distanceFromCoast = tx.putAttributeType("distance-from-coast", AttributeType.DataType.LONG);
-
-            company.attribute(name);
-            country.attribute(name);
-            article.attribute(subject);
-            oilPlatform.attribute(distanceFromCoast);
-
-            tx.putRelationshipType("located-in")
-                    .relates(tx.putRole("location")).relates(tx.putRole("located"));
-
-            tx.putRelationshipType("issues")
-                    .relates(tx.putRole("issuer")).relates(tx.putRole("issued"));
-
-            tx.putRelationshipType("owns")
-                    .relates(tx.putRole("owner")).relates(tx.putRole("owned"));
-
-            // TODO: Remove these random types when not used
-            tx.putEntityType("cluster");
+            loader.accept(tx);
 
             tx.commit();
         }
@@ -135,9 +160,18 @@ public class DocTestUtil {
         Pattern pattern = Pattern.compile("\n");
         Matcher matcher = pattern.matcher(data);
         matcher.region(0, start);
-        while(matcher.find()) {
+        while (matcher.find()) {
             line++;
         }
         return line;
+    }
+
+    static String getKnowledgeBaseName(String contents) {
+        Matcher matcher = KEYSPACE_HEADER.matcher(contents);
+        if (matcher.find()) {
+            return matcher.group(1);
+        } else {
+            return "default";
+        }
     }
 }

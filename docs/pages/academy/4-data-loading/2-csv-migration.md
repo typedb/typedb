@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/csv-migration.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 In the last lesson, you should have learned how to load a file containing a (potentially very long) list of GRAQL statements into GRAKN.

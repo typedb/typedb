@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/inference-rules.html
 folder: academy
 toc: false
+KB: academy
 ---
 
 As anticipated in the [last lesson](/academy/reasoner-intro.html), in this module you are going to learn how to use GRAKN Reasoner to make your data more intelligent.

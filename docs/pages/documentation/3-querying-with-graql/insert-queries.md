@@ -7,6 +7,7 @@ summary: "Graql Insert Queries"
 sidebar: documentation_sidebar
 permalink: /documentation/graql/insert-queries.html
 folder: documentation
+KB: genealogy-plus
 ---
 
 The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](./matches.html#variable-patterns)

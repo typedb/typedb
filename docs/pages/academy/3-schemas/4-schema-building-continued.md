@@ -8,6 +8,7 @@ sidebar: academy_sidebar
 permalink: ./academy/schema-building-continued.html
 folder: overview
 toc: false
+KB: academy
 ---
 
 ## The story so far
