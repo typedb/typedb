@@ -20,14 +20,20 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -49,7 +55,7 @@ public class HALUtils {
     final static String RELATES_EDGE = Schema.EdgeLabel.RELATES.getLabel();
     final static String HAS_EDGE = "has";
     final static String PLAYS_EDGE = Schema.EdgeLabel.PLAYS.getLabel();
-    final static String ASSERTION_URL = "?keyspace=%s&query=match %s %s %s %s; %s &limitEmbedded=%s&infer=false&materialise=false";
+    final static String ASSERTION_URL = "?keyspace=%s&query=%s&limitEmbedded=%s&infer=false&materialise=false";
 
 
     // - State properties
@@ -61,7 +67,6 @@ public class HALUtils {
     public final static String VALUE_PROPERTY = "_value";
     public final static String DATATYPE_PROPERTY = "_dataType";
     public final static String NAME_PROPERTY = "_name";
-    public final static String LINKS_PROPERTY = "_links";
 
     public final static String INFERRED_RELATIONSHIP = "INFERRED_RELATIONSHIP";
     public final static String GENERATED_RELATIONSHIP = "generated-relationship";
@@ -127,25 +132,29 @@ public class HALUtils {
 
 
     static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit) {
-        Set<Thing> thingSet = new HashSet<>();
-        currentConcept.asRelationship().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
-        String isaString = "isa " + currentConcept.asRelationship().type().getLabel();
-        StringBuilder stringBuilderVarsWithIds = new StringBuilder();
-        StringBuilder stringBuilderParenthesis = new StringBuilder().append("$rel (");
-        char currentVarLetter = 'a';
-        for (Thing var : thingSet) {
-            stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(var.getId().getValue()).append("';");
-            stringBuilderParenthesis.append("$").append(currentVarLetter++).append(",");
+
+        VarPattern relationPattern = Graql.var();
+        Set<Pattern> idPatterns = new HashSet<>();
+
+        for (Map.Entry<Role, Set<Thing>> entry : currentConcept.asRelationship().allRolePlayers().entrySet()) {
+            for (Thing var : entry.getValue()) {
+                Var rolePlayer = Graql.var();
+                relationPattern = relationPattern.rel(entry.getKey().getLabel().getValue(), rolePlayer);
+                idPatterns.add(rolePlayer.asUserDefined().id(var.getId()));
+            }
         }
-        String varsWithIds = stringBuilderVarsWithIds.toString();
-        String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
+        relationPattern = relationPattern.isa(currentConcept.asRelationship().type().getLabel().getValue());
 
-        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, "", parenthesis, isaString, "get;", limit);
+        Pattern pattern = relationPattern;
+        for (Pattern idPattern : idPatterns) {
+            pattern = pattern.and(idPattern);
+        }
 
+        String withoutURL = String.format(ASSERTION_URL, keyspace, Graql.match(pattern).get().toString(), limit);
         String URL = REST.WebPath.Dashboard.EXPLAIN;
 
-        return URL + withoutUrl;
 
+        return URL + withoutURL;
     }
 
 }
