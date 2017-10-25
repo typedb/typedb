@@ -59,6 +59,7 @@ import static ai.grakn.SNB.EMAIL;
 import static ai.grakn.SNB.EMPLOYEE;
 import static ai.grakn.SNB.EMPLOYER;
 import static ai.grakn.SNB.FIRST_NAME;
+import static ai.grakn.SNB.FORUM;
 import static ai.grakn.SNB.FORUM_ID;
 import static ai.grakn.SNB.FRIEND;
 import static ai.grakn.SNB.GENDER;
@@ -260,7 +261,7 @@ public class GraknUpdateQueryHandlers {
                     insert.add(var().rel(TAGGED, $forum).rel(TOPIC, $tag).isa(HAS_TAG));
                 }
 
-                insert.add($forum
+                insert.add($forum.isa(FORUM)
                         .has(FORUM_ID, operation.forumId())
                         .has(TITLE, operation.forumTitle())
                         .has(CREATION_DATE, fromDate(operation.creationDate()))
