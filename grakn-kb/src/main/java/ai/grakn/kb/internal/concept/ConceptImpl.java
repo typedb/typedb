@@ -21,8 +21,8 @@ package ai.grakn.kb.internal.concept;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.cache.Cache;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
@@ -32,7 +32,10 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 
@@ -49,7 +52,8 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public abstract class ConceptImpl extends CacheOwner implements Concept, ConceptVertex{
+public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
+    private final Set<Cache> registeredCaches = new HashSet<>();
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
     private final Cache<Shard> currentShard = Cache.createTxCache(this, Cacheable.shard(), () -> {
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
@@ -95,6 +99,11 @@ public abstract class ConceptImpl extends CacheOwner implements Concept, Concept
     public void deleteNode(){
         vertex().tx().txCache().remove(this);
         vertex().delete();
+    }
+
+    @Override
+    public Collection<Cache> caches(){
+        return registeredCaches;
     }
 
     /**

@@ -20,8 +20,7 @@ package ai.grakn.kb.internal.cache;
 
 import ai.grakn.concept.Concept;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * <p>
@@ -35,29 +34,33 @@ import java.util.Set;
  * @author fppt
  *
  */
-public abstract class CacheOwner {
-    //All the aches belonging to this object
-    private final Set<Cache> registeredCaches = new HashSet<>();
+public interface CacheOwner {
+
+    /**
+     *
+     * @return all the caches beloning to the {@link CacheOwner}
+     */
+    Collection<Cache> caches();
 
     /**
      * Clears the internal {@link Cache}
      */
-    protected final void txCacheClear() {
-        registeredCaches.forEach(Cache::clear);
+    default void txCacheClear() {
+        caches().forEach(Cache::clear);
     }
 
     /**
      * Registers a {@link Cache} so that later it can be cleaned up
      */
-    final void registerCache(Cache cache) {
-        registeredCaches.add(cache);
+    default void registerCache(Cache cache) {
+        caches().add(cache);
     }
 
     /**
      * Flushes the internal transaction caches so they can refresh with persisted graph
      */
-    protected final void txCacheFlush(){
-        registeredCaches.forEach(Cache::flush);
+    default void txCacheFlush(){
+        caches().forEach(Cache::flush);
     }
 
     /**

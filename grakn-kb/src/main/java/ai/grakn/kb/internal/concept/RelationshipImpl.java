@@ -26,10 +26,12 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.structure.VertexElement;
 import com.google.common.collect.Iterables;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -48,7 +50,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationshipImpl extends CacheOwner implements Relationship, ConceptVertex{
+public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner{
     private RelationshipStructure relationshipStructure;
 
     private RelationshipImpl(RelationshipStructure relationshipStructure) {
@@ -233,4 +235,8 @@ public class RelationshipImpl extends CacheOwner implements Relationship, Concep
         return (RelationshipImpl) relationship;
     }
 
+    @Override
+    public Collection<Cache> caches() {
+        return structure().caches();
+    }
 }

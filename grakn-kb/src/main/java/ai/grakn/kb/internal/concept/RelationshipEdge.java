@@ -34,6 +34,7 @@ import ai.grakn.util.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,7 +55,8 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationshipEdge extends CacheOwner implements RelationshipStructure {
+public class RelationshipEdge implements RelationshipStructure, CacheOwner {
+    private final Set<Cache> registeredCaches = new HashSet<>();
     private final Logger LOG = LoggerFactory.getLogger(RelationshipEdge.class);
     private final EdgeElement edgeElement;
 
@@ -187,5 +189,10 @@ public class RelationshipEdge extends CacheOwner implements RelationshipStructur
         return "ID [" + getId() + "] Type [" + type().getLabel() + "] Roles and Role Players: \n" +
                 "Role [" + ownerRole().getLabel() + "] played by [" + owner().getId() + "] \n" +
                 "Role [" + valueRole().getLabel() + "] played by [" + value().getId() + "] \n";
+    }
+
+    @Override
+    public Collection<Cache> caches() {
+        return registeredCaches;
     }
 }

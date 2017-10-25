@@ -31,6 +31,9 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * <p>
@@ -44,7 +47,8 @@ import javax.annotation.Nullable;
  *
  * @author fppt
  */
-public class Casting extends CacheOwner{
+public class Casting implements CacheOwner{
+    private final Set<Cache> registeredCaches = new HashSet<>();
     private final EdgeElement edgeElement;
     private final Cache<Role> cachedRole = Cache.createTxCache(this, Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
     private final Cache<Thing> cachedInstance = Cache.createTxCache(this, Cacheable.concept(), () -> edge().target().
@@ -86,6 +90,11 @@ public class Casting extends CacheOwner{
 
     private EdgeElement edge(){
         return edgeElement;
+    }
+
+    @Override
+    public Collection<Cache> caches(){
+        return registeredCaches;
     }
 
     /**
