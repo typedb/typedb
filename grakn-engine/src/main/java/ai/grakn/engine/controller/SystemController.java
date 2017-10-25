@@ -25,11 +25,12 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.ErrorMessage;
 import com.codahale.metrics.MetricFilter;
@@ -77,18 +78,14 @@ import static ai.grakn.util.REST.WebPath.System.STATUS;
 import static org.apache.http.HttpHeaders.CACHE_CONTROL;
 
 
-
 /**
- * <p>
- *     Controller Providing Configs for building Grakn Graphs
- * </p>
+ * <p> Controller Providing Configs for building Grakn Graphs </p>
  *
- * <p>
- *     When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location this controller
- *     is accessed. The controller provides the necessary config needed in order to build a {@link GraknTx}.
+ * <p> When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location
+ * this controller is accessed. The controller provides the necessary config needed in order to
+ * build a {@link GraknTx}.
  *
- *     This controller also allows the retrieval of all keyspaces opened so far.
- * </p>
+ * This controller also allows the retrieval of all keyspaces opened so far. </p>
  *
  * @author fppt
  */
@@ -106,7 +103,7 @@ public class SystemController {
     private final CollectorRegistry prometheusRegistry;
 
     public SystemController(EngineGraknTxFactory factory, Service spark,
-                            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
+            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
         this.factory = factory;
         this.graknEngineStatus = graknEngineStatus;
         this.metricRegistry = metricRegistry;
@@ -127,9 +124,9 @@ public class SystemController {
 
         this.mapper = new ObjectMapper().registerModule(
                 new MetricsModule(rateUnit,
-                    durationUnit,
-                    showSamples,
-                    filter));
+                        durationUnit,
+                        showSamples,
+                        filter));
     }
 
     @GET
@@ -159,25 +156,26 @@ public class SystemController {
     @Path("/kb/{keyspace}")
     @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "path")
-    private String putKeyspace(Request request, Response response){
+    private String putKeyspace(Request request, Response response) {
         Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         boolean keyspaceInitialised = factory.systemKeyspace().ensureKeyspaceInitialised(keyspace);
 
-        if(keyspaceInitialised) {
+        if (keyspaceInitialised) {
             return getConfiguration(request, response);
         }
 
-        throw GraknServerException.internalError("Unable to instantiate system keyspace " + keyspace);
+        throw GraknServerException
+                .internalError("Unable to instantiate system keyspace " + keyspace);
     }
 
     @DELETE
     @Path("/kb/{keyspace}")
     @ApiOperation(value = "Delete a keyspace from the system graph.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "path")
-    private boolean deleteKeyspace(Request request, Response response){
+    private boolean deleteKeyspace(Request request, Response response) {
         Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
-        if(deletionComplete){
+        if (deletionComplete) {
             LOG.info("Keyspace {} deleted", keyspace);
             response.status(200);
             return true;
@@ -199,8 +197,8 @@ public class SystemController {
         Json jsonConfig = Json.make(properties);
 
         // Remove the JWT Secret
-        if(jsonConfig.has(GraknEngineConfig.JWT_SECRET_PROPERTY)) {
-            jsonConfig.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
+        if (jsonConfig.has(GraknConfigKey.JWT_SECRET.name())) {
+            jsonConfig.delAt(GraknConfigKey.JWT_SECRET.name());
         }
 
         return jsonConfig.toString();

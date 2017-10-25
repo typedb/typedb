@@ -301,7 +301,9 @@ grakn_check_if_running() {
 }
 
 grakn_check_if_ready() {
-  java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.client.Client > /dev/null 2>&1
+  local host=`cat "${GRAKN_HOME}"/conf/grakn.properties| grep server.host | awk -F "=" '{print $2}'`
+  local port=`cat "${GRAKN_HOME}"/conf/grakn.properties| grep server.port | awk -F "=" '{print $2}'`
+  curl $host:$port/configuration > /dev/null 2>&1
   return $?
 }
 

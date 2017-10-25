@@ -392,5 +392,14 @@ public class GraknTxTest extends TxTestBase {
             graph.commit();
         }
     }
+
+    @Test
+    public void whenShardingConcepts_EnsureCountsAreUpdated(){
+        EntityType entity = tx.putEntityType("my amazing entity type");
+        assertEquals(1L, tx.admin().getShardCount(entity));
+
+        tx.admin().shard(entity.getId());
+        assertEquals(2L, tx.admin().getShardCount(entity));
+    }
 }
 

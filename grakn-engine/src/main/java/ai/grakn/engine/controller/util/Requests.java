@@ -78,7 +78,6 @@ public class Requests {
 
     /**
      * Given a {@link Function}, retrieve the value of the {@param parameter} by applying that function
-     * @param extractParameterFunction function used to extract the parameter
      * @param parameter value to retrieve from the HTTP request
      * @return value of the given parameter
      */

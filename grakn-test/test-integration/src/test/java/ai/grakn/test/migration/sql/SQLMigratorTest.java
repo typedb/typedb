@@ -49,6 +49,7 @@ public class SQLMigratorTest {
 
     private Migrator migrator;
     private GraknSession factory;
+    private Keyspace keyspace;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -58,9 +59,9 @@ public class SQLMigratorTest {
 
     @Before
     public void setup(){
-        Keyspace keyspace = SampleKBLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
-        migrator = Migrator.to(engine.uri(), keyspace);
+        migrator = new Migrator(engine.uri(), keyspace);
     }
 
     @Test
@@ -70,7 +71,6 @@ public class SQLMigratorTest {
 
         try(Connection connection = setupExample(factory, "pets")){
             migrator.load(template, new SQLMigrator(query, connection).convert());
-
             assertPetGraphCorrect(factory);
         }
     }

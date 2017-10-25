@@ -67,6 +67,11 @@
             <groupId>org.apache.httpcomponents</groupId>
             <version>${httpclient.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.reactivex</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>1.3.2</version>
+        </dependency>
     </dependencies>
 
     <build>

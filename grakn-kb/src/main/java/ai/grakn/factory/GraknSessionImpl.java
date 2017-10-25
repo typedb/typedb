@@ -20,6 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -124,7 +125,7 @@ public class GraknSessionImpl implements GraknSession {
      */
     private static Properties getTxInMemoryProperties(){
         Properties inMemoryProperties = new Properties();
-        inMemoryProperties.put(GraknTxAbstract.SHARDING_THRESHOLD, 100_000);
+        inMemoryProperties.put(GraknConfigKey.SHARDING_THRESHOLD, 100_000);
         inMemoryProperties.put(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS, 30_000);
         inMemoryProperties.put(FactoryBuilder.KB_MODE, TxFactoryTinker.class.getName());
         return inMemoryProperties;

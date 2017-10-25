@@ -63,8 +63,11 @@ public class RedisWrapper {
             getJedisPool().getResource();
         } catch (JedisConnectionException e) {
             throw GraknBackendException.serverStartupException(
-                    "Redis is not available. Make sure it's running on " + String
-                            .join(", ", uriSet), e);
+                "Redis is not available. Make sure it's running on "
+                        + String.join(", ", uriSet)
+                        + ". It's possible the destination"
+                        + "directory for the rdb and aof files is not writable. Restarting "
+                        + "Redis could fix it.", e);
         }
     }
 
