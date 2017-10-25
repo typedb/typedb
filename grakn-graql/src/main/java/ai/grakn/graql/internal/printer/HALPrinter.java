@@ -22,12 +22,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.hal.HALBuilder;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import mjson.Json;
 
 import java.util.Optional;
@@ -43,12 +38,6 @@ class HALPrinter extends JsonPrinter {
         this.limitEmbedded = limitEmbedded;
     }
 
-
-    public Json graqlString(Concept concept, boolean inferred) {
-        String json = HALBuilder.renderHALConceptData(concept, inferred, 0, keyspace, 0, limitEmbedded);
-        return Json.read(json);
-    }
-
     @Override
     public Json graqlString(boolean inner, Answer answer) {
 
@@ -56,24 +45,28 @@ class HALPrinter extends JsonPrinter {
 
         answer.map().forEach((Var key, Concept value) -> {
             String keyString = key.getValue();
-            json.set(keyString, graqlString(value, isInferred(key, value, answer)));
+            json.set(keyString, halString(value, isInferred(key, value, answer)));
         });
 
         return json;
+    }
+
+    public Json halString(Concept concept, boolean inferred) {
+        String json = HALBuilder.renderHALConceptData(concept, inferred, 0, keyspace, 0, limitEmbedded);
+        return Json.read(json);
     }
 
     private boolean isInferred(Var key, Concept concept, Answer answer) {
         if (key == null || answer.getExplanation().isEmpty()) return false;
 
         //TO-DO add support for attributes
-        if (!concept.isRelationship()) return false;
+        if (!concept.isRelationship() || answer.getExplanation().isLookupExplanation()) return false;
 
-        //Here I already know the concept is a relationship so if rule expl -> true
+        //Here we already know the concept is a relationship so if rule expl -> true
         if (answer.getExplanation().isRuleExplanation()) return true;
 
-        if (answer.getExplanation().isLookupExplanation()) return false;
 
-        // Here we know we have a relationship but also a JoinExplanation
+        // Here we know we have a relationship and a JoinExplanation
         Optional<Answer> subAnswer = answer.getExplanation().getAnswers().stream()
                 .filter(a -> a.map().keySet().contains(key))
                 .findFirst();

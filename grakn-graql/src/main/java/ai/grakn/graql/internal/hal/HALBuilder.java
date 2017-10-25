@@ -25,6 +25,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
@@ -67,30 +68,22 @@ public class HALBuilder {
         answers.forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();
             Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
-            List<Answer> list = ReasonerQueries.atomic(atom.rewriteToUserDefined()).getQuery().execute();
+            List<Answer> userDefinedAnswers = ReasonerQueries.atomic(atom.rewriteToUserDefined()).getQuery().execute();
+            Answer inferredAnswer = new QueryAnswer();
 
-            if (expl.isLookupExplanation()) {
-                conceptsArray.add(halPrinter.graqlString(false, list.get(0)));
+            if (!userDefinedAnswers.isEmpty()) {
+                inferredAnswer =  userDefinedAnswers.get(0);
             } else if (expl.isRuleExplanation()) {
                 Atom headAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
 
-                Answer fake;
-                if (list.isEmpty()){
-                    fake = headAtom.getMultiUnifier(atom, UnifierType.RULE).stream()
+                inferredAnswer = headAtom.getMultiUnifier(atom, UnifierType.RULE).stream()
                             .map(Unifier::inverse)
-                            .flatMap(unifier -> new ReasonerAtomicQuery(headAtom.rewriteToUserDefined())
-                                    .materialise(answer.unify(unifier))
-                            )
-                            .iterator().next();
-                } else {
-                    fake = list.get(0);
-                }
+                            .flatMap(unifier -> new ReasonerAtomicQuery(headAtom.rewriteToUserDefined()).materialise(answer.unify(unifier)))
+                            .findFirst().orElse(new QueryAnswer());
 
-                //TODO: handle case innerAtom isa resource
-                if (atom.isRelation()) {
-                    conceptsArray.add(halPrinter.graqlString(false, fake));
-                }
             }
+            conceptsArray.add(halPrinter.graqlString(false, inferredAnswer));
+
         });
         return conceptsArray;
     }
