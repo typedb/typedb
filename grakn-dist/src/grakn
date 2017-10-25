@@ -199,7 +199,8 @@ queue_start_process() {
 
 queue_check_if_running() {
   local queue_fullpath="${GRAKN_HOME}/services/redis/`get_redis_binary_name`"
-  local count_running_queue_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
+  local ps_redis=`ps_ef_grep_processname "$queue_fullpath"`
+  local count_running_queue_process=`echo $ps_redis | wc -l`
   local status=
   if [ $count_running_queue_process -gt 0 ] ; then
     status=0 # queue running
