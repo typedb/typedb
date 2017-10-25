@@ -30,6 +30,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.util.REST;
 import com.google.common.collect.Iterables;
 import io.swagger.annotations.ApiImplicitParam;
@@ -185,7 +186,7 @@ public class DashboardController {
             int limitEmbedded = queryParameter(request, REST.Request.Graql.LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
             response.status(200);
             Printer<?> printer = Printers.hal(graph.getKeyspace(), limitEmbedded);
-            Answer answer = Iterables.getOnlyElement(((GetQuery) query).execute());
+            Answer answer = ((GetQuery) query).execute().stream().findFirst().orElse(new QueryAnswer());
             return explanationAnswersToHAL(answer.getExplanation().getAnswers(), printer);
 
         }

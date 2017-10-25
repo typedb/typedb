@@ -55,7 +55,7 @@ public class HALUtils {
     final static String RELATES_EDGE = Schema.EdgeLabel.RELATES.getLabel();
     final static String HAS_EDGE = "has";
     final static String PLAYS_EDGE = Schema.EdgeLabel.PLAYS.getLabel();
-    final static String ASSERTION_URL = "?keyspace=%s&query=%s&limitEmbedded=%s&infer=false&materialise=false";
+    final static String ASSERTION_URL = "?keyspace=%s&query=%s&limitEmbedded=%s";
 
 
     // - State properties
