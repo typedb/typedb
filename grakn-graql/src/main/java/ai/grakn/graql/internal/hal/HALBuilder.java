@@ -67,7 +67,7 @@ public class HALBuilder {
         answers.forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();
             Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
-            List<Answer> list = ReasonerQueries.atomic(atom.rewriteWithRelationVariableMock()).getQuery().execute();
+            List<Answer> list = ReasonerQueries.atomic(atom.rewriteToUserDefined()).getQuery().execute();
 
             if (expl.isLookupExplanation()) {
                 conceptsArray.add(halPrinter.graqlString(false, list.get(0)));
@@ -75,15 +75,16 @@ public class HALBuilder {
                 Atom headAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
 
                 Answer fake;
-                if (list.isEmpty())
+                if (list.isEmpty()){
                     fake = headAtom.getMultiUnifier(atom, UnifierType.RULE).stream()
                             .map(Unifier::inverse)
-                            .flatMap(unifier -> new ReasonerAtomicQuery(headAtom.rewriteWithRelationVariableMock())
+                            .flatMap(unifier -> new ReasonerAtomicQuery(headAtom.rewriteToUserDefined())
                                     .materialise(answer.unify(unifier))
                             )
                             .iterator().next();
-                else
+                } else {
                     fake = list.get(0);
+                }
 
                 //TODO: handle case innerAtom isa resource
                 if (atom.isRelation()) {
