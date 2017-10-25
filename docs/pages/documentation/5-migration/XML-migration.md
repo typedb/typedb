@@ -7,6 +7,7 @@ summary: "This document will teach you how to migrate XML data into Grakn."
 sidebar: documentation_sidebar
 permalink: /documentation/migration/XML-migration.html
 folder: documentation
+KB: plants
 ---
 
 ## Introduction

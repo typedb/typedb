@@ -192,3 +192,6 @@ entries:
   - title: Contribute to GRAKN.AI
     output: web
     url: /contributors/index.html
+  - title: GRAKN Academy
+    output: web
+    url: /academy/index.html
