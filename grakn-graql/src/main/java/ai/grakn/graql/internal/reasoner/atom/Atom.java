@@ -310,10 +310,16 @@ public abstract class Atom extends AtomicBase {
 
     /**
      * rewrites the atom to one with user defined name
-     * @param parentAtom parent atom that triggers rewrite
-     * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
+     * @return rewritten atom
      */
-    public Atom rewriteToUserDefined(Atom parentAtom){ return this;}
+    public Atom rewriteToUserDefined(){ return this;}
+
+    /**
+     * rewrites the atom to one with suitably user-defined names depending on provided parent
+     * @param parentAtom parent atom that triggers rewrite
+     * @return rewritten atom
+     */
+    public Atom rewriteToUserDefined(Atom parentAtom){ return rewriteToUserDefined();}
 
     /**
      * @param parentAtom atom to be unified with
@@ -327,7 +333,4 @@ public abstract class Atom extends AtomicBase {
      * @return multiunifier
      */
     public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType){ return new MultiUnifierImpl(getUnifier(parentAtom));}
-
-    public Atom rewriteWithRelationVariableMock(){return this;};
-
 }
