@@ -56,7 +56,7 @@ import java.util.Set;
  * @author fppt
  *
  */
-public class TxCache {
+public class TxCache{
     //Cache which is shared across multiple transactions
     private final GlobalCache globalCache;
 
@@ -85,6 +85,7 @@ public class TxCache {
 
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
+    private boolean writeOccurred = false;
     private GraknTxType txType;
     private String closedReason = null;
 
@@ -100,25 +101,17 @@ public class TxCache {
     public void writeToGraphCache(boolean isSafe){
         //When a commit has occurred or a transaction is read only all types can be overridden this is because we know they are valid.
         //When it is not safe to simply flush we have to check that no mutations were made
-        if(isSafe || !writeOccured()){
+        if(isSafe || ! writeOccurred){
             globalCache.readTxCache(this);
         }
     }
 
     /**
-     * Checks if the Grakn Database has been mutated.
-     * This is done via checking specific caches.
-     *
-     * @return true if the database has been mutated in anyway.
+     * Notifies the cache that a write has occurred.
+     * This is later used to determine if it is safe to flush the transaction cache to the session cache or not.
      */
-    private boolean writeOccured(){
-        return !(modifiedThings.isEmpty() &&
-                modifiedRoles.isEmpty() &&
-                modifiedCastings.isEmpty() &&
-                modifiedRelationshipTypes.isEmpty() &&
-                modifiedRules.isEmpty() &&
-                newAttributes.isEmpty() &&
-                shardingCount.isEmpty());
+    public void writeOccured(){
+        writeOccurred = true;
     }
 
     /**
