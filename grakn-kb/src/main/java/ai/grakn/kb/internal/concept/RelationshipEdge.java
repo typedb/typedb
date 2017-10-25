@@ -25,6 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
@@ -53,25 +54,25 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationshipEdge implements RelationshipStructure {
+public class RelationshipEdge extends CacheOwner implements RelationshipStructure {
     private final Logger LOG = LoggerFactory.getLogger(RelationshipEdge.class);
     private final EdgeElement edgeElement;
 
-    private final Cache<RelationshipType> relationType = Cache.createTxCache(Cacheable.concept(), () ->
+    private final Cache<RelationshipType> relationType = Cache.createTxCache(this, Cacheable.concept(), () ->
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
 
-    private final Cache<Role> ownerRole = Cache.createTxCache(Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> ownerRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID))));
 
-    private final Cache<Role> valueRole = Cache.createTxCache(Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> valueRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = Cache.createTxCache(Cacheable.concept(), () -> edge().source().
+    private final Cache<Thing> owner = Cache.createTxCache(this, Cacheable.concept(), () -> edge().source().
             flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingOwner(getId()))
     );
 
-    private final Cache<Thing> value = Cache.createTxCache(Cacheable.concept(), () -> edge().target().
+    private final Cache<Thing> value = Cache.createTxCache(this, Cacheable.concept(), () -> edge().target().
             flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingValue(getId()))
     );
@@ -155,15 +156,6 @@ public class RelationshipEdge implements RelationshipStructure {
             }
         }
         return result.stream();
-    }
-
-    @Override
-    public void txCacheClear() {
-        relationType.clear();
-        ownerRole.clear();
-        valueRole.clear();
-        owner.clear();
-        value.clear();
     }
 
     public Role ownerRole(){

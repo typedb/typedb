@@ -25,6 +25,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -43,20 +44,20 @@ import javax.annotation.Nullable;
  *
  * @author fppt
  */
-public class Casting {
+public class Casting extends CacheOwner{
     private final EdgeElement edgeElement;
-    private final Cache<Role> cachedRole = Cache.createTxCache(Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
-    private final Cache<Thing> cachedInstance = Cache.createTxCache(Cacheable.concept(), () -> edge().target().
+    private final Cache<Role> cachedRole = Cache.createTxCache(this, Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
+    private final Cache<Thing> cachedInstance = Cache.createTxCache(this, Cacheable.concept(), () -> edge().target().
             flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
     );
 
-    private final Cache<Relationship> cachedRelationship = Cache.createTxCache(Cacheable.concept(), () -> edge().source().
+    private final Cache<Relationship> cachedRelationship = Cache.createTxCache(this, Cacheable.concept(), () -> edge().source().
             flatMap(vertexElement -> edge().tx().factory().<Relationship>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()))
     );
 
-    private final Cache<RelationshipType> cachedRelationshipType = Cache.createTxCache(Cacheable.concept(), () -> {
+    private final Cache<RelationshipType> cachedRelationshipType = Cache.createTxCache(this, Cacheable.concept(), () -> {
         if(cachedRelationship.isPresent()){
             return cachedRelationship.get().type();
         } else {

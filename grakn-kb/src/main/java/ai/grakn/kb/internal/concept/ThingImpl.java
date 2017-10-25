@@ -76,7 +76,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return type.orElseThrow(() -> GraknTxOperationException.missingType(getId())).getLabel();
     });
 
-    private final Cache<V> cachedType = Cache.createTxCache(Cacheable.concept(), () -> {
+    private final Cache<V> cachedType = Cache.createTxCache(this, Cacheable.concept(), () -> {
         Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 map(EdgeElement::target).
                 flatMap(CommonUtil::optionalToStream).

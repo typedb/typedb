@@ -18,15 +18,15 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.cache.ContainsTxCache;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.structure.VertexElement;
 import com.google.common.collect.Iterables;
 
@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTxCache {
+public class RelationshipImpl extends CacheOwner implements Relationship, ConceptVertex{
     private RelationshipStructure relationshipStructure;
 
     private RelationshipImpl(RelationshipStructure relationshipStructure) {
@@ -233,8 +233,4 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
         return (RelationshipImpl) relationship;
     }
 
-    @Override
-    public void txCacheClear() {
-        structure().txCacheClear();
-    }
 }

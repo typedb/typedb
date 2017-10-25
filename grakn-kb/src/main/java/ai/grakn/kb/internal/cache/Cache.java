@@ -63,37 +63,25 @@ public class Cache<V> {
     // If this is false then the owner object must be deleted and garabe collected for the cache to die
     private final boolean isClearable;
 
-    private Cache(Cacheable<V> cacheable, boolean isSessionCache, boolean isClearable, Supplier<V> databaseReader){
+    private Cache(CacheOwner owner, Cacheable<V> cacheable, boolean isSessionCache, boolean isClearable, Supplier<V> databaseReader){
         this.isSessionCache = isSessionCache;
         this.isClearable = isClearable;
         this.cacheable = cacheable;
         this.databaseReader = databaseReader;
-    }
-
-    private Cache(ConceptImpl owner, Cacheable<V> cacheable, boolean isSessionCache, boolean isClearable, Supplier<V> databaseReader){
-        this(cacheable, isSessionCache, isClearable, databaseReader);
-        owner.registerCahce(this);
-    }
-
-    /**
-     * Creates a {@link Cache} that will only exist within the context of a Transaction which does not belong to any
-     * {@link ai.grakn.concept.Concept}
-     */
-    public static Cache createTxCache(Cacheable cacheable, Supplier databaseReader){
-        return new Cache(cacheable, false, true, databaseReader);
+        owner.registerCache(this);
     }
 
     /**
      * Creates a {@link Cache} that will only exist within the context of a Transaction
      */
-    public static Cache createTxCache(ConceptImpl owner, Cacheable cacheable, Supplier databaseReader){
+    public static Cache createTxCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader){
         return new Cache(owner, cacheable, false, true, databaseReader);
     }
 
     /**
      * Creates a {@link Cache} that will only flush to a central shared cache then the Transaction is disposed off
      */
-    public static Cache createSessionCache(ConceptImpl owner, Cacheable cacheable, Supplier databaseReader){
+    public static Cache createSessionCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader){
         return new Cache(owner, cacheable, true, true, databaseReader);
     }
 
@@ -101,7 +89,7 @@ public class Cache<V> {
      * Creates a session level {@link Cache} which cannot be cleared.
      * When creating these types of {@link Cache}s the only way to get rid of them is to remove the owner {@link ConceptImpl}
      */
-    public static Cache createPersistentCache(ConceptImpl owner, Cacheable cacheable, Supplier databaseReader) {
+    public static Cache createPersistentCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
         return new Cache(owner, cacheable, true, false, databaseReader);
     }
 
