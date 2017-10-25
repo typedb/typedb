@@ -42,10 +42,9 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
 import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
-import org.apache.http.entity.ContentType;
-import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -67,8 +66,10 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.REST.Request.FORMAT;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
 import static ai.grakn.util.REST.WebPath.System.KB;
 import static ai.grakn.util.REST.WebPath.System.KB_KEYSPACE;
@@ -90,9 +91,7 @@ import static org.apache.http.HttpHeaders.CACHE_CONTROL;
  */
 public class SystemController {
 
-    private static final ContentType PROMETHEUS_CONTENT_TYPE =
-            ContentType.create("text/plain", new BasicNameValuePair("version", "0.0.4"));
-
+    private static final String PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4";
     private static final String PROMETHEUS = "prometheus";
     private static final String JSON = "json";
 
@@ -220,32 +219,30 @@ public class SystemController {
     @GET
     @Path("/metrics")
     @ApiOperation(value = "Exposes internal metrics")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = FORMAT, value = "prometheus", dataType = "string", paramType = "path")
+    })
     private String getMetrics(Request request, Response response) throws IOException {
         response.header(CACHE_CONTROL, "must-revalidate,no-cache,no-store");
         response.status(HttpServletResponse.SC_OK);
-
-        // TODO: Maybe we shouldn't use the header for this?
-        ContentType contentType =
-                Optional.ofNullable(request.contentType()).map(ContentType::parse).orElse(ContentType.APPLICATION_JSON);
-        
-        String mimeType = contentType.getMimeType();
-
-        response.type(contentType.toString());
-
-        if (mimeType.equals(PROMETHEUS_CONTENT_TYPE.getMimeType())) {
+        Optional<String> format = Optional.ofNullable(request.queryParams(FORMAT));
+        String dFormat = format.orElse(JSON);
+        if (dFormat.equals(PROMETHEUS)) {
             // Prometheus format for the metrics
+            response.type(PROMETHEUS_CONTENT_TYPE);
             final Writer writer1 = new StringWriter();
             TextFormat.write004(writer1, this.prometheusRegistry.metricFamilySamples());
             return writer1.toString();
-        } else if (mimeType.equals(ContentType.APPLICATION_JSON.getMimeType())) {
+        } else if (dFormat.equals(JSON)) {
             // Json/Dropwizard format
+            response.type(APPLICATION_JSON);
             final ObjectWriter writer = mapper.writer();
             try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
                 writer.writeValue(output, this.metricRegistry);
                 return new String(output.toByteArray(), "UTF-8");
             }
         } else {
-            throw new IllegalArgumentException("Unexpected content type " + contentType);
+            throw new IllegalArgumentException("Unexpected format " + dFormat);
         }
     }
 

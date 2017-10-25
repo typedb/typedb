@@ -33,7 +33,6 @@ import org.mockito.Mockito;
 
 import java.util.Properties;
 
-import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.when;
 import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
@@ -51,12 +50,11 @@ public class SystemControllerTest {
 
     private static final Properties properties = GraknEngineConfig.create().getProperties();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
-    private static final MetricRegistry metricRegistry = new MetricRegistry();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(properties);
-        new SystemController(factory, spark, status, metricRegistry);
+        new SystemController(factory, spark, status, mock(MetricRegistry.class));
     });
 
     @Test
@@ -127,25 +125,5 @@ public class SystemControllerTest {
     public void whenCallingStatusEndpoint_AndStatusIsNotReady_ReturnInitializing() {
         Mockito.when(status.isReady()).thenReturn(false);
         when().get("/status").then().body(is("INITIALIZING"));
-    }
-
-    @Test
-    public void whenCallingMetricsEndpoint_ReturnJson() {
-        when().get("/metrics").then().contentType(ContentType.JSON);
-    }
-
-    @Test
-    public void whenCallingMetricsEndpoint_ReturnOK() {
-        when().get("/metrics").then().statusCode(SC_OK);
-    }
-
-    @Test
-    public void whenCallingMetricsEndpointAndRequestingJson_ReturnJson() {
-        given().contentType(ContentType.JSON).when().get("/metrics").then().contentType(ContentType.JSON);
-    }
-
-    @Test
-    public void whenCallingMetricsEndpointAndRequestingText_ReturnText() {
-        given().contentType(ContentType.TEXT).when().get("/metrics").then().contentType(ContentType.TEXT);
     }
 }
