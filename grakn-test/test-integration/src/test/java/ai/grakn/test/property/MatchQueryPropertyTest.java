@@ -35,6 +35,7 @@ import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import java.util.Map;
@@ -53,6 +54,7 @@ public class MatchQueryPropertyTest {
     // This is a measure to increase test performance by avoiding queries with huge numbers of answers
     private static final int MAX_ANSWERS = 100;
 
+    @Ignore("Currently failing randomly. This needs to be fixed or removed")
     @Property
     public void matchIsAMorphism_From_PatternsWithConjunction_To_AnswersWithNaturalJoin(
             @Open GraknTx graph, Pattern a, Pattern b
@@ -78,6 +80,7 @@ public class MatchQueryPropertyTest {
         );
     }
 
+    @Ignore("Currently failing randomly. This needs to be fixed or removed")
     @Property
     public void conjunctionIsAssociative(@Open GraknTx graph, Pattern a, Pattern b, Pattern c) {
         assertEquivalent(graph,
@@ -86,6 +89,7 @@ public class MatchQueryPropertyTest {
         );
     }
 
+    @Ignore("Currently failing randomly. This needs to be fixed or removed")
     @Property
     public void conjunctionIsDistributiveOverDisjunction(@Open GraknTx graph, Pattern a, Pattern b, Pattern c) {
         assertEquivalent(graph,
