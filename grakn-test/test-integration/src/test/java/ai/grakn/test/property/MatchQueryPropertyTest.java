@@ -57,24 +57,24 @@ public class MatchQueryPropertyTest {
     @Ignore("Currently failing randomly. This needs to be fixed or removed")
     @Property
     public void matchIsAMorphism_From_PatternsWithConjunction_To_AnswersWithNaturalJoin(
-            @Open GraknTx graph, Pattern a, Pattern b
+            @Open GraknTx tx, Pattern a, Pattern b
     ) {
         System.out.println(a);
         System.out.println(b);
-        Set<Answer> matchA = matchSet(graph, a);
-        Set<Answer> matchB = matchSet(graph, b);
+        Set<Answer> matchA = matchSet(tx, a);
+        Set<Answer> matchB = matchSet(tx, b);
         String formatMsg = "\nmatch(a Λ b) != match(a) ⋈ match(b)\na = %s\nb = %s \nmatch(a) = %s\nmatch(b) = %s\n";
         String message = String.format(formatMsg, a, b, matchA, matchB);
 
         assertEquals(message,
                 naturalJoin(matchA, matchB),
-                matchSet(graph, (a).and(b))
+                matchSet(tx, (a).and(b))
         );
     }
 
     @Property
-    public void conjunctionIsCommutative(@Open GraknTx graph, Pattern a, Pattern b) {
-        assertEquivalent(graph,
+    public void conjunctionIsCommutative(@Open GraknTx tx, Pattern a, Pattern b) {
+        assertEquivalent(tx,
                 (a).and(b),
                 (b).and(a)
         );
@@ -82,8 +82,8 @@ public class MatchQueryPropertyTest {
 
     @Ignore("Currently failing randomly. This needs to be fixed or removed")
     @Property
-    public void conjunctionIsAssociative(@Open GraknTx graph, Pattern a, Pattern b, Pattern c) {
-        assertEquivalent(graph,
+    public void conjunctionIsAssociative(@Open GraknTx tx, Pattern a, Pattern b, Pattern c) {
+        assertEquivalent(tx,
                 (a).and( (b).and(c) ),
                 ( (a).and(b) ).and(c)
         );
@@ -91,24 +91,24 @@ public class MatchQueryPropertyTest {
 
     @Ignore("Currently failing randomly. This needs to be fixed or removed")
     @Property
-    public void conjunctionIsDistributiveOverDisjunction(@Open GraknTx graph, Pattern a, Pattern b, Pattern c) {
-        assertEquivalent(graph,
+    public void conjunctionIsDistributiveOverDisjunction(@Open GraknTx tx, Pattern a, Pattern b, Pattern c) {
+        assertEquivalent(tx,
                 (a).and( (b).or(c) ),
                 ( (a).and(b) ).or( (a).and(c) )
         );
     }
 
     @Property
-    public void disjunctionIsCommutative(@Open GraknTx graph, Pattern a, Pattern b) {
-        assertEquivalent(graph,
+    public void disjunctionIsCommutative(@Open GraknTx tx, Pattern a, Pattern b) {
+        assertEquivalent(tx,
                 (a).or(b),
                 (b).or(a)
         );
     }
 
     @Property
-    public void disjunctionIsAssociative(@Open GraknTx graph, Pattern a, Pattern b, Pattern c) {
-        assertEquivalent(graph,
+    public void disjunctionIsAssociative(@Open GraknTx tx, Pattern a, Pattern b, Pattern c) {
+        assertEquivalent(tx,
                 (a).or( (b).or(c) ),
                 ( (a).or(b) ).or(c)
         );
@@ -116,20 +116,20 @@ public class MatchQueryPropertyTest {
 
     @Property
     public void varPatternIsAMorphism_From_VarPropertiesWithUnion_To_PatternsWithConjunction(
-            @Open GraknTx graph,
+            @Open GraknTx tx,
             Var var, @Size(max=10) Set<VarProperty> a, @Size(max=10) Set<VarProperty> b
     ) {
-        assertEquivalent(graph,
+        assertEquivalent(tx,
                 varPattern(var, Sets.union(a, b)),
                 (varPattern(var, a)).and(varPattern(var, b))
         );
     }
 
-    private Set<Answer> matchSet(GraknTx graph, Pattern pattern) {
+    private Set<Answer> matchSet(GraknTx tx, Pattern pattern) {
         final int[] count = {0};
 
         try {
-            return graph.graql().match(pattern).stream().peek(answer -> {
+            return tx.graql().match(pattern).stream().peek(answer -> {
                 count[0] += 1;
                 // This assumption will cause the query execution to fail fast if there are too many results
                 assumeTrue(count[0] < MAX_ANSWERS);
@@ -165,10 +165,10 @@ public class MatchQueryPropertyTest {
         return Optional.of(new QueryAnswer(answer));
     }
 
-    private void assertEquivalent(GraknTx graph, Pattern patternA, Pattern patternB) {
+    private void assertEquivalent(GraknTx tx, Pattern patternA, Pattern patternB) {
         assertEquals(
-                matchSet(graph, patternA),
-                matchSet(graph, patternB)
+                matchSet(tx, patternA),
+                matchSet(tx, patternB)
         );
     }
 }
