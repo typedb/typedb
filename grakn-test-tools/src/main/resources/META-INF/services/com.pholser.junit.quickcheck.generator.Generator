@@ -17,11 +17,6 @@
 #
 #
 
-ai.grakn.generator.Vars
-ai.grakn.generator.VarPatternAdmins
-ai.grakn.generator.Conjunctions
-ai.grakn.generator.Disjunctions
-
 ai.grakn.generator.GraknTxs
 ai.grakn.generator.DataTypes
 ai.grakn.generator.Labels
