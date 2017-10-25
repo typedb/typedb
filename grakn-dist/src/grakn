@@ -76,7 +76,7 @@ ps_ef_grep_processname() {
 
 
 ps_ef_grep_processname_by_java_classname() {
-  echo -n `ps -ef | grep -v grep | awk '{print $2" "$(NF)}' | grep "$1"`
+  ps -ef | grep -v grep | awk '{print $2" "$(NF)}' | grep "$1"
 }
 
 # ================================================
