@@ -21,7 +21,7 @@ package ai.grakn.engine.config;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.MockRedisRule;
 import com.google.common.collect.Iterables;

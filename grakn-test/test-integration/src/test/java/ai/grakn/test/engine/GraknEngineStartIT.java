@@ -25,7 +25,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.MockRedisRule;
 import com.google.common.base.StandardSystemProperty;

@@ -42,7 +42,7 @@ if (false) {
     GraknSession session = null
     LocalDateTime time = null
     CSVMigrator migrator = null
-    BatchMutatorClient client = null
+    BatchExecutorClient client = null
     Json json = null
     TaskId id = null
     ShortExecutionMockTask mockTask = null

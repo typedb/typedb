@@ -16,9 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.util;
+package ai.grakn.util;
 
 import com.google.common.base.Preconditions;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * This Util class just takes care of going from host and port to string and viceversa
@@ -27,14 +29,19 @@ import com.google.common.base.Preconditions;
  * @author pluraliseseverythings
  */
 public class SimpleURI {
+
     private final int port;
     private final String host;
 
     public SimpleURI(String uri) {
         String[] uriSplit = uri.split(":");
-        Preconditions.checkArgument(uriSplit.length == 2, "Malformed URI " + uri);
-        this.host = uriSplit[0].trim();
-        this.port = Integer.parseInt(uriSplit[1].trim());
+        Preconditions.checkArgument(
+                uriSplit.length == 2 || (uriSplit.length == 3 && uriSplit[1].contains("//")),
+                "Malformed URI " + uri);
+        // if it has the schema, we start parsing from after
+        int bias = uriSplit.length == 3 ? 1 : 0;
+        this.host = uriSplit[bias].replace("/", "").trim();
+        this.port = Integer.parseInt(uriSplit[1 + bias].trim());
     }
 
     public SimpleURI(String host, int port) {
@@ -55,11 +62,23 @@ public class SimpleURI {
         return String.format("%s:%d", host, port);
     }
 
+    public String toStringWithSchema() {
+        return String.format("http://%s:%d", host, port);
+    }
+
     public static SimpleURI withDefaultPort(String uri, int defaultPort) {
         if (uri.contains(":")) {
             return new SimpleURI(uri);
         } else {
             return new SimpleURI(uri, defaultPort);
+        }
+    }
+
+    public URL toURL() {
+        try {
+            return new URL("http", getHost(), getPort(), "");
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Unexpected error while generating URL from " + this);
         }
     }
 }

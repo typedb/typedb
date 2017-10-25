@@ -170,8 +170,4 @@
             </exclusions>
         </dependency>
     </dependencies>
-    <properties>
-        <jmh-core.version>1.19</jmh-core.version>
-    </properties>
-
 </project>

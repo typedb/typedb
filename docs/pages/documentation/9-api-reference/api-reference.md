@@ -543,7 +543,7 @@ Server: Jetty(9.3.6.v20151106)
 
 [
    {
-      "creator":"ai.grakn.client.BatchMutatorClient",
+      "creator":"ai.grakn.client.BatchExecutorClient",
       "runAt":1498664697751,
       "recurring":false,
       "className":"ai.grakn.engine.loader.MutatorTask",
@@ -591,7 +591,7 @@ Server: Jetty(9.3.6.v20151106)
 
 {
    "exception":"ai.grakn.exception.GraqlSyntaxException",
-   "creator":"ai.grakn.client.BatchMutatorClient",
+   "creator":"ai.grakn.client.BatchExecutorClient",
    "runAt":1498664697751,
    "recurring":false,
    "className":"ai.grakn.engine.loader.MutatorTask",
@@ -688,7 +688,7 @@ One of the most common uses of the tasks API is to submit batch loading tasks to
 {
    "tasks":[
       {
-         "creator":"ai.grakn.client.BatchMutatorClient",
+         "creator":"ai.grakn.client.BatchExecutorClient",
          "runAt":"1498667812828",
          "configuration":{
             "keyspace":"grakn",
@@ -719,7 +719,7 @@ One of the most common uses of the tasks API is to submit batch loading tasks to
 **Request:**
 
 ```
-curl -X POST "http://localhost:4567/tasks" --data '{"tasks":[{"creator":"ai.grakn.client.BatchMutatorClient","runAt":"1498667812828","configuration":{"keyspace":"grakn","mutations":["insert $p0 isa person has identifier \"Elizabeth Niesz\";"],"batchNumber":0},"limit":"10000","className":"ai.grakn.engine.loader.MutatorTask"}]}' -g 
+curl -X POST "http://localhost:4567/tasks" --data '{"tasks":[{"creator":"ai.grakn.client.BatchExecutorClient","runAt":"1498667812828","configuration":{"keyspace":"grakn","mutations":["insert $p0 isa person has identifier \"Elizabeth Niesz\";"],"batchNumber":0},"limit":"10000","className":"ai.grakn.engine.loader.MutatorTask"}]}' -g 
 ```
 
 **Response:**

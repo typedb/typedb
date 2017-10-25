@@ -24,6 +24,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.ImmutableSetMultimap.Builder;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.AbstractMap;
@@ -55,7 +56,9 @@ public class UnifierImpl implements Unifier {
         this.unifier = ImmutableSetMultimap.of();
     }
     public UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){
-        this.unifier =  ImmutableSetMultimap.<Var, Var>builder().putAll(mappings).build();
+        Builder<Var, Var> builder = ImmutableSetMultimap.builder();
+        mappings.forEach(entry -> builder.put(entry.getKey(), entry.getValue()));
+        this.unifier =  builder.build();
     }
     public UnifierImpl(ImmutableMultimap<Var, Var> map){ this(map.entries());}
     public UnifierImpl(Multimap<Var, Var> map){ this(map.entries());}
