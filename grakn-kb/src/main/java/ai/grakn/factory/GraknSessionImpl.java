@@ -104,9 +104,7 @@ public class GraknSessionImpl implements GraknSession {
     private static Properties getTxRemoteProperties(String engineUrl, Keyspace keyspace){
         URI restFactoryUri;
         try {
-            restFactoryUri = new SimpleURI(engineUrl).builder()
-                    .setPath(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue()))
-                    .build();
+            restFactoryUri = new SimpleURI(engineUrl).builder().setPath(REST.WebPath.System.CONFIGURATION).build();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }

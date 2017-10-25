@@ -19,20 +19,20 @@
 package ai.grakn.engine.controller;
 
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.REST;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
@@ -110,6 +110,7 @@ public class SystemController {
         DropwizardExports prometheusMetricWrapper = new DropwizardExports(metricRegistry);
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
+
         spark.get(KB, this::getKeyspaces);
         spark.put(KB_KEYSPACE, this::putKeyspace);
         spark.delete(KB_KEYSPACE, this::deleteKeyspace);
@@ -133,6 +134,8 @@ public class SystemController {
     @Path(KB)
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
+        response.type(REST.Response.ContentType.APPLICATION_JSON);
+
         try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
 
             AttributeType<String> keyspaceName = graph.getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
@@ -161,11 +164,13 @@ public class SystemController {
         boolean keyspaceInitialised = factory.systemKeyspace().ensureKeyspaceInitialised(keyspace);
 
         if (keyspaceInitialised) {
-            return getConfiguration(request, response);
+            response.status(HttpServletResponse.SC_NO_CONTENT);
+        } else {
+            throw GraknServerException
+                .internalError("Unable to instantiate system keyspace " + keyspace);
         }
 
-        throw GraknServerException
-                .internalError("Unable to instantiate system keyspace " + keyspace);
+        return "";
     }
 
     @DELETE
@@ -177,7 +182,7 @@ public class SystemController {
         boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
         if (deletionComplete) {
             LOG.info("Keyspace {} deleted", keyspace);
-            response.status(200);
+            response.status(HttpServletResponse.SC_NO_CONTENT);
             return true;
         } else {
             throw GraknServerException.couldNotDelete(keyspace);
