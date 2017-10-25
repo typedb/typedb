@@ -91,7 +91,8 @@ def buildGrakn() {
 }
 
 //Only run validation master/stable
-if (env.BRANCH_NAME in ['master', 'stable']) {
+// TODO: undo this etc.
+if (env.BRANCH_NAME in ['master', 'stable'] || true) {
     properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
 
     node {
@@ -112,6 +113,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
         }
     }
 
+    // This is a map of jobs to perform in parallel, name -> job closure
     jobs = [
         benchmarks: {
             node {
@@ -130,6 +132,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
     ];
 
     for (String moduleName : integrationTests) {
+        // Add each integration test as a parallel job
         jobs[moduleName] = {
             node {
                 String workspace = pwd()
@@ -141,6 +144,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
         }
     }
 
+    // Execute all jobs in parallel
     parallel(jobs);
 
     node {
