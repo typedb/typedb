@@ -33,7 +33,7 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.concurrent.CompletableFuture;
 
@@ -58,7 +58,7 @@ public class CommitLogController {
         spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
     }
 
-    @GET
+    @POST
     @Path("/kb/{keyspace}/commit_log")
     @ApiOperation(value = "Submits post processing jobs for a specific keyspace")
     @ApiImplicitParams({
