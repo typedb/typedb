@@ -107,6 +107,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
 
             archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 
+            // Stash the built distribution so other nodes can access it
             stash includes: 'grakn-dist/target/grakn-dist*.tar.gz', name: 'dist'
         }
     }
