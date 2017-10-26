@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -44,7 +45,7 @@ import java.util.stream.Collectors;
  */
 public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
 
-    public ValuePredicate(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    public ValuePredicate(VarPattern pattern, ReasonerQuery par) { super(pattern, par);}
     public ValuePredicate(Var varName, ai.grakn.graql.ValuePredicate pred, ReasonerQuery par){ this(createValueVar(varName, pred), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
 
@@ -63,8 +64,8 @@ public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
                 vars.stream().map(v -> new ValuePredicate(v, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
-    public static VarPatternAdmin createValueVar(Var name, ai.grakn.graql.ValuePredicate pred) {
-        return name.val(pred).admin();
+    public static VarPattern createValueVar(Var name, ai.grakn.graql.ValuePredicate pred) {
+        return name.val(pred);
     }
 
     @Override
@@ -116,8 +117,8 @@ public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
     }
 
     @Override
-    protected ai.grakn.graql.ValuePredicate extractPredicate(VarPatternAdmin pattern) {
-        Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
+    protected ai.grakn.graql.ValuePredicate extractPredicate(VarPattern pattern) {
+        Iterator<ValueProperty> properties = pattern.admin().getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
         if (properties.hasNext()) {
             throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();

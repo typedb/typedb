@@ -19,9 +19,9 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -51,7 +51,7 @@ import java.util.Set;
  */
 public abstract class TypeAtom extends Binary{
 
-    protected TypeAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
+    protected TypeAtom(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}
     protected TypeAtom(TypeAtom a) { super(a);}
 
@@ -80,7 +80,7 @@ public abstract class TypeAtom extends Binary{
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         return this.getSchemaConcept() != null
                 //ensure not ontological atom query
-                && getPattern().asVarPattern().hasProperty(IsaProperty.class)
+                && getPattern().admin().hasProperty(IsaProperty.class)
                 && this.getSchemaConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getSchemaConcept()));
     }
 

@@ -25,9 +25,9 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 
 /**
@@ -41,14 +41,16 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
  */
 public class IdPredicate extends Predicate<ConceptId>{
 
-    public IdPredicate(VarPatternAdmin pattern, ReasonerQuery par) {
+    public IdPredicate(VarPattern pattern, ReasonerQuery par) {
         super(pattern, par);
     }
-    public IdPredicate(Var varName, Label label, ReasonerQuery par) { super(createIdVar(varName, label, par.tx()), par);}
+    public IdPredicate(Var varName, Label label, ReasonerQuery par) { super(createIdVar(varName.asUserDefined(), label, par.tx()), par);}
     public IdPredicate(Var varName, ConceptId id, ReasonerQuery par) {
-        super(createIdVar(varName, id), par);
+        super(createIdVar(varName.asUserDefined(), id), par);
     }
-    public IdPredicate(Var varName, Concept con, ReasonerQuery par) { super(createIdVar(varName, con.getId()), par);}
+    public IdPredicate(Var varName, Concept con, ReasonerQuery par) {
+        super(createIdVar(varName.asUserDefined(), con.getId()), par);
+    }
     private IdPredicate(IdPredicate a) { super(a);}
 
     @Override
@@ -65,17 +67,17 @@ public class IdPredicate extends Predicate<ConceptId>{
     public String getPredicateValue() { return getPredicate().getValue();}
 
     @Override
-    protected ConceptId extractPredicate(VarPatternAdmin var){
+    protected ConceptId extractPredicate(VarPattern var){
         return var.admin().getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
     }
 
-    private static VarPatternAdmin createIdVar(Var varName, ConceptId typeId){
-        return varName.id(typeId).admin();
+    private static VarPattern createIdVar(Var varName, ConceptId typeId){
+        return varName.id(typeId);
     }
 
-    private static VarPatternAdmin createIdVar(Var varName, Label label, GraknTx graph){
+    private static VarPattern createIdVar(Var varName, Label label, GraknTx graph){
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
-        return varName.id(schemaConcept.getId()).admin();
+        return varName.id(schemaConcept.getId());
     }
 }

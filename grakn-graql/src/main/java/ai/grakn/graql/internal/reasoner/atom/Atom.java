@@ -22,6 +22,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -30,6 +31,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -66,7 +68,7 @@ public abstract class Atom extends AtomicBase {
     private int basePriority = Integer.MAX_VALUE;
     private Set<InferenceRule> applicableRules = null;
 
-    protected Atom(VarPatternAdmin pattern, ReasonerQuery par) {
+    protected Atom(VarPattern pattern, ReasonerQuery par) {
         super(pattern, par);
     }
     protected Atom(Atom a) {
@@ -102,7 +104,7 @@ public abstract class Atom extends AtomicBase {
      * @return var properties this atom (its pattern) contains
      */
     public Set<VarProperty> getVarProperties() {
-        return getPattern().asVarPattern().getProperties().collect(Collectors.toSet());
+        return getCombinedPattern().admin().varPatterns().stream().flatMap(VarPatternAdmin::getProperties).collect(Collectors.toSet());
     }
 
     /**
@@ -294,7 +296,10 @@ public abstract class Atom extends AtomicBase {
     public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
 
     @Override
-    public Atom inferTypes(){ return this; }
+    public Atom inferTypes(){ return inferTypes(new QueryAnswer()); }
+
+    @Override
+    public Atom inferTypes(Answer sub){ return this; }
 
     /**
      * @param sub partial substitution
@@ -313,7 +318,7 @@ public abstract class Atom extends AtomicBase {
      * @param parentAtom parent atom that triggers rewrite
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Atom rewriteToUserDefined(Atom parentAtom){ return this;}
+    public abstract Atom rewriteToUserDefined(Atom parentAtom);
 
     /**
      * @param parentAtom atom to be unified with
