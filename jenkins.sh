@@ -12,9 +12,10 @@ export WORKSPACE=`pwd`
 
 PATH="${WORKSPACE}/grakn-test/test-integration/src/test/bash:${WORKSPACE}/grakn-test/${MODULE_NAME}:${WORKSPACE}/grakn-test/${MODULE_NAME}/src/main/bash:${PATH}"
 
-build-grakn.sh "local-test" &&
+#build-grakn.sh "local-test" &&
 init-grakn.sh &&
 load.sh &&
 validate.sh;
 
+echo "Tearing down"
 tear-down.sh
