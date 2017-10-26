@@ -501,9 +501,7 @@ public class ReasonerUtils {
      */
     public static <T> Collection<T> subtract(Collection<T> a, Collection<T> b){
         ArrayList<T> list = new ArrayList<>(a);
-        for (T aC2 : b) {
-            list.remove(aC2);
-        }
+        b.forEach(list::remove);
         return list;
     }
 }

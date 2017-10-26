@@ -229,7 +229,7 @@ public class InferenceRule {
                     .peek(bodyAtoms::add)
                     .collect(toSet());
             headAtom = new ResourceAtom(
-                    headAtom.getPattern().asVarPattern(),
+                    headAtom.getPattern(),
                     headAtom.getPredicateVariable(),
                     resourceHead.getRelationVariable(),
                     resourceHead.getTypePredicate(),

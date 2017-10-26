@@ -22,11 +22,12 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -58,7 +59,7 @@ public abstract class Binary extends Atom {
     private final Var predicateVariable;
     private Type type = null;
 
-    Binary(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
+    Binary(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicateVariable = predicateVar;
         this.typePredicate = p;
@@ -117,9 +118,9 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    public PatternAdmin getCombinedPattern() {
-        Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVarPattern());
-        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().asVarPattern());
+    public Pattern getCombinedPattern() {
+        Set<PatternAdmin> vars = Sets.newHashSet(super.getPattern().admin());
+        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().admin());
         return Patterns.conjunction(vars);
     }
 
@@ -152,15 +153,14 @@ public abstract class Binary extends Atom {
         Var childPredicateVarName = this.getPredicateVariable();
         Var parentPredicateVarName = parentAtom.getPredicateVariable();
 
-        if (parentAtom.getVarName().isUserDefinedName()){
+        if (parentAtom.getVarName().isUserDefinedName() == this.getVarName().isUserDefinedName()){
             Var childVarName = this.getVarName();
             Var parentVarName = parentAtom.getVarName();
             if (!childVarName.equals(parentVarName)) {
                 unifier.addMapping(childVarName, parentVarName);
             }
         }
-        if (!childPredicateVarName.getValue().isEmpty()
-                && !parentPredicateVarName.getValue().isEmpty()
+        if (parentPredicateVarName.isUserDefinedName() == childPredicateVarName.isUserDefinedName()
                 && !childPredicateVarName.equals(parentPredicateVarName)) {
             unifier.addMapping(childPredicateVarName, parentPredicateVarName);
         }

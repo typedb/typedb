@@ -67,15 +67,15 @@ public class ConjunctiveState extends QueryState {
 
         if (!query.isRuleResolvable()){
             dbIterator = query.getQuery().stream()
-                    .map(at -> at.explain(new JoinExplanation(query, at)))
+                    .map(ans -> ans.explain(new JoinExplanation(query, ans)))
                     .iterator();
             subQueries = new LinkedList<>();
         } else {
             dbIterator = Collections.emptyIterator();
             subQueries = new ResolutionPlan(query).queryPlan();
 
-            LOG.trace("CQ plan:\n" + subQueries.stream()
-                    .map(aq -> aq.toString() + (aq.isRuleResolvable()? "*" : ""))
+            LOG.debug("CQ plan:\n" + subQueries.stream()
+                    .map(sq -> sq.toString() + (sq.isRuleResolvable()? "*" : ""))
                     .collect(Collectors.joining("\n"))
             );
         }
@@ -95,7 +95,8 @@ public class ConjunctiveState extends QueryState {
     @Override
     public ResolutionState generateSubGoal(){
         if (dbIterator.hasNext()){
-            return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
+            Answer answer = dbIterator.next();
+            return new AnswerState(answer, getUnifier(), getParentState());
         }
 
         if (!subQueries.isEmpty() && !visited) {

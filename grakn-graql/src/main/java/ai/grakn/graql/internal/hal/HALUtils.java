@@ -156,8 +156,8 @@ public class HALUtils {
     private static void updateRoleTypesFromAnswer(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Answer answer, GetQuery getQuery) {
         Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
         if (atom.isRelation()) {
-            Optional<VarPatternAdmin> var = atom.getPattern().varPatterns().stream().filter(x -> x.hasProperty(RelationshipProperty.class)).findFirst();
-            VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
+            Optional<VarPatternAdmin> var = atom.getPattern().admin().varPatterns().stream().filter(x -> x.hasProperty(RelationshipProperty.class)).findFirst();
+            VarPatternAdmin varAdmin = atom.getPattern().admin();
             if (var.isPresent() && !var.get().var().isUserDefinedName() && bothRolePlayersAreSelected(atom, getQuery)) {
                 roleTypes.put(varAdmin, pairVarNamesRelationshipType(atom));
             }
@@ -222,14 +222,14 @@ public class HALUtils {
         if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
             Atom atom = ((ReasonerAtomicQuery) firstAnswer.getExplanation().getQuery()).getAtom();
             if (atom.isRelation()) {
-                VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
+                VarPatternAdmin varAdmin = atom.getPattern().admin();
                 inferredRelationships.put(varAdmin, firstAnswer.getExplanation().isRuleExplanation());
             }
         } else {
             firstAnswer.getExplanation().getAnswers().forEach(answer -> {
                 Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
                 if (atom.isRelation()) {
-                    VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
+                    VarPatternAdmin varAdmin = atom.getPattern().admin();
                     inferredRelationships.put(varAdmin, answer.getExplanation().isRuleExplanation());
                 }
             });

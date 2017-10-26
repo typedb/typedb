@@ -155,10 +155,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public String toString(){
-        return "{\n" +
+        return "{\n\t" +
                 getAtoms(Atom.class)
                         .map(Atomic::toString)
-                        .collect(Collectors.joining(";\n")) +
+                        .collect(Collectors.joining(";\n\t")) +
                 "\n}\n";
     }
 
@@ -208,7 +208,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return !getEquivalentAtoms(atom).isEmpty();
     }
 
-    Set<Atom> getEquivalentAtoms(Atom atom) {
+    private Set<Atom> getEquivalentAtoms(Atom atom) {
         return getAtoms(Atom.class)
                 .filter(at -> at.isEquivalent(atom))
                 .collect(Collectors.toSet());
@@ -224,7 +224,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<PatternAdmin> patterns = new HashSet<>();
         atomSet.stream()
                 .map(Atomic::getCombinedPattern)
-                .flatMap(p -> p.varPatterns().stream())
+                .flatMap(p -> p.admin().varPatterns().stream())
                 .forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }
@@ -241,12 +241,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public boolean isRuleResolvable() {
-        for (Atom atom : selectAtoms()) {
-            if (atom.isRuleResolvable()) {
-                return true;
-            }
-        }
-        return false;
+        return selectAtoms().stream().filter(Atom::isRuleResolvable).findFirst().isPresent();
     }
 
     private boolean isTransitive() {
@@ -543,18 +538,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
      */
-    Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
-        List<List<? extends Atom>> atomOptions = getAtoms(Atom.class)
-                .map(at -> at.atomOptions(sub))
-                .collect(Collectors.toList());
-
-        if (atomOptions.stream().mapToInt(List::size).sum() == atomOptions.size()) {
-            return Stream.of(this);
-        }
-
-        return Lists.cartesianProduct(atomOptions).stream()
-                .map(atomList -> ReasonerQueries.create(atomList, tx()));
-    }
+    Stream<ReasonerQueryImpl> getQueryStream(Answer sub){ return Stream.of(this);}
 
     /**
      * reiteration might be required if rule graph contains loops with negative flux

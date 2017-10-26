@@ -22,10 +22,10 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -77,7 +77,7 @@ public class ResourceAtom extends Binary{
     private final Var relationVariable;
     private final ImmutableSet<ValuePredicate> multiPredicate;
 
-    public ResourceAtom(VarPatternAdmin pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+    public ResourceAtom(VarPattern pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
         super(pattern, attributeVar, idPred, par);
         this.relationVariable = relationVariable;
         this.multiPredicate = ImmutableSet.copyOf(ps);
@@ -187,12 +187,12 @@ public class ResourceAtom extends Binary{
     public Var getRelationVariable(){ return relationVariable;}
 
     @Override
-    public PatternAdmin getCombinedPattern() {
+    public Pattern getCombinedPattern() {
         Set<VarPatternAdmin> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
-                .map(PatternAdmin::asVarPattern)
+                .map(VarPattern::admin)
                 .collect(Collectors.toSet());
-        vars.add(super.getPattern().asVarPattern());
+        vars.add(super.getPattern().admin());
         return Patterns.conjunction(vars);
     }
 
@@ -342,14 +342,6 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public Atom rewriteToUserDefined(Atom parentAtom){
-        Var attributeVariable = getPredicateVariable();
-        Var relationVariable = getRelationVariable().asUserDefined();
-        VarPattern newVar = getVarName().has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
-        return new ResourceAtom(newVar.admin(), attributeVariable, relationVariable, getTypePredicate(), getMultiPredicate(), getParentQuery());
-    }
-
-    @Override
     public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof ResourceAtom)){
             return new UnifierImpl(ImmutableMap.of(this.getPredicateVariable(), parentAtom.getVarName()));
@@ -378,6 +370,37 @@ public class ResourceAtom extends Binary{
                 .filter(t -> t.getVarName().equals(getVarName()))
                 .filter(t -> Objects.nonNull(t.getSchemaConcept()))
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     *
+     * @param parentAtom
+     * @return
+     */
+    private ResourceAtom rewriteWithRelationVariable(Atom parentAtom){
+        if (!parentAtom.isResource() || !((ResourceAtom) parentAtom).getRelationVariable().isUserDefinedName()) return this;
+        Var attributeVariable = getPredicateVariable();
+        Var relationVariable = getRelationVariable().asUserDefined();
+        VarPattern newVar = getVarName().has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
+        return new ResourceAtom(newVar.admin(), attributeVariable, relationVariable, getTypePredicate(), getMultiPredicate(), getParentQuery());
+    }
+
+    /**
+     *
+     * @param parentAtom
+     * @return
+     */
+    private ResourceAtom rewriteWithTypeVariable(Atom parentAtom){
+        return parentAtom.getPredicateVariable().isUserDefinedName()?
+                new ResourceAtom(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypePredicate(), getMultiPredicate(), getParentQuery()):
+                this;
+    }
+
+    @Override
+    public Atom rewriteToUserDefined(Atom parentAtom){
+        return this
+                .rewriteWithTypeVariable(parentAtom)
+                .rewriteWithRelationVariable(parentAtom);
     }
 
 }
