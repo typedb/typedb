@@ -177,12 +177,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     /**
-     * @param concept A concept in the graph
-     * @return True if the concept has been modified in the transaction
-     */
-    public abstract boolean isConceptModified(Concept concept);
-
-    /**
      * @return The number of open transactions currently.
      */
     public abstract int numOpenTx();
@@ -753,7 +747,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Optional<String> commitNoLogs() throws InvalidKBException {
+    public Optional<String> commitSubmitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
 

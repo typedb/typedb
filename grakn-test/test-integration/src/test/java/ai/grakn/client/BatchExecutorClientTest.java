@@ -171,7 +171,7 @@ public class BatchExecutorClientTest {
 
             nameTag.attribute(nameTagString);
             nameTag.attribute(nameTagId);
-            graph.admin().commitNoLogs();
+            graph.admin().commitSubmitNoLogs();
 
             String spec = "http://" + engine.uri();
             GraknClient graknClient = new GraknClient(new SimpleURI(spec));
