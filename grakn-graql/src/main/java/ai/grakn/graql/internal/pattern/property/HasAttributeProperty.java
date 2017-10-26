@@ -68,13 +68,13 @@ import static java.util.stream.Collectors.joining;
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class HasAttributeProperty extends AbstractVarProperty implements NamedProperty {
 
     public static final String NAME = "has";
 
-    public static HasResourceProperty of(Label attributeType, VarPatternAdmin attribute, VarPatternAdmin relationship) {
+    public static HasAttributeProperty of(Label attributeType, VarPatternAdmin attribute, VarPatternAdmin relationship) {
         attribute = attribute.isa(label(attributeType)).admin();
-        return new AutoValue_HasResourceProperty(attributeType, attribute, relationship);
+        return new AutoValue_HasAttributeProperty(attributeType, attribute, relationship);
     }
 
     public abstract Label type();
@@ -157,7 +157,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        HasResourceProperty that = (HasResourceProperty) o;
+        HasAttributeProperty that = (HasAttributeProperty) o;
 
         if (!type().equals(that.type())) return false;
         if (!attribute().equals(that.attribute())) return false;
@@ -184,7 +184,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        //NB: HasResourceProperty always has (type) label specified
+        //NB: HasAttributeProperty always has (type) label specified
         Var varName = var.var().asUserDefined();
 
         Var relationVariable = relationship().var();

@@ -26,8 +26,8 @@ ai.grakn.generator.Conjunctions
 ai.grakn.generator.Disjunctions
 
 ai.grakn.generator.DataTypeProperties
-ai.grakn.generator.HasResourceProperties
-ai.grakn.generator.HasResourceTypeProperties
+ai.grakn.generator.HasAttributeProperties
+ai.grakn.generator.HasAttributeTypeProperties
 ai.grakn.generator.IsAbstractProperties
 ai.grakn.generator.IsaProperties
 ai.grakn.generator.LabelProperties

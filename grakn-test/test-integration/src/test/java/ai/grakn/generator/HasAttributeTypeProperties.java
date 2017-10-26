@@ -21,28 +21,28 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Label;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 
 /**
  * @author Felix Chapman
  */
-public class HasResourceTypeProperties extends AbstractGenerator<HasResourceTypeProperty> {
+public class HasAttributeTypeProperties extends AbstractGenerator<HasAttributeTypeProperty> {
 
-    public HasResourceTypeProperties() {
-        super(HasResourceTypeProperty.class);
+    public HasAttributeTypeProperties() {
+        super(HasAttributeTypeProperty.class);
     }
 
     @Override
-    public HasResourceTypeProperty generate() {
+    public HasAttributeTypeProperty generate() {
         VarPatternAdmin varPattern = gen(VarPatternAdmin.class);
 
-        // Make sure the var has a label (or else `new HasResourceTypeProperty(..)` will throw)
+        // Make sure the var has a label (or else `new HasAttributeTypeProperty(..)` will throw)
         // TODO: can we avoid this
         if (!varPattern.hasProperty(LabelProperty.class)) {
             varPattern = varPattern.label(gen(Label.class)).admin();
         }
 
-        return HasResourceTypeProperty.of(varPattern, random.nextBoolean());
+        return HasAttributeTypeProperty.of(varPattern, random.nextBoolean());
     }
 }

@@ -52,19 +52,19 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
  * Represents the {@code has} and {@code key} properties on a {@link Type}.
  *
  * This property can be queried or inserted. Whether this is a key is indicated by the
- * {@link HasResourceTypeProperty#required} field.
+ * {@link HasAttributeTypeProperty#required} field.
  *
  * This property is defined as an implicit ontological structure between a {@link Type} and a {@link AttributeType},
  * including one implicit {@link RelationshipType} and two implicit {@link Role}s. The labels of these types are derived
  * from the label of the {@link AttributeType}.
  *
- * Like {@link HasResourceProperty}, if this is not a key and is used in a {@link Match} it will not use the implicit
+ * Like {@link HasAttributeProperty}, if this is not a key and is used in a {@link Match} it will not use the implicit
  * structure - instead, it will match if there is any kind of relation type connecting the two types.
  *
  * @author Felix Chapman
  */
 @AutoValue
-public abstract class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class HasAttributeTypeProperty extends AbstractVarProperty implements NamedProperty {
 
     abstract VarPatternAdmin resourceType();
 
@@ -78,7 +78,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
     /**
      * @throws GraqlQueryException if no label is specified on {@code resourceType}
      */
-    public static HasResourceTypeProperty of(VarPatternAdmin resourceType, boolean required) {
+    public static HasAttributeTypeProperty of(VarPatternAdmin resourceType, boolean required) {
         Label resourceLabel = resourceType.getTypeLabel().orElseThrow(GraqlQueryException::noLabelSpecifiedForHas);
 
         VarPattern role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
@@ -97,7 +97,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         VarPatternAdmin relationOwner = relationType.relates(ownerRole).admin();
         VarPatternAdmin relationValue = relationType.admin().var().relates(valueRole).admin();
 
-        return new AutoValue_HasResourceTypeProperty(
+        return new AutoValue_HasAttributeTypeProperty(
                 resourceType, ownerRole, valueRole, relationOwner, relationValue, required);
     }
 

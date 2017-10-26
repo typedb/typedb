@@ -57,7 +57,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(JUnitQuickcheck.class)
-public class MatchQueryPropertyTest {
+public class GetQueryPropertyTest {
 
     // If a generated query has more than this many answers, it is skipped.
     // This is a measure to increase test performance by avoiding queries with huge numbers of answers

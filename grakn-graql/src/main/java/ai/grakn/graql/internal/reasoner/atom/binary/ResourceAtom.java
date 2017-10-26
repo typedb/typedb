@@ -30,7 +30,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -59,7 +59,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTy
 /**
  *
  * <p>
- * Atom implementation defining a resource atom corresponding to a {@link HasResourceProperty}.
+ * Atom implementation defining a resource atom corresponding to a {@link HasAttributeProperty}.
  * The resource structure is the following:
  *
  * has($varName, $predicateVariable = resource variable), type($predicateVariable)
