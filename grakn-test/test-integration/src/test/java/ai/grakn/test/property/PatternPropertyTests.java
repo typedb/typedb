@@ -57,4 +57,14 @@ public class PatternPropertyTests {
         Pattern conjunction = pattern1.and(pattern2);
         assertEquals(union, conjunction.admin().varPatterns());
     }
+
+    @Property
+    public void theDisjunctionOfTwoPatterns_ShouldBeContainedInTheResultingPattern(Pattern pattern1, Pattern pattern2){
+        Set<VarPattern> union = new HashSet<>();
+        union.addAll(pattern1.admin().varPatterns());
+        union.addAll(pattern2.admin().varPatterns());
+
+        Pattern disjunction = pattern1.or(pattern2);
+        assertEquals(union, disjunction.admin().varPatterns());
+    }
 }

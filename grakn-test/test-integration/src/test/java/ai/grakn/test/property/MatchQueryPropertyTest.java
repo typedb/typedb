@@ -20,13 +20,19 @@
 package ai.grakn.test.property;
 
 import ai.grakn.GraknTx;
-import ai.grakn.generator.GraknTxs.Open;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.generator.GraknTxs.Open;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
@@ -38,13 +44,16 @@ import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import static ai.grakn.graql.internal.pattern.Patterns.varPattern;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(JUnitQuickcheck.class)
@@ -123,6 +132,36 @@ public class MatchQueryPropertyTest {
                 varPattern(var, Sets.union(a, b)),
                 (varPattern(var, a)).and(varPattern(var, b))
         );
+    }
+
+    @Property
+    public void anyPropertyCanBeExecutedOnAMatchQuery(@Open GraknTx tx, VarProperty property){
+        VarPatternAdmin pattern = Patterns.varPattern(Graql.var(), Collections.singleton(property));
+        try {
+            tx.graql().match(pattern).get().execute();
+        } catch(GraqlQueryException e){
+            //Ignore
+        }
+    }
+
+    @Property
+    public void ifAPatternCanBeUsedInAnInsertQuery_ItCanBeUsedInGetQuery(@Open GraknTx tx, VarPattern pattern){
+        executeAsGetQuery(tx, pattern, (p) -> tx.graql().insert(p));
+    }
+
+    @Property
+    public void ifAPatternCanBeUsedInADefineQuery_ItCanBeUsedInGetQuery(@Open GraknTx tx, VarPattern pattern){
+        executeAsGetQuery(tx, pattern, (p) -> tx.graql().define(p));
+    }
+
+    private void executeAsGetQuery(@Open GraknTx tx, VarPattern pattern, Function<VarPattern, Query> queryBuilder){
+        try {
+            queryBuilder.apply(pattern).execute();
+        } catch (GraknTxOperationException | GraqlQueryException e){
+            return ;
+        }
+
+        assertFalse(tx.graql().match(pattern).get().execute().isEmpty());
     }
 
     private Set<Answer> matchSet(GraknTx tx, Pattern pattern) {
