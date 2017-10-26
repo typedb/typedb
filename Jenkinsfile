@@ -95,7 +95,8 @@ def buildGrakn() {
 }
 
 //Only run validation master/stable
-if (env.BRANCH_NAME in ['master', 'stable']) {
+//TODO: DO NOT MERGE THIS
+if (env.BRANCH_NAME in ['master', 'stable'] || true) {
     properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
     node {
         String workspace = pwd()
