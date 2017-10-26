@@ -92,7 +92,7 @@ public class GraknSessionImpl implements GraknSession {
         if(Grakn.IN_MEMORY.equals(engineUri)){
             properties = getTxInMemoryProperties();
         } else {
-            properties = getTxRemoteProperties(engineUri, keyspace);
+            properties = getTxRemoteProperties(engineUri);
         }
     }
 
@@ -101,7 +101,7 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build a {@link GraknTx}
      */
-    private static Properties getTxRemoteProperties(String engineUrl, Keyspace keyspace){
+    private static Properties getTxRemoteProperties(String engineUrl){
         URI restFactoryUri;
         try {
             restFactoryUri = new SimpleURI(engineUrl).builder().setPath(REST.WebPath.System.CONFIGURATION).build();

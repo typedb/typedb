@@ -32,7 +32,6 @@ import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.REST;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
@@ -134,7 +133,7 @@ public class SystemController {
     @Path(KB)
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
-        response.type(REST.Response.ContentType.APPLICATION_JSON);
+        response.type(APPLICATION_JSON);
 
         try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
 
