@@ -147,9 +147,9 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
     // Execute all jobs in parallel
     parallel(jobs);
 
-    // only deploy long-running instance on stable branch if all tests pass
-    if (env.BRANCH_NAME == 'stable') {
-        node {
+    node {
+        // only deploy long-running instance on stable branch if all tests pass
+        if (env.BRANCH_NAME == 'stable') {
             checkout scm
             unstash 'dist'
 
@@ -160,7 +160,7 @@ if (env.BRANCH_NAME in ['master', 'stable'] || true) {
                 }
             }
         }
-    }
 
-    slackGithub "Periodic Build Success", "good"
+        slackGithub "Periodic Build Success", "good"
+    }
 }
