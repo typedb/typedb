@@ -77,7 +77,7 @@ public class EngineCommunicator {
                 }
 
                 if (connection.getResponseCode() != 200) {
-                    throw new IllegalArgumentException(ErrorMessage.INVALID_ENGINE_RESPONSE.getMessage(engineUri, connection.getResponseCode()));
+                    throw new IllegalArgumentException(ErrorMessage.INVALID_ENGINE_RESPONSE.getMessage(url, connection.getResponseCode()));
                 }
 
                 //Reading from Connection

@@ -23,11 +23,12 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.factory.FactoryBuilder;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import mjson.Json;
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -54,8 +55,9 @@ public class SystemControllerTest {
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
 
-    @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
+    @Rule
+    public SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        FactoryBuilder.refresh();
         EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(properties);
         new SystemController(factory, spark, status, metricRegistry);
     });

@@ -96,7 +96,7 @@ public class GraknBackendException extends GraknException {
     }
 
     public static GraknBackendException initializationException(Keyspace keyspace) {
-        return new GraknBackendException(String.format(INITIALIZATION_EXCEPTION.getMessage(), keyspace));
+        return new GraknBackendException(INITIALIZATION_EXCEPTION.getMessage(keyspace));
     }
 
     public static GraknBackendException noSuchKeyspace(Keyspace keyspace) {

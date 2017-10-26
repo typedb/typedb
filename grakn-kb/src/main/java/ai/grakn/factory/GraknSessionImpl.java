@@ -111,7 +111,7 @@ public class GraknSessionImpl implements GraknSession {
 
         Properties properties = new Properties();
         //Get Specific Configs
-        properties.putAll(read(contactEngine(Optional.of(restFactoryUri), REST.HttpConn.PUT_METHOD)).asMap());
+        properties.putAll(read(contactEngine(Optional.of(restFactoryUri), REST.HttpConn.GET_METHOD)).asMap());
         return properties;
     }
 
