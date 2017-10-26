@@ -103,10 +103,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     final Logger LOG = LoggerFactory.getLogger(GraknTxAbstract.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
-    //TODO: Is this the correct place for these config paths
-    //----------------------------- Config Paths
-    public static final String NORMAL_CACHE_TIMEOUT_MS = "knowledge-base.schema-cache-timeout-ms";
-
     //----------------------------- Shared Variables
     private final CommitLog commitLog;
     private final Keyspace keyspace;
