@@ -24,11 +24,11 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
+import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.runner.RunWith;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
@@ -50,9 +50,7 @@ public class PatternPropertyTests {
 
     @Property
     public void theConjunctionOfTwoPatterns_ShouldBeContainedInTheResultingPattern(Pattern pattern1, Pattern pattern2){
-        Set<VarPattern> union = new HashSet<>();
-        union.addAll(pattern1.admin().varPatterns());
-        union.addAll(pattern2.admin().varPatterns());
+        Set<VarPattern> union = Sets.union(pattern1.admin().varPatterns(), pattern2.admin().varPatterns());
 
         Pattern conjunction = pattern1.and(pattern2);
         assertEquals(union, conjunction.admin().varPatterns());
@@ -60,9 +58,7 @@ public class PatternPropertyTests {
 
     @Property
     public void theDisjunctionOfTwoPatterns_ShouldBeContainedInTheResultingPattern(Pattern pattern1, Pattern pattern2){
-        Set<VarPattern> union = new HashSet<>();
-        union.addAll(pattern1.admin().varPatterns());
-        union.addAll(pattern2.admin().varPatterns());
+        Set<VarPattern> union = Sets.union(pattern1.admin().varPatterns(), pattern2.admin().varPatterns());
 
         Pattern disjunction = pattern1.or(pattern2);
         assertEquals(union, disjunction.admin().varPatterns());
