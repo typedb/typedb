@@ -21,25 +21,21 @@ package ai.grakn.graql;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.client.BatchExecutorClient;
+import static ai.grakn.util.REST.RemoteShell.ACTION;
+import static ai.grakn.util.REST.RemoteShell.ACTION_END;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.CompletableFuture;
-
-import static ai.grakn.util.REST.RemoteShell.ACTION;
-import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,7 +44,7 @@ public class GraqlShellTest {
     private GraqlClient client;
     private final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
-    private BatchMutatorClient batchMutatorClient;
+    private BatchExecutorClient batchExecutorClient;
 
     @Before
     public void createMocks() {
@@ -67,9 +63,9 @@ public class GraqlShellTest {
 
         when(client.serverIsRunning(any())).thenReturn(true);
 
-        batchMutatorClient = mock(BatchMutatorClient.class);
+        batchExecutorClient = mock(BatchExecutorClient.class);
 
-        when(client.loaderClient(any(Keyspace.class), anyString())).thenReturn(batchMutatorClient);
+        when(client.loaderClient(any(Keyspace.class), anyString())).thenReturn(batchExecutorClient);
     }
 
    @Test
@@ -83,23 +79,4 @@ public class GraqlShellTest {
         GraqlShell.runShell(new String[]{"-r", "1.2.3.4:5678"}, expectedVersion, historyFile, client);
         verify(client).connect(any(), eq(URI.create("ws://1.2.3.4:5678/shell/remote")));
     }
-
-    @Test
-    public void testBatchArgsReachLoaderClient() throws IOException {
-        String testFilePath = GraqlShellTest.class.getClassLoader().getResource("test-query.gql").getPath();
-        int batchSize = 100;
-        int activeTasks = 1000;
-        GraqlShell.runShell(new String[]{"-s", String.valueOf(batchSize), "-a", String.valueOf(activeTasks), "-b", testFilePath}, expectedVersion, historyFile, client);
-        verify(batchMutatorClient).setNumberActiveTasks(activeTasks);
-        verify(batchMutatorClient).setBatchSize(batchSize);
-    }
-
-    @Test
-    public void testBatchArgsDontHaveToBePresent() {
-        String testFilePath = GraqlShellTest.class.getClassLoader().getResource("test-query.gql").getPath();
-        GraqlShell.runShell(new String[]{"-b", testFilePath}, expectedVersion, historyFile, client);
-        verify(batchMutatorClient, never()).setNumberActiveTasks(anyInt());
-        verify(batchMutatorClient, never()).setBatchSize(anyInt());
-    }
-
 }

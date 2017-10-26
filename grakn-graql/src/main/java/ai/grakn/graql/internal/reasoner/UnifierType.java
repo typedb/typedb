@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -42,12 +42,12 @@ public enum UnifierType implements UnifierComparison {
      */
     EXACT {
         @Override
-        public boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type) {
+        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
             return true;
         }
 
         @Override
-        public boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child) {
+        public boolean typeCompatibility(Type parent, Type child) {
             return !areDisjointTypes(parent, child);
         }
 
@@ -62,12 +62,12 @@ public enum UnifierType implements UnifierComparison {
      */
     RULE {
         @Override
-        public boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type) {
+        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
             return query.isTypeRoleCompatible(var, type);
         }
 
         @Override
-        public boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child) {
+        public boolean typeCompatibility(Type parent, Type child) {
             return child == null || !areDisjointTypes(parent, child);
         }
 
@@ -82,12 +82,12 @@ public enum UnifierType implements UnifierComparison {
      */
     STRUCTURAL {
         @Override
-        public boolean typeCompatibility(ReasonerQuery query, Var var, SchemaConcept type) {
+        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
             return true;
         }
 
         @Override
-        public boolean schemaConceptComparison(SchemaConcept parent, SchemaConcept child) {
+        public boolean typeCompatibility(Type parent, Type child) {
             return child == null || !areDisjointTypes(parent, child);
         }
 

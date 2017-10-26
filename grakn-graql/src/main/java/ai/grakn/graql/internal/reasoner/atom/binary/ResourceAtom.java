@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -224,11 +225,9 @@ public class ResourceAtom extends Binary{
         ReasonerQueryImpl childQuery = (ReasonerQueryImpl) childAtom.getParentQuery();
 
         //check type bindings compatiblity
-        TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
-        TypeAtom childTypeConstraint = childAtom.getTypeConstraints().findFirst().orElse(null);
+        Type parentType = this.getParentQuery().getVarTypeMap().get(this.getVarName());
+        Type childType = childQuery.getVarTypeMap().get(childAtom.getVarName());
 
-        SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
-        SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
         if (parentType != null && childType != null && areDisjointTypes(parentType, childType)
                 || !childQuery.isTypeRoleCompatible(ruleAtom.getVarName(), parentType)) return false;
 

@@ -6,6 +6,7 @@ summary: "This page provides an overview of the Graql analytics capabilities."
 sidebar: documentation_sidebar
 permalink: /documentation/graql-analytics/analytics-overview.html
 folder: documentation
+KB: genealogy-plus
 ---
 
 The distributed Grakn knowledge base presents two different ways to obtain insight on a large dataset:   

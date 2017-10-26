@@ -20,7 +20,7 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.postprocessing.GraknTxMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
@@ -62,7 +62,7 @@ public class MutatorTask extends BackgroundTask {
         Collection<Query> inserts = getInserts(configuration());
         metricRegistry().histogram(name(MutatorTask.class, "jobs")).update(inserts.size());
         Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
-        int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+        int maxRetry = engineConfiguration().getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
 
         GraknTxMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
@@ -99,7 +99,7 @@ public class MutatorTask extends BackgroundTask {
                     Optional<TaskConfiguration> configPP = PostProcessingTask.createConfig(tx.getKeyspace(), logs);
                     if(configPP.isPresent()) {
                         addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
-                                        .getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY)),
+                                        .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
                                 configPP.get());
                     }
                     addTask(UpdatingInstanceCountTask.createTask(this.getClass()),

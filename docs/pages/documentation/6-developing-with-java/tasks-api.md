@@ -26,8 +26,6 @@ and add the following to your imports:
 import ai.grakn.client.TaskClient;
 ```
 
-The `BatchMutatorClient` makes use of the `TaskClient`. If your intention is to load data, please see our [mutator client documentation](../loader-api.html). 
-
 # Basic Usage
 
 The task client provides only one constructor that accepts the host and port where a single engine is running.

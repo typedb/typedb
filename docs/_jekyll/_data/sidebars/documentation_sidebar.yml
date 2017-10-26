@@ -95,6 +95,9 @@ entries:
       - title: JSON Migration
         output: web
         url: /documentation/migration/JSON-migration.html
+      - title: XML Migration
+        output: web
+        url: /documentation/migration/XML-migration.html
       - title: SQL Migration
         output: web
         url: /documentation/migration/SQL-migration.html
@@ -189,3 +192,6 @@ entries:
   - title: Contribute to GRAKN.AI
     output: web
     url: /contributors/index.html
+  - title: GRAKN Academy
+    output: web
+    url: /academy/index.html

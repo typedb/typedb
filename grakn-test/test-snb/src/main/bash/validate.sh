@@ -23,9 +23,6 @@ java \
     -p ai.grakn.uri ${ENGINE} \
     -p ai.grakn.keyspace ${KEYSPACE}
 
-# check for errors from Grakn
-check-errors.sh fail
-
 # check for errors from LDBC
 FAILURES=$(cat ${CSV_DATA}/validation_params-failed-actual.json)
 if [ "${FAILURES}" == "[ ]" ]; then

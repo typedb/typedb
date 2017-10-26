@@ -16,33 +16,30 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.kb.internal.cache;
+package ai.grakn.engine;
 
-import ai.grakn.concept.Concept;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * <p>
- *     Indicates a {@link Cache} is contained within the class
- * </p>
  *
- * <p>
- *     Wraps up behaviour which needs to be handled whenever a {@link Cache} is used in a class
- * </p>
+ * Main class invoked by bash scripting
  *
- * @author fppt
+ * @author Michele Orsi
  *
  */
-public interface ContainsTxCache {
+public class Grakn {
 
-    /**
-     * Clears the internal {@link Cache}
-     */
-    void txCacheClear();
+    private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
 
-    /**
-     * Helper method to cast {@link Concept} into {@link ContainsTxCache}
-     */
-    static ContainsTxCache from(Concept concept){
-        return (ContainsTxCache) concept;
+    public static void main(String[] args) {
+        try {
+            // Start Engine
+            GraknEngineServer graknEngineServer = GraknCreator.instantiateGraknEngineServer(Runtime.getRuntime());
+            graknEngineServer.start();
+        } catch (Exception e) {
+            LOG.error("An exception has occurred", e);
+        }
     }
+
 }

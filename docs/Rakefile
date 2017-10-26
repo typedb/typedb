@@ -47,14 +47,14 @@ task :test do
           # The favicon is not in the repo
           '/favicon.ico',
           # This is the address of engine by default
-          /.*:\/\/localhost:4567.*/,
+          %r{.*://localhost:4567.*},
           # We generate links to the pages within our repo which may not exist yet
-          /.*github\.com\/graknlabs\/grakn\/tree\/.*/,
-          # TODO: fix links to non-existent sample projects/datasets
-          /.*github\.com\/graknlabs\/sample-(projects|datasets).*/
+          %r{.*github\.com/graknlabs/grakn/tree/.*},
+          %r{.*github\.com/graknlabs/sample-(projects|datasets).*},
+          # These ones mysteriously go wrong even though they were fine when I last checked
+          %r{https://javadoc.io/.*},
+          'https://docs.docker.com/docker-for-windows/'
       ],
-      # TODO: fix missing alt attributes
-      :alt_ignore => [/.*/],
       # avoid SSL errors: https://github.com/gjtorikian/html-proofer/issues/376
       :typhoeus => {
         :ssl_verifypeer => false,

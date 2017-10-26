@@ -97,7 +97,7 @@ public class TaskManagerTest {
 
     @AfterClass
     public static void closeTaskManagers(){
-        TaskManagers.closeAndClear();
+        TaskManagers.close();
     }
 
     @Property(trials=10)

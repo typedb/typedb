@@ -81,6 +81,7 @@ public class RelationshipController {
                 LOG.debug("postRelationship - relationshipType " + relationshipTypeLabel + " found.");
                 RelationshipType relationshipType = relationshipTypeOptional.get();
                 Relationship relationship = relationshipType.addRelationship();
+                tx.commit();
                 String jsonConceptId = relationship.getId().getValue();
                 LOG.debug("postRelationship - relationship " + jsonConceptId + " of relationshipType " + relationshipTypeLabel + " added. request processed");
                 response.status(HttpStatus.SC_OK);

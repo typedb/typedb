@@ -18,10 +18,10 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
@@ -67,12 +67,14 @@ public class PostProcessingTask extends BackgroundTask {
      */
     @Override
     public boolean start() {
-        try (Context context = metricRegistry().timer(name(PostProcessingTask.class, "execution")).time()) {
+        try (Context context = metricRegistry()
+                .timer(name(PostProcessingTask.class, "execution")).time()) {
             Json logs = configuration().json();
-            if(logs.has(REST.Request.COMMIT_LOG_FIXING)){
-                logs = logs.at(REST.Request.COMMIT_LOG_FIXING);
-                Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
-                int fixingRetries = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+if(logs.has(REST.Request.COMMIT_LOG_FIXING)){
+            logs = logs.at(REST.Request.COMMIT_LOG_FIXING);
+                    Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
+                    int fixingRetries = engineConfiguration()
+                            .getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
 
                 Context contextSingle = metricRegistry().timer(name(PostProcessingTask.class, "execution-single")).time();
                 try {

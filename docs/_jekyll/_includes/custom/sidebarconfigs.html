@@ -7,6 +7,9 @@
 {% elsif page.sidebar == "contributors_sidebar" %}
 {% assign sidebar = site.data.sidebars.contributors_sidebar.entries %}
 
+{% elsif page.sidebar == "academy_sidebar" %}
+{% assign sidebar = site.data.sidebars.academy_sidebar.entries %}
+
 {% else %}
 {% assign sidebar = site.data.sidebars.documentation_sidebar.entries %}
 {% endif %}

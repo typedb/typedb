@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.factory.FactoryBuilder;
 
@@ -59,7 +59,7 @@ public class EngineGraknTxFactory {
     private EngineGraknTxFactory(Properties properties, boolean loadSchema) {
         this.properties = new Properties();
         this.properties.putAll(properties);
-        this.engineURI = properties.getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + properties.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
+        this.engineURI = properties.getProperty(GraknConfigKey.SERVER_HOST_NAME.name()) + ":" + properties.getProperty(GraknConfigKey.SERVER_PORT.name());
         this.systemKeyspace = new SystemKeyspace(this, loadSchema);
     }
 

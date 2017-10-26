@@ -19,7 +19,6 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
@@ -95,11 +94,11 @@ public interface ReasonerQuery{
 
     /**
      * @param typedVar variable of interest
-     * @param parentType to be checked
+     * @param parentType which playability in this query is to be checked
      * @return true if typing the typeVar with type is compatible with role configuration of this query
      */
     @CheckReturnValue
-    boolean isTypeRoleCompatible(Var typedVar, SchemaConcept parentType);
+    boolean isTypeRoleCompatible(Var typedVar, Type parentType);
 
     /**
      * @param parent query to unify wth

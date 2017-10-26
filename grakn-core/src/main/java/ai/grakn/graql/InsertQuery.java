@@ -37,7 +37,7 @@ import java.util.List;
  *
  * @author Felix Chapman
  */
-public interface InsertQuery extends Query<List<Answer>>, Streamable<Answer> {
+public interface    InsertQuery extends Query<List<Answer>>, Streamable<Answer> {
 
     /**
      * @param tx the graph to execute the query on

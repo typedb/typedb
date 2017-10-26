@@ -1,12 +1,13 @@
 package ai.grakn.engine.controller;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.util.MockRedisRule;
+import com.google.common.collect.Iterables;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.ClassRule;
@@ -25,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 public class AuthControllerTest  {
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(EngineTestHelper.config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
     @ClassRule
     public static ControllerFixture fixture = ControllerFixture.INSTANCE;
@@ -33,7 +34,7 @@ public class AuthControllerTest  {
     private static final JWTHandler jwtHandler = JWTHandler.create("secret token");
 
     private UsersHandler usersHandler = UsersHandler.create(
-            EngineTestHelper.config().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY), 
+            EngineTestHelper.config().getProperty(GraknConfigKey.ADMIN_PASSWORD),
                                                   EngineGraknTxFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties()));
 
     @Test

@@ -49,8 +49,8 @@ import java.util.stream.Stream;
  *
  */
 public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
-    private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private final Cache<Set<RelationshipType>> cachedRelationTypes = new Cache<>(Cacheable.set(), () -> this.<RelationshipType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<Type>> cachedDirectPlayedByTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private final Cache<Set<RelationshipType>> cachedRelationTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<RelationshipType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     private RoleImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -68,21 +68,6 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
         RoleImpl role = new RoleImpl(vertexElement, type);
         vertexElement.tx().txCache().trackForValidation(role);
         return role;
-    }
-
-
-    @Override
-    public void txCacheFlush(){
-        super.txCacheFlush();
-        cachedDirectPlayedByTypes.flush();
-        cachedRelationTypes.flush();
-    }
-
-    @Override
-    public void txCacheClear(){
-        super.txCacheClear();
-        cachedDirectPlayedByTypes.clear();
-        cachedRelationTypes.clear();
     }
 
     @Override

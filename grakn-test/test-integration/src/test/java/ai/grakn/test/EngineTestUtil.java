@@ -17,6 +17,7 @@
  */
 package ai.grakn.test;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -41,7 +42,7 @@ public abstract class EngineTestUtil {
     static GraknEngineConfig createTestConfig() {
         GraknEngineConfig config = GraknEngineConfig.create();
         Integer serverPort = getEphemeralPort();
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(serverPort));
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, serverPort);
         return config;
     }
 

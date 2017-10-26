@@ -31,9 +31,11 @@ import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
+import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
+
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -156,41 +158,6 @@ public class ReasonerUtils {
     }
 
     /**
-     *
-     * @param type for which top type is to be found
-     * @return non-meta top type of the type
-     */
-    public static Type topType(Type type){
-        Type superType = type;
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
-            superType = superType.sup();
-        }
-        return superType;
-    }
-
-    /**
-     * @param schemaConcepts entry set
-     * @return top non-meta {@link SchemaConcept} from within the provided set of {@link Role}
-     */
-    public static <T extends SchemaConcept> Set<T> schemaConcepts(Set<T> schemaConcepts) {
-        return schemaConcepts.stream()
-                .filter(rt -> Sets.intersection(supers(rt), schemaConcepts).isEmpty())
-                .collect(toSet());
-    }
-
-    /**
-     * Gets {@link Role} a given {@link Type} can play in the provided {@link RelationshipType} by performing
-     * type intersection between type's playedRoles and relation's relates.
-     * @param type for which we want to obtain compatible {@link Role}s it plays
-     * @param relRoles entry {@link Role}s
-     * @return set of {@link Role}s the type can play from the provided {@link Role}s
-     */
-    public static Set<Role> compatibleRoles(Type type, Stream<Role> relRoles){
-        Set<Role> typeRoles = type.plays().collect(toSet());
-        return relRoles.filter(typeRoles::contains).collect(toSet());
-    }
-
-    /**
      * calculates map intersection by doing an intersection on key sets and accumulating the keys
      * @param m1 first operand
      * @param m2 second operand
@@ -208,6 +175,7 @@ public class ReasonerUtils {
     }
 
     /**
+     * NB: assumes MATCH semantics - all types and their subs are considered
      * compute the map of compatible {@link RelationshipType}s for a given set of {@link Type}s
      * (intersection of allowed sets of relation types for each entry type) and compatible role types
      * @param types for which the set of compatible {@link RelationshipType}s is to be computed
@@ -218,16 +186,75 @@ public class ReasonerUtils {
     public static <T extends SchemaConcept> Multimap<RelationshipType, Role> compatibleRelationTypesWithRoles(Set<T> types, SchemaConceptConverter<T> schemaConceptConverter) {
         Multimap<RelationshipType, Role> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
-        Iterator<T> it = types.iterator();
-        compatibleTypes.putAll(schemaConceptConverter.toRelationshipMultimap(it.next()));
-        while(it.hasNext() && !compatibleTypes.isEmpty()) {
-            compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(it.next()));
+        Iterator<T> typeIterator = types.iterator();
+        compatibleTypes.putAll(schemaConceptConverter.toRelationshipMultimap(typeIterator.next()));
+
+        while(typeIterator.hasNext() && compatibleTypes.size() > 1) {
+            compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(typeIterator.next()));
         }
         return compatibleTypes;
     }
 
     /**
-     *
+     * NB: assumes MATCH semantics - all types and their subs are considered
+     * @param parentRole parent {@link Role}
+     * @param parentType parent {@link Type}
+     * @param entryRoles entry set of possible {@link Role}s
+     * @return set of playable {@link Role}s defined by type-role parent combination, parent role assumed as possible
+     */
+    public static Set<Role> compatibleRoles(Role parentRole, Type parentType, Set<Role> entryRoles) {
+        Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();
+
+        if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ){
+            Sets.intersection(
+                    new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()),
+                    entryRoles
+            )
+                    .forEach(compatibleRoles::add);
+        } else {
+            entryRoles.forEach(compatibleRoles::add);
+        }
+
+        if (parentType != null && !Schema.MetaSchema.isMetaLabel(parentType.getLabel())) {
+            Set<Role> compatibleRolesFromTypes = new TypeConverter().toCompatibleRoles(parentType).collect(toSet());
+
+            //do set intersection meta role
+            compatibleRoles = compatibleRoles.stream()
+                    .filter(role -> Schema.MetaSchema.isMetaLabel(role.getLabel()) || compatibleRolesFromTypes.contains(role))
+                    .collect(toSet());
+            //parent role also possible
+            if (parentRole != null) compatibleRoles.add(parentRole);
+        }
+        return compatibleRoles;
+    }
+
+    public static Set<Role> compatibleRoles(Type type, Set<Role> relRoles){
+        return compatibleRoles(null, type, relRoles);
+    }
+
+    /**
+     * @param schemaConcepts entry set
+     * @return top non-meta {@link SchemaConcept}s from within the provided set of {@link Role}
+     */
+    public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
+        return schemaConcepts.stream()
+                .filter(rt -> Sets.intersection(supers(rt), schemaConcepts).isEmpty())
+                .collect(toSet());
+    }
+
+    /**
+     * @param type for which top type is to be found
+     * @return non-meta top type of the type
+     */
+    public static Type top(Type type){
+        Type superType = type;
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+            superType = superType.sup();
+        }
+        return superType;
+    }
+
+    /**
      * @param childTypes type atoms of child query
      * @param parentTypes type atoms of parent query
      * @param childParentUnifier unifier to unify child with parent
@@ -247,34 +274,6 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param parentRole parent {@link Role}
-     * @param parentType parent {@link SchemaConcept}
-     * @param childRoles entry set of possible {@link Role}s
-     * @return set of playable {@link Role}s defined by type-role parent
-     */
-    public static Set<Role> playableRoles(Role parentRole, SchemaConcept parentType, Set<Role> childRoles) {
-        boolean isParentRoleMeta = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());
-        Set<Role> compatibleRoles = Sets.union(
-                Sets.newHashSet(parentRole),
-                isParentRoleMeta? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles)
-        );
-
-        //if parent role player has a type, constrain the allowed roles
-        if (parentType != null && parentType.isType()) {
-            boolean isParentTypeMeta = Schema.MetaSchema.isMetaLabel(parentType.getLabel());
-            Set<Role> parentTypeRoles = isParentTypeMeta ? childRoles : parentType.asType().plays().collect(toSet());
-
-            compatibleRoles = compatibleRoles.stream()
-                    .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || parentTypeRoles.contains(rc))
-                    .collect(toSet());
-
-            //parent role also possible
-            compatibleRoles.add(parentRole);
-        }
-        return compatibleRoles;
-    }
-
-    /**
      * @param parent type
      * @param child type
      * @return true if child is a subtype of parent
@@ -291,21 +290,9 @@ public class ReasonerUtils {
         return false;
     }
 
-    /**
-     * @param parent predicate
-     * @param child predicate
-     * @param exact whether compatibility criterion should be exact
-     * @param <T> type generic
-     * @return true if predicates compatible
-     */
-    public static <T extends Predicate> boolean predicatesCompatible(T parent, T child, boolean exact){
-        if (exact) return parent == null || parent.isCompatibleWith(child);
-        else return child == null || parent == null || parent.isCompatibleWith(child);
-    }
-
     /** determines disjointness of parent-child types, parent defines the bound on the child
-     * @param parent type
-     * @param child type
+     * @param parent {@link SchemaConcept}
+     * @param child {@link SchemaConcept}
      * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
      */
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child) {

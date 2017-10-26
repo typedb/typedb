@@ -64,7 +64,7 @@ public class JsonMigratorTest {
     public void setup(){
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
-        migrator = Migrator.to(engine.uri(), keyspace);
+        migrator = new Migrator(engine.uri(), keyspace);
     }
 
     @Test
@@ -224,7 +224,7 @@ public class JsonMigratorTest {
 
     private void declareAndLoad(String template, String file){
         try(JsonMigrator m = new JsonMigrator(getFile("json", file))){
-            migrator.load(template, m.convert());
+            migrator.load(template, m.convert(), 0, false, 500);
         }
     }
 }

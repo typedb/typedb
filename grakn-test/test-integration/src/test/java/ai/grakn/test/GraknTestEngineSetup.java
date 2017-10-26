@@ -19,6 +19,8 @@ package ai.grakn.test;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.SystemKeyspace;
@@ -32,8 +34,7 @@ import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
 
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import static ai.grakn.engine.HttpHandler.configureSpark;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -60,7 +61,7 @@ public abstract class GraknTestEngineSetup {
 
         Integer serverPort = getEphemeralPort();
 
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(serverPort));
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, serverPort);
 
         return config;
     }
@@ -84,7 +85,7 @@ public abstract class GraknTestEngineSetup {
 
         // start engine
         setRestAssuredUri(config);
-        GraknEngineServer server = GraknEngineServer.create(config);
+        GraknEngineServer server = EngineTestHelper.cleanGraknEngineServer(config);
         server.start();
 
         LOG.info("engine started.");
@@ -108,7 +109,8 @@ public abstract class GraknTestEngineSetup {
         LOG.info("starting spark on port " + config.uri());
 
         Service spark = Service.ignite();
-        configureSpark(spark, config, JWTHandler.create(config.getProperty(JWT_SECRET_PROPERTY)));
+        // TODO: Make sure JWTHandler manages the null case
+        configureSpark(spark, config, JWTHandler.create(config.getProperty(GraknConfigKey.JWT_SECRET).orElse(null)));
         setRestAssuredUri(config);
         return spark;
     }
