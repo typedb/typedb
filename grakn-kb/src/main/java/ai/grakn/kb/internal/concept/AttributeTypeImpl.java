@@ -20,6 +20,7 @@ package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
@@ -29,6 +30,7 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -74,6 +76,11 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     public AttributeType<D> sup(AttributeType<D> superType){
         ((AttributeTypeImpl<D>) superType).superSet().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
         return super.sup(superType);
+    }
+
+    @Override
+    public Stream<AttributeType<D>> sups() {
+        return this.superSet();
     }
 
     /**

@@ -109,6 +109,11 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         return this;
     }
 
+    @Override
+    public Stream<RelationshipType> sups() {
+        return this.superSet();
+    }
+
     /**
      *
      * @param role The {@link Role} to delete from this {@link RelationshipType}.

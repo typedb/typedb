@@ -135,6 +135,16 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         return cachedSuperType.get();
     }
 
+
+    /**
+     *
+     * @return The supertypes of this
+     */
+    @Override
+    public Stream<T> sups() {
+        return this.superSet();
+    }
+
     /**
      *
      * @return All outgoing sub parents including itself
@@ -290,6 +300,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         }
         return getThis();
     }
+
 
     /**
      * Checks if changing the super is allowed. This passed if:

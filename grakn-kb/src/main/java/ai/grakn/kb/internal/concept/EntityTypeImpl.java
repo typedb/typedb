@@ -24,6 +24,8 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 
+import java.util.stream.Stream;
+
 /**
  * <p>
  *     {@link SchemaConcept} used to represent categories.
@@ -57,5 +59,10 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
     @Override
     public Entity addEntity() {
         return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> vertex().tx().factory().buildEntity(vertex, type), true);
+    }
+
+    @Override
+    public Stream<EntityType> sups() {
+        return this.superSet();
     }
 }
