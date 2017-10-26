@@ -57,7 +57,7 @@ public class MigrationOptions {
                 "Number of times to retry sending tasks if engine is not available");
         options.addOption("d", "debug", false,
                 "Immediately stop and fail migration if an error occurs");
-        options.addOption("l", "lines", true,
+        options.addOption("z", "lines", true,
                 "Number of lines to be processed. Used for testing when we want to stop earlier.");
     }
 
@@ -132,7 +132,7 @@ public class MigrationOptions {
     }
 
     public int getLines() {
-        return parseInt(command.getOptionValue("l", LINES_DEFAULT_VALUE));
+        return parseInt(command.getOptionValue("z", LINES_DEFAULT_VALUE));
     }
 
 
