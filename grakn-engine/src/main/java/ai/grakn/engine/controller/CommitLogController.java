@@ -67,6 +67,8 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private Json submitConcepts(Request req, Response res) {
+        res.type(REST.Response.ContentType.APPLICATION_JSON);
+
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, KEYSPACE_PARAM));
 
         // Instances to post process
