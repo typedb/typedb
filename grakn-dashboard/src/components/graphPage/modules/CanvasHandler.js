@@ -31,9 +31,11 @@ function clearGraph() {
 
 
 function onClickSubmit(query:string) {
-  if (query.includes('aggregate')) {
+  if (query.includes('aggregate')
+      || (query.includes('compute')&&query.includes('degrees'))
+      || (query.includes('compute')&&query.includes('cluster'))) {
           // Error message until we will not properly support aggregate queries in graph page.
-    EventHub.$emit('error-message', '{"exception":"Invalid query: \'aggregate\' queries are not allowed from the Graph page. \\nPlease use the Console page."}');
+    EventHub.$emit('error-message', '{"exception":"Invalid query: \\n \'aggregate\' queries \\n \'compute degrees\' \\n \'compute cluster\' \\n are not allowed from the Graph page. \\n \\nPlease use the Console page."}');
     return;
   }
 
