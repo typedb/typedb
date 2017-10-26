@@ -330,7 +330,7 @@ public class TxCache {
         this.closedReason = closedReason;
 
         //Clear Concept Caches
-        conceptCache.values().forEach(concept -> ContainsTxCache.from(concept).txCacheClear());
+        conceptCache.values().forEach(concept -> CacheOwner.from(concept).txCacheClear());
 
         //Clear Collection Caches
         modifiedThings.clear();

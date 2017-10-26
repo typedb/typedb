@@ -20,6 +20,8 @@ package ai.grakn.kb.internal.cache;
 
 import ai.grakn.concept.Concept;
 
+import java.util.Collection;
+
 /**
  * <p>
  *     Indicates a {@link Cache} is contained within the class
@@ -32,17 +34,39 @@ import ai.grakn.concept.Concept;
  * @author fppt
  *
  */
-public interface ContainsTxCache {
+public interface CacheOwner {
+
+    /**
+     *
+     * @return all the caches beloning to the {@link CacheOwner}
+     */
+    Collection<Cache> caches();
 
     /**
      * Clears the internal {@link Cache}
      */
-    void txCacheClear();
+    default void txCacheClear() {
+        caches().forEach(Cache::clear);
+    }
 
     /**
-     * Helper method to cast {@link Concept} into {@link ContainsTxCache}
+     * Registers a {@link Cache} so that later it can be cleaned up
      */
-    static ContainsTxCache from(Concept concept){
-        return (ContainsTxCache) concept;
+    default void registerCache(Cache cache) {
+        caches().add(cache);
+    }
+
+    /**
+     * Flushes the internal transaction caches so they can refresh with persisted graph
+     */
+    default void txCacheFlush(){
+        caches().forEach(Cache::flush);
+    }
+
+    /**
+     * Helper method to cast {@link Concept} into {@link CacheOwner}
+     */
+    static CacheOwner from(Concept concept){
+        return (CacheOwner) concept;
     }
 }
