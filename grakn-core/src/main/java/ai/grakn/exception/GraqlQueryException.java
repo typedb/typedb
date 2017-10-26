@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.ErrorMessage;
 
+import static ai.grakn.util.ErrorMessage.UNEXPECTED_RESULT;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
@@ -324,5 +325,9 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException insertAbstractOnNonType(SchemaConcept concept) {
         return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
+    }
+
+    public static GraqlQueryException unexpectedResult(Var var) {
+        return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.getValue()));
     }
 }
