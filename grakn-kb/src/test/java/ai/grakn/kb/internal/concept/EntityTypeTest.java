@@ -127,16 +127,13 @@ public class EntityTypeTest extends TxTestBase {
     }
 
     @Test
-    public void whenGettingtheSuperSetViaSupsMethod_ReturnAllOfItsSuperTypes() throws  Exception{
-        EntityType entityType = tx.admin().getMetaEntityType();
-        EntityType c1 = tx.putEntityType("c1");
-        EntityType c2 = tx.putEntityType("c2").sup(c1);
-        EntityType c3 = tx.putEntityType("c3").sup(c2);
-        EntityType c4 = tx.putEntityType("c4").sup(c1);
+    public void whenGettingTheSuperSetViaSupsMethod_ReturnAllOfItsSuperTypes(){
+        EntityType child = tx.putEntityType("child");
+        EntityType p2 = tx.putEntityType("p2").sup(child);
+        EntityType p3 = tx.putEntityType("p3").sup(p2);
+        EntityType p4 = tx.putEntityType("p4").sup(p3);
 
-        Stream<EntityType> c1SuperTypes = EntityTypeImpl.from(c1).sups();
-
-        assertThat(c1SuperTypes, containsInAnyOrder(entityType, c1));
+        assertThat(child.sups().collect(toSet()), containsInAnyOrder(child, p2, p3, p4));
 
     }
 
