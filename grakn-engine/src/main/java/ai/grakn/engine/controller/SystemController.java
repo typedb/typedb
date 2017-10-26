@@ -227,22 +227,23 @@ public class SystemController {
         response.status(HttpServletResponse.SC_OK);
         Optional<String> format = Optional.ofNullable(request.queryParams(FORMAT));
         String dFormat = format.orElse(JSON);
-        if (dFormat.equals(PROMETHEUS)) {
-            // Prometheus format for the metrics
-            response.type(PROMETHEUS_CONTENT_TYPE);
-            final Writer writer1 = new StringWriter();
-            TextFormat.write004(writer1, this.prometheusRegistry.metricFamilySamples());
-            return writer1.toString();
-        } else if (dFormat.equals(JSON)) {
-            // Json/Dropwizard format
-            response.type(APPLICATION_JSON);
-            final ObjectWriter writer = mapper.writer();
-            try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-                writer.writeValue(output, this.metricRegistry);
-                return new String(output.toByteArray(), "UTF-8");
-            }
-        } else {
-            throw new IllegalArgumentException("Unexpected format " + dFormat);
+        switch (dFormat) {
+            case PROMETHEUS:
+                // Prometheus format for the metrics
+                response.type(PROMETHEUS_CONTENT_TYPE);
+                final Writer writer1 = new StringWriter();
+                TextFormat.write004(writer1, this.prometheusRegistry.metricFamilySamples());
+                return writer1.toString();
+            case JSON:
+                // Json/Dropwizard format
+                response.type(APPLICATION_JSON);
+                final ObjectWriter writer = mapper.writer();
+                try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                    writer.writeValue(output, this.metricRegistry);
+                    return new String(output.toByteArray(), "UTF-8");
+                }
+            default:
+                throw GraknServerException.requestInvalidParameter(FORMAT, dFormat);
         }
     }
 
