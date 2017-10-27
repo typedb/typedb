@@ -24,10 +24,10 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import ai.grakn.util.SimpleURI;
 import com.google.common.collect.Sets;
 import mjson.Json;
 
+import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
@@ -113,7 +113,8 @@ public class CommitLog {
         if (Grakn.IN_MEMORY.equals(engineUri)) {
             return Optional.empty();
         }
-        return Optional.of(REST.makeURI(new SimpleURI(engineUri), REST.WebPath.COMMIT_LOG_URI, keyspace.getValue()));
+        String path = REST.resolveTemplate(REST.WebPath.COMMIT_LOG_URI, keyspace.getValue());
+        return Optional.of(UriBuilder.fromUri(engineUri).path(path).build());
     }
 
     static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes){

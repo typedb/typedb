@@ -23,10 +23,8 @@ import com.google.common.base.Preconditions;
 import org.apache.http.HttpHost;
 import org.apache.http.client.utils.URIBuilder;
 
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 
 /**
  * This Util class just takes care of going from host and port to string and viceversa
@@ -62,17 +60,9 @@ public class SimpleURI {
         return host;
     }
 
-    public URIBuilder builder() {
-        return new URIBuilder().setScheme(HttpHost.DEFAULT_SCHEME_NAME).setHost(host).setPort(port);
-    }
-
     @Override
     public String toString() {
         return String.format("%s:%d", host, port);
-    }
-
-    public String toStringWithSchema() {
-        return String.format("http://%s:%d", host, port);
     }
 
     public static SimpleURI withDefaultPort(String uri, int defaultPort) {
@@ -83,17 +73,9 @@ public class SimpleURI {
         }
     }
 
-    public URL toURL() {
-        try {
-            return new URL("http", getHost(), getPort(), "");
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Unexpected error while generating URL from " + this);
-        }
-    }
-
     public URI toURI() {
         try {
-            return builder().build();
+            return new URIBuilder().setScheme(HttpHost.DEFAULT_SCHEME_NAME).setHost(host).setPort(port).build();
         } catch (URISyntaxException e) {
             throw new IllegalStateException(e);
         }

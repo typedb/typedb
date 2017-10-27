@@ -18,9 +18,6 @@
 
 package ai.grakn.util;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
 
 /**
@@ -29,15 +26,6 @@ import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
  * @author Marco Scoppetta
  */
 public class REST {
-
-    public static URI makeURI(SimpleURI uri, String pathTemplate, String... pathParams) {
-        String path = resolveTemplate(pathTemplate, pathParams);
-        try {
-            return uri.builder().setPath(path).build();
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
 
     public static String resolveTemplate(String pathTemplate, String... pathParams) {
         // e.g. `/kb/:keyspace/commit_log` -> `/kb/%s/commit_log`

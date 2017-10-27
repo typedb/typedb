@@ -178,7 +178,7 @@ public enum ErrorMessage {
     INVALID_QUERY_USAGE("Only %s queries are allowed."),
     MISSING_TASK_ID("Could not retrieve id %s"),
     TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
-    ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s:%s]"),
+    ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s]"),
     AUTHENTICATION_FAILURE("Authentication parameters are incorrect or invalid"),
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 

@@ -31,14 +31,13 @@ import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
-import ai.grakn.util.SimpleURI;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executors;
@@ -102,13 +101,8 @@ public class GraknSessionImpl implements GraknSession {
      * @return the properties needed to build a {@link GraknTx}
      */
     private static Properties getTxRemoteProperties(String engineUrl, Keyspace keyspace){
-        URI configUri, keyspaceUri;
-        try {
-            configUri = new SimpleURI(engineUrl).builder().setPath(REST.WebPath.System.CONFIGURATION).build();
-            keyspaceUri = new SimpleURI(engineUrl).builder().setPath(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue())).build();
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(e);
-        }
+        URI configUri = UriBuilder.fromUri(engineUrl).path(REST.WebPath.System.CONFIGURATION).build();
+        URI keyspaceUri = UriBuilder.fromUri(engineUrl).path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue())).build();
 
         contactEngine(Optional.of(keyspaceUri), REST.HttpConn.PUT_METHOD);
 
