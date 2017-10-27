@@ -72,7 +72,7 @@ public abstract class GraknConfigKey<T> {
 
     public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", required(Paths::get));
 
-    public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT = key("knowledge-base.schema-cache-timeout-ms", INT);
+    public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
 
     // Delay for the post processing task in milliseconds
     public static final GraknConfigKey<Integer> POST_PROCESSING_TASK_DELAY = key("tasks.postprocessing.delay", INT);

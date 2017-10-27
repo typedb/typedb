@@ -64,7 +64,7 @@ public class GlobalCache {
         cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = Integer.parseInt(properties
-                .getProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT.name(),
+                .getProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(),
                         String.valueOf(DEFAULT_CACHE_TIMEOUT_MS)));
         cachedTypes = CacheBuilder.newBuilder()
                 .maximumSize(1000)
