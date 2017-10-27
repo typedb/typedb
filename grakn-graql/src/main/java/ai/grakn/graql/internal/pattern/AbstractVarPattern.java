@@ -35,8 +35,8 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
-import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
@@ -206,7 +206,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern has(Label type, VarPattern attribute, VarPattern relationship) {
-        return addProperty(HasResourceProperty.of(type, attribute.admin(), relationship.admin()));
+        return addProperty(HasAttributeProperty.of(type, attribute.admin(), relationship.admin()));
     }
 
     @Override
@@ -256,7 +256,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern has(VarPattern type) {
-        return addProperty(HasResourceTypeProperty.of(type.admin(), false));
+        return addProperty(HasAttributeTypeProperty.of(type.admin(), false));
     }
 
     @Override
@@ -266,7 +266,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern key(VarPattern type) {
-        return addProperty(HasResourceTypeProperty.of(type.admin(), true));
+        return addProperty(HasAttributeTypeProperty.of(type.admin(), true));
     }
 
     @Override

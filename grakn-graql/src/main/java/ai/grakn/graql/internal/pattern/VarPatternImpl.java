@@ -22,7 +22,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
@@ -76,8 +76,8 @@ abstract class VarPatternImpl extends AbstractVarPattern {
     public final String toString() {
         Collection<VarPatternAdmin> innerVars = innerVarPatterns();
         innerVars.remove(this);
-        getProperties(HasResourceProperty.class)
-                .map(HasResourceProperty::attribute)
+        getProperties(HasAttributeProperty.class)
+                .map(HasAttributeProperty::attribute)
                 .flatMap(r -> r.innerVarPatterns().stream())
                 .forEach(innerVars::remove);
 
