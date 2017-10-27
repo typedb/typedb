@@ -180,22 +180,5 @@ public class SystemKeyspace {
         //Keyspace data
         AttributeType<String> keyspaceName = tx.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
         tx.putEntityType("keyspace").key(keyspaceName);
-
-        //User Data
-        AttributeType<String> userName = tx.putAttributeType("user-name", AttributeType.DataType.STRING);
-        AttributeType<String> userPassword = tx.putAttributeType("user-password", AttributeType.DataType.STRING);
-        AttributeType<String> userPasswordSalt = tx.putAttributeType("user-password-salt", AttributeType.DataType.STRING);
-        AttributeType<String> userFirstName = tx.putAttributeType("user-first-name", AttributeType.DataType.STRING);
-        AttributeType<String> userLastName = tx.putAttributeType("user-last-name", AttributeType.DataType.STRING);
-        AttributeType<String> userEmail = tx.putAttributeType("user-email", AttributeType.DataType.STRING);
-        AttributeType<Boolean> userIsAdmin = tx.putAttributeType("user-is-admin", AttributeType.DataType.BOOLEAN);
-
-        tx.putEntityType("user").key(userName).
-                attribute(userPassword).
-                attribute(userPasswordSalt).
-                attribute(userFirstName).
-                attribute(userLastName).
-                attribute(userEmail).
-                attribute(userIsAdmin);
     }
 }

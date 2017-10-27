@@ -10,25 +10,6 @@ const DEFAULT_QUERY_LIMIT = '30';
 
 export default {
 
-    // --------- User Login and Authentication ----------- //
-  newSession(creds, fn) {
-    return EngineClient.newSession(creds);
-  },
-
-  setAuthToken(token) {
-    localStorage.setItem('id_token', token);
-  },
-
-  logout() {
-    localStorage.removeItem('id_token');
-  },
-
-  isAuthenticated() {
-    const jwt = localStorage.getItem('id_token');
-    if (jwt) return true;
-    return false;
-  },
-
     // -------------- Reasoner and materialisation toggles ------------ //
   setReasonerStatus(status) {
     localStorage.setItem('use_reasoner', status);
@@ -61,7 +42,6 @@ export default {
     localStorage.setItem('freeze_nodes', status);
   },
 
-    // @return boolean
   getMaterialiseStatus() {
     const materialiseReasoner = localStorage.getItem('reasoner_materialise');
     if (materialiseReasoner == null) {

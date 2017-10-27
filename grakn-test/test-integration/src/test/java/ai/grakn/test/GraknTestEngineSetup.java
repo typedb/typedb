@@ -24,7 +24,6 @@ import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.util.JWTHandler;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
 import spark.Service;
@@ -109,8 +108,7 @@ public abstract class GraknTestEngineSetup {
         LOG.info("starting spark on port " + config.uri());
 
         Service spark = Service.ignite();
-        // TODO: Make sure JWTHandler manages the null case
-        configureSpark(spark, config, JWTHandler.create(config.getProperty(GraknConfigKey.JWT_SECRET).orElse(null)));
+        configureSpark(spark, config);
         setRestAssuredUri(config);
         return spark;
     }
