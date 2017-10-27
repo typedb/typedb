@@ -17,4 +17,5 @@ init-grakn.sh &&
 load.sh &&
 validate.sh;
 
+echo "Tearing down"
 tear-down.sh

@@ -25,6 +25,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.migration.base.Migrator;
+import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
@@ -61,7 +62,8 @@ public class SQLMigratorTest {
     public void setup(){
         keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
-        migrator = new Migrator(engine.uri(), keyspace);
+        migrator = new MigratorBuilder().setUri(engine.uri()).setKeyspace(keyspace)
+                .build();
     }
 
     @Test

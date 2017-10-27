@@ -159,6 +159,8 @@ public enum ErrorMessage {
     //Templating
     TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
 
+    UNEXPECTED_RESULT("the concept [%s] could not be found in results"),
+
     //--------------------------------------------- Engine Errors -----------------------------------------------
     ILLEGAL_ARGUMENT_EXCEPTION("Illegal argument exception caused by [%s]"),
     NO_CONCEPT_IN_KEYSPACE("No concept with ID [%s] exists in keyspace [%s]"),

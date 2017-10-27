@@ -53,17 +53,21 @@ import rx.Observable;
  * </p>
  *
  * @author alexandraorth
+ * @author Domenico Corapi
  */
 public class Migrator {
 
     private final static Logger LOG = LoggerFactory.getLogger(Migrator.class);
 
-    private final static int MAX_DELAY_MS = 500;
     public static final int OBSERVABLE_TIMEOUT_MINUTES = 2;
 
     private final QueryParser queryParser = Graql.withoutGraph().infer(false).parser();
     private final String uri;
     private final Keyspace keyspace;
+    private final int retries;
+    private final boolean failFast;
+    private final int maxDelayMs;
+    private final int maxLines;
     private final MetricRegistry metricRegistry;
     private final ConsoleReporter reporter;
     private final Meter totalMeter;
@@ -74,9 +78,13 @@ public class Migrator {
      * @param uri Uri where one instance of Grakn Engine is running
      * @param keyspace The {@link Keyspace} where the data should be persisted
      */
-    public Migrator(String uri, Keyspace keyspace) {
+    public Migrator(String uri, Keyspace keyspace, int retries, boolean failFast, int maxDelayMs, int maxLines) {
         this.uri = uri;
         this.keyspace = keyspace;
+        this.retries = retries;
+        this.failFast = failFast;
+        this.maxDelayMs = maxDelayMs;
+        this.maxLines = maxLines;
         this.metricRegistry = new MetricRegistry();
         this.totalMeter = metricRegistry.meter(name(this.getClass(), "total"));
         this.successMeter = metricRegistry.meter(name(this.getClass(), "success"));
@@ -85,16 +93,6 @@ public class Migrator {
                 .convertRatesTo(TimeUnit.SECONDS)
                 .convertDurationsTo(MILLISECONDS)
                 .build();
-    }
-
-    /**
-     * Migrate data passed in data parameter using the given template
-     *
-     * @param template Used to transform the data
-     * @param data Data being migrated
-     */
-    public void load(String template, Stream<Map<String, Object>> data) {
-        load(template, data, GraknClient.DEFAULT_MAX_RETRY, true, MAX_DELAY_MS);
     }
 
     /**
@@ -113,12 +111,8 @@ public class Migrator {
      *
      * @param template Template used to extract the data
      * @param data Data being migrated
-     * @param retries Number of retries before giving up
-     * @param failFast If the loader should stop after an error
-     * @param maxDelayMs Max delay before a batch is cut and sent
      */
-    public void load(String template, Stream<Map<String, Object>> data, int retries,
-            boolean failFast, int maxDelayMs) {
+    public void load(String template, Stream<Map<String, Object>> data) {
         GraknClient graknClient = new GraknClient(new SimpleURI(uri));
         try (BatchExecutorClient loader =
                 BatchExecutorClient.newBuilder()
@@ -129,7 +123,11 @@ public class Migrator {
                         .build()) {
             checkKeyspace(graknClient);
             List<Observable<QueryResponse>> allObservables = new ArrayList<>();
-            data.flatMap(d -> template(template, d, failFast))
+            Stream<Query> queryStream = data.flatMap(d -> template(template, d, failFast));
+            if (maxLines > -1) {
+                queryStream = queryStream.limit(maxLines);
+            }
+            queryStream
                     .forEach(q -> {
                         LOG.debug("Adding query {}", q);
                         totalMeter.mark();

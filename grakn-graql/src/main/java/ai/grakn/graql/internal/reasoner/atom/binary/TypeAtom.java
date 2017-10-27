@@ -22,6 +22,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -43,7 +44,7 @@ import java.util.Set;
  * {@link ai.grakn.graql.internal.pattern.property.SubProperty},
  * {@link ai.grakn.graql.internal.pattern.property.PlaysProperty}
  * {@link ai.grakn.graql.internal.pattern.property.RelatesProperty}
- * {@link ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty}
+ * {@link HasAttributeTypeProperty}
  * </p>
  *
  * @author Kasper Piskorski

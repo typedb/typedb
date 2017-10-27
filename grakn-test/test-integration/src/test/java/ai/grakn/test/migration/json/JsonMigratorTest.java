@@ -29,6 +29,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.migration.base.Migrator;
+import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.SampleKBLoader;
@@ -64,7 +65,12 @@ public class JsonMigratorTest {
     public void setup(){
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
-        migrator = new Migrator(engine.uri(), keyspace);
+        migrator = new MigratorBuilder()
+                .setUri(engine.uri())
+                .setKeyspace(keyspace)
+                .setRetries(0)
+                .setFailFast(false)
+                .build();
     }
 
     @Test
@@ -224,7 +230,7 @@ public class JsonMigratorTest {
 
     private void declareAndLoad(String template, String file){
         try(JsonMigrator m = new JsonMigrator(getFile("json", file))){
-            migrator.load(template, m.convert(), 0, false, 500);
+            migrator.load(template, m.convert());
         }
     }
 }

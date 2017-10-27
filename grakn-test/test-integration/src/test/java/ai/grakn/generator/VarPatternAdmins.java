@@ -14,10 +14,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
+
+package ai.grakn.generator;
+
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.Patterns;
 
 /**
- *  Implements graph user management.
+ * @author Felix Chapman
  */
+public class VarPatternAdmins extends RecursiveGenerator<VarPatternAdmin> {
 
-package ai.grakn.engine.user;
+    public VarPatternAdmins() {
+        super(VarPatternAdmin.class);
+    }
+
+    @Override
+    protected VarPatternAdmin generateBase() {
+        return gen(Var.class).admin();
+    }
+
+    @Override
+    protected VarPatternAdmin generateRecurse() {
+        return Patterns.varPattern(gen(Var.class), setOf(VarProperty.class, 0, 3));
+    }
+}

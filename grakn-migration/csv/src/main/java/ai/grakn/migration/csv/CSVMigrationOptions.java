@@ -38,9 +38,6 @@ public class CSVMigrationOptions extends MigrationOptions {
         options.addOption("s", "separator", true, "Separator of columns in input file.");
         options.addOption("q", "quote", true, "Character used to encapsulate values containing special characters.");
         options.addOption("l", "null", true, "String that will be evaluated as null.");
-        options.addOption("b", "batch", true, "Number of rows to execute in one Grakn transaction. Default 25.");
-        options.addOption("a", "active", true, "Number of tasks (batches) running on the server at any one time. Default 25.");
-
         parse(args);
     }
 

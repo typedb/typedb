@@ -14,6 +14,18 @@
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
+            <artifactId>migration-csv</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <!--Excluded because we provide logback logger-->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-nop</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
             <artifactId>janus-factory</artifactId>
             <version>${project.version}</version>
             <exclusions>

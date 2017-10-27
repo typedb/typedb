@@ -32,7 +32,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.test.SampleKBContext;
@@ -404,7 +404,7 @@ public class DefineQueryTest {
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(Matchers.anyOf(
-                is(GraqlQueryException.defineUnsupportedProperty(HasResourceProperty.NAME).getMessage()),
+                is(GraqlQueryException.defineUnsupportedProperty(HasAttributeProperty.NAME).getMessage()),
                 is(GraqlQueryException.defineUnsupportedProperty(ValueProperty.NAME).getMessage())
         ));
 

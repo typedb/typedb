@@ -97,32 +97,6 @@ public class AtomicTest {
     }
 
     @Test
-    public void testType(){
-        GraknTx graph = ruleApplicabilitySet.tx();
-        String queryString = "{$x isa binary;}";
-        String queryString2 = "{$x isa $type;$type label 'binary';}";
-        String queryString3 = "{$x isa $type;}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(queryString, graph), graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph);
-        ReasonerAtomicQuery query3 = ReasonerQueries.atomic(conjunction(queryString3, graph), graph);
-        assertTrue( 1 == 0);
-    }
-
-    @Test
-    public void testRelation(){
-        GraknTx graph = ruleApplicabilitySet.tx();
-        String queryString = "{($x, $y) isa binary;}";
-        String queryString2 = "{($x, $y) isa $type;$type label 'binary';}";
-        String queryString3 = "{($x, $y) isa $type;}";
-        String queryString4 = "{($x, $y);}";
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(queryString, graph), graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph);
-        ReasonerAtomicQuery query3 = ReasonerQueries.atomic(conjunction(queryString3, graph), graph);
-        ReasonerAtomicQuery query4 = ReasonerQueries.atomic(conjunction(queryString4, graph), graph);
-        assertTrue( 1 == 0);
-    }
-
-    @Test
     public void testAtomsAreCorrectlyIdentifiedAsRecursive(){
         GraknTx graph = ruleApplicabilitySet.tx();
         String recRelString = "{($x, $y) isa binary;}";
