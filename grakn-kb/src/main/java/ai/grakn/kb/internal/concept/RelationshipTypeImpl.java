@@ -111,15 +111,6 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     /**
      *
-     * @return filtered supertypes
-     */
-    @Override
-    public Stream<RelationshipType> sups() {
-        return this.filterSuperSet(superSet());
-    }
-
-    /**
-     *
      * @param role The {@link Role} to delete from this {@link RelationshipType}.
      * @return The {@link Relationship} Type itself.
      */

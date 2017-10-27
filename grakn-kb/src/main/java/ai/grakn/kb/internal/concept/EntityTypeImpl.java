@@ -60,9 +60,4 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
     public Entity addEntity() {
         return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> vertex().tx().factory().buildEntity(vertex, type), true);
     }
-
-    @Override
-    public Stream<EntityType> sups() {
-        return this.filterSuperSet(this.superSet());
-    }
 }

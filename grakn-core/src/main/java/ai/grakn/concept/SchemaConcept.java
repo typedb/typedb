@@ -73,7 +73,7 @@ public interface SchemaConcept extends Concept {
 
     /**
      *
-     * @return All the the super-types of this
+     * @return All the the super-types of this {@link SchemaConcept}
      */
     Stream<? extends SchemaConcept> sups();
 

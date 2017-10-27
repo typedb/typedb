@@ -122,7 +122,7 @@ public interface Type extends SchemaConcept {
 
     /**
      *
-     * @return
+     * @return All the the super-types of this {@link Type}
      */
     @Override
     Stream<? extends Type> sups();

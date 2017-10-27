@@ -23,7 +23,6 @@ To follow along, or experiment further, with the examples given below, please lo
 <div role="tabpanel" class="tab-pane active" id="shell1">
 <pre>
 match $x isa person; delete $x;
-commit
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java1">

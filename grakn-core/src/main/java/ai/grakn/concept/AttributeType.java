@@ -177,9 +177,9 @@ public interface AttributeType<D> extends Type {
     Attribute<D> getAttribute(D value);
 
     /**
-     * Returns a collection of supertypes of this {@link AttributeType}.
+     * Returns a collection of super-types of this {@link AttributeType}.
      *
-     * @return The supertypes of this {@link AttributeType}
+     * @return The super-types of this {@link AttributeType}
      */
     @Override
     Stream<AttributeType<D>> sups();

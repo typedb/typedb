@@ -79,15 +79,6 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     }
 
     /**
-     *
-     * @return Filter supertypes of this
-     */
-    @Override
-    public Stream<AttributeType<D>> sups() {
-        return this.filterSuperSet(this.superSet());
-    }
-
-    /**
      * @param regex The regular expression which instances of this resource must conform to.
      * @return The {@link AttributeType} itself.
      */

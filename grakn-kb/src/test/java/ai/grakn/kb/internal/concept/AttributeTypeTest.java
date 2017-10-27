@@ -176,28 +176,4 @@ public class AttributeTypeTest extends TxTestBase {
             }
         }
     }
-
-    @Test
-    public void whenGettingTheSuperSetViaSupsMethod_ReturnAllOfItsSuperTypes(){
-        AttributeType<String> a1 = tx.putAttributeType("a1", AttributeType.DataType.STRING);
-        AttributeType<String> a2 = tx.putAttributeType("a2", AttributeType.DataType.STRING);
-        AttributeType<String> a3 = tx.putAttributeType("a3", AttributeType.DataType.STRING);
-        AttributeType<String> a4 = tx.putAttributeType("a4", AttributeType.DataType.STRING);
-
-        a1.putAttribute("attr1");
-        a2.putAttribute("attr2");
-        a3.putAttribute("attr3");
-        a4.putAttribute("attr4");
-
-        a2.sub(a1);
-        a3.sub(a2);
-        a4.sub(a3);
-
-
-        assertThat(a1.sups().collect(toSet()), containsInAnyOrder(a1,a2,a3,a4));
-        assertThat(a2.sups().collect(toSet()), containsInAnyOrder(a2, a3, a4));
-        assertThat(a3.sups().collect(toSet()), containsInAnyOrder(a3,a4));
-        assertThat(a4.sups().collect(toSet()), containsInAnyOrder(a4));
-
-    }
 }

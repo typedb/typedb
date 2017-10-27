@@ -141,7 +141,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     /**
      *
      * @return The supertypes of this
-     * TODO: add option to return unfiltered supertypes
      */
     @Override
     public Stream<T> sups() {
@@ -170,22 +169,12 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
 
     /**
-     * Filters the supertypes not to return schema nodes
+     * Filters the supers not to return meta schema nodes defined in {@link Schema.MetaSchema}
      * @param superSet
-     * @return the filtered supertypes
+     * @return filtered supertypes
      */
     public Stream<T> filterSuperSet(Stream<T> superSet) {
-        Set<T> filtered = new HashSet<>();
-        superSet.forEach((node) -> {
-            if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(node.getLabel())
-                    && !Schema.MetaSchema.ENTITY.getLabel().equals(node.getLabel())
-                    && !Schema.MetaSchema.RELATIONSHIP.getLabel().equals(node.getLabel())
-                    && !Schema.MetaSchema.RULE.getLabel().equals(node.getLabel())){
-                filtered.add(node);
-            }
-        });
-
-        return filtered.stream();
+        return superSet.filter(concept -> !Schema.MetaSchema.isMetaLabel(concept.getLabel()));
 
     }
 
