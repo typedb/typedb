@@ -2,11 +2,12 @@ package ai.grakn.test.benchmark;
 
 import ai.grakn.client.TaskClient;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.util.SimpleURI;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.SimpleURI;
 import java.time.Instant;
 import static java.time.Instant.now;
 import mjson.Json;
+import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
@@ -37,6 +38,7 @@ public class MutatorTaskBenchmark extends BenchmarkTest {
         LOG.info("Starting teardown");
         LOG.info("Closing engine");
         engine.after();
+        EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
     }
 
     @Benchmark
