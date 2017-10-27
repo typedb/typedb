@@ -141,6 +141,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     /**
      *
      * @return The supertypes of this
+     * TODO: add option to return unfiltered supertypes
      */
     @Override
     public Stream<T> sups() {
@@ -169,7 +170,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
 
     /**
-     * Filtters the supertypes not to return schema nodes
+     * Filters the supertypes not to return schema nodes
      * @param superSet
      * @return the filtered supertypes
      */
