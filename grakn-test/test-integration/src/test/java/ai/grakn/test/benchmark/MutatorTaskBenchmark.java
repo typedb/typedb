@@ -45,8 +45,7 @@ public class MutatorTaskBenchmark extends BenchmarkTest {
         String creator = this.getClass().getName();
         Instant runAt = now();
         Json configuration = Json.object("id", "123");
-        client.sendTask(taskClass, creator, runAt, null, configuration, true).getTaskId();
-        LOG.info("Sent");
+        client.sendTask(taskClass, creator, runAt, null, configuration, true).getTaskId();;
     }
 //
 //    @Benchmark
