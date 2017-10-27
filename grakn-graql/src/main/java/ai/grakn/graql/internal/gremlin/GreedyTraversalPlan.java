@@ -176,8 +176,11 @@ public class GreedyTraversalPlan {
                     plan.add(fragment);
                     double instanceCount = -1D;
                     if (fragment.getShardCount(tx).isPresent()) {
-                        instanceCount = Math.log1p((fragment.getShardCount(tx).get() + SHARD_LOAD_FACTOR) *
-                                DEFAULT_SHARDING_THRESHOLD);
+                        long shardCount = fragment.getShardCount(tx).get();
+                        if (shardCount > 0) {
+                            instanceCount = Math.log1p((shardCount + SHARD_LOAD_FACTOR) *
+                                    DEFAULT_SHARDING_THRESHOLD);
+                        }
                     }
                     nodesWithFixedCost.put(start, instanceCount);
                     start.setFixedFragmentCost(fragment.fragmentCost());
