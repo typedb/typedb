@@ -30,19 +30,12 @@ function clearGraph() {
 }
 
 
-<<<<<<< HEAD
 function onClickSubmit(query:string) {
   if (query.includes('aggregate')
       || (query.includes('compute')&&query.includes('degrees'))
       || (query.includes('compute')&&query.includes('cluster'))) {
           // Error message until we will not properly support aggregate queries in graph page.
     EventHub.$emit('error-message', '{"exception":"Invalid query: \\n \'aggregate\' queries \\n \'compute degrees\' \\n \'compute cluster\' \\n are not allowed from the Graph page. \\n \\nPlease use the Console page."}');
-=======
-function onClickSubmit(query: string) {
-  if (query.includes('aggregate')) {
-    // Error message until we will not properly support aggregate queries in graph page.
-    EventHub.$emit('error-message', '{"exception":"Invalid query: \'aggregate\' queries are not allowed from the Graph page. \\nPlease use the Console page."}');
->>>>>>> d1b415a... Show all role-players of relations in dashboard
     return;
   }
 
