@@ -79,7 +79,7 @@ public class BatchExecutorClientTest {
             // Engine goes down
             engine.server().getHttpHandler().stopHTTP();
             // Most likely the first call doesn't find the server but it's retried
-            generate(this::query).limit(1).forEach(q -> all.add(loader.add(q, keyspace.getValue(), true)));
+            generate(this::query).limit(1).forEach(q -> all.add(loader.add(q, keyspace, true)));
             engine.server().getHttpHandler().startHTTP();
             int completed = allObservable(all).toBlocking().first().size();
             // Verify that the logger received the failed log message
