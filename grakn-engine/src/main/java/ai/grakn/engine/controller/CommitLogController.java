@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
+import ai.grakn.engine.postprocessing.UpdateInstanceCount;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -51,11 +51,13 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 //TODO Implement delete
 public class CommitLogController {
     private final TaskManager manager;
+    private final UpdateInstanceCount updateInstanceCount;
     private final int postProcessingDelay;
 
-    public CommitLogController(Service spark, int postProcessingDelay, TaskManager manager){
+    public CommitLogController(Service spark, int postProcessingDelay, TaskManager manager, UpdateInstanceCount updateInstanceCount){
         this.postProcessingDelay = postProcessingDelay;
         this.manager = manager;
+        this.updateInstanceCount = updateInstanceCount;
 
         spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
         spark.delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
@@ -86,19 +88,15 @@ public class CommitLogController {
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
         TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
-        //Instances to count
-        TaskState countingTaskState = UpdatingInstanceCountTask.createTask(this.getClass());
-        TaskConfiguration countingTaskConfiguration = UpdatingInstanceCountTask.createConfig(keyspace, req.body());
 
         // TODO Use an engine wide executor here
         CompletableFuture.allOf(
                 CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration)),
-                CompletableFuture.runAsync(() -> manager.addTask(countingTaskState, countingTaskConfiguration)))
+                CompletableFuture.runAsync(() -> updateInstanceCount.updateCounts(keyspace, Json.read(req.body()))))
                 .join();
 
         return Json.object(
                 "postProcessingTaskId", postProcessingTaskState.getId().getValue(),
-                "countingTaskId", countingTaskState.getId().getValue(),
                 "keyspace", keyspace.getValue()
         );
     }

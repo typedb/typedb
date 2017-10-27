@@ -35,7 +35,10 @@ import ai.grakn.engine.controller.api.RelationshipTypeController;
 import ai.grakn.engine.controller.api.RoleController;
 import ai.grakn.engine.controller.api.RuleController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.postprocessing.UpdateInstanceCount;
 import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
@@ -45,6 +48,8 @@ import mjson.Json;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
+import redis.clients.util.Pool;
 import spark.Response;
 import spark.Service;
 
@@ -68,8 +73,10 @@ public class HttpHandler {
     private final GraknEngineStatus graknEngineStatus;
     private final TaskManager taskManager;
     private final ExecutorService taskExecutor;
+    private final Pool<Jedis> jedisPool;
+    private final LockProvider lockProvider;
 
-    public HttpHandler(GraknEngineConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, ExecutorService taskExecutor) {
+    public HttpHandler(GraknEngineConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, ExecutorService taskExecutor, Pool<Jedis> jedisPool, LockProvider lockProvider) {
         this.prop = prop;
         this.spark = spark;
         this.factory = factory;
@@ -77,6 +84,8 @@ public class HttpHandler {
         this.graknEngineStatus = graknEngineStatus;
         this.taskManager = taskManager;
         this.taskExecutor = taskExecutor;
+        this.jedisPool = jedisPool;
+        this.lockProvider = lockProvider;
     }
 
 
@@ -89,12 +98,15 @@ public class HttpHandler {
 
         int postProcessingDelay = prop.getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
 
+        RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
+        UpdateInstanceCount instanceCount = new UpdateInstanceCount(prop, redisCountStorage, factory, lockProvider, metricRegistry);
+
         // Start all the controllers
         new GraqlController(factory, spark, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
         new DashboardController(factory, spark);
         new SystemController(factory, spark, graknEngineStatus, metricRegistry);
-        new CommitLogController(spark, postProcessingDelay, taskManager);
+        new CommitLogController(spark, postProcessingDelay, taskManager, instanceCount);
         new TasksController(spark, taskManager, metricRegistry, taskExecutor);
         new EntityController(factory, spark);
         new EntityTypeController(factory, spark);

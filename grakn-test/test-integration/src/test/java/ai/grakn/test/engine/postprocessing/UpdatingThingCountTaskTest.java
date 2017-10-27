@@ -7,25 +7,18 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
+import ai.grakn.engine.postprocessing.UpdateInstanceCount;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
-import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 
 public class UpdatingThingCountTaskTest {
@@ -58,21 +51,13 @@ public class UpdatingThingCountTaskTest {
     private void createAndExecuteCountTask(Keyspace keyspace, ConceptId conceptId, long count){
         Json instanceCounts = Json.array();
         instanceCounts.add(Json.object(COMMIT_LOG_CONCEPT_ID, conceptId.getValue(), COMMIT_LOG_SHARDING_COUNT, count));
-        Json configuration = Json.object(
-                KEYSPACE, keyspace.getValue(),
-                COMMIT_LOG_COUNTING, instanceCounts
-        );
+
+        Json fakeCommitLog = Json.object();
+        fakeCommitLog.set(REST.Request.COMMIT_LOG_COUNTING, instanceCounts);
 
         //Start up the Job
-        TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now(), TaskState.Priority.HIGH);
-        engine.getTaskManager().addTask(task, TaskConfiguration.of(configuration));
-
-        // Wait for task to complete
-        waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
-
-        // Check that task has ran
-        // STOPPED because it is a recurring task
-        assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
+        UpdateInstanceCount job = new UpdateInstanceCount(engine.config(), engine.redis(), engine.server().factory(), engine.server().lockProvider(), engine.getMetricRegistry());
+        job.updateCounts(keyspace, fakeCommitLog);
     }
 
     @Test

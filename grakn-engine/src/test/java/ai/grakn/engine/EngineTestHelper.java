@@ -105,7 +105,7 @@ public class EngineTestHelper extends GraknCreator {
         TaskManager taskManager = taskManager(config, factory, jedisPool, lockProvider, engineID, metricRegistry);
         GraknEngineStatus graknEngineStatus = graknEngineStatus();
         ExecutorService executorService = executorService();
-        HttpHandler httpHandler = new HttpHandler(config, sparkService(), factory, metricRegistry, graknEngineStatus, taskManager, executorService);
+        HttpHandler httpHandler = new HttpHandler(config, sparkService(), factory, metricRegistry, graknEngineStatus, taskManager, executorService, jedisPool, lockProvider);
         return new GraknEngineServer(config, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, executorService, httpHandler, engineID);
     }
 
