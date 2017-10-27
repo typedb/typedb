@@ -274,8 +274,8 @@ public abstract class Atom extends AtomicBase {
      */
     public <T extends Atomic> Stream<T> getNeighbours(Class<T> type){
         return getParentQuery().getAtoms(type)
-                .filter(at -> at != this)
-                .filter(at -> !Sets.intersection(this.getVarNames(), at.getVarNames()).isEmpty());
+                .filter(atom -> atom != this)
+                .filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
     }
 
     /**

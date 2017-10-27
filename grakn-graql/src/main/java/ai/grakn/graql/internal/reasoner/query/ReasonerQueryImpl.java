@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
@@ -215,7 +214,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return !getEquivalentAtoms(atom, equivalenceFunction).isEmpty();
     }
 
-    Set<Atom> getEquivalentAtoms(Atom atom, BiFunction<Atom, Atom, Boolean> equivalenceFunction) {
+    private Set<Atom> getEquivalentAtoms(Atom atom, BiFunction<Atom, Atom, Boolean> equivalenceFunction) {
         return getAtoms(Atom.class)
                 .filter(at -> equivalenceFunction.apply(at, atom))
                 .collect(Collectors.toSet());
@@ -264,14 +263,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
     }
 
-    /**
-     * @param typedVar variable of interest
-     * @param parentType to be checked
-     * @return true if typing the typeVar with type is compatible with role configuration of this query
-     */
-    public boolean isTypeRoleCompatible(Var typedVar, SchemaConcept parentType){
+    @Override
+    public boolean isTypeRoleCompatible(Var typedVar, Type parentType){
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
 
+        Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
         return !getAtoms(RelationshipAtom.class)
                 .filter(ra -> ra.getVarNames().contains(typedVar))
                 .filter(ra -> ra.getRoleVarMap().entries().stream()
@@ -279,7 +275,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                         .filter(e -> e.getValue().equals(typedVar))
                         .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
                         //check if it can play it
-                        .filter(e -> !e.getKey().playedByTypes().filter(parentType::equals).findFirst().isPresent())
+                        .filter(e -> !e.getKey().playedByTypes().filter(parentTypes::contains).findFirst().isPresent())
                         .findFirst().isPresent())
                 .findFirst().isPresent();
     }
@@ -322,7 +318,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (varTypeMap == null) {
             varTypeMap = new HashMap<>();
             Stream.concat(
-                    getAtoms(TypeAtom.class),
+                    getAtoms(IsaAtom.class),
                     inferEntityTypes()
             )
                     .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))

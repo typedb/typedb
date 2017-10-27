@@ -7,6 +7,7 @@ summary: "How to use templating on top of Graql"
 sidebar: documentation_sidebar
 permalink: /documentation/graql/graql-templating.html
 folder: documentation
+KB: genealogy-plus
 ---
 
 ## Basic Syntax

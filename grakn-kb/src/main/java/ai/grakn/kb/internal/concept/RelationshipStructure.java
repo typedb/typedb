@@ -23,7 +23,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.cache.ContainsTxCache;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 
@@ -46,7 +46,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-interface RelationshipStructure extends ContainsTxCache {
+interface RelationshipStructure extends CacheOwner{
 
     /**
      *

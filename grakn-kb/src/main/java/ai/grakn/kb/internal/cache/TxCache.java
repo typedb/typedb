@@ -56,7 +56,7 @@ import java.util.Set;
  * @author fppt
  *
  */
-public class TxCache {
+public class TxCache{
     //Cache which is shared across multiple transactions
     private final GlobalCache globalCache;
 
@@ -85,6 +85,7 @@ public class TxCache {
 
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
+    private boolean writeOccurred = false;
     private GraknTxType txType;
     private String closedReason = null;
 
@@ -98,11 +99,19 @@ public class TxCache {
      * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
     public void writeToGraphCache(boolean isSafe){
-        //When a commit has occurred or a graph is read only all types can be overridden this is because we know they are valid.
-        if(isSafe) globalCache.readTxCache(this);
+        //When a commit has occurred or a transaction is read only all types can be overridden this is because we know they are valid.
+        //When it is not safe to simply flush we have to check that no mutations were made
+        if(isSafe || ! writeOccurred){
+            globalCache.readTxCache(this);
+        }
+    }
 
-        //When a commit has not occurred some checks are required
-        //TODO: Fill our cache when not committing and when not read only graph.
+    /**
+     * Notifies the cache that a write has occurred.
+     * This is later used to determine if it is safe to flush the transaction cache to the session cache or not.
+     */
+    public void writeOccured(){
+        writeOccurred = true;
     }
 
     /**
@@ -330,7 +339,7 @@ public class TxCache {
         this.closedReason = closedReason;
 
         //Clear Concept Caches
-        conceptCache.values().forEach(concept -> ContainsTxCache.from(concept).txCacheClear());
+        conceptCache.values().forEach(concept -> CacheOwner.from(concept).txCacheClear());
 
         //Clear Collection Caches
         modifiedThings.clear();

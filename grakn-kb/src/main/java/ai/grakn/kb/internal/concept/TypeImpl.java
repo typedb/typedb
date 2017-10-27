@@ -66,10 +66,10 @@ import java.util.stream.Stream;
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private final Cache<Boolean> cachedIsAbstract = new Cache<>(Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
+    private final Cache<Boolean> cachedIsAbstract = Cache.createSessionCache(this, Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 
     //This cache is different in order to keep track of which plays are required
-    private final Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(Cacheable.map(), () -> {
+    private final Cache<Map<Role, Boolean>> cachedDirectPlays = Cache.createSessionCache(this, Cacheable.map(), () -> {
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
@@ -94,20 +94,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         super(vertexElement, superType);
         //This constructor is ONLY used when CREATING new types. Which is why we shard here
         createShard();
-    }
-
-    @Override
-    public void txCacheFlush(){
-        super.txCacheFlush();
-        cachedIsAbstract.flush();
-        cachedDirectPlays.flush();
-    }
-
-    @Override
-    public void txCacheClear(){
-        super.txCacheClear();
-        cachedIsAbstract.clear();
-        cachedDirectPlays.clear();
     }
 
     /**

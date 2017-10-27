@@ -45,11 +45,9 @@ import static ai.grakn.util.REST.RemoteShell.INFER;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
 import static ai.grakn.util.REST.RemoteShell.MATERIALISE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
-import static ai.grakn.util.REST.RemoteShell.PASSWORD;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
-import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static ai.grakn.util.Schema.BaseType.TYPE;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
@@ -176,8 +174,6 @@ public class GraqlShell {
         options.addOption("s", "size", true, "the size of the batches (must be used with -b)");
         options.addOption("a", "active", true, "the number of active tasks (must be used with -b)");
         options.addOption("o", "output", true, "output format for results");
-        options.addOption("u", "user", true, "username to sign in");
-        options.addOption("p", "pass", true, "password to sign in");
         options.addOption("n", "infer", false, "perform inference on results");
         options.addOption("m", "materialise", false, "materialise inferred results");
         options.addOption("h", "help", false, "print usage message");
@@ -221,8 +217,6 @@ public class GraqlShell {
         Keyspace keyspace = Keyspace.of(cmd.getOptionValue("k", DEFAULT_KEYSPACE));
         String uriString = cmd.getOptionValue("r", Grakn.DEFAULT_URI);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
-        Optional<String> username = Optional.ofNullable(cmd.getOptionValue("u"));
-        Optional<String> password = Optional.ofNullable(cmd.getOptionValue("p"));
 
         if (!client.serverIsRunning(uriString)) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
@@ -258,7 +252,7 @@ public class GraqlShell {
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
             GraqlShell shell = new GraqlShell(
-                    historyFilename, keyspace, username, password, client, uri, outputFormat,
+                    historyFilename, keyspace, client, uri, outputFormat,
                     infer, materialise
             );
 
@@ -315,7 +309,7 @@ public class GraqlShell {
      * Create a new Graql shell
      */
     GraqlShell(
-            String historyFilename, Keyspace keyspace, Optional<String> username, Optional<String> password,
+            String historyFilename, Keyspace keyspace,
             GraqlClient client, URI uri, String outputFormat, boolean infer, boolean materialise
     ) throws Throwable {
 
@@ -331,8 +325,6 @@ public class GraqlShell {
                 INFER, infer,
                 MATERIALISE, materialise
         );
-        username.ifPresent(u -> initJson.set(USERNAME, u));
-        password.ifPresent(p -> initJson.set(PASSWORD, p));
         session.sendJson(initJson);
 
         // Wait to receive confirmation
