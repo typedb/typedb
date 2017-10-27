@@ -78,9 +78,13 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         return super.sup(superType);
     }
 
+    /**
+     *
+     * @return Filter supertypes of this
+     */
     @Override
     public Stream<AttributeType<D>> sups() {
-        return this.superSet();
+        return this.filterSuperSet(this.superSet());
     }
 
     /**

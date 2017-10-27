@@ -129,11 +129,14 @@ public class EntityTypeTest extends TxTestBase {
     @Test
     public void whenGettingTheSuperSetViaSupsMethod_ReturnAllOfItsSuperTypes(){
         EntityType child = tx.putEntityType("child");
-        EntityType p2 = tx.putEntityType("p2").sup(child);
-        EntityType p3 = tx.putEntityType("p3").sup(p2);
-        EntityType p4 = tx.putEntityType("p4").sup(p3);
+        EntityType p2 = tx.putEntityType("p2").sub(child);
+        EntityType p3 = tx.putEntityType("p3").sub(p2);
+        EntityType p4 = tx.putEntityType("p4").sub(p3);
 
         assertThat(child.sups().collect(toSet()), containsInAnyOrder(child, p2, p3, p4));
+        assertThat(p2.sups().collect(toSet()), containsInAnyOrder(p2,p3, p4));
+        assertThat(p3.sups().collect(toSet()), containsInAnyOrder(p3,p4));
+        assertThat(p4.sups().collect(toSet()), containsInAnyOrder(p4));
 
     }
 

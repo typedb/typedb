@@ -109,9 +109,13 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         return this;
     }
 
+    /**
+     *
+     * @return filtered supertypes
+     */
     @Override
     public Stream<RelationshipType> sups() {
-        return this.superSet();
+        return this.filterSuperSet(superSet());
     }
 
     /**

@@ -34,7 +34,9 @@ import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -142,7 +144,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      */
     @Override
     public Stream<T> sups() {
-        return this.superSet();
+        return this.filterSuperSet(this.superSet());
     }
 
     /**
@@ -151,16 +153,39 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      */
     public Stream<T> superSet() {
         Set<T> superSet= new HashSet<>();
+
         superSet.add(getThis());
         T superParent = sup();
 
         while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
             superSet.add(superParent);
+
             //noinspection unchecked
             superParent = (T) superParent.sup();
         }
 
         return superSet.stream();
+    }
+
+
+    /**
+     * Filtters the supertypes not to return schema nodes
+     * @param superSet
+     * @return the filtered supertypes
+     */
+    public Stream<T> filterSuperSet(Stream<T> superSet) {
+        Set<T> filtered = new HashSet<>();
+        superSet.forEach((node) -> {
+            if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(node.getLabel())
+                    && !Schema.MetaSchema.ENTITY.getLabel().equals(node.getLabel())
+                    && !Schema.MetaSchema.RELATIONSHIP.getLabel().equals(node.getLabel())
+                    && !Schema.MetaSchema.RULE.getLabel().equals(node.getLabel())){
+                filtered.add(node);
+            }
+        });
+
+        return filtered.stream();
+
     }
 
     /**

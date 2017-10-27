@@ -63,6 +63,6 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
 
     @Override
     public Stream<EntityType> sups() {
-        return this.superSet();
+        return this.filterSuperSet(this.superSet());
     }
 }
