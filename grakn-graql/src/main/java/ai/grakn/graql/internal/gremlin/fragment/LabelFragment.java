@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
@@ -79,7 +78,7 @@ abstract class LabelFragment extends Fragment {
     public Optional<Long> getShardCount(GraknTx tx) {
         return Optional.of(labels().stream()
                 .map(tx::<SchemaConcept>getSchemaConcept)
-                .filter(Concept::isType)
+                .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
                 .mapToLong(schemaConcept -> tx.admin().getShardCount(schemaConcept.asType()))
                 .sum());
     }
