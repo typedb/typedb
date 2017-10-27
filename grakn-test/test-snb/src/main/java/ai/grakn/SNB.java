@@ -62,6 +62,7 @@ public class SNB {
     static final String CONTENT = "content";
     static final String NAME = "name";
 
+    static final VarPattern FORUM = label("forum");
     static final VarPattern TAG = label("tag");
     static final VarPattern UNIVERSITY = label("university");
     static final VarPattern COMPANY = label("company");

@@ -9,6 +9,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.migration.base.Migrator;
+import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.xml.XmlMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
@@ -105,7 +106,8 @@ public class XMLMigratorTest {
         MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "schema.gql"));
 
         // load the data
-        Migrator migrator = new Migrator(engine.uri(), keyspace);
+        Migrator migrator = new MigratorBuilder().setUri(engine.uri()).setKeyspace(keyspace)
+                .build();
 
         File xmlFile = MigratorTestUtils.getFile("xml", "data.xml");
 

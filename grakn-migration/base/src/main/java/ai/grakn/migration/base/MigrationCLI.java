@@ -103,14 +103,18 @@ public class MigrationCLI {
 
     public static void loadOrPrint(File templateFile, Stream<Map<String, Object>> data, MigrationOptions options){
         String template = fileAsString(templateFile);
-        Migrator migrator = new Migrator(options.getUri(), options.getKeyspace());
+        Migrator migrator = new MigratorBuilder()
+                .setUri(options.getUri())
+                .setMigrationOptions(options)
+                .setKeyspace(options.getKeyspace())
+                .build();
         if(options.isNo()){
             migrator.print(template, data);
         } else {
             printInitMessage(options);
             migrator.getReporter().start(1, TimeUnit.MINUTES);
             try {
-                migrator.load(template, data, options.getRetry(), options.isDebug(), options.getMaxDelay());
+                migrator.load(template, data);
             } catch (Exception e) {
                 // This is to catch migration exceptions and return intelligible output messages
                 System.out.println("Error while loading data: " + e.getMessage());

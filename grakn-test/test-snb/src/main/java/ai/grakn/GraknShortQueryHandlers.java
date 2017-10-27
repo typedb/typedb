@@ -326,9 +326,9 @@ public class GraknShortQueryHandlers {
                 List<Answer> results = graph.graql().match(
                         $message.has(MESSAGE_ID, operation.messageId()),
                         var().rel(PRODUCT, $message).rel(CREATOR, $person).isa(HAS_CREATOR),
-                        var().rel($person, $firstName).isa(has(FIRST_NAME)),
-                        var().rel($person, $lastName).isa(has(LAST_NAME)),
-                        var().rel($person, $personId).isa(key(PERSON_ID))
+                        var().rel($person).rel($firstName).isa(has(FIRST_NAME)),
+                        var().rel($person).rel($lastName).isa(has(LAST_NAME)),
+                        var().rel($person).rel($personId).isa(key(PERSON_ID))
                 ).get().execute();
 
                 if (results.size() >= 1) {
@@ -412,9 +412,9 @@ public class GraknShortQueryHandlers {
                         var().rel($comment).rel($content).isa(has(CONTENT)),
                         var().rel($comment).rel($date).isa(has(CREATION_DATE)),
                         var().rel(PRODUCT, $comment).rel(CREATOR, $author2).isa(HAS_CREATOR),
-                        var().rel($author2, $personId).isa(key(PERSON_ID)),
-                        var().rel($author2, $firstName).isa(has(FIRST_NAME)),
-                        var().rel($author2, $lastName).isa(has(LAST_NAME))
+                        var().rel($author2).rel($personId).isa(key(PERSON_ID)),
+                        var().rel($author2).rel($firstName).isa(has(FIRST_NAME)),
+                        var().rel($author2).rel($lastName).isa(has(LAST_NAME))
                 ).get().execute();
 
                 List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
