@@ -70,6 +70,7 @@ public class SNB {
     static final VarPattern INTEREST = label("interest");
     static final VarPattern HAS_INTEREST = label("has-interest");
     static final VarPattern STUDENT = label("student");
+    static final VarPattern FORUM = label("school");
     static final VarPattern SCHOOL = label("school");
     static final VarPattern STUDY_AT = label("study-at");
     static final VarPattern EMPLOYEE = label("employee");
