@@ -17,7 +17,6 @@ import org.openjdk.jmh.annotations.TearDown;
 
 
 public class AddBenchmark extends BenchmarkTest {
-
     private static final Keyspace KEYSPACE = SampleKBLoader.randomKeyspace();
 
     private EngineContext engine;

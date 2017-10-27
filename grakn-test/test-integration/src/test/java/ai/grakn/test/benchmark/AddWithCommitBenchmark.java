@@ -16,11 +16,13 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @State(Scope.Benchmark)
 public class AddWithCommitBenchmark extends BenchmarkTest {
-
+    private static final Logger LOG = LoggerFactory.getLogger(AddWithCommitBenchmark.class);
     private static final Keyspace KEYSPACE = SampleKBLoader.randomKeyspace();
 
     private EngineContext engine;
@@ -46,7 +48,9 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
 
     @TearDown
     public void tearDown() {
+        LOG.error("Closing");
         session.close();
+        LOG.error("Aftering");
         engine.after();
     }
 
