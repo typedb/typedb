@@ -92,7 +92,7 @@ public class GraknSessionImpl implements GraknSession {
         if(Grakn.IN_MEMORY.equals(engineUri)){
             properties = getTxInMemoryProperties();
         } else {
-            properties = getTxRemoteProperties(engineUri);
+            properties = getTxRemoteProperties(engineUri, keyspace);
         }
     }
 
@@ -101,17 +101,20 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build a {@link GraknTx}
      */
-    private static Properties getTxRemoteProperties(String engineUrl){
-        URI restFactoryUri;
+    private static Properties getTxRemoteProperties(String engineUrl, Keyspace keyspace){
+        URI configUri, keyspaceUri;
         try {
-            restFactoryUri = new SimpleURI(engineUrl).builder().setPath(REST.WebPath.System.CONFIGURATION).build();
+            configUri = new SimpleURI(engineUrl).builder().setPath(REST.WebPath.System.CONFIGURATION).build();
+            keyspaceUri = new SimpleURI(engineUrl).builder().setPath(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue())).build();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }
 
+        contactEngine(Optional.of(keyspaceUri), REST.HttpConn.PUT_METHOD);
+
         Properties properties = new Properties();
         //Get Specific Configs
-        properties.putAll(read(contactEngine(Optional.of(restFactoryUri), REST.HttpConn.GET_METHOD)).asMap());
+        properties.putAll(read(contactEngine(Optional.of(configUri), REST.HttpConn.GET_METHOD)).asMap());
         return properties;
     }
 

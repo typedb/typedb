@@ -24,6 +24,8 @@ import org.apache.http.HttpHost;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
@@ -86,6 +88,14 @@ public class SimpleURI {
             return new URL("http", getHost(), getPort(), "");
         } catch (MalformedURLException e) {
             throw new RuntimeException("Unexpected error while generating URL from " + this);
+        }
+    }
+
+    public URI toURI() {
+        try {
+            return builder().build();
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
         }
     }
 }

@@ -19,7 +19,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -113,11 +112,8 @@ public class SystemControllerTest {
     }
 
     @Test
-    public void whenCallingConfigurationEndpoint_GetConfigurationWithoutJWTPassword() {
-        Json expected = Json.make(properties);
-        expected.delAt(GraknConfigKey.JWT_SECRET.name());
-
-        when().get("/configuration").then().body(is(expected.toString()));
+    public void whenCallingConfigurationEndpoint_GetConfiguration() {
+        when().get("/configuration").then().body(is(Json.make(properties).toString()));
     }
 
     @Test

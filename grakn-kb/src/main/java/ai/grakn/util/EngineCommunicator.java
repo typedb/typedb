@@ -76,7 +76,7 @@ public class EngineCommunicator {
                     }
                 }
 
-                if (connection.getResponseCode() != 200) {
+                if (!statusCodeIsSuccessful(connection.getResponseCode())) {
                     throw new IllegalArgumentException(ErrorMessage.INVALID_ENGINE_RESPONSE.getMessage(url, connection.getResponseCode()));
                 }
 
@@ -94,6 +94,10 @@ public class EngineCommunicator {
             }
         }
         throw new RuntimeException(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUri));
+    }
+
+    private static boolean statusCodeIsSuccessful(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
     }
 
     /**

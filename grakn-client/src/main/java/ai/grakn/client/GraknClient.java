@@ -19,8 +19,8 @@ package ai.grakn.client;
 
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
+import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
-import com.google.common.collect.ImmutableMap;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import mjson.Json;
@@ -34,10 +34,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 
 /**
@@ -52,26 +49,22 @@ public class GraknClient {
     private final Logger LOG = LoggerFactory.getLogger(GraknClient.class);
 
     private final Client asyncHttpClient;
-    private final String graqlExecuteURL;
-    private final String keyspaceURL;
+    private final SimpleURI uri;
 
     public GraknClient(SimpleURI url)  {
         this.asyncHttpClient = Client.create();
         this.asyncHttpClient.setConnectTimeout(CONNECT_TIMEOUT_MS);
         this.asyncHttpClient.setReadTimeout(CONNECT_TIMEOUT_MS * 2);
-        String urlWithSchema = url.toStringWithSchema();
-        this.graqlExecuteURL = urlWithSchema + "/kb/graql/execute";
-        this.keyspaceURL = urlWithSchema + "/keyspaces/{keyspace}";
+        this.uri = url;
     }
 
-    public List<QueryResponse> graqlExecute(List<Query<?>> queryList, String keyspace)
+    public List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace)
             throws GraknClientException {
         String body = queryList.stream().map(Object::toString).reduce("; ", String::concat).substring(2);
-        URI fullURI = UriBuilder.fromPath(graqlExecuteURL)
-                .queryParam(MATERIALISE, "false")
-                .queryParam(INFER, "false")
-                .queryParam(MULTI, "true")
-                .queryParam(KEYSPACE, keyspace).build();
+        URI fullURI = UriBuilder.fromUri(uri.toURI())
+                .path(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace.getValue()))
+                .queryParam(MULTI, true)
+                .build();
         ClientResponse response = asyncHttpClient.resource(fullURI.toString())
                 .accept(APPLICATION_JSON_GRAQL)
                 .post(ClientResponse.class, body);
@@ -89,7 +82,9 @@ public class GraknClient {
     }
 
     public Optional<Keyspace> keyspace(String keyspace) throws GraknClientException {
-        URI fullURI = UriBuilder.fromPath(keyspaceURL).buildFromMap(ImmutableMap.of("keyspace", keyspace));
+        URI fullURI = UriBuilder.fromUri(uri.toURI())
+                .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace))
+                .build();
         ClientResponse response = asyncHttpClient.resource(fullURI.toString())
                 .accept(APPLICATION_JSON_GRAQL)
                 .get(ClientResponse.class);
