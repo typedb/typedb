@@ -58,6 +58,7 @@ import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import ai.grakn.util.SimpleURI;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -809,7 +810,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             return Optional.empty();
         }
 
-        URI uri = UriBuilder.fromUri(engineUri)
+        URI uri = UriBuilder.fromUri(new SimpleURI(engineUri).toURI())
                 .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue()))
                 .build();
         return Optional.of(uri);

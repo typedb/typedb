@@ -36,6 +36,7 @@ import java.util.Properties;
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.when;
 import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
+import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.Matchers.empty;
@@ -74,6 +75,18 @@ public class SystemControllerTest {
     @Test
     public void whenInitiallyCallingKBEndpoint_GetEmptyList() {
         when().get("/kb").then().body("", empty());
+    }
+
+    @Test
+    public void whenCallingGetKBEndpointOnNonExistentKeyspace_Return404() {
+        when().get("/kb/myks").then().statusCode(SC_NOT_FOUND).body(isEmptyString());
+    }
+
+    @Test
+    public void whenCallingGetKBEndpointOnExistingKeyspace_Return200() {
+        RestAssured.put("/kb/myks");
+
+        when().get("/kb/myks").then().statusCode(SC_OK).body(isEmptyString());
     }
 
     @Test

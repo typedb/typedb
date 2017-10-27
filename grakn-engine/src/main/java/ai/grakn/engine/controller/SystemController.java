@@ -110,6 +110,7 @@ public class SystemController {
         prometheusRegistry.register(prometheusMetricWrapper);
 
         spark.get(KB, this::getKeyspaces);
+        spark.get(KB_KEYSPACE, this::getKeyspace);
         spark.put(KB_KEYSPACE, this::putKeyspace);
         spark.delete(KB_KEYSPACE, this::deleteKeyspace);
         spark.get(CONFIGURATION, this::getConfiguration);
@@ -151,6 +152,21 @@ public class SystemController {
             LOG.error("While retrieving keyspace list:", e);
             throw GraknServerException.serverException(500, e);
         }
+    }
+
+    @GET
+    @Path("/kb/{keyspace}")
+    @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "path")
+    private String getKeyspace(Request request, Response response) {
+        Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
+
+        if (factory.systemKeyspace().containsKeyspace(keyspace)) {
+            response.status(HttpServletResponse.SC_OK);
+        } else {
+            response.status(HttpServletResponse.SC_NOT_FOUND);
+        }
+
+        return "";
     }
 
     @PUT

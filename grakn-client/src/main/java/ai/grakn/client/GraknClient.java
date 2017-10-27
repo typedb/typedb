@@ -23,10 +23,10 @@ import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.UriBuilder;
@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static ai.grakn.util.REST.Request.Graql.MULTI;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 
 /**
@@ -65,16 +66,16 @@ public class GraknClient {
                 .path(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace.getValue()))
                 .queryParam(MULTI, true)
                 .build();
-        ClientResponse response = asyncHttpClient.resource(fullURI.toString())
+        ClientResponse response = asyncHttpClient.resource(fullURI)
                 .accept(APPLICATION_JSON_GRAQL)
                 .post(ClientResponse.class, body);
         try {
-            int statusCode = response.getStatus();
+            Response.StatusType status = response.getStatusInfo();
             String entity = response.getEntity(String.class);
-            if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
-                throw new GraknClientException("Failed graqlExecute. Error status: " + statusCode + ", error info: " + entity, response.getStatusInfo());
+            if (!status.getFamily().equals(Family.SUCCESSFUL)) {
+                throw new GraknClientException("Failed graqlExecute. Error status: " + status.getStatusCode() + ", error info: " + entity, response.getStatusInfo());
             }
-            LOG.debug("Received {}", statusCode);
+            LOG.debug("Received {}", status.getStatusCode());
             return QueryResponse.from(queryList, entity);
         } finally {
             response.close();
@@ -85,20 +86,19 @@ public class GraknClient {
         URI fullURI = UriBuilder.fromUri(uri.toURI())
                 .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace))
                 .build();
-        ClientResponse response = asyncHttpClient.resource(fullURI.toString())
-                .accept(APPLICATION_JSON_GRAQL)
+        ClientResponse response = asyncHttpClient.resource(fullURI)
+                .accept(APPLICATION_JSON)
                 .get(ClientResponse.class);
-        int statusCode = response.getStatus();
-        LOG.debug("Received {}", statusCode);
-        if (response.getStatusInfo().getStatusCode() == Status.NOT_FOUND.getStatusCode()) {
+        Response.StatusType status = response.getStatusInfo();
+        LOG.debug("Received {}", status.getStatusCode());
+        if (status.getStatusCode() == Status.NOT_FOUND.getStatusCode()) {
             return Optional.empty();
         }
         String entity = response.getEntity(String.class);
-        if (!response.getStatusInfo().getFamily().equals(Family.SUCCESSFUL)) {
-            throw new GraknClientException("Failed keyspace. Error status: " + statusCode + ", error info: " + entity, response.getStatusInfo());
+        if (!status.getFamily().equals(Family.SUCCESSFUL)) {
+            throw new GraknClientException("Failed keyspace. Error status: " + status.getStatusCode() + ", error info: " + entity, response.getStatusInfo());
         }
-        String value = Json.read(entity).at("value").asString();
         response.close();
-        return Optional.of(Keyspace.of(value));
+        return Optional.of(Keyspace.of(keyspace));
     }
 }
