@@ -60,6 +60,8 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  * @author Jason Liu
  */
 public class GreedyTraversalPlan {
+    private static final double SHARD_LOAD_FACTOR = 0.25 - 1.0; // there is at least one shard
+    private static final long DEFAULT_SHARDING_THRESHOLD = 10_000L;
 
     protected static final Logger LOG = LoggerFactory.getLogger(GreedyTraversalPlan.class);
 
@@ -69,12 +71,12 @@ public class GreedyTraversalPlan {
      * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
      */
-    public static GraqlTraversal createTraversal(PatternAdmin pattern, GraknTx graph) {
+    public static GraqlTraversal createTraversal(PatternAdmin pattern, GraknTx tx) {
         Collection<Conjunction<VarPatternAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<? extends List<Fragment>> fragments = patterns.stream()
-                .map(conjunction -> new ConjunctionQuery(conjunction, graph))
-                .map(GreedyTraversalPlan::planForConjunction)
+                .map(conjunction -> new ConjunctionQuery(conjunction, tx))
+                .map((ConjunctionQuery query) -> planForConjunction(query, tx))
                 .collect(toImmutableSet());
 
         return GraqlTraversal.create(fragments);
@@ -86,7 +88,7 @@ public class GreedyTraversalPlan {
      * @param query the conjunction query to find a traversal plan
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
-    private static List<Fragment> planForConjunction(ConjunctionQuery query) {
+    private static List<Fragment> planForConjunction(ConjunctionQuery query, GraknTx tx) {
 
         List<Fragment> plan = new ArrayList<>();
         Map<NodeId, Node> allNodes = new HashMap<>();
@@ -97,13 +99,21 @@ public class GreedyTraversalPlan {
 
             Set<Node> connectedNodes = new HashSet<>();
             Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
-            final Set<Node> nodesWithFixedCost = new HashSet<>();
+            final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
             Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
 
             fragmentSet.stream()
-                    .filter(filterNodeFragment(plan, allNodes, connectedNodes, nodesWithFixedCost))
-                    .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
+                    .filter(filterNodeFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, tx))
+                    .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())//.distinct()
                     .forEach(weightedDirectedEdge -> {
+                        if (nodesWithFixedCost.containsKey(weightedDirectedEdge.val.source) &&
+                                nodesWithFixedCost.get(weightedDirectedEdge.val.source) > 0 &&
+                                weightedDirectedEdge.val.destination.getNodeId().getNodeType() == NodeId.NodeType.ISA) {
+
+                            edges.get(weightedDirectedEdge.val.destination).get(weightedDirectedEdge.val.source)
+                                    .setAccurateFragmentCost(nodesWithFixedCost.get(weightedDirectedEdge.val.source));
+                            weightedDirectedEdge.weight = -nodesWithFixedCost.get(weightedDirectedEdge.val.source);
+                        }
                         weightedGraph.add(weightedDirectedEdge);
                         connectedNodes.add(weightedDirectedEdge.val.destination);
                         connectedNodes.add(weightedDirectedEdge.val.source);
@@ -115,7 +125,8 @@ public class GreedyTraversalPlan {
 
                 final Collection<Node> startingNodes = nodesWithFixedCost.isEmpty() ?
                         sparseWeightedGraph.getNodes().stream()
-                                .filter(Node::isValidStartingPoint).collect(Collectors.toSet()) : nodesWithFixedCost;
+                                .filter(Node::isValidStartingPoint).collect(Collectors.toSet()) :
+                        nodesWithFixedCost.keySet();
 
                 Arborescence<Node> arborescence = startingNodes.stream()
                         .map(node -> ChuLiuEdmonds.getMaxArborescence(sparseWeightedGraph, node))
@@ -150,8 +161,11 @@ public class GreedyTraversalPlan {
         }
     }
 
-    private static Predicate<Fragment> filterNodeFragment(List<Fragment> plan, Map<NodeId, Node> allNodes,
-                                                          Set<Node> connectedNodes, Set<Node> nodesWithFixedCost) {
+    private static Predicate<Fragment> filterNodeFragment(List<Fragment> plan,
+                                                          Map<NodeId, Node> allNodes,
+                                                          Set<Node> connectedNodes,
+                                                          Map<Node, Double> nodesWithFixedCost,
+                                                          GraknTx tx) {
         return fragment -> {
             if (fragment.end() == null) {
                 Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
@@ -160,7 +174,12 @@ public class GreedyTraversalPlan {
                 if (fragment.hasFixedFragmentCost()) {
                     // fragments that should be done right away
                     plan.add(fragment);
-                    nodesWithFixedCost.add(start);
+                    double instanceCount = -1D;
+                    if (fragment.getShardCount(tx).isPresent()) {
+                        instanceCount = Math.log1p((fragment.getShardCount(tx).get() + SHARD_LOAD_FACTOR) *
+                                DEFAULT_SHARDING_THRESHOLD);
+                    }
+                    nodesWithFixedCost.put(start, instanceCount);
                     start.setFixedFragmentCost(fragment.fragmentCost());
 
                 } else if (fragment.dependencies().isEmpty()) {

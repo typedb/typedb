@@ -99,16 +99,21 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
+    Optional<Double> accurateFragmentCost = Optional.empty();
+
     /*
      * This is the memoized result of {@link #vars()}
      */
-    private @Nullable ImmutableSet<Var> vars = null;
-  
+    private @Nullable
+    ImmutableSet<Var> vars = null;
+
     /**
      * @param transform map defining id transform var -> new id
      * @return transformed fragment with id predicates transformed according to the transform
      */
-    public Fragment transform(Map<Var, ConceptId> transform){ return this;}
+    public Fragment transform(Map<Var, ConceptId> transform) {
+        return this;
+    }
 
     /**
      * Get the corresponding property
@@ -226,12 +231,20 @@ public abstract class Fragment {
      */
     public abstract double fragmentCost();
 
+    public void setAccurateFragmentCost(double fragmentCost) {
+        accurateFragmentCost = Optional.of(fragmentCost);
+    }
+
     /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
      * A plan should always start with these fragments when possible.
      */
     public boolean hasFixedFragmentCost() {
         return false;
+    }
+
+    public Optional<Long> getShardCount(GraknTx tx) {
+        return Optional.empty();
     }
 
     /**

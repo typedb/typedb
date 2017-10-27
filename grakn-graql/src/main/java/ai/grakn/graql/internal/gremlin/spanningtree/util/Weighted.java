@@ -27,12 +27,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Add a weight to anything!
  *
  * @param <T> the type of object
- * @author Sam Thomson
  * @author Jason Liu
  */
 public class Weighted<T> implements Comparable<Weighted<T>> {
     public final T val;
-    public final double weight;
+    public double weight;
 
     public Weighted(T val, double weight) {
         checkNotNull(val);
@@ -45,7 +44,7 @@ public class Weighted<T> implements Comparable<Weighted<T>> {
      * Convenience static constructor
      */
     public static <T> Weighted<T> weighted(T value, double weight) {
-        return new Weighted<T>(value, weight);
+        return new Weighted<>(value, weight);
     }
 
     /**
