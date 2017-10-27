@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 
 import java.io.Closeable;
+import java.net.ConnectException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -273,6 +274,7 @@ public class BatchExecutorClient implements Closeable {
                     .retryIfException((throwable) ->
                             throwable instanceof GraknClientException
                                     && ((GraknClientException) throwable).isRetriable())
+                    .retryIfExceptionOfType(ConnectException.class)
                     .withWaitStrategy(WaitStrategies.exponentialWait(10, 1, TimeUnit.MINUTES))
                     .withStopStrategy(StopStrategies.stopAfterAttempt(retries + 1))
                     .withRetryListener(new RetryListener() {

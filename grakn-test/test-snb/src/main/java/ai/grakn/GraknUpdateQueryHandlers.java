@@ -17,6 +17,7 @@
  */
 package ai.grakn;
 
+import static ai.grakn.SNB.FORUM;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import com.google.common.collect.ImmutableSet;
@@ -260,7 +261,7 @@ public class GraknUpdateQueryHandlers {
                     insert.add(var().rel(TAGGED, $forum).rel(TOPIC, $tag).isa(HAS_TAG));
                 }
 
-                insert.add($forum
+                insert.add($forum.isa(FORUM)
                         .has(FORUM_ID, operation.forumId())
                         .has(TITLE, operation.forumTitle())
                         .has(CREATION_DATE, fromDate(operation.creationDate()))

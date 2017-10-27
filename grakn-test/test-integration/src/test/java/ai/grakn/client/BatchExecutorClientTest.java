@@ -72,6 +72,22 @@ public class BatchExecutorClientTest {
     }
 
     @Test
+    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() {
+        List<Observable<QueryResponse>> all = new ArrayList<>();
+        // Create a BatchExecutorClient with a callback that will fail
+        try (BatchExecutorClient loader = loader(MAX_DELAY)) {
+            // Engine goes down
+            engine.server().getHttpHandler().stopHTTP();
+            // Most likely the first call doesn't find the server but it's retried
+            generate(this::query).limit(1).forEach(q -> all.add(loader.add(q, keyspace.getValue(), true)));
+            engine.server().getHttpHandler().startHTTP();
+            int completed = allObservable(all).toBlocking().first().size();
+            // Verify that the logger received the failed log message
+            assertEquals(1, completed);
+        }
+    }
+
+    @Test
     public void whenSingleQueryLoaded_TaskCompletionExecutesExactlyOnce() {
         List<Observable<QueryResponse>> all = new ArrayList<>();
         // Create a BatchExecutorClient with a callback that will fail
