@@ -105,7 +105,7 @@ node {
     timeout(90) {
 	stage('Run Janus test profile') {
 	    sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT || true"
-	    junit "**/target/*.xml"
+	    junit "**/target/surefire-reports/*.xml"
 	}
     }
 
