@@ -155,10 +155,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public String toString(){
-        return "{\n" +
+        return "{\n\t" +
                 getAtoms(Atom.class)
                         .map(Atomic::toString)
-                        .collect(Collectors.joining(";\n")) +
+                        .collect(Collectors.joining(";\n\t")) +
                 "\n}\n";
     }
 
@@ -208,7 +208,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return !getEquivalentAtoms(atom).isEmpty();
     }
 
-    Set<Atom> getEquivalentAtoms(Atom atom) {
+    private Set<Atom> getEquivalentAtoms(Atom atom) {
         return getAtoms(Atom.class)
                 .filter(at -> at.isEquivalent(atom))
                 .collect(Collectors.toSet());

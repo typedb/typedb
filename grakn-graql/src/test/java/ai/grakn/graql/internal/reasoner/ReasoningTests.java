@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.parsePatterns;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
@@ -753,22 +754,36 @@ public class ReasoningTests {
                 "get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), 10);
+
+        //1 relation satisfying ($a, $b) with types x (4 db relations + 1 inferred + 1 resource) x 2 for var change
+        assertEquals(answers.size(), 12);
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
+    /* Should find the possible relation configurations:
+         (x, z) - (z, z1) - (z1, z)
+                - (z, z2) - (z2, z)
+                - (z, y)  - { (y,z) (y, x) }
+                - (z, x)  - { res, (x, y), (x, z) }
+         */
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_WithRelationWithoutAnyBounds(){
         QueryBuilder qb = testSet28b.tx().graql().infer(true);
-        String queryString = "match " +
+        String partialPattern = "{" +
                 "$a isa entity1;" +
                 "($a, $b); $b isa entity3;" +
                 "($b, $c);" +
+                "};";
+
+        List<Answer> partialAnswers = qb.match(parsePatterns(partialPattern)).get().execute();
+        assertEquals(partialAnswers.size(), 4);
+        String queryString = "match " +
+                partialPattern +
                 "($c, $d);" +
                 "get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), 6);
+        assertEquals(answers.size(), 7);
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
