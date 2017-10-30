@@ -40,7 +40,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -265,7 +264,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param parentType to be checked
      * @return true if typing the typeVar with type is compatible with role configuration of this query
      */
-    public boolean isTypeRoleCompatible(Var typedVar, SchemaConcept parentType){
+    public boolean isTypeRoleCompatible(Var typedVar, Type parentType){
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
 
         Set<SchemaConcept> parentTypes = parentType.subs().collect(Collectors.toSet());
@@ -327,7 +326,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (varTypeMap == null) {
             varTypeMap = new HashMap<>();
             Stream.concat(
-                    getAtoms(TypeAtom.class),
+                    getAtoms(IsaAtom.class),
                     inferEntityTypes()
             )
                     .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))
@@ -385,8 +384,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public Answer getSubstitution(){
         if (substitution == null) {
-            Set<IdPredicate> predicates = getAtoms(TypeAtom.class)
-                    .map(TypeAtom::getTypePredicate)
+            Set<IdPredicate> predicates = getAtoms(IsaAtom.class)
+                    .map(IsaAtom::getTypePredicate)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
             getAtoms(IdPredicate.class).forEach(predicates::add);
