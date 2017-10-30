@@ -32,28 +32,22 @@ function clearGraph() {
 
 function onClickSubmit(query:string) {
   if (query.includes('aggregate')
-      || (query.includes('compute')&&query.includes('degrees'))
-      || (query.includes('compute')&&query.includes('cluster'))) {
+      || (query.includes('compute') && query.includes('degrees'))
+      || (query.includes('compute') && query.includes('cluster'))) {
           // Error message until we will not properly support aggregate queries in graph page.
     EventHub.$emit('error-message', '{"exception":"Invalid query: \\n \'aggregate\' queries \\n \'compute degrees\' \\n \'compute cluster\' \\n are not allowed from the Graph page. \\n \\nPlease use the Console page."}');
     return;
   }
 
-  if (query.startsWith('compute')) {
-    // If analytics query contains path we execute a HAL request
-    if (query.includes('path')) {
-      EngineClient.graqlHAL(query).then(resp => onGraphResponse(resp, false, false), (err) => {
-        EventHub.$emit('error-message', err.message);
-      });
-    } else {
-      EngineClient.graqlAnalytics(query).then(resp => onGraphResponseAnalytics(resp), (err) => {
-        EventHub.$emit('error-message', err.message);
-      });
-    }
-  } else {
-    EngineClient.graqlHAL(query).then((resp, nodeId) => onGraphResponse(resp, false, false, nodeId), (err) => {
+  if (query.startsWith('compute') && !query.includes('path')) {
+    EngineClient.graqlAnalytics(query).then(resp => onGraphResponseAnalytics(resp), (err) => {
       EventHub.$emit('error-message', err.message);
     });
+  } else {
+    EngineClient.graqlHAL(query)
+    .then((resp, nodeId) => onGraphResponse(resp, false, false, nodeId))
+    .then((instances) => { loadInstancesAttributes(0, instances); })
+    .catch((err) => { EventHub.$emit('error-message', err.message); });
   }
 }
 
@@ -153,19 +147,6 @@ function softFail(promise) {
     .catch(error => ({ success: false, error }));
 }
 
-function linkAttributeOwners(instances) {
-  instances.forEach((attribute) => {
-    EngineClient.request({
-      url: attribute.properties.href,
-    }).then((resp) => {
-      const responseObject = JSON.parse(resp);
-      const parsedResponse = HALParser.parseResponse(responseObject, false);
-      parsedResponse.edges.forEach(edge => visualiser.addEdge(edge.from, edge.to, edge.label));
-    });
-  });
-}
-
-
 /*
 * Public functions
 */
@@ -193,19 +174,16 @@ function onGraphResponse(resp: string, showIsa: boolean, showAttributes: boolean
   // Collect instances from filteredNodes to lazy load their attributes.
   const instances = filteredNodes
     .map(x => x.properties)
-    .filter(node => ((node.baseType === API.ENTITY || node.baseType === API.RELATIONSHIP || node.baseType === API.RULE) && (!visualiser.nodeExists(node.id))));
+    .filter(node => ((node.baseType === API.ENTITY || node.baseType === API.RELATIONSHIP || node.baseType === API.RULE)));
 
   filteredNodes.forEach(node => visualiser.addNode(node.properties, node.attributes, node.links, nodeId));
   parsedResponse.edges.forEach(edge => visualiser.addEdge(edge.from, edge.to, edge.label));
 
-  loadInstancesAttributes(0, instances);
-
-  // Check if there are attributes and make sure they are linked to their owners (if any already drawn in the graph)
-  linkAttributeOwners(filteredNodes.filter(node => ((node.properties.baseType === API.ATTRIBUTE))));
-
   if (nodeId) updateNodeHref(nodeId, responseObject);
 
   visualiser.fitGraphToWindow();
+
+  return instances;
 }
 
 function fetchFilteredRelationships(href: string) {
@@ -223,4 +201,4 @@ function loadAttributeOwners(attributeId: string) {
 }
 
 
-export default { initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners };
+export default { initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners, loadInstancesAttributes };
