@@ -464,6 +464,7 @@ public class RelationshipAtom extends IsaAtom {
 
         return compatibleTypes.asMap().entrySet().stream()
                 .sorted(Comparator.comparing(e -> -e.getValue().size()))
+                .sorted(Comparator.comparing(e -> e.getKey().isImplicit()))
                 .map(Map.Entry::getKey)
                 //all supers are also compatible
                 .filter(t -> Sets.intersection(supers(t), compatibleTypes.keySet()).isEmpty())
