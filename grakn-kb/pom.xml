@@ -35,11 +35,6 @@
             <artifactId>grakn-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.sharegov</groupId>
-            <artifactId>mjson</artifactId>
-            <version>${mjson.version}</version>
-        </dependency>        
         <!--Spark Computer Dependencies-->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>

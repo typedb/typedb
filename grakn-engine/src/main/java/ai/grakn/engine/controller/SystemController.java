@@ -20,17 +20,11 @@ package ai.grakn.engine.controller;
 
 
 import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.EntityType;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.util.Requests;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.util.ErrorMessage;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
@@ -58,12 +52,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.Collection;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
+import static ai.grakn.util.CommonUtil.toJsonArray;
 import static ai.grakn.util.REST.Request.FORMAT;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
@@ -94,15 +87,18 @@ public class SystemController {
     private static final String JSON = "json";
 
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
-    private final EngineGraknTxFactory factory;
     private final GraknEngineStatus graknEngineStatus;
     private final MetricRegistry metricRegistry;
     private final ObjectMapper mapper;
     private final CollectorRegistry prometheusRegistry;
+    private final SystemKeyspace systemKeyspace;
+    private final Properties properties;
 
-    public SystemController(EngineGraknTxFactory factory, Service spark,
-            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
-        this.factory = factory;
+    public SystemController(Service spark, Properties properties, SystemKeyspace systemKeyspace,
+                            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
+        this.systemKeyspace = systemKeyspace;
+        this.properties = properties;
+
         this.graknEngineStatus = graknEngineStatus;
         this.metricRegistry = metricRegistry;
         DropwizardExports prometheusMetricWrapper = new DropwizardExports(metricRegistry);
@@ -134,24 +130,7 @@ public class SystemController {
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
         response.type(APPLICATION_JSON);
-
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
-
-            AttributeType<String> keyspaceName = graph.getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
-            Json result = Json.array();
-
-            graph.<EntityType>getSchemaConcept(SystemKeyspace.KEYSPACE_ENTITY).instances().forEach(keyspace -> {
-                Collection<Attribute<?>> names = keyspace.attributes(keyspaceName).collect(Collectors.toSet());
-                if (names.size() != 1) {
-                    throw GraknServerException.internalError(ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
-                }
-                result.add(names.iterator().next().getValue());
-            });
-            return result.toString();
-        } catch (Exception e) {
-            LOG.error("While retrieving keyspace list:", e);
-            throw GraknServerException.serverException(500, e);
-        }
+        return systemKeyspace.keyspaces().map(Keyspace::getValue).collect(toJsonArray()).toString();
     }
 
     @GET
@@ -160,7 +139,7 @@ public class SystemController {
     private String getKeyspace(Request request, Response response) {
         Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
 
-        if (factory.systemKeyspace().containsKeyspace(keyspace)) {
+        if (systemKeyspace.containsKeyspace(keyspace)) {
             response.status(HttpServletResponse.SC_OK);
         } else {
             response.status(HttpServletResponse.SC_NOT_FOUND);
@@ -175,15 +154,8 @@ public class SystemController {
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "path")
     private String putKeyspace(Request request, Response response) {
         Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
-        boolean keyspaceInitialised = factory.systemKeyspace().ensureKeyspaceInitialised(keyspace);
-
-        if (keyspaceInitialised) {
-            response.status(HttpServletResponse.SC_NO_CONTENT);
-        } else {
-            throw GraknServerException
-                .internalError("Unable to instantiate system keyspace " + keyspace);
-        }
-
+        systemKeyspace.openKeyspace(keyspace);
+        response.status(HttpServletResponse.SC_NO_CONTENT);
         return "";
     }
 
@@ -193,7 +165,7 @@ public class SystemController {
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "path")
     private boolean deleteKeyspace(Request request, Response response) {
         Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
-        boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
+        boolean deletionComplete = systemKeyspace.deleteKeyspace(keyspace);
         if (deletionComplete) {
             LOG.info("Keyspace {} deleted", keyspace);
             response.status(HttpServletResponse.SC_NO_CONTENT);
@@ -210,7 +182,7 @@ public class SystemController {
 
         // Make a copy of the properties object
         Properties properties = new Properties();
-        properties.putAll(factory.properties());
+        properties.putAll(this.properties);
 
         // Turn the properties into a Json object
         Json jsonConfig = Json.make(properties);

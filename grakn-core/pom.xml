@@ -72,6 +72,11 @@
             <artifactId>rxjava</artifactId>
             <version>1.3.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.sharegov</groupId>
+            <artifactId>mjson</artifactId>
+            <version>${mjson.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

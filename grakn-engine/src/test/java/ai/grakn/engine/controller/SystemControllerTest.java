@@ -21,13 +21,13 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.engine.SystemKeyspaceFake;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import mjson.Json;
-import org.junit.Rule;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -54,13 +54,17 @@ public class SystemControllerTest {
     private static final Properties properties = GraknEngineConfig.create().getProperties();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
+    private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
 
-    @Rule
-    public SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        FactoryBuilder.refresh();
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(properties);
-        new SystemController(factory, spark, status, metricRegistry);
+    @ClassRule
+    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        new SystemController(spark, properties, systemKeyspace, status, metricRegistry);
     });
+
+    @Before
+    public void setUp() {
+        systemKeyspace.clear();
+    }
 
     @Test
     public void whenCallingKBEndpoint_Return200() {
@@ -166,3 +170,4 @@ public class SystemControllerTest {
         given().param("format", "rainbows").when().get("/metrics").then().statusCode(SC_BAD_REQUEST);
     }
 }
+

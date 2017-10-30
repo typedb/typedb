@@ -25,9 +25,9 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.util.SimpleURI;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.SimpleURI;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -39,7 +39,6 @@ import org.junit.runner.RunWith;
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(JUnitQuickcheck.class)
@@ -89,8 +88,7 @@ public class GraknEngineStartIT {
                             fail();
                         }
                     }
-                    boolean success = engine.factory().systemKeyspace().ensureKeyspaceInitialised(Keyspace.of("grakn"));
-                    assertTrue(success);
+                    engine.factory().systemKeyspace().openKeyspace(Keyspace.of("grakn"));
                 }));
         CompletableFuture.allOf(cfs.toArray(new CompletableFuture[cfs.size()])).join();
         engine.close();

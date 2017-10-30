@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
@@ -85,7 +86,7 @@ public class GraqlControllerReadOnlyTest {
     private static GraknTx mockTx;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
-    private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspace.class);
+    private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspaceImpl.class);
 
     private static final JsonMapper jsonMapper = new JsonMapper();
 
@@ -95,7 +96,7 @@ public class GraqlControllerReadOnlyTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(mockFactory, spark, new GraknEngineStatus(), metricRegistry);
+        new SystemController(spark, mockFactory.properties(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
         new GraqlController(mockFactory, spark, metricRegistry);
     });
 
@@ -116,8 +117,6 @@ public class GraqlControllerReadOnlyTest {
 
         when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomkeyspace"));
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
-
-        when(mockSystemKeyspace.ensureKeyspaceInitialised(any())).thenReturn(true);
 
         when(mockFactory.tx(eq(mockTx.getKeyspace()), any())).thenReturn(mockTx);
         when(mockFactory.systemKeyspace()).thenReturn(mockSystemKeyspace);
