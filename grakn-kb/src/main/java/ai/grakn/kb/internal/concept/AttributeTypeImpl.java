@@ -20,7 +20,6 @@ package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
@@ -30,7 +29,6 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * <p>

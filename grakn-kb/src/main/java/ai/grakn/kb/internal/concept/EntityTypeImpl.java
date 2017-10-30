@@ -24,8 +24,6 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 
-import java.util.stream.Stream;
-
 /**
  * <p>
  *     {@link SchemaConcept} used to represent categories.
