@@ -1162,7 +1162,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testUnification_VariousAtoms(){
+    public void testUnification_VariousResourceAtoms(){
         GraknTx graph = unificationTestSet.tx();
         String resource = "{$x has res1 $r;$r val 'f';}";
         String resource2 = "{$r has res1 $x;$x val 'f';}";
@@ -1226,7 +1226,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testUnification_ResourceWithType(){
+    public void testUnification_ResourceWithIndirectValuePredicate(){
         GraknTx graph = unificationTestSet.tx();
         String resource = "{$x has res1 $r;$r val 'f';}";
         String resource2 = "{$r has res1 $x;$x val 'f';}";
