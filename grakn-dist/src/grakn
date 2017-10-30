@@ -232,10 +232,13 @@ queue_start_and_wait_until_ready() {
       # exec queue bin successful. now wait until ready
       queue_wait_until_ready
       status=$?
+    else
+      status=1
+    fi
+
+    if [ ${status} -eq 0 ] ; then
       echo "SUCCESS"
     else
-      # exec queue bin failed
-      status=1
       echo "FAILED!"
     fi
 
