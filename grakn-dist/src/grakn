@@ -50,7 +50,7 @@ STORAGE_PID=/tmp/grakn-storage.pid
 STORAGE_STARTUP_TIMEOUT_S=60
 
 # Queue globals
-QUEUE_STARTUP_TIMEOUT_S=30
+QUEUE_STARTUP_TIMEOUT_S=10
 
 # ================================================
 # common helper functions
