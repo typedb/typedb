@@ -61,6 +61,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
+import java.util.Iterator;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -473,20 +474,24 @@ public class RelationshipAtom extends IsaAtom {
         if (possibleRelations == null) {
             Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations(sub);
             Set<Var> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap().keySet());
-            RelationshipAtom untypedNeighbour = getNeighbours(RelationshipAtom.class)
+            Set<RelationshipAtom> untypedNeighbours = getNeighbours(RelationshipAtom.class)
                     .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
-                    .findFirst().orElse(null);
+                    .collect(toSet());
 
             possibleRelations = compatibleConfigurations.asMap().entrySet().stream()
                     //sort by number of allowed roles
                     .sorted(Comparator.comparing(e -> -e.getValue().size()))
                     .sorted(Comparator.comparing(e -> e.getKey().relates().count() != getRelationPlayers().size()))
                     //sort by number of types untyped role players can have
-                    //TODO do intersection with all neighbours
                     .map(e -> {
-                        if (untypedNeighbour == null) return new Pair<>(e.getKey(), 0L);
+                        if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
 
-                        Set<Type> typesFromNeighbour = untypedNeighbour.inferPossibleEntityTypes(sub);
+                        Iterator<RelationshipAtom> neighbourIterator = untypedNeighbours.iterator();
+                        Set<Type> typesFromNeighbour = neighbourIterator.next().inferPossibleEntityTypes(sub);
+                        while(neighbourIterator.hasNext()){
+                            typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypes(sub));
+                        }
+
                         Set<Role> rs = e.getKey().relates().collect(toSet());
                         rs.removeAll(e.getValue());
                         return new Pair<>(
