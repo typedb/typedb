@@ -45,6 +45,8 @@ if [ -z "${GRAKN_HOME}" ]; then
     GRAKN_STARTUP_TIMEOUT_S=120
 fi
 
+GRAKN_CLASSNAME="ai.grakn.engine.Grakn"
+
 # Storage globals
 STORAGE_PID=/tmp/grakn-storage.pid
 STORAGE_STARTUP_TIMEOUT_S=60
@@ -66,6 +68,15 @@ update_classpath_global_var() {
   # Add path containing grakn.properties and logback.xml
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
+}
+
+ps_ef_grep_processname() {
+  ps -ef | grep -v grep | awk '{print $2" "$(NF-1)}' | grep "$1"
+}
+
+
+ps_ef_grep_processname_by_java_classname() {
+  ps -ef | grep -v grep | awk '{print $2" "$(NF)}' | grep "$1"
 }
 
 # ================================================
@@ -165,17 +176,19 @@ storage_wipe_all_data() {
 # ================================================
 # queue helper functions
 # ================================================
-queue_start_process() {
-  local queue_bin=""
+get_redis_binary_name() {
   if [ "$(uname)" == "Darwin" ]; then
-      queue_bin="redis-server-osx"
+      echo -n "redis-server-osx"
   elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-      queue_bin="redis-server-linux"
+      echo -n "redis-server-linux"
   fi
+}
 
+queue_start_process() {
   # run queue
   # queue needs to be ran with $GRAKN_HOME as the working directory
   # otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
+  local queue_bin=`get_redis_binary_name`
   pushd "$GRAKN_HOME" > /dev/null
   "${GRAKN_HOME}"/services/redis/$queue_bin "${GRAKN_HOME}"/services/redis/redis.conf
   local status=$?
@@ -185,8 +198,9 @@ queue_start_process() {
 }
 
 queue_check_if_running() {
+  local queue_fullpath="${GRAKN_HOME}/services/redis/`get_redis_binary_name`"
+  local count_running_queue_process=`ps_ef_grep_processname "$queue_fullpath" | wc -l`
   local status=
-  local count_running_queue_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
   if [ $count_running_queue_process -gt 0 ] ; then
     status=0 # queue running
   else
@@ -287,7 +301,7 @@ grakn_start_process() {
   java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" \
     ai.grakn.engine.Grakn > /dev/null 2>&1 &
   status=$?
-  pid=`ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'`
+  local pid=`ps_ef_grep_processname_by_java_classname "$GRAKN_CLASSNAME" | awk '{print $1}'`
   echo $pid > "${GRAKN_PID}"
   return $status
 }
