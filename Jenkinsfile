@@ -13,7 +13,7 @@ class Constants {
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([pipelineTriggers([cron('H H/8 * * *')])])
-    properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
+properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
 
 def slackGithub(String message, String color = null) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
@@ -104,8 +104,11 @@ node {
 
     timeout(90) {
 	stage('Run Janus test profile') {
-	    sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT || true"
-	    junit "**/target/surefire-reports/*.xml"
+	    try {
+		sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
+	    } finally {
+		junit "**/TEST*.xml"
+	    }
 	}
     }
 
