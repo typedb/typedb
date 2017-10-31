@@ -104,7 +104,8 @@ public class GreedyTraversalPlan {
 
             fragmentSet.stream()
                     .filter(filterNodeFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, tx))
-                    .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())//.distinct()
+                    .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
+                    .collect(Collectors.toSet()) // make sure previous steps are done
                     .forEach(weightedDirectedEdge -> {
                         if (nodesWithFixedCost.containsKey(weightedDirectedEdge.val.source) &&
                                 nodesWithFixedCost.get(weightedDirectedEdge.val.source) > 0 &&
