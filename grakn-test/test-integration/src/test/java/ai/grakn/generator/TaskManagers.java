@@ -21,6 +21,7 @@ package ai.grakn.generator;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.EngineID;
@@ -69,10 +70,15 @@ public class TaskManagers extends Generator<TaskManager> {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         SimpleURI simpleURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         Pool<Jedis> jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort());
+        ProcessWideLockProvider distributedLockClient = new ProcessWideLockProvider();
+        MetricRegistry metricRegistry = new MetricRegistry();
+
+        PostProcessor postProcessor = PostProcessor.create(config, jedisPool, null, distributedLockClient, metricRegistry);
+
         if (taskManager == null) {
             // TODO this doesn't take a Redis connection. Make sure this is what we expect
             taskManager = new RedisTaskManager(EngineID.me(), config, jedisPool, 32, null,
-                            new ProcessWideLockProvider(), new MetricRegistry());
+                    distributedLockClient, metricRegistry, postProcessor);
         }
 
         return taskManager;

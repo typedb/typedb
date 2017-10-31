@@ -75,6 +75,7 @@ public class RedisTaskManager implements TaskManager {
         Consumer<Task> consumer = new RedisTaskQueueConsumer(this, engineId, config,
                 RedisCountStorage.create(jedisPool, metricRegistry), metricRegistry, factory,
                 distributedLockClient, postProcessor);
+
         LOG.info("Running queue consumer with {} execution threads", threads);
         ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("redisq-task-manager-%d").build();
