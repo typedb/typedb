@@ -106,7 +106,7 @@ public class RedisTaskManagerTest {
         int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
         PostProcessor postProcessor = PostProcessor.create(CONFIG, jedisPool, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry);
-        taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry, postProcessor);
+        taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknTxFactory, metricRegistry, postProcessor);
         CompletableFuture<Void> cf = taskManager.start();
         cf.join();
     }

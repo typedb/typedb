@@ -23,7 +23,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -134,7 +133,7 @@ public class PostProcessingTest {
             }
         };
         task.initialize(null, configuration, taskSubmitter, engine.config(), engine.server().factory(),
-                new ProcessWideLockProvider(), new MetricRegistry(), postProcessor);
+                new MetricRegistry(), postProcessor);
 
         task.start();
 

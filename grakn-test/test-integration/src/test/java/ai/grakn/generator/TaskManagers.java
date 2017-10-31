@@ -78,7 +78,7 @@ public class TaskManagers extends Generator<TaskManager> {
         if (taskManager == null) {
             // TODO this doesn't take a Redis connection. Make sure this is what we expect
             taskManager = new RedisTaskManager(EngineID.me(), config, jedisPool, 32, null,
-                    distributedLockClient, metricRegistry, postProcessor);
+                   metricRegistry, postProcessor);
         }
 
         return taskManager;

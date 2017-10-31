@@ -20,9 +20,7 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -49,7 +47,6 @@ public abstract class BackgroundTask {
     private @Nullable
     EngineGraknTxFactory factory = null;
     private @Nullable MetricRegistry metricRegistry = null;
-    private @Nullable LockProvider lockProvider = null;
     private @Nullable PostProcessor postProcessor = null;
 
     /**
@@ -64,12 +61,11 @@ public abstract class BackgroundTask {
     public final void initialize(
             Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
             TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig,
-            EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, PostProcessor postProcessor)  {
+            EngineGraknTxFactory factory, MetricRegistry metricRegistry, PostProcessor postProcessor)  {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;
         this.engineConfig = engineConfig;
-        this.lockProvider = lockProvider;
         this.metricRegistry = metricRegistry;
         this.factory = factory;
         this.postProcessor = postProcessor;
@@ -161,11 +157,6 @@ public abstract class BackgroundTask {
 
     public final PostProcessor postProcessor(){
         return defaultNullCheck(postProcessor);
-    }
-
-    public LockProvider getLockProvider() {
-        Preconditions.checkNotNull(lockProvider, "Lock provider was null, possible race condition in initialisation");
-        return lockProvider;
     }
 
     private static <X> X defaultNullCheck(X someThing){

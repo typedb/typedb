@@ -22,7 +22,6 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
@@ -87,7 +86,7 @@ public class PostProcessingTaskTest {
         PostProcessingTask task = new PostProcessingTask();
 
         task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
+                METRIC_REGISTRY, postProcessor);
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -98,7 +97,7 @@ public class PostProcessingTaskTest {
         PostProcessingTask task = new PostProcessingTask();
 
         task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
+                METRIC_REGISTRY, postProcessor);
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -110,9 +109,9 @@ public class PostProcessingTaskTest {
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
         task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
+                METRIC_REGISTRY, postProcessor);
         task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
+                METRIC_REGISTRY, postProcessor);
 
         Thread pp1 = new Thread(task1::start);
         Thread pp2 = new Thread(task2::start);

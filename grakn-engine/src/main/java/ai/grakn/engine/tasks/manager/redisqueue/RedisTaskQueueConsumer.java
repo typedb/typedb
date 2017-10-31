@@ -20,7 +20,6 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
@@ -57,7 +56,6 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
     private final GraknEngineConfig config;
     private final MetricRegistry metricRegistry;
     private final EngineGraknTxFactory factory;
-    private final LockProvider lockProvider;
     private final PostProcessor postProcessor;
 
 
@@ -65,13 +63,12 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
             RedisTaskManager redisTaskManager, EngineID engineId,
             GraknEngineConfig config,
             MetricRegistry metricRegistry,
-            EngineGraknTxFactory factory, LockProvider lockProvider, PostProcessor postProcessor) {
+            EngineGraknTxFactory factory, PostProcessor postProcessor) {
         this.redisTaskManager = redisTaskManager;
         this.engineId = engineId;
         this.config = config;
         this.metricRegistry = metricRegistry;
         this.factory = factory;
-        this.lockProvider = lockProvider;
         this.postProcessor = postProcessor;
     }
 
@@ -81,7 +78,6 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
             Preconditions.checkNotNull(engineId);
             Preconditions.checkNotNull(config);
             Preconditions.checkNotNull(redisTaskManager);
-            Preconditions.checkNotNull(lockProvider);
             Preconditions.checkNotNull(postProcessor);
         } catch (NullPointerException e) {
             throw new IllegalStateException(
@@ -117,7 +113,7 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
             runningTask = taskState.taskClass().newInstance();
             runningTask.initialize(saveCheckpoint(taskState, redisTaskManager.storage()),
                     taskConfiguration, redisTaskManager, config, factory,
-                    lockProvider, metricRegistry, postProcessor);
+                    metricRegistry, postProcessor);
             metricRegistry.meter(name(RedisTaskQueueConsumer.class, "initialized")).mark();
             if (taskShouldResume(task)) {
                 // Not implemented
