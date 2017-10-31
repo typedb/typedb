@@ -133,7 +133,7 @@ public class PostProcessingTest {
             public void runTask(TaskState taskState, TaskConfiguration configuration) {
             }
         };
-        task.initialize(null, configuration, taskSubmitter, engine.config(), null, engine.server().factory(),
+        task.initialize(null, configuration, taskSubmitter, engine.config(), engine.server().factory(),
                 new ProcessWideLockProvider(), new MetricRegistry(), postProcessor);
 
         task.start();

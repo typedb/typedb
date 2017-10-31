@@ -86,7 +86,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
                 new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
         task.start();
 
@@ -97,7 +97,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
+        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
                 new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
         task.start();
 
@@ -109,9 +109,9 @@ public class PostProcessingTaskTest {
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
-        task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY, null);
-        task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
+        task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+                new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
+        task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
                 new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
 
         Thread pp1 = new Thread(task1::start);

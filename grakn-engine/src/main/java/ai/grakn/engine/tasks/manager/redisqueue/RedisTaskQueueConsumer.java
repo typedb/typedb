@@ -23,7 +23,6 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -56,7 +55,6 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
     private final RedisTaskManager redisTaskManager;
     private final EngineID engineId;
     private final GraknEngineConfig config;
-    private final RedisCountStorage redisCountStorage;
     private final MetricRegistry metricRegistry;
     private final EngineGraknTxFactory factory;
     private final LockProvider lockProvider;
@@ -66,12 +64,11 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
     public RedisTaskQueueConsumer(
             RedisTaskManager redisTaskManager, EngineID engineId,
             GraknEngineConfig config,
-            RedisCountStorage redisCountStorage, MetricRegistry metricRegistry,
+            MetricRegistry metricRegistry,
             EngineGraknTxFactory factory, LockProvider lockProvider, PostProcessor postProcessor) {
         this.redisTaskManager = redisTaskManager;
         this.engineId = engineId;
         this.config = config;
-        this.redisCountStorage = redisCountStorage;
         this.metricRegistry = metricRegistry;
         this.factory = factory;
         this.lockProvider = lockProvider;
@@ -83,9 +80,9 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
             Preconditions.checkNotNull(metricRegistry);
             Preconditions.checkNotNull(engineId);
             Preconditions.checkNotNull(config);
-            Preconditions.checkNotNull(redisCountStorage);
             Preconditions.checkNotNull(redisTaskManager);
             Preconditions.checkNotNull(lockProvider);
+            Preconditions.checkNotNull(postProcessor);
         } catch (NullPointerException e) {
             throw new IllegalStateException(
                     String.format("%s was started but the state wasn't set explicitly",
@@ -119,7 +116,7 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
         try {
             runningTask = taskState.taskClass().newInstance();
             runningTask.initialize(saveCheckpoint(taskState, redisTaskManager.storage()),
-                    taskConfiguration, redisTaskManager, config, redisCountStorage, factory,
+                    taskConfiguration, redisTaskManager, config, factory,
                     lockProvider, metricRegistry, postProcessor);
             metricRegistry.meter(name(RedisTaskQueueConsumer.class, "initialized")).mark();
             if (taskShouldResume(task)) {

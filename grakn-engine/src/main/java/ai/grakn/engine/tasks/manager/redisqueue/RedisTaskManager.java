@@ -24,7 +24,6 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -73,7 +72,7 @@ public class RedisTaskManager implements TaskManager {
             MetricRegistry metricRegistry, PostProcessor postProcessor) {
 
         Consumer<Task> consumer = new RedisTaskQueueConsumer(this, engineId, config,
-                RedisCountStorage.create(jedisPool, metricRegistry), metricRegistry, factory,
+                metricRegistry, factory,
                 distributedLockClient, postProcessor);
 
         LOG.info("Running queue consumer with {} execution threads", threads);

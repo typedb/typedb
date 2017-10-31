@@ -48,7 +48,6 @@ public abstract class BackgroundTask {
     private @Nullable GraknEngineConfig engineConfig = null;
     private @Nullable
     EngineGraknTxFactory factory = null;
-    private @Nullable RedisCountStorage redis = null;
     private @Nullable MetricRegistry metricRegistry = null;
     private @Nullable LockProvider lockProvider = null;
     private @Nullable PostProcessor postProcessor = null;
@@ -64,13 +63,12 @@ public abstract class BackgroundTask {
      */
     public final void initialize(
             Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
-            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
+            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig,
             EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, PostProcessor postProcessor)  {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;
         this.engineConfig = engineConfig;
-        this.redis = redis;
         this.lockProvider = lockProvider;
         this.metricRegistry = metricRegistry;
         this.factory = factory;
@@ -151,10 +149,6 @@ public abstract class BackgroundTask {
 
     public final GraknEngineConfig engineConfiguration() {
         return defaultNullCheck(engineConfig);
-    }
-
-    public final RedisCountStorage redis() {
-        return defaultNullCheck(redis);
     }
 
     public final EngineGraknTxFactory factory(){
