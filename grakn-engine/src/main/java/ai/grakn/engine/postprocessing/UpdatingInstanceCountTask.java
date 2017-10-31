@@ -155,7 +155,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
                 //Shard
                 GraknTxMutators.runMutationWithRetry(factory, keyspace, maxRetry, graph -> {
                     graph.admin().shard(conceptId);
-                    graph.admin().commitNoLogs();
+                    graph.admin().commitSubmitNoLogs();
                 });
 
                 //Update number of shards

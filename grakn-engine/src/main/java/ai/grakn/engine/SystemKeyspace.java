@@ -101,7 +101,7 @@ public class SystemKeyspace {
             if (attribute.owner() == null) {
                 graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
             }
-            graph.admin().commitNoLogs();
+            graph.admin().commitSubmitNoLogs();
         } catch (InvalidKBException e) {
             throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
         }
@@ -144,7 +144,7 @@ public class SystemKeyspace {
 
             openSpaces.remove(keyspace);
 
-            graph.admin().commitNoLogs();
+            graph.admin().commitSubmitNoLogs();
         }
 
         return true;
@@ -163,7 +163,7 @@ public class SystemKeyspace {
             }
             LOG.info("Loading schema");
             loadSystemSchema(tx);
-            tx.admin().commitNoLogs();
+            tx.admin().commitSubmitNoLogs();
             LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
         } catch (Exception e) {
             LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);
