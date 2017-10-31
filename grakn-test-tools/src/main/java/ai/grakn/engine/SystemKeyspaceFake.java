@@ -23,7 +23,6 @@ import ai.grakn.Keyspace;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * A fake {@link SystemKeyspace} implementation, that follows the correct contract, but operates without a real
@@ -59,8 +58,8 @@ public class SystemKeyspaceFake implements SystemKeyspace {
     }
 
     @Override
-    public Stream<Keyspace> keyspaces() {
-        return keyspaces.stream();
+    public Set<Keyspace> keyspaces() {
+        return Sets.newHashSet(keyspaces);
     }
 
     @Override

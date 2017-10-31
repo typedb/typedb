@@ -23,7 +23,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Label;
 import ai.grakn.kb.admin.GraknAdmin;
 
-import java.util.stream.Stream;
+import java.util.Set;
 
 /**
  * <p>
@@ -84,7 +84,7 @@ public interface SystemKeyspace {
      */
     boolean deleteKeyspace(Keyspace keyspace);
 
-    Stream<Keyspace> keyspaces();
+    Set<Keyspace> keyspaces();
 
     /**
      * Load the system schema into a newly created system keyspace. Because the schema

@@ -130,7 +130,7 @@ public class SystemController {
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
         response.type(APPLICATION_JSON);
-        return systemKeyspace.keyspaces().map(Keyspace::getValue).collect(toJsonArray()).toString();
+        return systemKeyspace.keyspaces().stream().map(Keyspace::getValue).collect(toJsonArray()).toString();
     }
 
     @GET

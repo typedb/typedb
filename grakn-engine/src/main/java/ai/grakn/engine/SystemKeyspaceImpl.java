@@ -34,8 +34,9 @@ import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 /**
  * Default implementation of {@link SystemKeyspace} that uses a {@link EngineGraknTxFactory} to access a knowledge
@@ -110,14 +111,15 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
         return true;
     }
 
-    @Override public Stream<Keyspace> keyspaces() {
+    @Override public Set<Keyspace> keyspaces() {
         try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
 
             return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
                     .flatMap(keyspace -> keyspace.attributes(keyspaceName))
                     .map(name -> (String) name.getValue())
-                    .map(Keyspace::of);
+                    .map(Keyspace::of)
+                    .collect(Collectors.toSet());
         }
     }
 
