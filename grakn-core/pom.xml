@@ -70,7 +70,7 @@
         <dependency>
             <groupId>io.reactivex</groupId>
             <artifactId>rxjava</artifactId>
-            <version>1.3.2</version>
+            <version>${reactivex.version}</version>
         </dependency>
         <dependency>
             <groupId>org.sharegov</groupId>
