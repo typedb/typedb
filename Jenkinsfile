@@ -98,7 +98,7 @@ node {
 
     slackGithub "Janus tests started"
 
-    timeout(90) {
+    timeout(120) {
 	stage('Run Janus test profile') {
 	    try {
 		sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
