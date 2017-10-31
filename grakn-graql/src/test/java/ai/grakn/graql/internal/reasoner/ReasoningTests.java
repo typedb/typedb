@@ -764,23 +764,23 @@ public class ReasoningTests {
         //(4 db relations  + 1 inferred + 1 resource) x 2 for variable swap
         assertEquals(partialAnswers2.size(), 12);
 
+        //1 relation satisfying ($a, $b) with types x (4 db relations + 1 inferred + 1 resource) x 2 for var change
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), partialAnswers.size() * partialAnswers2.size());
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
-    //TODO requires implicit types to be activated in type inference - another PR
+    //TODO requires activating implicit types - next PR
+    @Ignore
     /* Should find the possible relation configurations:
          (x, z) - (z, z1) - (z1, z)
                 - (z, z2) - (z2, z)
                 - (z, y)  - { (y,z) (y, x) }
                 - (z, x)  - { res, (x, y), (x, z) }
          */
-    @Ignore
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_WithRelationWithoutAnyBounds(){
         QueryBuilder qb = testSet28b.tx().graql().infer(true);
-
         String entryPattern = "{" +
                 "$a isa entity1;" +
                 "($a, $b);" +

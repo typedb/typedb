@@ -145,10 +145,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public String toString(){
-        return "{\n" +
+        return "{\n\t" +
                 getAtoms(Atom.class)
                         .map(Atomic::toString)
-                        .collect(Collectors.joining(";\n")) +
+                        .collect(Collectors.joining(";\n\t")) +
                 "\n}\n";
     }
 
