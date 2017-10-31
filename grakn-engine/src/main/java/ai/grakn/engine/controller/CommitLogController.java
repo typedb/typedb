@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.UpdateInstanceCount;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -51,13 +51,13 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 //TODO Implement delete
 public class CommitLogController {
     private final TaskManager manager;
-    private final UpdateInstanceCount updateInstanceCount;
+    private final PostProcessor postProcessor;
     private final int postProcessingDelay;
 
-    public CommitLogController(Service spark, int postProcessingDelay, TaskManager manager, UpdateInstanceCount updateInstanceCount){
+    public CommitLogController(Service spark, int postProcessingDelay, TaskManager manager, PostProcessor postProcessor){
         this.postProcessingDelay = postProcessingDelay;
         this.manager = manager;
-        this.updateInstanceCount = updateInstanceCount;
+        this.postProcessor = postProcessor;
 
         spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
         spark.delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
@@ -88,11 +88,10 @@ public class CommitLogController {
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
         TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
-
         // TODO Use an engine wide executor here
         CompletableFuture.allOf(
                 CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration)),
-                CompletableFuture.runAsync(() -> updateInstanceCount.updateCounts(keyspace, Json.read(req.body()))))
+                CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, Json.read(req.body()))))
                 .join();
 
         return Json.object(

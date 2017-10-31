@@ -4,6 +4,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.GraknTestSetup;
@@ -105,7 +106,8 @@ public class EngineTestHelper extends GraknCreator {
         TaskManager taskManager = taskManager(config, factory, jedisPool, lockProvider, engineID, metricRegistry);
         GraknEngineStatus graknEngineStatus = graknEngineStatus();
         ExecutorService executorService = executorService();
-        HttpHandler httpHandler = new HttpHandler(config, sparkService(), factory, metricRegistry, graknEngineStatus, taskManager, executorService, jedisPool, lockProvider);
+        PostProcessor postProcessor = postProcessor(metricRegistry, config, factory, jedisPool, lockProvider);
+        HttpHandler httpHandler = new HttpHandler(config, sparkService(), factory, metricRegistry, graknEngineStatus, taskManager, executorService, postProcessor);
         return new GraknEngineServer(config, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, executorService, httpHandler, engineID);
     }
 
