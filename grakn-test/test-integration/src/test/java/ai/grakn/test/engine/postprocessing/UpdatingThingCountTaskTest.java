@@ -85,7 +85,7 @@ public class UpdatingThingCountTaskTest {
         try(GraknTx graknTx = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             et1 = graknTx.putEntityType("et1");
             et2 = graknTx.putEntityType("et2");
-            graknTx.admin().commitNoLogs();
+            graknTx.admin().commitSubmitNoLogs();
         }
 
         checkShardCount(keyspace, et1, 1);

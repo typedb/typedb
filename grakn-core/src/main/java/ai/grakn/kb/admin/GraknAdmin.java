@@ -147,7 +147,7 @@ public interface GraknAdmin {
      * @return the commit log that would have been submitted if it is needed.
      * @throws InvalidKBException when the graph does not conform to the object concept
      */
-    Optional<String> commitNoLogs() throws InvalidKBException;
+    Optional<String> commitSubmitNoLogs() throws InvalidKBException;
 
     /**
      * Check if there are duplicate resources in the provided set of vertex IDs

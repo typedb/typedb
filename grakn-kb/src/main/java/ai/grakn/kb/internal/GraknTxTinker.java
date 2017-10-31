@@ -20,7 +20,6 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
-import ai.grakn.concept.Concept;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -46,17 +45,6 @@ public class GraknTxTinker extends GraknTxAbstract<TinkerGraph> {
     public GraknTxTinker(TinkerGraph tinkerGraph, Keyspace keyspace, String engineUrl, Properties properties){
         super(tinkerGraph, keyspace, engineUrl, properties);
         rootGraph = tinkerGraph;
-    }
-
-    /**
-     *
-     * @param concept A concept in the graph
-     * @return true all the time. There is no way to know if a
-     * {@link org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex} has been modified or not.
-     */
-    @Override
-    public boolean isConceptModified(Concept concept) {
-        return true;
     }
 
     @Override
