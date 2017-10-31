@@ -429,6 +429,10 @@ public class RelationshipAtom extends IsaAtom {
                 }).collect(Collectors.toSet());
     }
 
+    /**
+     * @param sub partial answer
+     * @return a map of relationships and corresponding roles that could be played by this atom
+     */
     private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(Answer sub){
         Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.getLabel())).collect(toSet());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -600,7 +604,9 @@ public class RelationshipAtom extends IsaAtom {
         //return if all roles known and non-meta
         List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
-        boolean allRolesMeta = explicitRoles.stream().filter(role -> Schema.MetaSchema.isMetaLabel(role.getLabel())).count() == getRelationPlayers().size();
+        boolean allRolesMeta = explicitRoles.stream().allMatch(role ->
+                Schema.MetaSchema.isMetaLabel(role.getLabel())
+        );
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), getRolePlayers()).isEmpty());
         if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
 
