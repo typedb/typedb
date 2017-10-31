@@ -764,6 +764,7 @@ public class ReasoningTests {
         //(4 db relations  + 1 inferred + 1 resource) x 2 for variable swap
         assertEquals(partialAnswers2.size(), 12);
 
+        //1 relation satisfying ($a, $b) with types x (4 db relations + 1 inferred + 1 resource) x 2 for var change
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), partialAnswers.size() * partialAnswers2.size());
         answers.forEach(ans -> assertEquals(ans.size(), 4));
@@ -780,7 +781,6 @@ public class ReasoningTests {
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_WithRelationWithoutAnyBounds(){
         QueryBuilder qb = testSet28b.tx().graql().infer(true);
-
         String entryPattern = "{" +
                 "$a isa entity1;" +
                 "($a, $b);" +
