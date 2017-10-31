@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.parsePatterns;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
@@ -746,29 +747,63 @@ public class ReasoningTests {
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_DisconnectedQuery(){
         QueryBuilder qb = testSet28b.tx().graql().infer(true);
+
+        String pattern = "{$a isa entity1;($a, $b); $b isa entity3;};";
+        String pattern2 = "{($c, $d);};";
         String queryString = "match " +
-                "$a isa entity1;" +
-                "($a, $b); $b isa entity3;" +
-                "($c, $d);" +
+                pattern +
+                pattern2 +
                 "get;";
 
+        List<Answer> partialAnswers = qb.match(parsePatterns(pattern)).get().execute();
+
+        //single relation that satisfies the types
+        assertEquals(partialAnswers.size(), 1);
+
+        List<Answer> partialAnswers2 = qb.match(parsePatterns(pattern2)).get().execute();
+        //(4 db relations  + 1 inferred + 1 resource) x 2 for variable swap
+        assertEquals(partialAnswers2.size(), 12);
+
+        //1 relation satisfying ($a, $b) with types x (4 db relations + 1 inferred + 1 resource) x 2 for var change
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), 10);
+        assertEquals(answers.size(), partialAnswers.size() * partialAnswers2.size());
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
+    //TODO requires activating implicit types - next PR
+    @Ignore
+    /* Should find the possible relation configurations:
+         (x, z) - (z, z1) - (z1, z)
+                - (z, z2) - (z2, z)
+                - (z, y)  - { (y,z) (y, x) }
+                - (z, x)  - { res, (x, y), (x, z) }
+         */
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_WithRelationWithoutAnyBounds(){
         QueryBuilder qb = testSet28b.tx().graql().infer(true);
-        String queryString = "match " +
+        String entryPattern = "{" +
+                "$a isa entity1;" +
+                "($a, $b);" +
+                "};";
+
+        List<Answer> entryAnswers = qb.match(parsePatterns(entryPattern)).get().execute();
+        assertEquals(entryAnswers.size(), 3);
+
+        String partialPattern = "{" +
                 "$a isa entity1;" +
                 "($a, $b); $b isa entity3;" +
                 "($b, $c);" +
+                "};";
+
+        List<Answer> partialAnswers = qb.match(parsePatterns(partialPattern)).get().execute();
+        assertEquals(partialAnswers.size(), 4);
+        String queryString = "match " +
+                partialPattern +
                 "($c, $d);" +
                 "get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), 6);
+        assertEquals(answers.size(), 7);
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
