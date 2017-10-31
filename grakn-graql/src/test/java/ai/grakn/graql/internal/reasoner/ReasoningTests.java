@@ -770,14 +770,12 @@ public class ReasoningTests {
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
-    //TODO - this needs the type map mutation fix to work - in next PR
     /* Should find the possible relation configurations:
          (x, z) - (z, z1) - (z1, z)
                 - (z, z2) - (z2, z)
                 - (z, y)  - { (y,z) (y, x) }
                 - (z, x)  - { res, (x, y), (x, z) }
          */
-    @Ignore
     @Test
     public void relationTypesAreCorrectlyInferredInConjunction_TypesAreAbsent_WithRelationWithoutAnyBounds(){
         QueryBuilder qb = testSet28b.tx().graql().infer(true);
