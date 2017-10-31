@@ -6,6 +6,12 @@
 *.iml
 *.geany
 
+# VS Code #
+.vscode/
+.settings/
+.project
+.classpath
+
 # Compiled files #
 out/
 target/
