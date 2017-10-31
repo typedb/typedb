@@ -7,13 +7,15 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.postprocessing.UpdateInstanceCount;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.Schema;
+import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -21,10 +23,17 @@ import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
 import static org.junit.Assert.assertEquals;
 
-public class UpdatingThingCountTaskTest {
+public class PostProcessorTest {
+
+    private PostProcessor postProcessor;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
+
+    @Before
+    public void setupPostProcessor(){
+        postProcessor = PostProcessor.create(engine.config(), engine.getJedisPool(), engine.server().factory(), engine.server().lockProvider(), new MetricRegistry());
+    }
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
@@ -56,8 +65,7 @@ public class UpdatingThingCountTaskTest {
         fakeCommitLog.set(REST.Request.COMMIT_LOG_COUNTING, instanceCounts);
 
         //Start up the Job
-        UpdateInstanceCount job = new UpdateInstanceCount(engine.config(), engine.redis(), engine.server().factory(), engine.server().lockProvider(), engine.getMetricRegistry());
-        job.updateCounts(keyspace, fakeCommitLog);
+        postProcessor.updateCounts(keyspace, fakeCommitLog);
     }
 
     @Test

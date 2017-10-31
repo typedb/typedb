@@ -131,7 +131,7 @@ public class PostProcessingTest {
             }
         };
         task.initialize(null, configuration, taskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), new MetricRegistry());
+                new ProcessWideLockProvider(), new MetricRegistry(), null);
 
         task.start();
 

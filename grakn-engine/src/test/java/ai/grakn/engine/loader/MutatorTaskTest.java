@@ -45,7 +45,7 @@ public class MutatorTaskTest {
         MutatorTask mutatorTask = new MutatorTask();
         mutatorTask.initialize((x) -> System.out.println(x.toString()), taskConfiguration,
                 TaskSubmitter.getNoopTaskSubmitter(), null, null, null, null,
-                new MetricRegistry());
+                new MetricRegistry(), null);
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(READ_ONLY_QUERY.getMessage(readOnlyQuery));
         mutatorTask.start();

@@ -23,7 +23,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.postprocessing.GraknTxMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.UpdateInstanceCount;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.graql.Graql;
@@ -99,9 +98,7 @@ public class MutatorTask extends BackgroundTask {
                                     .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
                             PostProcessingTask.createConfig(graph.getKeyspace(), logs));
 
-                    //TODO: Cleanup this.
-                    new UpdateInstanceCount(engineConfiguration(), redis(), factory(), getLockProvider(), metricRegistry()).
-                            updateCounts(graph.getKeyspace(), Json.read(logs));
+                    postProcessor().updateCounts(graph.getKeyspace(), Json.read(logs));
                 }
                 return true;
             }

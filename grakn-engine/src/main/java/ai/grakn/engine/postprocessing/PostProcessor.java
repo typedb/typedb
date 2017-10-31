@@ -86,9 +86,9 @@ public class PostProcessor {
     public void updateCounts(Keyspace keyspace, Json commitLog){
         final long shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
         final int maxRetry = engineConfig.getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
-        try (Timer.Context context = metricRegistry.timer(name(UpdateInstanceCount.class, "execution")).time()) {
+        try (Timer.Context context = metricRegistry.timer(name(PostProcessor.class, "execution")).time()) {
             Map<ConceptId, Long> jobs = getCountUpdatingJobs(commitLog);
-            metricRegistry.histogram(name(UpdateInstanceCount.class, "jobs"))
+            metricRegistry.histogram(name(PostProcessor.class, "jobs"))
                     .update(jobs.size());
 
             //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
@@ -99,10 +99,10 @@ public class PostProcessor {
             //Update counts
             jobs.forEach((key, value) -> {
                 metricRegistry
-                        .histogram(name(UpdateInstanceCount.class, "shard-size-increase"))
+                        .histogram(name(PostProcessor.class, "shard-size-increase"))
                         .update(value);
                 Timer.Context contextSingle = metricRegistry
-                        .timer(name(UpdateInstanceCount.class, "execution-single")).time();
+                        .timer(name(PostProcessor.class, "execution-single")).time();
                 try {
                     if (updateShardCounts(redis, keyspace, key, value, shardingThreshold)) {
                         conceptToShard.add(key);
