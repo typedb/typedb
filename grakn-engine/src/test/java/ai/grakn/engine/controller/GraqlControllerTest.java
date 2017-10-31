@@ -205,8 +205,8 @@ public class GraqlControllerTest {
                 .map(entry -> entry.getValue())
                 .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("marriage"))
                 .forEach(thing -> {
-                    assertEquals("INFERRED_RELATIONSHIP",thing.at("_baseType").asString());
-                    thing.at("_embedded").at("spouse").asJsonList().forEach(spouse->{
+                    assertEquals("INFERRED_RELATIONSHIP", thing.at("_baseType").asString());
+                    thing.at("_embedded").at("spouse").asJsonList().forEach(spouse -> {
                         assertEquals("ENTITY", spouse.at("_baseType").asString());
                     });
                 });
@@ -215,7 +215,7 @@ public class GraqlControllerTest {
 
     @Test
     public void whenMatchingJoinExplanation_HALResponseContainsInferredRelation() {
-        String queryString = "match ($x,$y) isa marriage; $z isa person; offset 0; limit 25; get;";
+        String queryString = "match ($x,$y) isa siblings; $z isa person; offset 0; limit 2; get;";
         int limitEmbedded = 10;
         Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, genealogyKB.tx().getKeyspace().getValue());
         resp.then().statusCode(200);
@@ -226,7 +226,7 @@ public class GraqlControllerTest {
                 .map(entry -> entry.getValue())
                 .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("marriage"))
                 .forEach(thing -> {
-                    assertEquals("INFERRED_RELATIONSHIP",thing.at("_baseType").asString());
+                    assertEquals("INFERRED_RELATIONSHIP", thing.at("_baseType").asString());
                 });
 
     }
@@ -244,7 +244,7 @@ public class GraqlControllerTest {
                 .map(entry -> entry.getValue())
                 .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("directed-by"))
                 .forEach(thing -> {
-                    assertEquals("RELATIONSHIP",thing.at("_baseType").asString());
+                    assertEquals("RELATIONSHIP", thing.at("_baseType").asString());
                 });
 
     }

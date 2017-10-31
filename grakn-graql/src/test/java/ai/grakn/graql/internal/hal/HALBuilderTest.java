@@ -19,19 +19,77 @@
 package ai.grakn.graql.internal.hal;
 
 
+import ai.grakn.concept.Concept;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
+import mjson.Json;
+import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class HALBuilderTest {
 
-    @Test
-    public void testRenderHALConceptData(){}
+    @ClassRule
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @Test
-    public void testHALExploreConcept(){}
+    public void renderHALConceptData_producesCorrectHALObject() {
+        Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
+        String halString = HALBuilder.renderHALConceptData(concept, false, 0, sampleKB.tx().getKeyspace(), 0, 10);
+        Json halObject = Json.read(halString);
+        assertTrue(halObject.has("_id"));
+        assertTrue(halObject.has("_type"));
+        assertTrue(halObject.has("_baseType"));
+        assertEquals("movie", halObject.at("_type").asString());
+        assertEquals("ENTITY", halObject.at("_baseType").asString());
+
+    }
 
     @Test
-    public void testExplainAnswers(){}
+    public void renderHALConceptDataWithSeparationDegree0_producedHALWithoutEmbedded() {
+        Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
+        String halString = HALBuilder.renderHALConceptData(concept, false, 0, sampleKB.tx().getKeyspace(), 0, 10);
+        Json halObject = Json.read(halString);
+        assertFalse(halObject.has("_embedded"));
+    }
 
+    @Test
+    public void renderHALConceptDataWithSeparationDegree1_producedHALWithEmbedded() {
+        Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
+        String halString = HALBuilder.renderHALConceptData(concept, false, 1, sampleKB.tx().getKeyspace(), 0, 10);
+        Json halObject = Json.read(halString);
+        assertTrue(halObject.has("_embedded"));
+    }
+
+    @Test
+    public void testHALExploreConceptWithThing_producesCorrectHALObject() {
+        Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
+        String halString = HALBuilder.HALExploreConcept(concept, sampleKB.tx().getKeyspace(), 0, 10);
+
+        //Check Explore Thing embeds thing's attributes
+        Json halObject = Json.read(halString);
+        halObject.at("_embedded").asJsonMap().values().forEach(attr -> {
+            assertEquals("ATTRIBUTE", attr.asJsonList().get(0).at("_baseType").asString());
+        });
+    }
+
+    @Test
+    public void testHALExploreConceptWithSchemaConcept_producesCorrectHALObject() {
+        Concept concept = sampleKB.tx().getEntityType("movie");
+        String halString = HALBuilder.HALExploreConcept(concept, sampleKB.tx().getKeyspace(), 0, 10);
+
+        //Check Explore Schema Concept embeds attribute types and roles played by concept
+        Json halObject = Json.read(halString);
+        Set<String> embeddedKeys = halObject.at("_embedded").asJsonMap().keySet();
+        assertEquals(2, embeddedKeys.size());
+        assertTrue(embeddedKeys.contains("has"));
+        assertTrue(embeddedKeys.contains("plays"));
+    }
 
 
 }

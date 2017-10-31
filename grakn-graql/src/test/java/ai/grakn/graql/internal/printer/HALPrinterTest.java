@@ -62,7 +62,7 @@ public class HALPrinterTest {
     @Test
     public void whenAskForRelationTypes_EnsureAllObjectsHaveImplicitField() {
         Json response = printHAL(academyKB.tx(), "match $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + "; get;");
-        response.asJsonList().stream().map(x->x.at("x")).forEach(halObj -> {
+        response.asJsonList().stream().map(x -> x.at("x")).forEach(halObj -> {
             assertTrue(halObj.has("_implicit"));
             if (halObj.at("_name").asString().startsWith("has-")) {
                 assertTrue(halObj.at("_implicit").asBoolean());
@@ -81,12 +81,12 @@ public class HALPrinterTest {
                 "offset 0; limit 2; get $bond, $article;");
 
         assertEquals(2, response.asList().size());
-        response.asJsonList().stream().map(x->x.at("bond")).forEach(halObj -> {
+        response.asJsonList().stream().map(x -> x.at("bond")).forEach(halObj -> {
             assertEquals(halObj.at("_baseType").asString(), "ENTITY");
             String entityType = halObj.at("_type").asString();
             assertTrue(entityType.equals("bond"));
         });
-        response.asJsonList().stream().map(x->x.at("article")).forEach(halObj -> {
+        response.asJsonList().stream().map(x -> x.at("article")).forEach(halObj -> {
             assertEquals(halObj.at("_baseType").asString(), "ENTITY");
             String entityType = halObj.at("_type").asString();
             assertTrue(entityType.equals("article"));
@@ -104,12 +104,12 @@ public class HALPrinterTest {
                 "offset 0; limit 2; get $bond, $article;");
 
         assertEquals(2, response.asList().size());
-        response.asJsonList().stream().map(x->x.at("bond")).forEach(halObj -> {
+        response.asJsonList().stream().map(x -> x.at("bond")).forEach(halObj -> {
             assertEquals(halObj.at("_baseType").asString(), "ENTITY");
             String entityType = halObj.at("_type").asString();
             assertTrue(entityType.equals("bond"));
         });
-        response.asJsonList().stream().map(x->x.at("article")).forEach(halObj -> {
+        response.asJsonList().stream().map(x -> x.at("article")).forEach(halObj -> {
             assertEquals(halObj.at("_baseType").asString(), "ENTITY");
             String entityType = halObj.at("_type").asString();
             assertTrue(entityType.equals("article"));
@@ -120,7 +120,7 @@ public class HALPrinterTest {
     public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse() {
         Json response = printHAL(genealogyKB.tx(), "match $x isa marriage; offset 0; limit 5; get;");
         assertEquals(5, response.asList().size());
-        response.asJsonList().stream().map(x->x.at("x")).forEach(halObj -> {
+        response.asJsonList().stream().map(x -> x.at("x")).forEach(halObj -> {
             assertEquals("INFERRED_RELATIONSHIP", halObj.at("_baseType").asString());
             String href = halObj.at("_links").at("self").at("href").asString();
             assertTrue(href.contains("&query=match {"));
@@ -142,21 +142,25 @@ public class HALPrinterTest {
         Json response = printHAL(academyKB.tx(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20; get;");
         // Limit to 20 results, each result will contain 3 variables, expected size 60
         assertEquals(20, response.asList().size());
-        response.asJsonList().forEach(resultMap -> {assertEquals(3,resultMap.asJsonMap().keySet().size());});
-        response.asJsonList().stream().map(x->x.at("x")).forEach(halObj -> {
+        response.asJsonList().forEach(resultMap -> {
+            assertEquals(3, resultMap.asJsonMap().keySet().size());
+        });
+        response.asJsonList().stream().map(x -> x.at("x")).forEach(halObj -> {
             String entityType = halObj.at("_type").asString();
             assertTrue(entityType.equals("region"));
         });
-        response.asJsonList().stream().map(x->x.at("y")).forEach(halObj -> {
+        response.asJsonList().stream().map(x -> x.at("y")).forEach(halObj -> {
             String entityType = halObj.at("_type").asString();
             assertTrue(entityType.equals("oil-platform"));
         });
-        response.asJsonList().stream().flatMap(x->x.asJsonMap()
-                .entrySet().stream()).filter(entry->(!entry.getKey().equals("x")&&!entry.getKey().equals("y")))
+        response.asJsonList().stream().flatMap(x -> x.asJsonMap()
+                .entrySet().stream()).filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y")))
                 .forEach(halObj -> {
-            String entityType = halObj.getValue().at("_type").asString();
-            assertTrue(entityType.equals("located-in"));
-        });
+                    String relationshipType = halObj.getValue().at("_type").asString();
+                    String relationshipBaseType = halObj.getValue().at("_baseType").asString();
+                    assertTrue(relationshipType.equals("located-in"));
+                    assertTrue(relationshipBaseType.equals("INFERRED_RELATIONSHIP"));
+                });
     }
 
 

@@ -68,7 +68,7 @@ public class ConceptControllerTest {
     });
 
     @Before
-    public void setupMock(){
+    public void setupMock() {
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
         when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
@@ -80,7 +80,7 @@ public class ConceptControllerTest {
 
 
     @Test
-    public void gettingConceptById_ResponseStatusIs200(){
+    public void gettingConceptById_ResponseStatusIs200() {
         Response response = sendRequest(sampleKB.tx().getEntityType("movie"), 0);
 
         assertThat(response.statusCode(), equalTo(200));
@@ -99,7 +99,7 @@ public class ConceptControllerTest {
     }
 
     @Test
-    public void gettingConceptByIdWithHAlAcceptType_ResponseContentTypeIsHAL(){
+    public void gettingConceptByIdWithHAlAcceptType_ResponseContentTypeIsHAL() {
         Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
@@ -110,7 +110,7 @@ public class ConceptControllerTest {
     }
 
     @Test
-    public void gettingConceptByIdWithInvalidAcceptType_ResponseStatusIs406(){
+    public void gettingConceptByIdWithInvalidAcceptType_ResponseStatusIs406() {
         Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace())
@@ -124,40 +124,40 @@ public class ConceptControllerTest {
 
     @Test
     @Ignore //TODO Figure out how to properly check the Json objects
-    public void gettingInstanceElementById_ConceptIdIsReturnedWithCorrectHAL(){
+    public void gettingInstanceElementById_ConceptIdIsReturnedWithCorrectHAL() {
         Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
 
         Response response = sendRequest(concept, 1);
 
-        String expectedResponse = renderHALConceptData(concept, false,1, SampleKBLoader.randomKeyspace(), 0, 1);
+        String expectedResponse = renderHALConceptData(concept, false, 1, SampleKBLoader.randomKeyspace(), 0, 1);
         assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 
     @Test
     @Ignore //TODO Figure out how to properly check the Json objects
-    public void gettingSchemaConceptById_ConceptIdIsReturnedWithCorrectHAL(){
+    public void gettingSchemaConceptById_ConceptIdIsReturnedWithCorrectHAL() {
         Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = sendRequest(concept, 1);
 
-        String expectedResponse = renderHALConceptData(concept,  false,1, SampleKBLoader.randomKeyspace(), 0, 1);
+        String expectedResponse = renderHALConceptData(concept, false, 1, SampleKBLoader.randomKeyspace(), 0, 1);
         assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 
     @Test
     @Ignore //TODO Figure out how should work and how to test
-    public void gettingConceptByIdWithNumberEmbedded2_Only2EmbeddedConceptsReturned(){
+    public void gettingConceptByIdWithNumberEmbedded2_Only2EmbeddedConceptsReturned() {
         fail();
     }
 
     @Test
     @Ignore //TODO Figure out how should work and how to test
-    public void gettingConceptByIdWithOffset1_SecondConceptIsReturned(){
+    public void gettingConceptByIdWithOffset1_SecondConceptIsReturned() {
         fail();
     }
 
     @Test
-    public void gettingNonExistingElementById_ResponseStatusIs404(){
+    public void gettingNonExistingElementById_ResponseStatusIs404() {
         Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .queryParam(IDENTIFIER, "invalid")
                 .accept(APPLICATION_HAL)
@@ -166,7 +166,7 @@ public class ConceptControllerTest {
         assertThat(response.statusCode(), equalTo(404));
     }
 
-    private Response sendRequest(Concept concept, int numberEmbeddedComponents){
+    private Response sendRequest(Concept concept, int numberEmbeddedComponents) {
         return with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .queryParam(LIMIT_EMBEDDED, numberEmbeddedComponents)
                 .accept(APPLICATION_HAL)
