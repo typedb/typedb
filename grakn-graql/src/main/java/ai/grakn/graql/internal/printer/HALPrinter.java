@@ -56,6 +56,7 @@ class HALPrinter extends JsonPrinter {
         return Json.read(json);
     }
 
+    // TODO: Add 'inferred' flag to concept
     private boolean isInferred(Var key, Concept concept, Answer answer) {
         if (key == null || answer.getExplanation().isEmpty()) return false;
 
