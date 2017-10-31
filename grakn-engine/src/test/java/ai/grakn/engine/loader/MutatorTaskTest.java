@@ -43,7 +43,7 @@ public class MutatorTaskTest {
     @Test
     public void checkReadOnlyQueriesAreRejected() {
         MutatorTask mutatorTask = new MutatorTask();
-        mutatorTask.initialize((x) -> System.out.println(x.toString()), taskConfiguration,
+        mutatorTask.initialize(taskConfiguration,
                 TaskSubmitter.getNoopTaskSubmitter(), null, null,
                 new MetricRegistry(), null);
         exception.expect(IllegalArgumentException.class);

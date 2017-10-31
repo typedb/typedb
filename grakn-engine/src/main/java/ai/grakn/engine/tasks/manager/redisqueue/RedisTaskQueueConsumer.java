@@ -22,10 +22,8 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -96,10 +94,6 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
     }
 
 
-    private Consumer<TaskCheckpoint> saveCheckpoint(TaskState taskState, TaskStateStorage storage) {
-        return checkpoint -> storage.updateState(taskState.checkpoint(checkpoint));
-    }
-
     @Override
     public void accept(Task task) {
         checkPreconditions();
@@ -111,8 +105,7 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
         BackgroundTask runningTask;
         try {
             runningTask = taskState.taskClass().newInstance();
-            runningTask.initialize(saveCheckpoint(taskState, redisTaskManager.storage()),
-                    taskConfiguration, redisTaskManager, config, factory,
+            runningTask.initialize(taskConfiguration, redisTaskManager, config, factory,
                     metricRegistry, postProcessor);
             metricRegistry.meter(name(RedisTaskQueueConsumer.class, "initialized")).mark();
             if (taskShouldResume(task)) {
