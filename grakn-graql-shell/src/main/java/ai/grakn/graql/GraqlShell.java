@@ -20,49 +20,14 @@ package ai.grakn.graql;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.client.BatchExecutorClient;
+import ai.grakn.client.QueryResponse;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
-import ai.grakn.util.GraknVersion;
-import com.google.common.base.Splitter;
-import com.google.common.base.StandardSystemProperty;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import jline.console.ConsoleReader;
-import jline.console.completer.AggregateCompleter;
-import jline.console.history.FileHistory;
-import mjson.Json;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
-import javax.annotation.Nullable;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.URI;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.stream.Stream;
-
 import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
+import static ai.grakn.util.ConcurrencyUtil.allObservable;
+import ai.grakn.util.GraknVersion;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
 import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
@@ -80,19 +45,52 @@ import static ai.grakn.util.REST.RemoteShell.INFER;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
 import static ai.grakn.util.REST.RemoteShell.MATERIALISE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
-import static ai.grakn.util.REST.RemoteShell.PASSWORD;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
-import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static ai.grakn.util.Schema.BaseType.TYPE;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
-import static java.lang.String.format;
+import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.regex.Matcher;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import jline.console.ConsoleReader;
+import jline.console.completer.AggregateCompleter;
+import jline.console.history.FileHistory;
+import mjson.Json;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import rx.Observable;
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -176,8 +174,6 @@ public class GraqlShell {
         options.addOption("s", "size", true, "the size of the batches (must be used with -b)");
         options.addOption("a", "active", true, "the number of active tasks (must be used with -b)");
         options.addOption("o", "output", true, "output format for results");
-        options.addOption("u", "user", true, "username to sign in");
-        options.addOption("p", "pass", true, "password to sign in");
         options.addOption("n", "infer", false, "perform inference on results");
         options.addOption("m", "materialise", false, "materialise inferred results");
         options.addOption("h", "help", false, "print usage message");
@@ -221,8 +217,6 @@ public class GraqlShell {
         Keyspace keyspace = Keyspace.of(cmd.getOptionValue("k", DEFAULT_KEYSPACE));
         String uriString = cmd.getOptionValue("r", Grakn.DEFAULT_URI);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
-        Optional<String> username = Optional.ofNullable(cmd.getOptionValue("u"));
-        Optional<String> password = Optional.ofNullable(cmd.getOptionValue("p"));
 
         if (!client.serverIsRunning(uriString)) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
@@ -234,17 +228,8 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
-                Optional<Integer> activeTasks = Optional.empty();
-                Optional<Integer> batchSize = Optional.empty();
-                if (cmd.hasOption("a")) {
-                    activeTasks = Optional.of(Integer.parseInt(cmd.getOptionValue("a")));
-                }
-                if (cmd.hasOption("s")) {
-                    batchSize = Optional.of(Integer.parseInt(cmd.getOptionValue("s")));
-                }
                 try {
-                    sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"),
-                            activeTasks, batchSize);
+                    sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"), keyspace.getValue());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -267,7 +252,7 @@ public class GraqlShell {
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
             GraqlShell shell = new GraqlShell(
-                    historyFilename, keyspace, username, password, client, uri, outputFormat,
+                    historyFilename, keyspace, client, uri, outputFormat,
                     infer, materialise
             );
 
@@ -311,36 +296,24 @@ public class GraqlShell {
             return lines.stream().collect(joining("\n"));
     }
 
-    private static void sendBatchRequest(BatchMutatorClient batchMutatorClient, String graqlPath, Optional<Integer> activeTasks, Optional<Integer> batchSize) throws IOException {
-        AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
-
-        activeTasks.ifPresent(batchMutatorClient::setNumberActiveTasks);
-        batchSize.ifPresent(batchMutatorClient::setBatchSize);
-
-        batchMutatorClient.setTaskCompletionConsumer((t) -> {
-            numberBatchesCompleted.incrementAndGet();
-            System.out.println(format("Number batches completed: %s", numberBatchesCompleted.get()));
-            System.out.println(format("Approximate queries executed: %s", numberBatchesCompleted.get() * batchMutatorClient.getBatchSize()));
-        });
-
+    private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, String keyspace) throws IOException {
         String queries = loadQuery(graqlPath);
-
-        Graql.parser().parseList(queries).forEach(batchMutatorClient::add);
-
-        batchMutatorClient.waitToFinish();
-        batchMutatorClient.close();
+        List<Observable<QueryResponse>> all = new ArrayList<>();
+        Graql.parser().parseList(queries).forEach(query -> batchExecutorClient.add(query, keyspace, true));
+        int completed = allObservable(all).toBlocking().first().size();
+        System.out.println("Statements executed: " + completed);
+        batchExecutorClient.close();
     }
 
     /**
      * Create a new Graql shell
      */
     GraqlShell(
-            String historyFilename, Keyspace keyspace, Optional<String> username, Optional<String> password,
+            String historyFilename, Keyspace keyspace,
             GraqlClient client, URI uri, String outputFormat, boolean infer, boolean materialise
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
-
         console = new ConsoleReader(System.in, System.out);
         session = new JsonSession(client, uri);
 
@@ -352,8 +325,6 @@ public class GraqlShell {
                 INFER, infer,
                 MATERIALISE, materialise
         );
-        username.ifPresent(u -> initJson.set(USERNAME, u));
-        password.ifPresent(p -> initJson.set(PASSWORD, p));
         session.sendJson(initJson);
 
         // Wait to receive confirmation

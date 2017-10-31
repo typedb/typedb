@@ -64,6 +64,7 @@ public class REST {
             public static final String CONFIGURATION = "/configuration";
             public static final String METRICS = "/metrics";
             public static final String KEYSPACES = "/keyspaces";
+            public static final String KEYSPACE = "/keyspaces/:keyspace";
         }
 
         /**
@@ -106,12 +107,6 @@ public class REST {
             public static final String EXPLORE = "/dashboard/explore/";
             public static final String EXPLAIN = "/dashboard/explain";
         }
-
-        public static final String NEW_SESSION_URI="/auth/session/";
-        public static final String IS_PASSWORD_PROTECTED_URI="/auth/enabled/";
-
-        public static final String ALL_USERS = "/user/all";
-        public static final String ONE_USER = "/user/one";
     }
 
     /**
@@ -188,6 +183,7 @@ public class REST {
         public static final class Graql {
             public static final String QUERY = "query";
             public static final String INFER = "infer";
+            public static final String MULTI = "multi";
             public static final String MATERIALISE = "materialise";
             public static final String LIMIT_EMBEDDED = "limitEmbedded";
             public static final String DEFINE_ALL_VARS = "defineAllVars";
@@ -276,8 +272,6 @@ public class REST {
         public static final String ACTION_TYPES = "types";
         public static final String ACTION_DISPLAY = "display";
 
-        public static final String USERNAME = "username";
-        public static final String PASSWORD = "password";
         public static final String KEYSPACE = "keyspace";
         public static final String OUTPUT_FORMAT = "outputFormat";
         public static final String INFER = "infer";

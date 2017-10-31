@@ -1,7 +1,5 @@
 # GRAKN.AI Documentation
 
-[![Code Triagers Badge](https://www.codetriage.com/graknlabs/docs/badges/users.svg)](https://www.codetriage.com/graknlabs/docs)
-
 ## TL;DR
 
 **How to update and build the docs**
@@ -96,3 +94,30 @@ $
 ```
 
 You can now view the documentation by navigating your web browser to `http://127.0.0.1:4005/`
+
+## Tests
+
+There are a few tests we run against docs:
+
+- `html-proofer`
+- `GraqlDocsTest`
+- `JavaDocsTest`
+
+`html-proofer` can be executed with `rake test`. It will check all the links in the docs to make sure they actually go
+somewhere.
+
+`GraqlDocsTest` and `JavaDocsTest` will test the Graql and Java code blocks respectively. Blocks are identified by
+whether they begin with `graql` or `java`. Each page is tested on its own by executing the code blocks sequentially.
+
+By default, the code blocks are executed against the genealogy knowledge base. If you want to use a different knowledge
+base, then add e.g.
+```
+KB: pokemon
+```
+to the header of the markdown file. The valid knowledge bases can be found in `DocTestUtils`.
+
+Java code blocks are actually tested with Groovy (because it is an interpreted language). There are some differences
+between Java and Groovy syntax, so we recommend writing code that is valid in both languages.
+
+If a code block should not be executed (e.g. because it is deliberately invalid or does something dangerous), then mark
+it `graq-test-ignore` or `java-test-ignore` instead of `graql` or `java`.

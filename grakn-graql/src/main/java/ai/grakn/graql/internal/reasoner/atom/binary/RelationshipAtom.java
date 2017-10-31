@@ -60,6 +60,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -81,7 +82,8 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.compatibleRelationTypesWithRoles;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.supers;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.playableRoles;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.compatibleRoles;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.top;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -475,7 +477,9 @@ public class RelationshipAtom extends IsaAtom {
                 .collect(toSet());
 
         //types deduced from substitution
-        inferEntityTypes(sub).stream().map(Pair::getValue).forEach(types::add);
+        inferEntityTypes(sub).stream()
+                .map(Pair::getValue)
+                .forEach(types::add);
 
         Multimap<RelationshipType, Role> compatibleTypesFromTypes = compatibleRelationTypesWithRoles(types, new TypeConverter());
 
@@ -596,9 +600,8 @@ public class RelationshipAtom extends IsaAtom {
 
         GraknTx graph = getParentQuery().tx();
         Role metaRole = graph.admin().getMetaRole();
-        RelationshipType relType = getSchemaConcept() != null? getSchemaConcept().asRelationshipType() : null;
-
         List<RelationPlayer> allocatedRelationPlayers = new ArrayList<>();
+        RelationshipType relType = getSchemaConcept() != null? getSchemaConcept().asRelationshipType() : null;
 
         //explicit role types from castings
         List<Pair<Var, VarPattern>> rolePlayerMappings = new ArrayList<>();
@@ -614,45 +617,37 @@ public class RelationshipAtom extends IsaAtom {
         //remaining roles
         //role types can repeat so no matter what has been allocated still the full spectrum of possibilities is present
         //TODO make restrictions based on cardinality constraints
-        Set<Role> possibleRoles = relType != null? relType.relates().collect(toSet()) : Sets.newHashSet(metaRole);
+        Set<Role> possibleRoles = relType != null?
+                relType.relates().collect(toSet()) :
+                inferPossibleRelationTypes(sub).stream().flatMap(RelationshipType::relates).collect(toSet());
 
         //possible role types for each casting based on its type
         Map<RelationPlayer, Set<Role>> mappings = new HashMap<>();
-        Map<Var, Type> varSchemaConceptMap = getParentQuery().getVarTypeMap();
-
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         //types deduced from substitution
-        inferEntityTypes(sub).forEach(p -> varSchemaConceptMap.put(p.getKey(), p.getValue()));
+        inferEntityTypes(sub).forEach(p -> varTypeMap.put(p.getKey(), p.getValue()));
 
         getRelationPlayers().stream()
                 .filter(rp -> !allocatedRelationPlayers.contains(rp))
-                .forEach(casting -> {
-                    Var varName = casting.getRolePlayer().var();
-                    SchemaConcept schemaConcept = varSchemaConceptMap.get(varName);
-                    if (schemaConcept != null && !Schema.MetaSchema.isMetaLabel(schemaConcept.getLabel()) && schemaConcept.isType()) {
-                        mappings.put(casting, ReasonerUtils.compatibleRoles(schemaConcept.asType(), possibleRoles.stream()));
-                    } else {
-                        mappings.put(casting, ReasonerUtils.schemaConcepts(possibleRoles));
-                    }
+                .forEach(rp -> {
+                    Var varName = rp.getRolePlayer().var();
+                    Type type = varTypeMap.get(varName);
+                    mappings.put(rp, top(type != null? compatibleRoles(type, possibleRoles) : possibleRoles));
                 });
 
 
-        //resolve ambiguities until no unambiguous mapping exist
-        while( mappings.values().stream().filter(s -> s.size() == 1).count() != 0) {
-            Map.Entry<RelationPlayer, Set<Role>> entry = mappings.entrySet().stream()
-                    .filter(e -> e.getValue().size() == 1)
-                    .findFirst().orElse(null);
+        //allocate all unambiguous mappings
+        mappings.entrySet().stream()
+                .filter(entry -> entry.getValue().size() == 1)
+                .forEach(entry -> {
+                    RelationPlayer rp = entry.getKey();
+                    Var varName = rp.getRolePlayer().var();
+                    Role role = Iterables.getOnlyElement(entry.getValue());
+                    VarPatternAdmin roleVar = Graql.var().label(role.getLabel()).admin();
 
-            RelationPlayer casting = entry.getKey();
-            Var varName = casting.getRolePlayer().var();
-            Role role = entry.getValue().iterator().next();
-            VarPatternAdmin roleVar = Graql.var().label(role.getLabel()).admin();
-
-            //TODO remove from all mappings if it follows from cardinality constraints
-            mappings.get(casting).remove(role);
-
-            rolePlayerMappings.add(new Pair<>(varName, roleVar));
-            allocatedRelationPlayers.add(casting);
-        }
+                    rolePlayerMappings.add(new Pair<>(varName, roleVar));
+                    allocatedRelationPlayers.add(rp);
+                });
 
         //fill in unallocated roles with metarole
         getRelationPlayers().stream()
@@ -735,8 +730,8 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierComparison matchType) {
         Multimap<Role, RelationPlayer> childRoleRPMap = this.getRoleRelationPlayerMap();
-        Map<Var, Type> childVarSchemaConceptMap = this.getParentQuery().getVarTypeMap();
-        Map<Var, Type> parentVarSchemaConceptMap = parentAtom.getParentQuery().getVarTypeMap();
+        Map<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap();
+        Map<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap();
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
@@ -753,9 +748,9 @@ public class RelationshipAtom extends IsaAtom {
 
                     if (parentRoleLabel != null) {
                         Var parentRolePlayer = prp.getRolePlayer().var();
-                        SchemaConcept parentType = parentVarSchemaConceptMap.get(parentRolePlayer);
+                        Type parentType = parentVarTypeMap.get(parentRolePlayer);
 
-                        Set<Role> compatibleRoles = playableRoles(
+                        Set<Role> compatibleRoles = compatibleRoles(
                                 tx().getSchemaConcept(parentRoleLabel),
                                 parentType,
                                 childRoles);
@@ -768,9 +763,9 @@ public class RelationshipAtom extends IsaAtom {
                                             //check for inter-type compatibility
                                             .filter(crp -> {
                                                 Var childVar = crp.getRolePlayer().var();
-                                                SchemaConcept childType = childVarSchemaConceptMap.get(childVar);
-                                                return matchType.typeCompatibility(childQuery, childVar, parentType)
-                                                        && matchType.schemaConceptComparison(parentType, childType);
+                                                Type childType = childVarTypeMap.get(childVar);
+                                                return matchType.typePlayability(childQuery, childVar, parentType)
+                                                        && matchType.typeCompatibility(parentType, childType);
                                             })
                                             //check for substitution compatibility
                                             .filter(crp -> {

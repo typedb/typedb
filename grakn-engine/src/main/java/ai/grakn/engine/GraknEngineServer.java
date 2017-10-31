@@ -17,6 +17,7 @@
  */
 package ai.grakn.engine;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
@@ -78,8 +79,8 @@ public class GraknEngineServer implements AutoCloseable {
         taskManager.start();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
-                prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
-                prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
+                prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
+                prop.getProperty(GraknConfigKey.SERVER_PORT));
         synchronized (this){
             checkVersion();
             lockAndInitializeSystemSchema();
@@ -135,7 +136,7 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    private void logStartMessage(String host, String port) {
+    private void logStartMessage(String host, int port) {
         String address = "http://" + host + ":" + port;
         LOG.info("\n==================================================");
         LOG.info("\n" + String.format(GraknEngineConfig.GRAKN_ASCII, address));

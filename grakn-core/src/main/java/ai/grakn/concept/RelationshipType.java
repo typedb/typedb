@@ -141,6 +141,13 @@ public interface RelationshipType extends Type {
     RelationshipType sup();
 
     /**
+     * Returns a collection of supertypes of this {@link RelationshipType}.
+     * @return All the supertypes of this {@link RelationshipType}
+     */
+    @Override
+    Stream<RelationshipType> sups();
+
+    /**
      * Returns a collection of subtypes of this {@link RelationshipType}.
      *
      * @return All the sub types of this {@link RelationshipType}

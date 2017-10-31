@@ -25,7 +25,7 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskStorage;
 import ai.grakn.engine.tasks.manager.redisqueue.Task;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.redisq.Redisq;
 import ai.grakn.redisq.RedisqBuilder;

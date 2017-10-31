@@ -103,11 +103,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     final Logger LOG = LoggerFactory.getLogger(GraknTxAbstract.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
-    //TODO: Is this the correct place for these config paths
-    //----------------------------- Config Paths
-    public static final String SHARDING_THRESHOLD = "knowledge-base.sharding-threshold";
-    public static final String NORMAL_CACHE_TIMEOUT_MS = "knowledge-base.schema-cache-timeout-ms";
-
     //----------------------------- Shared Variables
     private final CommitLog commitLog;
     private final Keyspace keyspace;
@@ -180,12 +175,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     GlobalCache getGlobalCache() {
         return globalCache;
     }
-
-    /**
-     * @param concept A concept in the graph
-     * @return True if the concept has been modified in the transaction
-     */
-    public abstract boolean isConceptModified(Concept concept);
 
     /**
      * @return The number of open transactions currently.
@@ -758,7 +747,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Optional<String> commitNoLogs() throws InvalidKBException {
+    public Optional<String> commitSubmitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
 
@@ -945,5 +934,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         } else {
             type.createShard();
         }
+    }
+
+    @Override
+    public long getShardCount(Type concept){
+        return TypeImpl.from(concept).shardCount();
     }
 }

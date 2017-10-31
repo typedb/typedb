@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -30,7 +31,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -59,7 +60,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTy
 /**
  *
  * <p>
- * Atom implementation defining a resource atom corresponding to a {@link HasResourceProperty}.
+ * Atom implementation defining a resource atom corresponding to a {@link HasAttributeProperty}.
  * The resource structure is the following:
  *
  * has($varName, $predicateVariable = resource variable), type($predicateVariable)
@@ -224,11 +225,9 @@ public class ResourceAtom extends Binary{
         ReasonerQueryImpl childQuery = (ReasonerQueryImpl) childAtom.getParentQuery();
 
         //check type bindings compatiblity
-        TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
-        TypeAtom childTypeConstraint = childAtom.getTypeConstraints().findFirst().orElse(null);
+        Type parentType = this.getParentQuery().getVarTypeMap().get(this.getVarName());
+        Type childType = childQuery.getVarTypeMap().get(childAtom.getVarName());
 
-        SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
-        SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
         if (parentType != null && childType != null && areDisjointTypes(parentType, childType)
                 || !childQuery.isTypeRoleCompatible(ruleAtom.getVarName(), parentType)) return false;
 

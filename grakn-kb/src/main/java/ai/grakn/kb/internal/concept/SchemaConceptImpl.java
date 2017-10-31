@@ -59,11 +59,11 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *           For example an {@link EntityType} or {@link RelationshipType} or {@link Role}
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
-    private final Cache<Label> cachedLabel = new Cache<>(Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
-    private final Cache<LabelId> cachedLabelId = new Cache<>(Cacheable.labelId(), () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
-    private final Cache<T> cachedSuperType = new Cache<>(Cacheable.concept(), () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private final Cache<Boolean> cachedIsImplicit = new Cache<>(Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private final Cache<Label> cachedLabel = Cache.createPersistentCache(this, Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
+    private final Cache<LabelId> cachedLabelId = Cache.createSessionCache(this, Cacheable.labelId(), () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
+    private final Cache<T> cachedSuperType = Cache.createSessionCache(this, Cacheable.concept(), () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private final Cache<Set<T>> cachedDirectSubTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsImplicit = Cache.createSessionCache(this, Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     SchemaConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -106,27 +106,21 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     * Flushes the internal transaction caches so they can refresh with persisted graph
-     */
-    public void txCacheFlush(){
-        cachedSuperType.flush();
-        cachedDirectSubTypes.flush();
-        cachedIsImplicit.flush();
-    }
-
-    @Override
-    public void txCacheClear(){
-        cachedSuperType.clear();
-        cachedDirectSubTypes.clear();
-        cachedIsImplicit.clear();
-    }
-
-    /**
      *
      * @return The super of this {@link SchemaConcept}
      */
     public T sup() {
         return cachedSuperType.get();
+    }
+
+
+    /**
+     *
+     * @return The supertypes of this
+     */
+    @Override
+    public Stream<T> sups() {
+        return this.filterSuperSet(this.superSet());
     }
 
     /**
@@ -135,16 +129,29 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      */
     public Stream<T> superSet() {
         Set<T> superSet= new HashSet<>();
+
         superSet.add(getThis());
         T superParent = sup();
 
         while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
             superSet.add(superParent);
+
             //noinspection unchecked
             superParent = (T) superParent.sup();
         }
 
         return superSet.stream();
+    }
+
+
+    /**
+     * Filters the supers not to return meta schema nodes defined in {@link Schema.MetaSchema}
+     * @param superSet
+     * @return filtered supertypes
+     */
+    public Stream<T> filterSuperSet(Stream<T> superSet) {
+        return superSet.filter(concept -> !Schema.MetaSchema.isMetaLabel(concept.getLabel()));
+
     }
 
     /**
@@ -171,11 +178,11 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             //noinspection unchecked
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
 
-            //Clear internal caching
-            txCacheClear();
-
             //Clear Global Cache
             vertex().tx().txCache().remove(this);
+
+            //Clear internal caching
+            txCacheClear();
         } else {
             throw GraknTxOperationException.cannotBeDeleted(this);
         }
@@ -284,6 +291,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         }
         return getThis();
     }
+
 
     /**
      * Checks if changing the super is allowed. This passed if:

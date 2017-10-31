@@ -28,22 +28,15 @@ To use the loader client API, add the following to your pom.xml:
  and add the following to your imports:
  
 ```
-import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.client.BatchExecutorClient;
 ```
 
 # Basic Usage
 
-The loader client provides two constructors. 
-The first accepts only the keyspace to load data into, the URI endpoint where Grakn Engine Server is running, a flag to enable debug mode, and the number of retries to perform should engine be unavailable for some time.
+The loader client can be instantiated by giving the engine URI. 
 
 ```java
-BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, false, 1);
-```
-
-The second constructor additionally allows the user to specify a callback function that executes on completion of tasks. 
-
-```java
-loader = new BatchMutatorClient(keyspace, uri, callback, false, 1);
+BatchExecutorClient loader = BatchExecutorClient.newBuilderforURI(uri).build();
 ```
 
 The loader client can be thought of as an empty bucket in which to dump insert queries that will be batch-loaded into the specified knowledge base. Batching, blocking and callbacks are all executed based on how the user has configured the client, which simplifies usage. The following code will load 100 insert queries into the knowledge base.
@@ -52,130 +45,19 @@ The loader client can be thought of as an empty bucket in which to dump insert q
 InsertQuery insert = insert(var().isa("person"));
 
 for(int i = 0; i < 100; i++){
-	loader.add(insert);
-}
-
-loader.waitToFinish();
-```
-
-The user should call `waitToFinish()`, which will flush the last batch of queries and block until all batches have executed. 
-
-# Configuring the client
-
-## Configuring Batch Size 
-
-The batch size represents the number of tasks that will be executed in a single transaction when batch loading.
-
-The default batch size is **25**.
-
-```java
-// Setting the batch size to one
-loader.setBatchSize(1);
-
-// Each of these insert queries will be executed in their own transaction
-loader.add(insert);
-loader.add(insert);
-loader.add(insert);
-
-loader.waitToFinish();
-
-// Set the batch size to five
-loader.setBatchSize(5);
-
-// All of these insert queries will be executed in one single transaction
-loader.add(insert);
-loader.add(insert);
-loader.add(insert);
-
-loader.waitToFinish();
-```
-
-Flushing in the middle of adding queries will force-send batches to the server, overriding the set batch size. The following code will execute in two transactions, the first containing one insert and the second transaction containing two, even though the overall batch size is set to five. 
-
-```java
-loader.setBatchSize(5);
-
-// First transaction
-loader.add(insert);
-
-loader.flush();
-
-// Second transaction
-loader.add(insert);
-loader.add(insert);
-
-loader.waitToFinish();
-```
-
-This batch size property can directly effect loading times. If you find that your data is loading too slowly, try increasing the size of the batch. 
-
-## Configuring Active Tasks
-The number of active tasks represents the capcity beyond which no additional inserts can be added without blocking. 
-
-The default number of active tasks is **25**.
-
-
-```java
-loader.setBatchSize(1);
-loader.setNumberActiveTasks(1);
-
-// First transaction
-loader.add(insert);
-
-// Second transaction. Block here until the first transaction completes. 
-loader.add(insert);
-
-loader.waitToFinish();
-```
-
-In the above scenario, the loader will block the calling thread when adding the second transaction. Only when the first transaction completes execution will the second transaction be sent to the server. 
-
-## Task Completion Callback
-
-Specify a callback function that will execute over the server response after batch completion. 
-
-The server response is describes more in deatils in the REST api documentation. It will look something like this:
-
-```json
-{
-	"creator":"ai.grakn.client.BatchMutatorClient",
-	"runAt":"2017-02-28T10:38:07.585Z",
-	"recurring":false,
-	"className":"ai.grakn.engine.loader.LoaderTask",
-	"interval":0,
-	"id":"9118075f-afd7-48dd-b594-b49d9e2cc8d7",
-	"status":"COMPLETED",
-	"engineID":"67128a90-1112-400a-a38e-0f4a35f2c8f6"
+	loader.add(insert, keyspace.getValue()).toBlocking();
 }
 ```
 
-Migration uses this callback function to track status information about the number of batches that have completed for the running migration.
-
-<!-- Ignored because it contains a Java lambda, which Groovy doesn't support -->
-```java-test-ignore
-AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
-
-loader.setTaskCompletionConsumer((Json json) -> {
-	Integer completed = numberBatchesCompleted.incrementAndGet();
-	String status = json.at("status").asString();
-
-	LOG.info("Batches completed: {}\nStatus of last batch: {}", completed, status);
-});
-```
-
-This callback is executed whenever a terminal response from the server is received, even if an exception was thrown. In the case of an execption, the Json argument will be either empty or contain the errored response from the server including the server-side exception. 
+Note that the output is a Java RX Observable that needs subscription or blocking.
 
 ## Close
 
-The loader can be closed as follows
+The loader should be closed as follows
 
 ```java
 loader.close();
 ```
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/23" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-
 
 {% include links.html %}
 

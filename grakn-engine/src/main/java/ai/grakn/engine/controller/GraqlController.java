@@ -30,7 +30,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.util.REST;
+import ai.grakn.util.REST.WebPath.KB;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import io.swagger.annotations.Api;
@@ -46,7 +46,10 @@ import spark.Service;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
@@ -56,6 +59,7 @@ import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
+import static ai.grakn.util.REST.Request.Graql.MULTI;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -80,14 +84,16 @@ public class GraqlController {
     private final EngineGraknTxFactory factory;
     private final Timer executeGraqlGetTimer;
     private final Timer executeGraqlPostTimer;
+    private final Timer singleExecutionTimer;
 
     public GraqlController(EngineGraknTxFactory factory, Service spark,
                            MetricRegistry metricRegistry) {
         this.factory = factory;
         this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
         this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
+        this.singleExecutionTimer = metricRegistry.timer(name(GraqlController.class, "single", "execution"));
 
-        spark.post(REST.WebPath.KB.ANY_GRAQL, this::executeGraql);
+        spark.post(KB.ANY_GRAQL, this::executeGraql);
 
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
@@ -104,6 +110,7 @@ public class GraqlController {
         String queryString = mandatoryBody(request);
         Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(request, KEYSPACE));
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
+        boolean multi = parseBoolean(queryParameter(request, MULTI).orElse("false"));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
@@ -113,9 +120,10 @@ public class GraqlController {
         try (GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
             QueryParser parser = graph.graql().materialise(materialise).infer(infer).parser();
             defineAllVars.ifPresent(parser::defineAllVars);
-            Query<?> query = parser.parseQuery(queryString);
-            Object resp = respond(response, acceptType, executeQuery(graph.getKeyspace(), limitEmbedded, query, acceptType));
-            if (!query.isReadOnly()) graph.commit();
+            Object responseBody = executeQuery(graph, limitEmbedded, queryString,
+                    acceptType, multi, parser, materialise);
+            Object resp = respond(response, acceptType, responseBody);
+
             return resp;
         }
     }
@@ -147,18 +155,20 @@ public class GraqlController {
         response.type(contentType);
         response.body(responseBody.toString());
         response.status(200);
-
         return responseBody;
     }
 
     /**
      * Execute a query and return a response in the format specified by the request.
      *
-     * @param keyspace   the keyspace the query is running on
-     * @param query      read query to be executed
-     * @param acceptType response format that the client will accept
+     * @param keyspace    the keyspace the query is running on
+     * @param queryString read query to be executed
+     * @param acceptType  response format that the client will accept
+     * @param multi       execute multiple statements
+     * @param parser
      */
-    private Object executeQuery(Keyspace keyspace, int limitEmbedded, Query<?> query, String acceptType) {
+    private Object executeQuery(GraknTx graph, int limitEmbedded, String queryString,
+                                String acceptType, boolean multi, QueryParser parser, boolean materialise) {
         Printer<?> printer;
 
         switch (acceptType) {
@@ -169,15 +179,29 @@ public class GraqlController {
                 printer = Printers.json();
                 break;
             case APPLICATION_HAL:
-                printer = Printers.hal(keyspace, limitEmbedded);
+                printer = Printers.hal(graph.getKeyspace(), limitEmbedded);
                 break;
             default:
                 throw GraknServerException.unsupportedContentType(acceptType);
         }
 
-        String formatted = printer.graqlString(query.execute());
-
+        String formatted;
+        boolean commitQuery = false;
+        if (multi) {
+            Stream<Query<?>> query = parser.parseList(queryString);
+            List<?> collectedResults = query.map(this::executeAndMonitor).collect(Collectors.toList());
+            formatted = printer.graqlString(collectedResults);
+        } else {
+            Query<?> query = parser.parseQuery(queryString);
+            formatted = printer.graqlString(executeAndMonitor(query));
+            commitQuery = !query.isReadOnly();
+        }
+        if (commitQuery || materialise) graph.commit();
         return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
+    }
+
+    private Object executeAndMonitor(Query<?> query) {
+        return query.execute();
     }
 
     static String getAcceptType(Request request) {

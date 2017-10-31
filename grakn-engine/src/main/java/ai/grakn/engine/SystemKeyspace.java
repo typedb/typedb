@@ -101,7 +101,7 @@ public class SystemKeyspace {
             if (attribute.owner() == null) {
                 graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
             }
-            graph.admin().commitNoLogs();
+            graph.admin().commitSubmitNoLogs();
         } catch (InvalidKBException e) {
             throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
         }
@@ -144,7 +144,7 @@ public class SystemKeyspace {
 
             openSpaces.remove(keyspace);
 
-            graph.admin().commitNoLogs();
+            graph.admin().commitSubmitNoLogs();
         }
 
         return true;
@@ -163,7 +163,7 @@ public class SystemKeyspace {
             }
             LOG.info("Loading schema");
             loadSystemSchema(tx);
-            tx.admin().commitNoLogs();
+            tx.admin().commitSubmitNoLogs();
             LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
         } catch (Exception e) {
             LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);
@@ -180,22 +180,5 @@ public class SystemKeyspace {
         //Keyspace data
         AttributeType<String> keyspaceName = tx.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
         tx.putEntityType("keyspace").key(keyspaceName);
-
-        //User Data
-        AttributeType<String> userName = tx.putAttributeType("user-name", AttributeType.DataType.STRING);
-        AttributeType<String> userPassword = tx.putAttributeType("user-password", AttributeType.DataType.STRING);
-        AttributeType<String> userPasswordSalt = tx.putAttributeType("user-password-salt", AttributeType.DataType.STRING);
-        AttributeType<String> userFirstName = tx.putAttributeType("user-first-name", AttributeType.DataType.STRING);
-        AttributeType<String> userLastName = tx.putAttributeType("user-last-name", AttributeType.DataType.STRING);
-        AttributeType<String> userEmail = tx.putAttributeType("user-email", AttributeType.DataType.STRING);
-        AttributeType<Boolean> userIsAdmin = tx.putAttributeType("user-is-admin", AttributeType.DataType.BOOLEAN);
-
-        tx.putEntityType("user").key(userName).
-                attribute(userPassword).
-                attribute(userPasswordSalt).
-                attribute(userFirstName).
-                attribute(userLastName).
-                attribute(userEmail).
-                attribute(userIsAdmin);
     }
 }

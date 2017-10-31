@@ -19,9 +19,15 @@
 
 package ai.grakn.generator;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Abstract class for generating test objects that handles some boilerplate.
@@ -49,5 +55,21 @@ public abstract class AbstractGenerator<T> extends Generator<T> {
 
     final <S> S gen(Class<S> clazz) {
         return gen().type(clazz).generate(random, status);
+    }
+
+    protected <S> Set<S> setOf(Class<S> clazz, int minSize, int maxSize) {
+        return fillWith(Sets.newHashSet(), clazz, minSize, maxSize);
+    }
+
+    protected <S> List<S> listOf(Class<S> clazz, int minSize, int maxSize) {
+        return fillWith(Lists.newArrayList(), clazz, minSize, maxSize);
+    }
+
+    private <S, U extends Collection<S>> U fillWith(U collection, Class<S> clazz, int minSize, int maxSize) {
+        for (int i = 0; i < random.nextInt(minSize, maxSize); i ++) {
+            collection.add(gen(clazz));
+        }
+
+        return collection;
     }
 }
