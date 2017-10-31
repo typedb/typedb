@@ -371,32 +371,16 @@ public class RelationshipAtom extends IsaAtom {
                 && !headAtom.getRelationPlayerMappings(atomWithType).isEmpty();
     }
 
-    private Set<Role> getExplicitRoles() {
-        Set<Role> roles = new HashSet<>();
+    private Stream<Role> getExplicitRoles() {
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         GraknTx graph = parent.tx();
 
-        Set<VarPatternAdmin> roleVars = getRelationPlayers().stream()
+        return getRelationPlayers().stream()
                 .map(RelationPlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
-                .collect(Collectors.toSet());
-        //try directly
-        roleVars.stream()
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(graph::<Role>getSchemaConcept)
-                .forEach(roles::add);
-
-        //try indirectly
-        roleVars.stream()
-                .filter(v -> v.var().isUserDefinedName())
-                .map(VarPatternAdmin::var)
-                .map(this::getIdPredicate)
-                .filter(Objects::nonNull)
-                .map(Predicate::getPredicate)
-                .map(graph::<Role>getConcept)
-                .forEach(roles::add);
-        return roles;
+                .map(graph::<Role>getSchemaConcept);
     }
 
     public RelationshipAtom addType(SchemaConcept type) {
@@ -429,24 +413,18 @@ public class RelationshipAtom extends IsaAtom {
     public List<RelationshipType> inferPossibleRelationTypes(Answer sub) {
         if (getSchemaConcept() != null) return Collections.singletonList(getSchemaConcept().asRelationshipType());
 
-        //look at available roles
-        Set<Role> roles = getExplicitRoles();
-        Multimap<RelationshipType, Role> compatibleTypesFromRoles = compatibleRelationTypesWithRoles(roles, new RoleConverter());
-
-        //look at entity types
+        Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.getLabel())).collect(toSet());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
-
-        //explicit types
-        Set<Type> types = getRolePlayers().stream()
-                .filter(varTypeMap::containsKey)
-                .map(varTypeMap::get)
-                .collect(toSet());
-
+        Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).map(varTypeMap::get).collect(toSet());
         //types deduced from substitution
-        inferEntityTypes(sub).stream()
-                .map(Pair::getValue)
-                .forEach(types::add);
+        inferEntityTypes(sub).stream().map(Pair::getValue).forEach(types::add);
 
+        if (roles.isEmpty() && types.isEmpty()){
+            RelationshipType metaRelationType = tx().admin().getMetaRelationType();
+            return metaRelationType.subs().filter(rt -> !rt.equals(metaRelationType)).collect(Collectors.toList());
+        }
+
+        Multimap<RelationshipType, Role> compatibleTypesFromRoles = compatibleRelationTypesWithRoles(roles, new RoleConverter());
         Multimap<RelationshipType, Role> compatibleTypesFromTypes = compatibleRelationTypesWithRoles(types, new TypeConverter());
 
         //intersect relation types from roles and types
@@ -559,10 +537,13 @@ public class RelationshipAtom extends IsaAtom {
      */
     private RelationshipAtom inferRoles(Answer sub){
         //return if all roles known and non-meta
-        Set<Role> explicitRoleTypes = getExplicitRoles();
-        boolean allRolesMeta = explicitRoleTypes.stream().filter(role -> Schema.MetaSchema.isMetaLabel(role.getLabel())).count() == getRelationPlayers().size();
-        boolean metaRoleRecomputationViable = allRolesMeta && !sub.isEmpty();
-        if (explicitRoleTypes.size() == getRelationPlayers().size() && !metaRoleRecomputationViable) return this;
+        List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
+        boolean allRolesMeta = explicitRoles.stream().allMatch(role ->
+                Schema.MetaSchema.isMetaLabel(role.getLabel())
+        );
+        boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), getRolePlayers()).isEmpty());
+        if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
 
         GraknTx graph = getParentQuery().tx();
         Role metaRole = graph.admin().getMetaRole();
@@ -575,8 +556,12 @@ public class RelationshipAtom extends IsaAtom {
             Var varName = rp.getRolePlayer().var();
             VarPatternAdmin rolePattern = rp.getRole().orElse(null);
             if (rolePattern != null) {
-                inferredRelationPlayer.add(RelationPlayer.of(rolePattern, varName.admin()));
-                allocatedRelationPlayers.add(rp);
+                Label roleLabel = rolePattern.getTypeLabel().orElse(null);
+                //allocate if variable role or if label non meta
+                if (roleLabel == null || !Schema.MetaSchema.isMetaLabel(roleLabel)) {
+                    inferredRelationPlayer.add(RelationPlayer.of(rolePattern, varName.admin()));
+                    allocatedRelationPlayers.add(rp);
+                }
             }
         });
 
@@ -589,7 +574,6 @@ public class RelationshipAtom extends IsaAtom {
 
         //possible role types for each casting based on its type
         Map<RelationPlayer, Set<Role>> mappings = new HashMap<>();
-        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         //types deduced from substitution
         inferEntityTypes(sub).forEach(p -> varTypeMap.put(p.getKey(), p.getValue()));
 
@@ -598,7 +582,7 @@ public class RelationshipAtom extends IsaAtom {
                 .forEach(rp -> {
                     Var varName = rp.getRolePlayer().var();
                     Type type = varTypeMap.get(varName);
-                    mappings.put(rp, top(compatibleRoles(type, possibleRoles)));
+                    mappings.put(rp, top(type != null? compatibleRoles(type, possibleRoles) : possibleRoles));
                 });
 
 
@@ -626,8 +610,10 @@ public class RelationshipAtom extends IsaAtom {
                     inferredRelationPlayer.add(RelationPlayer.of(rolePattern, varName.admin()));
                 });
 
-        VarPatternAdmin newPattern = relationPattern(getVarName(), inferredRelationPlayer).asVarPattern();
-        return new RelationshipAtom(newPattern.isa(getPredicateVariable()).admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
+        VarPatternAdmin newPattern = relationPattern(getVarName(), inferredRelationPlayer)
+                .asVarPattern()
+                .isa(getPredicateVariable()).admin();
+        return new RelationshipAtom(newPattern, getPredicateVariable(), getTypePredicate(), getParentQuery());
     }
 
     /**
