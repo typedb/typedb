@@ -24,6 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
@@ -59,6 +60,7 @@ public class PostProcessingTaskTest {
     private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
     private TaskSubmitter mockTaskSubmitter;
+    private PostProcessor postProcessor;
 
     @Before
     public void mockPostProcessing(){
@@ -67,6 +69,7 @@ public class PostProcessingTaskTest {
         mockTaskSubmitter = mock(RedisTaskManager.class);
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
+        postProcessor = PostProcessor.create(engine.config(), engine.getJedisPool(), engine.server().factory(), engine.server().lockProvider(), METRIC_REGISTRY);
         String keyspace = "testing";
         when(mockConfiguration.json()).thenReturn(Json.object(
                 KEYSPACE, keyspace,
@@ -84,7 +87,7 @@ public class PostProcessingTaskTest {
         PostProcessingTask task = new PostProcessingTask();
 
         task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY);
+                new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -95,7 +98,7 @@ public class PostProcessingTaskTest {
         PostProcessingTask task = new PostProcessingTask();
 
         task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY);
+                new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -107,9 +110,9 @@ public class PostProcessingTaskTest {
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
         task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY);
+                new ProcessWideLockProvider(), METRIC_REGISTRY, null);
         task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY);
+                new ProcessWideLockProvider(), METRIC_REGISTRY, postProcessor);
 
         Thread pp1 = new Thread(task1::start);
         Thread pp2 = new Thread(task2::start);

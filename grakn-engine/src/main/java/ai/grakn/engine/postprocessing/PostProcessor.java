@@ -19,6 +19,7 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
@@ -26,8 +27,10 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.google.common.base.Preconditions;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +39,7 @@ import redis.clients.util.Pool;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
@@ -64,6 +68,9 @@ public class PostProcessor {
     private final LockProvider lockProvider;
     private final RedisCountStorage redis;
     private final EngineGraknTxFactory factory;
+
+    @Deprecated
+    private static final String LOCK_KEY = "/post-processing-lock";
 
     private PostProcessor(GraknEngineConfig engineConfig, Pool<Jedis> jedisPool, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry){
         this.engineConfig = engineConfig;
@@ -192,5 +199,76 @@ public class PostProcessor {
                 .collect(Collectors.toMap(
                         e -> ConceptId.of(e.at(REST.Request.COMMIT_LOG_CONCEPT_ID).asString()),
                         e -> e.at(REST.Request.COMMIT_LOG_SHARDING_COUNT).asLong()));
+    }
+
+    /**
+     * Merges duplicate {@link ai.grakn.concept.Concept}s based on the unique index provided plus the {@link ConceptId}s
+     * of the suspected duplicates
+     *
+     * @param tx The {@link GraknTx} responsible for performing the merge
+     * @param conceptIndex The unique {@link ai.grakn.concept.Concept} index which is supposed to exist only once
+     *                     across the entire DB.
+     * @param conceptIds The {@link ConceptId}s of the suspected duplicates
+     */
+    public void mergeDuplicateConcepts(GraknTx tx, String conceptIndex, Set<ConceptId> conceptIds){
+        Preconditions.checkNotNull(lockProvider, "Lock provider was null, possible race condition in initialisation");
+        if(tx.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
+
+            // Acquire a lock when you post process on an index to prevent race conditions
+            // Lock is acquired after checking for duplicates to reduce runtime
+            Lock indexLock = lockProvider.getLock(LOCK_KEY + "/" + conceptIndex);
+            indexLock.lock();
+
+            try {
+                // execute the provided post processing method
+                boolean commitNeeded = tx.admin().fixDuplicateResources(conceptIndex, conceptIds);
+
+                // ensure post processing was correctly executed
+                if(commitNeeded) {
+                    validateMerged(tx, conceptIndex, conceptIds).
+                            ifPresent(message -> {
+                                throw new RuntimeException(message);
+                            });
+
+                    // persist merged concepts
+                    tx.admin().commitNoLogs();
+                }
+            } finally {
+                indexLock.unlock();
+            }
+        }
+    }
+
+    /**
+     * Checks that post processing was done successfully by doing two things:
+     *  1. That there is only 1 valid conceptID left
+     *  2. That the concept Index does not return null
+     * @param graph A grakn graph to run the checks against.
+     * @param conceptIndex The concept index which MUST return a valid concept
+     * @param conceptIds The concpet ids which should only return 1 valid concept
+     * @return An error if one of the above rules are not satisfied.
+     */
+    private Optional<String> validateMerged(GraknTx graph, String conceptIndex, Set<ConceptId> conceptIds){
+        //Check number of valid concept Ids
+        int numConceptFound = 0;
+        for (ConceptId conceptId : conceptIds) {
+            if (graph.getConcept(conceptId) != null) {
+                numConceptFound++;
+                if (numConceptFound > 1) {
+                    StringBuilder conceptIdValues = new StringBuilder();
+                    for (ConceptId id : conceptIds) {
+                        conceptIdValues.append(id.getValue()).append(",");
+                    }
+                    return Optional.of("Not all concept were merged. The set of concepts [" + conceptIds.size() + "] with IDs [" + conceptIdValues.toString() + "] matched more than one concept");
+                }
+            }
+        }
+
+        //Check index
+        if(graph.admin().getConcept(Schema.VertexProperty.INDEX, conceptIndex) == null){
+            return Optional.of("The concept index [" + conceptIndex + "] did not return any concept");
+        }
+
+        return Optional.empty();
     }
 }
