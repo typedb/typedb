@@ -34,6 +34,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
@@ -52,12 +53,15 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.concept.TypeImpl;
+import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -65,6 +69,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -766,7 +771,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
         Map<ConceptId, Long> newInstances = txCache().getShardingCount();
         Map<String, ConceptId> newAttributes = txCache().getNewAttributes();
-        boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
+        Set<ConceptId> relationshipsWithNewRolePlayers = txCache().getRelationshipsWithNewRolePlayers();
+        boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty() || ! relationshipsWithNewRolePlayers.isEmpty();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
@@ -778,8 +784,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             if(trackingNeeded) {
                 commitLog().addNewInstances(newInstances);
                 commitLog().addNewAttributes(newAttributes);
+                commitLog().addRelationshipsWithNewRolePlayers(relationshipsWithNewRolePlayers);
+
             } else {
-                return Optional.of(CommitLog.formatTxLog(newInstances, newAttributes).toString());
+                return Optional.of(CommitLog.formatTxLog(newInstances, newAttributes, relationshipsWithNewRolePlayers).toString());
             }
         }
 
@@ -912,7 +920,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         otherRelationship.allRolePlayers().forEach((role, instances) -> {
             Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
             if (instances.contains(other) && relationReified.isPresent()) {
-                relationReified.get().putRolePlayerEdge(role, main);
+                relationReified.get().addRolePlayerEdge(role, main);
             }
         });
     }
@@ -950,4 +958,70 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public long getShardCount(Type concept){
         return TypeImpl.from(concept).shardCount();
     }
+
+    @Override
+    public boolean relationshipHasDuplicateRolePlayers(ConceptId relationshipId){
+        Multimap<Pair<Role, Thing>, Casting> rolePlayersToCastings = getRolePlayersToCastings(relationshipId);
+        for (Pair<Role, Thing> key : rolePlayersToCastings.keys()) {
+            if(rolePlayersToCastings.get(key).size() > 1){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean fixRelationshipWithDuplicateRolePlayers(ConceptId relationshipId){
+        boolean commitRequired = false;
+
+        Multimap<Pair<Role, Thing>, Casting> rolePlayersToCastings = getRolePlayersToCastings(relationshipId);
+        for (Pair<Role, Thing> key : rolePlayersToCastings.keys()) {
+            Collection<Casting> castings = rolePlayersToCastings.get(key);
+
+            if(castings.size() > 1){
+                commitRequired = true;
+
+                //Remove Castings skipping the first one so we don't completely disconnect the role player
+                castings.stream().skip(1).forEach(Casting::delete);
+            }
+        }
+
+        return commitRequired;
+    }
+
+    /**
+     * Give a {@link ConceptId} which corresponds to a {@link Relationship} which has been reified it returns a
+     * {@link Multimap} of Role players to {@link Casting}s. Each Role Player is a pair of a {@link Role} and a
+     * {@link Thing} which plays that role.
+     *
+     * If the {@link Relationship} does not require any fixing then there should only be one {@link Casting} per
+     * Role Player.
+     *
+     * @param relationshipId A {@link ConceptId} that corresponds to a {@link Relationship}
+     * @return a {@link Multimap} of Role players to {@link Casting}s. This is empty if the provided {@link ConceptId}
+     * is not a {@link RelationshipReified}
+     */
+    private Multimap<Pair<Role, Thing>, Casting> getRolePlayersToCastings(ConceptId relationshipId){
+        //Get the relationship
+        Concept concept = getConcept(relationshipId);
+        if(concept == null || !concept.isRelationship()){
+            return HashMultimap.create();
+        }
+
+        //Check that it is reified
+        Optional<RelationshipReified> relationshipReified = RelationshipImpl.from(concept.asRelationship()).reified();
+        if(!relationshipReified.isPresent()){
+            return HashMultimap.create();
+        }
+
+        //Get the castings
+        Multimap<Pair<Role, Thing>, Casting> rolePlayersToCastings = HashMultimap.create();
+
+        relationshipReified.get().castingsRelation().forEach(casting ->
+                rolePlayersToCastings.put(new Pair<>(casting.getRole(), casting.getRolePlayer()), casting));
+
+        return rolePlayersToCastings;
+    }
+
+
 }
