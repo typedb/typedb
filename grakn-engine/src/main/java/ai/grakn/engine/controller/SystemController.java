@@ -153,7 +153,7 @@ public class SystemController {
     private String putKeyspace(Request request, Response response) {
         Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         systemKeyspace.openKeyspace(keyspace);
-        response.status(HttpServletResponse.SC_NO_CONTENT);
+        response.status(HttpServletResponse.SC_OK);
 
         // Make a copy of the properties object
         Properties properties = new Properties();
