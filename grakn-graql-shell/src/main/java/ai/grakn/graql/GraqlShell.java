@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
 import ai.grakn.util.GraknVersion;
+import ai.grakn.util.SimpleURI;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
@@ -44,6 +45,7 @@ import org.apache.commons.cli.ParseException;
 import rx.Observable;
 
 import javax.annotation.Nullable;
+import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -217,10 +219,10 @@ public class GraqlShell {
         }
 
         Keyspace keyspace = Keyspace.of(cmd.getOptionValue("k", DEFAULT_KEYSPACE));
-        String uriString = cmd.getOptionValue("r", Grakn.DEFAULT_URI);
+        SimpleURI location = Optional.ofNullable(cmd.getOptionValue("r")).map(SimpleURI::new).orElse(Grakn.DEFAULT_URI);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
 
-        if (!client.serverIsRunning(uriString)) {
+        if (!client.serverIsRunning(location)) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
             return false;
         }
@@ -231,7 +233,7 @@ public class GraqlShell {
         if (cmd.hasOption("b")) {
             try {
                 try {
-                    sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"), keyspace);
+                    sendBatchRequest(client.loaderClient(keyspace, location), cmd.getOptionValue("b"), keyspace);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -251,7 +253,7 @@ public class GraqlShell {
                 queries = Optional.of(loadQueries(filePaths));
             }
 
-            URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
+            URI uri = UriBuilder.fromUri(location.toURI()).scheme("ws://").path(REMOTE_SHELL_URI).build();
 
             GraqlShell shell = new GraqlShell(
                     historyFilename, keyspace, client, uri, outputFormat,

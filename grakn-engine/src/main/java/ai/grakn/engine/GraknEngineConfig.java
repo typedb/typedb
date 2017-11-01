@@ -21,6 +21,7 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.GraknVersion;
+import ai.grakn.util.SimpleURI;
 import com.google.common.base.StandardSystemProperty;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -131,8 +132,8 @@ public class GraknEngineConfig {
         return key.parse(Optional.ofNullable(prop.getProperty(key.name())), CONFIG_FILE_PATH);
     }
 
-    public String uri() {
-        return getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + getProperty(GraknConfigKey.SERVER_PORT);
+    public SimpleURI uri() {
+        return new SimpleURI(getProperty(GraknConfigKey.SERVER_HOST_NAME), getProperty(GraknConfigKey.SERVER_PORT));
     }
 
     private static String loadGraknAsciiFile(Path projectPath, Path graknAsciiPath) {

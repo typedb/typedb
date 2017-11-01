@@ -3,7 +3,6 @@ package ai.grakn.test.benchmark;
 import ai.grakn.client.TaskClient;
 import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.util.SimpleURI;
 import ai.grakn.test.EngineContext;
 import com.codahale.metrics.ConsoleReporter;
 import mjson.Json;
@@ -26,8 +25,7 @@ public class MutatorTaskBenchmark extends BenchmarkTest {
     public void setup() throws Throwable {
         engine = makeEngine();
         engine.before();
-        SimpleURI simpleURI = new SimpleURI(engine.uri());
-        client = TaskClient.of(simpleURI.getHost(), simpleURI.getPort());
+        client = TaskClient.of(engine.uri());
         consoleReporter = ConsoleReporter
                 .forRegistry(engine.getMetricRegistry()).build();
     }

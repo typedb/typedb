@@ -117,7 +117,7 @@ public class EngineContext extends ExternalResource {
         return server.getTaskManager();
     }
 
-    public String uri() {
+    public SimpleURI uri() {
         return config.uri();
     }
 
@@ -127,7 +127,7 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void before() throws Throwable {
-        RestAssured.baseURI = "http://" + config.uri();
+        RestAssured.baseURI = uri().toURI().toString();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }

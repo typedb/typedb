@@ -170,9 +170,10 @@ public class DistributionContext extends ExternalResource {
      * Wait for the engine REST API to be available
      */
     private static void waitForEngine(int port) {
+        SimpleURI uri = new SimpleURI("localhost", port);
         long endTime = currentTimeMillis() + 120000;
         while (currentTimeMillis() < endTime) {
-            if (Client.serverIsRunning("localhost:" + port)) {
+            if (Client.serverIsRunning(uri)) {
                 return;
             }
             try {

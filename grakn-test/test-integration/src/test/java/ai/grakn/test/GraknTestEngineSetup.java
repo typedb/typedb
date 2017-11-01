@@ -131,7 +131,7 @@ public abstract class GraknTestEngineSetup {
     }
 
     static void setRestAssuredUri(GraknEngineConfig config) {
-        RestAssured.baseURI = "http://" + config.uri();
+        RestAssured.baseURI = config.uri().toURI().toString();
     }
 
     private static int getEphemeralPort() {
