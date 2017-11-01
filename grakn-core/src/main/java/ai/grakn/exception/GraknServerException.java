@@ -34,6 +34,12 @@ import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
+import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
+import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
+import static org.apache.http.HttpStatus.SC_METHOD_NOT_ALLOWED;
+import static org.apache.http.HttpStatus.SC_NOT_ACCEPTABLE;
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 
 /**
  * <p>
@@ -78,83 +84,93 @@ public class GraknServerException extends GraknBackendException {
      * Thrown when attempting to create an invalid task
      */
     public static GraknServerException invalidTask(String className){
-        return new GraknServerException(UNAVAILABLE_TASK_CLASS.getMessage(className), 400);
+        return new GraknServerException(UNAVAILABLE_TASK_CLASS.getMessage(className), SC_BAD_REQUEST);
+    }
+
+    /**
+     * Thrown when a request has an invalid parameter
+     */
+    public static GraknServerException requestInvalidParameter(String parameter, String value){
+        String message = String.format("Invalid value %s for parameter %s", value, parameter);
+        return new GraknServerException(message, SC_BAD_REQUEST);
     }
 
     /**
      * Thrown when a request is missing mandatory parameters
      */
     public static GraknServerException requestMissingParameters(String parameter){
-        return new GraknServerException(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(parameter), 400);
+        return new GraknServerException(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(parameter), SC_BAD_REQUEST);
     }
 
     /**
      * Thrown when a request is missing mandatory parameters in the body
      */
     public static GraknServerException requestMissingBodyParameters(String parameter){
-        return new GraknServerException(MISSING_MANDATORY_BODY_REQUEST_PARAMETERS.getMessage(parameter), 400);
+        return new GraknServerException(
+                MISSING_MANDATORY_BODY_REQUEST_PARAMETERS.getMessage(parameter), SC_BAD_REQUEST);
     }
 
     /**
      * Thrown when a request is missing the body
      */
     public static GraknServerException requestMissingBody(){
-        return new GraknServerException(MISSING_REQUEST_BODY.getMessage(), 400);
+        return new GraknServerException(MISSING_REQUEST_BODY.getMessage(), SC_BAD_REQUEST);
     }
 
     /**
      * Thrown the content type specified in a request is invalid
      */
     public static GraknServerException unsupportedContentType(String contentType){
-        return new GraknServerException(UNSUPPORTED_CONTENT_TYPE.getMessage(contentType), 406);
+        return new GraknServerException(UNSUPPORTED_CONTENT_TYPE.getMessage(contentType), SC_NOT_ACCEPTABLE);
     }
 
     /**
      * Thrown when there is a mismatch between the content type in the request and the query to be executed
      */
     public static GraknServerException contentTypeQueryMismatch(String contentType, Query query){
-        return new GraknServerException(INVALID_CONTENT_TYPE.getMessage(query.getClass().getName(), contentType), 406);
+        return new GraknServerException(
+                INVALID_CONTENT_TYPE.getMessage(query.getClass().getName(), contentType), SC_NOT_ACCEPTABLE);
     }
 
     /**
      * Thrown when an incorrect query is used with a REST endpoint
      */
     public static GraknServerException invalidQuery(String queryType){
-        return new GraknServerException(INVALID_QUERY_USAGE.getMessage(queryType), 405);
+        return new GraknServerException(INVALID_QUERY_USAGE.getMessage(queryType), SC_METHOD_NOT_ALLOWED);
     }
 
     /**
      * Thrown when asked to explain a non-get query
      */
     public static GraknServerException invalidQueryExplaination(String query){
-        return new GraknServerException(EXPLAIN_ONLY_MATCH.getMessage(query), 405);
+        return new GraknServerException(EXPLAIN_ONLY_MATCH.getMessage(query), SC_METHOD_NOT_ALLOWED);
     }
 
     /**
      * Thrown when an incorrect query is used with a REST endpoint
      */
     public static GraknServerException authenticationFailure(){
-        return new GraknServerException(AUTHENTICATION_FAILURE.getMessage(), 401);
+        return new GraknServerException(AUTHENTICATION_FAILURE.getMessage(), SC_UNAUTHORIZED);
     }
 
     /**
      * Thrown when engine cannot delete a keyspace as expected
      */
     public static GraknServerException couldNotDelete(Keyspace keyspace){
-        return new GraknServerException(CANNOT_DELETE_KEYSPACE.getMessage(keyspace), 500);
+        return new GraknServerException(CANNOT_DELETE_KEYSPACE.getMessage(keyspace), SC_INTERNAL_SERVER_ERROR);
     }
 
     /**
      * Thrown when requested concept is not found in the graph
      */
     public static GraknServerException noConceptFound(ConceptId conceptId, Keyspace keyspace){
-        return new GraknServerException(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, keyspace), 404);
+        return new GraknServerException(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, keyspace), SC_NOT_FOUND);
     }
 
     /**
      * Thrown when an internal server error occurs. This is likely due to incorrect configs
      */
     public static GraknServerException internalError(String errorMessage){
-        return new GraknServerException(errorMessage, 500);
+        return new GraknServerException(errorMessage, SC_INTERNAL_SERVER_ERROR);
     }
 }

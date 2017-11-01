@@ -24,6 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.factory.FactoryBuilder;
 
 import java.util.Properties;
@@ -60,7 +61,7 @@ public class EngineGraknTxFactory {
         this.properties = new Properties();
         this.properties.putAll(properties);
         this.engineURI = properties.getProperty(GraknConfigKey.SERVER_HOST_NAME.name()) + ":" + properties.getProperty(GraknConfigKey.SERVER_PORT.name());
-        this.systemKeyspace = new SystemKeyspace(this, loadSchema);
+        this.systemKeyspace = SystemKeyspaceImpl.create(this, loadSchema);
     }
 
     public synchronized void refreshConnections(){
@@ -73,7 +74,7 @@ public class EngineGraknTxFactory {
 
     public GraknTx tx(Keyspace keyspace, GraknTxType type){
         if(!keyspace.equals(SystemKeyspace.SYSTEM_KB_KEYSPACE)) {
-            systemKeyspace.ensureKeyspaceInitialised(keyspace);
+            systemKeyspace.openKeyspace(keyspace);
         }
         return FactoryBuilder.getFactory(keyspace, engineURI, properties).open(type);
     }
