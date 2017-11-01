@@ -88,7 +88,7 @@ public class DistributionContext extends ExternalResource {
 
         engineProcess.destroyForcibly();
         engineProcess = newEngineProcess(port, redisPort);
-        waitForEngine(port);
+        waitForEngine();
         return true;
     }
 
@@ -104,7 +104,7 @@ public class DistributionContext extends ExternalResource {
         redisServer = MockRedisRule.create(redisPort).server();
         redisServer.start();
         engineProcess = newEngineProcess(port, redisPort);
-        waitForEngine(port);
+        waitForEngine();
     }
 
     @Override
@@ -169,11 +169,10 @@ public class DistributionContext extends ExternalResource {
     /**
      * Wait for the engine REST API to be available
      */
-    private static void waitForEngine(int port) {
-        SimpleURI uri = new SimpleURI("localhost", port);
+    private void waitForEngine() {
         long endTime = currentTimeMillis() + 120000;
         while (currentTimeMillis() < endTime) {
-            if (Client.serverIsRunning(uri)) {
+            if (Client.serverIsRunning(uri())) {
                 return;
             }
             try {
