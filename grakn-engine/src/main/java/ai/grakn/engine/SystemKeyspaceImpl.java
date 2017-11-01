@@ -84,19 +84,11 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
         Lock lock = lockProvider.getLock(getLockingKey(keyspace));
         lock.lock();
         try{
-            initialiseNewKeyspace(keyspace);
+            factory.initialiseNewKeyspace(keyspace);
             logNewKeyspace(keyspace);
         } finally {
             lock.unlock();
         }
-    }
-
-    /**
-     * Initialise a new {@link Keyspace} by opening and closing a transaction on it.
-     * @param keyspace the new {@link Keyspace} we want to create
-     */
-    private void initialiseNewKeyspace(Keyspace keyspace) {
-        factory.tx(keyspace, GraknTxType.WRITE).close();
     }
 
     /**

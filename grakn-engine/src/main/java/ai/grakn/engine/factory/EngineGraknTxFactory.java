@@ -82,6 +82,14 @@ public class EngineGraknTxFactory {
         return FactoryBuilder.getFactory(keyspace, engineURI, properties).open(type);
     }
 
+    /**
+     * Initialise a new {@link Keyspace} by opening and closing a transaction on it.
+     * @param keyspace the new {@link Keyspace} we want to create
+     */
+    public void initialiseNewKeyspace(Keyspace keyspace) {
+        FactoryBuilder.getFactory(keyspace, engineURI, properties).open(GraknTxType.WRITE).close();
+    }
+
     public Properties properties() {
         return properties;
     }
