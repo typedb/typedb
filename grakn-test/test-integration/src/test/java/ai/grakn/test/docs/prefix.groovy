@@ -51,7 +51,7 @@ if (false) {
 // Initialise graphs and fields that the code samples will use
 
 uri = JavaDocsTest.engine.uri()
-host = uri.hos;
+host = uri.host
 port = uri.port
 
 tx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).open(GraknTxType.WRITE)
