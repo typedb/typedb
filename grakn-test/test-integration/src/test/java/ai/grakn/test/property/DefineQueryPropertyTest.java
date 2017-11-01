@@ -25,11 +25,12 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.PlaysProperty;
+import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
@@ -46,9 +47,11 @@ public class DefineQueryPropertyTest {
 
     @Ignore("Currently no error message is returned when trying to insert an empty set of propoerties. I am not entirely sure this is correct")
     @Property
-    public void anInsertQueryWithoutAnIsaProperty_CannotBeInserted(@Open GraknTx tx, @Size(max=5) Set<VarProperty> properties){
+    public void aDefineQueryWithoutASubOrPlaysOrRelatesProperty_CannotBeInserted(@Open GraknTx tx, @Size(max=5) Set<VarProperty> properties){
         boolean containsSub = properties.stream().anyMatch(SubProperty.class::isInstance);
-        assumeFalse(containsSub);
+        boolean containsPlays = properties.stream().anyMatch(PlaysProperty.class::isInstance);
+        boolean containsRelates = properties.stream().anyMatch(RelatesProperty.class::isInstance);
+        assumeFalse(containsSub || containsPlays || containsRelates);
 
         VarPatternAdmin pattern = Patterns.varPattern(Graql.var("x"), properties);
 
