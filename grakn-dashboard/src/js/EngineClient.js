@@ -107,9 +107,11 @@ export default {
              */
   graqlShell(query:string) {
     return this.request({
-      url: `/kb/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}`,
       contentType: 'application/text',
       accepts: 'application/text',
+      requestType: 'POST',
+      data: query,
     });
   },
             /**
@@ -118,7 +120,7 @@ export default {
   graqlHAL(query:string) {
       // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
-      url: `/kb/graql/execute?keyspace=${User.getCurrentKeySpace()}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}&defineAllVars=true`,
+      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}&defineAllVars=true`,
       requestType: 'POST',
       data: query,
     });
@@ -128,8 +130,10 @@ export default {
              */
   graqlAnalytics(query:string) {
     return this.request({
-      url: `/kb/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=false&materialise=false`,
+      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}`,
+      requestType: 'POST',
       accepts: 'application/text',
+      data: query,
     });
   },
   /**
