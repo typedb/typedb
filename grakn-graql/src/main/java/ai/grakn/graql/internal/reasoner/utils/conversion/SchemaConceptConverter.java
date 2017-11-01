@@ -47,7 +47,6 @@ public interface SchemaConceptConverter<T extends SchemaConcept>{
         toCompatibleRoles(entryConcept)
                 .forEach(role -> {
                     role.relationshipTypes()
-                            .filter(rel -> !rel.isImplicit())
                             .forEach(rel -> relationMap.put(rel, role));
                 });
         return relationMap;

@@ -47,9 +47,9 @@ function doubleClick(param) {
   } else {
     EngineClient.request({
       url: nodeObj.href,
-    }).then(resp => CanvasHandler.onGraphResponse(resp, false, false, node), (err) => {
-      EventHub.$emit('error-message', err.message);
-    });
+    }).then(resp => CanvasHandler.onGraphResponse(resp, false, false, node))
+    .then((instances) => { CanvasHandler.loadInstancesAttributes(0, instances); })
+    .catch((err) => { EventHub.$emit('error-message', err.message); });
   }
 }
 
