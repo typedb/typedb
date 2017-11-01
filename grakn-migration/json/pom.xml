@@ -28,11 +28,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.sharegov</groupId>
-            <artifactId>mjson</artifactId>
-            <version>${mjson.version}</version>
-        </dependency>
-        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-base</artifactId>
             <version>${project.version}</version>

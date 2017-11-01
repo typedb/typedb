@@ -19,8 +19,8 @@
 package ai.grakn.engine.controller;
 
 
-import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.builder.RequestSpecBuilder;

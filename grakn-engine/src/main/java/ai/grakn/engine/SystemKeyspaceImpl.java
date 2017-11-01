@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.engine;
@@ -29,54 +30,28 @@ import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.kb.admin.GraknAdmin;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
- * <p>
- * Manages the system keyspace.
- * </p>
- * 
- * <p>
- * Used to populate the system schema the first time the system keyspace
- * is created.
- * </p>
- * 
- * <p>
- * Used to populate the system keyspace with all newly create keyspaces as a
- * user opens them. We have no way to determining whether a keyspace with a
- * given name already exists or not. We maintain the list in our Grakn system
- * keyspace. An element is added to that list when there is an attempt to create
- * a graph from a factory bound to the keyspace name. The list is simply the
- * instances of the system entity type 'keyspace'. Nothing is ever removed from
- * that list. The set of known keyspaces is maintained in a static map so we
- * don't connect to the system keyspace every time a factory produces a new
- * graph. That means that we can't have several different factories (e.g. Janus
- * and in-memory Tinkerpop) at the same time sharing keyspace names. We can't
- * identify the factory builder by engineUrl and config because we don't know
- * what's inside the config, which is residing remotely at the engine!
- * </p>
- * 
- * @author borislav, fppt
+ * Default implementation of {@link SystemKeyspace} that uses a {@link EngineGraknTxFactory} to access a knowledge
+ * base and store keyspace information.
  *
+ * @author Felix Chapman
  */
-public class SystemKeyspace {
-    // This will eventually be configurable and obtained the same way the factory is obtained
-    // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
-    // If there is a more natural home for this constant, feel free to put it there! (Boris)
-    public static final Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
-    public static final Label KEYSPACE_ENTITY = Label.of("keyspace");
-    public static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
+public class SystemKeyspaceImpl implements SystemKeyspace {
+    private static final Label KEYSPACE_ENTITY = Label.of("keyspace");
 
     private static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     private final ConcurrentHashMap<Keyspace, Boolean> openSpaces;
     private final EngineGraknTxFactory factory;
 
-    public SystemKeyspace(EngineGraknTxFactory factory, boolean loadSystemSchema){
+    private SystemKeyspaceImpl(EngineGraknTxFactory factory, boolean loadSystemSchema){
         this.factory = factory;
         this.openSpaces = new ConcurrentHashMap<>();
         if (loadSystemSchema) {
@@ -84,12 +59,13 @@ public class SystemKeyspace {
         }
     }
 
-    /**
-     * Notify that we just opened a keyspace with the same engineUrl & config.
-     */
-     public boolean ensureKeyspaceInitialised(Keyspace keyspace) {
+    public static SystemKeyspace create(EngineGraknTxFactory factory, boolean loadSystemSchema) {
+        return new SystemKeyspaceImpl(factory, loadSystemSchema);
+    }
+
+    @Override public void openKeyspace(Keyspace keyspace) {
          if(openSpaces.containsKey(keyspace)){
-             return true;
+             return;
          }
 
         try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
@@ -105,30 +81,15 @@ public class SystemKeyspace {
         } catch (InvalidKBException e) {
             throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
         }
-
-        return true;
     }
 
-    /**
-     * Checks if the keyspace exists in the system. The persisted graph is checked each time because the graph
-     * may have been deleted in another JVM.
-     *
-     * @param keyspace The {@link Keyspace} which might be in the system
-     * @return true if the keyspace is in the system
-     */
-    public boolean containsKeyspace(Keyspace keyspace){
+    @Override public boolean containsKeyspace(Keyspace keyspace){
         try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)) {
             return graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null;
         }
     }
 
-    /**
-     * This is called when a graph is deleted via {@link GraknAdmin#delete()}.
-     * This removes the keyspace of the deleted graph from the system graph
-     *
-     * @param keyspace the {@link Keyspace} to be removed from the system graph
-     */
-    public boolean deleteKeyspace(Keyspace keyspace){
+    @Override public boolean deleteKeyspace(Keyspace keyspace){
         if(keyspace.equals(SYSTEM_KB_KEYSPACE)){
            return false;
         }
@@ -150,12 +111,19 @@ public class SystemKeyspace {
         return true;
     }
 
-    /**
-     * Load the system schema into a newly created system keyspace. Because the schema
-     * only consists of types, the inserts are idempotent and it is safe to load it
-     * multiple times.
-     */
-    public void loadSystemSchema() {
+    @Override public Set<Keyspace> keyspaces() {
+        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+            AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
+
+            return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
+                    .flatMap(keyspace -> keyspace.attributes(keyspaceName))
+                    .map(name -> (String) name.getValue())
+                    .map(Keyspace::of)
+                    .collect(Collectors.toSet());
+        }
+    }
+
+    @Override public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
         try (GraknTx tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {

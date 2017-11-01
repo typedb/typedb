@@ -68,7 +68,6 @@ public class GraqlControllerTest {
                                int limitEmbedded,
                                String keyspace, boolean multi) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, keyspace)
                 .body(query)
                 .queryParam(INFER, reasoner)
                 .queryParam(MATERIALISE, materialise)
@@ -76,7 +75,7 @@ public class GraqlControllerTest {
                 .queryParam(MULTI, multi)
                 .queryParam(DEFINE_ALL_VARS, true)
                 .accept(acceptType)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace));
     }
 
     @ClassRule

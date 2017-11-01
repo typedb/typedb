@@ -74,7 +74,7 @@ import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static ai.grakn.util.REST.Response.Task.STATUS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static ai.grakn.util.REST.WebPath.Tasks.TASK;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.lang.Long.parseLong;
 import static java.time.Instant.ofEpochMilli;
@@ -87,8 +87,8 @@ import static java.util.stream.Collectors.toList;
  *
  * @author Denis Lobanov, alexandraorth
  */
-@Path("/tasks")
-@Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
+@Path("/task")
+@Api(value = "/task", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
 
     private static final Logger LOG = LoggerFactory.getLogger(TasksController.class);
@@ -119,10 +119,10 @@ public class TasksController {
         this.stopTaskTimer = metricRegistry.timer(name(TasksController.class, "stop-task"));
         this.createTasksTimer = metricRegistry.timer(name(TasksController.class, "create-tasks"));
 
-        spark.get(TASKS, this::getTasks);
+        spark.get(TASK, this::getTasks);
         spark.get(GET, this::getTask);
         spark.put(STOP, this::stopTask);
-        spark.post(TASKS, this::createTasks);
+        spark.post(TASK, this::createTasks);
 
         spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));

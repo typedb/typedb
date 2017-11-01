@@ -80,7 +80,7 @@ public class BatchExecutorClientTest {
             // Engine goes down
             engine.server().getHttpHandler().stopHTTP();
             // Most likely the first call doesn't find the server but it's retried
-            generate(this::query).limit(1).forEach(q -> all.add(loader.add(q, keyspace.getValue(), true)));
+            generate(this::query).limit(1).forEach(q -> all.add(loader.add(q, keyspace, true)));
             engine.server().getHttpHandler().startHTTP();
             int completed = allObservable(all).toBlocking().first().size();
             // Verify that the logger received the failed log message
@@ -95,7 +95,7 @@ public class BatchExecutorClientTest {
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             // Load some queries
             generate(this::query).limit(1).forEach(q ->
-                    all.add(loader.add(q, keyspace.getValue(), true))
+                    all.add(loader.add(q, keyspace, true))
             );
             int completed = allObservable(all).toBlocking().first().size();
             // Verify that the logger received the failed log message
@@ -109,7 +109,7 @@ public class BatchExecutorClientTest {
         List<Observable<QueryResponse>> all = new ArrayList<>();
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             generate(this::query).limit(n).forEach(q ->
-                    all.add(loader.add(q, keyspace.getValue(), true))
+                    all.add(loader.add(q, keyspace, true))
             );
             int completed = allObservable(all).toBlocking().first().size();
             assertEquals(n, completed);
@@ -126,7 +126,7 @@ public class BatchExecutorClientTest {
         try (BatchExecutorClient loader = loader(MAX_DELAY * 100)) {
             int n = 100;
             generate(this::query).limit(n).forEach(q ->
-                    all.add(loader.add(q, keyspace.getValue(), true))
+                    all.add(loader.add(q, keyspace, true))
             );
 
             int completed = allObservable(all).toBlocking().first().size();
@@ -156,7 +156,7 @@ public class BatchExecutorClientTest {
             for (int i = 0; i < n; i++) {
                 all.add(
                         loader
-                                .add(query(), keyspace.getValue(), true)
+                                .add(query(), keyspace, true)
                                 .doOnError(ex -> System.out.println("Error " + ex.getMessage())));
 
                 if (i % 5 == 0) {

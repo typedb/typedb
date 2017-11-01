@@ -24,6 +24,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -33,7 +34,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ROLE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.ROLE;
@@ -86,8 +86,7 @@ public class RoleControllerTest {
         String productionWithCluster = "production-with-cluster";
 
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get(ROLE + "/" + productionWithCluster);
+            .get(REST.resolveTemplate(ROLE + "/" + productionWithCluster, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 

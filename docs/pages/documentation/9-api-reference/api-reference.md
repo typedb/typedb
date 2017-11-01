@@ -501,7 +501,7 @@ Server: Jetty(9.3.6.v20151106)
 }
 ```
 
-## `/tasks`
+## `/task`
 
 #### `GET /`
 
@@ -529,7 +529,7 @@ Get tasks executing on the server or cluster that match all of the provided crit
 **Request:**
 
 ```
-curl -X GET "http://localhost:4567/tasks" 
+curl -X GET "http://localhost:4567/task"
 ```
 
 **Response:**
@@ -577,7 +577,7 @@ Get detailed information about the specified task that has been submitted to the
 **Request:**
 
 ```
-curl -X GET "http://localhost:4567/tasks/04e16459-ac56-4be5-b9d4-32ead920ce93" 
+curl -X GET "http://localhost:4567/task/04e16459-ac56-4be5-b9d4-32ead920ce93"
 ```
 
 **Response:**
@@ -650,7 +650,7 @@ Attempt to stop a given task from executing. Note that this does not guarantee t
 **Request:**
 
 ```
-curl -X GET "http://localhost:4567/tasks/04e16459-ac56-4be5-b9d4-32ead920ce93" 
+curl -X GET "http://localhost:4567/task/04e16459-ac56-4be5-b9d4-32ead920ce93"
 ```
 
 **Response:**
@@ -665,7 +665,7 @@ Server: Jetty(9.3.6.v20151106)
 {}
 ```
 
-#### `POST /tasks`
+#### `POST /task`
 
 Send tasks to be executed on the server or cluster. 
 
@@ -719,7 +719,7 @@ One of the most common uses of the tasks API is to submit batch loading tasks to
 **Request:**
 
 ```
-curl -X POST "http://localhost:4567/tasks" --data '{"tasks":[{"creator":"ai.grakn.client.BatchExecutorClient","runAt":"1498667812828","configuration":{"keyspace":"grakn","mutations":["insert $p0 isa person has identifier \"Elizabeth Niesz\";"],"batchNumber":0},"limit":"10000","className":"ai.grakn.engine.loader.MutatorTask"}]}' -g 
+curl -X POST "http://localhost:4567/task" --data '{"tasks":[{"creator":"ai.grakn.client.BatchExecutorClient","runAt":"1498667812828","configuration":{"keyspace":"grakn","mutations":["insert $p0 isa person has identifier \"Elizabeth Niesz\";"],"batchNumber":0},"limit":"10000","className":"ai.grakn.engine.loader.MutatorTask"}]}' -g
 ```
 
 **Response:**
