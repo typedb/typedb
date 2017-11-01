@@ -57,6 +57,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.util.Comparator;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
@@ -585,7 +586,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
 
         return Lists.cartesianProduct(atomOptions).stream()
-                .map(atomList -> ReasonerQueries.create(atomList, tx()));
+                .map(atomList -> ReasonerQueries.create(atomList, tx()))
+                .sorted(Comparator.comparing(q ->
+                        q.getAtoms(RelationshipAtom.class)
+                                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                                .filter(at -> at.getSchemaConcept().isImplicit())
+                                .findFirst().isPresent())
+                );
     }
 
     /**

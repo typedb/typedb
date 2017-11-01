@@ -472,10 +472,12 @@ public class RelationshipAtom extends IsaAtom {
                     .collect(toSet());
 
             ImmutableList.Builder<RelationshipType> builder = ImmutableList.builder();
+            //sort the types in order to prioritise relations with higher chance of yielding answers
             compatibleConfigurations.asMap().entrySet().stream()
                     //sort by number of allowed roles
                     .sorted(Comparator.comparing(e -> -e.getValue().size()))
                     .sorted(Comparator.comparing(e -> e.getKey().relates().count() != getRelationPlayers().size()))
+                    .sorted(Comparator.comparing(e -> e.getKey().isImplicit()))
                     //sort by number of types untyped role players can have
                     .map(e -> {
                         if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);

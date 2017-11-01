@@ -341,26 +341,28 @@ public class AtomicTest {
      * ##################################
      */
 
-    @Test //should assign (role1: $x, role {role1, role2} : $y, role {role2, role3} : $z) which taking into account types is compatible with 3 ternary rules
+    @Test
     public void testRuleApplicability_AmbiguousRoleMapping(){
         GraknTx graph = ruleApplicabilitySet.tx();
+        //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; $z isa twoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
-                graph.getRole("role1"), var("x"),
+                graph.getRole("role"), var("x"),
                 graph.getRole("role"), var("y"),
                 graph.getRole("role"), var("z"));
         assertEquals(roleMap, roleSetMap((relation.getRoleVarMap())));
         assertEquals(3, relation.getApplicableRules().count());
     }
 
-    @Test //should assign (role1: $x, role {role1, role2}: $y, role {role1, role2, role3}: $z) which taking into account types is compatible with 2 ternary rules
+    @Test
     public void testRuleApplicability_AmbiguousRoleMapping_RolePlayerTypeMismatch(){
         GraknTx graph = ruleApplicabilitySet.tx();
+        //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
-                graph.getRole("role1"), var("x"),
+                graph.getRole("role"), var("x"),
                 graph.getRole("role"), var("y"),
                 graph.getRole("role"), var("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
@@ -416,11 +418,12 @@ public class AtomicTest {
     @Test //should assign (role : $x, role1: $y, role: $z) which is compatible with 3 ternary rules
     public void testRuleApplicability_WithWildcard(){
         GraknTx graph = ruleApplicabilitySet.tx();
+        //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
                 graph.getRole("role"), var("x"),
-                graph.getRole("role1"), var("y"),
+                graph.getRole("role"), var("y"),
                 graph.getRole("role"), var("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
         assertEquals(3, relation.getApplicableRules().count());
@@ -473,15 +476,16 @@ public class AtomicTest {
         );
     }
 
-    @Test //should assign (role: $x, role1: $y, role1: $z) which is incompatible with any of the rule heads
+    @Test
     public void testRuleApplicability_WithWildcard_MissingMappings(){
         GraknTx graph = ruleApplicabilitySet.tx();
+        //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
         String relationString = "{($x, $y, $z);$y isa singleRoleEntity; $z isa singleRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         ImmutableSetMultimap<Role, Var> roleMap = ImmutableSetMultimap.of(
                 graph.getRole("role"), var("x"),
-                graph.getRole("role1"), var("y"),
-                graph.getRole("role1"), var("z"));
+                graph.getRole("role"), var("y"),
+                graph.getRole("role"), var("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
         assertThat(relation.getApplicableRules().collect(toSet()), empty());
     }
