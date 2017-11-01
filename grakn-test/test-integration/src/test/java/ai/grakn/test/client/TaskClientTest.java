@@ -18,11 +18,29 @@
 
 package ai.grakn.test.client;
 
+import ai.grakn.client.TaskClient;
+import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.controller.TasksController;
+import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import ai.grakn.exception.GraknBackendException;
+import ai.grakn.test.SparkContext;
+import com.codahale.metrics.MetricRegistry;
+import mjson.Json;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import java.time.Duration;
+import java.time.Instant;
+
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
-
-import ai.grakn.client.TaskClient;
-import com.codahale.metrics.MetricRegistry;
 import static java.time.Instant.now;
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,25 +52,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import ai.grakn.engine.TaskId;
-import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.engine.tasks.manager.TaskStateStorage;
-import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.exception.GraknBackendException;
-import ai.grakn.test.SparkContext;
-
-import java.time.Duration;
-import java.time.Instant;
-import mjson.Json;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class TaskClientTest {
 
@@ -69,7 +68,7 @@ public class TaskClientTest {
 
     @Before
     public void setUp() {
-        client = TaskClient.of("localhost", ctx.port());
+        client = TaskClient.of(ctx.uri());
         when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
     }
 

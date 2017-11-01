@@ -78,10 +78,6 @@ public class TaskClient extends Client {
         this.uri = uri;
     }
 
-    public static TaskClient of(String host, int port) {
-        return of(new SimpleURI(host, port));
-    }
-
     public static TaskClient of(SimpleURI uri) {
         return new TaskClient(uri);
     }

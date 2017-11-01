@@ -92,8 +92,8 @@ public class DistributionContext extends ExternalResource {
         return true;
     }
 
-    public int port(){
-        return port;
+    public SimpleURI uri(){
+        return new SimpleURI("localhost", port);
     }
 
     @Override
