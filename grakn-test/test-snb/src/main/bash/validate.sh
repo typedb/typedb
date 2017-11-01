@@ -4,6 +4,9 @@ source snb-env.sh
 
 BRANCH_NAME=$1
 
+# TODO: it shouldn't be necessary to re-build grakn to make SNB work
+build-grakn.sh ${BRANCH_NAME}
+
 build-snb-connectors.sh
 
 LDBC_CONNECTOR=${WORKSPACE}/grakn-test/test-snb/target/test-snb-${BRANCH_NAME}-jar-with-dependencies.jar

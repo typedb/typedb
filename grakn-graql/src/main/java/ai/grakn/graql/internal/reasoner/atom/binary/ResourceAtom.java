@@ -290,11 +290,10 @@ public class ResourceAtom extends Binary{
             return errors;
         }
 
-        SchemaConcept ownerType = getParentQuery().getVarTypeMap().get(getVarName());
+        Type ownerType = getParentQuery().getVarTypeMap().get(getVarName());
 
         if (ownerType != null
-                && ownerType.isType()
-                && ownerType.asType().attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
+                && ownerType.attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
             errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
         }
         return errors;
