@@ -155,6 +155,8 @@ void runTests(def args) {
 
 } // void
 
+runTests
+
 //Only run validation master/stable
 if (env.BRANCH_NAME in ['master', 'stable']) {
     node {
