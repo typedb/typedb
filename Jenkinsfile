@@ -92,74 +92,68 @@ def buildGrakn() {
 }
 
 //Run all tests
-node {
-    String workspace = pwd()
-    checkout scm
+void runTests(def args) {
+  /* Request the test groupings.  Based on previous test results. */
+  /* see https://wiki.jenkins-ci.org/display/JENKINS/Parallel+Test+Executor+Plugin and demo on github
+  /* Using arbitrary parallelism of 4 and "generateInclusions" feature added in v1.8. */
+  def splits = splitTests parallelism: [$class: 'CountDrivenParallelism', size: 4], generateInclusions: true
+ 
+  /* Create dictionary to hold set of parallel test executions. */
+  def testGroups = [:]
+ 
+  for (int i = 0; i < splits.size(); i++) {
+    def split = splits[i]
+ 
+    /* Loop over each record in splits to prepare the testGroups that we'll run in parallel. */
+    /* Split records returned from splitTests contain { includes: boolean, list: List<string>  }. */
+    /*     includes = whether list specifies tests to include (true) or tests to exclude (false). */
+    /*     list = list of tests for inclusion or exclusion. */
+    /* The list of inclusions is constructed based on results gathered from */
+    /* the previous successfully completed job. One additional record will exclude */
+    /* all known tests to run any tests not seen during the previous run.  */
+    testGroups["split-${i}"] = {  // example, "split3"
+      node {
+	String workspace = pwd()
+	checkout scm
+ 
+	slackGithub "Janus tests started"
+	/* Clean each test node to start. */
+	mvn 'clean'
+ 
+	def mavenVerify = 'verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true'
+ 
+	/* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
+	/* Tell Maven to read the appropriate file. */
+	if (split.includes) {
+	  writeFile file: "target/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+	  mavenVerify += " -Dsurefire.includesFile=target/parallel-test-includes-${i}.txt"
+	
+	} else {
+	  writeFile file: "target/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+	  mavenVerify += " -Dsurefire.excludesFile=target/parallel-test-excludes-${i}.txt"
+	
+	} // if split
+ 
+	try {
+	  /* Call the Maven build with tests. */
+	  timeout(60) {
+	      stage('Run Janus test profile') {
+		  mvn mavenVerify
+	      }
+	  } // timeout
 
-    slackGithub "Janus tests started"
+	} finally {
+	  /* Archive the test results */
+	    junit "**/TEST*.xml"
+	} //try
+      } // node
+    } // testGroups
+  } // for
 
-    void runTests(def args) {
-      /* Request the test groupings.  Based on previous test results. */
-      /* see https://wiki.jenkins-ci.org/display/JENKINS/Parallel+Test+Executor+Plugin and demo on github
-      /* Using arbitrary parallelism of 4 and "generateInclusions" feature added in v1.8. */
-      def splits = splitTests parallelism: [$class: 'CountDrivenParallelism', size: 4], generateInclusions: true
-     
-      /* Create dictionary to hold set of parallel test executions. */
-      def testGroups = [:]
-     
-	for (int i = 0; i < splits.size(); i++) {
-	def split = splits[i]
-     
-	/* Loop over each record in splits to prepare the testGroups that we'll run in parallel. */
-	/* Split records returned from splitTests contain { includes: boolean, list: List<string>  }. */
-	/*     includes = whether list specifies tests to include (true) or tests to exclude (false). */
-	/*     list = list of tests for inclusion or exclusion. */
-	/* The list of inclusions is constructed based on results gathered from */
-	/* the previous successfully completed job. One additional record will exclude */
-	/* all known tests to run any tests not seen during the previous run.  */
-	testGroups["split-${i}"] = {  // example, "split3"
-	  node {
-	    checkout scm
-     
-	    /* Clean each test node to start. */
-	    mvn 'clean'
-     
-	    def mavenVerify = 'verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true'
-     
-	    /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
-	    /* Tell Maven to read the appropriate file. */
-	    if (split.includes) {
-	      writeFile file: "target/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-	      mavenVerify += " -Dsurefire.includesFile=target/parallel-test-includes-${i}.txt"
-	    
-	    } else {
-	      writeFile file: "target/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
-	      mavenVerify += " -Dsurefire.excludesFile=target/parallel-test-excludes-${i}.txt"
-	    
-	    } // if split
-     
-	    try {
-	    /* Call the Maven build with tests. */
-	      mvn mavenVerify
-     
-	    /* Archive the test results */
-	    } finally {
-		junit "**/TEST*.xml"
-	    } //try
-	  } // node
-	} // testGroups
-    } // for
+  parallel testGroups
+  slackGithub "Janus tests success", "good"
 
-    timeout(120) {
-	stage('Run Janus test profile') {
-	  parallel testGroups
-	}
-    } // timeout
-
-  } // void
-
-    slackGithub "Janus tests success", "good"
-}
+} // void
 
 //Only run validation master/stable
 if (env.BRANCH_NAME in ['master', 'stable']) {
