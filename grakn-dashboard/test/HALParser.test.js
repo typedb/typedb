@@ -22,6 +22,12 @@ import * as MockedResponses from './modules/MockedEngineResponses';
 import * as GlobalMocks from './modules/GlobalMocks';
 import _ from 'underscore';
 
+
+
+Array.prototype.flatMap = function (lambda) {
+  return Array.prototype.concat.apply([], this.map(lambda));
+};
+
 beforeAll(() => {
   GlobalMocks.MockLocalStorage();
 });
@@ -46,41 +52,41 @@ test('Parse pokemon instance', () => {
   expect(obj.nodes[0].properties.id).toBe('V16488');
 });
 
-// test('Parse single object HAL response with showIsa true', () => {
-//   const responseObj = MockedResponses.HALParserTestResponse0;
-//   const obj = HALParser.parseResponse(responseObj, true);
-//   expect(obj.nodes.length).toBe(2);
-//   expect(obj.edges.length).toBe(1);
-//   expect(obj.nodes[0].properties.id).toBe('4128');
-// });
+test('Parse single object HAL response with showIsa true', () => {
+  const responseObj = MockedResponses.PokemonInstance;
+  const obj = HALParser.parseResponse(responseObj, true);
+  expect(obj.nodes.length).toBe(5);
+  expect(obj.edges.length).toBe(6);
+  expect(obj.nodes[0].properties.id).toBe('V16488');
+});
 
-// test('Parse HAL response with embedded', () => {
-//   const responseObj = MockedResponses.HALParserTestResponse1;
-//   const obj = HALParser.parseResponse(responseObj, true);
-//   expect(obj.nodes.length).toBe(7);
-//   expect(obj.edges.length).toBe(6);
-//   const collectedIds = obj.nodes.reduce((accumulator, current) => {
-//     const currentId = current.properties.id;
-//     let count = 1;
-//     if (currentId in accumulator) { count = accumulator[currentId] + 1; }
-//     return Object.assign(accumulator, { [currentId]: count });
-//   }, {});
-//   expect(collectedIds[984997984]).toBe(3);
-//   expect(collectedIds[3396772072]).toBe(1);
-//   expect(collectedIds[52064336]).toBe(1);
-//   expect(collectedIds[2285097056]).toBe(1);
-//   expect(collectedIds[35004512]).toBe(1);
-// });
+test('Parse HAL response with embedded', () => {
+  const responseObj = MockedResponses.HALParserTestResponse1;
+  const obj = HALParser.parseResponse(responseObj, true);
+  expect(obj.nodes.length).toBe(5);
+  expect(obj.edges.length).toBe(6);
+  const collectedIds = obj.nodes.reduce((accumulator, current) => {
+    const currentId = current.properties.id;
+    let count = 1;
+    if (currentId in accumulator) { count = accumulator[currentId] + 1; }
+    return Object.assign(accumulator, { [currentId]: count });
+  }, {});
+  expect(collectedIds[984997984]).toBe(1);
+  expect(collectedIds[3396772072]).toBe(1);
+  expect(collectedIds[52064336]).toBe(1);
+  expect(collectedIds[2285097056]).toBe(1);
+  expect(collectedIds[35004512]).toBe(1);
+});
 
-// test('Parse single object HAL response with reflexive relation', () => {
-//   const responseObj = MockedResponses.HALParserTestResponseReflexive;
-//   const obj = HALParser.parseResponse(responseObj, true);
-//   expect(obj.nodes.length).toBe(3);
-//   expect(obj.edges.length).toBe(2);
-// });
+test('Parse single object HAL response with reflexive relation', () => {
+  const responseObj = MockedResponses.HALParserTestResponseReflexive;
+  const obj = HALParser.parseResponse(responseObj, true);
+  expect(obj.nodes.length).toBe(2);
+  expect(obj.edges.length).toBe(2);
+});
 
-// test('Parse empty HAL response', () => {
-//   const responseObj = [];
-//   const obj = HALParser.parseResponse(responseObj, false, false);
-//   expect(obj.nodes.length).toBe(0);
-// });
+test('Parse empty HAL response', () => {
+  const responseObj = [];
+  const obj = HALParser.parseResponse(responseObj, false, false);
+  expect(obj.nodes.length).toBe(0);
+});
