@@ -51,6 +51,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.gremlin.fragment.Fragment.DEFAULT_SHARD_COST;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
@@ -60,8 +62,6 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  * @author Jason Liu
  */
 public class GreedyTraversalPlan {
-    private static final double SHARD_LOAD_FACTOR = 0.25 - 1.0; // there is at least one shard
-    private static final long DEFAULT_SHARDING_THRESHOLD = 10_000L;
 
     protected static final Logger LOG = LoggerFactory.getLogger(GreedyTraversalPlan.class);
 
@@ -105,7 +105,7 @@ public class GreedyTraversalPlan {
             fragmentSet.stream()
                     .filter(filterNodeFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, tx))
                     .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
-                    .collect(Collectors.toSet()) // make sure previous steps are done
+                    .collect(Collectors.toList()) // make sure previous steps are done
                     .forEach(weightedDirectedEdge -> {
                         if (nodesWithFixedCost.containsKey(weightedDirectedEdge.val.source) &&
                                 nodesWithFixedCost.get(weightedDirectedEdge.val.source) > 0 &&
@@ -175,15 +175,14 @@ public class GreedyTraversalPlan {
                 if (fragment.hasFixedFragmentCost()) {
                     // fragments that should be done right away
                     plan.add(fragment);
-                    double instanceCount = -1D;
+                    double logInstanceCount = -1D;
                     if (fragment.getShardCount(tx).isPresent()) {
                         long shardCount = fragment.getShardCount(tx).get();
                         if (shardCount > 0) {
-                            instanceCount = Math.log1p((shardCount + SHARD_LOAD_FACTOR) *
-                                    DEFAULT_SHARDING_THRESHOLD);
+                            logInstanceCount = Math.log(shardCount + SHARD_LOAD_FACTOR) + DEFAULT_SHARD_COST;
                         }
                     }
-                    nodesWithFixedCost.put(start, instanceCount);
+                    nodesWithFixedCost.put(start, logInstanceCount);
                     start.setFixedFragmentCost(fragment.fragmentCost());
 
                 } else if (fragment.dependencies().isEmpty()) {

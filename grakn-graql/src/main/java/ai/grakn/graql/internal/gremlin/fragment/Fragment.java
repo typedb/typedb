@@ -99,6 +99,10 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
+    public static final double SHARD_LOAD_FACTOR = 0.25 - 1.0; // there is at least one shard
+    public static final long DEFAULT_SHARDING_THRESHOLD = 10_000L;
+    public static final double DEFAULT_SHARD_COST = Math.log(DEFAULT_SHARDING_THRESHOLD);
+
     Optional<Double> accurateFragmentCost = Optional.empty();
 
     /*
@@ -232,6 +236,9 @@ public abstract class Fragment {
     public abstract double fragmentCost();
 
     public void setAccurateFragmentCost(double fragmentCost) {
+        System.out.println("this = " + this);
+        System.out.println("fragmentCost = " + fragmentCost);
+        System.out.println();
         accurateFragmentCost = Optional.of(fragmentCost);
     }
 
