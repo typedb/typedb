@@ -106,7 +106,7 @@ public class GraknEngineServerTest {
 
             // init a random keyspace
             String keyspaceName = "thisisarandomwhalekeyspace";
-            server.factory().systemKeyspace().ensureKeyspaceInitialised(Keyspace.of(keyspaceName));
+            server.factory().systemKeyspace().openKeyspace(Keyspace.of(keyspaceName));
 
             assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
         }

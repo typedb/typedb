@@ -34,11 +34,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -117,21 +115,9 @@ public class GraqlControllerDeleteTest {
     }
 
     @Test
-    public void DELETEWithNoKeyspace_ResponseStatusIs400(){
-        String query = "match $x isa person; limit 1; delete;";
-
-        Response response = RestAssured.with()
-                .body(query)
-                .post(REST.WebPath.KB.ANY_GRAQL);
-
-        assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
-    }
-
-    @Test
     public void DELETEWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, "some-kb"));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -191,11 +177,10 @@ public class GraqlControllerDeleteTest {
 
     private Response sendRequest(String query){
         return RestAssured.with()
-                .queryParam(KEYSPACE, tx.getKeyspace().getValue())
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
                 .accept(APPLICATION_TEXT)
                 .body(query)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, tx.getKeyspace().getValue()));
     }
 }

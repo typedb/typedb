@@ -54,14 +54,13 @@ public class GraqlControllerTest {
             int limitEmbedded,
             boolean multi) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, sampleKB.tx().getKeyspace().getValue())
                 .body(query)
                 .queryParam(INFER, reasonser)
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .queryParam(MULTI, multi)
                 .accept(acceptType)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, sampleKB.tx().getKeyspace().getValue()));
     }
 
     @ClassRule

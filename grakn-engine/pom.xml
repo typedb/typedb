@@ -148,11 +148,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>org.sharegov</groupId>
-            <artifactId>mjson</artifactId>
-            <version>${mjson.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>com.jayway.restassured</groupId>

@@ -93,7 +93,6 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         return castingsRelation(roles).map(Casting::getRolePlayer);
     }
 
-    //TODO: This could probably become more efficient in certain use cases
     void removeRolePlayer(Role role, Thing thing) {
         castingsRelation().filter(casting -> casting.getRole().equals(role) && casting.getRolePlayer().equals(thing)).
                 findAny().

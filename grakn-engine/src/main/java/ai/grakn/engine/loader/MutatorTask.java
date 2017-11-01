@@ -91,7 +91,7 @@ public class MutatorTask extends BackgroundTask {
                     }
                 });
 
-                Optional<String> result = graph.admin().commitNoLogs();
+                Optional<String> result = graph.admin().commitSubmitNoLogs();
                 if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
                     String logs = result.get();
                     addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()

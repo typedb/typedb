@@ -40,7 +40,7 @@ import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static ai.grakn.util.REST.WebPath.Tasks.TASK;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -456,7 +456,7 @@ public class TasksControllerTest {
         RequestSpecification request = with()
                 .config(new RestAssuredConfig().objectMapperConfig(new ObjectMapperConfig(jsonMapper)))
                 .body(tasksList);
-        return request.post(String.format("http://%s%s", ctx.uri(), TASKS));
+        return request.post(String.format("http://%s%s", ctx.uri(), TASK));
     }
 
     private Response get(TaskId taskId){

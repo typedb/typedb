@@ -25,6 +25,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -35,7 +36,6 @@ import org.junit.Test;
 
 import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.TYPE_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
@@ -98,9 +98,8 @@ public class AttributeTypeControllerTest {
             )
         );
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
-            .post(ATTRIBUTE_TYPE);
+            .post(REST.resolveTemplate(ATTRIBUTE_TYPE, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -114,8 +113,7 @@ public class AttributeTypeControllerTest {
         String attributeTypeLabel = "tmdb-vote-count";
         String attributeTypeDataType = "long";
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get(ATTRIBUTE_TYPE + "/" + attributeTypeLabel);
+            .get(REST.resolveTemplate(ATTRIBUTE_TYPE + "/" + attributeTypeLabel, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 

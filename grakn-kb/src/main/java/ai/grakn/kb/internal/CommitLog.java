@@ -27,6 +27,8 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import mjson.Json;
 
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -96,7 +98,7 @@ public class CommitLog {
             return Optional.empty();
         }
 
-        String endPoint = getCommitLogEndPoint(engineUri, keyspace);
+        Optional<URI> endPoint = getCommitLogEndPoint(engineUri, keyspace);
         try{
             lock.writeLock().lock();
             String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, getFormattedLog().toString());
@@ -107,11 +109,12 @@ public class CommitLog {
         }
     }
 
-    private static String getCommitLogEndPoint(String engineUri, Keyspace keyspace) {
+    private static Optional<URI> getCommitLogEndPoint(String engineUri, Keyspace keyspace) {
         if (Grakn.IN_MEMORY.equals(engineUri)) {
-            return Grakn.IN_MEMORY;
+            return Optional.empty();
         }
-        return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+        String path = REST.resolveTemplate(REST.WebPath.COMMIT_LOG_URI, keyspace.getValue());
+        return Optional.of(UriBuilder.fromUri(engineUri).path(path).build());
     }
 
     static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes){

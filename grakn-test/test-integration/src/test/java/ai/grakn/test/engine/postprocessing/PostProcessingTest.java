@@ -86,7 +86,7 @@ public class PostProcessingTest {
         AttributeType<String> attributeType = graph.putAttributeType(sample, AttributeType.DataType.STRING);
 
         Attribute<String> attribute = attributeType.putAttribute(value);
-        graph.admin().commitNoLogs();
+        graph.admin().commitSubmitNoLogs();
         graph = session.open(GraknTxType.WRITE);
 
         assertEquals(1, attributeType.instances().count());

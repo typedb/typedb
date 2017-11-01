@@ -174,7 +174,7 @@ public class PostProcessor {
                 //Shard
                 GraknTxMutators.runMutationWithRetry(factory, keyspace, maxRetry, graph -> {
                     graph.admin().shard(conceptId);
-                    graph.admin().commitNoLogs();
+                    graph.admin().commitSubmitNoLogs();
                 });
 
                 //Update number of shards
@@ -231,7 +231,7 @@ public class PostProcessor {
                             });
 
                     // persist merged concepts
-                    tx.admin().commitNoLogs();
+                    tx.admin().commitSubmitNoLogs();
                 }
             } finally {
                 indexLock.unlock();
