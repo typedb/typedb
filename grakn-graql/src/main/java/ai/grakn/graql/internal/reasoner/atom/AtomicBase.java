@@ -29,6 +29,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -75,7 +76,7 @@ public abstract class AtomicBase implements Atomic {
 
     @Override
     public Set<Var> getVarNames(){
-        return Sets.newHashSet(varName);
+        return varName.isUserDefinedName()? Sets.newHashSet(varName) : Collections.emptySet();
     }
 
     @Override

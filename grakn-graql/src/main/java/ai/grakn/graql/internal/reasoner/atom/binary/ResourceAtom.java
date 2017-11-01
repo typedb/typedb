@@ -273,7 +273,7 @@ public class ResourceAtom extends Binary{
     public Set<Var> getVarNames() {
         Set<Var> varNames = super.getVarNames();
         multiPredicate.stream().flatMap(p -> p.getVarNames().stream()).forEach(varNames::add);
-        if (relationVariable.isUserDefinedName()) varNames.add(relationVariable);
+        if (getRelationVariable().isUserDefinedName()) varNames.add(relationVariable);
         return varNames;
     }
 

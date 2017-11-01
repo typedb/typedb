@@ -153,6 +153,9 @@ public class RelationshipAtom extends IsaAtom {
         return getRelationPlayers().stream().map(c -> c.getRolePlayer().var()).collect(toSet());
     }
 
+    /**
+     * @return set of user defined role variables if any
+     */
     private Set<Var> getRoleVariables(){
         return getRelationPlayers().stream()
                 .map(RelationPlayer::getRole)
@@ -556,8 +559,8 @@ public class RelationshipAtom extends IsaAtom {
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = super.getVarNames();
-        vars.addAll(getRolePlayers());
-        vars.addAll(getRoleVariables());
+        getRolePlayers().forEach(vars::add);
+        getRoleVariables().forEach(vars::add);
         return vars;
     }
 

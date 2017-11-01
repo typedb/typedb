@@ -162,7 +162,7 @@ public abstract class Binary extends Atom {
     public Set<Var> getVarNames() {
         Set<Var> vars = new HashSet<>();
         if (getVarName().isUserDefinedName()) vars.add(getVarName());
-        if (!predicateVariable.getValue().isEmpty()) vars.add(predicateVariable);
+        if (getPredicateVariable().isUserDefinedName()) vars.add(predicateVariable);
         return vars;
     }
 
@@ -178,17 +178,18 @@ public abstract class Binary extends Atom {
         }
 
         Multimap<Var, Var> varMappings = HashMultimap.create();
+        Var childVarName = this.getVarName();
+        Var parentVarName = parentAtom.getVarName();
         Var childPredicateVarName = this.getPredicateVariable();
         Var parentPredicateVarName = parentAtom.getPredicateVariable();
 
-        if (parentAtom.getVarName().isUserDefinedName() == this.getVarName().isUserDefinedName()){
-            Var childVarName = this.getVarName();
-            Var parentVarName = parentAtom.getVarName();
-            if (!childVarName.equals(parentVarName)) {
-                varMappings.put(childVarName, parentVarName);
-            }
+        if (parentVarName.isUserDefinedName()
+                && childVarName.isUserDefinedName()
+                && !childVarName.equals(parentVarName)) {
+            varMappings.put(childVarName, parentVarName);
         }
-        if (parentPredicateVarName.isUserDefinedName() == childPredicateVarName.isUserDefinedName()
+        if (parentPredicateVarName.isUserDefinedName()
+                && childPredicateVarName.isUserDefinedName()
                 && !childPredicateVarName.equals(parentPredicateVarName)) {
             varMappings.put(childPredicateVarName, parentPredicateVarName);
         }

@@ -280,12 +280,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
-        return atomSet.stream().filter(type::isInstance).map(type::cast);}
+        return getAtoms().stream().filter(type::isInstance).map(type::cast);}
 
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = new HashSet<>();
-        atomSet.forEach(atom -> vars.addAll(atom.getVarNames()));
+        getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
         return vars;
     }
 
@@ -386,10 +386,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public Answer getSubstitution(){
         if (substitution == null) {
+            Set<Var> varNames = getVarNames();
             Set<IdPredicate> predicates = getAtoms(TypeAtom.class)
                     .map(TypeAtom::getTypePredicate)
                     .filter(Objects::nonNull)
+                    .filter(p -> varNames.contains(p.getVarName()))
                     .collect(Collectors.toSet());
+            /*
+            Set<IdPredicate> predicates = getAtoms(Atom.class)
+                    .flatMap(at -> at.getInnerPredicates(IdPredicate.class))
+                    .filter(Objects::nonNull)
+                    .filter(p -> varNames.contains(p.getVarName()))
+                    .collect(Collectors.toSet());
+                    */
             getAtoms(IdPredicate.class).forEach(predicates::add);
 
             // the mapping function is declared separately to please the Eclipse compiler
