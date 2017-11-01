@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
@@ -155,7 +155,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
                 //Shard
                 GraknTxMutators.runMutationWithRetry(factory, keyspace, maxRetry, graph -> {
                     graph.admin().shard(conceptId);
-                    graph.admin().commitNoLogs();
+                    graph.admin().commitSubmitNoLogs();
                 });
 
                 //Update number of shards

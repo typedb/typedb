@@ -36,6 +36,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
@@ -123,6 +124,20 @@ public class EntityTypeTest extends TxTestBase {
         assertThat(c2SuperTypes, containsInAnyOrder(entityType, c2, c1));
         assertThat(c3SuperTypes, containsInAnyOrder(entityType, c3, c2, c1));
         assertThat(c4SuperTypes, containsInAnyOrder(entityType, c4, c1));
+    }
+
+    @Test
+    public void whenGettingTheSuperSetViaSupsMethod_ReturnAllOfItsSuperTypes(){
+        EntityType child = tx.putEntityType("child");
+        EntityType p2 = tx.putEntityType("p2").sub(child);
+        EntityType p3 = tx.putEntityType("p3").sub(p2);
+        EntityType p4 = tx.putEntityType("p4").sub(p3);
+
+        assertThat(child.sups().collect(toSet()), containsInAnyOrder(child, p2, p3, p4));
+        assertThat(p2.sups().collect(toSet()), containsInAnyOrder(p2,p3, p4));
+        assertThat(p3.sups().collect(toSet()), containsInAnyOrder(p3,p4));
+        assertThat(p4.sups().collect(toSet()), containsInAnyOrder(p4));
+
     }
 
     @Test

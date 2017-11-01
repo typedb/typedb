@@ -6,6 +6,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -16,9 +17,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_OBJECT_JSON_FIELD;
-import static ai.grakn.util.REST.WebPath.Api.API_PREFIX;
+import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT;
 import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,8 +68,7 @@ public class RelationshipControllerTest {
         String directedBy = "directed-by";
 
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post(RELATIONSHIP_TYPE + "/" + directedBy);
+            .post(REST.resolveTemplate(RELATIONSHIP_TYPE + "/" + directedBy, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -92,11 +91,11 @@ public class RelationshipControllerTest {
             tx.commit();
         }
 
-        Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .put(API_PREFIX + "/relationship/" + relationshipConceptId +
-                "/entity/" + entityConceptId +
-                "/role/" + roleLabel);
+        String path = REST.resolveTemplate(
+                RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT, mockTx.getKeyspace().getValue(), relationshipConceptId,
+                entityConceptId, roleLabel
+        );
+        Response response = with().put(path);
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }

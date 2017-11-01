@@ -58,6 +58,7 @@ import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import ai.grakn.util.SimpleURI;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -69,7 +70,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.ws.rs.core.UriBuilder;
 import java.lang.reflect.Constructor;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -102,10 +105,6 @@ import static java.util.stream.Collectors.toSet;
 public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(GraknTxAbstract.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
-
-    //TODO: Is this the correct place for these config paths
-    //----------------------------- Config Paths
-    public static final String NORMAL_CACHE_TIMEOUT_MS = "knowledge-base.schema-cache-timeout-ms";
 
     //----------------------------- Shared Variables
     private final CommitLog commitLog;
@@ -179,12 +178,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     GlobalCache getGlobalCache() {
         return globalCache;
     }
-
-    /**
-     * @param concept A concept in the graph
-     * @return True if the concept has been modified in the transaction
-     */
-    public abstract boolean isConceptModified(Concept concept);
 
     /**
      * @return The number of open transactions currently.
@@ -757,7 +750,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Optional<String> commitNoLogs() throws InvalidKBException {
+    public Optional<String> commitSubmitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
 
@@ -802,11 +795,15 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
     }
 
-    private String getDeleteKeyspaceEndpoint() {
+    private Optional<URI> getDeleteKeyspaceEndpoint() {
         if (Grakn.IN_MEMORY.equals(engineUri)) {
-            return Grakn.IN_MEMORY;
+            return Optional.empty();
         }
-        return engineUri + REST.WebPath.System.DELETE_KEYSPACE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+
+        URI uri = UriBuilder.fromUri(new SimpleURI(engineUri).toURI())
+                .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue()))
+                .build();
+        return Optional.of(uri);
     }
 
     public boolean validElement(Element element) {

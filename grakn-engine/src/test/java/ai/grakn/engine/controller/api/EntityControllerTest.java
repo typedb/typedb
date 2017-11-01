@@ -24,6 +24,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -35,7 +36,6 @@ import org.mockito.Mockito;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.WebPath.Api.API_PREFIX;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 import static com.jayway.restassured.RestAssured.with;
@@ -92,8 +92,7 @@ public class EntityControllerTest {
     public void postEntityShouldExecuteSuccessfully() {
         String entityType = "production";
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post(ENTITY_TYPE + "/" + entityType);
+            .post(REST.resolveTemplate(ENTITY_TYPE + "/" + entityType, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -117,9 +116,8 @@ public class EntityControllerTest {
         }
 
         // assign the attribute to the entity
-        Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .put(API_PREFIX + "/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
+        String path = API_PREFIX + "/entity/" + entityConceptId + "/attribute/" + attributeConceptId;
+        Response response = with().put(REST.resolveTemplate(path, mockTx.getKeyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }
@@ -140,9 +138,8 @@ public class EntityControllerTest {
         }
 
         // assign the attribute to the entity
-        Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .delete(API_PREFIX + "/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
+        String path = API_PREFIX + "/entity/" + entityConceptId + "/attribute/" + attributeConceptId;
+        Response response = with().delete(REST.resolveTemplate(path, mockTx.getKeyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }

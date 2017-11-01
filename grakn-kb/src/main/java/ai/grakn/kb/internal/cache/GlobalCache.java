@@ -18,10 +18,10 @@
 
 package ai.grakn.kb.internal.cache;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -64,7 +64,7 @@ public class GlobalCache {
         cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = Integer.parseInt(properties
-                .getProperty(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS,
+                .getProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(),
                         String.valueOf(DEFAULT_CACHE_TIMEOUT_MS)));
         cachedTypes = CacheBuilder.newBuilder()
                 .maximumSize(1000)

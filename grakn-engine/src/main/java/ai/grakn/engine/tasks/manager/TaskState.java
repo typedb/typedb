@@ -80,6 +80,7 @@ public class TaskState implements Serializable {
      * Time when task status was last updated.
      */
     private Instant statusChangeTime;
+
     /**
      * Name of Class implementing the BackgroundTask interface that should be executed when task is run.
      */
