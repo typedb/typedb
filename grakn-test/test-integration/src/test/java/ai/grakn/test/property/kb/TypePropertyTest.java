@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.property;
+package ai.grakn.test.property.kb;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
@@ -27,6 +27,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromTxGenerator.FromTx;
+import ai.grakn.test.property.PropertyUtil;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;

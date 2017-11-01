@@ -14,10 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.test.property;
+package ai.grakn.test.property.graql;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
