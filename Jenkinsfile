@@ -154,8 +154,9 @@ void runTests(def args) {
   slackGithub "Janus tests success", "good"
 
 } // void
-
-runTests()
+node {
+  runTests()
+}
 
 //Only run validation master/stable
 if (env.BRANCH_NAME in ['master', 'stable']) {
