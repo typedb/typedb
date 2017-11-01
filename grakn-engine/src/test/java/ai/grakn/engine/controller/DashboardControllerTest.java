@@ -2,6 +2,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
@@ -24,9 +25,10 @@ import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static junit.framework.TestCase.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class DashboardControllerTest {
-
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
     private Printer<Json> jsonPrinter;
 
     private Response sendQueryExplain(String query) {
@@ -56,7 +58,7 @@ public class DashboardControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create().getProperties());
         new DashboardController(factory, spark);
     });
 

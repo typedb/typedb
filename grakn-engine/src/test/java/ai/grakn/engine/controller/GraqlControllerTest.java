@@ -3,38 +3,41 @@ package ai.grakn.engine.controller;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import static ai.grakn.graql.Graql.var;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.Graql.MULTI;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import mjson.Json;
 import org.junit.Assert;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class GraqlControllerTest {
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
+import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
+import static ai.grakn.util.REST.Request.Graql.MULTI;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.mock;
+
+public class GraqlControllerTest {
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
     private Printer<Json> jsonPrinter;
     private Printer<Function<StringBuilder, StringBuilder>> graqlPrinter;
     private Printer halPrinter;
@@ -69,7 +72,7 @@ public class GraqlControllerTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
-                .createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
+                .createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create().getProperties());
         new GraqlController(factory, spark, new MetricRegistry());
     });
 

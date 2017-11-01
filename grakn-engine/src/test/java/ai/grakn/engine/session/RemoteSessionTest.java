@@ -24,6 +24,7 @@ import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.util.EmbeddedCassandra;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
@@ -67,6 +68,7 @@ import static org.mockito.Mockito.when;
  * @author Felix Chapman
  */
 public class RemoteSessionTest {
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
 
     private static final Json INIT_JSON = Json.object(
             ACTION, ACTION_INIT,
@@ -80,7 +82,7 @@ public class RemoteSessionTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EmbeddedCassandra.start();
         Properties properties = GraknEngineConfig.create().getProperties();
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(properties);
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, properties);
         new SystemController(spark, properties, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
     }).port(4567);
 

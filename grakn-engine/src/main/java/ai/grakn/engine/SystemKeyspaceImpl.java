@@ -28,6 +28,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
 import com.google.common.base.Stopwatch;
@@ -50,20 +51,23 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
     private static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     private final ConcurrentHashMap<Keyspace, Boolean> openSpaces;
     private final EngineGraknTxFactory factory;
+    private final LockProvider lockProvider;
 
-    private SystemKeyspaceImpl(EngineGraknTxFactory factory, boolean loadSystemSchema){
+    private SystemKeyspaceImpl(EngineGraknTxFactory factory, LockProvider lockProvider, boolean loadSystemSchema){
         this.factory = factory;
         this.openSpaces = new ConcurrentHashMap<>();
+        this.lockProvider = lockProvider;
         if (loadSystemSchema) {
             loadSystemSchema();
         }
     }
 
-    public static SystemKeyspace create(EngineGraknTxFactory factory, boolean loadSystemSchema) {
-        return new SystemKeyspaceImpl(factory, loadSystemSchema);
+    public static SystemKeyspace create(EngineGraknTxFactory factory, LockProvider lockProvider, boolean loadSystemSchema) {
+        return new SystemKeyspaceImpl(factory, lockProvider, loadSystemSchema);
     }
 
-    @Override public void openKeyspace(Keyspace keyspace) {
+    @Override
+    public void openKeyspace(Keyspace keyspace) {
          if(openSpaces.containsKey(keyspace)){
              return;
          }
@@ -83,13 +87,15 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
         }
     }
 
-    @Override public boolean containsKeyspace(Keyspace keyspace){
+    @Override
+    public boolean containsKeyspace(Keyspace keyspace){
         try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)) {
             return graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null;
         }
     }
 
-    @Override public boolean deleteKeyspace(Keyspace keyspace){
+    @Override
+    public boolean deleteKeyspace(Keyspace keyspace){
         if(keyspace.equals(SYSTEM_KB_KEYSPACE)){
            return false;
         }
@@ -111,7 +117,8 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
         return true;
     }
 
-    @Override public Set<Keyspace> keyspaces() {
+    @Override
+    public Set<Keyspace> keyspaces() {
         try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
 
@@ -123,7 +130,8 @@ public class SystemKeyspaceImpl implements SystemKeyspace {
         }
     }
 
-    @Override public void loadSystemSchema() {
+    @Override
+    public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
         try (GraknTx tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
