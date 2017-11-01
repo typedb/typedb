@@ -17,6 +17,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
@@ -25,10 +26,13 @@ import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static junit.framework.TestCase.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DashboardControllerTest {
     private static final LockProvider mockLockProvider = mock(LockProvider.class);
+    private static final Lock mockLock = mock(Lock.class);
     private Printer<Json> jsonPrinter;
 
     private Response sendQueryExplain(String query) {
@@ -65,6 +69,7 @@ public class DashboardControllerTest {
     @Before
     public void setUp() {
         jsonPrinter = Printers.json();
+        when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
     @Test

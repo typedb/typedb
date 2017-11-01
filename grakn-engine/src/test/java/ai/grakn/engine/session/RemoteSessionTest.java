@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
@@ -69,6 +70,7 @@ import static org.mockito.Mockito.when;
  */
 public class RemoteSessionTest {
     private static final LockProvider mockLockProvider = mock(LockProvider.class);
+    private static final Lock mockLock = mock(Lock.class);
 
     private static final Json INIT_JSON = Json.object(
             ACTION, ACTION_INIT,
@@ -96,6 +98,8 @@ public class RemoteSessionTest {
             responses.offer(Json.read((String)invocation.getArgument(0)));
             return null;
         }).when(remoteEndpoint).sendString(any());
+
+        when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
     @After
