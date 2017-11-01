@@ -67,7 +67,6 @@ public class REST {
             public static final String KB = "/kb";
             public static final String KB_KEYSPACE = "/kb/:keyspace";
             public static final String STATUS = "/status";
-            public static final String CONFIGURATION = "/configuration";
             public static final String METRICS = "/metrics";
         }
 
