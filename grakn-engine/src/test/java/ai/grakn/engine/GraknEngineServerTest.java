@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,20 +16,17 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine;
+package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
-import ai.grakn.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.SimpleURI;
 import com.google.common.collect.Iterables;
 import org.junit.Before;
 import org.junit.Ignore;
