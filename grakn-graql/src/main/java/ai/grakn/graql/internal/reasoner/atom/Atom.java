@@ -104,7 +104,6 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<VarProperty> getVarProperties() {
         return getPattern().admin().getProperties().collect(Collectors.toSet());
-        //return getCombinedPattern().admin().varPatterns().stream().flatMap(VarPatternAdmin::getProperties).collect(Collectors.toSet());
     }
 
     /**
@@ -313,7 +312,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Atom addType(SchemaConcept type){ return this;}
 
-    protected abstract Atom rewriteWithTypeVariable();
+    public abstract Atom rewriteWithTypeVariable();
 
     /**
      * rewrites the atom to user-defined type variable
