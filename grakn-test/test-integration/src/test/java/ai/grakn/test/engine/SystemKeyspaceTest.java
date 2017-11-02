@@ -38,9 +38,10 @@ public class SystemKeyspaceTest {
 
     @After
     public void cleanSystemKeySpaceGraph(){
-        try (GraknTx graph = engine.server().factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
-            graph.getEntityType("keyspace").instances().forEach(Concept::delete);
-            graph.commit();
+        try (GraknTx tx = engine.server().factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
+            tx.getEntityType("keyspace").instances().forEach(Concept::delete);
+            tx.getAttributeType("keyspace-name").instances().forEach(Concept::delete);
+            tx.commit();
         }
 
         transactions.forEach(GraknTx::close);
@@ -54,7 +55,7 @@ public class SystemKeyspaceTest {
         Set<String> spaces = getSystemKeyspaces();
 
         for (String keyspace : keyspaces) {
-            assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
+            assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
             assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
         }
     }
@@ -67,7 +68,7 @@ public class SystemKeyspaceTest {
         Set<String> spaces = getSystemKeyspaces();
 
         for (String keyspace : keyspaces) {
-            assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
+            assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
             assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
         }
     }
@@ -80,7 +81,7 @@ public class SystemKeyspaceTest {
         Set<GraknTx> txs = buildTxs(externalFactoryGraphProvider, keyspaces);
         txs.forEach(GraknTx::close);
 
-        //Delete a graph entirely
+        //Delete a tx entirely
         GraknTx deletedGraph = txs.iterator().next();
         deletedGraph.admin().delete();
         txs.remove(deletedGraph);
@@ -89,8 +90,8 @@ public class SystemKeyspaceTest {
         Set<String> systemKeyspaces = getSystemKeyspaces();
 
         //Check only 2 graphs have been built
-        for(GraknTx graph:txs){
-            assertTrue("Contains correct keyspace", systemKeyspaces.contains(graph.getKeyspace().getValue()));
+        for(GraknTx tx:txs){
+            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
         }
         assertFalse(engine.server().factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
     }
@@ -103,7 +104,7 @@ public class SystemKeyspaceTest {
         Set<GraknTx> txs = buildTxs(engineFactoryGraphProvider, keyspaces);
         txs.forEach(GraknTx::close);
 
-        //Delete a graph entirely
+        //Delete a tx entirely
         GraknTx deletedGraph = txs.iterator().next();
         deletedGraph.admin().delete();
         txs.remove(deletedGraph);
@@ -112,23 +113,10 @@ public class SystemKeyspaceTest {
         Set<String> systemKeyspaces = getSystemKeyspaces();
 
         //Check only 2 graphs have been built
-        for(GraknTx graph:txs){
-            assertTrue("Contains correct keyspace", systemKeyspaces.contains(graph.getKeyspace().getValue()));
+        for(GraknTx tx:txs){
+            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
         }
         assertFalse(engine.server().factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
-    }
-
-    private void setVersionInSystemGraph(String version){
-        String versionResourceType = "system-version";
-
-        //Insert fake version number
-        try(GraknTx graph = engine.server().factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
-            //Delete old version number
-            graph.getAttributeType(versionResourceType).instances().forEach(Concept::delete);
-            //Add Fake Version
-            graph.getAttributeType(versionResourceType).putAttribute(version);
-            graph.commit();
-        }
     }
 
     private Set<GraknTx> buildTxs(Function<String, GraknTx> txProvider, String ... keyspaces){
@@ -140,9 +128,9 @@ public class SystemKeyspaceTest {
     }
 
     private Set<String> getSystemKeyspaces(){
-        try(GraknTx graph = engine.server().factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)){
-            AttributeType<String> keyspaceName = graph.getAttributeType("keyspace-name");
-            return graph.getEntityType("keyspace").instances().
+        try(GraknTx tx = engine.server().factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)){
+            AttributeType<String> keyspaceName = tx.getAttributeType("keyspace-name");
+            return tx.getEntityType("keyspace").instances().
                     map(e -> e.attributes(keyspaceName).iterator().next().getValue().toString()).
                     collect(Collectors.toSet());
         }

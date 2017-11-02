@@ -124,7 +124,7 @@ public class Client {
      */
     public static boolean serverIsRunning(String host, int port) {
         try {
-            URL url = new URL("http", host, port, REST.WebPath.System.CONFIGURATION);
+            URL url = new URL("http", host, port, REST.WebPath.System.KB);
 
             HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
 
@@ -154,7 +154,7 @@ public class Client {
         URL mappedUrl;
         if ((originalUrl.getProtocol() + originalUrl.getHost()).equals(QUAD_ZERO_ROUTE)) {
             mappedUrl = new URL(
-                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.System.CONFIGURATION);
+                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.System.KB);
         } else {
             mappedUrl = originalUrl;
         }
