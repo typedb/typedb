@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 @AutoValue
-abstract class OutSubFragment extends Fragment {
+public abstract class OutSubFragment extends Fragment {
 
     @Override
     public abstract Var end();
@@ -53,7 +53,7 @@ abstract class OutSubFragment extends Fragment {
 
     @Override
     public double fragmentCost() {
-        return COST_SAME_AS_PREVIOUS;
+        return accurateFragmentCost.orElse(COST_SAME_AS_PREVIOUS);
     }
 
     @Override

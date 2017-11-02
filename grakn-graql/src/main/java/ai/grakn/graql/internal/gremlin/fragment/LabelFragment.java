@@ -79,6 +79,7 @@ abstract class LabelFragment extends Fragment {
         return Optional.of(labels().stream()
                 .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
+                .flatMap(SchemaConcept::subs)
                 .mapToLong(schemaConcept -> tx.admin().getShardCount(schemaConcept.asType()))
                 .sum());
     }

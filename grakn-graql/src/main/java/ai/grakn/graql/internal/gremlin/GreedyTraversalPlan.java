@@ -25,6 +25,9 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.fragment.InSubFragment;
+import ai.grakn.graql.internal.gremlin.fragment.OutSubFragment;
 import ai.grakn.graql.internal.gremlin.spanningtree.Arborescence;
 import ai.grakn.graql.internal.gremlin.spanningtree.ChuLiuEdmonds;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
@@ -102,23 +105,78 @@ public class GreedyTraversalPlan {
             final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
             Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
 
-            fragmentSet.stream()
+//            Set<Weighted<DirectedEdge<Node>>> edgeSet =
+            Set<Fragment> edgeFragmentSet = fragmentSet.stream()
                     .filter(filterNodeFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, tx))
-                    .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
-                    .collect(Collectors.toList()) // make sure previous steps are done
-                    .forEach(weightedDirectedEdge -> {
-                        if (nodesWithFixedCost.containsKey(weightedDirectedEdge.val.source) &&
-                                nodesWithFixedCost.get(weightedDirectedEdge.val.source) > 0 &&
-                                weightedDirectedEdge.val.destination.getNodeId().getNodeType() == NodeId.NodeType.ISA) {
+                    .collect(Collectors.toSet());
 
-                            edges.get(weightedDirectedEdge.val.destination).get(weightedDirectedEdge.val.source)
-                                    .setAccurateFragmentCost(nodesWithFixedCost.get(weightedDirectedEdge.val.source));
-                            weightedDirectedEdge.weight = -nodesWithFixedCost.get(weightedDirectedEdge.val.source);
-                        }
-                        weightedGraph.add(weightedDirectedEdge);
-                        connectedNodes.add(weightedDirectedEdge.val.destination);
-                        connectedNodes.add(weightedDirectedEdge.val.source);
-                    });
+            // deal with sub fragment first
+            Set<Fragment> subFragmentSet = new HashSet<>();
+            edgeFragmentSet.forEach(fragment -> {
+                if (fragment instanceof InSubFragment) {
+                    Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
+                    if (nodesWithFixedCost.containsKey(superType) && nodesWithFixedCost.get(superType) > 0) {
+                        plan.add(fragment);
+                        nodesWithFixedCost.put(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
+                                nodesWithFixedCost.get(superType));
+                        subFragmentSet.add(fragment);
+//                        fragment.setAccurateFragmentCost(0D);
+                    }
+                }
+//                else if  (fragment instanceof OutSubFragment) {
+//                    Node subType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes);
+//                    if (nodesWithFixedCost.containsKey(subType) && nodesWithFixedCost.get(subType) > 0) {
+////                        plan.add(fragment);
+////                        nodesWithFixedCost.put(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
+////                                nodesWithFixedCost.get(subType));
+//                        subFragmentSet.add(fragment);
+//                        fragment.setAccurateFragmentCost(0.001D);
+//                    }
+//                }
+            });
+            subFragmentSet.forEach(inSubFragment -> {
+                edgeFragmentSet.remove(inSubFragment);
+                edgeFragmentSet.remove(Fragments.outSub(
+                        inSubFragment.varProperty(), inSubFragment.end(), inSubFragment.start()));
+                // remove it so the graph is still connected
+                nodesWithFixedCost.remove(Node.addIfAbsent(NodeId.NodeType.VAR, inSubFragment.start(), allNodes));
+            });
+
+            Set<Weighted<DirectedEdge<Node>>> edgeSet = edgeFragmentSet.stream()
+                    .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
+                    .collect(Collectors.toSet());// make sure previous steps are done
+
+//            Set<Node> validSubs = new HashSet<>();
+//            if (!nodesWithFixedCost.isEmpty()) {
+//                for (Weighted<DirectedEdge<Node>> weightedDirectedEdge : edgeSet) {
+//                    if (nodesWithFixedCost.containsKey(weightedDirectedEdge.val.source) &&
+//                            nodesWithFixedCost.get(weightedDirectedEdge.val.source) > 0 &&
+//                            weightedDirectedEdge.val.destination.getNodeId().getNodeType() == NodeId.NodeType.SUB) {
+//                        Fragment sub =
+//                                edges.get(weightedDirectedEdge.val.destination).get(weightedDirectedEdge.val.source);
+//                        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, sub.end(), allNodes);
+//                        if (!nodesWithFixedCost.containsKey(end)) {
+//                            nodesWithFixedCost.put(end, nodesWithFixedCost.get(weightedDirectedEdge.val.source));
+//                            validSubs.add(end);
+//                        }
+//                    }
+//                }
+//            }
+
+            edgeSet.forEach(weightedDirectedEdge -> {
+                if (nodesWithFixedCost.containsKey(weightedDirectedEdge.val.source) &&
+                        nodesWithFixedCost.get(weightedDirectedEdge.val.source) > 0 &&
+                        weightedDirectedEdge.val.destination.getNodeId().getNodeType() == NodeId.NodeType.ISA) {
+
+                    edges.get(weightedDirectedEdge.val.destination).get(weightedDirectedEdge.val.source)
+                            .setAccurateFragmentCost(nodesWithFixedCost.get(weightedDirectedEdge.val.source));
+                    weightedDirectedEdge.weight = -nodesWithFixedCost.get(weightedDirectedEdge.val.source);
+                }
+                weightedGraph.add(weightedDirectedEdge);
+                connectedNodes.add(weightedDirectedEdge.val.destination);
+                connectedNodes.add(weightedDirectedEdge.val.source);
+            });
+//            validSubs.forEach(nodesWithFixedCost::remove);
 
             // if there is no edge fragment
             if (!weightedGraph.isEmpty()) {
@@ -178,6 +236,9 @@ public class GreedyTraversalPlan {
                     double logInstanceCount = -1D;
                     if (fragment.getShardCount(tx).isPresent()) {
                         long shardCount = fragment.getShardCount(tx).get();
+                        System.out.println("fragment = " + fragment);
+                        System.out.println("shardCount = " + shardCount);
+                        System.out.println();
                         if (shardCount > 0) {
                             logInstanceCount = Math.log(shardCount + SHARD_LOAD_FACTOR) + DEFAULT_SHARD_COST;
                         }
@@ -264,7 +325,9 @@ public class GreedyTraversalPlan {
 
         Node root = arborescence.getRoot();
 
+        System.out.println("root = " + root);
         Set<Node> reachableNodes = Sets.newHashSet(root);
+        System.out.println("plan = " + plan);
         while (!reachableNodes.isEmpty()) {
             Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
                     branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).get();

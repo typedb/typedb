@@ -36,7 +36,6 @@ import org.junit.Test;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class QueryPlannerTest {
 
@@ -44,6 +43,8 @@ public class QueryPlannerTest {
     private static final Var y = var("y");
     private static final Var z = var("z");
 
+    private static final String thingy = "thingy";
+    private static final String thingy0 = "thingy0";
     private static final String thingy1 = "thingy1";
     private static final String thingy2 = "thingy2";
     private static final String thingy3 = "thingy3";
@@ -54,14 +55,22 @@ public class QueryPlannerTest {
     @ClassRule
     public static final SampleKBContext context = SampleKBContext.preLoad(graph -> {
 
+        EntityType entityType0 = graph.putEntityType(thingy0);
         EntityType entityType1 = graph.putEntityType(thingy1);
         EntityType entityType2 = graph.putEntityType(thingy2);
         EntityType entityType3 = graph.putEntityType(thingy3);
 
+        EntityType superType1 = graph.putEntityType(thingy)
+                .sub(entityType0)
+                .sub(entityType1);
+//                .sub(entityType2)
+//                .sub(entityType3);
+
+
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
         Role role3 = graph.putRole("role3");
-        entityType1.plays(role1).plays(role2).plays(role3);
+        superType1.plays(role1).plays(role2).plays(role3);
         entityType2.plays(role1).plays(role2).plays(role3);
         entityType3.plays(role1).plays(role2).plays(role3);
         RelationshipType relationshipType = graph.putRelationshipType(related)
@@ -85,6 +94,12 @@ public class QueryPlannerTest {
     public void shardCountIsUsed() {
         // force the concept to get a new shard
         tx.admin().shard(tx.getEntityType(thingy2).getId());
+        tx.admin().shard(tx.getEntityType(thingy2).getId());
+        tx.admin().shard(tx.getEntityType(thingy2).getId());
+        tx.admin().shard(tx.getEntityType(thingy3).getId());
+        tx.admin().shard(tx.getEntityType(thingy3).getId());
+        tx.admin().shard(tx.getEntityType(thingy3).getId());
+        tx.admin().shard(tx.getEntityType(thingy3).getId());
         tx.admin().shard(tx.getEntityType(thingy3).getId());
         tx.admin().shard(tx.getEntityType(thingy3).getId());
 
@@ -94,9 +109,7 @@ public class QueryPlannerTest {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         ImmutableList<Fragment> plan = getPlan(pattern);
-
-        String varName = plan.get(3).end().getValue();
-        assertEquals(x.getValue(), varName);
+        assertEquals(x, plan.get(3).end());
 
         //TODO: should uncomment the following after updating cost of out-isa fragment
 //        varName = plan.get(7).end().getValue();
@@ -104,6 +117,33 @@ public class QueryPlannerTest {
 //
 //        varName = plan.get(11).end().getValue();
 //        assertEquals(y.getValue(), varName);
+
+        pattern = and(
+                x.isa(thingy),
+                y.isa(thingy2),
+                z.isa(thingy3),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+        assertEquals(x, plan.get(4).end());
+
+        tx.admin().shard(tx.getEntityType(thingy).getId());
+        tx.admin().shard(tx.getEntityType(thingy).getId());
+        tx.admin().shard(tx.getEntityType(thingy).getId());
+
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+        //TODO
+        assertEquals(y, plan.get(4).end());
+
+        tx.admin().shard(tx.getEntityType(thingy1).getId());
+        tx.admin().shard(tx.getEntityType(thingy1).getId());
+        tx.admin().shard(tx.getEntityType(thingy1).getId());
+
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+
+        assertEquals(y, plan.get(4).end());
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {

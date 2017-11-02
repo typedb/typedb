@@ -100,7 +100,8 @@ public abstract class Fragment {
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
     public static final double SHARD_LOAD_FACTOR = 0.25 - 1.0; // there is at least one shard
-    public static final long DEFAULT_SHARDING_THRESHOLD = 10_000L;
+
+    private static final long DEFAULT_SHARDING_THRESHOLD = 10_000L;
     public static final double DEFAULT_SHARD_COST = Math.log(DEFAULT_SHARDING_THRESHOLD);
 
     Optional<Double> accurateFragmentCost = Optional.empty();
@@ -167,8 +168,7 @@ public abstract class Fragment {
      */
     public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
             GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph,
-            Collection<Var> vars, @Nullable Var currentVar
-    ) {
+            Collection<Var> vars, @Nullable Var currentVar) {
         if (currentVar != null) {
             if (!currentVar.equals(start())) {
                 if (vars.contains(start())) {
