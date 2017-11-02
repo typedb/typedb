@@ -36,7 +36,7 @@ If you want to find the minimum value of the risk you would just substitute `get
 
   ![Aggregate example](/images/academy/2-graql/aggregate-query.png)
 
-With aggregate queries you can find means, standard deviations, counts and many other useful things. You can find the complete list in the [documentation](/documentation/aggregate-queries.html).
+With aggregate queries you can find means, standard deviations, counts and many other useful things. You can find the complete list in the [documentation](../aggregate-queries.html).
 
 How would you find the standard deviation of risk of all bonds?
 
@@ -71,4 +71,4 @@ You now know all the query types that GRAQL supports. You are ready to step up y
 
 
 ## What next?
-First of all, try and do the [GRAQL review](/academy/graql-review.html) before proceeding to [module 3](/academy/schema-elements.html). If you want to know more about the queries introduced in this lesson you can, as always, have a look at the [docs](/index.html).
+First of all, try and do the [GRAQL review](./graql-review.html) before proceeding to [module 3](./schema-elements.html). If you want to know more about the queries introduced in this lesson you can, as always, have a look at the [docs](../index.html).

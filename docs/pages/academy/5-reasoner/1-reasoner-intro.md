@@ -20,7 +20,7 @@ But you are not done yet: we now need to start using this knowledge base and add
 It is time for some logic inference.
 
 ## Back to the query
-Since from the beginning of [module 2](/academy/graql-intro.html), you should have learned that the questions you have built your knowledge base around translate into GRAQL as
+Since from the beginning of [module 2](./graql-intro.html), you should have learned that the questions you have built your knowledge base around translate into GRAQL as
 
 ```graql
 match
@@ -74,4 +74,4 @@ That is, you will learn to make your data more intelligent. Which is one of the 
 This was a very brief introductory lesson, but you should have at this point understood what logic inference is about.
 
 ## What next
-In the [next lesson](/academy/inference-rules.html), we will learn how to add GRAQL inference rules to your knowledge base; as you will see, it is a very simple yet powerful process. If you are impatient and what to know everything immediately, you can learn more about GRAKN Reasoner from the [docs](/index.html).
+In the [next lesson](./inference-rules.html), we will learn how to add GRAQL inference rules to your knowledge base; as you will see, it is a very simple yet powerful process. If you are impatient and what to know everything immediately, you can learn more about GRAKN Reasoner from the [docs](../index.html).
