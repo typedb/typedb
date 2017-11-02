@@ -69,6 +69,7 @@ def graknNode(Closure closure) {
                 throw error
             } finally {
                 archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+                archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
                 stage('Tear Down') {
                     sh 'tear-down.sh'
                 }
