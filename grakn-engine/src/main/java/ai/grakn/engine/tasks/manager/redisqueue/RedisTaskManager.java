@@ -23,8 +23,6 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
