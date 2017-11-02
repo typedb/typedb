@@ -93,7 +93,7 @@ public class HttpHandler {
         new GraqlController(factory, spark, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
         new DashboardController(factory, spark);
-        new SystemController(factory, spark, graknEngineStatus, metricRegistry);
+        new SystemController(spark, factory.properties(), factory.systemKeyspace(), graknEngineStatus, metricRegistry);
         new CommitLogController(spark, postProcessingDelay, taskManager);
         new TasksController(spark, taskManager, metricRegistry, taskExecutor);
         new EntityController(factory, spark);

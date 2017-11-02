@@ -23,12 +23,12 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.util.SimpleURI;
 import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
 import com.jayway.restassured.RestAssured;
@@ -143,7 +143,7 @@ public class EngineContext extends ExternalResource {
             try {
                 if(mockRedis != null) mockRedis.server().stop();
             } catch (Throwable t) {
-                // Ignored
+                // Ignored: this may fail if redis failed to start
             }
             throw e;
         }

@@ -14,13 +14,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.util;
 
 import com.google.common.base.Preconditions;
-import java.net.MalformedURLException;
-import java.net.URL;
+import org.apache.http.HttpHost;
+import org.apache.http.client.utils.URIBuilder;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * This Util class just takes care of going from host and port to string and viceversa
@@ -29,7 +33,6 @@ import java.net.URL;
  * @author pluraliseseverythings
  */
 public class SimpleURI {
-
     private final int port;
     private final String host;
 
@@ -62,10 +65,6 @@ public class SimpleURI {
         return String.format("%s:%d", host, port);
     }
 
-    public String toStringWithSchema() {
-        return String.format("http://%s:%d", host, port);
-    }
-
     public static SimpleURI withDefaultPort(String uri, int defaultPort) {
         if (uri.contains(":")) {
             return new SimpleURI(uri);
@@ -74,11 +73,11 @@ public class SimpleURI {
         }
     }
 
-    public URL toURL() {
+    public URI toURI() {
         try {
-            return new URL("http", getHost(), getPort(), "");
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Unexpected error while generating URL from " + this);
+            return new URIBuilder().setScheme(HttpHost.DEFAULT_SCHEME_NAME).setHost(host).setPort(port).build();
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
         }
     }
 }

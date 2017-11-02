@@ -87,7 +87,7 @@ export default {
 
   fetchKeyspaces() {
     return this.request({
-      url: '/keyspaces',
+      url: '/kb',
     });
   },
 
@@ -160,13 +160,13 @@ export default {
     */
   getAllTasks() {
     return this.request({
-      url: '/tasks',
+      url: '/task',
     });
   },
 
   stopTask(uuid:string) {
     return this.request({
-      url: `/tasks/${uuid}/stop`,
+      url: `/task/${uuid}/stop`,
       requestType: 'PUT',
     });
   },

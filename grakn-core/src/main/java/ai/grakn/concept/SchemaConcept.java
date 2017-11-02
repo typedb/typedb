@@ -72,6 +72,12 @@ public interface SchemaConcept extends Concept {
     SchemaConcept sup();
 
     /**
+     *
+     * @return All the the super-types of this {@link SchemaConcept}
+     */
+    Stream<? extends SchemaConcept> sups();
+
+    /**
      * Get all indirect subs of this concept.
      *
      * The indirect subs are the concept itself and all indirect subs of direct subs.

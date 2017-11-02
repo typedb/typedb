@@ -71,6 +71,12 @@ public interface Role extends SchemaConcept {
     Role sup();
 
     /**
+     * @return All the super-types of this this {@link Role}
+     */
+    @Override
+    Stream<Role> sups();
+
+    /**
      * Returns the sub of this Role.
      *
      * @return The sub of this Role
