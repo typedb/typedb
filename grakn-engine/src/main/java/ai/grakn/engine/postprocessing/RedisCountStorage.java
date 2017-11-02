@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks.connection;
+package ai.grakn.engine.postprocessing;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
