@@ -68,6 +68,14 @@ public class EngineTestHelper extends GraknCreator {
         server.start();
     }
 
+    public static EngineGraknTxFactory factory(){
+        return server.factory();
+    }
+
+    public static String uri(){
+        return "localhost:" + config.getProperty(GraknConfigKey.SERVER_PORT);
+    }
+
     /**
      * Similarly to {@link EngineTestHelper#engine()} it creates a test engine with the ability to write {@link ai.grakn.GraknTx} to a
      * persistent backend if needed

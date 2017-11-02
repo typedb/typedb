@@ -16,12 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.property;
+package ai.grakn.test.property.kb;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.generator.AbstractThingGenerator.WithResource;
+import ai.grakn.test.property.PropertyUtil;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.runner.RunWith;

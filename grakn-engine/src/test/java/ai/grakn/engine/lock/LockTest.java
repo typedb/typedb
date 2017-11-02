@@ -16,12 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.lock;
+package ai.grakn.engine.lock;
 
-import ai.grakn.engine.lock.JedisLock;
-import ai.grakn.engine.lock.NonReentrantLock;
-import ai.grakn.test.EngineContext;
-import java.util.UUID;
+import ai.grakn.util.MockRedisRule;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.experimental.theories.DataPoints;
@@ -30,17 +27,19 @@ import org.junit.experimental.theories.Theory;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(Theories.class)
-public class LockTestIT {
+public class LockTest {
 
     private static final String LOCK_NAME = "/lock";
 
@@ -48,7 +47,7 @@ public class LockTestIT {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static MockRedisRule mockRedisRule = MockRedisRule.create();
 
     @DataPoints
     public static Locks[] configValues = Locks.values();
@@ -60,7 +59,7 @@ public class LockTestIT {
     private Lock getLock(Locks lock, String lockName){
         switch (lock){
             case REDIS:
-                return new JedisLock(engine.getJedisPool(), lockName);
+                return new JedisLock(mockRedisRule.jedisPool(), lockName);
             case NONREENTRANT:
                 return new NonReentrantLock();
         }
@@ -69,7 +68,7 @@ public class LockTestIT {
 
     private Lock copy(Lock lock){
         if(lock instanceof JedisLock){
-            return new JedisLock(engine.getJedisPool(), ((JedisLock) lock).getLockName());
+            return new JedisLock(mockRedisRule.jedisPool(), ((JedisLock) lock).getLockName());
         } else if(lock instanceof NonReentrantLock){
             return lock;
         }
