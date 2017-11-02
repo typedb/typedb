@@ -390,9 +390,9 @@ public class ResourceAtom extends Binary{
     }
 
     /**
-     *
-     * @param parentAtom
-     * @return
+     * rewrites the atom to one with relation variable
+     * @param parentAtom parent atom that triggers rewrite
+     * @return rewritten atom
      */
     private ResourceAtom rewriteWithRelationVariable(Atom parentAtom){
         if (!parentAtom.isResource() || !((ResourceAtom) parentAtom).getRelationVariable().isUserDefinedName()) return this;
@@ -402,22 +402,16 @@ public class ResourceAtom extends Binary{
         return new ResourceAtom(newVar.admin(), attributeVariable, relationVariable, getTypePredicate(), getMultiPredicate(), getParentQuery());
     }
 
-    /**
-     *
-     * @param parentAtom
-     * @return
-     */
-    private ResourceAtom rewriteWithTypeVariable(Atom parentAtom){
-        return parentAtom.getPredicateVariable().isUserDefinedName()?
-                new ResourceAtom(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypePredicate(), getMultiPredicate(), getParentQuery()):
-                this;
+    @Override
+    public Atom rewriteWithTypeVariable() {
+        return new ResourceAtom(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypePredicate(), getMultiPredicate(), getParentQuery());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom){
         return this
-                .rewriteWithTypeVariable(parentAtom)
-                .rewriteWithRelationVariable(parentAtom);
+                .rewriteWithRelationVariable(parentAtom)
+                .rewriteWithTypeVariable(parentAtom);
     }
 
 }

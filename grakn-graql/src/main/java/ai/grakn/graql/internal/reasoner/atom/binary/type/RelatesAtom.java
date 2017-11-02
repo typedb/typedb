@@ -63,6 +63,11 @@ public class RelatesAtom extends TypeAtom {
     }
 
     @Override
+    public Atom rewriteWithTypeVariable() {
+        return new RelatesAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+    }
+
+    @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isUserDefinedName()?
                 new RelatesAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :

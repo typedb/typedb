@@ -29,7 +29,6 @@ import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
@@ -104,7 +103,8 @@ public abstract class Atom extends AtomicBase {
      * @return var properties this atom (its pattern) contains
      */
     public Set<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(VarPatternAdmin::getProperties).collect(Collectors.toSet());
+        return getPattern().admin().getProperties().collect(Collectors.toSet());
+        //return getCombinedPattern().admin().varPatterns().stream().flatMap(VarPatternAdmin::getProperties).collect(Collectors.toSet());
     }
 
     /**
@@ -313,10 +313,22 @@ public abstract class Atom extends AtomicBase {
      */
     public Atom addType(SchemaConcept type){ return this;}
 
+    protected abstract Atom rewriteWithTypeVariable();
+
+    /**
+     * rewrites the atom to user-defined type variable
+     * @param parentAtom parent atom that triggers rewrite
+     * @return rewritten atom
+     */
+    protected Atom rewriteWithTypeVariable(Atom parentAtom){
+        if (!parentAtom.getPredicateVariable().isUserDefinedName()) return this;
+        return rewriteWithTypeVariable();
+    }
+
     /**
      * rewrites the atom to one with user defined name
      * @param parentAtom parent atom that triggers rewrite
-     * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
+     * @return rewritten atom
      */
     public abstract Atom rewriteToUserDefined(Atom parentAtom);
 

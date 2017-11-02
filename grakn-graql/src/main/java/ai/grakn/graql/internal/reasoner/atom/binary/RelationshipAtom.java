@@ -204,14 +204,14 @@ public class RelationshipAtom extends IsaAtom {
         return var.admin();
     }
 
-
     @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationshipAtom a2 = (RelationshipAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && getVarNames().equals(a2.getVarNames())
+                && getVarName().equals(a2.getVarName())
+                && getPredicateVariable().equals(a2.getPredicateVariable())
                 && getRelationPlayers().equals(a2.getRelationPlayers());
     }
 
@@ -950,21 +950,17 @@ public class RelationshipAtom extends IsaAtom {
         return new RelationshipAtom(relVar.admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
     }
 
-    /**
-     *
-     * @param parentAtom
-     * @return
-     */
-    private RelationshipAtom rewriteWithTypeVariable(Atom parentAtom){
-        if (!parentAtom.getPredicateVariable().isUserDefinedName()) return this;
+    @Override
+    public RelationshipAtom rewriteWithTypeVariable(){
         return new RelationshipAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom){
         return this
-                .rewriteWithTypeVariable(parentAtom)
                 .rewriteWithRelationVariable(parentAtom)
-                .rewriteWithVariableRoles(parentAtom);
+                .rewriteWithVariableRoles(parentAtom)
+                .rewriteWithTypeVariable(parentAtom);
+
     }
 }

@@ -62,6 +62,11 @@ public class PlaysAtom extends TypeAtom {
     }
 
     @Override
+    public Atom rewriteWithTypeVariable() {
+        return new PlaysAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+    }
+
+    @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isUserDefinedName()?
                 new PlaysAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :

@@ -1224,7 +1224,7 @@ public class AtomicTest {
 
         exactUnification(type, type2, true, true, graph);
         exactUnification(userDefinedType, userDefinedType2, true, true, graph);
-        //TODO mized defined-generated test
+        //TODO user defined-generated test
         //exactUnification(type, userDefinedType, true, true, graph);
     }
 
@@ -1338,7 +1338,7 @@ public class AtomicTest {
     public void testUnification_MatchAllParentAtom(){
         GraknTx graph = unificationTestSet.tx();
         String parentString = "{$r($a, $x);}";
-        String childString = "{(role1: $z, role2: $b) isa binary;}";
+        String childString = "{$rel (role1: $z, role2: $b) isa binary;}";
         Atom parent = ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
         Atom child = ReasonerQueries.atomic(conjunction(childString, graph), graph).getAtom();
 

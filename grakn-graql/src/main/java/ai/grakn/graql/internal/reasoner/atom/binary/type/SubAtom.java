@@ -69,6 +69,11 @@ public class SubAtom extends TypeAtom {
     }
 
     @Override
+    public Atom rewriteWithTypeVariable() {
+        return new SubAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+    }
+
+    @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isUserDefinedName()?
                 new SubAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :

@@ -436,13 +436,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     .filter(Objects::nonNull)
                     .filter(p -> varNames.contains(p.getVarName()))
                     .collect(Collectors.toSet());
-            /*
-            Set<IdPredicate> predicates = getAtoms(Atom.class)
-                    .flatMap(at -> at.getInnerPredicates(IdPredicate.class))
-                    .filter(Objects::nonNull)
-                    .filter(p -> varNames.contains(p.getVarName()))
-                    .collect(Collectors.toSet());
-                    */
             getAtoms(IdPredicate.class).forEach(predicates::add);
 
             // the mapping function is declared separately to please the Eclipse compiler

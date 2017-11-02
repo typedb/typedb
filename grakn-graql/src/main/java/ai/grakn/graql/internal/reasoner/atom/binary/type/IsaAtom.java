@@ -105,9 +105,14 @@ public class IsaAtom extends TypeAtom {
     }
 
     @Override
+    public Atom rewriteWithTypeVariable() {
+        return new IsaAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+    }
+
+    @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return parentAtom.getPredicateVariable().isUserDefinedName()?
-                new IsaAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :
+                rewriteWithTypeVariable() :
                 this;
     }
 }
