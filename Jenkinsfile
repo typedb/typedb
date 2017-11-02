@@ -16,7 +16,7 @@ properties([
     pipelineTriggers([
       cron('H H/8 * * *'),
       issueCommentTrigger('.*!rtg.*')
-    ])
+    ]),
     buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
 ])
 
