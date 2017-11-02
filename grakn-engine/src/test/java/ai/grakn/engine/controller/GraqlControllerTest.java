@@ -3,6 +3,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
@@ -20,6 +21,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,14 +32,18 @@ import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GraqlControllerTest {
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
+    private static final Lock mockLock = mock(Lock.class);
 
     private Printer<Json> jsonPrinter;
     private Printer<Function<StringBuilder, StringBuilder>> graqlPrinter;
@@ -86,7 +92,7 @@ public class GraqlControllerTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
-                .createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
+                .createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create().getProperties());
         new GraqlController(factory, spark, new MetricRegistry());
     });
 
@@ -95,6 +101,7 @@ public class GraqlControllerTest {
         jsonPrinter = Printers.json();
         graqlPrinter = Printers.graql(false);
         halPrinter = Printers.hal(sampleKB.tx().getKeyspace(), -1);
+        when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
     @Test

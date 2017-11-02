@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
@@ -101,7 +102,8 @@ public class RedisTaskManagerTest {
         poolConfig.setMaxTotal(MAX_TOTAL);
         jedisPool = mockRedisRule.jedisPool(poolConfig);
         assertFalse(jedisPool.isClosed());
-        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(CONFIG.getProperties());
+        JedisLockProvider lockProvider = new JedisLockProvider(jedisPool);
+        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, CONFIG.getProperties());
         int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
         taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry);
