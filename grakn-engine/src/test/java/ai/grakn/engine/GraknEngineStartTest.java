@@ -14,35 +14,28 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.test.engine;
+package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.fail;
 
-@RunWith(JUnitQuickcheck.class)
-public class GraknEngineStartIT {
+public class GraknEngineStartTest {
 
     private static final int[] PORTS = {50120, 50121, 50122};
     private static final int REDIS_PORT = 50123;

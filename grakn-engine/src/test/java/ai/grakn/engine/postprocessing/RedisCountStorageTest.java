@@ -16,14 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.tasks.connection;
+package ai.grakn.engine.postprocessing;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
-import ai.grakn.test.EngineContext;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SampleKBLoader;
+import com.codahale.metrics.MetricRegistry;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -47,16 +46,13 @@ import static org.junit.Assert.assertEquals;
 public class RedisCountStorageTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
-
-    @ClassRule
     public static final MockRedisRule mockRedisRule = MockRedisRule.create();
 
     private static RedisCountStorage redis;
 
     @BeforeClass
     public static void getConnection(){
-        redis = engine.redis(mockRedisRule.server().getHost(), mockRedisRule.server().getBindPort());
+        redis = RedisCountStorage.create(mockRedisRule.jedisPool(), new MetricRegistry());
     }
 
     @Test

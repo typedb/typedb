@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.property;
+package ai.grakn.test.property.graql;
 
 import ai.grakn.GraknTx;
 import ai.grakn.generator.GraknTxs.Open;
