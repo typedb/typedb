@@ -67,6 +67,7 @@ def withGrakn(String workspace, Closure closure) {
             timeout(5) {
                 stage('Stop Grakn') {
                     archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+                    archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
                     sh 'tear-down.sh'
                 }
             }
