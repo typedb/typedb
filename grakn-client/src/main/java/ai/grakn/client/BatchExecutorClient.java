@@ -389,9 +389,6 @@ public class BatchExecutorClient implements Closeable {
             int count = 0;
             for (CollapsedRequest<QueryResponse, QueryWithId<?>> request : collapsedRequests) {
                 QueryResponse response = batchResponse.get(count++);
-                if (response == null) {
-                    LOG.warn("Response for request {} was null", request.getArgument().getQuery());
-                }
                 request.setResponse(response);
             }
             metricRegistry.histogram(name(QueriesObservableCollapser.class, "batch", "size"))
