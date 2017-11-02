@@ -98,6 +98,14 @@ node {
 
     slackGithub "Janus tests started"
 
+    triggers {
+	githubPullRequest {
+            admins(['haikalpribadi', 'fppt', 'aelred', 'burukuru'])
+            triggerPhrase('!rtg')
+            useGitHubHooks()
+	}
+    }
+
     timeout(120) {
 	stage('Run Janus test profile') {
 	    try {
