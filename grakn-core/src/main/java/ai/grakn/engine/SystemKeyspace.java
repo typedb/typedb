@@ -62,6 +62,7 @@ public interface SystemKeyspace {
 
     /**
      * Notify that we just opened a keyspace with the same engineUrl & config.
+     * This process also creates a keyspace if needed.
      */
     void openKeyspace(Keyspace keyspace);
 

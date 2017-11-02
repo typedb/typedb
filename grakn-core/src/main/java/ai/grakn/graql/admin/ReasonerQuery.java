@@ -23,8 +23,8 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 
+import com.google.common.collect.ImmutableMap;
 import javax.annotation.CheckReturnValue;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -116,8 +116,17 @@ public interface ReasonerQuery{
     Stream<Answer> resolve(boolean materialise);
 
     /**
+     * Returns a var-type map local to this query. Map is cached.
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<Var, Type> getVarTypeMap();
+    ImmutableMap<Var, Type> getVarTypeMap();
+
+    /**
+     * Returns a var-type of this query with possible additions coming from supplied partial answer.
+     * @param sub partial answer
+     * @return map of variable name - corresponding type pairs
+     */
+    @CheckReturnValue
+    ImmutableMap<Var, Type> getVarTypeMap(Answer sub);
 }
