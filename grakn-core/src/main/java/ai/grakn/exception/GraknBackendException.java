@@ -20,6 +20,7 @@ package ai.grakn.exception;
 
 import ai.grakn.Keyspace;
 import ai.grakn.engine.TaskId;
+import ai.grakn.util.SimpleURI;
 import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.IOException;
@@ -91,12 +92,12 @@ public class GraknBackendException extends GraknException {
     /**
      * Thrown when the task client cannot reach engine
      */
-    public static GraknBackendException engineUnavailable(String host, int port, IOException e){
-        return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(host, port), e);
+    public static GraknBackendException engineUnavailable(SimpleURI uri, IOException e){
+        return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(uri), e);
     }
 
     public static GraknBackendException initializationException(Keyspace keyspace) {
-        return new GraknBackendException(String.format(INITIALIZATION_EXCEPTION.getMessage(), keyspace));
+        return new GraknBackendException(INITIALIZATION_EXCEPTION.getMessage(keyspace));
     }
 
     public static GraknBackendException noSuchKeyspace(Keyspace keyspace) {

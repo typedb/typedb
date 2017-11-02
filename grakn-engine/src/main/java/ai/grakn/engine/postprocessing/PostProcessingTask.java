@@ -132,7 +132,7 @@ public class PostProcessingTask extends BackgroundTask {
                             });
 
                     // persist merged concepts
-                    graph.admin().commitNoLogs();
+                    graph.admin().commitSubmitNoLogs();
                 }
             } finally {
                 indexLock.unlock();

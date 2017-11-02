@@ -97,7 +97,7 @@ public class QueryAnswerStream {
         return true;
     }
 
-    public static boolean entityTypeFilter(Answer answer, Set<TypeAtom> types){
+    static boolean entityTypeFilter(Answer answer, Set<TypeAtom> types){
         if (types.isEmpty()) return true;
         for (TypeAtom type : types){
             Var var = type.getVarName();

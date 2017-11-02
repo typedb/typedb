@@ -2,6 +2,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
@@ -16,6 +17,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
@@ -24,9 +26,13 @@ import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static junit.framework.TestCase.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DashboardControllerTest {
-
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
+    private static final Lock mockLock = mock(Lock.class);
     private Printer<Json> jsonPrinter;
 
     private Response sendQueryExplain(String query) {
@@ -56,13 +62,14 @@ public class DashboardControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create().getProperties());
         new DashboardController(factory, spark);
     });
 
     @Before
     public void setUp() {
         jsonPrinter = Printers.json();
+        when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
     @Test

@@ -48,11 +48,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.sharegov</groupId>
-            <artifactId>mjson</artifactId>
-            <version>${mjson.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.theoryinpractise</groupId>
             <artifactId>halbuilder-standard</artifactId>
             <version>${halbuilder-standard.version}</version>

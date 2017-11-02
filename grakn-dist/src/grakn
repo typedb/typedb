@@ -45,8 +45,6 @@ if [ -z "${GRAKN_HOME}" ]; then
     GRAKN_STARTUP_TIMEOUT_S=120
 fi
 
-GRAKN_CLASSNAME="ai.grakn.engine.Grakn"
-
 # Storage globals
 STORAGE_PID=/tmp/grakn-storage.pid
 STORAGE_STARTUP_TIMEOUT_S=60
@@ -68,15 +66,6 @@ update_classpath_global_var() {
   # Add path containing grakn.properties and logback.xml
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
-}
-
-ps_ef_grep_processname() {
-  ps -ef | grep -v grep | awk '{print $2" "$(NF-1)}' | grep "$1"
-}
-
-
-ps_ef_grep_processname_by_java_classname() {
-  ps -ef | grep -v grep | awk '{print $2" "$(NF)}' | grep "$1"
 }
 
 # ================================================
@@ -135,13 +124,12 @@ storage_start_and_wait_until_ready() {
       # exec storage bin successful. now wait until ready
       storage_wait_until_ready
       status=$?
-      echo "SUCCESS"
     else
       # exec storage bin failed
       status=1
-      echo "FAILED!"
     fi
 
+    print_status_message ${status}
     return $status
   fi
 }
@@ -176,19 +164,17 @@ storage_wipe_all_data() {
 # ================================================
 # queue helper functions
 # ================================================
-get_redis_binary_name() {
-  if [ "$(uname)" == "Darwin" ]; then
-      echo -n "redis-server-osx"
-  elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-      echo -n "redis-server-linux"
-  fi
-}
-
 queue_start_process() {
+  local queue_bin=""
+  if [ "$(uname)" == "Darwin" ]; then
+      queue_bin="redis-server-osx"
+  elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+      queue_bin="redis-server-linux"
+  fi
+
   # run queue
   # queue needs to be ran with $GRAKN_HOME as the working directory
   # otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
-  local queue_bin=`get_redis_binary_name`
   pushd "$GRAKN_HOME" > /dev/null
   "${GRAKN_HOME}"/services/redis/$queue_bin "${GRAKN_HOME}"/services/redis/redis.conf
   local status=$?
@@ -198,9 +184,8 @@ queue_start_process() {
 }
 
 queue_check_if_running() {
-  local queue_fullpath="${GRAKN_HOME}/services/redis/`get_redis_binary_name`"
-  local count_running_queue_process=`ps_ef_grep_processname "$queue_fullpath" | wc -l`
   local status=
+  local count_running_queue_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
   if [ $count_running_queue_process -gt 0 ] ; then
     status=0 # queue running
   else
@@ -246,13 +231,12 @@ queue_start_and_wait_until_ready() {
       # exec queue bin successful. now wait until ready
       queue_wait_until_ready
       status=$?
-      echo "SUCCESS"
     else
       # exec queue bin failed
       status=1
-      echo "FAILED!"
     fi
 
+    print_status_message ${status}
     return $status
   fi
 }
@@ -270,11 +254,7 @@ queue_stop_process() {
     fi
     "${GRAKN_HOME}/services/redis/"$queue_bin shutdown
     local status=$?
-    if [ $status -eq 0 ] ; then
-      echo "SUCCESS"
-    else
-      echo "FAILED!"
-    fi
+    print_status_message ${status}
   else
     echo "NOT RUNNING"
   fi
@@ -301,7 +281,7 @@ grakn_start_process() {
   java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" \
     ai.grakn.engine.Grakn > /dev/null 2>&1 &
   status=$?
-  local pid=`ps_ef_grep_processname_by_java_classname "$GRAKN_CLASSNAME" | awk '{print $1}'`
+  pid=`ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'`
   echo $pid > "${GRAKN_PID}"
   return $status
 }
@@ -312,6 +292,14 @@ grakn_check_if_running() {
   else
     return 1
   fi
+}
+
+print_status_message() {
+    if [ $1 -eq 0 ] ; then
+        echo "SUCCESS"
+    else
+        echo "FAILED!"
+    fi
 }
 
 grakn_check_if_ready() {
@@ -358,13 +346,12 @@ grakn_start_and_wait_until_ready() {
       # exec grakn bin successful. now wait until ready
       grakn_wait_until_ready
       status=$?
-      echo "SUCCESS"
     else
       # exec grakn bin failed
       status=1
-      echo "FAILED!"
     fi
 
+    print_status_message ${status}
     return $status
   fi
 }
@@ -378,11 +365,7 @@ grakn_stop_process() {
       kill `cat $GRAKN_PID`
       status_kill=$?
       rm $GRAKN_PID
-      if [ $status_kill -eq 0 ] ; then
-        echo "SUCCESS"
-      else
-        echo "FAILED!" # unable to kill
-      fi
+      print_status_message ${status_kill}
       return $status_kill
     else
       echo "FAILED!" # unable to find PID file
