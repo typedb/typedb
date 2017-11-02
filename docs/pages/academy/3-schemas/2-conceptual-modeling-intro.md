@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-Just to restate something we have seen a few lessons ago,  when we have to deal with data modeling it is always a good idea to start with a question. In our context (if you want to review our problem context you will find it [here](/academy/graql-intro.html)) the question we want to model our knowledge around is:
+Just to restate something we have seen a few lessons ago,  when we have to deal with data modeling it is always a good idea to start with a question. In our context (if you want to review our problem context you will find it [here](./graql-intro.html)) the question we want to model our knowledge around is:
 
 > What are the bonds issued by companies that own oil platforms located in Italy less than 18 kilometers from the coast? Those bonds should be connected to articles related to the Italian referendum.
 
@@ -92,4 +92,4 @@ Subject (of articles)
 
 
 ## What next?
-We are now ready to turn our conceptual model into a valid GRAKN schema in the [next lesson](/academy/schema-building.html). If you want to know more about Entity-Relationship modeling you can [head to wikipedia](https://en.wikipedia.org/wiki/Entity–relationship_model). On the other hand, if you want to know more about GRAKN object model (which will make it clearer why it is so easy to use after you have done your conceptual modeling), you can read about it in the [docs](/index.html)
+We are now ready to turn our conceptual model into a valid GRAKN schema in the [next lesson](./schema-building.html). If you want to know more about Entity-Relationship modeling you can [head to wikipedia](https://en.wikipedia.org/wiki/Entity–relationship_model). On the other hand, if you want to know more about GRAKN object model (which will make it clearer why it is so easy to use after you have done your conceptual modeling), you can read about it in the [docs](../index.html)
