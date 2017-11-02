@@ -49,24 +49,27 @@ def runIntegrationTest(String workspace, String moduleName) {
 }
 
 def withGrakn(String workspace, Closure closure) {
-    withScripts(workspace) {
-        //Everything is wrapped in a try catch so we can handle any test failures
-        //If one test fails then all the others will stop. I.e. we fail fast
-        try {
-            timeout(15) {
-                //Stages allow you to organise and group things within Jenkins
-                stage('Start Grakn') {
-                    sh 'init-grakn.sh'
-                }
-            }
-            closure()
-        } catch (error) {
-            slackGithub "Periodic Build Failed", "danger"
-            throw error
-        } finally { // Tears down test environment
-            timeout(5) {
-                stage('Stop Grakn') {
-                    archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+    timeout(15) {
+        //Stages allow you to organise and group things within Jenkins
+        stage('Start Grakn') {
+            sh 'init-grakn.sh'
+        }
+    }
+}
+
+def graknNode(Closure closure) {
+    //Everything is wrapped in a try catch so we can handle any test failures
+    //If one test fails then all the others will stop. I.e. we fail fast
+    node {
+        withScripts(workspace) {
+            try {
+                closure()
+            } catch (error) {
+                slackGithub "Periodic Build Failed", "danger"
+                throw error
+            } finally {
+                archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+                stage('Tear Down') {
                     sh 'tear-down.sh'
                 }
             }
@@ -92,20 +95,20 @@ def buildGrakn() {
 }
 
 //Run all tests
-node {
+graknNode {
     String workspace = pwd()
     checkout scm
 
     slackGithub "Janus tests started"
 
     timeout(120) {
-	stage('Run Janus test profile') {
-	    try {
-		sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
-	    } finally {
-		junit "**/TEST*.xml"
-	    }
-	}
+        stage('Run Janus test profile') {
+            try {
+            sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
+            } finally {
+            junit "**/TEST*.xml"
+            }
+        }
     }
 
     slackGithub "Janus tests success", "good"
@@ -113,16 +116,14 @@ node {
 
 //Only run validation master/stable
 if (env.BRANCH_NAME in ['master', 'stable']) {
-    node {
+    graknNode {
         slackGithub "Build started"
 
         String workspace = pwd()
         checkout scm
 
         stage('Build Grakn') {
-            withScripts(workspace) {
-                buildGrakn()
-            }
+            buildGrakn()
 
             archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 
@@ -134,7 +135,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
     // This is a map of jobs to perform in parallel, name -> job closure
     jobs = [
         benchmarks: {
-            node {
+            graknNode {
                 String workspace = pwd()
                 checkout scm
                 unstash 'dist'
@@ -152,7 +153,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
     for (String moduleName : integrationTests) {
         // Add each integration test as a parallel job
         jobs[moduleName] = {
-            node {
+            graknNode {
                 String workspace = pwd()
                 checkout scm
                 unstash 'dist'
@@ -165,7 +166,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
     // Execute all jobs in parallel
     parallel(jobs);
 
-    node {
+    graknNode {
         // only deploy long-running instance on stable branch if all tests pass
         if (env.BRANCH_NAME == 'stable') {
             checkout scm
