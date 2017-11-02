@@ -3,7 +3,9 @@
 source env.sh
 
 if [ -d maven ] ;  then rm -rf maven ; fi
-grakn server stop
+
+if type grakn ; then grakn server stop fi
+
 if [ -d ${PACKAGE} ] ;  then rm -rf ${PACKAGE} ; fi
 
 if pgrep -l redis-server ; then
