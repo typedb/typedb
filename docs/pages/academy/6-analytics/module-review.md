@@ -50,6 +50,6 @@ Find clusters of companies, bonds and `issues` relationships and verify that the
 
 ## Keep calm and release the GRAKN!
 
-**CONGRATULATIONS!** You have graduated from the GRAKN Academy! The only thing left to do is starting developing your own projects. If you need more help or want to ask question you can delve into the [documentation](/index.html) and the [blog](https://blog.grakn.ai) to get more ideas on how to use GRAKN. Make sure as well to check our [discussion forum](https://discuss.grakn.ai) and to [join our Slack community](https://grakn.ai/slack.html), where you will find plenty of people willing to help should you have any doubts.
+**CONGRATULATIONS!** You have graduated from the GRAKN Academy! The only thing left to do is starting developing your own projects. If you need more help or want to ask question you can delve into the [documentation](../index.html) and the [blog](https://blog.grakn.ai) to get more ideas on how to use GRAKN. Make sure as well to check our [discussion forum](https://discuss.grakn.ai) and to [join our Slack community](https://grakn.ai/slack.html), where you will find plenty of people willing to help should you have any doubts.
 
 Be sure to mention you completed the GRAKN academy for extra kudos!

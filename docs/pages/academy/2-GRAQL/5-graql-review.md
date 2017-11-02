@@ -53,4 +53,4 @@ Write both a `compute` query and an `aggregate` for the task.
 You are now a GRAQL expert! Or at least you already master GRAQL enough to take full advantage of the power of GRAKN. There is still a lot of things that can be done and will be covered in the next modules, but you are now well equipped to start using GRAKN. Remember: GRAQL is the language that is used for all the GRAKN tasks, so you are now in a very good position.
 
 ## What next
-The [next Academy module](/academy/schema-elements.html) will teach you all there is to know about GRAKN schemas. What they are and how to build one. If you want to review the GRAQL material, go back to [lesson 2.1](/academy/graql-intro.html). Otherwise, if you want to have a deeper look, head to the [docs](/index.html).
+The [next Academy module](./schema-elements.html) will teach you all there is to know about GRAKN schemas. What they are and how to build one. If you want to review the GRAQL material, go back to [lesson 2.1](./graql-intro.html). Otherwise, if you want to have a deeper look, head to the [docs](../index.html).

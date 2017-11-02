@@ -127,4 +127,4 @@ In this tutorial we have learned the basics of inserting and deleting data from 
 
 
 ## What next?
-In the [next lesson](/academy/other-queries.html) you will be introduced to other, less common kind of queries. Once again a more complete description of the GRAQL syntax can be found in the [docs](/index.html).
+In the [next lesson](./other-queries.html) you will be introduced to other, less common kind of queries. Once again a more complete description of the GRAQL syntax can be found in the [docs](../index.html).

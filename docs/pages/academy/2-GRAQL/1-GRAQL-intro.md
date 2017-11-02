@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-During the course of the Academy lessons, you will learn step by step how to reproduce the academy dataset that comes preloaded into the GRAKN distribution in the VM that you should have installe by now (if you have not, head back to [last lesson](/academy/setup.html) and make sure you do so.)
+During the course of the Academy lessons, you will learn step by step how to reproduce the academy dataset that comes preloaded into the GRAKN distribution in the VM that you should have installe by now (if you have not, head back to [last lesson](./setup.html) and make sure you do so.)
 
 In order to understand the dataset, let's first set up the scene.
 
@@ -82,4 +82,4 @@ By now, you should be familiar the background of the demo dataset we will be wor
 
 ## What next?
 
-In the [next lesson](/academy/get-queries.html) we will dive more deeply into the syntax for get and insert queries. If you are curious about all the possible GRAQL query and you want to go faster, you can have a look at the GRAQL syntax [documentation](/index.html), but it might be a bit too advanced at this point in time.
+In the [next lesson](./get-queries.html) we will dive more deeply into the syntax for get and insert queries. If you are curious about all the possible GRAQL query and you want to go faster, you can have a look at the GRAQL syntax [documentation](/index.html), but it might be a bit too advanced at this point in time.
