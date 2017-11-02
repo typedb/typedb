@@ -43,7 +43,7 @@ function doubleClick(param) {
   const nodeObj = visualiser.getNode(node);
 
   if (eventKeys.shiftKey) {
-    requestExplore(nodeObj);
+    if (nodeObj.baseType !== API.INFERRED_RELATIONSHIP_TYPE) { requestExplore(nodeObj); }
   } else {
     EngineClient.request({
       url: nodeObj.href,
