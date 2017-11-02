@@ -94,8 +94,8 @@ public class SystemControllerTest {
     }
 
     @Test
-    public void whenCallingPutKBEndpoint_Return204() {
-        when().put("/kb/myks").then().statusCode(SC_NO_CONTENT).body(isEmptyString());
+    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() {
+        when().put("/kb/myks").then().statusCode(SC_OK).body(is(Json.make(properties).toString()));
     }
 
     @Test
@@ -126,11 +126,6 @@ public class SystemControllerTest {
         RestAssured.delete("/kb/myks");
 
         when().get("/kb").then().body("", not(hasItem("myks")));
-    }
-
-    @Test
-    public void whenCallingConfigurationEndpoint_GetConfiguration() {
-        when().get("/configuration").then().body(is(Json.make(properties).toString()));
     }
 
     @Test

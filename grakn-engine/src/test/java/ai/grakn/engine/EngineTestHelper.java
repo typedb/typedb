@@ -98,9 +98,9 @@ public class EngineTestHelper extends GraknCreator {
     }
 
     public static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config, RedisWrapper redisWrapper) {
-        EngineGraknTxFactory factory = engineGraknTxFactory(config);
         Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
         LockProvider lockProvider = lockProvider(jedisPool);
+        EngineGraknTxFactory factory = engineGraknTxFactory(config, lockProvider);
         MetricRegistry metricRegistry = metricRegistry();
         EngineID engineID = engineId();
         GraknEngineStatus graknEngineStatus = graknEngineStatus();

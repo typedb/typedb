@@ -7,12 +7,13 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.util.SimpleURI;
+import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SampleKBLoader;
+import ai.grakn.util.SimpleURI;
 import com.google.common.collect.Iterables;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -41,7 +42,8 @@ public class EngineGraknSessionTest {
     @BeforeClass
     public static void beforeClass() {
         EngineTestHelper.engineWithKBs();
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties());
+        JedisLockProvider lockProvider = new JedisLockProvider(mockRedisRule.jedisPool());
+        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, EngineTestHelper.config().getProperties());
     }
 
     @AfterClass
