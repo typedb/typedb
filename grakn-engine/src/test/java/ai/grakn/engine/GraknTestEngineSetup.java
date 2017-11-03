@@ -151,11 +151,11 @@ public abstract class GraknTestEngineSetup {
         }
     }
 
-    private static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config) {
+    public static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config) {
         return cleanGraknEngineServer(config,redisWrapper(config));
     }
 
-    private static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config, RedisWrapper redisWrapper) {
+    public static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config, RedisWrapper redisWrapper) {
         Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
         LockProvider lockProvider = GraknCreator.lockProvider(jedisPool);
         EngineGraknTxFactory factory = GraknCreator.engineGraknTxFactory(config, lockProvider);
