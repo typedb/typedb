@@ -15,15 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package ai.grakn.test;
+package ai.grakn.engine;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.test.GraknTestSetup;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
 import spark.Service;

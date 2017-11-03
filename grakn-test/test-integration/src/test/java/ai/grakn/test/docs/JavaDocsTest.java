@@ -19,7 +19,7 @@
 
 package ai.grakn.test.docs;
 
-import ai.grakn.test.EngineContext;
+import ai.grakn.engine.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import groovy.util.Eval;
 import org.junit.AfterClass;

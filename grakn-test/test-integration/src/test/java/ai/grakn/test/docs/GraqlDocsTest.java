@@ -21,10 +21,10 @@ package ai.grakn.test.docs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.EngineContext;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Query;
-import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.junit.AfterClass;

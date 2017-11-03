@@ -22,8 +22,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
+import ai.grakn.engine.EngineContext;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.test.EngineContext;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;

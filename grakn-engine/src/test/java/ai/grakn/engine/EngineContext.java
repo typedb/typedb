@@ -16,13 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.engine;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
-import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
@@ -38,9 +36,9 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import java.io.IOException;
 
+import static ai.grakn.engine.GraknTestEngineSetup.startEngine;
+import static ai.grakn.engine.GraknTestEngineSetup.stopEngine;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 
 
