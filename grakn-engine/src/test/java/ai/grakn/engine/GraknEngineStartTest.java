@@ -99,6 +99,6 @@ public class GraknEngineStartTest {
         GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
         graknEngineConfig.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         graknEngineConfig.setConfigProperty(GraknConfigKey.REDIS_HOST, ImmutableList.of(new SimpleURI("localhost", REDIS_PORT).toString()));
-        return EngineTestHelper.cleanGraknEngineServer(graknEngineConfig);
+        return GraknTestEngineSetup.cleanGraknEngineServer(graknEngineConfig);
     }
 }
