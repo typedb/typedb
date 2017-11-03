@@ -64,7 +64,7 @@ public abstract class GraknTestEngineSetup {
     /**
      * Create a configuration for use in tests, using random ports.
      */
-    static GraknEngineConfig createTestConfig() {
+    public static GraknEngineConfig createTestConfig() {
         GraknEngineConfig config = GraknEngineConfig.create();
 
         Integer serverPort = getEphemeralPort();
@@ -113,7 +113,7 @@ public abstract class GraknTestEngineSetup {
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
 
-    static Service startSpark(GraknEngineConfig config) {
+    public static Service startSpark(GraknEngineConfig config) {
         LOG.info("starting spark on port " + config.uri());
 
         Service spark = Service.ignite();

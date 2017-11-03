@@ -21,6 +21,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknTestEngineSetup;
 import org.junit.rules.ExternalResource;
 import spark.Service;
 
