@@ -116,8 +116,7 @@ graknNode {
 }
 
 //Only run validation master/stable
-// TODO: remove
-if (env.BRANCH_NAME in ['master', 'stable'] || true) {
+if (env.BRANCH_NAME in ['master', 'stable']) {
     graknNode {
         slackGithub "Build started"
 
