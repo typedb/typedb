@@ -66,7 +66,7 @@
         <rest-assured.version>2.7.0</rest-assured.version>
         <commons-math.version>3.4.1</commons-math.version>
         <java-tuples.version>1.2</java-tuples.version>
-        <spark.version>1.6.1</spark.version>
+        <spark.version>1.5.2</spark.version>
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
