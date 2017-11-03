@@ -37,10 +37,10 @@ import java.util.Set;
  */
 public abstract class AbstractGenerator<T> extends Generator<T> {
 
-    SourceOfRandomness random;
-    GenerationStatus status;
+    public SourceOfRandomness random;
+    public GenerationStatus status;
 
-    AbstractGenerator(Class<T> type) {
+    public AbstractGenerator(Class<T> type) {
         super(type);
     }
 
@@ -53,7 +53,7 @@ public abstract class AbstractGenerator<T> extends Generator<T> {
 
     protected abstract T generate();
 
-    final <S> S gen(Class<S> clazz) {
+    public final <S> S gen(Class<S> clazz) {
         return gen().type(clazz).generate(random, status);
     }
 

@@ -16,34 +16,30 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.generator.concept.AbstractTypeGenerator;
 
 /**
+ * Generator that produces {@link EntityType}s
+ *
  * @author Felix Chapman
  */
-public class Conjunctions extends RecursiveGenerator<Conjunction> {
+public class EntityTypes extends AbstractTypeGenerator<EntityType> {
 
-    public Conjunctions() {
-        super(Conjunction.class);
+    public EntityTypes() {
+        super(EntityType.class);
     }
 
     @Override
-    protected Conjunction generateBase() {
-        return Patterns.conjunction(setOf(VarPatternAdmin.class, 1, 1));
+    protected EntityType newSchemaConcept(Label label) {
+        return tx().putEntityType(label);
     }
 
     @Override
-    protected Conjunction generateRecurse() {
-        // This is done to favour generating `VarPattern`s instead of endless `Conjunction`s or `Disjunction`s
-        if (random.nextFloat() > 0.9) {
-            return Patterns.conjunction(setOf(PatternAdmin.class, 1, 3));
-        } else {
-            return generateBase();
-        }
+    protected EntityType metaSchemaConcept() {
+        return tx().admin().getMetaEntityType();
     }
 }

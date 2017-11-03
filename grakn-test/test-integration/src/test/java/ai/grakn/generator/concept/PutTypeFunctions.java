@@ -14,39 +14,36 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
+import ai.grakn.generator.AbstractGenerator;
 import com.google.common.collect.ImmutableList;
 
 import java.util.function.BiFunction;
 
 /**
- * Generator that produces {@link GraknTx} methods that put an {@link SchemaConcept} in the graph, given {@link Label}.
+ * Generator that produces {@link GraknTx} methods that put a type in the graph, given {@link Label}.
  *
  * @author Felix Chapman
  */
-public class PutSchemaConceptFunctions extends AbstractGenerator<BiFunction> {
+public class PutTypeFunctions extends AbstractGenerator<BiFunction> {
 
-    public PutSchemaConceptFunctions() {
+    public PutTypeFunctions() {
         super(BiFunction.class);
     }
 
     @Override
-    protected BiFunction<GraknTx, Label, SchemaConcept> generate() {
+    protected BiFunction<GraknTx, Label, Type> generate() {
         return random.choose(ImmutableList.of(
                 GraknTx::putEntityType,
                 (graph, label) -> graph.putAttributeType(label, gen(AttributeType.DataType.class)),
-                GraknTx::putRelationshipType,
-                GraknTx::putRole,
-                //TODO: Make smarter rules
-                (graph, label) -> graph.putRule(label, graph.graql().parser().parsePattern("$x"), graph.graql().parser().parsePattern("$x"))
+                GraknTx::putRelationshipType
         ));
     }
 }

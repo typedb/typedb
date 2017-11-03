@@ -45,7 +45,7 @@ public abstract class FromTxGenerator<T> extends AbstractGenerator<T> {
 
     private GraknTx tx;
 
-    FromTxGenerator(Class<T> type) {
+    public FromTxGenerator(Class<T> type) {
         super(type);
     }
 
@@ -76,7 +76,7 @@ public abstract class FromTxGenerator<T> extends AbstractGenerator<T> {
         return this;
     }
 
-    final FromTxGenerator<T> fromLastGeneratedTx() {
+    public final FromTxGenerator<T> fromLastGeneratedTx() {
         fromTx(GraknTxs::lastGeneratedGraph);
         return this;
     }

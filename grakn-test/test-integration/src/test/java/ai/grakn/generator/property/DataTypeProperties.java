@@ -14,27 +14,25 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.property;
 
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.generator.AbstractGenerator;
+import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 
 /**
- * Generator that produces {@link Entity}s
- *
  * @author Felix Chapman
  */
-public class Entities extends AbstractThingGenerator<Entity, EntityType> {
+public class DataTypeProperties extends AbstractGenerator<DataTypeProperty> {
 
-    public Entities() {
-        super(Entity.class, EntityTypes.class);
+    public DataTypeProperties() {
+        super(DataTypeProperty.class);
     }
 
     @Override
-    protected Entity newInstance(EntityType type) {
-        return type.addEntity();
+    public DataTypeProperty generate() {
+        return DataTypeProperty.of(gen(AttributeType.DataType.class));
     }
 }

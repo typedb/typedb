@@ -14,34 +14,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.Type;
+import ai.grakn.generator.FromTxGenerator;
+import ai.grakn.generator.concept.AbstractSchemaConceptGenerator.Meta;
 
 /**
- * A generator that produces {@link AttributeType}s
+ * This is a generator that just produces the top-level meta-type `thing`.
+ *
+ * Other meta types are still handled from their respective generators, e.g. `EntityTypes`
  *
  * @author Felix Chapman
  */
-public class ResourceTypes extends AbstractTypeGenerator<AttributeType> {
+public class MetaTypes extends FromTxGenerator<Type> {
 
-    public ResourceTypes() {
-        super(AttributeType.class);
+    public MetaTypes() {
+        super(Type.class);
     }
 
     @Override
-    protected AttributeType newSchemaConcept(Label label) {
-        AttributeType.DataType<?> dataType = gen(AttributeType.DataType.class);
-
-        return tx().putAttributeType(label, dataType);
+    protected Type generateFromTx() {
+        return tx().admin().getMetaConcept();
     }
 
-    @Override
-    protected AttributeType metaSchemaConcept() {
-        return tx().admin().getMetaResourceType();
+    public final void configure(Meta meta) {
     }
 }

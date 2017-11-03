@@ -14,13 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.generator.FromTxGenerator;
+import ai.grakn.generator.Labels;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -49,7 +50,7 @@ public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> ex
 
     private Optional<Boolean> meta = Optional.empty();
 
-    AbstractSchemaConceptGenerator(Class<T> type) {
+    public AbstractSchemaConceptGenerator(Class<T> type) {
         super(type);
     }
 

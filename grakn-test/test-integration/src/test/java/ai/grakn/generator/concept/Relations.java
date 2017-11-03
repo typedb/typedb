@@ -14,23 +14,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
-import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 
 /**
+ * A generator that produces {@link Relationship}s
+ *
  * @author Felix Chapman
  */
-public class IsAbstractProperties extends AbstractGenerator<IsAbstractProperty> {
+public class Relations extends AbstractThingGenerator<Relationship, RelationshipType> {
 
-    public IsAbstractProperties() {
-        super(IsAbstractProperty.class);
+    public Relations() {
+        super(Relationship.class, RelationTypes.class);
     }
 
-    public IsAbstractProperty generate() {
-        return IsAbstractProperty.get();
+    @Override
+    protected Relationship newInstance(RelationshipType type) {
+        return type.addRelationship();
     }
 }

@@ -20,8 +20,8 @@ package ai.grakn.test.property.kb;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
-import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
+import ai.grakn.generator.concept.AbstractSchemaConceptGenerator.NonMeta;
+import ai.grakn.generator.concept.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.ResourceValues;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;

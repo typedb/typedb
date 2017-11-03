@@ -14,35 +14,35 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.property;
 
 import ai.grakn.concept.Label;
+import ai.grakn.generator.AbstractGenerator;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
-import ai.grakn.graql.internal.pattern.property.LabelProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
+
+import static ai.grakn.graql.Graql.var;
 
 /**
  * @author Felix Chapman
  */
-public class HasAttributeTypeProperties extends AbstractGenerator<HasAttributeTypeProperty> {
+public class IsaProperties extends AbstractGenerator<IsaProperty> {
 
-    public HasAttributeTypeProperties() {
-        super(HasAttributeTypeProperty.class);
+    public IsaProperties() {
+        super(IsaProperty.class);
     }
 
-    @Override
-    public HasAttributeTypeProperty generate() {
-        VarPatternAdmin varPattern = gen(VarPatternAdmin.class);
+    public IsaProperty generate() {
+        VarPatternAdmin varPattern;
 
-        // Make sure the var has a label (or else `new HasAttributeTypeProperty(..)` will throw)
-        // TODO: can we avoid this
-        if (!varPattern.hasProperty(LabelProperty.class)) {
-            varPattern = varPattern.label(gen(Label.class)).admin();
+        if (random.nextBoolean()) {
+            varPattern = var().label(gen(Label.class)).admin();
+        } else {
+            varPattern = gen(VarPatternAdmin.class);
         }
 
-        return HasAttributeTypeProperty.of(varPattern, random.nextBoolean());
+        return IsaProperty.of(varPattern);
     }
 }

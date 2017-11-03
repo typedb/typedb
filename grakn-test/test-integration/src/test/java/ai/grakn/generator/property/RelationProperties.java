@@ -14,32 +14,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.property;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.generator.AbstractGenerator;
+import ai.grakn.graql.admin.RelationPlayer;
+import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
+import com.google.common.collect.ImmutableMultiset;
 
 /**
  * @author Felix Chapman
  */
-public class VarPatternAdmins extends RecursiveGenerator<VarPatternAdmin> {
+public class RelationProperties extends AbstractGenerator<RelationshipProperty> {
 
-    public VarPatternAdmins() {
-        super(VarPatternAdmin.class);
+    public RelationProperties() {
+        super(RelationshipProperty.class);
     }
 
     @Override
-    protected VarPatternAdmin generateBase() {
-        return gen(Var.class).admin();
-    }
-
-    @Override
-    protected VarPatternAdmin generateRecurse() {
-        return Patterns.varPattern(gen(Var.class), setOf(VarProperty.class, 0, 3));
+    public RelationshipProperty generate() {
+        return RelationshipProperty.of(ImmutableMultiset.copyOf(listOf(RelationPlayer.class, 1, 3)));
     }
 }

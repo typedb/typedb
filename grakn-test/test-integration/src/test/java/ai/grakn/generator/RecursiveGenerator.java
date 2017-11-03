@@ -28,7 +28,7 @@ import com.pholser.junit.quickcheck.generator.GenerationStatus;
  */
 public abstract class RecursiveGenerator<T> extends AbstractGenerator<T> {
 
-    RecursiveGenerator(Class<T> type) {
+    public RecursiveGenerator(Class<T> type) {
         super(type);
     }
 

@@ -14,30 +14,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 
 /**
+ * Generator that produces {@link Entity}s
+ *
  * @author Felix Chapman
  */
-public class Vars extends AbstractGenerator<Var> {
+public class Entities extends AbstractThingGenerator<Entity, EntityType> {
 
-    public Vars() {
-        super(Var.class);
+    public Entities() {
+        super(Entity.class, EntityTypes.class);
     }
 
-    public Var generate() {
-        if (random.nextBoolean() && false) { // TODO
-            return Graql.var();
-        } else {
-            // We use a very limited number of variable names to encourage queries with similar variables
-            // This lets us test more interesting queries, improves readability and performance of the tests
-            return Graql.var(gen().make(MetasyntacticStrings.class).generate(random, status));
-        }
+    @Override
+    protected Entity newInstance(EntityType type) {
+        return type.addEntity();
     }
 }

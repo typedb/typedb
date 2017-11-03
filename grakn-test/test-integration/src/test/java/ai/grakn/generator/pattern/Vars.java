@@ -14,32 +14,31 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.pattern;
 
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
+import ai.grakn.generator.AbstractGenerator;
+import ai.grakn.generator.MetasyntacticStrings;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 
 /**
- * Generator that produces {@link EntityType}s
- *
  * @author Felix Chapman
  */
-public class EntityTypes extends AbstractTypeGenerator<EntityType> {
+public class Vars extends AbstractGenerator<Var> {
 
-    public EntityTypes() {
-        super(EntityType.class);
+    public Vars() {
+        super(Var.class);
     }
 
-    @Override
-    protected EntityType newSchemaConcept(Label label) {
-        return tx().putEntityType(label);
-    }
-
-    @Override
-    protected EntityType metaSchemaConcept() {
-        return tx().admin().getMetaEntityType();
+    public Var generate() {
+        if (random.nextBoolean() && false) { // TODO
+            return Graql.var();
+        } else {
+            // We use a very limited number of variable names to encourage queries with similar variables
+            // This lets us test more interesting queries, improves readability and performance of the tests
+            return Graql.var(gen().make(MetasyntacticStrings.class).generate(random, status));
+        }
     }
 }

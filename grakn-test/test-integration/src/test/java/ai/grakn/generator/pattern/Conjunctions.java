@@ -14,35 +14,37 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.pattern;
 
-import ai.grakn.concept.Label;
+import ai.grakn.generator.RecursiveGenerator;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
-
-import static ai.grakn.graql.Graql.var;
+import ai.grakn.graql.internal.pattern.Patterns;
 
 /**
  * @author Felix Chapman
  */
-public class IsaProperties extends AbstractGenerator<IsaProperty> {
+public class Conjunctions extends RecursiveGenerator<Conjunction> {
 
-    public IsaProperties() {
-        super(IsaProperty.class);
+    public Conjunctions() {
+        super(Conjunction.class);
     }
 
-    public IsaProperty generate() {
-        VarPatternAdmin varPattern;
+    @Override
+    protected Conjunction generateBase() {
+        return Patterns.conjunction(setOf(VarPatternAdmin.class, 1, 1));
+    }
 
-        if (random.nextBoolean()) {
-            varPattern = var().label(gen(Label.class)).admin();
+    @Override
+    protected Conjunction generateRecurse() {
+        // This is done to favour generating `VarPattern`s instead of endless `Conjunction`s or `Disjunction`s
+        if (random.nextFloat() > 0.9) {
+            return Patterns.conjunction(setOf(PatternAdmin.class, 1, 3));
         } else {
-            varPattern = gen(VarPatternAdmin.class);
+            return generateBase();
         }
-
-        return IsaProperty.of(varPattern);
     }
 }

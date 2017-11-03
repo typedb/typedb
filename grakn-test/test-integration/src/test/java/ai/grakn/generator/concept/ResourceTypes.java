@@ -14,26 +14,34 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
-import ai.grakn.graql.admin.RelationPlayer;
-import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
-import com.google.common.collect.ImmutableMultiset;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Label;
+import ai.grakn.generator.concept.AbstractTypeGenerator;
 
 /**
+ * A generator that produces {@link AttributeType}s
+ *
  * @author Felix Chapman
  */
-public class RelationProperties extends AbstractGenerator<RelationshipProperty> {
+public class ResourceTypes extends AbstractTypeGenerator<AttributeType> {
 
-    public RelationProperties() {
-        super(RelationshipProperty.class);
+    public ResourceTypes() {
+        super(AttributeType.class);
     }
 
     @Override
-    public RelationshipProperty generate() {
-        return RelationshipProperty.of(ImmutableMultiset.copyOf(listOf(RelationPlayer.class, 1, 3)));
+    protected AttributeType newSchemaConcept(Label label) {
+        AttributeType.DataType<?> dataType = gen(AttributeType.DataType.class);
+
+        return tx().putAttributeType(label, dataType);
+    }
+
+    @Override
+    protected AttributeType metaSchemaConcept() {
+        return tx().admin().getMetaResourceType();
     }
 }

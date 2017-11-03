@@ -14,10 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;

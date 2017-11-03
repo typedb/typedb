@@ -14,37 +14,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
-import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
+import ai.grakn.generator.concept.AbstractSchemaConceptGenerator;
 
 /**
+ * A generator that produces random {@link Role}s
+ *
  * @author Felix Chapman
  */
-public class Disjunctions extends RecursiveGenerator<Disjunction> {
+public class Roles extends AbstractSchemaConceptGenerator<Role> {
 
-    public Disjunctions() {
-        super(Disjunction.class);
+    public Roles() {
+        super(Role.class);
     }
 
     @Override
-    protected Disjunction generateBase() {
-        return Patterns.disjunction(setOf(VarPatternAdmin.class, 1, 1));
+    protected Role newSchemaConcept(Label label) {
+        return tx().putRole(label);
     }
 
     @Override
-    protected Disjunction generateRecurse() {
-        // This is done to favour generating `VarPattern`s instead of endless `Conjunction`s or `Disjunction`s
-        if (random.nextFloat() > 0.9) {
-            return Patterns.disjunction(setOf(PatternAdmin.class, 1, 3));
-        } else {
-            return generateBase();
-        }
+    protected Role metaSchemaConcept() {
+        return tx().admin().getMetaRole();
     }
 }

@@ -14,32 +14,23 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.property;
 
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Role;
+import ai.grakn.generator.AbstractGenerator;
+import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 
 /**
- * A generator that produces random {@link Role}s
- *
  * @author Felix Chapman
  */
-public class Roles extends AbstractSchemaConceptGenerator<Role> {
+public class IsAbstractProperties extends AbstractGenerator<IsAbstractProperty> {
 
-    public Roles() {
-        super(Role.class);
+    public IsAbstractProperties() {
+        super(IsAbstractProperty.class);
     }
 
-    @Override
-    protected Role newSchemaConcept(Label label) {
-        return tx().putRole(label);
-    }
-
-    @Override
-    protected Role metaSchemaConcept() {
-        return tx().admin().getMetaRole();
+    public IsAbstractProperty generate() {
+        return IsAbstractProperty.get();
     }
 }

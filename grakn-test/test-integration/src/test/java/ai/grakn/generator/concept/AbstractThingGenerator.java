@@ -14,17 +14,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
+import ai.grakn.generator.FromTxGenerator;
+import ai.grakn.generator.Labels;
+import ai.grakn.generator.ResourceValues;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
@@ -50,7 +51,7 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
     private boolean withResource = false;
     private final Class<? extends AbstractTypeGenerator<S>> generatorClass;
 
-    AbstractThingGenerator(Class<T> type, Class<? extends AbstractTypeGenerator<S>> generatorClass) {
+    public AbstractThingGenerator(Class<T> type, Class<? extends AbstractTypeGenerator<S>> generatorClass) {
         super(type);
         this.generatorClass = generatorClass;
     }
@@ -96,7 +97,7 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
         return type.putAttribute(value);
     }
 
-    public final void configure(NonMeta nonMeta) {
+    public final void configure(AbstractSchemaConceptGenerator.NonMeta nonMeta) {
     }
 
     public final void configure(WithResource withResource) {

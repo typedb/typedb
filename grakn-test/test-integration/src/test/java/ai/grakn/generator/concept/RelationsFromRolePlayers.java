@@ -14,14 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
+import ai.grakn.generator.FromTxGenerator;
 
 import java.util.Optional;
 import java.util.stream.Stream;

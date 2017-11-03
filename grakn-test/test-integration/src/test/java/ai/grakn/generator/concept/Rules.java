@@ -14,25 +14,35 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
 import ai.grakn.concept.Label;
-import ai.grakn.graql.internal.pattern.property.LabelProperty;
+import ai.grakn.concept.Rule;
+import ai.grakn.generator.concept.AbstractSchemaConceptGenerator;
+import ai.grakn.graql.QueryBuilder;
 
 /**
+ * A generator that produces random {@link Rule}s
+ *
  * @author Felix Chapman
  */
-public class LabelProperties extends AbstractGenerator<LabelProperty> {
+public class Rules extends AbstractSchemaConceptGenerator<Rule> {
 
-    public LabelProperties() {
-        super(LabelProperty.class);
+    public Rules() {
+        super(Rule.class);
     }
 
     @Override
-    public LabelProperty generate() {
-        return LabelProperty.of(gen(Label.class));
+    protected Rule newSchemaConcept(Label label) {
+        // TODO: generate more complicated rules
+        QueryBuilder graql = this.tx().graql();
+        return tx().putRule(label, graql.parser().parsePattern("$x"), graql.parser().parsePattern("$x"));
+    }
+
+    @Override
+    protected Rule metaSchemaConcept() {
+        return tx().admin().getMetaRule();
     }
 }

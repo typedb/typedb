@@ -16,29 +16,30 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.pattern;
 
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
+import ai.grakn.generator.RecursiveGenerator;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.Patterns;
 
 /**
- * A generator that produces {@link RelationshipType}s
- *
  * @author Felix Chapman
  */
-public class RelationTypes extends AbstractTypeGenerator<RelationshipType> {
+public class VarPatternAdmins extends RecursiveGenerator<VarPatternAdmin> {
 
-    public RelationTypes() {
-        super(RelationshipType.class);
+    public VarPatternAdmins() {
+        super(VarPatternAdmin.class);
     }
 
     @Override
-    protected RelationshipType newSchemaConcept(Label label) {
-        return tx().putRelationshipType(label);
+    protected VarPatternAdmin generateBase() {
+        return gen(Var.class).admin();
     }
 
     @Override
-    protected RelationshipType metaSchemaConcept() {
-        return tx().admin().getMetaRelationType();
+    protected VarPatternAdmin generateRecurse() {
+        return Patterns.varPattern(gen(Var.class), setOf(VarProperty.class, 0, 3));
     }
 }

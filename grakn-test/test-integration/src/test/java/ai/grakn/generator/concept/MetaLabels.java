@@ -14,35 +14,35 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.generator;
+package ai.grakn.generator.concept;
 
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Rule;
-import ai.grakn.graql.QueryBuilder;
+import ai.grakn.generator.AbstractGenerator;
+import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.stream.Stream;
+
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
- * A generator that produces random {@link Rule}s
+ * Generator that generates meta type names only
  *
  * @author Felix Chapman
  */
-public class Rules extends AbstractSchemaConceptGenerator<Rule> {
+public class MetaLabels extends AbstractGenerator<Label> {
 
-    public Rules() {
-        super(Rule.class);
+    private static final ImmutableSet<Label> META_TYPE_LABELS =
+            Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(toImmutableSet());
+
+    public MetaLabels() {
+        super(Label.class);
     }
 
     @Override
-    protected Rule newSchemaConcept(Label label) {
-        // TODO: generate more complicated rules
-        QueryBuilder graql = this.tx().graql();
-        return tx().putRule(label, graql.parser().parsePattern("$x"), graql.parser().parsePattern("$x"));
-    }
-
-    @Override
-    protected Rule metaSchemaConcept() {
-        return tx().admin().getMetaRule();
+    public Label generate() {
+        return random.choose(META_TYPE_LABELS);
     }
 }

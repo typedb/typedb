@@ -71,7 +71,7 @@ public class Labels extends FromTxGenerator<Label> {
         mustBeUnused();
     }
 
-    Labels mustBeUnused() {
+    public Labels mustBeUnused() {
         mustBeUnused = true;
         return this;
     }
