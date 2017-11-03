@@ -20,16 +20,28 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.data.RedisWrapper;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.GraknTestSetup;
+import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
+import redis.clients.util.Pool;
 import spark.Service;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
+import static ai.grakn.engine.GraknCreator.engineId;
+import static ai.grakn.engine.GraknCreator.redisWrapper;
+import static ai.grakn.engine.GraknCreator.sparkService;
 import static ai.grakn.engine.HttpHandler.configureSpark;
 import static ai.grakn.graql.Graql.var;
 
@@ -81,7 +93,7 @@ public abstract class GraknTestEngineSetup {
 
         // start engine
         setRestAssuredUri(config);
-        GraknEngineServer server = EngineTestHelper.cleanGraknEngineServer(config);
+        GraknEngineServer server = cleanGraknEngineServer(config);
         server.start();
 
         LOG.info("engine started.");
@@ -137,5 +149,22 @@ public abstract class GraknTestEngineSetup {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config) {
+        return cleanGraknEngineServer(config,redisWrapper(config));
+    }
+
+    private static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config, RedisWrapper redisWrapper) {
+        Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
+        LockProvider lockProvider = GraknCreator.lockProvider(jedisPool);
+        EngineGraknTxFactory factory = GraknCreator.engineGraknTxFactory(config, lockProvider);
+        MetricRegistry metricRegistry = GraknCreator.metricRegistry();
+        EngineID engineID = engineId();
+        TaskManager taskManager =GraknCreator.taskManager(config, factory, jedisPool, lockProvider, engineID, metricRegistry);
+        GraknEngineStatus graknEngineStatus = GraknCreator.graknEngineStatus();
+        ExecutorService executorService = GraknCreator.executorService();
+        HttpHandler httpHandler = new HttpHandler(config, sparkService(), factory, metricRegistry, graknEngineStatus, taskManager, executorService);
+        return new GraknEngineServer(config, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, executorService, httpHandler, engineID);
     }
 }
