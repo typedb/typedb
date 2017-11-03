@@ -49,6 +49,13 @@
             <version>${quickcheck.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Used for creating a in memory mock Redis for testing -->
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>redis-mock</artifactId>
+            <version>${redis-mock.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-client</artifactId>
