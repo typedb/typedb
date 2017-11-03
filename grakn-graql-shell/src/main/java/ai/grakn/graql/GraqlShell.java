@@ -253,7 +253,7 @@ public class GraqlShell {
                 queries = Optional.of(loadQueries(filePaths));
             }
 
-            URI uri = UriBuilder.fromUri(location.toURI()).scheme("ws://").path(REMOTE_SHELL_URI).build();
+            URI uri = UriBuilder.fromUri(location.toURI()).scheme("ws").path(REMOTE_SHELL_URI).build();
 
             GraqlShell shell = new GraqlShell(
                     historyFilename, keyspace, client, uri, outputFormat,
