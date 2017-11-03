@@ -12,8 +12,13 @@ class Constants {
 }
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
-properties([pipelineTriggers([cron('H H/8 * * *')])])
-properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
+properties([
+    pipelineTriggers([
+      cron('H H/8 * * *'),
+      issueCommentTrigger('.*!rtg.*')
+    ]),
+    buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+])
 
 def slackGithub(String message, String color = null) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
