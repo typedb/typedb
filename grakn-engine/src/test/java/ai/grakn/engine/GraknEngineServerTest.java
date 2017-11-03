@@ -25,7 +25,6 @@ import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.GraknVersion;
-import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.Iterables;
 import org.junit.Before;

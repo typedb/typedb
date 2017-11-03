@@ -32,7 +32,7 @@ import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.graql.SampleKBContext;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.engine.MockRedisRule;
 import com.codahale.metrics.MetricRegistry;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;

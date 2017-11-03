@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.lock;
 
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.engine.MockRedisRule;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.experimental.theories.DataPoints;

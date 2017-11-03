@@ -22,7 +22,6 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.Keyspace;
 import ai.grakn.util.GraknTestSetup;
-import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;

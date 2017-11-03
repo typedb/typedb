@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.util;
+package ai.grakn.engine;
 
 import org.slf4j.LoggerFactory;
 import redis.embedded.RedisServer;
