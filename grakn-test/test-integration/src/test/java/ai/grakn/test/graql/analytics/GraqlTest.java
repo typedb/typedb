@@ -58,7 +58,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestSetup.usingTinker;
+import static ai.grakn.util.GraknTestSetup.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;

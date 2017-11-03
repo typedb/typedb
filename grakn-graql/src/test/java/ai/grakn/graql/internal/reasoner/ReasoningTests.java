@@ -23,13 +23,14 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.SampleKBContext;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.graql.SampleKBContext;
+import ai.grakn.util.GraknTestSetup;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -53,7 +54,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import org.apache.commons.math3.util.CombinatoricsUtils;
 
 /**
  * Suite of tests checking different meanders and aspects of reasoning - full reasoning cycle is being tested.

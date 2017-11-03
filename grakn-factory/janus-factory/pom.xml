@@ -38,6 +38,14 @@
 
         <dependency>
             <groupId>ai.grakn</groupId>
+            <artifactId>grakn-kb</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.grakn</groupId>
             <artifactId>grakn-test-tools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

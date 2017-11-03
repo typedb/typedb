@@ -18,9 +18,9 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.GraknTx;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.SampleKBLoader;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;

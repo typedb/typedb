@@ -23,9 +23,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.graql.SampleKBContext;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.kb.sample.DiagonalKB;
 import ai.grakn.graql.kb.sample.MatrixKB;
 import ai.grakn.graql.kb.sample.MatrixKBII;
@@ -36,12 +35,14 @@ import ai.grakn.graql.kb.sample.PathKBSymmetric;
 import ai.grakn.graql.kb.sample.TailRecursionKB;
 import ai.grakn.graql.kb.sample.TransitivityChainKB;
 import ai.grakn.graql.kb.sample.TransitivityMatrixKB;
-import java.util.List;
+import ai.grakn.util.GraknTestSetup;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.List;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;

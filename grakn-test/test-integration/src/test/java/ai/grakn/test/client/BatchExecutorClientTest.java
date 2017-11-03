@@ -32,7 +32,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.engine.EngineContext;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.SimpleURI;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixEventType;

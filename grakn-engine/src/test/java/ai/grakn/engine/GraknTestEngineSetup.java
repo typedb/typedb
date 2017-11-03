@@ -25,7 +25,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.GraknTestSetup;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;

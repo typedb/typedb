@@ -33,7 +33,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.EngineContext;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.GraknTestSetup;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -48,7 +48,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestSetup.usingTinker;
+import static ai.grakn.util.GraknTestSetup.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

@@ -16,11 +16,10 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.util;
 
 
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.util.EmbeddedCassandra;
 
 /**
  * <p>

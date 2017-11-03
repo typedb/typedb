@@ -31,7 +31,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.engine.EngineContext;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -44,7 +43,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestSetup.usingTinker;
+import static ai.grakn.util.GraknTestSetup.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -128,7 +127,7 @@ public class AnalyticsTest {
 
     @Test
     public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
-        assumeFalse(GraknTestSetup.usingTinker());
+        assumeFalse(usingTinker());
 
         addSchemaAndEntities();
 

@@ -25,7 +25,7 @@ import ai.grakn.engine.EngineContext;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Query;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.GraknTestSetup;
 import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
