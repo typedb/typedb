@@ -52,7 +52,13 @@ def withGrakn(String workspace, Closure closure) {
     timeout(15) {
         //Stages allow you to organise and group things within Jenkins
         stage('Start Grakn') {
-            sh 'init-grakn.sh'
+            try {
+                sh 'init-grakn.sh'
+                closure()
+            } finally {
+                archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+                archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
+            }
         }
     }
 }
@@ -68,8 +74,6 @@ def graknNode(Closure closure) {
                 slackGithub "Periodic Build Failed", "danger"
                 throw error
             } finally {
-                archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-                archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
                 stage('Tear Down') {
                     sh 'tear-down.sh'
                 }
