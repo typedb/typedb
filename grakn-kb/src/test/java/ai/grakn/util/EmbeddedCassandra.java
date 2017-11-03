@@ -69,4 +69,8 @@ public class EmbeddedCassandra {
             }
         }
     }
+
+    public static void clean() {
+        EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
+    }
 }
