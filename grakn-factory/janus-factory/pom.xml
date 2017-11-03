@@ -44,13 +44,6 @@
             <type>test-jar</type>
         </dependency>
 
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-test-tools</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
         <!-- Janus DB -->
         <dependency>
             <groupId>org.janusgraph</groupId>
