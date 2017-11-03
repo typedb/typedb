@@ -46,6 +46,9 @@
                     don't contain stack traces! -->
                     <trimStackTrace>false</trimStackTrace>
                     <argLine>-XX:+HeapDumpOnOutOfMemoryError</argLine>
+
+                    <!-- Added this config to try and help sort out flaky tests -->
+                    <runOrder>random</runOrder>
                 </configuration>
             </plugin>
             <plugin>
