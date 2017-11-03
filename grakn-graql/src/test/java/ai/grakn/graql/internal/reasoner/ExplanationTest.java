@@ -145,8 +145,10 @@ public class ExplanationTest {
         assertTrue(queryAnswer1.getExplanation().isJoinExplanation());
         assertTrue(queryAnswer2.getExplanation().isJoinExplanation());
 
-        assertEquals(queryAnswer1.getAnswers().size(), 7);
-        assertEquals(queryAnswer2.getAnswers().size(), 7);
+        //(res), (uni, ctr) - (region, ctr)
+        //                  - (uni, region) - {(city, region), (uni, city)
+        assertEquals(queryAnswer1.getAnswers().size(), 6);
+        assertEquals(queryAnswer2.getAnswers().size(), 6);
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
         assertEquals(4, queryAnswer1.getExplicitPath().size());

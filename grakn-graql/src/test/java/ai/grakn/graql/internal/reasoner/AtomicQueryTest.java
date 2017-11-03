@@ -552,10 +552,10 @@ public class AtomicQueryTest {
     @Test // subSubThreeRoleEntity sub subThreeRoleEntity sub threeRoleEntity3
     public void testExactUnification_TernaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes_TypeHierarchyInvolved(){
         GraknTx graph =  unificationWithTypesSet.tx();
-        String parentString = "{$x1 isa threeRoleEntity3;$x2 isa subThreeRoleEntity; $x3 isa subSubThreeRoleEntity;($x1, $x2, $x3) isa ternary;}";
+        String parentString = "{$x1 isa threeRoleEntity;$x2 isa subThreeRoleEntity; $x3 isa subSubThreeRoleEntity;($x1, $x2, $x3) isa ternary;}";
 
-        String childString = "{$y3 isa subSubThreeRoleEntity;$y2 isa subThreeRoleEntity;$y1 isa threeRoleEntity3;($y2, $y3, $y1) isa ternary;}";
-        String childString2 = "{$y3 isa subSubThreeRoleEntity;$y2 isa subThreeRoleEntity;$y1 isa threeRoleEntity3;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
+        String childString = "{$y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;($y2, $y3, $y1) isa ternary;}";
+        String childString2 = "{$y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(parentString, graph);
         Conjunction<VarPatternAdmin> pattern2 = conjunction(childString, graph);
         Conjunction<VarPatternAdmin> pattern3 = conjunction(childString2, graph);
