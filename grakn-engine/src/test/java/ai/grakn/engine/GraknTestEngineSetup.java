@@ -74,6 +74,14 @@ public abstract class GraknTestEngineSetup {
         return config;
     }
 
+    public static int findAvailablePort() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * To run engine we must ensure Cassandra and the Grakn HTTP endpoint are running
      */
