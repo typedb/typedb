@@ -6,14 +6,16 @@ import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.SimpleURI;
-import java.time.Instant;
-import static java.time.Instant.now;
 import mjson.Json;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Instant;
+
+import static java.time.Instant.now;
 
 
 public class MutatorTaskBenchmark extends BenchmarkTest {
