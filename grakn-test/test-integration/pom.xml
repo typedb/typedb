@@ -42,6 +42,13 @@
             <scope>test</scope>
             <type>test-jar</type>
         </dependency>
+        <!-- used for writing quickcheck property tests-->
+        <dependency>
+            <groupId>com.pholser</groupId>
+            <artifactId>junit-quickcheck-generators</artifactId>
+            <version>${quickcheck.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-client</artifactId>
