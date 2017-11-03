@@ -21,11 +21,13 @@ package ai.grakn.graql.internal.reasoner.atom.binary.type;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -47,7 +49,7 @@ import java.util.stream.Collectors;
  */
 public class IsaAtom extends TypeAtom {
 
-    public IsaAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
+    public IsaAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}
     public IsaAtom(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery par) {
         this(var, predicateVar, new IdPredicate(predicateVar, type.getLabel(), par), par);
@@ -73,18 +75,24 @@ public class IsaAtom extends TypeAtom {
         return new IsaAtom(this);
     }
 
-    protected Pair<VarPatternAdmin, IdPredicate> getTypedPair(SchemaConcept type){
+    @Override
+    public Pattern getCombinedPattern(){
+        if (getPredicateVariable().isUserDefinedName()) return super.getCombinedPattern();
+        return getSchemaConcept() != null? getVarName().isa(getSchemaConcept().getLabel().getValue()): getVarName().isa(getPredicateVariable());
+    }
+
+    protected Pair<VarPattern, IdPredicate> getTypedPair(SchemaConcept type){
         ConceptId typeId = type.getId();
         Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
 
-        VarPatternAdmin newPattern = getPattern().asVarPattern().isa(typeVariable).admin();
+        VarPattern newPattern = getPattern().isa(typeVariable);
         IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
         return new Pair<>(newPattern, newPredicate);
     }
 
     @Override
     public IsaAtom addType(SchemaConcept type) {
-        Pair<VarPatternAdmin, IdPredicate> typedPair = getTypedPair(type);
+        Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
         return new IsaAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
     }
 
@@ -94,5 +102,17 @@ public class IsaAtom extends TypeAtom {
         return vars.isEmpty()?
                 Collections.singleton(this) :
                 vars.stream().map(v -> new IsaAtom(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Atom rewriteWithTypeVariable() {
+        return new IsaAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+    }
+
+    @Override
+    public Atom rewriteToUserDefined(Atom parentAtom) {
+        return parentAtom.getPredicateVariable().isUserDefinedName()?
+                rewriteWithTypeVariable() :
+                this;
     }
 }
