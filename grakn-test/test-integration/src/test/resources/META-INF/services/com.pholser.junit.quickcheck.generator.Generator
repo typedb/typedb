@@ -33,3 +33,23 @@ ai.grakn.generator.IsaProperties
 ai.grakn.generator.LabelProperties
 ai.grakn.generator.RelationPlayers
 ai.grakn.generator.RelationProperties
+
+ai.grakn.generator.GraknTxs
+ai.grakn.generator.DataTypes
+ai.grakn.generator.Labels
+ai.grakn.generator.ConceptIds
+ai.grakn.generator.EntityTypes
+ai.grakn.generator.RelationTypes
+ai.grakn.generator.Rules
+ai.grakn.generator.ResourceTypes
+ai.grakn.generator.MetaTypes
+ai.grakn.generator.Roles
+ai.grakn.generator.Entities
+ai.grakn.generator.Relations
+ai.grakn.generator.RelationsFromRolePlayers
+#TODO: Re-enable when graph can support creating graql constructs
+#ai.grakn.generator.Rules
+ai.grakn.generator.Resources
+ai.grakn.generator.MetaLabels
+ai.grakn.generator.Methods
+ai.grakn.generator.MetasyntacticStrings

@@ -14,13 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 
 /**
  * A generator that produces {@link RelationshipType}s
