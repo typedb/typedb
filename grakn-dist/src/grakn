@@ -124,13 +124,12 @@ storage_start_and_wait_until_ready() {
       # exec storage bin successful. now wait until ready
       storage_wait_until_ready
       status=$?
-      echo "SUCCESS"
     else
       # exec storage bin failed
       status=1
-      echo "FAILED!"
     fi
 
+    print_status_message ${status}
     return $status
   fi
 }
@@ -232,13 +231,12 @@ queue_start_and_wait_until_ready() {
       # exec queue bin successful. now wait until ready
       queue_wait_until_ready
       status=$?
-      echo "SUCCESS"
     else
       # exec queue bin failed
       status=1
-      echo "FAILED!"
     fi
 
+    print_status_message ${status}
     return $status
   fi
 }
@@ -256,11 +254,7 @@ queue_stop_process() {
     fi
     "${GRAKN_HOME}/services/redis/"$queue_bin shutdown
     local status=$?
-    if [ $status -eq 0 ] ; then
-      echo "SUCCESS"
-    else
-      echo "FAILED!"
-    fi
+    print_status_message ${status}
   else
     echo "NOT RUNNING"
   fi
@@ -298,6 +292,14 @@ grakn_check_if_running() {
   else
     return 1
   fi
+}
+
+print_status_message() {
+    if [ $1 -eq 0 ] ; then
+        echo "SUCCESS"
+    else
+        echo "FAILED!"
+    fi
 }
 
 grakn_check_if_ready() {
@@ -342,13 +344,12 @@ grakn_start_and_wait_until_ready() {
       # exec grakn bin successful. now wait until ready
       grakn_wait_until_ready
       status=$?
-      echo "SUCCESS"
     else
       # exec grakn bin failed
       status=1
-      echo "FAILED!"
     fi
 
+    print_status_message ${status}
     return $status
   fi
 }
@@ -362,11 +363,7 @@ grakn_stop_process() {
       kill `cat $GRAKN_PID`
       status_kill=$?
       rm $GRAKN_PID
-      if [ $status_kill -eq 0 ] ; then
-        echo "SUCCESS"
-      else
-        echo "FAILED!" # unable to kill
-      fi
+      print_status_message ${status_kill}
       return $status_kill
     else
       echo "FAILED!" # unable to find PID file

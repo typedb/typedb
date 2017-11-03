@@ -13,6 +13,7 @@ class Constants {
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([pipelineTriggers([cron('H H/8 * * *')])])
+properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
 
 def slackGithub(String message, String color = null) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
@@ -66,6 +67,7 @@ def withGrakn(String workspace, Closure closure) {
             timeout(5) {
                 stage('Stop Grakn') {
                     archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+                    archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
                     sh 'tear-down.sh'
                 }
             }
@@ -90,9 +92,28 @@ def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
 
+//Run all tests
+node {
+    String workspace = pwd()
+    checkout scm
+
+    slackGithub "Janus tests started"
+
+    timeout(120) {
+	stage('Run Janus test profile') {
+	    try {
+		sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
+	    } finally {
+		junit "**/TEST*.xml"
+	    }
+	}
+    }
+
+    slackGithub "Janus tests success", "good"
+}
+
 //Only run validation master/stable
-if (env.BRANCH_NAME in ['master', 'stable'] || true) {
-    properties([buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))])
+if (env.BRANCH_NAME in ['master', 'stable']) {
 
     node {
         slackGithub "Build started"

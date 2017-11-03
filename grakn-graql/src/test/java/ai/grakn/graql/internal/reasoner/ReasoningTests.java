@@ -770,8 +770,6 @@ public class ReasoningTests {
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
-    //TODO requires activating implicit types - next PR
-    @Ignore
     /* Should find the possible relation configurations:
          (x, z) - (z, z1) - (z1, z)
                 - (z, z2) - (z2, z)
