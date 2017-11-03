@@ -33,7 +33,6 @@ public class PhilosophersExampleIT {
     @Test
     public void testAlexanderHasShahOfPersiaTitle() {
         assertExists(qb, var().has("name", "Alexander").has("title", "Shah of Persia"));
-
     }
 
     @Test

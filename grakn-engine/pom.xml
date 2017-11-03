@@ -53,6 +53,13 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graql</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <artifactId>jackson-core</artifactId>
             <groupId>com.fasterxml.jackson.core</groupId>
             <version>${jackson.version}</version>

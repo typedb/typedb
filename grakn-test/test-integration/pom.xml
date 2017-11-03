@@ -27,6 +27,14 @@
             <artifactId>grakn-graql</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graql</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-client</artifactId>

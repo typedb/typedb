@@ -14,7 +14,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.util;
@@ -23,9 +22,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.util.Collection;
-import org.apache.commons.collections.CollectionUtils;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
