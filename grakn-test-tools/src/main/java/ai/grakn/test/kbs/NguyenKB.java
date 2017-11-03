@@ -44,8 +44,8 @@ public class NguyenKB extends TestKB {
         this.n = n;
     }
 
-    public static Consumer<GraknTx> get(int n) {
-        return new NguyenKB(n).build();
+    public static SampleKBContext context(int n) {
+        return new NguyenKB(n).makeContext();
     }
 
     @Override

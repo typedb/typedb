@@ -73,22 +73,22 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicTest {
 
     @ClassRule
-    public static final SampleKBContext roleInferenceSet = SampleKBContext.preLoad("roleInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext roleInferenceSet = SampleKBContext.load("roleInferenceTest.gql");
 
     @ClassRule
-    public static final SampleKBContext typeInferenceSet = SampleKBContext.preLoad("typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext typeInferenceSet = SampleKBContext.load("typeInferenceTest.gql");
 
     @ClassRule
-    public static final SampleKBContext ruleApplicabilitySet = SampleKBContext.preLoad("ruleApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext ruleApplicabilitySet = SampleKBContext.load("ruleApplicabilityTest.gql");
 
     @ClassRule
-    public static final SampleKBContext resourceApplicabilitySet = SampleKBContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext resourceApplicabilitySet = SampleKBContext.load("resourceApplicabilityTest.gql");
 
     @ClassRule
-    public static final SampleKBContext reifiedResourceApplicabilitySet = SampleKBContext.preLoad("reifiedResourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext reifiedResourceApplicabilitySet = SampleKBContext.load("reifiedResourceApplicabilityTest.gql");
 
     @ClassRule
-    public static final SampleKBContext unificationTestSet = SampleKBContext.preLoad("unificationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext unificationTestSet = SampleKBContext.load("unificationTest.gql");
 
     @BeforeClass
     public static void onStartup() throws Exception {

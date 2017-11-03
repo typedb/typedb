@@ -42,13 +42,13 @@ public class MatrixKBII extends TestKB {
     private final int n;
     private final int m;
 
-    public MatrixKBII(int n, int m){
+    private MatrixKBII(int n, int m){
         this.m = m;
         this.n = n;
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new MatrixKBII(n, m).build();
+    public static SampleKBContext context(int n, int m) {
+        return new MatrixKBII(n, m).makeContext();
     }
 
     @Override

@@ -42,7 +42,7 @@ import static org.junit.Assume.assumeTrue;
 public class SNBInferenceTest {
 
     @Rule
-    public final SampleKBContext snbGraph = SampleKBContext.preLoad(SNBKB.get());
+    public final SampleKBContext snbGraph = SNBKB.context();
 
     @BeforeClass
     public static void onStartup() throws Exception {

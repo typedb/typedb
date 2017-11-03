@@ -45,8 +45,8 @@ public class TransitivityChainKB extends TestKB {
         this.n = n;
     }
 
-    public static Consumer<GraknTx> get(int n) {
-        return new TransitivityChainKB(n).build();
+    public static SampleKBContext context(int n) {
+        return new TransitivityChainKB(n).makeContext();
     }
 
     @Override

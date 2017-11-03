@@ -45,8 +45,8 @@ public class TailRecursionKB extends TestKB {
         this.m = m;
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new TailRecursionKB(n, m).build();
+    public static SampleKBContext context(int n, int m) {
+        return new TailRecursionKB(n, m).makeContext();
     }
 
     @Override

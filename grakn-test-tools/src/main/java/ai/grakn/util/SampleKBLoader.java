@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.util;
@@ -67,7 +68,7 @@ public class SampleKBLoader {
     private boolean graphLoaded = false;
     private GraknTx tx;
 
-    protected SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
+    private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
     }
@@ -76,16 +77,8 @@ public class SampleKBLoader {
         return new SampleKBLoader(null);
     }
 
-    public static SampleKBLoader preLoad(Consumer<GraknTx> build){
+    public static SampleKBLoader preLoad(@Nullable Consumer<GraknTx> build){
         return new SampleKBLoader(build);
-    }
-
-    public static SampleKBLoader preLoad(String [] files){
-        return new SampleKBLoader((graknGraph) -> {
-            for (String file : files) {
-                loadFromFile(graknGraph, file);
-            }
-        });
     }
 
     public GraknTx tx(){

@@ -39,7 +39,7 @@ public class AutocompleteTest {
     private final Set<String> types = ImmutableSet.of("production", "movie", "person");
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Test
     public void whenAutocompletingAnEmptyQuery_CandidatesIncludeTypesAndKeywords() {

@@ -48,7 +48,7 @@ public class GenealogyTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
+    public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     @BeforeClass
     public static void setUpClass() throws Exception {

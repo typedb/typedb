@@ -58,8 +58,7 @@ public class AttributeControllerTest {
     private static GraknTx mockTx;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
-    @ClassRule
-    public static SampleKBContext sampleKBContext = SampleKBContext.preLoad(MovieKB.get());
+    private static SampleKBContext sampleKBContext = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {

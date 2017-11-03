@@ -21,9 +21,7 @@ package ai.grakn.test;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.SampleKBLoader;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.rules.ExternalResource;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -44,22 +42,22 @@ import java.util.function.Consumer;
  * @author borislav, fppt
  *
  */
-public class SampleKBContext extends SampleKBLoader implements TestRule {
-    private boolean assumption = true;
+public class SampleKBContext extends ExternalResource {
+    private final SampleKBLoader loader;
 
     private SampleKBContext(@Nullable Consumer<GraknTx> preLoad){
-        super(preLoad);
+        loader = SampleKBLoader.preLoad(preLoad);
     }
 
     public static SampleKBContext empty(){
         return getContext(null);
     }
 
-    public static SampleKBContext preLoad(Consumer<GraknTx> build){
+    public static SampleKBContext load(Consumer<GraknTx> build){
         return getContext(build);
     }
 
-    public static SampleKBContext preLoad(String ... files){
+    public static SampleKBContext load(String ... files){
         return getContext((graknGraph) -> {
             for (String file : files) {
                 loadFromFile(graknGraph, file);
@@ -72,24 +70,15 @@ public class SampleKBContext extends SampleKBLoader implements TestRule {
         return new SampleKBContext(preLoad);
     }
 
-    public SampleKBContext assumeTrue(boolean bool){
-        this.assumption = bool;
-        return this;
-    }
-
     public static void loadFromFile(GraknTx graph, String file) {
         SampleKBLoader.loadFromFile(graph, GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + file);
     }
 
-    @Override
-    public Statement apply(final Statement base, Description description) {
+    public GraknTx tx() {
+        return loader.tx();
+    }
 
-        return new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                org.junit.Assume.assumeTrue(assumption);
-                base.evaluate();
-            }
-        };
+    public void rollback() {
+        loader.rollback();
     }
 }

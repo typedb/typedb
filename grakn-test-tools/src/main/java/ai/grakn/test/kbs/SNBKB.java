@@ -21,8 +21,6 @@ package ai.grakn.test.kbs;
 import ai.grakn.GraknTx;
 import ai.grakn.test.SampleKBContext;
 
-import java.util.function.Consumer;
-
 /**
  *
  * @author Sheldon
@@ -30,8 +28,8 @@ import java.util.function.Consumer;
  */
 public class SNBKB extends TestKB {
 
-    public static Consumer<GraknTx> get() {
-        return new SNBKB().build();
+    public static SampleKBContext context() {
+        return new SNBKB().makeContext();
     }
 
     @Override

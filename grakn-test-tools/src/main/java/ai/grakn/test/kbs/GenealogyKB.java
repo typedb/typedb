@@ -34,6 +34,10 @@ public class GenealogyKB extends TestKB {
     final private static String dataFile = "genealogy/data.gql";
     final private static String rulesFile = "genealogy/rules.gql";
 
+    public static SampleKBContext context() {
+        return new GenealogyKB().makeContext();
+    }
+
     public static Consumer<GraknTx> get() {
         return new GenealogyKB().build();
     }

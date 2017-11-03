@@ -29,8 +29,6 @@ import ai.grakn.test.kbs.MatrixKBII;
 import ai.grakn.test.kbs.PathKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -38,14 +36,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class BenchmarkTests {
-
-    @Rule
-    public final SampleKBContext sampleKB = SampleKBContext.empty();
-
-    @Before
-    public void setUpGraph(){
-        sampleKB.tx().close();
-    }
 
     /**
      * 2-rule transitive test with transitivity expressed in terms of two linear rules
@@ -82,12 +72,12 @@ public class BenchmarkTests {
         //results @N = 30 216225  132s    65 s
 
         long startTime = System.currentTimeMillis();
-        sampleKB.load(MatrixKBII.get(N, N));
+        SampleKBContext kb = MatrixKBII.context(N, N);
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = sampleKB.tx();
+        GraknTx tx = kb.tx();
 
-        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
+        QueryBuilder iqb = tx.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
         GetQuery query = iqb.parse(queryString);
 
@@ -117,12 +107,12 @@ public class BenchmarkTests {
         final int N = 100;
         final int answers = (N+1)*N/2;
         long startTime = System.currentTimeMillis();
-        sampleKB.load(TransitivityChainKB.get(N));
+        SampleKBContext kb = TransitivityChainKB.context(N);
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = sampleKB.tx();
+        GraknTx tx = kb.tx();
 
-        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
+        QueryBuilder iqb = tx.graql().infer(true).materialise(false);
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
         GetQuery query = iqb.parse(queryString);
@@ -170,12 +160,12 @@ public class BenchmarkTests {
         //results @N = 35 396900   ?        ?      ?     76 s
 
         long startTime = System.currentTimeMillis();
-        sampleKB.load(TransitivityMatrixKB.get(N, N));
+        SampleKBContext kb = TransitivityMatrixKB.context(N, N);
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = sampleKB.tx();
+        GraknTx tx = kb.tx();
 
-        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
+        QueryBuilder iqb = tx.graql().infer(true).materialise(false);
 
         //full result
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
@@ -229,12 +219,12 @@ public class BenchmarkTests {
         //results @N = 100 9604  loading takes ages
 
         long startTime = System.currentTimeMillis();
-        sampleKB.load(DiagonalKB.get(N, N));
+        SampleKBContext kb = DiagonalKB.context(N, N);
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = sampleKB.tx();
+        GraknTx tx = kb.tx();
 
-        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
+        QueryBuilder iqb = tx.graql().infer(true).materialise(false);
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GetQuery query = iqb.parse(queryString);
 
@@ -285,8 +275,8 @@ public class BenchmarkTests {
         final int linksPerEntity = 4;
         int answers = 0;
         for(int i = 1 ; i <= N ; i++) answers += Math.pow(linksPerEntity, i);
-        sampleKB.load(PathKB.get(N, linksPerEntity));
-        GraknTx graph = sampleKB.tx();
+        SampleKBContext kb = PathKB.context(N, linksPerEntity);
+        GraknTx graph = kb.tx();
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;" +
                 "$x has index 'a0';" +

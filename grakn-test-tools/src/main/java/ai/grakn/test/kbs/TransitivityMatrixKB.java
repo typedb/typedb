@@ -47,8 +47,8 @@ public class TransitivityMatrixKB extends TestKB {
         this.n = n;
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new TransitivityMatrixKB(n, m).build();
+    public static SampleKBContext context(int n, int m) {
+        return new TransitivityMatrixKB(n, m).makeContext();
     }
 
     @Override

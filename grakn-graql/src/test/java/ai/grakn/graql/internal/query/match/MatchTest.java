@@ -164,11 +164,11 @@ public class MatchTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieKB = MovieKB.context();
 
     // This is a graph to contain unusual edge cases
     @ClassRule
-    public static final SampleKBContext weirdKB = SampleKBContext.preLoad(graph -> {
+    public static final SampleKBContext weirdKB = SampleKBContext.load(graph -> {
         AttributeType<String> weirdLoopType = graph.putAttributeType("name", AttributeType.DataType.STRING);
         weirdLoopType.attribute(weirdLoopType);
         Attribute<String> weird = weirdLoopType.putAttribute("weird");

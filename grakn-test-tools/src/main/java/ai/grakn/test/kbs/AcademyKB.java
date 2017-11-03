@@ -34,8 +34,8 @@ public class AcademyKB extends TestKB {
     final private static String dataFile = "academy/data.gql";
     final private static String rulesFile = "academy/rules.gql";
 
-    public static Consumer<GraknTx> get() {
-        return new AcademyKB().build();
+    public static SampleKBContext context() {
+        return new AcademyKB().makeContext();
     }
 
     @Override

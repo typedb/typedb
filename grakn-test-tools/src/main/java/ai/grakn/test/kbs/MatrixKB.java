@@ -46,8 +46,8 @@ public class MatrixKB extends TestKB {
         this.n = n;
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new MatrixKB(n, m).build();
+    public static SampleKBContext context(int n, int m) {
+        return new MatrixKB(n, m).makeContext();
     }
 
     @Override

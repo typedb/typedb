@@ -24,8 +24,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.test.SampleKBContext;
 
-import java.util.function.Consumer;
-
 /**
  *
  * @author Kasper Piskorski
@@ -50,8 +48,8 @@ public class AdmissionsKB extends TestKB {
     private static AttributeType<String> admissionStatus;
     private static AttributeType<String> decisionType;
 
-    public static Consumer<GraknTx> get() {
-        return new AdmissionsKB().build();
+    public static SampleKBContext context() {
+        return new AdmissionsKB().makeContext();
     }
 
     @Override

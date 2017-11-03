@@ -37,7 +37,6 @@ import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.SNBKB;
 import ai.grakn.util.Schema;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -60,26 +59,19 @@ import static org.junit.Assume.assumeTrue;
  */
 public class ReasonerTest {
 
-    @ClassRule
-    public static final SampleKBContext snbKB = SampleKBContext.preLoad(SNBKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    private static final SampleKBContext snbKB = SNBKB.context();
 
-    @ClassRule
-    public static final SampleKBContext testGeoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    private static final SampleKBContext testGeoKB = GeoKB.context();
 
-    @ClassRule
-    public static final SampleKBContext nonMaterialisedGeoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    private static final SampleKBContext nonMaterialisedGeoKB = GeoKB.context();
 
-    @ClassRule
-    public static final SampleKBContext nonMaterialisedSnbKB = SampleKBContext.preLoad(SNBKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    private static final SampleKBContext nonMaterialisedSnbKB = SNBKB.context();
 
-    @ClassRule
-    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    private static final SampleKBContext geoKB = GeoKB.context();
 
-    @ClassRule
-    public static final SampleKBContext geoKB2 = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    private static final SampleKBContext geoKB2 = GeoKB.context();
 
-    @ClassRule
-    public static final SampleKBContext geoKB3 = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    private static final SampleKBContext geoKB3 = GeoKB.context();
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
