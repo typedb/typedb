@@ -21,6 +21,7 @@ package ai.grakn.util;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
+import org.junit.rules.ExternalResource;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -39,9 +40,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author fppt
  *
  */
-public class EmbeddedCassandra {
+public class EmbeddedCassandra extends ExternalResource {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandra.class);
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
+
+    private EmbeddedCassandra() {
+
+    }
+
+    public static EmbeddedCassandra create() {
+        return new EmbeddedCassandra();
+    }
 
     /**
      * Starts an embedded version of cassandra
@@ -68,5 +77,10 @@ public class EmbeddedCassandra {
                 LOG.error("Cassandra already running! Attempting to continue.");
             }
         }
+    }
+
+    @Override
+    protected void before() throws Throwable {
+        start();
     }
 }

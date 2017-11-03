@@ -32,11 +32,11 @@ import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
 import com.jayway.restassured.RestAssured;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-
-import java.io.IOException;
 
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
@@ -51,18 +51,25 @@ import static ai.grakn.util.SampleKBLoader.randomKeyspace;
  *
  * @author alexandraorth
  */
-public class EngineContext extends ExternalResource {
+public class EngineContext implements TestRule {
 
     private GraknEngineServer server;
 
     private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
-    private final boolean inMemoryRedis;
-    private MockRedisRule mockRedis;
     private JedisPool jedisPool;
     private MetricRegistry metricRegistry;
 
+    private final TestRule redis;
+
     private EngineContext(boolean inMemoryRedis){
-        this.inMemoryRedis = inMemoryRedis;
+        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
+        int redisPort = redisURI.getPort();
+
+        if (inMemoryRedis) {
+            redis = MockRedisRule.create(redisPort);
+        } else {
+            redis = EmbeddedRedis.create(redisPort);
+        }
     }
 
     /**
@@ -126,40 +133,36 @@ public class EngineContext extends ExternalResource {
     }
 
     @Override
+    public Statement apply(Statement base, Description description) {
+        Statement statement = new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                before();
+                try {
+                    base.evaluate();
+                } finally {
+                    after();
+                }
+            }
+        };
+
+        // Start redis
+        return redis.apply(statement, description);
+    }
+
     public void before() throws Throwable {
         RestAssured.baseURI = "http://" + config.uri();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
 
-        try {
-            SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
-            redisStart(redisURI);
+        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
 
-            jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
+        jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
-            server = startEngine(config);
-        } catch (Exception e) {
-            try {
-                mockRedis.server().stop();
-            } catch (Exception e2) {
-                // This may fail if redis failed to start
-            }
-            throw e;
-        }
-
+        server = startEngine(config);
     }
 
-    private void redisStart(SimpleURI redisURI) throws IOException {
-        if(inMemoryRedis) {
-            mockRedis = MockRedisRule.create(redisURI.getPort());
-            mockRedis.server().start();
-        } else {
-            EmbeddedRedis.start(redisURI.getPort());
-        }
-    }
-
-    @Override
     public void after() {
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
@@ -169,17 +172,8 @@ public class EngineContext extends ExternalResource {
         try {
             noThrow(() -> stopEngine(server), "Error closing engine");
             getJedisPool().close();
-            redisStop();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
-        }
-    }
-
-    private void redisStop(){
-        if(inMemoryRedis){
-            if(mockRedis != null) mockRedis.server().stop();
-        } else {
-            EmbeddedRedis.stop();
         }
     }
 

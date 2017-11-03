@@ -18,6 +18,7 @@
 
 package ai.grakn.util;
 
+import org.junit.rules.ExternalResource;
 import org.slf4j.LoggerFactory;
 import redis.embedded.RedisServer;
 import redis.embedded.exceptions.EmbeddedRedisException;
@@ -35,9 +36,19 @@ import redis.embedded.exceptions.EmbeddedRedisException;
  * @author fppt
  *
  */
-public class EmbeddedRedis {
+public class EmbeddedRedis extends ExternalResource {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedRedis.class);
     private static volatile RedisServer redisServer;
+
+    private final int port;
+
+    private EmbeddedRedis(int port) {
+        this.port = port;
+    }
+
+    public static EmbeddedRedis create(int port) {
+        return new EmbeddedRedis(port);
+    }
 
     static {
         Runtime.getRuntime().addShutdownHook(
@@ -49,12 +60,8 @@ public class EmbeddedRedis {
                 }));
     }
 
-    /**
-     * Starts an embedded redis on the provided port
-     *
-     * @param port The port to start redis on
-     */
-    public static void start(int port, boolean force){
+    @Override
+    protected void before() throws Throwable {
         try {
             LOG.info("Starting redis...");
             redisServer = RedisServer.builder()
@@ -62,7 +69,7 @@ public class EmbeddedRedis {
                     // We have short running tests and sometimes we kill the connections
                     .setting("timeout 360")
                     .build();
-            if (force || !redisServer.isActive()) {
+            if (!redisServer.isActive()) {
                 try {
                     redisServer.start();
                 } catch (EmbeddedRedisException e) {
@@ -79,14 +86,8 @@ public class EmbeddedRedis {
         }
     }
 
-    public static void start(int port){
-        start(port, false);
-    }
-
-    /**
-     * Stops the embedded redis
-     */
-    public static void stop(){
+    @Override
+    protected void after() {
         try {
             LOG.info("Stopping Redis...");
             redisServer.stop();
