@@ -16,37 +16,25 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.kbs;
+package ai.grakn.graql.kb.sample;
 
 import ai.grakn.GraknTx;
-import ai.grakn.test.SampleKBContext;
 
 import java.util.function.Consumer;
 
 /**
  *
- * @author Sheldon
+ * @author Kasper Piskorski
  *
  */
-public class SNBKB extends TestKB {
+public class PathKBSymmetric extends AbstractPathKB {
+    private final static String gqlFile = "path-test-symmetric.gql";
 
-    public static Consumer<GraknTx> get() {
-        return new SNBKB().build();
+    public PathKBSymmetric(int n, int m){
+        super(gqlFile, n, m);
     }
 
-    @Override
-    protected void buildSchema(GraknTx tx) {
-        SampleKBContext.loadFromFile(tx, "ldbc-snb-schema.gql");
-        SampleKBContext.loadFromFile(tx, "ldbc-snb-product-schema.gql");
-    }
-
-    @Override
-    protected void buildRules(GraknTx tx) {
-        SampleKBContext.loadFromFile(tx, "ldbc-snb-rules.gql");
-    }
-
-    @Override
-    protected void buildInstances(GraknTx tx) {
-        SampleKBContext.loadFromFile(tx, "ldbc-snb-data.gql");
+    public static Consumer<GraknTx> get(int n, int m) {
+        return new PathKBSymmetric(n, m).build();
     }
 }

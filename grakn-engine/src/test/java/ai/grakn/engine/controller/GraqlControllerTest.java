@@ -8,7 +8,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.graql.kb.MovieKB;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;

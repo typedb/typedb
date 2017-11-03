@@ -16,10 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.SampleKBLoader;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -78,7 +79,7 @@ public class SampleKBContext extends SampleKBLoader implements TestRule {
     }
 
     public static void loadFromFile(GraknTx graph, String file) {
-        SampleKBLoader.loadFromFile(graph, GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + file);
+        SampleKBLoader.loadFromFile(graph, GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-graql/src/test/graql/" + file);
     }
 
     @Override

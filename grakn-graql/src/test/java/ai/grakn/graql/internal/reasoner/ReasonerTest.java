@@ -19,8 +19,6 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
@@ -33,12 +31,10 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.kbs.GeoKB;
-import ai.grakn.test.kbs.SNBKB;
+import ai.grakn.graql.SampleKBContext;
+import ai.grakn.graql.kb.sample.GeoKB;
+import ai.grakn.graql.kb.sample.SNBKB;
 import ai.grakn.util.Schema;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -47,10 +43,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.and;

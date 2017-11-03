@@ -7,7 +7,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.kbs.GenealogyKB;
+import ai.grakn.graql.kb.GenealogyKB;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;

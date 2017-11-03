@@ -16,25 +16,37 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.kbs;
+package ai.grakn.graql.kb.sample;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.SampleKBContext;
 
 import java.util.function.Consumer;
 
 /**
  *
- * @author Kasper Piskorski
+ * @author Sheldon
  *
  */
-public class PathKB extends AbstractPathKB {
-    private final static String gqlFile = "path-test.gql";
+public class SNBKB extends TestKB {
 
-    public PathKB(int n, int m){
-        super(gqlFile, n, m);
+    public static Consumer<GraknTx> get() {
+        return new SNBKB().build();
     }
 
-    public static Consumer<GraknTx> get(int n, int children) {
-        return new PathKB(n, children).build();
+    @Override
+    protected void buildSchema(GraknTx tx) {
+        SampleKBContext.loadFromFile(tx, "ldbc-snb-schema.gql");
+        SampleKBContext.loadFromFile(tx, "ldbc-snb-product-schema.gql");
+    }
+
+    @Override
+    protected void buildRules(GraknTx tx) {
+        SampleKBContext.loadFromFile(tx, "ldbc-snb-rules.gql");
+    }
+
+    @Override
+    protected void buildInstances(GraknTx tx) {
+        SampleKBContext.loadFromFile(tx, "ldbc-snb-data.gql");
     }
 }

@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.graql.SampleKBContext;
+import ai.grakn.graql.kb.sample.MovieKB;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

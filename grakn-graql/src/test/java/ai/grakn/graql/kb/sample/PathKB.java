@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.kbs;
+package ai.grakn.graql.kb.sample;
 
 import ai.grakn.GraknTx;
 
@@ -27,14 +27,14 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class PathKBSymmetric extends AbstractPathKB {
-    private final static String gqlFile = "path-test-symmetric.gql";
+public class PathKB extends AbstractPathKB {
+    private final static String gqlFile = "path-test.gql";
 
-    public PathKBSymmetric(int n, int m){
+    public PathKB(int n, int m){
         super(gqlFile, n, m);
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new PathKBSymmetric(n, m).build();
+    public static Consumer<GraknTx> get(int n, int children) {
+        return new PathKB(n, children).build();
     }
 }

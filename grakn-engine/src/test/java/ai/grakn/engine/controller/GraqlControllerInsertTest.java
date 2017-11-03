@@ -23,7 +23,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.graql.kb.MovieKB;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;

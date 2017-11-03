@@ -16,14 +16,14 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.kbs;
+package ai.grakn.graql.kb.sample;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.graql.SampleKBContext;
 
 import java.util.function.Consumer;
 

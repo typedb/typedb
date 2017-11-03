@@ -16,16 +16,16 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.kbs;
+package ai.grakn.graql.kb.sample;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Label;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.graql.SampleKBContext;
 
 import java.util.function.Consumer;
 
@@ -34,62 +34,49 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class TransitivityMatrixKB extends TestKB {
+public class TransitivityChainKB extends TestKB {
 
     private final static Label key = Label.of("index");
     private final static String gqlFile = "simple-transitivity.gql";
 
     private final int n;
-    private final int m;
 
-    public TransitivityMatrixKB(int n, int m){
-        this.m = m;
+    public TransitivityChainKB(int n){
         this.n = n;
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new TransitivityMatrixKB(n, m).build();
+    public static Consumer<GraknTx> get(int n) {
+        return new TransitivityChainKB(n).build();
     }
 
     @Override
     public Consumer<GraknTx> build(){
         return (GraknTx graph) -> {
             SampleKBContext.loadFromFile(graph, gqlFile);
-            buildExtensionalDB(graph, n, m);
+            buildExtensionalDB(graph, n);
         };
     }
 
-    private void buildExtensionalDB(GraknTx graph, int n, int m) {
+    private void buildExtensionalDB(GraknTx graph, int n) {
         Role qfrom = graph.getRole("Q-from");
         Role qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationshipType q = graph.getRelationshipType("Q");
         Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
-        ConceptId[][] aInstanceIds = new ConceptId[n][m];
+        ConceptId[] aInstanceIds = new ConceptId[n];
         for(int i = 0 ; i < n ;i++) {
-            for (int j = 0; j < m; j++) {
-                aInstanceIds[i][j] = putEntity(graph, "a" + i + "," + j, aEntity, key).getId();
-            }
+            aInstanceIds[i] = putEntity(graph, "a" + i, aEntity, key).getId();
         }
-        
+
         q.addRelationship()
                 .addRolePlayer(qfrom, aInst)
-                .addRolePlayer(qto, graph.getConcept(aInstanceIds[0][0]));
+                .addRolePlayer(qto, graph.getConcept(aInstanceIds[0]));
 
-        for(int i = 0 ; i < n ; i++) {
-            for (int j = 0; j < m ; j++) {
-                if ( i < n - 1 ) {
+        for(int i = 0 ; i < n - 1 ; i++) {
                     q.addRelationship()
-                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
-                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1][j]));
-                }
-                if ( j < m - 1){
-                    q.addRelationship()
-                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
-                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i][j+1]));
-                }
-            }
+                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i]))
+                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1]));
         }
     }
 }
