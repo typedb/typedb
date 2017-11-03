@@ -19,8 +19,6 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
@@ -33,8 +31,6 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
@@ -46,11 +42,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.and;
@@ -58,10 +50,10 @@ import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.hamcrest.Matchers.empty;
 
 /**
  * Suite of tests focused on reasoning expressivity and various edge cases.
@@ -70,15 +62,6 @@ public class ReasonerTest {
 
     @ClassRule
     public static final SampleKBContext snbKB = SampleKBContext.preLoad(SNBKB.get()).assumeTrue(GraknTestSetup.usingTinker());
-
-    @ClassRule
-    public static final SampleKBContext snbKB2 = SampleKBContext.preLoad(SNBKB.get()).assumeTrue(GraknTestSetup.usingTinker());
-
-    @ClassRule
-    public static final SampleKBContext snbKB3 = SampleKBContext.preLoad(SNBKB.get()).assumeTrue(GraknTestSetup.usingTinker());
-
-    @ClassRule
-    public static final SampleKBContext testSnbKB = SampleKBContext.preLoad(SNBKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
     public static final SampleKBContext testGeoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
