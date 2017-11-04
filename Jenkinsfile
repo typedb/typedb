@@ -14,8 +14,9 @@ class Constants {
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([
     pipelineTriggers([
-      issueCommentTrigger('.*!rtg.*'),
+      issueCommentTrigger('.*!rtg.*')
     ]),
+    disableConcurrentBuilds()
     buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
 ])
 
