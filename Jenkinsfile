@@ -16,7 +16,6 @@ properties([
     pipelineTriggers([
       issueCommentTrigger('.*!rtg.*')
     ]),
-    disableConcurrentBuilds()
     buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
 ])
 
