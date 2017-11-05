@@ -98,6 +98,10 @@ def buildGrakn() {
 }
 
 //Run all tests
+
+print BUILD_URL 
+print BUILD_NUMBER
+
 node {
     String workspace = pwd()
     checkout scm
