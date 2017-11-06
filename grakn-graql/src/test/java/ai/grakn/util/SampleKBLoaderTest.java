@@ -23,7 +23,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.TxFactoryContext;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 
 public class SampleKBLoaderTest {
 
-    @Rule
+    @ClassRule
     public static TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
     @Test

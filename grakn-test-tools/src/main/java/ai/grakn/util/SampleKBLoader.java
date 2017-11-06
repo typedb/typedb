@@ -130,6 +130,7 @@ public class SampleKBLoader {
     private static Properties properties(){
         if(propertiesLoaded.compareAndSet(false, true)){
             String configFilePath = GraknSystemProperty.CONFIGURATION_FILE.value();
+            assert configFilePath != null;
 
             if (!Paths.get(configFilePath).isAbsolute()) {
                 configFilePath = getProjectPath() + configFilePath;
