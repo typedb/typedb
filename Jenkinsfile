@@ -96,6 +96,14 @@ def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
 
+def shouldRunAllTests() {
+    return env.BRANCH_NAME in ['master', 'stable']
+}
+
+def shouldDeployLongRunningInstance() {
+    return env.BRANCH_NAME == 'stable'
+}
+
 // This is a map of jobs to perform in parallel, name -> job closure
 jobs = [
         tests: {
@@ -121,8 +129,7 @@ jobs = [
         }
 ];
 
-//Only run validation master/stable
-if (env.BRANCH_NAME in ['master', 'stable']) {
+if (shouldRunAllTests()) {
 
     // Build grakn so it can be used by benchmarks and integration tests
     node {
@@ -176,7 +183,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
 parallel(jobs);
 
 // only deploy long-running instance on stable branch if all tests pass
-if (env.BRANCH_NAME == 'stable') {
+if (shouldDeployLongRunningInstance()) {
     node {
         checkout scm
         unstash 'dist'
@@ -191,6 +198,6 @@ if (env.BRANCH_NAME == 'stable') {
     }
 }
 
-if (env.BRANCH_NAME in ['master', 'stable']) {
+if (shouldRunAllTests()) {
     slackGithub "Build Success", "good"
 }
