@@ -50,6 +50,7 @@ STORAGE_PID=/tmp/grakn-storage.pid
 STORAGE_STARTUP_TIMEOUT_S=60
 
 # Queue globals
+QUEUE_PID=/tmp/grakn-queue.pid # If you want to change it, be sure to change it in redis.conf as well
 QUEUE_STARTUP_TIMEOUT_S=10
 
 # ================================================
@@ -303,11 +304,17 @@ grakn_check_if_running_by_pidfile() {
 }
 
 print_status_message() {
-    if [ $1 -eq 0 ] ; then
-        echo "SUCCESS"
-    else
-        echo "FAILED!"
-    fi
+  if [ $1 -eq 0 ] ; then
+      echo "SUCCESS"
+  else
+      echo "FAILED!"
+  fi
+}
+
+print_failure_diagnostics() {
+  echo "Grakn pid = '`cat $GRAKN_PID`' (from $GRAKN_PID), '`grakn_get_pid_by_ps_ef`' (from ps -ef)"
+  echo "Queue pid = '`cat $QUEUE_PID`' (from $QUEUE_PID), '`queue_get_pid_by_ps_ef`' (from ps -ef)"
+  echo "Storage pid = '`cat $STORAGE_PID`' (from $STORAGE_PID)"
 }
 
 grakn_check_if_ready() {
@@ -563,6 +570,8 @@ cli_case_grakn_server_start() {
       else
         # failure detected. attempt to terminate every component gracefully
         echo "Unable to start Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
         exit 1
       fi
     ;;
@@ -575,6 +584,8 @@ cli_case_grakn_server_start() {
       else
         # failure detected. attempt to terminate every component gracefully
         echo "Unable to start Queue. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
         exit 1
       fi
     ;;
@@ -587,6 +598,8 @@ cli_case_grakn_server_start() {
       else
         # failure detected. attempt to terminate every component gracefully
         echo "Unable to start Storage. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
         exit 1
       fi
     ;;
@@ -599,6 +612,8 @@ cli_case_grakn_server_start() {
       else
         # failure detected. attempt to terminate every component gracefully
         echo "Unable to start Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
         exit 1
       fi
     ;;
