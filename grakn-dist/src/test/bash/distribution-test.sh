@@ -21,10 +21,12 @@ must_properly_start() {
   fi
   if [[ $count_running_redis_process -ne 1 ]]; then
     echo "Error in starting Redis: Expected to find 1 running Redis process. Found " $count_running_redis_process
+    ps -ef | grep 'redis-server'
     return 1
   fi
   if [[ $count_running_grakn_process -ne 1 ]]; then
-    echo "Error in starting Grakn: Expected to find 1 running Redis process. Found " $count_running_grakn_process
+    echo "Error in starting Grakn: Expected to find 1 running Grakn process. Found " $count_running_grakn_process
+    ps -ef | grep 'Grakn'
     return 1
   fi
 
@@ -108,10 +110,12 @@ must_properly_stop() {
   fi
   if [[ $count_running_redis_process -ne 0 ]]; then
     echo "Error in stopping Redis: Expected to find 0 running Redis process. Found " $count_running_redis_process
+    ps -ef | grep 'redis-server'
     return 1
   fi
   if [[ $count_running_grakn_process -ne 0 ]]; then
-    echo "Error in stopping Grakn: Expected to find 0 running Redis process. Found " $count_running_grakn_process
+    echo "Error in stopping Grakn: Expected to find 0 running Grakn process. Found " $count_running_grakn_process
+    ps -ef | grep 'Grakn'
     return 1
   fi
 
