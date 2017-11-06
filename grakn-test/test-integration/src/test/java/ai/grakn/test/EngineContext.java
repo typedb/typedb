@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -65,9 +67,8 @@ public class EngineContext extends CompositeResource {
 
     private GraknEngineServer server;
 
-    private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
+    private final GraknEngineConfig config = createTestConfig();
     private JedisPool jedisPool;
-    private MetricRegistry metricRegistry;
 
     private final TestRule redis;
 
@@ -126,7 +127,7 @@ public class EngineContext extends CompositeResource {
     public RedisCountStorage redis(String host, int port) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         this.jedisPool = new JedisPool(poolConfig, host, port);
-        this.metricRegistry = new MetricRegistry();
+        MetricRegistry metricRegistry = new MetricRegistry();
         return RedisCountStorage.create(jedisPool, metricRegistry);
     }
 
@@ -173,7 +174,7 @@ public class EngineContext extends CompositeResource {
         LOG.info("starting engine...");
 
         // start engine
-        GraknTestEngineSetup.setRestAssuredUri(config);
+        setRestAssuredUri(config);
         server = GraknCreator.cleanGraknEngineServer(config);
         server.start();
 
@@ -199,21 +200,13 @@ public class EngineContext extends CompositeResource {
 
                 // There is no way to stop the embedded Casssandra, no such API offered.
             }, "Error closing engine");
-            getJedisPool().close();
+            jedisPool.close();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
     }
 
-    public JedisPool getJedisPool() {
-        return jedisPool;
-    }
-
-    public MetricRegistry getMetricRegistry() {
-        return metricRegistry;
-    }
-
-    static void clearGraphs(GraknEngineServer server) {
+    private static void clearGraphs(GraknEngineServer server) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
         try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
@@ -228,5 +221,30 @@ public class EngineContext extends CompositeResource {
             graph.admin().delete();
         });
         server.factory().refreshConnections();
+    }
+
+    /**
+     * Create a configuration for use in tests, using random ports.
+     */
+    private static GraknEngineConfig createTestConfig() {
+        GraknEngineConfig config = GraknEngineConfig.create();
+
+        Integer serverPort = getEphemeralPort();
+
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, serverPort);
+
+        return config;
+    }
+
+    private static void setRestAssuredUri(GraknEngineConfig config) {
+        RestAssured.baseURI = "http://" + config.uri();
+    }
+
+    private static int getEphemeralPort() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
