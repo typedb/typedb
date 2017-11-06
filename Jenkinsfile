@@ -13,10 +13,10 @@ class Constants {
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([
-    pipelineTriggers([
-      issueCommentTrigger('.*!rtg.*')
-    ]),
-    buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+        pipelineTriggers([
+                issueCommentTrigger('.*!rtg.*')
+        ]),
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
 ])
 
 def slackGithub(String message, String color = null) {
@@ -75,7 +75,7 @@ def graknNode(Closure closure) {
             try {
                 closure()
             } catch (error) {
-                slackGithub "Periodic Build Failed", "danger"
+                slackGithub "Build Failure", "danger"
                 throw error
             } finally {
                 stage('Tear Down') {
@@ -103,32 +103,46 @@ def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
 
-//Run all tests
-graknNode {
-    String workspace = pwd()
-    checkout scm
-
-    slackGithub "Janus tests started"
-
-    timeout(120) {
-        stage('Run Janus test profile') {
-            try {
-            sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
-            } finally {
-            junit "**/TEST*.xml"
-            }
-        }
-    }
-
-    slackGithub "Janus tests success", "good"
+def shouldRunAllTests() {
+    // TODO bad
+    return true
+    return env.BRANCH_NAME in ['master', 'stable']
 }
 
-//Only run validation master/stable
-if (env.BRANCH_NAME in ['master', 'stable']) {
+def shouldDeployLongRunningInstance() {
+    return env.BRANCH_NAME == 'stable'
+}
+
+// This is a map that we fill with jobs to perform in parallel, name -> job closure
+jobs = [:]
+
+jobs['tests'] = {
+    // Run all tests
+    graknNode {
+        checkout scm
+
+        slackGithub "Janus tests started"
+
+        timeout(120) {
+            stage('Run Janus test profile') {
+                try {
+                    sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
+                } finally {
+                    junit "**/TEST*.xml"
+                }
+            }
+        }
+
+        slackGithub "Janus tests success", "good"
+    }
+}
+
+if (shouldRunAllTests()) {
+
+    // Build grakn so it can be used by benchmarks and integration tests
     graknNode {
         slackGithub "Build started"
 
-        String workspace = pwd()
         checkout scm
 
         stage('Build Grakn') {
@@ -141,23 +155,20 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
         }
     }
 
-    // This is a map of jobs to perform in parallel, name -> job closure
-    jobs = [
-        benchmarks: {
-            graknNode {
-                String workspace = pwd()
-                checkout scm
-                unstash 'dist'
+    jobs['benchmarks'] = {
+        graknNode {
+            String workspace = pwd()
+            checkout scm
+            unstash 'dist'
 
-                timeout(60) {
-                    stage('Run the benchmarks') {
-                        sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                        archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-                    }
+            timeout(60) {
+                stage('Run the benchmarks') {
+                    sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
             }
         }
-    ];
+    }
 
     for (String moduleName : integrationTests) {
         // Add each integration test as a parallel job
@@ -171,13 +182,15 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
             }
         }
     }
+}
 
-    // Execute all jobs in parallel
-    parallel(jobs);
+// Execute all jobs in parallel
+parallel(jobs);
 
+if (shouldRunAllTests()) {
     graknNode {
         // only deploy long-running instance on stable branch if all tests pass
-        if (env.BRANCH_NAME == 'stable') {
+        if (shouldDeployLongRunningInstance()) {
             checkout scm
             unstash 'dist'
 
@@ -190,6 +203,6 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
             }
         }
 
-        slackGithub "Periodic Build Success", "good"
+        slackGithub "Build Success", "good"
     }
 }
