@@ -18,8 +18,10 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 
+import ai.grakn.graql.VarPattern;
 import java.util.HashSet;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -143,13 +145,13 @@ public interface Atomic {
      * @return the corresponding base pattern
      * */
     @CheckReturnValue
-    PatternAdmin getPattern();
+    VarPattern getPattern();
 
     /**
      * @return the base pattern combined with possible predicate patterns
      */
     @CheckReturnValue
-    PatternAdmin getCombinedPattern();
+    Pattern getCombinedPattern();
 
     /**
      * @return the query the atomic is contained in
@@ -180,4 +182,7 @@ public interface Atomic {
      */
     @CheckReturnValue
     Atomic inferTypes();
+
+    @CheckReturnValue
+    Atomic inferTypes(Answer sub);
 }

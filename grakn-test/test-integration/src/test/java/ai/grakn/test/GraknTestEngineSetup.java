@@ -17,10 +17,10 @@
  */
 package ai.grakn.test;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.engine.GraknCreator;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.SystemKeyspace;
@@ -84,7 +84,7 @@ public abstract class GraknTestEngineSetup {
 
         // start engine
         setRestAssuredUri(config);
-        GraknEngineServer server = EngineTestHelper.cleanGraknEngineServer(config);
+        GraknEngineServer server = GraknCreator.cleanGraknEngineServer(config);
         server.start();
 
         LOG.info("engine started.");

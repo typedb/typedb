@@ -19,14 +19,17 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
 
+import ai.grakn.graql.internal.query.QueryAnswer;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -41,18 +44,18 @@ import java.util.Set;
 public abstract class AtomicBase implements Atomic {
 
     private final Var varName;
-    private final PatternAdmin atomPattern;
+    private final VarPattern atomPattern;
     private ReasonerQuery parent = null;
 
-    protected AtomicBase(VarPatternAdmin pattern, ReasonerQuery par) {
+    protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
-        this.varName = pattern.var();
+        this.varName = pattern.admin().var();
         this.parent = par;
     }
 
     protected AtomicBase(AtomicBase a) {
         this.atomPattern = a.atomPattern;
-        this.varName = atomPattern.asVarPattern().var();
+        this.varName = atomPattern.admin().var();
         this.parent = a.getParentQuery();
     }
 
@@ -73,14 +76,14 @@ public abstract class AtomicBase implements Atomic {
 
     @Override
     public Set<Var> getVarNames(){
-        return Sets.newHashSet(varName);
+        return varName.isUserDefinedName()? Sets.newHashSet(varName) : Collections.emptySet();
     }
 
     @Override
-    public PatternAdmin getPattern(){ return atomPattern;}
+    public VarPattern getPattern(){ return atomPattern;}
 
     @Override
-    public PatternAdmin getCombinedPattern(){ return getPattern();}
+    public Pattern getCombinedPattern(){ return getPattern();}
 
     @Override
     public ReasonerQuery getParentQuery(){ return parent;}
@@ -89,7 +92,10 @@ public abstract class AtomicBase implements Atomic {
     public void setParentQuery(ReasonerQuery q){ parent = q;}
 
     @Override
-    public Atomic inferTypes(){ return this; }
+    public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }
+
+    @Override
+    public Atomic inferTypes(Answer sub){ return this; }
 
     /**
      * @return GraknTx this atomic is defined in
