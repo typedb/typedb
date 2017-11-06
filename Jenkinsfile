@@ -53,25 +53,32 @@ def runIntegrationTest(String workspace, String moduleName) {
 }
 
 def withGrakn(String workspace, Closure closure) {
-    withScripts(workspace) {
-        //Everything is wrapped in a try catch so we can handle any test failures
-        //If one test fails then all the others will stop. I.e. we fail fast
-        try {
-            timeout(15) {
-                //Stages allow you to organise and group things within Jenkins
-                stage('Start Grakn') {
-                    sh 'init-grakn.sh'
-                }
+    timeout(15) {
+        //Stages allow you to organise and group things within Jenkins
+        stage('Start Grakn') {
+            try {
+                sh 'init-grakn.sh'
+                closure()
+            } finally {
+                archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+                archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
             }
-            closure()
-        } catch (error) {
-            slackGithub "Build Failure", "danger"
-            throw error
-        } finally { // Tears down test environment
-            timeout(5) {
-                stage('Stop Grakn') {
-                    archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-                    archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
+        }
+    }
+}
+
+def graknNode(Closure closure) {
+    //Everything is wrapped in a try catch so we can handle any test failures
+    //If one test fails then all the others will stop. I.e. we fail fast
+    node {
+        withScripts(workspace) {
+            try {
+                closure()
+            } catch (error) {
+                slackGithub "Build Failure", "danger"
+                throw error
+            } finally {
+                stage('Tear Down') {
                     sh 'tear-down.sh'
                 }
             }
@@ -108,10 +115,8 @@ def shouldDeployLongRunningInstance() {
 
 // This is a map of jobs to perform in parallel, name -> job closure
 jobs = [
-        tests: {
-            //Run all tests
-            node {
-                String workspace = pwd()
+        tests: {//Run all tests
+            graknNode {
                 checkout scm
 
                 slackGithub "Janus tests started"
@@ -134,16 +139,13 @@ jobs = [
 if (shouldRunAllTests()) {
 
     // Build grakn so it can be used by benchmarks and integration tests
-    node {
+    graknNode {
         slackGithub "Build started"
 
-        String workspace = pwd()
         checkout scm
 
         stage('Build Grakn') {
-            withScripts(workspace) {
-                buildGrakn()
-            }
+            buildGrakn()
 
             archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 
@@ -153,7 +155,7 @@ if (shouldRunAllTests()) {
     }
 
     jobs['benchmarks'] = {
-        node {
+        graknNode {
             String workspace = pwd()
             checkout scm
             unstash 'dist'
@@ -170,7 +172,7 @@ if (shouldRunAllTests()) {
     for (String moduleName : integrationTests) {
         // Add each integration test as a parallel job
         jobs[moduleName] = {
-            node {
+            graknNode {
                 String workspace = pwd()
                 checkout scm
                 unstash 'dist'
@@ -185,7 +187,7 @@ if (shouldRunAllTests()) {
 parallel(jobs);
 
 if (shouldRunAllTests()) {
-    node {
+    graknNode {
         // only deploy long-running instance on stable branch if all tests pass
         if (shouldDeployLongRunningInstance()) {
             checkout scm
