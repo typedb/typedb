@@ -204,7 +204,7 @@ public class GraqlController {
         }
 
         String formatted;
-        boolean commitQuery = false;
+        boolean commitQuery = true;
         if (multi) {
             Stream<Query<?>> query = parser.parseList(queryString);
             List<?> collectedResults = query.map(this::executeAndMonitor).collect(Collectors.toList());
