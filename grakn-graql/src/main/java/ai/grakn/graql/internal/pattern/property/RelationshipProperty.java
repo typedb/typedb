@@ -257,7 +257,9 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
-        Var typeVariable = isaProp != null? isaProp.type().var().asUserDefined() : Graql.var().asUserDefined();
+        //TODO remove forcing user definition
+        Var typeVariable = isaProp != null? isaProp.type().var() : Graql.var();
+        //Var typeVariable = isaProp != null? isaProp.type().var().asUserDefined() : Graql.var().asUserDefined();
 
         //Isa present
         if (isaProp != null) {
@@ -270,7 +272,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
             }
         }
-        relVar = relVar.isa(typeVariable);
+        relVar = relVar.isa(typeVariable.asUserDefined());
         return new RelationshipAtom(relVar.admin(), typeVariable, predicate, parent);
     }
 }

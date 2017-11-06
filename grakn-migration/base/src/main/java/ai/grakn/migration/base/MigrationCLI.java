@@ -115,9 +115,14 @@ public class MigrationCLI {
             migrator.getReporter().start(1, TimeUnit.MINUTES);
             try {
                 migrator.load(template, data);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 // This is to catch migration exceptions and return intelligible output messages
-                System.out.println("Error while loading data: " + e.getMessage());
+                StringBuilder message = new StringBuilder(e.getMessage());
+                while(e.getCause() != null) {
+                    e = e.getCause();
+                    message.append("\n").append(e.getMessage());
+                }
+                System.out.println("ERROR: Exception while loading data (disabling debug mode might skip and continue): " + message.toString());
             } finally {
                 migrator.getReporter().stop();
             }
