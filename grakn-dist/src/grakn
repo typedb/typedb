@@ -184,7 +184,7 @@ queue_start_process() {
 }
 
 queue_get_pid_by_ps_ef() {
-  echo -n `ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}'`
+  ps -ef | grep 'redis-server' | grep -v grep | awk '{print $2}'
 }
 
 queue_check_if_running_by_ps_ef() {
@@ -291,7 +291,7 @@ grakn_start_process() {
 }
 
 grakn_get_pid_by_ps_ef() {
-  echo -n `ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'`
+  ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'
 }
 
 grakn_check_if_running_by_pidfile() {
