@@ -57,7 +57,7 @@ public class EmbeddedRedis extends ExternalResource {
                         LOG.warn("Redis still running, stopping it on shutdown hook");
                         redisServer.stop();
                     }
-                }));
+                }, "shutdown-redis"));
     }
 
     @Override

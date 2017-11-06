@@ -1218,11 +1218,14 @@ public class AtomicTest {
     public void testUnification_VariousTypeAtoms(){
         GraknTx graph = unificationTestSet.tx();
         String type = "{$x isa baseRoleEntity;}";
-        String type2 = "{$y isa $x;$x label 'baseRoleEntity';}";
-        String type3 = "{$y isa baseRoleEntity;}";
+        String type2 = "{$y isa baseRoleEntity;}";
+        String userDefinedType = "{$y isa $x;$x label 'baseRoleEntity';}";
+        String userDefinedType2 = "{$u isa $v;$v label 'baseRoleEntity';}";
+
         exactUnification(type, type2, true, true, graph);
-        exactUnification(type, type3, true, true, graph);
-        exactUnification(type2, type3, true, true, graph);
+        exactUnification(userDefinedType, userDefinedType2, true, true, graph);
+        //TODO user defined-generated test
+        //exactUnification(type, userDefinedType, true, true, graph);
     }
 
     @Test
@@ -1335,7 +1338,7 @@ public class AtomicTest {
     public void testUnification_MatchAllParentAtom(){
         GraknTx graph = unificationTestSet.tx();
         String parentString = "{$r($a, $x);}";
-        String childString = "{(role1: $z, role2: $b) isa binary;}";
+        String childString = "{$rel (role1: $z, role2: $b) isa binary;}";
         Atom parent = ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
         Atom child = ReasonerQueries.atomic(conjunction(childString, graph), graph).getAtom();
 
