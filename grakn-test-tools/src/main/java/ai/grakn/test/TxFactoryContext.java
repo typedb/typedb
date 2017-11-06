@@ -19,6 +19,7 @@
 
 package ai.grakn.test;
 
+import ai.grakn.GraknTx;
 import ai.grakn.util.EmbeddedCassandra;
 import com.google.common.collect.ImmutableList;
 import org.junit.rules.TestRule;
@@ -26,6 +27,8 @@ import org.junit.rules.TestRule;
 import java.util.List;
 
 /**
+ * Context for tests that use {@link GraknTx}s. Will make sure that any dependencies such as cassandra are running
+ *
  * @author Felix Chapman
  */
 public class TxFactoryContext extends CompositeResource {
