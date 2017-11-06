@@ -123,16 +123,19 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
         if (var.hasProperty(RelationshipProperty.class)) return null;
 
         Var varName = var.var().asUserDefined();
-        VarPatternAdmin typeVar = this.type();
-        Var typeVariable = typeVar.var().asUserDefined();
-        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+        VarPatternAdmin typePattern = this.type();
+
+        //TODO do not force user definedness
+        Var typeVariable = typePattern.var();
+
+        IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
 
         //isa part
         VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
         return new IsaAtom(isaVar, typeVariable, predicate, parent);
     }
 
-    // TODO: These are overriden so we ignore `directType`, which ideally shouldn't be necessary
+    // TODO: These are overridden so we ignore `directType`, which ideally shouldn't be necessary
     @Override
     public boolean equals(Object o) {
         if (o == this) {

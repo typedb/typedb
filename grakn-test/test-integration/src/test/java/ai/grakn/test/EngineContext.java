@@ -141,9 +141,9 @@ public class EngineContext extends ExternalResource {
             server = startEngine(config);
         } catch (Exception e) {
             try {
-                mockRedis.server().stop();
-            } catch (Exception e2) {
-                // This may fail if redis failed to start
+                if(mockRedis != null) mockRedis.server().stop();
+            } catch (Throwable t) {
+                // Ignored: this may fail if redis failed to start
             }
             throw e;
         }

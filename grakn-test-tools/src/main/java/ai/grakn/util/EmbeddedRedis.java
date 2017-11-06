@@ -46,7 +46,7 @@ public class EmbeddedRedis {
                         LOG.warn("Redis still running, stopping it on shutdown hook");
                         redisServer.stop();
                     }
-                }));
+                }, "shutdown-redis"));
     }
 
     /**

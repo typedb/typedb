@@ -1,20 +1,15 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.GraknTestSetup;
-import com.codahale.metrics.MetricRegistry;
-import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.concurrent.ExecutorService;
 
 /**
  * <p>
@@ -100,23 +95,4 @@ public class EngineTestHelper extends GraknCreator {
             server = null;
         }
     }
-
-    public static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config) {
-        return EngineTestHelper.cleanGraknEngineServer(config,redisWrapper(config));
-    }
-
-    public static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config, RedisWrapper redisWrapper) {
-        Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
-        LockProvider lockProvider = lockProvider(jedisPool);
-        EngineGraknTxFactory factory = engineGraknTxFactory(config, lockProvider);
-        MetricRegistry metricRegistry = metricRegistry();
-        EngineID engineID = engineId();
-        GraknEngineStatus graknEngineStatus = graknEngineStatus();
-        ExecutorService executorService = executorService();
-        PostProcessor postProcessor = postProcessor(metricRegistry, config, factory, jedisPool, lockProvider);
-        TaskManager taskManager = taskManager(config, factory, jedisPool, engineID, metricRegistry, postProcessor);
-        HttpHandler httpHandler = new HttpHandler(config, sparkService(), factory, metricRegistry, graknEngineStatus, taskManager, executorService, postProcessor);
-        return new GraknEngineServer(config, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, executorService, httpHandler, engineID);
-    }
-
 }
