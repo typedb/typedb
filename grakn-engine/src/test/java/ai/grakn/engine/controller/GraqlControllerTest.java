@@ -71,7 +71,8 @@ public class GraqlControllerTest {
                 .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, sampleKB.tx().getKeyspace().getValue()));
     }
 
-    private static SampleKBContext sampleKB = MovieKB.context();
+    @ClassRule
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {

@@ -61,6 +61,7 @@ public class AttributeTypeControllerTest {
     private static GraknTx mockTx;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
+    @ClassRule
     public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule

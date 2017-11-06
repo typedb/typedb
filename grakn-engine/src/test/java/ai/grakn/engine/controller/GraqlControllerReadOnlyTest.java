@@ -90,7 +90,8 @@ public class GraqlControllerReadOnlyTest {
 
     private static final JsonMapper jsonMapper = new JsonMapper();
 
-    private static SampleKBContext sampleKB = MovieKB.context();
+    @ClassRule
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {

@@ -58,7 +58,8 @@ public class GraqlControllerDeleteTest {
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
-    private static SampleKBContext sampleKB = MovieKB.context();
+    @ClassRule
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {

@@ -56,8 +56,8 @@ public class DashboardControllerTest {
                 .get(REST.WebPath.Dashboard.EXPLORE + id);
     }
 
-
-    private static final SampleKBContext genealogyKB = GenealogyKB.context();
+    @ClassRule
+    public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
