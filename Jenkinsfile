@@ -13,10 +13,10 @@ class Constants {
 
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([
-    pipelineTriggers([
-      issueCommentTrigger('.*!rtg.*')
-    ]),
-    buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+        pipelineTriggers([
+                issueCommentTrigger('.*!rtg.*')
+        ]),
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
 ])
 
 def slackGithub(String message, String color = null) {
@@ -65,7 +65,7 @@ def withGrakn(String workspace, Closure closure) {
             }
             closure()
         } catch (error) {
-            slackGithub "Periodic Build Failed", "danger"
+            slackGithub "Build Failure", "danger"
             throw error
         } finally { // Tears down test environment
             timeout(5) {
@@ -96,28 +96,35 @@ def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
 
-//Run all tests
-node {
-    String workspace = pwd()
-    checkout scm
+// This is a map of jobs to perform in parallel, name -> job closure
+jobs = [
+        tests: {
+            //Run all tests
+            node {
+                String workspace = pwd()
+                checkout scm
 
-    slackGithub "Janus tests started"
+                slackGithub "Janus tests started"
 
-    timeout(120) {
-	stage('Run Janus test profile') {
-	    try {
-		sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
-	    } finally {
-		junit "**/TEST*.xml"
-	    }
-	}
-    }
+                timeout(120) {
+                    stage('Run Janus test profile') {
+                        try {
+                            sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
+                        } finally {
+                            junit "**/TEST*.xml"
+                        }
+                    }
+                }
 
-    slackGithub "Janus tests success", "good"
-}
+                slackGithub "Janus tests success", "good"
+            }
+        }
+];
 
 //Only run validation master/stable
 if (env.BRANCH_NAME in ['master', 'stable']) {
+
+    // Build grakn so it can be used by benchmarks and integration tests
     node {
         slackGithub "Build started"
 
@@ -136,23 +143,20 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
         }
     }
 
-    // This is a map of jobs to perform in parallel, name -> job closure
-    jobs = [
-        benchmarks: {
-            node {
-                String workspace = pwd()
-                checkout scm
-                unstash 'dist'
+    jobs[benchmarks] = {
+        node {
+            String workspace = pwd()
+            checkout scm
+            unstash 'dist'
 
-                timeout(60) {
-                    stage('Run the benchmarks') {
-                        sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                        archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-                    }
+            timeout(60) {
+                stage('Run the benchmarks') {
+                    sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
             }
         }
-    ];
+    }
 
     for (String moduleName : integrationTests) {
         // Add each integration test as a parallel job
@@ -166,25 +170,27 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
             }
         }
     }
+}
 
-    // Execute all jobs in parallel
-    parallel(jobs);
+// Execute all jobs in parallel
+parallel(jobs);
 
+// only deploy long-running instance on stable branch if all tests pass
+if (env.BRANCH_NAME == 'stable') {
     node {
-        // only deploy long-running instance on stable branch if all tests pass
-        if (env.BRANCH_NAME == 'stable') {
-            checkout scm
-            unstash 'dist'
+        checkout scm
+        unstash 'dist'
 
-            stage('Deploy Grakn') {
-                sshagent(credentials: ['jenkins-aws-ssh']) {
-                    sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
-                    sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
-                    ssh "'bash -s' < scripts/start-long-running-instance.sh"
-                }
+        stage('Deploy Grakn') {
+            sshagent(credentials: ['jenkins-aws-ssh']) {
+                sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                ssh "'bash -s' < scripts/start-long-running-instance.sh"
             }
         }
-
-        slackGithub "Periodic Build Success", "good"
     }
+}
+
+if (env.BRANCH_NAME in ['master', 'stable']) {
+    slackGithub "Build Success", "good"
 }
