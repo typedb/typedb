@@ -626,15 +626,59 @@ cli_case_grakn_server_stop() {
   case $1 in
     grakn)
       grakn_stop_process
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Unable to stop Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
+        exit 1
+      fi
     ;;
     queue)
       queue_stop_process
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Unable to stop Queue. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
+        exit 1
+      fi
     ;;
     storage)
       storage_stop_process
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Unable to stop Storage. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
+        exit 1
+      fi
     ;;
     *)
       cli_case_grakn_server_stop_all
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Unable to stop Storage. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
+        exit 1
+      fi
     ;;
   esac
 }
