@@ -21,7 +21,7 @@ package ai.grakn.test.property.kb;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
+import ai.grakn.generator.concept.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromTxGenerator.FromTx;
 import ai.grakn.generator.GraknTxs;
 import com.pholser.junit.quickcheck.Property;

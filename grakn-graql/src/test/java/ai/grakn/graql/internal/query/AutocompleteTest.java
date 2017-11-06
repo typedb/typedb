@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.graql.Autocomplete;
-import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.graql.SampleKBContext;
+import ai.grakn.graql.kb.sample.MovieKB;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;

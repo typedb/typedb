@@ -75,6 +75,15 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Test Specific Dependency -->
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graql</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
         <!--Migrations-->
         <dependency>
             <groupId>ai.grakn</groupId>

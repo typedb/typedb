@@ -38,9 +38,10 @@
 
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-test-tools</artifactId>
+            <artifactId>grakn-kb</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+            <type>test-jar</type>
         </dependency>
 
         <!-- Janus DB -->

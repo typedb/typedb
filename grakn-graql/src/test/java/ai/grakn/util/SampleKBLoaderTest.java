@@ -21,7 +21,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.GraknTxTinker;
-import ai.grakn.test.GraknTestSetup;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -18,19 +18,19 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.engine.EngineContext;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;

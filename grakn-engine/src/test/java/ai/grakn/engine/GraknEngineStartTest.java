@@ -21,8 +21,7 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.Keyspace;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
@@ -99,6 +98,6 @@ public class GraknEngineStartTest {
         GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
         graknEngineConfig.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         graknEngineConfig.setConfigProperty(GraknConfigKey.REDIS_HOST, ImmutableList.of(new SimpleURI("localhost", REDIS_PORT).toString()));
-        return EngineTestHelper.cleanGraknEngineServer(graknEngineConfig);
+        return GraknTestEngineSetup.cleanGraknEngineServer(graknEngineConfig);
     }
 }

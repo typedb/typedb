@@ -27,7 +27,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.test.kbs.GenealogyKB;
+import ai.grakn.graql.kb.sample.GenealogyKB;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;

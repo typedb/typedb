@@ -21,18 +21,19 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.SampleKBContext;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.kbs.SNBKB;
-import java.util.List;
-import java.util.stream.Collectors;
+import ai.grakn.graql.kb.sample.SNBKB;
+import ai.grakn.util.GraknTestSetup;
 import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;

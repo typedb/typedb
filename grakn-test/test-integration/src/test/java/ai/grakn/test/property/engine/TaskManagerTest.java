@@ -18,6 +18,7 @@
 
 package ai.grakn.test.property.engine;
 
+import ai.grakn.engine.EngineContext;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -28,7 +29,6 @@ import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskManagers;
 import ai.grakn.generator.TaskStates;
-import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;

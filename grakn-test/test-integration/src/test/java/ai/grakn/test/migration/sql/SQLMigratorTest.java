@@ -19,15 +19,15 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
+import ai.grakn.engine.EngineContext;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.sql.SQLMigrator;
-import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
 import ai.grakn.util.SampleKBLoader;
 import org.jooq.exception.DataAccessException;

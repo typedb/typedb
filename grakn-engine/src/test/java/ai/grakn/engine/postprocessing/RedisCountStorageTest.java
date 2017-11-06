@@ -20,7 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.engine.MockRedisRule;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.BeforeClass;

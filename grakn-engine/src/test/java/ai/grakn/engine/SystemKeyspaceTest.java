@@ -19,17 +19,12 @@
 package ai.grakn.engine;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.util.MockRedisRule;
-import ai.grakn.util.SimpleURI;
-import com.google.common.collect.Iterables;
 import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,25 +41,21 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
-    private final Function<String, GraknTx> engineFactoryGraphProvider = (k) -> EngineTestHelper.factory().tx(k, GraknTxType.WRITE);
-    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(EngineTestHelper.uri(), k).open(GraknTxType.WRITE);
+    private final Function<String, GraknTx> engineFactoryGraphProvider = (k) -> engine.server().factory().tx(k, GraknTxType.WRITE);
+    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(engine.uri(), k).open(GraknTxType.WRITE);
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST))).getPort());
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     private final Set<GraknTx> transactions = new HashSet<>();
 
-    @BeforeClass
-    public static void beforeClass() {
-        EngineTestHelper.engineWithKBs();
-    }
 
     @After
     public void cleanSystemKeySpaceGraph(){
-        try (GraknTx tx = EngineTestHelper.factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
+        try (GraknTx tx = engine.server().factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
             tx.getEntityType("keyspace").instances().forEach(Concept::delete);
             tx.getAttributeType("keyspace-name").instances().forEach(Concept::delete);
             tx.commit();
@@ -82,7 +73,7 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
-            assertTrue(EngineTestHelper.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
+            assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
         }
     }
 
@@ -95,7 +86,7 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
-            assertTrue(EngineTestHelper.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
+            assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
         }
     }
 
@@ -119,7 +110,7 @@ public class SystemKeyspaceTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
         }
-        assertFalse(EngineTestHelper.factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(engine.server().factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
     }
 
     @Test
@@ -142,7 +133,7 @@ public class SystemKeyspaceTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
         }
-        assertFalse(EngineTestHelper.factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(engine.server().factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
     }
     private Set<GraknTx> buildTxs(Function<String, GraknTx> txProvider, String ... keyspaces){
         Set<GraknTx> newTransactions = Arrays.stream(keyspaces)
@@ -153,7 +144,7 @@ public class SystemKeyspaceTest {
     }
 
     private Set<String> getSystemKeyspaces(){
-        try(GraknTx tx = EngineTestHelper.factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)){
+        try(GraknTx tx = engine.server().factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)){
             AttributeType<String> keyspaceName = tx.getAttributeType("keyspace-name");
             return tx.getEntityType("keyspace").instances().
                     map(e -> e.attributes(keyspaceName).iterator().next().getValue().toString()).

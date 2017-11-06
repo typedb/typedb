@@ -1,6 +1,6 @@
 package ai.grakn.engine.lock;
 
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.engine.MockRedisRule;
 import com.google.common.base.Stopwatch;
 import org.junit.AfterClass;
 import org.junit.Assert;

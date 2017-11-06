@@ -19,8 +19,8 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
@@ -28,10 +28,10 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
+import ai.grakn.engine.EngineContext;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.json.JsonMigrator;
-import ai.grakn.test.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.Sets;
 import org.junit.Before;

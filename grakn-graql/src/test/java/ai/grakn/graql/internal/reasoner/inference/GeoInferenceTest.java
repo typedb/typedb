@@ -21,26 +21,27 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
-import java.util.List;
+import ai.grakn.graql.SampleKBContext;
+import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.kb.sample.GeoKB;
+import ai.grakn.util.GraknTestSetup;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
-import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.hamcrest.Matchers.empty;
 
 public class GeoInferenceTest {
 

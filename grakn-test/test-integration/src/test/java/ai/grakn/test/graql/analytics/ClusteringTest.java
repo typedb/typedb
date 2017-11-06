@@ -30,10 +30,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.engine.EngineContext;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
-import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -48,7 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestSetup.usingTinker;
+import static ai.grakn.util.GraknTestSetup.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -202,7 +201,7 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentConcurrency() throws Exception {
-        assumeFalse(GraknTestSetup.usingTinker());
+        assumeFalse(usingTinker());
 
         addSchemaAndEntities();
         addResourceRelations();

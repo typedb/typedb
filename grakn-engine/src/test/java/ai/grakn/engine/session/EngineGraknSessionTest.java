@@ -5,17 +5,13 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.engine.EngineContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.GraknTestSetup;
 import ai.grakn.util.SampleKBLoader;
-import ai.grakn.util.SimpleURI;
-import com.google.common.collect.Iterables;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -30,25 +26,19 @@ import static org.junit.Assume.assumeFalse;
 public class EngineGraknSessionTest {
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST))).getPort());
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     private static EngineGraknTxFactory graknFactory;
     
-    private String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknConfigKey.SERVER_PORT);
+    private String factoryUri = "localhost:" + engine.config().getProperty(GraknConfigKey.SERVER_PORT);
 
     @BeforeClass
     public static void beforeClass() {
-        EngineTestHelper.engineWithKBs();
-        JedisLockProvider lockProvider = new JedisLockProvider(mockRedisRule.jedisPool());
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, EngineTestHelper.config().getProperties());
-    }
-
-    @AfterClass
-    public static void afterClass() {
-        EngineTestHelper.noEngine();
+        JedisLockProvider lockProvider = new JedisLockProvider(engine.getJedisPool());
+        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, engine.config().getProperties());
     }
 
     @Test

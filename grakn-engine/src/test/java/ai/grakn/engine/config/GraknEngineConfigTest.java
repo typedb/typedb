@@ -19,13 +19,8 @@
 package ai.grakn.engine.config;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.util.SimpleURI;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.MockRedisRule;
-import com.google.common.collect.Iterables;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,10 +34,7 @@ import static junit.framework.TestCase.assertNotNull;
  */
 public class GraknEngineConfigTest {
 
-    private GraknEngineConfig configuration = GraknEngineConfig.create();
-
-    @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST))).getPort());
+    private static GraknEngineConfig configuration = GraknEngineConfig.create();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

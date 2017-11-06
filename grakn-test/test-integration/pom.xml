@@ -18,6 +18,13 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-kb</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
+        <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
             <version>${metrics.version}</version>
@@ -26,6 +33,28 @@
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graql</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
+        <!-- used for writing quickcheck property tests-->
+        <dependency>
+            <groupId>com.pholser</groupId>
+            <artifactId>junit-quickcheck-generators</artifactId>
+            <version>${quickcheck.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Used for creating a in memory mock Redis for testing -->
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>redis-mock</artifactId>
+            <version>${redis-mock.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
