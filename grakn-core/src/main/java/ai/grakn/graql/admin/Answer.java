@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
 
+import com.google.common.collect.ImmutableMap;
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
@@ -71,16 +72,8 @@ public interface Answer {
     @CheckReturnValue
     Concept get(Var var);
 
-    Concept put(Var var, Concept con);
-
-    Concept remove(Var var);
-
     @CheckReturnValue
-    Map<Var, Concept> map();
-
-    void putAll(Answer a);
-
-    void putAll(Map<Var, Concept> m2);
+    ImmutableMap<Var, Concept> map();
 
     @CheckReturnValue
     boolean containsKey(Var var);
@@ -158,12 +151,6 @@ public interface Answer {
      */
     @CheckReturnValue
     AnswerExplanation getExplanation();
-
-    /**
-     * @param e explanation to be set for this answer
-     * @return answer with provided explanation
-     */
-    Answer setExplanation(AnswerExplanation e);
 
     /**
      * @return set of answers corresponding to the explicit path
