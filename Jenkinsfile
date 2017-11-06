@@ -152,7 +152,7 @@ if (shouldRunAllTests()) {
         }
     }
 
-    jobs[benchmarks] = {
+    jobs['benchmarks'] = {
         node {
             String workspace = pwd()
             checkout scm
