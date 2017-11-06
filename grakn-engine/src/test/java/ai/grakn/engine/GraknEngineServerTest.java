@@ -23,7 +23,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.redismock.RedisServer;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.TxFactoryContext;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
@@ -69,9 +69,11 @@ public class GraknEngineServerTest {
     private final RedisWrapper redisWrapper = mock(RedisWrapper.class);
     private final Jedis jedis = mock(Jedis.class);
 
+    @Rule
+    public final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+
     @Before
     public void setUp() {
-        GraknTestSetup.startCassandraIfNeeded();
         Pool<Jedis> jedisPool = mock(JedisPool.class);
         when(redisWrapper.getJedisPool()).thenReturn(jedisPool);
         when(jedisPool.getResource()).thenReturn(jedis);
@@ -93,7 +95,6 @@ public class GraknEngineServerTest {
 
     @Test
     public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
-        GraknTestSetup.startCassandraIfNeeded();
         RedisServer redisServer = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(conf.getProperty(GraknConfigKey.REDIS_HOST))).getPort()).server();
         redisServer.start();
 

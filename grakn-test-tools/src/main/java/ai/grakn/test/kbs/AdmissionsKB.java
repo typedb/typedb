@@ -23,6 +23,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 
 /**
  *
@@ -139,6 +140,6 @@ public class AdmissionsKB extends TestKB {
 
     @Override
     protected void buildRules(GraknTx tx) {
-        SampleKBContext.loadFromFile(tx, "admission-rules.gql");
+        SampleKBLoader.loadFromFile(tx, "admission-rules.gql");
     }
 }

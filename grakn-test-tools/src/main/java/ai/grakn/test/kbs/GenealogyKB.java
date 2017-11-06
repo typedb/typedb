@@ -20,6 +20,7 @@ package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 
 import java.util.function.Consumer;
 
@@ -45,9 +46,9 @@ public class GenealogyKB extends TestKB {
     @Override
     public Consumer<GraknTx> build(){
         return (GraknTx graph) -> {
-            SampleKBContext.loadFromFile(graph, schemaFile);
-            SampleKBContext.loadFromFile(graph, dataFile);
-            SampleKBContext.loadFromFile(graph, rulesFile);
+            SampleKBLoader.loadFromFile(graph, schemaFile);
+            SampleKBLoader.loadFromFile(graph, dataFile);
+            SampleKBLoader.loadFromFile(graph, rulesFile);
         };
     }
 }

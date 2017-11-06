@@ -20,6 +20,7 @@ package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 
 import java.util.function.Consumer;
 
@@ -41,9 +42,9 @@ public class AcademyKB extends TestKB {
     @Override
     public Consumer<GraknTx> build() {
         return (GraknTx tx) -> {
-            SampleKBContext.loadFromFile(tx, schemaFile);
-            SampleKBContext.loadFromFile(tx, dataFile);
-            SampleKBContext.loadFromFile(tx, rulesFile);
+            SampleKBLoader.loadFromFile(tx, schemaFile);
+            SampleKBLoader.loadFromFile(tx, dataFile);
+            SampleKBLoader.loadFromFile(tx, rulesFile);
         };
     }
 }

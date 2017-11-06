@@ -25,7 +25,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.TxFactory;
 import ai.grakn.graql.Query;
@@ -39,6 +38,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -166,13 +166,15 @@ public class SampleKBLoader {
     }
 
     public static void loadFromFile(GraknTx graph, String file) {
-        try {
-            File graql = new File(file);
+        File graql = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + file);
 
-            graph.graql().parser().parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(Collectors.joining("\n")))
-                    .forEach(Query::execute);
-        } catch (IOException |InvalidKBException e){
+        List<String> queries;
+        try {
+            queries = Files.readLines(graql, StandardCharsets.UTF_8);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        graph.graql().parser().parseList(queries.stream().collect(Collectors.joining("\n"))).forEach(Query::execute);
     }
 }

@@ -166,6 +166,9 @@ public class MatchTest {
     @ClassRule
     public static final SampleKBContext movieKB = MovieKB.context();
 
+    @ClassRule
+    public static final SampleKBContext emptyKB = SampleKBContext.empty();
+
     // This is a graph to contain unusual edge cases
     @ClassRule
     public static final SampleKBContext weirdKB = SampleKBContext.load(graph -> {
@@ -616,8 +619,8 @@ public class MatchTest {
 
     @Test
     public void testGraqlPlaysSemanticsMatchGraphAPI() {
-        GraknTx graph = SampleKBContext.empty().tx(); // TODO: Try and remove this call if possible
-        QueryBuilder qb = graph.graql();
+        GraknTx tx = emptyKB.tx();
+        QueryBuilder qb = tx.graql();
 
         Label a = Label.of("a");
         Label b = Label.of("b");
@@ -636,7 +639,7 @@ public class MatchTest {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get(x).collect(Collectors.toSet());
             Collection<Role> graphAPIPlays;
 
-            SchemaConcept schemaConcept = graph.getSchemaConcept(type);
+            SchemaConcept schemaConcept = tx.getSchemaConcept(type);
             if (schemaConcept.isType()) {
                 graphAPIPlays = schemaConcept.asType().plays().collect(toSet());
             } else {
@@ -648,7 +651,7 @@ public class MatchTest {
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get(x).collect(toSet());
-            Collection<Type> graphAPIPlayedBy = graph.<Role>getSchemaConcept(type).playedByTypes().collect(toSet());
+            Collection<Type> graphAPIPlayedBy = tx.<Role>getSchemaConcept(type).playedByTypes().collect(toSet());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });

@@ -18,23 +18,11 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.engine.GraknCreator;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.SystemKeyspace;
 import com.jayway.restassured.RestAssured;
-import org.slf4j.LoggerFactory;
-import spark.Service;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.HashSet;
-import java.util.Set;
-
-import static ai.grakn.engine.HttpHandler.configureSpark;
-import static ai.grakn.graql.Graql.var;
 
 /**
  * <p>
@@ -50,8 +38,6 @@ import static ai.grakn.graql.Graql.var;
  */
 public abstract class GraknTestEngineSetup {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEngineSetup.class);
-
     /**
      * Create a configuration for use in tests, using random ports.
      */
@@ -63,71 +49,6 @@ public abstract class GraknTestEngineSetup {
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, serverPort);
 
         return config;
-    }
-
-    /**
-     * To run engine we must ensure Cassandra and the Grakn HTTP endpoint are running
-     */
-    static GraknEngineServer startEngine(GraknEngineConfig config) throws Exception {
-        // To ensure consistency b/w test profiles and configuration files, when not using Janus
-        // for a unit tests in an IDE, add the following option:
-        // -Dgrakn.conf=../conf/test/tinker/grakn.properties
-        //
-        // When using janus, add -Dgrakn.test-profile=janus
-        //
-        // The reason is that the default configuration of Grakn uses the Janus factory while the default
-        // test profile is tinker: so when running a unit test within an IDE without any extra parameters,
-        // we end up wanting to use the JanusFactory but without starting Cassandra first.
-        LOG.info("starting engine...");
-
-        GraknTestSetup.startCassandraIfNeeded();
-
-        // start engine
-        setRestAssuredUri(config);
-        GraknEngineServer server = GraknCreator.cleanGraknEngineServer(config);
-        server.start();
-
-        LOG.info("engine started.");
-
-        return server;
-    }
-
-    static void stopEngine(GraknEngineServer server) throws Exception {
-        LOG.info("stopping engine...");
-
-        // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
-        clearGraphs(server);
-        server.close();
-
-        LOG.info("engine stopped.");
-
-        // There is no way to stop the embedded Casssandra, no such API offered.
-    }
-
-    static Service startSpark(GraknEngineConfig config) {
-        LOG.info("starting spark on port " + config.uri());
-
-        Service spark = Service.ignite();
-        configureSpark(spark, config);
-        setRestAssuredUri(config);
-        return spark;
-    }
-
-    private static void clearGraphs(GraknEngineServer server) {
-        // Drop all keyspaces
-        final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
-            systemGraph.graql().match(var("x").isa("keyspace-name"))
-                    .forEach(x -> x.values().forEach(y -> {
-                        keyspaceNames.add(y.asAttribute().getValue().toString());
-                    }));
-        }
-
-        keyspaceNames.forEach(name -> {
-            GraknTx graph = server.factory().tx(name, GraknTxType.WRITE);
-            graph.admin().delete();
-        });
-        server.factory().refreshConnections();
     }
 
     static void setRestAssuredUri(GraknEngineConfig config) {

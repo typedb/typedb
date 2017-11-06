@@ -23,7 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Label;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 import com.google.common.math.IntMath;
 
 import java.util.function.Consumer;
@@ -95,7 +95,7 @@ public abstract class AbstractPathKB extends TestKB {
     @Override
     public Consumer<GraknTx> build(){
         return (GraknTx tx) -> {
-            SampleKBContext.loadFromFile(tx, gqlFile);
+            SampleKBLoader.loadFromFile(tx, gqlFile);
             buildExtensionalDB(tx, n, m);
         };
     }

@@ -14,38 +14,39 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.test.kbs;
+package ai.grakn.test;
 
-import ai.grakn.GraknTx;
-import ai.grakn.test.SampleKBContext;
-import ai.grakn.util.SampleKBLoader;
+import ai.grakn.util.EmbeddedCassandra;
+import com.google.common.collect.ImmutableList;
+import org.junit.rules.TestRule;
+
+import java.util.List;
 
 /**
- *
- * @author Sheldon
- *
+ * @author Felix Chapman
  */
-public class SNBKB extends TestKB {
+public class TxFactoryContext extends CompositeResource {
 
-    public static SampleKBContext context() {
-        return new SNBKB().makeContext();
+    private TxFactoryContext() {
+    }
+
+    public static TxFactoryContext create() {
+        return new TxFactoryContext();
     }
 
     @Override
-    protected void buildSchema(GraknTx tx) {
-        SampleKBLoader.loadFromFile(tx, "ldbc-snb-schema.gql");
-        SampleKBLoader.loadFromFile(tx, "ldbc-snb-product-schema.gql");
+    protected List<TestRule> testRules() {
+        if (GraknTestSetup.usingJanus()) {
+            return ImmutableList.of(EmbeddedCassandra.create());
+        } else {
+            return ImmutableList.of();
+        }
     }
 
-    @Override
-    protected void buildRules(GraknTx tx) {
-        SampleKBLoader.loadFromFile(tx, "ldbc-snb-rules.gql");
-    }
-
-    @Override
-    protected void buildInstances(GraknTx tx) {
-        SampleKBLoader.loadFromFile(tx, "ldbc-snb-data.gql");
+    public static boolean canUseTx() {
+        return !GraknTestSetup.usingJanus() || EmbeddedCassandra.inCassandraContext();
     }
 }

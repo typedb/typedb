@@ -37,6 +37,7 @@ import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.SNBKB;
 import ai.grakn.util.Schema;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -59,19 +60,26 @@ import static org.junit.Assume.assumeTrue;
  */
 public class ReasonerTest {
 
-    private static final SampleKBContext snbKB = SNBKB.context();
+    @ClassRule
+    public static final SampleKBContext snbKB = SNBKB.context();
 
-    private static final SampleKBContext testGeoKB = GeoKB.context();
+    @ClassRule
+    public static final SampleKBContext testGeoKB = GeoKB.context();
 
-    private static final SampleKBContext nonMaterialisedGeoKB = GeoKB.context();
+    @ClassRule
+    public static final SampleKBContext nonMaterialisedGeoKB = GeoKB.context();
 
-    private static final SampleKBContext nonMaterialisedSnbKB = SNBKB.context();
+    @ClassRule
+    public static final SampleKBContext nonMaterialisedSnbKB = SNBKB.context();
 
-    private static final SampleKBContext geoKB = GeoKB.context();
+    @ClassRule
+    public static final SampleKBContext geoKB = GeoKB.context();
 
-    private static final SampleKBContext geoKB2 = GeoKB.context();
+    @ClassRule
+    public static final SampleKBContext geoKB2 = GeoKB.context();
 
-    private static final SampleKBContext geoKB3 = GeoKB.context();
+    @ClassRule
+    public static final SampleKBContext geoKB3 = GeoKB.context();
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();

@@ -22,16 +22,21 @@ package ai.grakn.test;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import org.junit.rules.ExternalResource;
+import org.slf4j.LoggerFactory;
 import spark.Service;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import static ai.grakn.engine.HttpHandler.configureSpark;
 
 /**
  * Context that starts spark
  * @author Felix Chapman
  */
 public class SparkContext extends ExternalResource {
+
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SparkContext.class);
 
     private final BiConsumer<Service, GraknEngineConfig> createControllers;
     private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
@@ -68,7 +73,7 @@ public class SparkContext extends ExternalResource {
     }
 
     public void start() {
-        spark = GraknTestEngineSetup.startSpark(config);
+        spark = startSpark(config);
 
         createControllers.accept(spark, config);
 
@@ -98,6 +103,15 @@ public class SparkContext extends ExternalResource {
     @Override
     protected void after() {
         stop();
+    }
+
+    static Service startSpark(GraknEngineConfig config) {
+        LOG.info("starting spark on port " + config.uri());
+
+        Service spark = Service.ignite();
+        configureSpark(spark, config);
+        GraknTestEngineSetup.setRestAssuredUri(config);
+        return spark;
     }
 
 }

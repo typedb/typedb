@@ -22,7 +22,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.test.GraknTestSetup;
-import org.junit.Before;
+import ai.grakn.test.TxFactoryContext;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -40,11 +41,8 @@ import static org.junit.Assert.assertTrue;
 
 public class SampleKBLoaderTest {
 
-    //TODO: Put this somewhere common
-    @Before
-    public void setup(){
-        GraknTestSetup.startCassandraIfNeeded();
-    }
+    @Rule
+    public static TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
     @Test
     public void whenCreatingEmptyGraph_EnsureGraphIsEmpty(){

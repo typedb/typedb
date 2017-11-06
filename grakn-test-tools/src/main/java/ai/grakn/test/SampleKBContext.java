@@ -19,11 +19,13 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknTx;
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.SampleKBLoader;
-import org.junit.rules.ExternalResource;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import org.junit.rules.TestRule;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -42,11 +44,11 @@ import java.util.function.Consumer;
  * @author borislav, fppt
  *
  */
-public class SampleKBContext extends ExternalResource {
+public class SampleKBContext extends CompositeResource {
     private final SampleKBLoader loader;
 
-    private SampleKBContext(@Nullable Consumer<GraknTx> preLoad){
-        loader = SampleKBLoader.preLoad(preLoad);
+    private SampleKBContext(SampleKBLoader loader){
+        this.loader = loader;
     }
 
     public static SampleKBContext empty(){
@@ -60,25 +62,31 @@ public class SampleKBContext extends ExternalResource {
     public static SampleKBContext load(String ... files){
         return getContext((graknGraph) -> {
             for (String file : files) {
-                loadFromFile(graknGraph, file);
+                SampleKBLoader.loadFromFile(graknGraph, file);
             }
         });
     }
 
     private static SampleKBContext getContext(@Nullable Consumer<GraknTx> preLoad){
-        GraknTestSetup.startCassandraIfNeeded();
-        return new SampleKBContext(preLoad);
+        return new SampleKBContext(SampleKBLoader.preLoad(preLoad));
     }
 
-    public static void loadFromFile(GraknTx graph, String file) {
-        SampleKBLoader.loadFromFile(graph, GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + file);
+    @Override
+    protected List<TestRule> testRules() {
+        return ImmutableList.of(TxFactoryContext.create());
     }
 
     public GraknTx tx() {
+        checkInContext();
         return loader.tx();
     }
 
     public void rollback() {
+        checkInContext();
         loader.rollback();
+    }
+
+    private void checkInContext() {
+        Preconditions.checkState(TxFactoryContext.canUseTx(), "EmbeddedCassandra may not have started");
     }
 }

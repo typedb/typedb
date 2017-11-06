@@ -21,26 +21,34 @@ package ai.grakn.test;
 import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknCreator;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
+import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 
 
@@ -51,7 +59,9 @@ import static ai.grakn.util.SampleKBLoader.randomKeyspace;
  *
  * @author alexandraorth
  */
-public class EngineContext implements TestRule {
+public class EngineContext extends CompositeResource {
+
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EngineContext.class);
 
     private GraknEngineServer server;
 
@@ -133,23 +143,14 @@ public class EngineContext implements TestRule {
     }
 
     @Override
-    public Statement apply(Statement base, Description description) {
-        Statement statement = new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                before();
-                try {
-                    base.evaluate();
-                } finally {
-                    after();
-                }
-            }
-        };
-
-        // Start redis
-        return redis.apply(statement, description);
+    protected List<TestRule> testRules() {
+        return ImmutableList.of(
+                EmbeddedCassandra.create(),
+                redis
+        );
     }
 
+    @Override
     public void before() throws Throwable {
         RestAssured.baseURI = "http://" + config.uri();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
@@ -160,9 +161,26 @@ public class EngineContext implements TestRule {
 
         jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
-        server = startEngine(config);
+        // To ensure consistency b/w test profiles and configuration files, when not using Janus
+        // for a unit tests in an IDE, add the following option:
+        // -Dgrakn.conf=../conf/test/tinker/grakn.properties
+        //
+        // When using janus, add -Dgrakn.test-profile=janus
+        //
+        // The reason is that the default configuration of Grakn uses the Janus factory while the default
+        // test profile is tinker: so when running a unit test within an IDE without any extra parameters,
+        // we end up wanting to use the JanusFactory but without starting Cassandra first.
+        LOG.info("starting engine...");
+
+        // start engine
+        GraknTestEngineSetup.setRestAssuredUri(config);
+        server = GraknCreator.cleanGraknEngineServer(config);
+        server.start();
+
+        LOG.info("engine started.");
     }
 
+    @Override
     public void after() {
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
@@ -170,7 +188,17 @@ public class EngineContext implements TestRule {
         noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
-            noThrow(() -> stopEngine(server), "Error closing engine");
+            noThrow(() -> {
+                LOG.info("stopping engine...");
+
+                // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
+                clearGraphs(server);
+                server.close();
+
+                LOG.info("engine stopped.");
+
+                // There is no way to stop the embedded Casssandra, no such API offered.
+            }, "Error closing engine");
             getJedisPool().close();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
@@ -183,5 +211,22 @@ public class EngineContext implements TestRule {
 
     public MetricRegistry getMetricRegistry() {
         return metricRegistry;
+    }
+
+    static void clearGraphs(GraknEngineServer server) {
+        // Drop all keyspaces
+        final Set<String> keyspaceNames = new HashSet<String>();
+        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+            systemGraph.graql().match(var("x").isa("keyspace-name"))
+                    .forEach(x -> x.values().forEach(y -> {
+                        keyspaceNames.add(y.asAttribute().getValue().toString());
+                    }));
+        }
+
+        keyspaceNames.forEach(name -> {
+            GraknTx graph = server.factory().tx(name, GraknTxType.WRITE);
+            graph.admin().delete();
+        });
+        server.factory().refreshConnections();
     }
 }

@@ -43,6 +43,7 @@ public class HALBuilderTest {
     @ClassRule
     public static final SampleKBContext academyKB = AcademyKB.context();
 
+    @ClassRule
     public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
 
