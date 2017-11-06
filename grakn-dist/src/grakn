@@ -183,9 +183,13 @@ queue_start_process() {
   return $status
 }
 
-queue_check_if_running() {
+queue_get_pid_by_ps_ef() {
+  echo -n `ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}'`
+}
+
+queue_check_if_running_by_ps_ef() {
   local status=
-  local count_running_queue_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
+  local count_running_queue_process=`queue_get_pid_by_ps_ef | wc -l`
   if [ $count_running_queue_process -gt 0 ] ; then
     status=0 # queue running
   else
@@ -200,7 +204,7 @@ queue_wait_until_ready() {
 
   while [ $now_s -le $stop_s ]; do
       echo -n "." # output some sort of "progress bar"
-      queue_check_if_running
+      queue_check_if_running_by_ps_ef
       local is_queue_running=$?
       if [ $is_queue_running -eq 0 ] ; then
           return 0
@@ -213,7 +217,7 @@ queue_wait_until_ready() {
 }
 
 queue_start_and_wait_until_ready() {
-  queue_check_if_running
+  queue_check_if_running_by_ps_ef
   is_queue_running=$?
 
   if [ $is_queue_running -eq 0 ]; then
@@ -243,7 +247,7 @@ queue_start_and_wait_until_ready() {
 
 queue_stop_process() {
   echo -n "Stopping Queue..."
-  queue_check_if_running
+  queue_check_if_running_by_ps_ef
   local is_queue_running=$?
   if [[ $is_queue_running -eq 0 ]]; then
     local queue_bin=
@@ -478,7 +482,7 @@ cli_case_grakn_server_status() {
     echo "Storage: NOT RUNNING"
   fi
 
-  queue_check_if_running
+  queue_check_if_running_by_ps_ef
   if [ $? -eq 0 ] ; then
     echo "Queue: RUNNING"
   else
@@ -497,7 +501,7 @@ cli_case_grakn_server_clean() {
   storage_check_if_running_by_pidfile
   local is_storage_running=$?
 
-  queue_check_if_running
+  queue_check_if_running_by_ps_ef
   local is_queue_running=$?
 
   grakn_check_if_ready
