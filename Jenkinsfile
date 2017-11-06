@@ -97,6 +97,8 @@ def buildGrakn() {
 }
 
 def shouldRunAllTests() {
+    // TODO bad
+    return true
     return env.BRANCH_NAME in ['master', 'stable']
 }
 
