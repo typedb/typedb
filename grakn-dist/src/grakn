@@ -76,7 +76,7 @@ storage_start_process() {
   return $?
 }
 
-storage_check_if_running() {
+storage_check_if_running_by_pidfile() {
   local status=
   if [ -e $STORAGE_PID ] && ps -p `cat $STORAGE_PID` > /dev/null ; then
     status=0 # storage running
@@ -106,7 +106,7 @@ storage_wait_until_ready() {
 }
 
 storage_start_and_wait_until_ready() {
-  storage_check_if_running
+  storage_check_if_running_by_pidfile
   is_storage_running=$?
 
   if [ $is_storage_running -eq 0 ]; then
@@ -136,7 +136,7 @@ storage_start_and_wait_until_ready() {
 
 storage_stop_process() {
   echo -n "Stopping Storage..."
-  storage_check_if_running
+  storage_check_if_running_by_pidfile
   local is_storage_running=$?
   if [[ $is_storage_running -eq 0 ]]; then
     if [[ -e $STORAGE_PID ]]; then
@@ -281,12 +281,16 @@ grakn_start_process() {
   java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" \
     ai.grakn.engine.Grakn > /dev/null 2>&1 &
   status=$?
-  pid=`ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'`
+  pid=`grakn_get_pid_by_ps_ef`
   echo $pid > "${GRAKN_PID}"
   return $status
 }
 
-grakn_check_if_running() {
+grakn_get_pid_by_ps_ef() {
+  echo -n `ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'`
+}
+
+grakn_check_if_running_by_pidfile() {
   if [ -e "$GRAKN_PID" ] && ps -p `cat $GRAKN_PID` > /dev/null ; then
     return 0
   else
@@ -303,8 +307,8 @@ print_status_message() {
 }
 
 grakn_check_if_ready() {
-  local host=`cat "${GRAKN_HOME}"/conf/grakn.properties| grep server.host | awk -F "=" '{print $2}'`
-  local port=`cat "${GRAKN_HOME}"/conf/grakn.properties| grep server.port | awk -F "=" '{print $2}'`
+  local host=`cat "${GRAKN_HOME}"/conf/grakn.properties | grep server.host | awk -F "=" '{print $2}'`
+  local port=`cat "${GRAKN_HOME}"/conf/grakn.properties | grep server.port | awk -F "=" '{print $2}'`
   curl $host:$port/configuration > /dev/null 2>&1
   return $?
 }
@@ -328,7 +332,7 @@ grakn_wait_until_ready() {
 }
 
 grakn_start_and_wait_until_ready() {
-  grakn_check_if_running
+  grakn_check_if_running_by_pidfile
   is_grakn_running=$?
 
   if [ $is_grakn_running -eq 0 ]; then
@@ -358,7 +362,7 @@ grakn_start_and_wait_until_ready() {
 
 grakn_stop_process() {
   echo -n "Stopping Grakn..."
-  grakn_check_if_running
+  grakn_check_if_running_by_pidfile
   local is_grakn_running=$?
   if [[ $is_grakn_running -eq 0 ]]; then
     if [[ -e "$GRAKN_PID" ]]; then
@@ -467,7 +471,7 @@ Tips:
 "
 }
 cli_case_grakn_server_status() {
-  storage_check_if_running
+  storage_check_if_running_by_pidfile
   if [ $? -eq 0 ] ; then
     echo "Storage: RUNNING"
   else
@@ -490,7 +494,7 @@ cli_case_grakn_server_status() {
 }
 
 cli_case_grakn_server_clean() {
-  storage_check_if_running
+  storage_check_if_running_by_pidfile
   local is_storage_running=$?
 
   queue_check_if_running
