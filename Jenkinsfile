@@ -113,28 +113,29 @@ def shouldDeployLongRunningInstance() {
     return env.BRANCH_NAME == 'stable'
 }
 
-// This is a map of jobs to perform in parallel, name -> job closure
-jobs = [
-        tests: {//Run all tests
-            graknNode {
-                checkout scm
+// This is a map that we fill with jobs to perform in parallel, name -> job closure
+jobs = [:]
 
-                slackGithub "Janus tests started"
+jobs['tests'] = {
+    // Run all tests
+    graknNode {
+        checkout scm
 
-                timeout(120) {
-                    stage('Run Janus test profile') {
-                        try {
-                            sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
-                        } finally {
-                            junit "**/TEST*.xml"
-                        }
-                    }
+        slackGithub "Janus tests started"
+
+        timeout(120) {
+            stage('Run Janus test profile') {
+                try {
+                    sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
+                } finally {
+                    junit "**/TEST*.xml"
                 }
-
-                slackGithub "Janus tests success", "good"
             }
         }
-];
+
+        slackGithub "Janus tests success", "good"
+    }
+}
 
 if (shouldRunAllTests()) {
 
