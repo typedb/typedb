@@ -67,14 +67,8 @@ function flatten<T>(array: T[][]): T[] {
   return array.reduce((x, y) => x.concat(y), []);
 }
 
-<<<<<<< HEAD
-function filterNodesToRender(responseObject: Object | Object[], parsedResponse: Object, showAttributes: boolean) {
-  let dataArray = (Array.isArray(responseObject)) ? responseObject : [responseObject];
-  dataArray = dataArray.flatMap(Object.values);
-=======
 function filterNodesToRender(responseObject: Object | Object[], parsedResponse: Object, showAttributes: boolean, isExplore: boolean) {
   const dataArray = (Array.isArray(responseObject)) ? responseObject : [responseObject];
->>>>>>> 64500feaa3cc6a8dfb1f2be1a7af9caf87d4c778
   // Populate map containing all the first level objects returned in the response, they MUST be added to the graph.
   const firstLevelNodes = dataArray.reduce((accumulator, current) => Object.assign(accumulator, { [current._id]: true }), {});
 

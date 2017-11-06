@@ -130,35 +130,6 @@ public class HALUtils {
         }
     }
 
-<<<<<<< HEAD
-=======
-    static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQuery(GetQuery getQuery, Answer firstAnswer) {
-        final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
-        AnswerExplanation firstExplanation = firstAnswer.getExplanation();
-        if (firstExplanation.isEmpty()) {
-            return computeRoleTypesFromQueryNoReasoner(getQuery);
-        } else {
-            if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
-                updateRoleTypesFromAnswer(roleTypes, firstAnswer, getQuery);
-            } else {
-                firstAnswer.getExplanation().getAnswers().forEach(answer -> updateRoleTypesFromAnswer(roleTypes, answer, getQuery));
-            }
-            return roleTypes;
-        }
-    }
-
-    private static void updateRoleTypesFromAnswer(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Answer answer, GetQuery getQuery) {
-        Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
-        if (atom.isRelation()) {
-            Optional<VarPatternAdmin> var = atom.getPattern().admin().varPatterns().stream().filter(x -> x.hasProperty(RelationshipProperty.class)).findFirst();
-            VarPatternAdmin varAdmin = atom.getPattern().admin();
-            if (var.isPresent() && !var.get().var().isUserDefinedName() && bothRolePlayersAreSelected(atom, getQuery)) {
-                roleTypes.put(varAdmin, pairVarNamesRelationshipType(atom));
-            }
-        }
-    }
->>>>>>> 64500feaa3cc6a8dfb1f2be1a7af9caf87d4c778
-
     static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit) {
 
         VarPattern relationPattern = Graql.var();
@@ -180,28 +151,6 @@ public class HALUtils {
 
         String withoutURL = String.format(ASSERTION_URL, keyspace, Graql.match(pattern).get().toString(), limit);
         String URL = REST.WebPath.Dashboard.EXPLAIN;
-
-<<<<<<< HEAD
-=======
-    static Map<VarPatternAdmin, Boolean> buildInferredRelationshipsMap(Answer firstAnswer) {
-        final Map<VarPatternAdmin, Boolean> inferredRelationships = new HashMap<>();
-        AnswerExplanation firstExplanation = firstAnswer.getExplanation();
-        if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
-            Atom atom = ((ReasonerAtomicQuery) firstAnswer.getExplanation().getQuery()).getAtom();
-            if (atom.isRelation()) {
-                VarPatternAdmin varAdmin = atom.getPattern().admin();
-                inferredRelationships.put(varAdmin, firstAnswer.getExplanation().isRuleExplanation());
-            }
-        } else {
-            firstAnswer.getExplanation().getAnswers().forEach(answer -> {
-                Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
-                if (atom.isRelation()) {
-                    VarPatternAdmin varAdmin = atom.getPattern().admin();
-                    inferredRelationships.put(varAdmin, answer.getExplanation().isRuleExplanation());
-                }
-            });
-        }
->>>>>>> 64500feaa3cc6a8dfb1f2be1a7af9caf87d4c778
 
         return URL + withoutURL;
     }
