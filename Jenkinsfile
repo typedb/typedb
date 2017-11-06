@@ -150,6 +150,9 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
     ];
 
     for (String moduleName : integrationTests) {
+        // We have to re-assign so this variable is always the same in the closure
+        String mod = moduleName
+
         // Add each integration test as a parallel job
         jobs[moduleName] = {
             node {
@@ -157,7 +160,7 @@ if (env.BRANCH_NAME in ['master', 'stable']) {
                 checkout scm
                 unstash 'dist'
 
-                runIntegrationTest(workspace, moduleName)
+                runIntegrationTest(workspace, mod)
             }
         }
     }

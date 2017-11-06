@@ -61,7 +61,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
-import java.util.Comparator;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
@@ -216,14 +215,26 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return tx;
     }
 
+    /**
+     * @return conjunctive pattern composed of constituent atom patterns
+     */
+    public Conjunction<PatternAdmin> getBasePattern(){
+        return Patterns.conjunction(
+                getAtoms().stream()
+                        .map(Atomic::getPattern)
+                        .flatMap(p -> p.admin().varPatterns().stream())
+                        .collect(Collectors.toSet())
+        );
+    }
+
     @Override
     public Conjunction<PatternAdmin> getPattern() {
-        Set<PatternAdmin> patterns = new HashSet<>();
-        atomSet.stream()
-                .map(Atomic::getCombinedPattern)
-                .flatMap(p -> p.varPatterns().stream())
-                .forEach(patterns::add);
-        return Patterns.conjunction(patterns);
+        return Patterns.conjunction(
+                getAtoms().stream()
+                        .map(Atomic::getCombinedPattern)
+                        .flatMap(p -> p.admin().varPatterns().stream())
+                        .collect(Collectors.toSet())
+        );
     }
 
     @Override
@@ -235,12 +246,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public boolean isRuleResolvable() {
-        for (Atom atom : selectAtoms()) {
-            if (atom.isRuleResolvable()) {
-                return true;
-            }
-        }
-        return false;
+        return selectAtoms().stream().filter(Atom::isRuleResolvable).findFirst().isPresent();
     }
 
     private boolean isTransitive() {
@@ -281,12 +287,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
-        return atomSet.stream().filter(type::isInstance).map(type::cast);}
+        return getAtoms().stream().filter(type::isInstance).map(type::cast);}
 
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = new HashSet<>();
-        atomSet.forEach(atom -> vars.addAll(atom.getVarNames()));
+        getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
         return vars;
     }
 
@@ -436,9 +442,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public Answer getSubstitution(){
         if (substitution == null) {
+            Set<Var> varNames = getVarNames();
             Set<IdPredicate> predicates = getAtoms(IsaAtom.class)
                     .map(IsaAtom::getTypePredicate)
                     .filter(Objects::nonNull)
+                    .filter(p -> varNames.contains(p.getVarName()))
                     .collect(Collectors.toSet());
             getAtoms(IdPredicate.class).forEach(predicates::add);
 
@@ -594,24 +602,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
      */
-    Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
-        List<List<? extends Atom>> atomOptions = getAtoms(Atom.class)
-                .map(at -> at.atomOptions(sub))
-                .collect(Collectors.toList());
-
-        if (atomOptions.stream().mapToInt(List::size).sum() == atomOptions.size()) {
-            return Stream.of(this);
-        }
-
-        return Lists.cartesianProduct(atomOptions).stream()
-                .map(atomList -> ReasonerQueries.create(atomList, tx()))
-                .sorted(Comparator.comparing(q ->
-                        q.getAtoms(RelationshipAtom.class)
-                                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                                .filter(at -> at.getSchemaConcept().isImplicit())
-                                .findFirst().isPresent())
-                );
-    }
+    Stream<ReasonerQueryImpl> getQueryStream(Answer sub){ return Stream.of(this);}
 
     /**
      * reiteration might be required if rule graph contains loops with negative flux

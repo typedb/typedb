@@ -22,14 +22,15 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -66,7 +67,7 @@ public abstract class Atom extends AtomicBase {
     private int basePriority = Integer.MAX_VALUE;
     private Set<InferenceRule> applicableRules = null;
 
-    protected Atom(VarPatternAdmin pattern, ReasonerQuery par) {
+    protected Atom(VarPattern pattern, ReasonerQuery par) {
         super(pattern, par);
     }
     protected Atom(Atom a) {
@@ -102,7 +103,7 @@ public abstract class Atom extends AtomicBase {
      * @return var properties this atom (its pattern) contains
      */
     public Set<VarProperty> getVarProperties() {
-        return getPattern().asVarPattern().getProperties().collect(Collectors.toSet());
+        return getPattern().admin().getProperties().collect(Collectors.toSet());
     }
 
     /**
@@ -294,7 +295,10 @@ public abstract class Atom extends AtomicBase {
     public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
 
     @Override
-    public Atom inferTypes(){ return this; }
+    public Atom inferTypes(){ return inferTypes(new QueryAnswer()); }
+
+    @Override
+    public Atom inferTypes(Answer sub){ return this; }
 
     /**
      * @param sub partial substitution
@@ -308,18 +312,30 @@ public abstract class Atom extends AtomicBase {
      */
     public Atom addType(SchemaConcept type){ return this;}
 
+    public abstract Atom rewriteWithTypeVariable();
+
     /**
-     * rewrites the atom to one with user defined name
+     * rewrites the atom to user-defined type variable
+     * @param parentAtom parent atom that triggers rewrite
      * @return rewritten atom
      */
-    public Atom rewriteToUserDefined(){ return this;}
+    protected Atom rewriteWithTypeVariable(Atom parentAtom){
+        if (!parentAtom.getPredicateVariable().isUserDefinedName()) return this;
+        return rewriteWithTypeVariable();
+    }
+
+    /**
+     * rewrites the atom to one with user defined relation variable
+     * @return rewritten atom
+     */
+    public Atom rewriteWithRelationVariable(){ return this;}
 
     /**
      * rewrites the atom to one with suitably user-defined names depending on provided parent
      * @param parentAtom parent atom that triggers rewrite
      * @return rewritten atom
      */
-    public Atom rewriteToUserDefined(Atom parentAtom){ return rewriteToUserDefined();}
+    public abstract Atom rewriteToUserDefined(Atom parentAtom);
 
     /**
      * @param parentAtom atom to be unified with

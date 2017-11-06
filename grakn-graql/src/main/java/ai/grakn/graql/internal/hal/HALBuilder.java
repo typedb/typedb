@@ -68,7 +68,7 @@ public class HALBuilder {
         answers.forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();
             Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
-            List<Answer> userDefinedAnswers = ReasonerQueries.atomic(atom.rewriteToUserDefined()).getQuery().execute();
+            List<Answer> userDefinedAnswers = ReasonerQueries.atomic(atom.rewriteWithRelationVariable()).getQuery().execute();
             Answer inferredAnswer = new QueryAnswer();
 
             if (!userDefinedAnswers.isEmpty()) {
@@ -78,7 +78,7 @@ public class HALBuilder {
 
                 inferredAnswer = headAtom.getMultiUnifier(atom, UnifierType.RULE).stream()
                             .map(Unifier::inverse)
-                            .flatMap(unifier -> new ReasonerAtomicQuery(headAtom.rewriteToUserDefined()).materialise(answer.unify(unifier)))
+                            .flatMap(unifier -> new ReasonerAtomicQuery(headAtom.rewriteWithRelationVariable()).materialise(answer.unify(unifier)))
                             .findFirst().orElse(new QueryAnswer());
 
             }

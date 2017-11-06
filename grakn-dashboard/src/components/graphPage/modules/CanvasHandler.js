@@ -45,15 +45,15 @@ function onClickSubmit(query:string) {
 
   } else {
     EngineClient.graqlHAL(query)
-    .then((resp, nodeId) => onGraphResponse(resp, false, false, nodeId))
-    .then((instances) => { loadInstancesAttributes(0, instances); })
+    .then((resp, nodeId) => onGraphResponse(resp, false, false, false, nodeId))
+    .then((instances) => { if(instances) loadInstancesAttributes(0, instances); })
     .catch((err) => { EventHub.$emit('error-message', err.message); });
   }
 }
 
 function onLoadSchema(type: string) {
   const querySub = `match $x sub ${type}; get;`;
-  EngineClient.graqlHAL(querySub).then(resp => onGraphResponse(resp, false, false), (err) => {
+  EngineClient.graqlHAL(querySub).then(resp => onGraphResponse(resp, false, false, false), (err) => {
     EventHub.$emit('error-message', err.message);
   });
 }
@@ -67,15 +67,20 @@ function flatten<T>(array: T[][]): T[] {
   return array.reduce((x, y) => x.concat(y), []);
 }
 
+<<<<<<< HEAD
 function filterNodesToRender(responseObject: Object | Object[], parsedResponse: Object, showAttributes: boolean) {
   let dataArray = (Array.isArray(responseObject)) ? responseObject : [responseObject];
   dataArray = dataArray.flatMap(Object.values);
+=======
+function filterNodesToRender(responseObject: Object | Object[], parsedResponse: Object, showAttributes: boolean, isExplore: boolean) {
+  const dataArray = (Array.isArray(responseObject)) ? responseObject : [responseObject];
+>>>>>>> 64500feaa3cc6a8dfb1f2be1a7af9caf87d4c778
   // Populate map containing all the first level objects returned in the response, they MUST be added to the graph.
   const firstLevelNodes = dataArray.reduce((accumulator, current) => Object.assign(accumulator, { [current._id]: true }), {});
 
   const rolePlayersOf = node => node._embedded ? flatten(Object.values(node._embedded)) : [];
-  const isRelationship = node => node._baseType == API.RELATIONSHIP;
-  const rolePlayerNodes = new Set(flatten(dataArray.filter(isRelationship).map(rolePlayersOf)).map(node => node._id));
+  const isRelationship = node => node._baseType == API.RELATIONSHIP || node._baseType == API.INFERRED_RELATIONSHIP_TYPE;
+  const rolePlayerNodes = (isExplore) ? new Set() : new Set(flatten(dataArray.filter(isRelationship).map(rolePlayersOf)).map(node => node._id));
 
   // Add embedded object to the graph only if one of the following is satisfied:
   // - the current node is not a ATTRIBUTE_TYPE || showAttributes is set to true
@@ -133,7 +138,7 @@ function flushPromises(promises: Object[]) {
       // Check if some of the attributes attached to this node are already drawn in the graph:
       // if a attribute is already in the graph (because explicitly asked for (e.g. all relationships with weight > 0.5 ))
       // we need to draw the edges connecting this node to the attribute node.
-      onGraphResponse(resp, false, false);
+      onGraphResponse(resp, false, false, true);
       visualiser.updateNodeAttributes(respObj[API.KEY_ID], Utils.extractAttributes(respObj));
     });
     visualiser.flushUpdates();
@@ -161,7 +166,7 @@ function initialise(graphElement: Object) {
   visualiser.render(graphElement);
 }
 
-function onGraphResponse(resp: string, showIsa: boolean, showAttributes: boolean, nodeId:?string) {
+function onGraphResponse(resp: string, showIsa: boolean, showAttributes: boolean, isExplore: boolean ,nodeId:?string) {
   const responseObject = JSON.parse(resp);
   const parsedResponse = HALParser.parseResponse(responseObject, showIsa);
 
@@ -170,7 +175,7 @@ function onGraphResponse(resp: string, showIsa: boolean, showAttributes: boolean
     return;
   }
 
-  const filteredNodes = filterNodesToRender(responseObject, parsedResponse, showAttributes);
+  const filteredNodes = filterNodesToRender(responseObject, parsedResponse, showAttributes, isExplore);
 
   // Collect instances from filteredNodes to lazy load their attributes.
   const instances = filteredNodes
@@ -190,7 +195,7 @@ function onGraphResponse(resp: string, showIsa: boolean, showAttributes: boolean
 function fetchFilteredRelationships(href: string) {
   EngineClient.request({
     url: href,
-  }).then(resp => onGraphResponse(resp, false, false), (err) => {
+  }).then(resp => onGraphResponse(resp, false, false, false), (err) => {
     EventHub.$emit('error-message', err.message);
   });
 }
@@ -198,7 +203,7 @@ function fetchFilteredRelationships(href: string) {
 function loadAttributeOwners(attributeId: string) {
   EngineClient.request({
     url: attributeId,
-  }).then(resp => onGraphResponse(resp, false, true));
+  }).then(resp => onGraphResponse(resp, false, true, false));
 }
 
 
