@@ -312,6 +312,7 @@ print_status_message() {
 }
 
 print_failure_diagnostics() {
+  echo "======== Failure Diagnostics ========"
   echo "Grakn pid = '`cat $GRAKN_PID`' (from $GRAKN_PID), '`grakn_get_pid_by_ps_ef`' (from ps -ef)"
   echo "Queue pid = '`cat $QUEUE_PID`' (from $QUEUE_PID), '`queue_get_pid_by_ps_ef`' (from ps -ef)"
   echo "Storage pid = '`cat $STORAGE_PID`' (from $STORAGE_PID)"
