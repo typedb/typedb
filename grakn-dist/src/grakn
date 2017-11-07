@@ -250,9 +250,9 @@ queue_wipe_all_data() {
 grakn_start_process() {
   local status=
   java -cp "${CLASSPATH}" -Dgrakn.dir="./services" -Dgrakn.conf="${GRAKN_CONFIG}" \
-    ai.grakn.engine.Grakn > /dev/null 2>&1 &
+    ai.grakn.engine.GraknEngineServer > /dev/null 2>&1 &
   status=$?
-  pid=`ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'`
+  pid=`ps -ef | grep GraknEngineServer | grep -v grep | awk '{ print $2}'`
   echo $pid > "${GRAKN_PID}"
   return $status
 }
