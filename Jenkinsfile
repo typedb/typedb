@@ -126,6 +126,10 @@ def shouldDeployLongRunningInstance() {
     return env.BRANCH_NAME == 'stable'
 }
 
+def mvn(String args) {
+    sh "mvn ${args}"
+}
+
 //Add all tests to job map
 void addTests(jobs) {
     /* Request the test groupings.  Based on previous test results. */
@@ -213,7 +217,7 @@ if (shouldRunAllTests()) {
 
             timeout(60) {
                 stage('Run the benchmarks') {
-                    sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                    mvn "clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
                     archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
             }
