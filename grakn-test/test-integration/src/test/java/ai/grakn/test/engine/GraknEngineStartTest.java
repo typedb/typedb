@@ -63,25 +63,6 @@ public class GraknEngineStartTest {
 
     @Test
     public void whenStartingAndCreatingKeyspace_InitializationSucceeds() throws InterruptedException {
-        /*HashSet<CompletableFuture<Void>> cfs = new HashSet<>();
-        final GraknEngineServer engine = makeEngine(PORTS[0]);
-        cfs
-                .add(CompletableFuture.runAsync(engine::start));
-        cfs
-                .add(CompletableFuture.runAsync(() -> {
-                    while(!engine.getGraknEngineStatus().isReady()) {
-                        try {
-                            Thread.sleep(500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                            fail();
-                        }
-                    }
-                    engine.factory().systemKeyspace().openKeyspace(Keyspace.of("grakn"));
-                }));
-        CompletableFuture.allOf(cfs.toArray(new CompletableFuture[cfs.size()])).join();
-        engine.close();*/
-
         HashSet<CompletableFuture<Void>> futures = new HashSet<>();
 
         engines.forEach(engine ->{
