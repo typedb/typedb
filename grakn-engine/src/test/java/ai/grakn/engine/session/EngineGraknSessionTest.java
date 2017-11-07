@@ -14,7 +14,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.test.TxFactoryContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SampleKBLoader;
@@ -52,7 +52,7 @@ public class EngineGraknSessionTest {
 
     //Needed to start cass depending on profile
     @ClassRule
-    public static final EmbeddedCassandra embeddedCassandra = EmbeddedCassandra.create();
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
