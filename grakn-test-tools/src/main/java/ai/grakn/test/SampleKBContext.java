@@ -44,7 +44,7 @@ import java.util.function.Consumer;
  * @author borislav, fppt
  *
  */
-public class SampleKBContext extends CompositeResource {
+public class SampleKBContext extends CompositeTestRule {
     private final SampleKBLoader loader;
 
     private SampleKBContext(SampleKBLoader loader){

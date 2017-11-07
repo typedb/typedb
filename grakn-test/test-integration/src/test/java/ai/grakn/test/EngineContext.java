@@ -60,7 +60,7 @@ import static ai.grakn.util.SampleKBLoader.randomKeyspace;
  *
  * @author alexandraorth
  */
-public class EngineContext extends CompositeResource {
+public class EngineContext extends CompositeTestRule {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EngineContext.class);
 

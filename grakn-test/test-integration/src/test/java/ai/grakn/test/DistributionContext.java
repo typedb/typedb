@@ -49,7 +49,7 @@ import static java.util.stream.Collectors.joining;
  *
  * @author alexandraorth
  */
-public class DistributionContext extends CompositeResource {
+public class DistributionContext extends CompositeTestRule {
 
     private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
     private static final String ZIP = "grakn-dist-" + GraknVersion.VERSION + ".zip";

@@ -31,7 +31,7 @@ import java.util.List;
  *
  * @author Felix Chapman
  */
-public class TxFactoryContext extends CompositeResource {
+public class TxFactoryContext extends CompositeTestRule {
 
     private TxFactoryContext() {
     }

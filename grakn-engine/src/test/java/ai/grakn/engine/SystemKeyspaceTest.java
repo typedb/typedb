@@ -46,7 +46,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
-    private final Function<String, GraknTx> engineFactoryGraphProvider = (k) -> EngineTestHelper.factory().tx(k, GraknTxType.WRITE);
+    private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> EngineTestHelper.factory().tx(k, GraknTxType.WRITE);
     private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(EngineTestHelper.uri(), k).open(GraknTxType.WRITE);
 
     @ClassRule
@@ -77,7 +77,7 @@ public class SystemKeyspaceTest {
     public void whenCreatingGraphsUsingEngineFactory_EnsureKeySpacesAreAddedToSystemGraph() {
         String [] keyspaces = {"s1", "s2", "s3"};
 
-        buildTxs(engineFactoryGraphProvider, keyspaces);
+        buildTxs(engineFactoryKBProvider, keyspaces);
         Set<String> spaces = getSystemKeyspaces();
 
         for (String keyspace : keyspaces) {
@@ -127,7 +127,7 @@ public class SystemKeyspaceTest {
         String[] keyspaces = {"g1", "g2", "g3"};
 
         //Create transactions to begin with
-        Set<GraknTx> txs = buildTxs(engineFactoryGraphProvider, keyspaces);
+        Set<GraknTx> txs = buildTxs(engineFactoryKBProvider, keyspaces);
         txs.forEach(GraknTx::close);
 
         //Delete a tx entirely

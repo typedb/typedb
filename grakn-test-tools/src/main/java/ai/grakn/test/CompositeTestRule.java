@@ -31,22 +31,26 @@ import java.util.List;
  *
  * @author Felix Chapman
  */
-public abstract class CompositeResource implements TestRule {
+public abstract class CompositeTestRule implements TestRule {
 
     protected abstract List<TestRule> testRules();
 
     private ExternalResource innerResource = new ExternalResource() {
         @Override
         protected void before() throws Throwable {
-            CompositeResource.this.before();
+            CompositeTestRule.this.before();
         }
 
         @Override
         protected void after() {
-            CompositeResource.this.after();
+            CompositeTestRule.this.after();
         }
     };
 
+    /**
+     * Takes all the rules in {@link #testRules()} and applies them to this Test Rule.
+     * This is essential because the composite rule may depend on these rules being executed.
+     */
     @Override
     public final Statement apply(Statement base, Description description) {
         base = innerResource.apply(base, description);
