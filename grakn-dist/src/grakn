@@ -71,6 +71,13 @@ update_classpath_global_var() {
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
 }
 
+pid_wait_until_terminated() {
+  while kill -0 "$1" 2>/dev/null; do
+    echo -n "." # output some sort of "progress bar"
+    sleep $WAIT_INTERVAL_S
+  done
+}
+
 print_status_message() {
   if [ $1 -eq 0 ] ; then
       echo "SUCCESS"
@@ -152,7 +159,7 @@ storage_start_and_wait_until_ready() {
   fi
 }
 
-storage_stop_process() {
+storage_stop_and_wait_until_terminated() {
   echo -n "Stopping Storage..."
   storage_check_if_running_by_pidfile
   local is_storage_running=$?
@@ -160,9 +167,7 @@ storage_stop_process() {
     if [[ -e $STORAGE_PID ]]; then
       pid=`cat $STORAGE_PID`
       kill "$pid"
-      while kill -0 "$pid" 2>/dev/null; do
-          sleep 0.5
-      done
+      wait_until_terminated $pid
       echo "SUCCESS"
       return 0
     else
@@ -263,7 +268,7 @@ queue_start_and_wait_until_ready() {
   fi
 }
 
-queue_stop_process() {
+queue_stop_and_wait_until_terminated() {
   echo -n "Stopping Queue..."
   queue_check_if_running_by_ps_ef
   local is_queue_running=$?
@@ -274,7 +279,10 @@ queue_stop_process() {
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
         queue_bin="redis-cli-linux"
     fi
+
+    local pid=`cat $QUEUE_PID`
     "${GRAKN_HOME}/services/redis/"$queue_bin shutdown
+    wait_until_terminated $pid
     local status=$?
     print_status_message ${status}
   else
@@ -374,24 +382,6 @@ grakn_start_and_wait_until_ready() {
   fi
 }
 
-grakn_wait_until_terminated() {
-  local now_s=`date '+%s'`
-  local stop_s=$(( $now_s + $GRAKN_SHUTDOWN_TIMEOUT_S ))
-
-  while [ $now_s -le $stop_s ]; do
-      echo -n "." # output some sort of "progress bar"
-      grakn_check_if_ready
-      local is_grakn_ready=$?
-      if [ $is_grakn_ready -ne 0 ] ; then
-          return 0
-      fi
-      sleep $WAIT_INTERVAL_S
-      now_s=`date '+%s'`
-  done
-
-  return 1
-}
-
 grakn_stop_and_wait_until_terminated() {
   echo -n "Stopping Grakn..."
   local status=
@@ -399,10 +389,11 @@ grakn_stop_and_wait_until_terminated() {
   local is_grakn_running=$?
   if [[ $is_grakn_running -eq 0 ]]; then
     if [[ -e "$GRAKN_PID" ]]; then
-      kill `cat $GRAKN_PID`
+      local pid=`cat $GRAKN_PID`
+      kill "$pid"
       local status_kill=$?
       if [ $status_kill -eq 0 ]; then
-        grakn_wait_until_terminated
+        wait_until_terminated $pid
         local status_wait_until_terminated=$?
         if [ $status_wait_until_terminated -eq 0 ]; then
           status=0
@@ -438,10 +429,10 @@ cli_case_grakn_server_stop_all() {
   grakn_stop_and_wait_until_terminated
   status_grakn=$?
 
-  queue_stop_process
+  queue_stop_and_wait_until_terminated
   status_queue=$?
 
-  storage_stop_process
+  storage_stop_and_wait_until_terminated
   status_storage=$?
 
   if [ $status_grakn -eq 0 ] && [ $status_queue -eq 0 ] && [ $status_storage -eq 0 ] ; then
@@ -571,7 +562,7 @@ cli_case_grakn_server_clean() {
 
     queue_start_and_wait_until_ready
     queue_wipe_all_data
-    queue_stop_process
+    queue_stop_and_wait_until_terminated
     echo "Cleaning Queue...SUCCESS"
 
     echo -n "Cleaning Grakn..."
@@ -678,7 +669,7 @@ cli_case_grakn_server_stop() {
       fi
     ;;
     queue)
-      queue_stop_process
+      queue_stop_and_wait_until_terminated
       status=$?
       if [ $status -eq 0 ] ; then
         # do nothing
@@ -692,7 +683,7 @@ cli_case_grakn_server_stop() {
       fi
     ;;
     storage)
-      storage_stop_process
+      storage_stop_and_wait_until_terminated
       status=$?
       if [ $status -eq 0 ] ; then
         # do nothing
