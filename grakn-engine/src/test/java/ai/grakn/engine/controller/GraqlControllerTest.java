@@ -87,7 +87,7 @@ public class GraqlControllerTest {
     @ClassRule
     public static SampleKBContext sampleKB = MovieKB.context();
 
-    public static SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
+    public static SampleKBContext genealogyKB = GenealogyKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
