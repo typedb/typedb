@@ -179,7 +179,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery queryToMaterialise = ReasonerQueries.atomic(this, answer);
         return queryToMaterialise
                 .insert()
-                .map(ans -> ans.setExplanation(answer.getExplanation()));
+                .map(ans -> ans.explain(answer.getExplanation()));
     }
 
     private Stream<Answer> getIdPredicateAnswerStream(Stream<Answer> stream){
