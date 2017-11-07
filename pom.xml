@@ -417,6 +417,8 @@
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
                     <argLine>-Xmx1024m</argLine>
+                    <!-- Added this config to try and help sort out flaky tests -->
+                    <runOrder>random</runOrder>
                 </configuration>
             </plugin>
             <plugin>
