@@ -44,6 +44,7 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -228,9 +229,8 @@ public class EngineContext extends CompositeTestRule {
     private static GraknEngineConfig createTestConfig() {
         GraknEngineConfig config = GraknEngineConfig.create();
 
-        Integer serverPort = getEphemeralPort();
-
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT, serverPort);
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, getEphemeralPort());
+        config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + getEphemeralPort()));
 
         return config;
     }
