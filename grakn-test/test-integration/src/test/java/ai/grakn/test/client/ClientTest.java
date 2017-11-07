@@ -24,6 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.test.EngineContext;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;
@@ -31,6 +32,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 public class ClientTest {
+    @ClassRule
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Test
     public void graknEngineRunning() throws Throwable {
