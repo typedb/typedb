@@ -49,7 +49,6 @@ public abstract class CompositeResource implements TestRule {
 
     @Override
     public final Statement apply(Statement base, Description description) {
-        List<TestRule> rules = testRules();
 
         for (TestRule each : testRules()) {
             base = each.apply(base, description);

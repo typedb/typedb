@@ -38,26 +38,22 @@ import redis.embedded.exceptions.EmbeddedRedisException;
  */
 public class EmbeddedRedis extends ExternalResource {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedRedis.class);
-    private static volatile RedisServer redisServer;
-
     private final int port;
+    private RedisServer redisServer;
 
     private EmbeddedRedis(int port) {
         this.port = port;
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (redisServer != null && redisServer.isActive()) {
+                LOG.warn("Redis still running, stopping it on shutdown hook");
+                redisServer.stop();
+            }
+        }, "shutdown-redis"));
     }
 
     public static EmbeddedRedis create(int port) {
         return new EmbeddedRedis(port);
-    }
-
-    static {
-        Runtime.getRuntime().addShutdownHook(
-                new Thread(() -> {
-                    if (redisServer != null && redisServer.isActive()) {
-                        LOG.warn("Redis still running, stopping it on shutdown hook");
-                        redisServer.stop();
-                    }
-                }, "shutdown-redis"));
     }
 
     @Override
@@ -66,9 +62,8 @@ public class EmbeddedRedis extends ExternalResource {
             LOG.info("Starting redis...");
             redisServer = RedisServer.builder()
                     .port(port)
-                    // We have short running tests and sometimes we kill the connections
-                    .setting("timeout 360")
-                    .build();
+                    .setting("timeout 360").build();
+
             if (!redisServer.isActive()) {
                 try {
                     redisServer.start();
