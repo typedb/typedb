@@ -37,9 +37,6 @@ public class ClientTest {
 
     @Test
     public void whenGraknEngineIsRunning_ClientCanConnect() throws Throwable {
-        EngineContext engine = EngineContext.createWithInMemoryRedis();
-        engine.before();
-
         boolean running = Client.serverIsRunning(engine.uri());
         assertTrue(running);
 
@@ -47,12 +44,10 @@ public class ClientTest {
         try(GraknTx tx = engine.server().factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
             assertNotNull(tx.getAttributeType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
         }
-
-        engine.after();
     }
 
     @Test
-    public void whenGraknEngineIsNotRunningONSpecifiedURI_ClientCannotConnect() throws Exception {
+    public void whenGraknEngineIsNotRunningOnSpecifiedURI_ClientCannotConnect() throws Exception {
         boolean running = Client.serverIsRunning(Grakn.DEFAULT_URI);
         assertFalse(running);
     }
