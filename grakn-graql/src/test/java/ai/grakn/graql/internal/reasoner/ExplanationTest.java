@@ -27,12 +27,19 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import java.util.Collection;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -42,6 +49,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.var;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -244,6 +252,52 @@ public class ExplanationTest {
         GetQuery query = eiqb.parse(queryString);
         List<Answer> answers = query.execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
+    }
+
+    @Test
+    public void testExplanationConsistency(){
+        GraknTx genealogyGraph = genealogyKB.tx();
+        QueryBuilder iqb = genealogyGraph.graql().infer(true);
+
+        String queryString = "match " +
+                "($x, $y) isa cousins;" +
+                "limit 10; get;";
+
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+
+        answers.forEach(answer -> {
+            testExplanation(answer);
+
+            String specificQuery = "match " +
+                    "$x id '" + answer.get(var("x")).getId().getValue() + "';" +
+                    "$y id '" + answer.get(var("y")).getId().getValue() + "';" +
+                    "(cousin: $x, cousin: $y) isa cousins;" +
+                    "limit 1; get;";
+            Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+            testExplanation(specificAnswer);
+        });
+
+    }
+
+    private void testExplanation(Answer answer){
+        AnswerExplanation explanation = answer.getExplanation();
+
+        if (explanation.isRuleExplanation()) {
+            //TODO test rewritten query once Marco's PR is in
+            Set<Answer> explAnswers = explanation.getAnswers();
+            answerConnectedness(explAnswers);
+        }
+    }
+
+    private void answerConnectedness(Collection<Answer> answers){
+        answers.forEach(a -> {
+            assertTrue(
+                    answers.stream()
+                            .filter(a2 -> !a2.equals(a))
+                            .filter(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
+                            .findFirst().isPresent()
+            );
+        });
     }
 
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){

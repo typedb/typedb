@@ -33,6 +33,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
+import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.ImmutableMap;
@@ -42,6 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -157,20 +159,23 @@ public class QueryAnswer implements Answer {
         if(a2.isEmpty()) return this;
         if(this.isEmpty()) return a2;
 
-        AnswerExplanation exp = this.getExplanation();
-        if(mergeExplanation) {
-            exp = exp.merge(a2.getExplanation());
-            if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
-            if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
-        }
-
         return new QueryAnswer(
                 Sets.union(
                         this.entrySet(),
                         a2.entrySet()
                 ),
-                exp
+                mergeExplanation? this.mergeExplanation(a2) : this.getExplanation()
         );
+    }
+
+    @Override
+    public AnswerExplanation mergeExplanation(Answer a2) {
+        Set<Answer> dependentAnswers = new HashSet<>();
+        if (this.getExplanation().isJoinExplanation()) this.getAnswers().forEach(dependentAnswers::add);
+        else dependentAnswers.add(this);
+        if (a2.getExplanation().isJoinExplanation()) a2.getAnswers().forEach(dependentAnswers::add);
+        else dependentAnswers.add(a2);
+        return new JoinExplanation(dependentAnswers);
     }
 
     @Override
@@ -178,9 +183,7 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Answer explain(AnswerExplanation exp){
-        AnswerExplanation explanation = exp.copy();
-        this.explanation.getAnswers().forEach(explanation::addAnswer);
-        return new QueryAnswer(this.entrySet(), explanation);
+        return new QueryAnswer(this.entrySet(), exp.withAnswers(getExplanation().getAnswers()));
     }
 
     @Override
