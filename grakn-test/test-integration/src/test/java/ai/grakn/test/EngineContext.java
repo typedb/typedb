@@ -30,7 +30,6 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
@@ -146,7 +145,7 @@ public class EngineContext extends CompositeResource {
     @Override
     protected List<TestRule> testRules() {
         return ImmutableList.of(
-                EmbeddedCassandra.create(),
+                TxFactoryContext.create(),
                 redis
         );
     }
