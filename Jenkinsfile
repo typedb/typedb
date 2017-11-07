@@ -53,17 +53,17 @@ def runIntegrationTest(String workspace, String moduleName) {
 }
 
 def withGrakn(String workspace, Closure closure) {
-    timeout(15) {
-        //Stages allow you to organise and group things within Jenkins
-        stage('Start Grakn') {
-            try {
+    //Stages allow you to organise and group things within Jenkins
+    try {
+        timeout(15) {
+            stage('Start Grakn') {
                 sh 'init-grakn.sh'
-                closure()
-            } finally {
-                archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-                archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
             }
         }
+        closure()
+    } finally {
+        archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+        archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
     }
 }
 
