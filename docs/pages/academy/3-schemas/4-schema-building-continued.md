@@ -13,7 +13,7 @@ KB: academy
 
 ## The story so far
 
-In the [last lesson](/academy/schema-building.html) you have started building the schema that models the example problem for the academy dataset (if you need to review the problem, [here is the link](/academy/graql-intro.html)). If you have followed all the exercises, you should by now have a file called `schema.gql` that looks more or less like this:
+In the [last lesson](./schema-building.html) you have started building the schema that models the example problem for the academy dataset (if you need to review the problem, [here is the link](./graql-intro.html)). If you have followed all the exercises, you should by now have a file called `schema.gql` that looks more or less like this:
 
 ```graql
 define
@@ -113,4 +113,4 @@ define
 Congratulations! You have built your first working GRAKN schema! Of course, this is just a starting point and when you start putting data into your knowledge base you will realise that you need to extend the schema (for example you might want to allow companies to have names), but the one you have built is valid and working and could be loaded into GRAKN as is (you will learn how in the next module of the Academy).
 
 ## What next?
-First of all, proceed to [next lesson](/academy/schema-review.html) to review the schema building process and to check that you remember what you have learned so far about GRAKN schemas; after that it will be time to load data and our knowledge base will start to look more and more like the one you have seen at the beginning of the Academy when you were still learning about the GRAQL basics.
+First of all, proceed to [next lesson](./schema-review.html) to review the schema building process and to check that you remember what you have learned so far about GRAKN schemas; after that it will be time to load data and our knowledge base will start to look more and more like the one you have seen at the beginning of the Academy when you were still learning about the GRAQL basics.
