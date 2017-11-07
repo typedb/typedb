@@ -49,12 +49,13 @@ public abstract class CompositeResource implements TestRule {
 
     @Override
     public final Statement apply(Statement base, Description description) {
+        base = innerResource.apply(base, description);
 
         for (TestRule each : testRules()) {
             base = each.apply(base, description);
         }
 
-        return innerResource.apply(base, description);
+        return base;
     }
 
     protected void before() throws Throwable {
