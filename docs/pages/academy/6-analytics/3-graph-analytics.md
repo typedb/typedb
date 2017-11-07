@@ -131,4 +131,4 @@ In this lesson, you have learned about the graph analytics capabilities of GRAKN
 
 ## What next
 
-You are almost done! You have learned about all the basics of GRAKN! The last thing left is doing the last [module review](/academy/analytics-review.html)!
+You are almost done! You have learned about all the basics of GRAKN! The last thing left is doing the last [module review](./analytics-review.html)!
