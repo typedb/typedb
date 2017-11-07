@@ -503,6 +503,12 @@ cli_case_grakn_server_status() {
   else
     echo "Grakn: NOT RUNNING"
   fi
+
+  case $1 in
+    --verbose)
+      print_failure_diagnostics
+    ;;
+  esac
 }
 
 cli_case_grakn_server_clean() {
@@ -622,7 +628,6 @@ cli_case_grakn_server_start() {
 }
 
 cli_case_grakn_server_stop() {
-  # TODO: handle if graceful termination failed and log failures
   case $1 in
     grakn)
       grakn_stop_process
