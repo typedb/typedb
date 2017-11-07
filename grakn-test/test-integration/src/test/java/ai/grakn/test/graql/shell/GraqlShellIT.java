@@ -583,18 +583,6 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
-        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
-
-        assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
-                is("Status of batch: FAILED"),
-                is("Number batches completed: 1"),
-                containsString("Approximate queries executed:"),
-                containsString("All tasks completed")
-        );
-    }
-
-    @Test
     public void whenUserMakesAMistake_SubsequentQueriesStillWork() throws Exception {
         ShellResponse response = runShell(
                 "match $x sub concet; aggregate count;\n" +

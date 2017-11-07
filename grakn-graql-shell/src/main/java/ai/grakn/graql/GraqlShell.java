@@ -25,6 +25,7 @@ import ai.grakn.client.QueryResponse;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
@@ -230,13 +231,13 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
-                try {
-                    sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"), keyspace);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"), keyspace);
             } catch (NumberFormatException e) {
                 printUsage(options, "Cannot cast argument to an integer "+e.getMessage());
+                return false;
+            } catch (Exception e) {
+                System.out.println("Batch failed \n" + CommonUtil
+                        .simplifyExceptionMessage(e));
                 return false;
             }
             return true;
