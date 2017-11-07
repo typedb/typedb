@@ -104,21 +104,6 @@ def buildGrakn() {
 }
 
 def shouldRunAllTests() {
-    /*
-    But first a PSA from Todo the Elephant
-                     .---.
-        .--.     ___/     \
-       /    `.-""   `-,    ;
-      ;     /     O O  \  /
-      `.    \          /-'
-     _  J-.__;      _.'
-    (" /      `.   -=:
-     `:         `, -=|   ______________________________
-      |  F\    i, ; -|  /                              \
-      |  | |   ||  \_J <| DON'T FORGET TO REMOVE THIS! |
-      mmm! `mmM Mmm'    \ _____________________________/
-     */
-    return true
     return env.BRANCH_NAME in ['master', 'stable']
 }
 
