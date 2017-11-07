@@ -36,7 +36,7 @@ public class ClientTest {
     public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Test
-    public void graknEngineRunning() throws Throwable {
+    public void whenGraknEngineIsRunning_ClientCanConnect() throws Throwable {
         EngineContext engine = EngineContext.createWithInMemoryRedis();
         engine.before();
 
@@ -44,15 +44,15 @@ public class ClientTest {
         assertTrue(running);
 
         // Check that we've loaded the schema
-        try(GraknTx graph = engine.server().factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
-            assertNotNull(graph.getAttributeType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
+        try(GraknTx tx = engine.server().factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
+            assertNotNull(tx.getAttributeType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
         }
 
         engine.after();
     }
 
     @Test
-    public void graknEngineNotRunning() throws Exception {
+    public void whenGraknEngineIsNotRunningONSpecifiedURI_ClientCannotConnect() throws Exception {
         boolean running = Client.serverIsRunning(Grakn.DEFAULT_URI);
         assertFalse(running);
     }
