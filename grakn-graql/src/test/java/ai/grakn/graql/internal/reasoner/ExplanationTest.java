@@ -27,11 +27,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
@@ -108,10 +104,10 @@ public class ExplanationTest {
         assertEquals(queryAnswer3, answer3);
         assertEquals(queryAnswer4, answer4);
 
-        assertEquals(queryAnswer1.getAnswers().size(), 1);
-        assertEquals(queryAnswer2.getAnswers().size(), 3);
-        assertEquals(queryAnswer3.getAnswers().size(), 5);
-        assertEquals(queryAnswer4.getAnswers().size(), 7);
+        assertEquals(queryAnswer1.getPartialAnswers().size(), 1);
+        assertEquals(queryAnswer2.getPartialAnswers().size(), 3);
+        assertEquals(queryAnswer3.getPartialAnswers().size(), 5);
+        assertEquals(queryAnswer4.getPartialAnswers().size(), 7);
 
         assertTrue(queryAnswer1.getExplanation().isLookupExplanation());
         assertTrue(answerHasConsistentExplanations(queryAnswer1));
@@ -155,8 +151,8 @@ public class ExplanationTest {
 
         //(res), (uni, ctr) - (region, ctr)
         //                  - (uni, region) - {(city, region), (uni, city)
-        assertEquals(queryAnswer1.getAnswers().size(), 6);
-        assertEquals(queryAnswer2.getAnswers().size(), 6);
+        assertEquals(queryAnswer1.getPartialAnswers().size(), 6);
+        assertEquals(queryAnswer2.getPartialAnswers().size(), 6);
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
         assertEquals(4, queryAnswer1.getExplicitPath().size());
@@ -261,7 +257,7 @@ public class ExplanationTest {
 
         String queryString = "match " +
                 "($x, $y) isa cousins;" +
-                "limit 10; get;";
+                "limit 3; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 
@@ -320,7 +316,7 @@ public class ExplanationTest {
     }
 
     private boolean answerHasConsistentExplanations(Answer ans){
-        Set<Answer> answers = ans.getAnswers().stream()
+        Set<Answer> answers = ans.getPartialAnswers().stream()
                 .filter(a -> !a.getExplanation().isJoinExplanation())
                 .collect(Collectors.toSet());
         for (Answer a : answers){

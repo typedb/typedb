@@ -169,7 +169,7 @@ public interface Answer {
      * @return set of all answers taking part in the derivation of this answer
      */
     @CheckReturnValue
-    Set<Answer> getAnswers();
+    Set<Answer> getPartialAnswers();
 
     /**
      * @return all explanations taking part in the derivation of this answer

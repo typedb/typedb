@@ -169,13 +169,13 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public AnswerExplanation mergeExplanation(Answer a2) {
-        Set<Answer> dependentAnswers = new HashSet<>();
-        if (this.getExplanation().isJoinExplanation()) this.getAnswers().forEach(dependentAnswers::add);
-        else dependentAnswers.add(this);
-        if (a2.getExplanation().isJoinExplanation()) a2.getAnswers().forEach(dependentAnswers::add);
-        else dependentAnswers.add(a2);
-        return new JoinExplanation(dependentAnswers);
+    public AnswerExplanation mergeExplanation(Answer toMerge) {
+        Set<Answer> partialAnswers = new HashSet<>();
+        if (this.getExplanation().isJoinExplanation()) this.getExplanation().getAnswers().forEach(partialAnswers::add);
+        else partialAnswers.add(this);
+        if (toMerge.getExplanation().isJoinExplanation()) toMerge.getExplanation().getAnswers().forEach(partialAnswers::add);
+        else partialAnswers.add(toMerge);
+        return new JoinExplanation(partialAnswers);
     }
 
     @Override
@@ -250,13 +250,13 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Set<Answer> getExplicitPath(){
-        return getAnswers().stream().filter(ans -> ans.getExplanation().isLookupExplanation()).collect(Collectors.toSet());
+        return getPartialAnswers().stream().filter(ans -> ans.getExplanation().isLookupExplanation()).collect(Collectors.toSet());
     }
 
     @Override
-    public Set<Answer> getAnswers(){
+    public Set<Answer> getPartialAnswers(){
         Set<Answer> answers = Sets.newHashSet(this);
-        this.getExplanation().getAnswers().forEach(ans -> ans.getAnswers().forEach(answers::add));
+        this.getExplanation().getAnswers().forEach(ans -> ans.getPartialAnswers().forEach(answers::add));
         return answers;
     }
 
