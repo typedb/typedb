@@ -18,6 +18,7 @@
 
 package ai.grakn.util;
 
+import ai.grakn.test.GraknTestSetup;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
@@ -59,7 +60,7 @@ public class EmbeddedCassandra extends ExternalResource {
      * Starts an embedded version of cassandra
      */
     public static void start(){
-        if(CASSANDRA_RUNNING.compareAndSet(false, true)) {
+        if(GraknTestSetup.usingJanus() && CASSANDRA_RUNNING.compareAndSet(false, true)) {
             try {
                 LOG.info("starting cassandra...");
                 EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml", 30_000L);

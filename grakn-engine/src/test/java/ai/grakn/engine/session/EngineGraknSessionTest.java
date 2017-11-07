@@ -5,17 +5,22 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineStatus;
+import ai.grakn.engine.SystemKeyspaceFake;
+import ai.grakn.engine.controller.SparkContext;
+import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.SimpleURI;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -26,36 +31,43 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.mockito.Mockito.mock;
 
 public class EngineGraknSessionTest {
+    private static final GraknEngineConfig config = GraknEngineConfig.create();
+    private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
+    private static final MetricRegistry metricRegistry = new MetricRegistry();
+    private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
+
+    private static EngineGraknTxFactory graknFactory;
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST))).getPort());
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
+
+    //Needed so that Grakn.session() can return a session
+    @ClassRule
+    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        new SystemController(spark, config.getProperties(), systemKeyspace, status, metricRegistry);
+    });
+
+    //Needed to start cass depending on profile
+    @ClassRule
+    public static final EmbeddedCassandra embeddedCassandra = EmbeddedCassandra.create();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private static EngineGraknTxFactory graknFactory;
-    
-    private String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknConfigKey.SERVER_PORT);
-
     @BeforeClass
     public static void beforeClass() {
-        EngineTestHelper.engineWithKBs();
         JedisLockProvider lockProvider = new JedisLockProvider(mockRedisRule.jedisPool());
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, EngineTestHelper.config().getProperties());
-    }
-
-    @AfterClass
-    public static void afterClass() {
-        EngineTestHelper.noEngine();
+        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
     }
 
     @Test
     public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame(){
         String keyspace = "mykeyspace";
 
-        GraknTx graph1 = Grakn.session(factoryUri, keyspace).open(GraknTxType.WRITE);
+        GraknTx graph1 = Grakn.session(sparkContext.uri(), keyspace).open(GraknTxType.WRITE);
         graph1.close();
         GraknTx graph2 = graknFactory.tx(keyspace, GraknTxType.WRITE);
 
@@ -81,7 +93,7 @@ public class EngineGraknSessionTest {
     public void closeGraphWhenOnlyOneTransactionIsOpen(){
         assumeFalse(GraknTestSetup.usingTinker()); //Tinker does not have any connections to close
 
-        GraknSession factory = Grakn.session(factoryUri, SampleKBLoader.randomKeyspace());
+        GraknSession factory = Grakn.session(sparkContext.uri(), SampleKBLoader.randomKeyspace());
         GraknTx graph = factory.open(GraknTxType.WRITE);
         factory.close();
 
