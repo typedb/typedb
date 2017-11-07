@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class GraknEngineServerTest {
-
+    private static final String VERSION_KEY = "info:version";
     private static final String OLD_VERSION = "0.0.1-ontoit-alpha";
 
     @Rule
@@ -60,15 +60,12 @@ public class GraknEngineServerTest {
 
     @Rule
     public final SystemOutRule stdout = new SystemOutRule();
-
-    private final GraknEngineConfig conf = GraknEngineConfig.create();
-    private static final String VERSION_KEY = "info:version";
-
-    private final RedisWrapper redisWrapper = mock(RedisWrapper.class);
-    private final Jedis jedis = mock(Jedis.class);
-
     @Rule
     public final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+
+    private final GraknEngineConfig conf = GraknEngineConfig.create();
+    private final RedisWrapper redisWrapper = mock(RedisWrapper.class);
+    private final Jedis jedis = mock(Jedis.class);
 
     @Before
     public void setUp() {
@@ -83,7 +80,7 @@ public class GraknEngineServerTest {
         RedisServer redisServer = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(conf.getProperty(GraknConfigKey.REDIS_HOST))).getPort()).server();
         redisServer.start();
 
-        try (GraknEngineServer server = EngineTestHelper.cleanGraknEngineServer(conf)) {
+        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf)) {
             server.start();
             assertNotNull(server.factory().systemKeyspace());
 
@@ -101,7 +98,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() {
         when(jedis.get(VERSION_KEY)).thenReturn(null);
 
-        try (GraknEngineServer server = EngineTestHelper.cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
             server.start();
         }
 
@@ -112,7 +109,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() {
         when(jedis.get(VERSION_KEY)).thenReturn(GraknVersion.VERSION);
 
-        try (GraknEngineServer server = EngineTestHelper.cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
             server.start();
         }
 
@@ -125,7 +122,7 @@ public class GraknEngineServerTest {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
         stdout.enableLog();
 
-        try (GraknEngineServer server = EngineTestHelper.cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
             server.start();
         }
 
@@ -137,7 +134,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
 
-        try (GraknEngineServer server = EngineTestHelper.cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
             server.start();
         }
 
