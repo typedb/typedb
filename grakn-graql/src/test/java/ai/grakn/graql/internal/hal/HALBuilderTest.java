@@ -22,38 +22,23 @@ package ai.grakn.graql.internal.hal;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.UnifierType;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import java.util.Collection;
-import junit.framework.TestCase;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import javax.swing.text.html.Option;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.explanationAnswersToHAL;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -62,6 +47,8 @@ public class HALBuilderTest {
 
     @ClassRule
     public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+
+    @ClassRule
     public static SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
 
     @Test
@@ -124,7 +111,6 @@ public class HALBuilderTest {
         String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
         List<Answer> answers = genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery).execute();
         answers.forEach(answer -> {
-            System.out.println("####################");
             String cousin1 = answer.get("x").getId().getValue();
             String cousin2 = answer.get("y").getId().getValue();
             String specificQuery = "match " +
@@ -136,13 +122,12 @@ public class HALBuilderTest {
             Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
 
             Json expl = explanationAnswersToHAL(specificAnswer.getExplanation().getAnswers(), printer);
-            System.out.println(expl.toString());
 
             Json siblings = expl.asJsonList().stream()
                     .filter(x -> x.asJsonMap().values().stream()
                                 .map(entry->entry.asJsonMap().get("_type").asString())
                                 .anyMatch(sub->sub.equals("siblings")))
-                    .findFirst().get();
+                    .findFirst().orElse(Json.array());
             // Two parents IDs
             Set<String> siblingsSet = siblings.asJsonMap().values()
                     .stream()

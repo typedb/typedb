@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import com.google.common.collect.Iterables;
+
 import mjson.Json;
 
 import javax.annotation.Nullable;

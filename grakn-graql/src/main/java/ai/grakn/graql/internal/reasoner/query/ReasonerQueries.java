@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
 
