@@ -29,31 +29,6 @@
 # ================================================
 
 # ================================================
-# global variables
-# ================================================
-
-# globals
-WAIT_INTERVAL_S=2
-
-# Grakn globals
-# TODO: clean up
-if [ -z "${GRAKN_HOME}" ]; then
-    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
-    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-fi
-
-GRAKN_CONFIG="../conf/grakn.properties"
-GRAKN_PID=/tmp/grakn.pid
-GRAKN_STARTUP_TIMEOUT_S=120
-
-# Storage globals
-STORAGE_PID=/tmp/grakn-storage.pid
-STORAGE_STARTUP_TIMEOUT_S=60
-
-# Queue globals
-QUEUE_STARTUP_TIMEOUT_S=10
-
-# ================================================
 # common helper functions
 # ================================================
 update_classpath_global_var() {
@@ -632,6 +607,28 @@ print_grakn_logo() {
 # =============================================
 # main routine
 # =============================================
+
+# Common global variables
+WAIT_INTERVAL_S=2
+
+# Grakn global variables
+# TODO: clean up
+if [ -z "${GRAKN_HOME}" ]; then
+    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
+fi
+
+GRAKN_CONFIG="../conf/grakn.properties"
+GRAKN_PID=/tmp/grakn.pid
+GRAKN_STARTUP_TIMEOUT_S=120
+
+# Storage global variables
+STORAGE_PID=/tmp/grakn-storage.pid
+STORAGE_STARTUP_TIMEOUT_S=60
+
+# Queue global variables
+QUEUE_STARTUP_TIMEOUT_S=10
+
 pushd "$GRAKN_HOME" > /dev/null
 
 update_classpath_global_var
