@@ -48,12 +48,14 @@ import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.VALUE_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.computeHrefInferred;
 import static ai.grakn.graql.internal.hal.HALUtils.generateConceptState;
 import static ai.grakn.util.REST.WebPath.Dashboard.EXPLORE;
 
 
 /**
  * Class used to build the HAL representation of a given concept.
+ *
  * @author Marco Scoppetta
  */
 
@@ -73,7 +75,7 @@ public class HALConceptData {
     private final int limit;
 
 
-    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, Keyspace keyspace, int offset, int limit){
+    public HALConceptData(Concept concept, boolean inferred, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, Keyspace keyspace, int offset, int limit) {
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
@@ -87,24 +89,24 @@ public class HALConceptData {
 
         //If we will include embedded nodes and limit is >=0 we increase the offset to prepare URI for next request
         int uriOffset = (separationDegree > 0 && limit >= 0) ? (offset + limit) : offset;
+        String selfHrefURL = inferred ? computeHrefInferred(concept, keyspace, limit): resourceLinkPrefix + concept.getId() + getURIParams(uriOffset);
+        halResource = factory.newRepresentation(selfHrefURL);
 
-        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId() + getURIParams(uriOffset));
-
-        handleConcept(halResource, concept, separationDegree);
+        handleConcept(halResource, concept, separationDegree, inferred);
 
     }
 
     private String getURIParams(int offset) {
         // If limit -1, we don't append the limit parameter to the URI string
-        String limitParam = (this.limit >= 0) ? "&"+REST.Request.Concept.LIMIT_EMBEDDED+"=" + this.limit : "";
+        String limitParam = (this.limit >= 0) ? "&" + REST.Request.Concept.LIMIT_EMBEDDED + "=" + this.limit : "";
 
-        return "?"+REST.Request.KEYSPACE+"=" + this.keyspace + "&"+REST.Request.Concept.OFFSET_EMBEDDED+"=" + offset + limitParam;
+        return "?" + REST.Request.KEYSPACE + "=" + this.keyspace + "&" + REST.Request.Concept.OFFSET_EMBEDDED + "=" + offset + limitParam;
     }
 
 
-    private void handleConcept(Representation halResource, Concept concept, int separationDegree) {
+    private void handleConcept(Representation halResource, Concept concept, int separationDegree, boolean inferred) {
 
-        generateStateAndLinks(halResource, concept);
+        generateStateAndLinks(halResource, concept,inferred);
 
         if (embedType && concept.isThing()) {
             Thing thing = concept.asThing();
@@ -179,7 +181,7 @@ public class HALConceptData {
         ownersStream.forEach(instance -> {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-            handleConcept(instanceResource, instance, separationDegree - 1);
+            handleConcept(instanceResource, instance, separationDegree - 1, false);
             halResource.withRepresentation(roleType.getValue(), instanceResource);
         });
     }
@@ -187,7 +189,7 @@ public class HALConceptData {
     private void embedSuperType(Representation halResource, Type type) {
         Representation HALType = factory.newRepresentation(resourceLinkPrefix + type.sup().getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-        generateStateAndLinks(HALType, type.sup());
+        generateStateAndLinks(HALType, type.sup(), false);
         halResource.withRepresentation(SUB_EDGE, HALType);
     }
 
@@ -196,14 +198,14 @@ public class HALConceptData {
         Representation HALType = factory.newRepresentation(resourceLinkPrefix + thing.type().getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
 
-        generateStateAndLinks(HALType, thing.type());
+        generateStateAndLinks(HALType, thing.type(), false);
         halResource.withRepresentation(ISA_EDGE, HALType);
     }
 
-    private void generateStateAndLinks(Representation resource, Concept concept) {
+    private void generateStateAndLinks(Representation resource, Concept concept, boolean inferred) {
 
         resource.withLink(EXPLORE_CONCEPT_LINK, EXPLORE + concept.getId() + getURIParams(0));
-        generateConceptState(resource, concept);
+        generateConceptState(resource, concept, inferred);
     }
 
     // ======================================= _embedded ================================================//
@@ -221,7 +223,7 @@ public class HALConceptData {
     private void attachRelation(Representation halResource, Concept rel, Label role, int separationDegree) {
         Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-        handleConcept(relationResource, rel, separationDegree - 1);
+        handleConcept(relationResource, rel, separationDegree - 1, false);
         halResource.withRepresentation(role.getValue(), relationResource);
     }
 
@@ -233,11 +235,11 @@ public class HALConceptData {
                     Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                             .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
                     if (!instance.isRelationship()) {
-                        handleConcept(roleResource, instance, separationDegree - 1);
+                        handleConcept(roleResource, instance, separationDegree - 1, false);
                     } else {
                         // If instance is a relation we just add state properties to HAL representation
                         // without including its role players.
-                        generateStateAndLinks(roleResource, instance);
+                        generateStateAndLinks(roleResource, instance, false);
                     }
                     halResource.withRepresentation(roleType.getLabel().getValue(), roleResource);
                 }
@@ -280,7 +282,7 @@ public class HALConceptData {
             instancesStream.forEach(instance -> {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                         .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-                handleConcept(instanceResource, instance, separationDegree - 1);
+                handleConcept(instanceResource, instance, separationDegree - 1, false);
                 halResource.withRepresentation(ISA_EDGE, instanceResource);
             });
         }
@@ -288,7 +290,7 @@ public class HALConceptData {
         type.subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
             Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-            handleConcept(subResource, sub, separationDegree - 1);
+            handleConcept(subResource, sub, separationDegree - 1, false);
             halResource.withRepresentation(SUB_EDGE, subResource);
         });
     }

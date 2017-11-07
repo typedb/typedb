@@ -325,7 +325,13 @@ public abstract class Atom extends AtomicBase {
     }
 
     /**
-     * rewrites the atom to one with user defined name
+     * rewrites the atom to one with user defined relation variable
+     * @return rewritten atom
+     */
+    public Atom rewriteWithRelationVariable(){ return this;}
+
+    /**
+     * rewrites the atom to one with suitably user-defined names depending on provided parent
      * @param parentAtom parent atom that triggers rewrite
      * @return rewritten atom
      */
