@@ -31,6 +31,7 @@ import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
@@ -42,8 +43,6 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -229,8 +228,8 @@ public class EngineContext extends CompositeTestRule {
     private static GraknEngineConfig createTestConfig() {
         GraknEngineConfig config = GraknEngineConfig.create();
 
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT, getEphemeralPort());
-        config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + getEphemeralPort()));
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, GraknTestUtil.getEphemeralPort());
+        config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + GraknTestUtil.getEphemeralPort()));
 
         return config;
     }
@@ -239,11 +238,4 @@ public class EngineContext extends CompositeTestRule {
         RestAssured.baseURI = "http://" + config.uri();
     }
 
-    private static int getEphemeralPort() {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
