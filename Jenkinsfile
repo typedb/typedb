@@ -149,6 +149,7 @@ void addTests(jobs) {
         /* all known tests to run any tests not seen during the previous run.  */
         jobs["split-${i}"] = {  // example, "split3"
             graknNode {
+                String workspace = pwd()
                 checkout scm
 
                 slackGithub "Janus tests started"
@@ -160,12 +161,12 @@ void addTests(jobs) {
                 /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
                 /* Tell Maven to read the appropriate file. */
                 if (split.includes) {
-                    writeFile file: "target/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-                    mavenVerify += " -Dsurefire.includesFile=target/parallel-test-includes-${i}.txt"
+                    writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+                    mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
 
                 } else {
-                    writeFile file: "target/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
-                    mavenVerify += " -Dsurefire.excludesFile=target/parallel-test-excludes-${i}.txt"
+                    writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+                    mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
 
                 } // if split
 
