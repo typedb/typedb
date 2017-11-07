@@ -458,11 +458,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     public Answer getRoleSubstitution(){
-        Answer answer = new QueryAnswer();
+        Map<Var, Concept> roleSub = new HashMap<>();
         getAtoms(RelationshipAtom.class)
                 .flatMap(RelationshipAtom::getRolePredicates)
-                .forEach(p -> answer.put(p.getVarName(), tx().getConcept(p.getPredicate())));
-        return answer;
+                .forEach(p -> roleSub.put(p.getVarName(), tx().getConcept(p.getPredicate())));
+        return new QueryAnswer(roleSub);
     }
 
     /**

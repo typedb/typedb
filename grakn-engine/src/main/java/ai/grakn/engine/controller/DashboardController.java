@@ -26,8 +26,13 @@ import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.util.REST;
+import com.google.common.collect.Iterables;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -43,6 +48,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static ai.grakn.GraknTxType.READ;
+import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.ConceptController.mandatoryRequestParameter;
 import static ai.grakn.engine.controller.ConceptController.retrieveExistingConcept;
 import static ai.grakn.engine.controller.ConceptController.validateRequest;
@@ -169,7 +175,7 @@ public class DashboardController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         Json body = Json.object();
 
-        try (GraknTx graph = factory.tx(keyspace, READ)) {
+        try (GraknTx graph = factory.tx(keyspace, WRITE)) {
             Query<?> query = graph.graql().infer(true).parse(queryString);
             body.set(ORIGINAL_QUERY, query.toString());
 
@@ -179,7 +185,10 @@ public class DashboardController {
 
             int limitEmbedded = queryParameter(request, REST.Request.Graql.LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
             response.status(200);
-            return explanationAnswersToHAL(((GetQuery) query).stream(), limitEmbedded);
+            Printer<?> printer = Printers.hal(graph.getKeyspace(), limitEmbedded);
+            Answer answer = ((GetQuery) query).execute().stream().findFirst().orElse(new QueryAnswer());
+            return explanationAnswersToHAL(answer.getExplanation().getAnswers(), printer);
+
         }
 
     }

@@ -40,11 +40,12 @@ WAIT_INTERVAL_S=2
 if [ -z "${GRAKN_HOME}" ]; then
     [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
     GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-    GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
-    GRAKN_PID=/tmp/grakn.pid
-    GRAKN_STARTUP_TIMEOUT_S=120
-    GRAKN_SHUTDOWN_TIMEOUT_S=120
 fi
+
+GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
+GRAKN_PID=/tmp/grakn.pid
+GRAKN_STARTUP_TIMEOUT_S=120
+GRAKN_SHUTDOWN_TIMEOUT_S=120
 
 # Storage globals
 STORAGE_PID=/tmp/grakn-storage.pid
