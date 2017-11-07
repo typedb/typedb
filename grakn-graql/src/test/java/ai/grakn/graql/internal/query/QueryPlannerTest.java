@@ -127,13 +127,24 @@ public class QueryPlannerTest {
         System.out.println("plan = " + plan);
         assertEquals(x, plan.get(4).end());
 
+        pattern = and(
+                x.isa(var("superType")),
+                var("superType").label(thingy),
+                y.isa(thingy2),
+                z.isa(thingy3),
+                var("subType").sub(var("superType")),
+                var("zzzz").isa(var("subType")),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+        assertEquals(x, plan.get(5).end());
+
         tx.admin().shard(tx.getEntityType(thingy).getId());
         tx.admin().shard(tx.getEntityType(thingy).getId());
         tx.admin().shard(tx.getEntityType(thingy).getId());
 
         plan = getPlan(pattern);
         System.out.println("plan = " + plan);
-        //TODO
         assertEquals(y, plan.get(4).end());
 
         tx.admin().shard(tx.getEntityType(thingy1).getId());
@@ -142,8 +153,17 @@ public class QueryPlannerTest {
 
         plan = getPlan(pattern);
         System.out.println("plan = " + plan);
-
         assertEquals(y, plan.get(4).end());
+
+        pattern = and(
+                x.isa(var(thingy)), var(thingy).label(thingy),
+                y.isa(thingy2),
+                z.isa(thingy3),
+                var("xxx").sub(thingy),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+//        assertEquals(x, plan.get(4).end());
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {

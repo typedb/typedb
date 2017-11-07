@@ -33,6 +33,12 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Fragment following in sub edges
+ *
+ * @author Felix Chapman
+ */
+
 @AutoValue
 public abstract class InSubFragment extends Fragment {
 

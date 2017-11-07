@@ -33,6 +33,12 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Fragment following out sub edges
+ *
+ * @author Felix Chapman
+ */
+
 @AutoValue
 public abstract class OutSubFragment extends Fragment {
 
@@ -42,7 +48,6 @@ public abstract class OutSubFragment extends Fragment {
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
-
         return Fragments.outSubs(Fragments.isVertex(traversal));
     }
 

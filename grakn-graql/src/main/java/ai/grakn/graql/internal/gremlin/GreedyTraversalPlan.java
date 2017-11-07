@@ -105,7 +105,6 @@ public class GreedyTraversalPlan {
             final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
             Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
 
-//            Set<Weighted<DirectedEdge<Node>>> edgeSet =
             Set<Fragment> edgeFragmentSet = fragmentSet.stream()
                     .filter(filterNodeFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, tx))
                     .collect(Collectors.toSet());
@@ -115,12 +114,13 @@ public class GreedyTraversalPlan {
             edgeFragmentSet.forEach(fragment -> {
                 if (fragment instanceof InSubFragment) {
                     Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
-                    if (nodesWithFixedCost.containsKey(superType) && nodesWithFixedCost.get(superType) > 0) {
+                    if (nodesWithFixedCost.containsKey(superType) && nodesWithFixedCost.get(superType) > 0D) {
                         plan.add(fragment);
-                        nodesWithFixedCost.put(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
+                        connectedNodes.add(superType);
+                        nodesWithFixedCost.put(
+                                Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
                                 nodesWithFixedCost.get(superType));
                         subFragmentSet.add(fragment);
-//                        fragment.setAccurateFragmentCost(0D);
                     }
                 }
 //                else if  (fragment instanceof OutSubFragment) {
@@ -325,9 +325,8 @@ public class GreedyTraversalPlan {
 
         Node root = arborescence.getRoot();
 
-        System.out.println("root = " + root);
+        System.out.println("root before traversal = " + root);
         Set<Node> reachableNodes = Sets.newHashSet(root);
-        System.out.println("plan = " + plan);
         while (!reachableNodes.isEmpty()) {
             Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
                     branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).get();
