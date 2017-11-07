@@ -34,13 +34,13 @@ public class GraknEngineStartTest {
     private static final Set<EngineContext> engines = new HashSet<>();
 
     @ClassRule
-    public static final EngineContext engine1 = EngineContext.createWithEmbeddedRedis();
+    public static final EngineContext engine1 = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
-    public static final EngineContext engine2 = EngineContext.createWithEmbeddedRedis();
+    public static final EngineContext engine2 = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
-    public static final EngineContext engine3 = EngineContext.createWithEmbeddedRedis();
+    public static final EngineContext engine3 = EngineContext.createWithInMemoryRedis();
 
     @BeforeClass
     public static void groupEngines(){

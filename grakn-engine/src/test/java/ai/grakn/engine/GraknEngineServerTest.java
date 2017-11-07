@@ -21,7 +21,6 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.data.RedisWrapper;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.TxFactoryContext;
 import ai.grakn.util.GraknVersion;
@@ -44,7 +43,6 @@ import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -79,19 +77,6 @@ public class GraknEngineServerTest {
         when(jedisPool.getResource()).thenReturn(jedis);
     }
 
-    @Test
-    public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() throws IOException {
-        MockRedisRule mock = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(conf.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
-        mock.server().start();
-
-        // Start Engine
-        try (GraknEngineServer server = EngineTestHelper.cleanGraknEngineServer(conf)) {
-            server.start();
-            assertThat(server.getTaskManager(), instanceOf(RedisTaskManager.class));
-        }
-
-        mock.server().stop();
-    }
 
     @Test
     public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
