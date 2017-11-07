@@ -83,11 +83,13 @@ public class DashboardControllerTest {
         Response explainResponse = sendQueryExplain(queryString);
         explainResponse.then().statusCode(200);
         Json jsonResponse = Json.read(explainResponse.asString());
-        jsonResponse.asJsonList().forEach(concept -> {
-            assertTrue(concept.has("_baseType"));
-            assertTrue(concept.has("_type"));
-            assertTrue(concept.has("_id"));
-        });
+        jsonResponse.asJsonList()
+                .stream().flatMap(obj -> obj.asJsonMap().values().stream())
+                .forEach(concept -> {
+                    assertTrue(concept.has("_baseType"));
+                    assertTrue(concept.has("_links"));
+                    assertTrue(concept.has("_id"));
+                });
     }
 
     @Test

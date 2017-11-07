@@ -20,6 +20,8 @@
 
 import * as API from '../util/HALTerms';
 import * as Utils from './APIUtils';
+import _ from 'underscore';
+
 
 /**
  * Regular expression used to match URIs contained in attributes values
@@ -112,6 +114,8 @@ function parseHalObject(obj:Object, showIsa:boolean, nodes:Object[], edges:Objec
 
   if (API.KEY_EMBEDDED in obj) {
     Object.keys(obj[API.KEY_EMBEDDED]).forEach((key) => {
+      const embeddedNodes = obj[API.KEY_EMBEDDED][key];
+        // We can safely check only element 0 since we only support single inheritance.
       if ((key !== 'isa') || showIsa === true || obj._baseType in metaTypesSet) {
         parseEmbedded(obj[API.KEY_EMBEDDED][key], obj, key, showIsa, nodes, edges);
       }
@@ -119,6 +123,9 @@ function parseHalObject(obj:Object, showIsa:boolean, nodes:Object[], edges:Objec
   }
 }
 
+function flat(array){
+  return array.flatMap(x => Object.values(x).reduce((array, current) => array.concat(current), []));
+}
 
 export default {
    /**
@@ -133,12 +140,16 @@ export default {
     const edges = [];
 
     try {
-      const dataArray = (Array.isArray(data)) ? data : [data];
-      dataArray.forEach((x) => { parseHalObject(x, showIsa, nodes, edges); });
+      let dataArray = (Array.isArray(data)) ? flat(data) : [data];
+
+      dataArray
+      .forEach((x) => {
+        parseHalObject(x, showIsa, nodes, edges);
+      });
     } catch (error) {
       console.log(`GRAKN Exception while parsing HAL response: \n ${error.stack}`);
     }
-
-    return { nodes, edges };
+    const uniqueNodes = _.map(_.groupBy(nodes, doc => doc.properties.id), grouped => grouped[0]);
+    return { nodes: uniqueNodes, edges };
   },
 };

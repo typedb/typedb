@@ -64,32 +64,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.ask;
-import static ai.grakn.graql.Graql.contains;
-import static ai.grakn.graql.Graql.count;
-import static ai.grakn.graql.Graql.define;
-import static ai.grakn.graql.Graql.eq;
-import static ai.grakn.graql.Graql.group;
-import static ai.grakn.graql.Graql.gt;
-import static ai.grakn.graql.Graql.gte;
-import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.label;
-import static ai.grakn.graql.Graql.lt;
-import static ai.grakn.graql.Graql.lte;
-import static ai.grakn.graql.Graql.match;
-import static ai.grakn.graql.Graql.neq;
-import static ai.grakn.graql.Graql.or;
-import static ai.grakn.graql.Graql.parse;
-import static ai.grakn.graql.Graql.regex;
-import static ai.grakn.graql.Graql.select;
-import static ai.grakn.graql.Graql.std;
-import static ai.grakn.graql.Graql.undefine;
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.Graql.withoutGraph;
+import static ai.grakn.graql.Graql.*;
 import static ai.grakn.graql.Order.desc;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
+import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
@@ -944,7 +923,7 @@ public class QueryParserTest {
     }
 
     @Test
-    public void whenParsingAQueryAndDefiningAllVars_AllVarsAreDefined() {
+    public void whenParsingAQueryAndDefiningAllVars_AllVarsExceptLabelsAreDefined() {
         QueryParser parser = Graql.parser();
         parser.defineAllVars(true);
         GetQuery query = parser.parseQuery("match ($x, $y) isa foo; get;");
@@ -961,7 +940,7 @@ public class QueryParserTest {
 
         IsaProperty property = pattern.getProperty(IsaProperty.class).get();
 
-        assertTrue(property.type().var().isUserDefinedName());
+        assertFalse(property.type().var().isUserDefinedName());
     }
 
     private static void assertParseEquivalence(String query) {
