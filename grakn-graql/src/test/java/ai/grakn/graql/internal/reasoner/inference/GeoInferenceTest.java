@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.empty;
 public class GeoInferenceTest {
 
     @Rule
-    public final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get());
+    public final SampleKBContext geoKB = GeoKB.context();
 
     @BeforeClass
     public static void onStartup() throws Exception {

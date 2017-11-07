@@ -37,10 +37,10 @@ public class CWInferenceTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static SampleKBContext cwKB = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwKB = CWKB.context();
 
     @ClassRule
-    public static SampleKBContext cwKB2 = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwKB2 = CWKB.context();
 
     @BeforeClass
     public static void onStartup() throws Exception {

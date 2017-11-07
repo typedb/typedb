@@ -81,7 +81,7 @@ public class UndefineQueryTest {
     private static final Label NEW_TYPE = Label.of("new-type");
 
     @ClassRule
-    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieKB = MovieKB.context();
     public static final Var x = var("x");
 
     private QueryBuilder qb;

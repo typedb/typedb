@@ -22,6 +22,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.Keyspace;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.TxFactoryContext;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.StandardSystemProperty;
@@ -43,9 +44,11 @@ public class GraknEngineStartTest {
     @ClassRule
     public static MockRedisRule mockRedisRule = MockRedisRule.create(REDIS_PORT);
 
+    @ClassRule
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+
     @BeforeClass
     public static void setUpClass() {
-        GraknTestSetup.startCassandraIfNeeded();
         GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
     }
 

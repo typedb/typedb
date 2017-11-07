@@ -50,7 +50,7 @@ public class PatternTest {
     private GraknTx tx = rule.tx();
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

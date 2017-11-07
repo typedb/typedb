@@ -81,8 +81,10 @@ public class RemoteSessionTest {
     );
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EmbeddedCassandra.start();
+    public static final EmbeddedCassandra cassandra = EmbeddedCassandra.create();
+
+    @ClassRule
+    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
         Properties properties = GraknEngineConfig.create().getProperties();
         EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, properties);
         new SystemController(spark, properties, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
