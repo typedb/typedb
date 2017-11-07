@@ -43,6 +43,7 @@ if [ -z "${GRAKN_HOME}" ]; then
     GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
     GRAKN_PID=/tmp/grakn.pid
     GRAKN_STARTUP_TIMEOUT_S=120
+    GRAKN_SHUTDOWN_TIMEOUT_S=120
 fi
 
 # Storage globals
@@ -67,6 +68,21 @@ update_classpath_global_var() {
   # Add path containing grakn.properties and logback.xml
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
+}
+
+print_status_message() {
+  if [ $1 -eq 0 ] ; then
+      echo "SUCCESS"
+  else
+      echo "FAILED!"
+  fi
+}
+
+print_failure_diagnostics() {
+  echo "======== Failure Diagnostics ========"
+  echo "Grakn pid = '`cat $GRAKN_PID`' (from $GRAKN_PID), '`grakn_get_pid_by_ps_ef`' (from ps -ef)"
+  echo "Queue pid = '`cat $QUEUE_PID`' (from $QUEUE_PID), '`queue_get_pid_by_ps_ef`' (from ps -ef)"
+  echo "Storage pid = '`cat $STORAGE_PID`' (from $STORAGE_PID)"
 }
 
 # ================================================
@@ -303,26 +319,11 @@ grakn_check_if_running_by_pidfile() {
   fi
 }
 
-print_status_message() {
-  if [ $1 -eq 0 ] ; then
-      echo "SUCCESS"
-  else
-      echo "FAILED!"
-  fi
-}
-
-print_failure_diagnostics() {
-  echo "======== Failure Diagnostics ========"
-  echo "Grakn pid = '`cat $GRAKN_PID`' (from $GRAKN_PID), '`grakn_get_pid_by_ps_ef`' (from ps -ef)"
-  echo "Queue pid = '`cat $QUEUE_PID`' (from $QUEUE_PID), '`queue_get_pid_by_ps_ef`' (from ps -ef)"
-  echo "Storage pid = '`cat $STORAGE_PID`' (from $STORAGE_PID)"
-}
-
 grakn_check_if_ready() {
   local host=`cat "${GRAKN_HOME}"/conf/grakn.properties | grep server.host | awk -F "=" '{print $2}'`
   local port=`cat "${GRAKN_HOME}"/conf/grakn.properties | grep server.port | awk -F "=" '{print $2}'`
   curl $host:$port/configuration > /dev/null 2>&1
-  return $?
+  return $? # curl would return 0 upon a successful response or nonzero otherwise
 }
 
 grakn_wait_until_ready() {
@@ -372,23 +373,55 @@ grakn_start_and_wait_until_ready() {
   fi
 }
 
-grakn_stop_process() {
+grakn_wait_until_terminated() {
+  local now_s=`date '+%s'`
+  local stop_s=$(( $now_s + $GRAKN_SHUTDOWN_TIMEOUT_S ))
+
+  while [ $now_s -le $stop_s ]; do
+      echo -n "." # output some sort of "progress bar"
+      grakn_check_if_ready
+      local is_grakn_ready=$?
+      if [ $is_grakn_ready -ne 0 ] ; then
+          return 0
+      fi
+      sleep $WAIT_INTERVAL_S
+      now_s=`date '+%s'`
+  done
+
+  return 1
+}
+
+grakn_stop_and_wait_until_terminated() {
   echo -n "Stopping Grakn..."
+  local status=
   grakn_check_if_running_by_pidfile
   local is_grakn_running=$?
   if [[ $is_grakn_running -eq 0 ]]; then
     if [[ -e "$GRAKN_PID" ]]; then
       kill `cat $GRAKN_PID`
-      status_kill=$?
-      rm $GRAKN_PID
-      print_status_message ${status_kill}
-      return $status_kill
+      local status_kill=$?
+      if [ $status_kill -eq 0 ]; then
+        grakn_wait_until_terminated
+        local status_wait_until_terminated=$?
+        if [ $status_wait_until_terminated -eq 0 ]; then
+          status=0
+        else
+          # wait failed for some reason
+          status=1
+        fi
+      else
+        # unable to kill for some reason
+        status=1
+      fi
     else
-      echo "FAILED!" # unable to find PID file
-      return 1
+      # unable to find PID file
+      status=1
     fi
+    print_status_message ${status}
+    return $status
   else
     echo "NOT RUNNING"
+    return 0
   fi
 }
 
@@ -401,7 +434,7 @@ grakn_wipe_all_data() {
 # command line case statement helpers
 # ================================================
 cli_case_grakn_server_stop_all() {
-  grakn_stop_process
+  grakn_stop_and_wait_until_terminated
   status_grakn=$?
 
   queue_stop_process
@@ -630,7 +663,7 @@ cli_case_grakn_server_start() {
 cli_case_grakn_server_stop() {
   case $1 in
     grakn)
-      grakn_stop_process
+      grakn_stop_and_wait_until_terminated
       status=$?
       if [ $status -eq 0 ] ; then
         # do nothing
