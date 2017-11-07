@@ -82,6 +82,11 @@ public class SparkContext extends ExternalResource {
         return this;
     }
 
+    public SparkContext host(String host) {
+        config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, host);
+        return this;
+    }
+
     public int port() {
         return config.getProperty(GraknConfigKey.SERVER_PORT);
     }

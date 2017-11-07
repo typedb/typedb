@@ -19,15 +19,17 @@
 package ai.grakn.engine;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.util.MockRedisRule;
-import ai.grakn.util.SimpleURI;
-import com.google.common.collect.Iterables;
+import ai.grakn.engine.controller.SparkContext;
+import ai.grakn.engine.controller.SystemController;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.test.TxFactoryContext;
+import com.codahale.metrics.MetricRegistry;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -38,19 +40,37 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ai.grakn.engine.SystemKeyspace.SYSTEM_KB_KEYSPACE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SystemKeyspaceTest {
-    private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> EngineTestHelper.factory().tx(k, GraknTxType.WRITE);
-    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(EngineTestHelper.uri(), k).open(GraknTxType.WRITE);
+    private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> graknFactory.tx(k, GraknTxType.WRITE);
+    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(sparkContext.uri(), k).open(GraknTxType.WRITE);
 
+    private static final GraknEngineConfig config = GraknEngineConfig.create();
+    private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
+    private static final MetricRegistry metricRegistry = new MetricRegistry();
+    private static final LockProvider lockProvider = mock(LockProvider.class);
+    private static final EngineGraknTxFactory graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
+    private static final SystemKeyspace systemKeyspace = SystemKeyspaceImpl.create(graknFactory, lockProvider, false);
+
+    //Needed so that Grakn.session() can return a session
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(EngineTestHelper.config().getProperty(GraknConfigKey.REDIS_HOST))).getPort());
+    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        new SystemController(spark, config.getProperties(), systemKeyspace, status, metricRegistry);
+    }).host("0.0.0.0").port(4567);
+
+    //Needed to start cass depending on profile
+    @ClassRule
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -58,13 +78,14 @@ public class SystemKeyspaceTest {
     private final Set<GraknTx> transactions = new HashSet<>();
 
     @BeforeClass
-    public static void beforeClass() {
-        EngineTestHelper.engineWithKBs();
+    public static void configureMock(){
+        Lock lock = mock(Lock.class);
+        when(lockProvider.getLock(any())).thenReturn(lock);
     }
 
     @After
     public void cleanSystemKeySpaceGraph(){
-        try (GraknTx tx = EngineTestHelper.factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
+        try (GraknTx tx = graknFactory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
             tx.getEntityType("keyspace").instances().forEach(Concept::delete);
             tx.getAttributeType("keyspace-name").instances().forEach(Concept::delete);
             tx.commit();
@@ -82,7 +103,7 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
-            assertTrue(EngineTestHelper.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
+            assertTrue(graknFactory.systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
         }
     }
 
@@ -95,7 +116,7 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system keyspace", spaces.contains(keyspace));
-            assertTrue(EngineTestHelper.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
+            assertTrue(graknFactory.systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
         }
     }
 
@@ -119,7 +140,7 @@ public class SystemKeyspaceTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
         }
-        assertFalse(EngineTestHelper.factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
     }
 
     @Test
@@ -142,7 +163,7 @@ public class SystemKeyspaceTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
         }
-        assertFalse(EngineTestHelper.factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
     }
     private Set<GraknTx> buildTxs(Function<String, GraknTx> txProvider, String ... keyspaces){
         Set<GraknTx> newTransactions = Arrays.stream(keyspaces)
@@ -153,7 +174,7 @@ public class SystemKeyspaceTest {
     }
 
     private Set<String> getSystemKeyspaces(){
-        try(GraknTx tx = EngineTestHelper.factory().tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)){
+        try(GraknTx tx = graknFactory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)){
             AttributeType<String> keyspaceName = tx.getAttributeType("keyspace-name");
             return tx.getEntityType("keyspace").instances().
                     map(e -> e.attributes(keyspaceName).iterator().next().getValue().toString()).
