@@ -116,7 +116,7 @@ public class ConceptController {
             response.type(APPLICATION_HAL);
             response.status(HttpStatus.SC_OK);
 
-            return Json.read(renderHALConceptData(concept, separationDegree, keyspace, offset, limit));
+            return Json.read(renderHALConceptData(concept, false, separationDegree, keyspace, offset, limit));
         }
     }
 

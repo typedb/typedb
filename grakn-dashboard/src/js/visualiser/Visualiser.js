@@ -566,7 +566,7 @@ export default class Visualiser {
   }
 
   generateLabel(type, properties, label, baseType) {
-    if (baseType === API.RELATIONSHIP || baseType === API.GENERATED_RELATIONSHIP_TYPE || baseType === API.INFERRED_RELATIONSHIP_TYPE) return '';
+    if (baseType === API.RELATIONSHIP || baseType === API.INFERRED_RELATIONSHIP_TYPE) return '';
     if (NodeSettings.getLabelProperties(type).length) {
       return NodeSettings.getLabelProperties(type).reduce((l, x) => {
         let value;
