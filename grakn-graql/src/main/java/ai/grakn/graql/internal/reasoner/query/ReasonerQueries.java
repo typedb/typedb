@@ -98,7 +98,7 @@ public class ReasonerQueries {
      * @return reasoner query with the substitution contained in the query
      */
     public static ReasonerQueryImpl create(ReasonerQueryImpl q, Answer sub){
-        return create(Sets.union(q.getAtoms(), sub.toPredicates(q)), q.tx());
+        return q.withSubstitution(sub).inferTypes();
     }
 
     /**
@@ -136,6 +136,6 @@ public class ReasonerQueries {
      * @return atomic query with the substitution contained in the query
      */
     public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, Answer sub){
-        return new ReasonerAtomicQuery(Sets.union(q.getAtoms(), sub.toPredicates(q)), q.tx()).inferTypes();
+        return q.withSubstitution(sub).inferTypes();
     }
 }

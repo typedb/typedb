@@ -24,11 +24,22 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.UnifierType;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import java.util.Collection;
+import junit.framework.TestCase;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -110,9 +121,10 @@ public class HALBuilderTest {
 
     @Test
     public void whenExplainInferred_returnsLinkedExplanation() {
-        String mainQuery = "match ($x, $y) isa cousins; limit 20; get;";
+        String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
         List<Answer> answers = genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery).execute();
         answers.forEach(answer -> {
+            System.out.println("####################");
             String cousin1 = answer.get("x").getId().getValue();
             String cousin2 = answer.get("y").getId().getValue();
             String specificQuery = "match " +
@@ -120,10 +132,10 @@ public class HALBuilderTest {
                     "$y id " + cousin2 + ";" +
                     "(cousin: $x, cousin: $y) isa cousins; get;";
             Printer<?> printer = Printers.hal(genealogyKB.tx().getKeyspace(), 5);
-            Query<?> query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
-            Answer specificAnswer = ((GetQuery) query).execute().stream().findFirst().orElse(new QueryAnswer());
-            Json expl = explanationAnswersToHAL(specificAnswer.getExplanation().getAnswers(), printer);
+            GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
+            Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
 
+            Json expl = explanationAnswersToHAL(specificAnswer.getExplanation().getAnswers(), printer);
             System.out.println(expl.toString());
 
             Json siblings = expl.asJsonList().stream()
@@ -162,6 +174,4 @@ public class HALBuilderTest {
         });
 
     }
-
-
 }

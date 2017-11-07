@@ -27,12 +27,19 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import java.util.Collection;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -42,6 +49,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.var;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -82,10 +90,10 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_TransitiveClosure() {
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), warsaw));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), masovia));
-        Answer answer3 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
-        Answer answer4 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), europe));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), warsaw));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), masovia));
+        Answer answer3 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
+        Answer answer4 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), europe));
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
@@ -131,8 +139,8 @@ public class ExplanationTest {
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y isa country;$y has name 'Poland'; get;";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), uw, Graql.var("y"), poland));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(var("x"), uw, var("y"), poland));
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
@@ -246,8 +254,69 @@ public class ExplanationTest {
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
 
+    @Test
+    public void testExplanationConsistency(){
+        GraknTx genealogyGraph = genealogyKB.tx();
+        QueryBuilder iqb = genealogyGraph.graql().infer(true);
+
+        String queryString = "match " +
+                "($x, $y) isa cousins;" +
+                "limit 3; get;";
+
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+
+        answers.forEach(answer -> {
+            testExplanation(answer);
+
+            String specificQuery = "match " +
+                    "$x id '" + answer.get(var("x")).getId().getValue() + "';" +
+                    "$y id '" + answer.get(var("y")).getId().getValue() + "';" +
+                    "(cousin: $x, cousin: $y) isa cousins;" +
+                    "limit 1; get;";
+            Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+            testExplanation(specificAnswer);
+        });
+
+    }
+
+    private void testExplanation(Answer answer){
+        AnswerExplanation explanation = answer.getExplanation();
+
+        if (explanation.isRuleExplanation()) {
+            Atom atom = ((ReasonerAtomicQuery) explanation.getQuery()).getAtom();
+            Atom headAtom = ((RuleExplanation) explanation).getRule().getHead().getAtom();
+
+            Unifier unifier = headAtom.getMultiUnifier(atom, UnifierType.RULE).unifiers().stream().findFirst().orElse(new UnifierImpl());
+            Unifier inverse = unifier.inverse();
+            Answer inferredAnswer = Iterables.getOnlyElement(
+                    new ReasonerAtomicQuery(headAtom.rewriteWithRelationVariable())
+                            .materialise(answer.unify(inverse))
+                            .map(ans -> ans.unify(unifier))
+                            .collect(Collectors.toSet())
+            );
+
+            assertTrue(inferredAnswer.containsAll(answer));
+            Set<Answer> explAnswers = explanation.getAnswers();
+            Set<Answer> inferredExplAnswers = inferredAnswer.getExplanation().getAnswers();
+            assertEquals(explAnswers, inferredExplAnswers);
+            answerConnectedness(explAnswers);
+            answerConnectedness(inferredExplAnswers);
+        }
+    }
+
+    private void answerConnectedness(Collection<Answer> answers){
+        answers.forEach(a -> {
+            assertTrue(
+                    answers.stream()
+                            .filter(a2 -> !a2.equals(a))
+                            .filter(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
+                            .findFirst().isPresent()
+            );
+        });
+    }
+
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
-        return graph.graql().match(Graql.var("x").has(typeLabel, val)).get("x").findAny().get();
+        return graph.graql().match(var("x").has(typeLabel, val)).get("x").findAny().get();
     }
 
     private Answer findAnswer(Answer a, List<Answer> list){

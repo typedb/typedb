@@ -91,8 +91,8 @@ class AnswerState extends ResolutionState {
     private Answer getMaterialisedAnswer(ReasonerAtomicQuery query, InferenceRule rule, QueryCache<ReasonerAtomicQuery> cache){
         Answer ans = getSubstitution();
 
-        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, ans);
-        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), ans);
+        ReasonerAtomicQuery subbedQuery = query.withSubstitution(ans);
+        ReasonerAtomicQuery ruleHead = rule.getHead().withSubstitution(ans);
 
         Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()?
                 unifier.keySet() :
