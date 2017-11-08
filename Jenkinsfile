@@ -127,8 +127,7 @@ void addTests(jobs) {
     // change timeout based on how many splits we have. e.g. 1 split = 120min, 3 splits = 60min
     def testTimeout = 30 + 90 / numSplits;
 
-    for (int i = 0; i < numSplits; i++) {
-        def split = splits[i]
+    splits.eachWithIndex { split, i ->
 
         /* Loop over each record in splits to prepare the testGroups that we'll run in parallel. */
         /* Split records returned from splitTests contain { includes: boolean, list: List<string>  }. */
