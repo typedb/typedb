@@ -57,7 +57,7 @@ import static org.junit.Assert.assertEquals;
 public class AggregateTest {
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

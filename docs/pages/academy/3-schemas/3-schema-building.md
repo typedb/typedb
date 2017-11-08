@@ -10,7 +10,7 @@ folder: overview
 toc: false
 KB: academy
 ---
-In the [last lesson](/academy/conceptual-modeling-intro.html), we have built, using an entity-relationship modeling process, the sketch of a conceptual model for our data. In this lesson, we will see how to translate that sketch into a working GRAKN schema. As you will see, the whole thing will be quite straightforward.
+In the [last lesson](./conceptual-modeling-intro.html), we have built, using an entity-relationship modeling process, the sketch of a conceptual model for our data. In this lesson, we will see how to translate that sketch into a working GRAKN schema. As you will see, the whole thing will be quite straightforward.
 
 ## Concept hierarchies
 The first thing you need to know is that every concept in a GRAKN schema is part of a hierarchy; this allows a lot more power in your model, and it is one of the thing that separates GRAKN from a [property graph](https://github.com/tinkerpop/gremlin/wiki/Defining-a-Property-Graph) or a traditional relational database (Object Relational Database Management Systems also have this feature, but it comes with a lot of added weight).
@@ -96,4 +96,4 @@ Try adding to your schema file the resources that you have listed in the concept
 
 
 ## What next?
-In this lesson you should have learned how to turn your conceptual model into a working GRAKN schema. Only one step remains: linking concepts together with roles, which will be done in the [next lesson](/academy/schema-building-continued.html), where you will also find a draft of how your schema file should look so far.
+In this lesson you should have learned how to turn your conceptual model into a working GRAKN schema. Only one step remains: linking concepts together with roles, which will be done in the [next lesson](./schema-building-continued.html), where you will also find a draft of how your schema file should look so far.

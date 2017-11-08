@@ -8,6 +8,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.TxFactoryContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
@@ -84,10 +85,14 @@ public class GraqlControllerTest {
                 .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace));
     }
 
+    //Needed to start cass depending on profile
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
-    public static SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
+    @ClassRule
+    public static SampleKBContext sampleKB = MovieKB.context();
+
+    public static SampleKBContext genealogyKB = GenealogyKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {

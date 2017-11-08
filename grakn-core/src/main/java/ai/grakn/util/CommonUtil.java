@@ -212,4 +212,13 @@ public class CommonUtil {
             }
         };
     }
+
+    public static StringBuilder simplifyExceptionMessage(Throwable e) {
+        StringBuilder message = new StringBuilder(e.getMessage());
+        while(e.getCause() != null) {
+            e = e.getCause();
+            message.append("\n").append(e.getMessage());
+        }
+        return message;
+    }
 }

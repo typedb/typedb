@@ -11,7 +11,7 @@ toc: false
 KB: academy
 ---
 
-As anticipated in the [last lesson](/academy/reasoner-intro.html), in this module you are going to learn how to use GRAKN Reasoner to make your data more intelligent.
+As anticipated in the [last lesson](./reasoner-intro.html), in this module you are going to learn how to use GRAKN Reasoner to make your data more intelligent.
 
 Among others, the two most common uses for Reasoner are:
 Knowledge discovery: as in the deserted island example you have read about in the last lesson, we can use logic inference to extract more knowledge out of our data without modifying it.
@@ -38,7 +38,7 @@ RULE_LABEL sub rule,
       }
 ```
 
-The rule label is just a unique shorthand that you use to refer to the specific concept in the schema, like the names of the types and roles that you have used during [module 3](/academy/schema-elements.html).
+The rule label is just a unique shorthand that you use to refer to the specific concept in the schema, like the names of the types and roles that you have used during [module 3](./schema-elements.html).
 
 The first block of the rule, the WHEN part or block, is just a list of patterns that works exactly like the `match` part of a normal query; the THEN part, on the other hand, is a bit more restrictive: you can only use variables that have been defined in the when part and you can only have at most one single `isa` pattern and one single `has` pattern. This is what is called an _atomic pattern_.
 
@@ -87,4 +87,4 @@ Save your result in a file called, for example. `rules.gql` and store it for fut
 You now should be able to GRAKN inference rules and know how a rule is structured. You are almost done building the example knowledge base!
 
 ## What next?
-In the [next lesson](/academy/advanced-rules.html) you will discover how to improve the rule you just wrote and make it more useful for future uses and will learn more about how Reasoner works. If you want to know more about atomic patterns and what you can actually use in a then block, head over to the [docs](/index.html).
+In the [next lesson](./advanced-rules.html) you will discover how to improve the rule you just wrote and make it more useful for future uses and will learn more about how Reasoner works. If you want to know more about atomic patterns and what you can actually use in a then block, head over to the [docs](../index.html).

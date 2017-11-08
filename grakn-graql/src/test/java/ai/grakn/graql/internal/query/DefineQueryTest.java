@@ -82,7 +82,7 @@ public class DefineQueryTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final SampleKBContext movies = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movies = MovieKB.context();
 
     @Before
     public void setUp() {

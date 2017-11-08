@@ -14,50 +14,45 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.test.client;
-
-import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
-
-import ai.grakn.client.TaskClient;
-import com.codahale.metrics.MetricRegistry;
-import static java.time.Instant.now;
-import static junit.framework.TestCase.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+package ai.grakn.client;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.test.SparkContext;
-
-import java.time.Duration;
-import java.time.Instant;
+import com.codahale.metrics.MetricRegistry;
+import junit.framework.TestCase;
 import mjson.Json;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 
+import java.time.Duration;
+import java.time.Instant;
+
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static java.time.Instant.now;
+
+// TODO: move this test into grakn-client when possible
 public class TaskClientTest {
 
     private static TaskClient client;
-    private static TaskManager manager = mock(TaskManager.class);
+    private static TaskManager manager = Mockito.mock(TaskManager.class);
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -70,7 +65,7 @@ public class TaskClientTest {
     @Before
     public void setUp() {
         client = TaskClient.of("localhost", ctx.port());
-        when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
+        Mockito.when(manager.storage()).thenReturn(Mockito.mock(TaskStateStorage.class));
     }
 
     @Test
@@ -84,13 +79,13 @@ public class TaskClientTest {
         TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration,
                 true).getTaskId();
 
-        verify(manager).runTask(argThat(argument ->
+        Mockito.verify(manager).runTask(ArgumentMatchers.argThat(argument ->
                 argument.getId().equals(identifier)
                 && argument.taskClass().equals(taskClass)
                 && argument.schedule().runAt().equals(runAt)
                 && argument.schedule().interval().get().equals(interval)
                 && argument.creator().equals(creator)),
-                argThat(argument -> argument.json().toString().equals(configuration.toString())));
+                ArgumentMatchers.argThat(argument -> argument.json().toString().equals(configuration.toString())));
     }
 
     @Test
@@ -127,7 +122,7 @@ public class TaskClientTest {
     @Test
     public void whenGettingStatusOfATaskAndSeverHasNotStoredTask_TheClientThrowsStorageException(){
         TaskState task = createTask();
-        when(manager.storage().getState(task.getId()))
+        Mockito.when(manager.storage().getState(task.getId()))
                 .thenThrow(GraknBackendException.stateStorage());
 
         exception.expect(GraknBackendException.class);
@@ -138,21 +133,21 @@ public class TaskClientTest {
     @Test
     public void whenGettingStatusOfATask_TheTaskManagerReceivedTheRequest(){
         TaskState task = createTask();
-        when(manager.storage().getState(task.getId())).thenReturn(task);
+        Mockito.when(manager.storage().getState(task.getId())).thenReturn(task);
 
         client.getStatus(task.getId());
 
-        verify(manager.storage()).getState(eq(task.getId()));
+        Mockito.verify(manager.storage()).getState(ArgumentMatchers.eq(task.getId()));
     }
 
     @Test
     public void whenGettingStatusOfATask_TheTaskManagerReturnsAStatus(){
         TaskState task = createTask();
-        when(manager.storage().getState(task.getId())).thenReturn(task);
+        Mockito.when(manager.storage().getState(task.getId())).thenReturn(task);
 
         TaskStatus status = client.getStatus(task.getId());
 
-        assertThat(status, equalTo(CREATED));
+        MatcherAssert.assertThat(status, IsEqual.equalTo(CREATED));
     }
 
     @Test
@@ -161,15 +156,19 @@ public class TaskClientTest {
 
         client.stopTask(taskId);
 
-        verify(manager).stopTask(eq(taskId));
+        Mockito.verify(manager).stopTask(ArgumentMatchers.eq(taskId));
     }
 
     @Test
     public void whenStoppingATaskAndThereIsAnError_ReturnFalse() {
         TaskId taskId = TaskId.generate();
 
-        doThrow(new RuntimeException("out of cheese error")).when(manager).stopTask(any());
+        Mockito.doThrow(new RuntimeException("out of cheese error")).when(manager).stopTask(ArgumentMatchers.any());
 
-        assertFalse(client.stopTask(taskId));
+        TestCase.assertFalse(client.stopTask(taskId));
+    }
+
+    private TaskState createTask() {
+        return TaskState.of(ShortExecutionMockTask.class, TaskClient.class.getName(), TaskSchedule.now(), TaskState.Priority.LOW);
     }
 }

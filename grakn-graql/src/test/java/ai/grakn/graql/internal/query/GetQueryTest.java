@@ -57,7 +57,7 @@ public class GetQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieKB = MovieKB.context();
 
     @Before
     public void setUp() {
