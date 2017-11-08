@@ -153,10 +153,8 @@ That means atomic queries contain at most one statement that can potentially app
 | `regex` | `$x isa attribute, regex /hello/;` | ✓ | x |
 
 ## Configuration options
-Graql offers certain degrees of freedom in deciding how and if reasoning should be performed. Namely it offers two options:
-
-* **whether reasoning should be on**. This option is self-explanatory. If the reasoning is not turned on, the rules will not be triggered and no knowledge will be inferred.
-* **whether inferred knowledge should be materialised (persisted to the knowledge base) or stored in memory**. Persisting to knowledge base has a huge impact on performance when compared to in-memory inference, and, for larger graphs, materialisation should either be avoided or queries be limited by employing the _limit_ modifier, which allows termination in sensible time.
+Graql provides an option to decide whether reasoning should be performed.
+If the reasoning is not turned on, the rules will not be triggered and no knowledge will be inferred.
 
 ## Where Next?
 
