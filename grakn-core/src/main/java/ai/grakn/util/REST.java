@@ -190,7 +190,6 @@ public class REST {
             public static final String QUERY = "query";
             public static final String INFER = "infer";
             public static final String MULTI = "multi";
-            public static final String MATERIALISE = "materialise";
             public static final String LIMIT_EMBEDDED = "limitEmbedded";
             public static final String DEFINE_ALL_VARS = "defineAllVars";
         }
