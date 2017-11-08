@@ -2,23 +2,15 @@
 
 source snb-env.sh
 
-BRANCH_NAME=$1
-
-# TODO: it shouldn't be necessary to re-build grakn to make SNB work
-build-grakn.sh ${BRANCH_NAME}
-
 build-snb-connectors.sh
 
-LDBC_CONNECTOR=${WORKSPACE}/grakn-test/test-snb/target/test-snb-${BRANCH_NAME}-jar-with-dependencies.jar
-
-# TODO: This is weird and possibly unnecessary now
-LDBC_DRIVER=${HOME}/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar
+LDBC_CONNECTOR=${WORKSPACE}/grakn-test/test-snb/target/test-snb-*-jar-with-dependencies.jar
 
 LDBC_VALIDATION_CONFIG=${WORKSPACE}/grakn-test/test-snb/src/main/bash/readwrite_grakn--ldbc_driver_config--db_validation.properties
 
 # execute validation
 java \
-    -classpath ${LDBC_DRIVER}:${LDBC_CONNECTOR} com.ldbc.driver.Client \
+    -classpath ${LDBC_CONNECTOR} com.ldbc.driver.Client \
     -db ai.grakn.GraknDb \
     -P ${LDBC_VALIDATION_CONFIG} \
     -vdb ${CSV_DATA}/validation_params.csv \

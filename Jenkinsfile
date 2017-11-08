@@ -4,7 +4,6 @@ import static Constants.*;
 
 // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
 // `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
-// `validate.sh` will be passed the branch name (e.g. "master") as the first argument
 def integrationTests = ["test-snb"]
 
 class Constants {
@@ -44,7 +43,7 @@ def runIntegrationTest(String workspace, String moduleName) {
                 }
                 timeout(360) {
                     stage('Validate') {
-                        sh "validate.sh ${env.BRANCH_NAME}"
+                        sh "validate.sh"
                     }
                 }
             }
