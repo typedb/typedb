@@ -37,9 +37,12 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
+import ai.grakn.graql.internal.reasoner.state.RuleState;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.Sets;
 
@@ -293,6 +296,31 @@ public class InferenceRule {
      */
     public InferenceRule rewriteToUserDefined(Atom parentAtom){
         return requiresRewrite(parentAtom)? rewrite(parentAtom) : this;
+    }
+
+    /**
+     *
+     * @param parentAtom
+     * @param unifier
+     * @param parent
+     * @param visitedSubGoals
+     * @param cache
+     * @return
+     */
+    public QueryStateBase subGoal(Atom parentAtom, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Unifier ruleUnifierInverse = unifier.inverse();
+
+        //delta' = theta . thetaP . delta
+        Answer partialSubPrime = ((ReasonerQueryImpl) parentAtom.getParentQuery())
+                .getSubstitution()
+                .unify(ruleUnifierInverse);
+
+
+        InferenceRule inferenceRule = this.propagateConstraints(parentAtom, ruleUnifierInverse);
+        return new RuleState(
+                inferenceRule.getBody().subGoal(partialSubPrime, unifier, parent, visitedSubGoals, cache),
+                inferenceRule
+        );
     }
 
     /**

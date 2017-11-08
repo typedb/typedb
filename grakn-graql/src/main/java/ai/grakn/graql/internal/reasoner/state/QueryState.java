@@ -22,8 +22,10 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.query.QueryStateIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -35,18 +37,31 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-public abstract class QueryState extends ResolutionState {
+public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryStateBase{
 
-    private final Unifier unifier;
-    private final Set<ReasonerAtomicQuery> subGoals;
-    private final QueryCache<ReasonerAtomicQuery> cache;
+    private final Q query;
+    private final Iterator<Answer> dbIterator;
+    private final Iterator<QueryStateBase> subGoalIterator;
+    private final MultiUnifier cacheUnifier;
 
-    QueryState(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
-        super(sub, parent);
-        this.unifier = u;
-        this.subGoals = subGoals;
-        this.cache = cache;
+    QueryState(Q query, Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+        super(sub, u, parent, subGoals, cache);
+        this.query = query;
+
+        QueryStateIterator queryStateIterator = query.queryStateIterator(this, subGoals, cache);
+        this.dbIterator = queryStateIterator.dbIterator();
+        this.cacheUnifier = queryStateIterator.cacheUnifier();
+        this.subGoalIterator = queryStateIterator.subGoalIterator();
     }
+
+    @Override
+    public ResolutionState generateSubGoal() {
+        if (dbIterator.hasNext()){
+            return new AnswerState(dbIterator.next(), getUnifier(), this);
+        }
+        return subGoalIterator.hasNext()? subGoalIterator.next() : null;
+    }
+
 
     /**
      * @return true if this state corresponds to an atomic state
@@ -56,32 +71,10 @@ public abstract class QueryState extends ResolutionState {
     /**
      * @return query corresponding to this query state
      */
-    abstract ReasonerQueryImpl getQuery();
-
-    /**
-     * @return set of already visited subGoals (atomic queries)
-     */
-    Set<ReasonerAtomicQuery> getSubGoals(){ return subGoals;}
-
-    /**
-     * @return query cache
-     */
-    QueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
+    Q getQuery(){ return query;}
 
     /**
      * @return cache unifier if any
      */
-    abstract MultiUnifier getCacheUnifier();
-
-    /**
-     * @return unifier of this state with parent state
-     */
-    Unifier getUnifier(){ return unifier;}
-
-    /**
-     * propagates the answer state up the tree and acknowledges (caches) its substitution
-     * @param state to propagate
-     * @return new resolution state obtained by propagating the answer up the resolution tree
-     */
-    abstract ResolutionState propagateAnswer(AnswerState state);
+    MultiUnifier getCacheUnifier(){ return cacheUnifier;}
 }

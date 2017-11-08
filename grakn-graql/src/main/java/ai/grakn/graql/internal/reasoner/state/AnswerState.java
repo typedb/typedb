@@ -41,11 +41,19 @@ import java.util.Set;
  */
 class AnswerState extends ResolutionState {
 
+    private final InferenceRule rule;
     private final Unifier unifier;
 
-    AnswerState(Answer sub, Unifier u, QueryState parent) {
+    AnswerState(Answer sub, Unifier u, QueryStateBase parent) {
         super(sub, parent);
         this.unifier = u;
+        this.rule = null;
+    }
+
+    AnswerState(Answer sub, Unifier u, QueryStateBase parent, InferenceRule rule) {
+        super(sub, parent);
+        this.unifier = u;
+        this.rule = rule;
     }
 
     @Override
@@ -56,6 +64,8 @@ class AnswerState extends ResolutionState {
         return getParentState().propagateAnswer(this);
     }
 
+    InferenceRule getRule(){ return rule;}
+
     Unifier getUnifier(){ return unifier;}
 
     Answer getAnswer(){
@@ -64,7 +74,7 @@ class AnswerState extends ResolutionState {
             Answer answer;
             AtomicState parent = (AtomicState) getParentState();
             ReasonerAtomicQuery query = parent.getQuery();
-            InferenceRule rule = parent.getCurrentRule();
+            //InferenceRule rule = parent.getCurrentRule();
             QueryCache<ReasonerAtomicQuery> cache = parent.getCache();
             if (rule == null) answer = getSubstitution();
             else{
