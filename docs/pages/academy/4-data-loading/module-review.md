@@ -36,7 +36,7 @@ Verify that bonds have been migrated into the knowledge base using the GRAQL she
 ## Test your knowledge base!
 Congratulations! You should have built your first GRAKN knowledge base at this point!
 
-Retrieve the big GRAQL query from [module 2](/academy/graql-intro.html) and test it on your knowledge base. Did you get the same answer as you did within the "Academy" keypsace? Celebrate!
+Retrieve the big GRAQL query from [module 2](./graql-intro.html) and test it on your knowledge base. Did you get the same answer as you did within the "Academy" keypsace? Celebrate!
 
 ## What next?
-Now that you have data into your knowledge base, we have barely started the engine. It’s time to push the gas pedal a bit. It is time to look at [inference rules](/academy/reasoner-intro.html).
+Now that you have data into your knowledge base, we have barely started the engine. It’s time to push the gas pedal a bit. It is time to look at [inference rules](./reasoner-intro.html).

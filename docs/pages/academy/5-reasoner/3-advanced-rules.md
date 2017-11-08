@@ -118,7 +118,7 @@ So this new rule is much more useful: it is telling us that everything that affe
 
 
 ## Can you explain that?
-Save the two rules in their latest version in your `rules.gql` file and load them into your knowledge base as you have learned in the [last module](/academy/loading-files.html).
+Save the two rules in their latest version in your `rules.gql` file and load them into your knowledge base as you have learned in the [last module](./loading-files.html).
 
 Making sure that the GRAKN distribution in the VM is running, open the dashboard and make sure that the inference is turned on as shown below
 
@@ -160,7 +160,7 @@ So we know that those bonds and those platforms are connected, but why it is so?
 
   ![Explanation example 1](/images/academy/5-reasoner/bond-explanation.png)
 
-What you have just witnessed is the action of the explanation facility. What this means is that when you double click on an inferred relationship, Reasoner will tell you exactly why that relationship has been inferred and then you will be see the explanation with the graph visualiser.
+What you have just witnessed is the action of the explanation facility. What this means is that when you double click on an inferred relationship, Reasoner will tell you exactly why that relationship has been inferred and then you will see the explanation with the graph visualiser.
 
 If you check carefully the explanation that has been added to your visualiser, you will see that there is another inferred relationship. This is result of the first inference rule.
 
@@ -169,5 +169,5 @@ If you check carefully the explanation that has been added to your visualiser, y
 In this lesson you have learned how rules chaining works in reasoner (not much to do on your side: it just works) and how to use the explanation facility. There are still many things to discover, but you are ready to build powerful knowledge bases with GRAKN and to take full advantage of its capabilities! Well done!
 
 ## What next
-One last thing to do before we proceed to the next module: it is time to [review your knowledge](/academy/reasoner-review.html) about logic reasoning.
+One last thing to do before we proceed to the next module: it is time to [review your knowledge](./reasoner-review.html) about logic reasoning.
 

@@ -40,4 +40,4 @@ The latter kind of queries are particularly useful when you are dealing with thi
 In this lesson you have learned the difference between OLTP and OLAP queries and learned about the two kind of analytics queries.
 
 ## What next
-In the [next lesson](/academy/statistics-queries.html) you will learn about the syntax and the types of the carious analytics queries with some necessary low level caveats. If you want to learn more about analytics you can read this [blog post](https://blog.grakn.ai/distributed-big-data-analytics-with-graql-fc71500822d1) or have a look at the [docs](/index.html).
+In the [next lesson](./statistics-queries.html) you will learn about the syntax and the types of the carious analytics queries with some necessary low level caveats. If you want to learn more about analytics you can read this [blog post](https://blog.grakn.ai/distributed-big-data-analytics-with-graql-fc71500822d1) or have a look at the [docs](../index.html).

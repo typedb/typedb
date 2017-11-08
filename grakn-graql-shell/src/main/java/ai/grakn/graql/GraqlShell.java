@@ -25,6 +25,7 @@ import ai.grakn.client.QueryResponse;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.Splitter;
@@ -232,13 +233,13 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
-                try {
-                    sendBatchRequest(client.loaderClient(keyspace, location), cmd.getOptionValue("b"), keyspace);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                sendBatchRequest(client.loaderClient(keyspace, location), cmd.getOptionValue("b"), keyspace);
             } catch (NumberFormatException e) {
                 printUsage(options, "Cannot cast argument to an integer "+e.getMessage());
+                return false;
+            } catch (Exception e) {
+                System.out.println("Batch failed \n" + CommonUtil
+                        .simplifyExceptionMessage(e));
                 return false;
             }
             return true;
@@ -303,7 +304,7 @@ public class GraqlShell {
     private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
         String queries = loadQuery(graqlPath);
         List<Observable<QueryResponse>> all = new ArrayList<>();
-        Graql.parser().parseList(queries).forEach(query -> batchExecutorClient.add(query, keyspace, true));
+        Graql.parser().parseList(queries).forEach(query -> all.add(batchExecutorClient.add(query, keyspace, true)));
         int completed = allObservable(all).toBlocking().first().size();
         System.out.println("Statements executed: " + completed);
         batchExecutorClient.close();

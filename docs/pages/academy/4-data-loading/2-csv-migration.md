@@ -120,5 +120,5 @@ Why aren’t you using the template file you just wrote and using one stored in 
 In this lesson, you have learned about GRAQL templating language, macros and how to migrate CSV files into GRAKN. That was quite a lot, so be sure to have understood all the topics of this lesson before proceeding.
 
 ## What next?
-[Next lesson](/academy/xml-migration.html) will be about migrating files with a more complex structure than the tabular one of CSV. If you want to delve deeper into the GRAQL templating language and macros, as usual, head to the [docs](/index.html)
+[Next lesson](./xml-migration.html) will be about migrating files with a more complex structure than the tabular one of CSV. If you want to delve deeper into the GRAQL templating language and macros, as usual, head to the [docs](../index.html)
 
