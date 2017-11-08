@@ -45,17 +45,17 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
  */
 public class GraknClient {
 
-    public static final int CONNECT_TIMEOUT_MS = 60 * 1000;
+    public static final int CONNECT_TIMEOUT_MS = 5 * 60 * 1000;
     public static final int DEFAULT_MAX_RETRY = 3;
     private final Logger LOG = LoggerFactory.getLogger(GraknClient.class);
 
-    private final Client asyncHttpClient;
+    private final Client client;
     private final SimpleURI uri;
 
     public GraknClient(SimpleURI url)  {
-        this.asyncHttpClient = Client.create();
-        this.asyncHttpClient.setConnectTimeout(CONNECT_TIMEOUT_MS);
-        this.asyncHttpClient.setReadTimeout(CONNECT_TIMEOUT_MS * 2);
+        this.client = Client.create();
+        this.client.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        this.client.setReadTimeout(CONNECT_TIMEOUT_MS * 2);
         this.uri = url;
     }
 
@@ -66,7 +66,7 @@ public class GraknClient {
                 .path(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace.getValue()))
                 .queryParam(MULTI, true)
                 .build();
-        ClientResponse response = asyncHttpClient.resource(fullURI)
+        ClientResponse response = client.resource(fullURI)
                 .accept(APPLICATION_JSON_GRAQL)
                 .post(ClientResponse.class, body);
         try {
@@ -86,7 +86,7 @@ public class GraknClient {
         URI fullURI = UriBuilder.fromUri(uri.toURI())
                 .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace))
                 .build();
-        ClientResponse response = asyncHttpClient.resource(fullURI)
+        ClientResponse response = client.resource(fullURI)
                 .accept(APPLICATION_JSON)
                 .get(ClientResponse.class);
         Response.StatusType status = response.getStatusInfo();
