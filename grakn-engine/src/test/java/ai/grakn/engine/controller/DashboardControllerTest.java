@@ -7,6 +7,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.TxFactoryContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
@@ -55,6 +56,10 @@ public class DashboardControllerTest {
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Dashboard.EXPLORE + id);
     }
+
+    //Needed to start cass depending on profile
+    @ClassRule
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
     @ClassRule
     public static final SampleKBContext genealogyKB = GenealogyKB.context();

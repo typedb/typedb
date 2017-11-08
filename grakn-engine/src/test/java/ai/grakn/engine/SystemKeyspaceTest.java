@@ -59,8 +59,8 @@ public class SystemKeyspaceTest {
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final LockProvider lockProvider = mock(LockProvider.class);
-    private static final EngineGraknTxFactory graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
-    private static final SystemKeyspace systemKeyspace = SystemKeyspaceImpl.create(graknFactory, lockProvider, false);
+    private static EngineGraknTxFactory graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
+    private static SystemKeyspace systemKeyspace = SystemKeyspaceImpl.create(graknFactory, lockProvider, false);
 
     //Needed so that Grakn.session() can return a session
     @ClassRule
@@ -78,7 +78,10 @@ public class SystemKeyspaceTest {
     private final Set<GraknTx> transactions = new HashSet<>();
 
     @BeforeClass
-    public static void configureMock(){
+    public static void setup(){
+        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
+        systemKeyspace = SystemKeyspaceImpl.create(graknFactory, lockProvider, false);
+
         Lock lock = mock(Lock.class);
         when(lockProvider.getLock(any())).thenReturn(lock);
     }

@@ -25,7 +25,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.test.TxFactoryContext;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
@@ -80,8 +80,9 @@ public class RemoteSessionTest {
             MATERIALISE, false
     );
 
+    //Needed to start cass depending on profile
     @ClassRule
-    public static final EmbeddedCassandra cassandra = EmbeddedCassandra.create();
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
