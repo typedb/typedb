@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.util;
@@ -24,7 +25,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.TxFactory;
 import ai.grakn.graql.Query;
@@ -38,6 +38,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -67,7 +68,7 @@ public class SampleKBLoader {
     private boolean graphLoaded = false;
     private GraknTx tx;
 
-    protected SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
+    private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
     }
@@ -76,16 +77,8 @@ public class SampleKBLoader {
         return new SampleKBLoader(null);
     }
 
-    public static SampleKBLoader preLoad(Consumer<GraknTx> build){
+    public static SampleKBLoader preLoad(@Nullable Consumer<GraknTx> build){
         return new SampleKBLoader(build);
-    }
-
-    public static SampleKBLoader preLoad(String [] files){
-        return new SampleKBLoader((graknGraph) -> {
-            for (String file : files) {
-                loadFromFile(graknGraph, file);
-            }
-        });
     }
 
     public GraknTx tx(){
@@ -137,6 +130,7 @@ public class SampleKBLoader {
     private static Properties properties(){
         if(propertiesLoaded.compareAndSet(false, true)){
             String configFilePath = GraknSystemProperty.CONFIGURATION_FILE.value();
+            assert configFilePath != null;
 
             if (!Paths.get(configFilePath).isAbsolute()) {
                 configFilePath = getProjectPath() + configFilePath;
@@ -173,13 +167,15 @@ public class SampleKBLoader {
     }
 
     public static void loadFromFile(GraknTx graph, String file) {
-        try {
-            File graql = new File(file);
+        File graql = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + file);
 
-            graph.graql().parser().parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(Collectors.joining("\n")))
-                    .forEach(Query::execute);
-        } catch (IOException |InvalidKBException e){
+        List<String> queries;
+        try {
+            queries = Files.readLines(graql, StandardCharsets.UTF_8);
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        graph.graql().parser().parseList(queries.stream().collect(Collectors.joining("\n"))).forEach(Query::execute);
     }
 }

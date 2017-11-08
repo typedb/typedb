@@ -18,6 +18,7 @@
 
 package ai.grakn.util;
 
+import ai.grakn.exception.GraknBackendException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +94,7 @@ public class EngineCommunicator {
                 LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUri), e);
             }
         }
-        throw new RuntimeException(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUri));
+        throw GraknBackendException.cannotReach(engineUri.get());
     }
 
     private static boolean statusCodeIsSuccessful(int statusCode) {

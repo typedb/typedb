@@ -108,6 +108,11 @@ public class GraknSessionImpl implements GraknSession {
         Properties properties = new Properties();
         //Get Specific Configs
         properties.putAll(read(contactEngine(Optional.of(keyspaceUri), REST.HttpConn.PUT_METHOD)).asMap());
+
+        //Overwrite Engine IP with something which is remotely accessible
+        properties.put(GraknConfigKey.SERVER_HOST_NAME.name(), uri.getHost());
+        properties.put(GraknConfigKey.SERVER_PORT.name(), uri.getPort());
+
         return properties;
     }
 

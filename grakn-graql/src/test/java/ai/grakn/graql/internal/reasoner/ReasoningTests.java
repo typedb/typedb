@@ -61,100 +61,100 @@ import org.apache.commons.math3.util.CombinatoricsUtils;
 public class ReasoningTests {
 
     @ClassRule
-    public static final SampleKBContext testSet1 = SampleKBContext.preLoad("testSet1.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet1 = SampleKBContext.load("testSet1.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet1b = SampleKBContext.preLoad("testSet1b.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet1b = SampleKBContext.load("testSet1b.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet2 = SampleKBContext.preLoad("testSet2.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet2 = SampleKBContext.load("testSet2.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet3 = SampleKBContext.preLoad("testSet3.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet3 = SampleKBContext.load("testSet3.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet4 = SampleKBContext.preLoad("testSet4.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet4 = SampleKBContext.load("testSet4.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet5 = SampleKBContext.preLoad("testSet5.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet5 = SampleKBContext.load("testSet5.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet6 = SampleKBContext.preLoad("testSet6.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet6 = SampleKBContext.load("testSet6.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet7 = SampleKBContext.preLoad("testSet7.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet7 = SampleKBContext.load("testSet7.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet8 = SampleKBContext.preLoad("testSet8.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet8 = SampleKBContext.load("testSet8.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet9 = SampleKBContext.preLoad("testSet9.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet9 = SampleKBContext.load("testSet9.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet10 = SampleKBContext.preLoad("testSet10.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet10 = SampleKBContext.load("testSet10.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet11 = SampleKBContext.preLoad("testSet11.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet11 = SampleKBContext.load("testSet11.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet12 = SampleKBContext.preLoad("testSet12.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet12 = SampleKBContext.load("testSet12.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet13 = SampleKBContext.preLoad("testSet13.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet13 = SampleKBContext.load("testSet13.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet14 = SampleKBContext.preLoad("testSet14.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet14 = SampleKBContext.load("testSet14.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet15 = SampleKBContext.preLoad("testSet15.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet15 = SampleKBContext.load("testSet15.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet16 = SampleKBContext.preLoad("testSet16.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet16 = SampleKBContext.load("testSet16.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet17 = SampleKBContext.preLoad("testSet17.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet17 = SampleKBContext.load("testSet17.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet19 = SampleKBContext.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet19 = SampleKBContext.load("testSet19.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet19recursive = SampleKBContext.preLoad("testSet19-recursive.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet19recursive = SampleKBContext.load("testSet19-recursive.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet20 = SampleKBContext.preLoad("testSet20.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet20 = SampleKBContext.load("testSet20.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet21 = SampleKBContext.preLoad("testSet21.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet21 = SampleKBContext.load("testSet21.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet22 = SampleKBContext.preLoad("testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet22 = SampleKBContext.load("testSet22.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet23 = SampleKBContext.preLoad("testSet23.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet23 = SampleKBContext.load("testSet23.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet24 = SampleKBContext.preLoad("testSet24.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet24 = SampleKBContext.load("testSet24.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet25 = SampleKBContext.preLoad("testSet25.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet25 = SampleKBContext.load("testSet25.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet26 = SampleKBContext.preLoad("testSet26.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet26 = SampleKBContext.load("testSet26.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet27 = SampleKBContext.preLoad("testSet27.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet27 = SampleKBContext.load("testSet27.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet28 = SampleKBContext.preLoad("testSet28.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet28 = SampleKBContext.load("testSet28.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet28b = SampleKBContext.preLoad("testSet28b.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet28b = SampleKBContext.load("testSet28b.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet29 = SampleKBContext.preLoad("testSet29.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet29 = SampleKBContext.load("testSet29.gql");
 
     @ClassRule
-    public static final SampleKBContext testSet30 = SampleKBContext.preLoad("testSet30.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSet30 = SampleKBContext.load("testSet30.gql");
 
     @Before
     public void onStartup() throws Exception {

@@ -25,8 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
-
-import java.util.function.Consumer;
+import ai.grakn.test.SampleKBContext;
 
 /**
  *
@@ -55,8 +54,8 @@ public class CWKB extends TestKB {
 
     private static Thing colonelWest, Nono, America, Tomahawk;
 
-    public static Consumer<GraknTx> get() {
-        return new CWKB().build();
+    public static SampleKBContext context() {
+        return new CWKB().makeContext();
     }
 
     @Override

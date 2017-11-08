@@ -51,7 +51,7 @@ public class QueryBuilderTest {
     private static final Var x = Graql.var("x");
 
     @ClassRule
-    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieKB = MovieKB.context();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
