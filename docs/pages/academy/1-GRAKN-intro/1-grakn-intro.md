@@ -76,4 +76,4 @@ Extra (these will require some additional external research):
   * What are the advantages of having a schema-first approach to data modeling?
 
 ## What next?
-In the [next lesson](/academy/setup.html) you will get ready for the Academy lessons, you will setup your computer and will be introduced to the main entrypoint of GRAKN that you will use during the following lessons.
+In the [next lesson](./setup.html) you will get ready for the Academy lessons, you will setup your computer and will be introduced to the main entrypoint of GRAKN that you will use during the following lessons.

@@ -92,5 +92,5 @@ In other words, the compute queries scale much better.
 In this lesson you have learned about the basic structure of compute queries, you have learned what are the statistics query you can perform with GRAKN analytics and what is the difference between compute and aggregate queries and which one to pick when.
 
 ## What next
-In the next lesson we will conclude our overview of the GRAKN Analytics component by looking at something that simple aggregate queries cannot do: perform [graph analytics](/academy/graph-analytics.html). More details about the compute query syntax can be found in the [docs](/index.html). If you want to learn more about the distributed computations that compute queries perform you will have to look around for an introduction to Pregel algorithms. Warning, though: heavy maths ahead.
+In the next lesson we will conclude our overview of the GRAKN Analytics component by looking at something that simple aggregate queries cannot do: perform [graph analytics](./graph-analytics.html). More details about the compute query syntax can be found in the [docs](../index.html). If you want to learn more about the distributed computations that compute queries perform you will have to look around for an introduction to Pregel algorithms. Warning, though: heavy maths ahead.
 
