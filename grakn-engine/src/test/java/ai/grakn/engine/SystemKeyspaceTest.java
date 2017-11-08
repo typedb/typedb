@@ -52,19 +52,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class SystemKeyspaceTest {
-    private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> graknFactory.tx(k, GraknTxType.WRITE);
-    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(sparkContext.uri(), k).open(GraknTxType.WRITE);
 
     private static final GraknEngineConfig config = GraknEngineConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final LockProvider lockProvider = mock(LockProvider.class);
-    private static EngineGraknTxFactory graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
-    private static SystemKeyspace systemKeyspace = SystemKeyspaceImpl.create(graknFactory, lockProvider, false);
+    private static EngineGraknTxFactory graknFactory;
+    private static SystemKeyspace systemKeyspace;
 
     //Needed so that Grakn.session() can return a session
-    @ClassRule
-    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
+    //Note: This is a rule rather than a class rule because we need to ensure that cass is started up first and then
+    // the systemKeyspace is initialised. If we make this a ClassRule that load order is broken and this test fails with
+    // the janus profile.
+    @Rule
+    public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
         new SystemController(spark, config.getProperties(), systemKeyspace, status, metricRegistry);
     }).host("0.0.0.0").port(4567);
 
@@ -74,6 +75,9 @@ public class SystemKeyspaceTest {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
+
+    private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> graknFactory.tx(k, GraknTxType.WRITE);
+    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(sparkContext.uri(), k).open(GraknTxType.WRITE);
 
     private final Set<GraknTx> transactions = new HashSet<>();
 
