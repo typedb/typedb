@@ -54,4 +54,4 @@ As a review exercise, try to describe what are the three modeling steps in datab
 
 
 ## What next?
-In our [next lesson](/academy/conceptual-modeling-intro.html)  we will be start modeling the big question we have introduced several lessons ago. If you haven’t read it or you need a refresher, here [is the link](/academy/graql-intro.html). If you want to know more about GRAKN schemas, as always, head over to [the docs](/index.html).
+In our [next lesson](./conceptual-modeling-intro.html)  we will be start modeling the big question we have introduced several lessons ago. If you haven’t read it or you need a refresher, here [is the link](./graql-intro.html). If you want to know more about GRAKN schemas, as always, head over to [the docs](../index.html).

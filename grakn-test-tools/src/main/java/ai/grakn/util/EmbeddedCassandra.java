@@ -63,7 +63,6 @@ public class EmbeddedCassandra extends ExternalResource {
             try {
                 LOG.info("starting cassandra...");
                 EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml", 30_000L);
-                EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
                 //This thread sleep is to give time for cass to startup
                 //TODO: Determine if this is still needed
                 try {
