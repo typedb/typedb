@@ -55,10 +55,12 @@ public class EmbeddedCassandra extends ExternalResource {
         return new EmbeddedCassandra();
     }
 
-    /**
-     * Starts an embedded version of cassandra
-     */
-    public static void start(){
+    public static boolean inCassandraContext() {
+        return IN_CASSANDRA_CONTEXT.get() > 0;
+    }
+
+    @Override
+    protected void before() throws Throwable {
         if(CASSANDRA_RUNNING.compareAndSet(false, true)) {
             try {
                 LOG.info("starting cassandra...");
@@ -79,15 +81,6 @@ public class EmbeddedCassandra extends ExternalResource {
                 LOG.error("Cassandra already running! Attempting to continue.");
             }
         }
-    }
-
-    public static boolean inCassandraContext() {
-        return IN_CASSANDRA_CONTEXT.get() > 0;
-    }
-
-    @Override
-    protected void before() throws Throwable {
-        start();
         IN_CASSANDRA_CONTEXT.incrementAndGet();
     }
 
