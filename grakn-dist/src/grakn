@@ -40,16 +40,19 @@ WAIT_INTERVAL_S=2
 if [ -z "${GRAKN_HOME}" ]; then
     [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
     GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-    GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
-    GRAKN_PID=/tmp/grakn.pid
-    GRAKN_STARTUP_TIMEOUT_S=120
 fi
+
+GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
+GRAKN_PID=/tmp/grakn.pid
+GRAKN_STARTUP_TIMEOUT_S=120
+GRAKN_SHUTDOWN_TIMEOUT_S=120
 
 # Storage globals
 STORAGE_PID=/tmp/grakn-storage.pid
 STORAGE_STARTUP_TIMEOUT_S=60
 
 # Queue globals
+QUEUE_PID=/tmp/grakn-queue.pid # If you want to change it, be sure to change it in redis.conf as well
 QUEUE_STARTUP_TIMEOUT_S=10
 
 # ================================================
@@ -68,6 +71,28 @@ update_classpath_global_var() {
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
 }
 
+wait_until_terminated() {
+  while kill -0 "$1" 2>/dev/null; do
+    echo -n "." # output some sort of "progress bar"
+    sleep $WAIT_INTERVAL_S
+  done
+}
+
+print_status_message() {
+  if [ $1 -eq 0 ] ; then
+      echo "SUCCESS"
+  else
+      echo "FAILED!"
+  fi
+}
+
+print_failure_diagnostics() {
+  echo "======== Failure Diagnostics ========"
+  echo "Grakn pid = '`cat $GRAKN_PID`' (from $GRAKN_PID), '`grakn_get_pid_by_ps_ef`' (from ps -ef)"
+  echo "Queue pid = '`cat $QUEUE_PID`' (from $QUEUE_PID), '`queue_get_pid_by_ps_ef`' (from ps -ef)"
+  echo "Storage pid = '`cat $STORAGE_PID`' (from $STORAGE_PID)"
+}
+
 # ================================================
 # storage helper functions
 # ================================================
@@ -76,7 +101,7 @@ storage_start_process() {
   return $?
 }
 
-storage_check_if_running() {
+storage_check_if_running_by_pidfile() {
   local status=
   if [ -e $STORAGE_PID ] && ps -p `cat $STORAGE_PID` > /dev/null ; then
     status=0 # storage running
@@ -106,7 +131,7 @@ storage_wait_until_ready() {
 }
 
 storage_start_and_wait_until_ready() {
-  storage_check_if_running
+  storage_check_if_running_by_pidfile
   is_storage_running=$?
 
   if [ $is_storage_running -eq 0 ]; then
@@ -134,17 +159,15 @@ storage_start_and_wait_until_ready() {
   fi
 }
 
-storage_stop_process() {
+storage_stop_and_wait_until_terminated() {
   echo -n "Stopping Storage..."
-  storage_check_if_running
+  storage_check_if_running_by_pidfile
   local is_storage_running=$?
   if [[ $is_storage_running -eq 0 ]]; then
     if [[ -e $STORAGE_PID ]]; then
       pid=`cat $STORAGE_PID`
       kill "$pid"
-      while kill -0 "$pid" 2>/dev/null; do
-          sleep 0.5
-      done
+      wait_until_terminated $pid
       echo "SUCCESS"
       return 0
     else
@@ -183,9 +206,13 @@ queue_start_process() {
   return $status
 }
 
-queue_check_if_running() {
+queue_get_pid_by_ps_ef() {
+  ps -ef | grep 'redis-server' | grep -v grep | awk '{print $2}'
+}
+
+queue_check_if_running_by_ps_ef() {
   local status=
-  local count_running_queue_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
+  local count_running_queue_process=`queue_get_pid_by_ps_ef | wc -l`
   if [ $count_running_queue_process -gt 0 ] ; then
     status=0 # queue running
   else
@@ -200,7 +227,7 @@ queue_wait_until_ready() {
 
   while [ $now_s -le $stop_s ]; do
       echo -n "." # output some sort of "progress bar"
-      queue_check_if_running
+      queue_check_if_running_by_ps_ef
       local is_queue_running=$?
       if [ $is_queue_running -eq 0 ] ; then
           return 0
@@ -213,7 +240,7 @@ queue_wait_until_ready() {
 }
 
 queue_start_and_wait_until_ready() {
-  queue_check_if_running
+  queue_check_if_running_by_ps_ef
   is_queue_running=$?
 
   if [ $is_queue_running -eq 0 ]; then
@@ -241,9 +268,9 @@ queue_start_and_wait_until_ready() {
   fi
 }
 
-queue_stop_process() {
+queue_stop_and_wait_until_terminated() {
   echo -n "Stopping Queue..."
-  queue_check_if_running
+  queue_check_if_running_by_ps_ef
   local is_queue_running=$?
   if [[ $is_queue_running -eq 0 ]]; then
     local queue_bin=
@@ -252,7 +279,10 @@ queue_stop_process() {
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
         queue_bin="redis-cli-linux"
     fi
+
+    local pid=`cat $QUEUE_PID`
     "${GRAKN_HOME}/services/redis/"$queue_bin shutdown
+    wait_until_terminated $pid
     local status=$?
     print_status_message ${status}
   else
@@ -281,12 +311,16 @@ grakn_start_process() {
   java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" \
     ai.grakn.engine.Grakn > /dev/null 2>&1 &
   status=$?
-  pid=`ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'`
+  pid=`grakn_get_pid_by_ps_ef`
   echo $pid > "${GRAKN_PID}"
   return $status
 }
 
-grakn_check_if_running() {
+grakn_get_pid_by_ps_ef() {
+  ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'
+}
+
+grakn_check_if_running_by_pidfile() {
   if [ -e "$GRAKN_PID" ] && ps -p `cat $GRAKN_PID` > /dev/null ; then
     return 0
   else
@@ -294,19 +328,11 @@ grakn_check_if_running() {
   fi
 }
 
-print_status_message() {
-    if [ $1 -eq 0 ] ; then
-        echo "SUCCESS"
-    else
-        echo "FAILED!"
-    fi
-}
-
 grakn_check_if_ready() {
-  local host=`cat "${GRAKN_HOME}"/conf/grakn.properties| grep server.host | awk -F "=" '{print $2}'`
-  local port=`cat "${GRAKN_HOME}"/conf/grakn.properties| grep server.port | awk -F "=" '{print $2}'`
+  local host=`cat "${GRAKN_HOME}"/conf/grakn.properties | grep server.host | awk -F "=" '{print $2}'`
+  local port=`cat "${GRAKN_HOME}"/conf/grakn.properties | grep server.port | awk -F "=" '{print $2}'`
   curl $host:$port/configuration > /dev/null 2>&1
-  return $?
+  return $? # curl would return 0 upon a successful response or nonzero otherwise
 }
 
 grakn_wait_until_ready() {
@@ -328,7 +354,7 @@ grakn_wait_until_ready() {
 }
 
 grakn_start_and_wait_until_ready() {
-  grakn_check_if_running
+  grakn_check_if_running_by_pidfile
   is_grakn_running=$?
 
   if [ $is_grakn_running -eq 0 ]; then
@@ -356,23 +382,41 @@ grakn_start_and_wait_until_ready() {
   fi
 }
 
-grakn_stop_process() {
+grakn_stop_and_wait_until_terminated() {
   echo -n "Stopping Grakn..."
-  grakn_check_if_running
+  local status=
+  grakn_check_if_running_by_pidfile
   local is_grakn_running=$?
   if [[ $is_grakn_running -eq 0 ]]; then
     if [[ -e "$GRAKN_PID" ]]; then
-      kill `cat $GRAKN_PID`
-      status_kill=$?
-      rm $GRAKN_PID
-      print_status_message ${status_kill}
-      return $status_kill
+      local pid=`cat "$GRAKN_PID"`
+      kill "$pid"
+      local status_kill=$?
+      if [ $status_kill -eq 0 ]; then
+        wait_until_terminated $pid
+        local status_wait_until_terminated=$?
+        if [ $status_wait_until_terminated -eq 0 ]; then
+          rm "$GRAKN_PID"
+          local status_delete_pid_after_termination=$?
+          if [ $status_delete_pid_after_termination -eq 0 ]; then
+            status=0
+          else
+            status=1 # unable to delete pid file after grakn is terminated
+          fi
+        else
+          status=1 # wait failed for some reason
+        fi
+      else
+        status=1 # unable to kill for some reason
+      fi
     else
-      echo "FAILED!" # unable to find PID file
-      return 1
+      status=1 # unable to find PID file
     fi
+    print_status_message ${status}
+    return $status
   else
     echo "NOT RUNNING"
+    return 0
   fi
 }
 
@@ -385,13 +429,13 @@ grakn_wipe_all_data() {
 # command line case statement helpers
 # ================================================
 cli_case_grakn_server_stop_all() {
-  grakn_stop_process
+  grakn_stop_and_wait_until_terminated
   status_grakn=$?
 
-  queue_stop_process
+  queue_stop_and_wait_until_terminated
   status_queue=$?
 
-  storage_stop_process
+  storage_stop_and_wait_until_terminated
   status_storage=$?
 
   if [ $status_grakn -eq 0 ] && [ $status_queue -eq 0 ] && [ $status_storage -eq 0 ] ; then
@@ -467,14 +511,14 @@ Tips:
 "
 }
 cli_case_grakn_server_status() {
-  storage_check_if_running
+  storage_check_if_running_by_pidfile
   if [ $? -eq 0 ] ; then
     echo "Storage: RUNNING"
   else
     echo "Storage: NOT RUNNING"
   fi
 
-  queue_check_if_running
+  queue_check_if_running_by_ps_ef
   if [ $? -eq 0 ] ; then
     echo "Queue: RUNNING"
   else
@@ -487,13 +531,19 @@ cli_case_grakn_server_status() {
   else
     echo "Grakn: NOT RUNNING"
   fi
+
+  case $1 in
+    --verbose)
+      print_failure_diagnostics
+    ;;
+  esac
 }
 
 cli_case_grakn_server_clean() {
-  storage_check_if_running
+  storage_check_if_running_by_pidfile
   local is_storage_running=$?
 
-  queue_check_if_running
+  queue_check_if_running_by_ps_ef
   local is_queue_running=$?
 
   grakn_check_if_ready
@@ -515,7 +565,7 @@ cli_case_grakn_server_clean() {
 
     queue_start_and_wait_until_ready
     queue_wipe_all_data
-    queue_stop_process
+    queue_stop_and_wait_until_terminated
     echo "Cleaning Queue...SUCCESS"
 
     echo -n "Cleaning Grakn..."
@@ -555,6 +605,8 @@ cli_case_grakn_server_start() {
       else
         # failure detected. attempt to terminate every component gracefully
         echo "Unable to start Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
         exit 1
       fi
     ;;
@@ -567,6 +619,8 @@ cli_case_grakn_server_start() {
       else
         # failure detected. attempt to terminate every component gracefully
         echo "Unable to start Queue. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
         exit 1
       fi
     ;;
@@ -579,6 +633,8 @@ cli_case_grakn_server_start() {
       else
         # failure detected. attempt to terminate every component gracefully
         echo "Unable to start Storage. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
         exit 1
       fi
     ;;
@@ -591,6 +647,8 @@ cli_case_grakn_server_start() {
       else
         # failure detected. attempt to terminate every component gracefully
         echo "Unable to start Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
         exit 1
       fi
     ;;
@@ -598,19 +656,62 @@ cli_case_grakn_server_start() {
 }
 
 cli_case_grakn_server_stop() {
-  # TODO: handle if graceful termination failed and log failures
   case $1 in
     grakn)
-      grakn_stop_process
+      grakn_stop_and_wait_until_terminated
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Unable to stop Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
+        exit 1
+      fi
     ;;
     queue)
-      queue_stop_process
+      queue_stop_and_wait_until_terminated
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Unable to stop Queue. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
+        exit 1
+      fi
     ;;
     storage)
-      storage_stop_process
+      storage_stop_and_wait_until_terminated
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Unable to stop Storage. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
+        exit 1
+      fi
     ;;
     *)
       cli_case_grakn_server_stop_all
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Unable to stop Storage. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        print_failure_diagnostics
+
+        exit 1
+      fi
     ;;
   esac
 }

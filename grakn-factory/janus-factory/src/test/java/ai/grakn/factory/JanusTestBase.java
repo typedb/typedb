@@ -23,6 +23,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.ErrorMessage;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
@@ -41,10 +42,11 @@ public abstract class JanusTestBase {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
+    @ClassRule
+    public static final EmbeddedCassandra cassandra = EmbeddedCassandra.create();
+
     @BeforeClass
     public static void setupMain(){
-        EmbeddedCassandra.start();
-
         try (InputStream in = new FileInputStream(CONFIG_LOCATION)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {

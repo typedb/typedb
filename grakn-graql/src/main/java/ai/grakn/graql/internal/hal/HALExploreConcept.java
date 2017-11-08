@@ -68,7 +68,7 @@ abstract class HALExploreConcept {
 
     void generateStateAndLinks(Representation resource, Concept concept) {
         resource.withLink(EXPLORE_CONCEPT_LINK, EXPLORE + concept.getId() + getURIParams());
-        generateConceptState(resource, concept);
+        generateConceptState(resource, concept, false);
     }
 
     abstract void populateEmbedded(Representation halResource, Concept concept);

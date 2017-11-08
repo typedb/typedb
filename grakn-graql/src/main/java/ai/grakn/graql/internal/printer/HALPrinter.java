@@ -20,9 +20,12 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.hal.HALBuilder;
 import mjson.Json;
 
+import java.util.Optional;
 
 
 class HALPrinter extends JsonPrinter {
@@ -36,9 +39,39 @@ class HALPrinter extends JsonPrinter {
     }
 
     @Override
-    public Json graqlString(boolean inner, Concept concept) {
-        String json = HALBuilder.renderHALConceptData(concept, 0, keyspace,0, limitEmbedded);
+    public Json graqlString(boolean inner, Answer answer) {
+
+        Json json = Json.object();
+
+        answer.map().forEach((Var key, Concept value) -> {
+            String keyString = key.getValue();
+            json.set(keyString, halString(value, isInferred(key, value, answer)));
+        });
+
+        return json;
+    }
+
+    public Json halString(Concept concept, boolean inferred) {
+        String json = HALBuilder.renderHALConceptData(concept, inferred, 0, keyspace, 0, limitEmbedded);
         return Json.read(json);
     }
 
+    // TODO: Add 'inferred' flag to concept
+    private boolean isInferred(Var key, Concept concept, Answer answer) {
+        if (key == null || answer.getExplanation().isEmpty()) return false;
+
+        //TO-DO add support for attributes
+        if (!concept.isRelationship() || answer.getExplanation().isLookupExplanation()) return false;
+
+        //Here we already know the concept is a relationship so if rule expl -> true
+        if (answer.getExplanation().isRuleExplanation()) return true;
+
+
+        // Here we know we have a relationship and a JoinExplanation
+        Optional<Answer> subAnswer = answer.getExplanation().getAnswers().stream()
+                .filter(a -> a.map().keySet().contains(key))
+                .findFirst();
+
+        return subAnswer.isPresent() && subAnswer.get().getExplanation().isRuleExplanation();
+    }
 }

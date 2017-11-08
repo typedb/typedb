@@ -38,8 +38,7 @@ export const ROLE = 'ROLE';
 export const ENTITY_TYPE = 'ENTITY_TYPE';
 export const ENTITY = 'ENTITY';
 
-export const GENERATED_RELATIONSHIP_TYPE = 'generated-relationship';
-export const INFERRED_RELATIONSHIP_TYPE = 'inferred-relationship';
+export const INFERRED_RELATIONSHIP_TYPE = 'INFERRED_RELATIONSHIP';
 
 
 export const ROOT_CONCEPT = 'thing';

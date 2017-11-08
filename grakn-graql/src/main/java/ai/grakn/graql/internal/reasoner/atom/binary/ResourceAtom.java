@@ -396,6 +396,11 @@ public class ResourceAtom extends Binary{
      */
     private ResourceAtom rewriteWithRelationVariable(Atom parentAtom){
         if (!parentAtom.isResource() || !((ResourceAtom) parentAtom).getRelationVariable().isUserDefinedName()) return this;
+        return rewriteWithRelationVariable();
+    }
+
+    @Override
+    public ResourceAtom rewriteWithRelationVariable(){
         Var attributeVariable = getPredicateVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
         VarPattern newVar = getVarName().has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);

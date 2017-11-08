@@ -24,6 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 
 import java.util.function.Consumer;
 
@@ -45,14 +46,14 @@ public class TailRecursionKB extends TestKB {
         this.m = m;
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new TailRecursionKB(n, m).build();
+    public static SampleKBContext context(int n, int m) {
+        return new TailRecursionKB(n, m).makeContext();
     }
 
     @Override
     public Consumer<GraknTx> build(){
         return (GraknTx graph) -> {
-            SampleKBContext.loadFromFile(graph, gqlFile);
+            SampleKBLoader.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }

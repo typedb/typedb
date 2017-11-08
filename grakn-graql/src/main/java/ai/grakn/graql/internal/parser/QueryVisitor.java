@@ -74,6 +74,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.eq;
+import static ai.grakn.graql.Graql.label;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -559,7 +560,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         if (ctx == null) {
             return var();
         } else if (ctx.label() != null) {
-            return var().label(visitLabel(ctx.label()));
+            return label(visitLabel(ctx.label()));
         } else {
             return getVariable(ctx.VARIABLE());
         }

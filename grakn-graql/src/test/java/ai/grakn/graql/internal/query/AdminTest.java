@@ -49,7 +49,7 @@ import static org.junit.Assert.assertFalse;
 public class AdminTest {
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     private QueryBuilder qb;
 

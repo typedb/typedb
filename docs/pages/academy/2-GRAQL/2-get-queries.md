@@ -133,4 +133,4 @@ In this lesson you have learned all the basics of match queries, which is probab
 
 
 ## What next?
-The [next step](/academy/insert-delete-queries.html) is to learn how to insert data into your knowledge base. If you want to know more about the GRAQL syntax and the possible modifiers you can look at the [docs](/index.html). If you want to explore more about the roles and the other parts of our data model, you could skip to the [third module](/academy/schema-elements.html) of the Academy, although it is not recommended.
+The [next step](./insert-delete-queries.html) is to learn how to insert data into your knowledge base. If you want to know more about the GRAQL syntax and the possible modifiers you can look at the [docs](../index.html). If you want to explore more about the roles and the other parts of our data model, you could skip to the [third module](./schema-elements.html) of the Academy, although it is not recommended.

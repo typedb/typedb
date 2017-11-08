@@ -7,6 +7,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.TxFactoryContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
@@ -56,9 +57,12 @@ public class DashboardControllerTest {
                 .get(REST.WebPath.Dashboard.EXPLORE + id);
     }
 
+    //Needed to start cass depending on profile
+    @ClassRule
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
     @ClassRule
-    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
+    public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -84,11 +88,13 @@ public class DashboardControllerTest {
         Response explainResponse = sendQueryExplain(queryString);
         explainResponse.then().statusCode(200);
         Json jsonResponse = Json.read(explainResponse.asString());
-        jsonResponse.asJsonList().forEach(concept -> {
-            assertTrue(concept.has("_baseType"));
-            assertTrue(concept.has("_type"));
-            assertTrue(concept.has("_id"));
-        });
+        jsonResponse.asJsonList()
+                .stream().flatMap(obj -> obj.asJsonMap().values().stream())
+                .forEach(concept -> {
+                    assertTrue(concept.has("_baseType"));
+                    assertTrue(concept.has("_links"));
+                    assertTrue(concept.has("_id"));
+                });
     }
 
     @Test

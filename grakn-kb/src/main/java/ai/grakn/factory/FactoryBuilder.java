@@ -82,7 +82,7 @@ public class FactoryBuilder {
             return factory;
         }
 
-       return newFactory(key, factoryType, keyspace, engineUrl, properties);
+        return newFactory(key, factoryType, keyspace, engineUrl, properties);
     }
 
     /**

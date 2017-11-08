@@ -933,7 +933,11 @@ public class RelationshipAtom extends IsaAtom {
      */
     private RelationshipAtom rewriteWithRelationVariable(Atom parentAtom){
         if (!parentAtom.getVarName().isUserDefinedName()) return this;
+        return rewriteWithRelationVariable();
+    }
 
+    @Override
+    public RelationshipAtom rewriteWithRelationVariable(){
         VarPattern newVar = Graql.var().asUserDefined();
         VarPattern relVar = getPattern().admin().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))
@@ -963,4 +967,5 @@ public class RelationshipAtom extends IsaAtom {
                 .rewriteWithTypeVariable(parentAtom);
 
     }
+
 }

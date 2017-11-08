@@ -8,6 +8,8 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.TxFactoryContext;
+import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -52,27 +55,44 @@ public class GraqlControllerTest {
     }
 
     private Response sendQuery(String query, String acceptType) {
-        return sendQuery(query, acceptType, true, false, -1, false);
+        return sendQuery(query, acceptType, true, false, -1, sampleKB.tx().getKeyspace().getValue(), false);
     }
 
     private Response sendQuery(String query,
-            String acceptType,
-            boolean reasonser,
-            boolean materialise,
-            int limitEmbedded,
-            boolean multi) {
+                               String acceptType,
+                               boolean reasoner,
+                               boolean materialise,
+                               int limitEmbedded,
+                               boolean multi) {
+        return sendQuery(query, acceptType, reasoner, materialise, limitEmbedded, sampleKB.tx().getKeyspace().getValue(), multi);
+    }
+
+
+    private Response sendQuery(String query,
+                               String acceptType,
+                               boolean reasoner,
+                               boolean materialise,
+                               int limitEmbedded,
+                               String keyspace, boolean multi) {
         return RestAssured.with()
                 .body(query)
-                .queryParam(INFER, reasonser)
+                .queryParam(INFER, reasoner)
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .queryParam(MULTI, multi)
+                .queryParam(DEFINE_ALL_VARS, true)
                 .accept(acceptType)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, sampleKB.tx().getKeyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace));
     }
 
+    //Needed to start cass depending on profile
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+
+    @ClassRule
+    public static SampleKBContext sampleKB = MovieKB.context();
+
+    public static SampleKBContext genealogyKB = GenealogyKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -206,10 +226,67 @@ public class GraqlControllerTest {
 
     @Test
     public void whenMatchingRules_ResponseStatusIs200() {
-        String queryString = "match $x sub "+ Schema.MetaSchema.RULE.getLabel().getValue()+"; get;";
+        String queryString = "match $x sub " + Schema.MetaSchema.RULE.getLabel().getValue() + "; get;";
         int limitEmbedded = 10;
         Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded, false);
         resp.then().statusCode(200);
+    }
+
+    @Test
+    public void whenMatchingRuleExplanation_HALResponseContainsInferredRelation() {
+        String queryString = "match ($x,$y) isa marriage; offset 0; limit 1; get;";
+        int limitEmbedded = 10;
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, genealogyKB.tx().getKeyspace().getValue(), false);
+        resp.then().statusCode(200);
+        Json jsonResp = Json.read(resp.body().asString());
+        jsonResp.asJsonList().stream()
+                .flatMap(x -> x.asJsonMap().entrySet().stream())
+                .filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y")))
+                .map(entry -> entry.getValue())
+                .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("marriage"))
+                .forEach(thing -> {
+                    assertEquals("INFERRED_RELATIONSHIP", thing.at("_baseType").asString());
+                    thing.at("_embedded").at("spouse").asJsonList().forEach(spouse -> {
+                        assertEquals("ENTITY", spouse.at("_baseType").asString());
+                    });
+                });
+
+    }
+
+    @Test
+    public void whenMatchingJoinExplanation_HALResponseContainsInferredRelation() {
+        String queryString = "match ($x,$y) isa siblings; $z isa person; offset 0; limit 2; get;";
+        int limitEmbedded = 10;
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, genealogyKB.tx().getKeyspace().getValue(), false);
+        resp.then().statusCode(200);
+        Json jsonResp = Json.read(resp.body().asString());
+        jsonResp.asJsonList().stream()
+                .flatMap(x -> x.asJsonMap().entrySet().stream())
+                .filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y") && !entry.getKey().equals("z")))
+                .map(entry -> entry.getValue())
+                .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("marriage"))
+                .forEach(thing -> {
+                    assertEquals("INFERRED_RELATIONSHIP", thing.at("_baseType").asString());
+                });
+
+    }
+
+    @Test
+    public void whenMatchingNotInferredRelation_HALResponseContainsRelation() {
+        String queryString = "match ($x,$y) isa directed-by; offset 0; limit 25; get;";
+        int limitEmbedded = 10;
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, false);
+        resp.then().statusCode(200);
+        Json jsonResp = Json.read(resp.body().asString());
+        jsonResp.asJsonList().stream()
+                .flatMap(x -> x.asJsonMap().entrySet().stream())
+                .filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y")))
+                .map(entry -> entry.getValue())
+                .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("directed-by"))
+                .forEach(thing -> {
+                    assertEquals("RELATIONSHIP", thing.at("_baseType").asString());
+                });
+
     }
 
     @Test
@@ -241,13 +318,13 @@ public class GraqlControllerTest {
     }
 
     private void assertResponseSameAsJavaGraql(String queryString, Printer<?> printer,
-            String acceptType) {
+                                               String acceptType) {
         Response resp = sendQuery(queryString, acceptType);
         assertResponseSameAsJavaGraql(resp, queryString, printer, acceptType);
     }
 
     private void assertResponseSameAsJavaGraql(Response resp, String queryString,
-            Printer<?> printer, String acceptType) {
+                                               Printer<?> printer, String acceptType) {
         resp.then().statusCode(200);
 
         sampleKB.rollback();

@@ -45,7 +45,7 @@ public class JsonPrinterTest {
     private Printer printer;
 
     @ClassRule
-    public static final SampleKBContext movieContext = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieContext = MovieKB.context();
 
     @Before
     public void setUp() {

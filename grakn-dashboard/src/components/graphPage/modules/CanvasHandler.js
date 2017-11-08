@@ -24,7 +24,6 @@ import * as API from '../../../js/util/HALTerms';
 import { EventHub } from '../../../js/state/graphPageState';
 import CanvasEvents from './CanvasEvents';
 
-
 function clearGraph() {
   visualiser.clearGraph();
 }
@@ -32,17 +31,18 @@ function clearGraph() {
 
 function onClickSubmit(query:string) {
   if (query.includes('aggregate')
-      || (query.includes('compute') && query.includes('degrees'))
-      || (query.includes('compute') && query.includes('cluster'))) {
-          // Error message until we will not properly support aggregate queries in graph page.
-    EventHub.$emit('error-message', '{"exception":"Invalid query: \\n \'aggregate\' queries \\n \'compute degrees\' \\n \'compute cluster\' \\n are not allowed from the Graph page. \\n \\nPlease use the Console page."}');
+          || (query.includes('compute') && query.includes('degrees'))
+      || (query.includes('compute') && query.includes('cluster'))) {// Error message until we will not properly support aggregate queries in graph page.
+    EventHub.$emit('error-message', '{"exception":"Invalid query: \\n \'aggregate\' queries \\n \'compute degrees\' \\n \'compute cluster\' \\nare not allowed from the Graph page. \\n \\nPlease use the Console page."}');
     return;
   }
 
-  if (query.startsWith('compute') && !query.includes('path')) {
-    EngineClient.graqlAnalytics(query).then(resp => onGraphResponseAnalytics(resp), (err) => {
-      EventHub.$emit('error-message', err.message);
-    });
+  if (query.startsWith('compute')&& !query.includes('path')) {
+
+      EngineClient.graqlAnalytics(query).then(resp => onGraphResponseAnalytics(resp), (err) => {
+        EventHub.$emit('error-message', err.message);
+      });
+
   } else {
     EngineClient.graqlHAL(query)
     .then((resp, nodeId) => onGraphResponse(resp, false, false, false, nodeId))
@@ -96,9 +96,9 @@ function filterNodesToRender(responseObject: Object | Object[], parsedResponse: 
 }
 
 function updateNodeHref(nodeId: string, responseObject: Object) {
-  // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
-  // which will contain a new value for offset
-  // Check if the node still in the Dataset, if not (generated relationship), don't update href
+  // When a nodeId is provided, it is because the user double-clicked on a node, so we need to update its href
+  // which will contain a new value for offset.
+  // If the node does not exist in the Dataset don't update href
   if (visualiser.getNode(nodeId) && ('_links' in responseObject)) {
     visualiser.updateNode({
       id: nodeId,

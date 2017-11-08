@@ -57,7 +57,7 @@ public class DeleteQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieKB = MovieKB.context();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
