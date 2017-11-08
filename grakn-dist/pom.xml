@@ -48,6 +48,13 @@
             <version>${logback.version}</version>
             <scope>compile</scope>
         </dependency>
+        <!--Jaino used for conditionals in log files-->
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>${janino.version}</version>
+            <scope>compile</scope>
+        </dependency>
 
         <!--Core dependencies-->
         <dependency>
@@ -113,6 +120,19 @@
             </exclusions>
         </dependency>
 
+        <!-- Cassandra uses airline for command line parsing -->
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>airline</artifactId>
+            <version>${airline.version}</version>
+
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
