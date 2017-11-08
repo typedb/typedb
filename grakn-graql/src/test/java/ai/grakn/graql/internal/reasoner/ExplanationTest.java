@@ -26,11 +26,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
@@ -260,7 +256,7 @@ public class ExplanationTest {
 
         String queryString = "match " +
                 "($x, $y) isa cousins;" +
-                "limit 3; get;";
+                "limit 5; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 
@@ -280,26 +276,8 @@ public class ExplanationTest {
 
     private void testExplanation(Answer answer){
         AnswerExplanation explanation = answer.getExplanation();
-
         if (explanation.isRuleExplanation()) {
-            Atom atom = ((ReasonerAtomicQuery) explanation.getQuery()).getAtom();
-            Atom headAtom = ((RuleExplanation) explanation).getRule().getHead().getAtom();
-
-            Unifier unifier = headAtom.getMultiUnifier(atom, UnifierType.RULE).unifiers().stream().findFirst().orElse(new UnifierImpl());
-            Unifier inverse = unifier.inverse();
-            Answer inferredAnswer = Iterables.getOnlyElement(
-                    new ReasonerAtomicQuery(headAtom.rewriteWithRelationVariable())
-                            .materialise(answer.unify(inverse))
-                            .map(ans -> ans.unify(unifier))
-                            .collect(Collectors.toSet())
-            );
-
-            assertTrue(inferredAnswer.containsAll(answer));
-            Set<Answer> explAnswers = explanation.getAnswers();
-            Set<Answer> inferredExplAnswers = inferredAnswer.getExplanation().getAnswers();
-            assertEquals(explAnswers, inferredExplAnswers);
-            answerConnectedness(explAnswers);
-            answerConnectedness(inferredExplAnswers);
+            answerConnectedness(explanation.getAnswers());
         }
     }
 
@@ -315,7 +293,7 @@ public class ExplanationTest {
     }
 
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
-        return graph.graql().match(var("x").has(typeLabel, val)).get("x").findAny().get();
+        return graph.graql().match(var("x").has(typeLabel, val)).get("x").findAny().orElse(null);
     }
 
     private Answer findAnswer(Answer a, List<Answer> list){
