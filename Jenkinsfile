@@ -137,7 +137,12 @@ void addTests(jobs) {
     /* Using arbitrary parallelism of 4 and "generateInclusions" feature added in v1.8. */
     def splits = splitTests parallelism: [$class: 'CountDrivenParallelism', size: 4], generateInclusions: true
 
-    for (int i = 0; i < splits.size(); i++) {
+    def numSplits = splits.size()
+
+    // change timeout based on how many splits we have. e.g. 1 split = 120min, 3 splits = 60min
+    def testTimeout = 30 + 90 / numSplits;
+
+    for (int i = 0; i < numSplits; i++) {
         def split = splits[i]
 
         /* Loop over each record in splits to prepare the testGroups that we'll run in parallel. */
@@ -172,7 +177,7 @@ void addTests(jobs) {
 
                 try {
                     /* Call the Maven build with tests. */
-                    timeout(60) {
+                    timeout(testTimeout) {
                         stage('Run Janus test profile') {
                             mvn mavenVerify
                         }
