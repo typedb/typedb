@@ -30,9 +30,9 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.EmbeddedRedisContext;
 import ai.grakn.util.GraknTestUtil;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.InMemoryRedisContext;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
@@ -76,9 +76,9 @@ public class EngineContext extends CompositeTestRule {
         int redisPort = redisURI.getPort();
 
         if (inMemoryRedis) {
-            redis = MockRedisRule.create(redisPort);
+            redis = InMemoryRedisContext.create(redisPort);
         } else {
-            redis = EmbeddedRedis.create(redisPort);
+            redis = EmbeddedRedisContext.create(redisPort);
         }
     }
 

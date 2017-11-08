@@ -19,6 +19,7 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknTx;
+import ai.grakn.util.EmbeddedCassandraContext;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -38,7 +39,7 @@ import java.util.function.Consumer;
  *     Grakn unit tests.
  *
  *     This specific class extend {@link SampleKBLoader} and starts Cassandra instance via
- *     {@link ai.grakn.util.EmbeddedCassandra} if needed.
+ *     {@link EmbeddedCassandraContext} if needed.
  * </p>
  *
  * @author borislav, fppt
@@ -87,6 +88,6 @@ public class SampleKBContext extends CompositeTestRule {
     }
 
     private void checkInContext() {
-        Preconditions.checkState(TxFactoryContext.canUseTx(), "EmbeddedCassandra may not have started");
+        Preconditions.checkState(TxFactoryContext.canUseTx(), "EmbeddedCassandraContext may not have started");
     }
 }

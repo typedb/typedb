@@ -36,12 +36,12 @@ import redis.embedded.exceptions.EmbeddedRedisException;
  * @author fppt
  *
  */
-public class EmbeddedRedis extends ExternalResource {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedRedis.class);
+public class EmbeddedRedisContext extends ExternalResource {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedRedisContext.class);
     private final int port;
     private RedisServer redisServer;
 
-    private EmbeddedRedis(int port) {
+    private EmbeddedRedisContext(int port) {
         this.port = port;
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -52,8 +52,8 @@ public class EmbeddedRedis extends ExternalResource {
         }, "shutdown-redis"));
     }
 
-    public static EmbeddedRedis create(int port) {
-        return new EmbeddedRedis(port);
+    public static EmbeddedRedisContext create(int port) {
+        return new EmbeddedRedisContext(port);
     }
 
     @Override

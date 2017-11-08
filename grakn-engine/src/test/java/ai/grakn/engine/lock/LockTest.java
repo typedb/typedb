@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.lock;
 
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.InMemoryRedisContext;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.experimental.theories.DataPoints;
@@ -47,7 +47,7 @@ public class LockTest {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create();
+    public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create();
 
     @DataPoints
     public static Locks[] configValues = Locks.values();
@@ -59,7 +59,7 @@ public class LockTest {
     private Lock getLock(Locks lock, String lockName){
         switch (lock){
             case REDIS:
-                return new JedisLock(mockRedisRule.jedisPool(), lockName);
+                return new JedisLock(inMemoryRedisContext.jedisPool(), lockName);
             case NONREENTRANT:
                 return new NonReentrantLock();
         }
@@ -68,7 +68,7 @@ public class LockTest {
 
     private Lock copy(Lock lock){
         if(lock instanceof JedisLock){
-            return new JedisLock(mockRedisRule.jedisPool(), ((JedisLock) lock).getLockName());
+            return new JedisLock(inMemoryRedisContext.jedisPool(), ((JedisLock) lock).getLockName());
         } else if(lock instanceof NonReentrantLock){
             return lock;
         }

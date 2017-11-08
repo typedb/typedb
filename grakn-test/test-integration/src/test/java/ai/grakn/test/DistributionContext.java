@@ -24,7 +24,7 @@ import ai.grakn.client.Client;
 import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.util.GraknVersion;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.InMemoryRedisContext;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import net.lingala.zip4j.core.ZipFile;
@@ -99,7 +99,7 @@ public class DistributionContext extends CompositeTestRule {
     protected List<TestRule> testRules() {
         return ImmutableList.of(
                 TxFactoryContext.create(),
-                MockRedisRule.create(redisPort)
+                InMemoryRedisContext.create(redisPort)
         );
     }
 

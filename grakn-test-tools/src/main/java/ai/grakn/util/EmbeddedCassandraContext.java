@@ -41,18 +41,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author fppt
  *
  */
-public class EmbeddedCassandra extends ExternalResource {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandra.class);
+public class EmbeddedCassandraContext extends ExternalResource {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandraContext.class);
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
 
     private static AtomicInteger IN_CASSANDRA_CONTEXT = new AtomicInteger(0);
 
-    private EmbeddedCassandra() {
+    private EmbeddedCassandraContext() {
 
     }
 
-    public static EmbeddedCassandra create() {
-        return new EmbeddedCassandra();
+    public static EmbeddedCassandraContext create() {
+        return new EmbeddedCassandraContext();
     }
 
     public static boolean inCassandraContext() {

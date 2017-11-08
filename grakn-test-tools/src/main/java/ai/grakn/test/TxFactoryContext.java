@@ -20,7 +20,7 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknTx;
-import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.util.EmbeddedCassandraContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableList;
 import org.junit.rules.TestRule;
@@ -44,13 +44,13 @@ public class TxFactoryContext extends CompositeTestRule {
     @Override
     protected List<TestRule> testRules() {
         if (GraknTestUtil.usingJanus()) {
-            return ImmutableList.of(EmbeddedCassandra.create());
+            return ImmutableList.of(EmbeddedCassandraContext.create());
         } else {
             return ImmutableList.of();
         }
     }
 
     public static boolean canUseTx() {
-        return !GraknTestUtil.usingJanus() || EmbeddedCassandra.inCassandraContext();
+        return !GraknTestUtil.usingJanus() || EmbeddedCassandraContext.inCassandraContext();
     }
 }

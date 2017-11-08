@@ -16,7 +16,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.TxFactoryContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.InMemoryRedisContext;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
@@ -42,7 +42,7 @@ public class EngineGraknSessionTest {
     private static EngineGraknTxFactory graknFactory;
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
+    public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
     //Needed so that Grakn.session() can return a session
     @ClassRule
@@ -59,7 +59,7 @@ public class EngineGraknSessionTest {
 
     @BeforeClass
     public static void beforeClass() {
-        JedisLockProvider lockProvider = new JedisLockProvider(mockRedisRule.jedisPool());
+        JedisLockProvider lockProvider = new JedisLockProvider(inMemoryRedisContext.jedisPool());
         graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
     }
 
