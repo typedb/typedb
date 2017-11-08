@@ -115,6 +115,44 @@ def mvn(String args) {
     sh "mvn ${args}"
 }
 
+Closure createTestJob(split, i, testTimeout) {
+    return {
+        graknNode {
+            String workspace = pwd()
+            checkout scm
+
+            slackGithub "Janus tests started"
+            /* Clean each test node to start. */
+            mvn 'clean'
+
+            def mavenVerify = 'verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true'
+
+            /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
+            /* Tell Maven to read the appropriate file. */
+            if (split.includes) {
+                writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+                mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
+            } else {
+                writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+                mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
+
+            }
+
+            try {
+                /* Call the Maven build with tests. */
+                timeout(testTimeout) {
+                    stage('Run Janus test profile') {
+                        mvn mavenVerify
+                    }
+                }
+            } finally {
+                /* Archive the test results */
+                junit "**/TEST*.xml"
+            }
+        }
+    }
+}
+
 //Add all tests to job map
 void addTests(jobs) {
     /* Request the test groupings.  Based on previous test results. */
@@ -128,52 +166,8 @@ void addTests(jobs) {
     def testTimeout = 30 + 90 / numSplits;
 
     splits.eachWithIndex { split, i ->
-
-        /* Loop over each record in splits to prepare the testGroups that we'll run in parallel. */
-        /* Split records returned from splitTests contain { includes: boolean, list: List<string>  }. */
-        /*     includes = whether list specifies tests to include (true) or tests to exclude (false). */
-        /*     list = list of tests for inclusion or exclusion. */
-        /* The list of inclusions is constructed based on results gathered from */
-        /* the previous successfully completed job. One additional record will exclude */
-        /* all known tests to run any tests not seen during the previous run.  */
-        jobs["split-${i}"] = {  // example, "split3"
-            graknNode {
-                String workspace = pwd()
-                checkout scm
-
-                slackGithub "Janus tests started"
-                /* Clean each test node to start. */
-                mvn 'clean'
-
-                def mavenVerify = 'verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true'
-
-                /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
-                /* Tell Maven to read the appropriate file. */
-                if (split.includes) {
-                    writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-                    mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
-
-                } else {
-                    writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
-                    mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
-
-                } // if split
-
-                try {
-                    /* Call the Maven build with tests. */
-                    timeout(testTimeout) {
-                        stage('Run Janus test profile') {
-                            mvn mavenVerify
-                        }
-                    } // timeout
-
-                } finally {
-                    /* Archive the test results */
-                    junit "**/TEST*.xml"
-                } //try
-            } // node
-        } // testGroups
-    } // for
+        jobs["split-${i}"] = createTestJob(split, i, testTimeout)
+    }
 }
 
 // This is a map that we fill with jobs to perform in parallel, name -> job closure
