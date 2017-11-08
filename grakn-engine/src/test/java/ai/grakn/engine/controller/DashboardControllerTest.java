@@ -21,7 +21,6 @@ import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
@@ -40,7 +39,6 @@ public class DashboardControllerTest {
                 .queryParam(QUERY, query)
                 .queryParam(KEYSPACE, genealogyKB.tx().getKeyspace().getValue())
                 .queryParam(INFER, true)
-                .queryParam(MATERIALISE, false)
                 .queryParam(LIMIT_EMBEDDED, -1)
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Dashboard.EXPLAIN);
@@ -50,7 +48,6 @@ public class DashboardControllerTest {
         return RestAssured.with()
                 .queryParam(KEYSPACE, genealogyKB.tx().getKeyspace().getValue())
                 .queryParam(INFER, true)
-                .queryParam(MATERIALISE, false)
                 .queryParam(LIMIT_EMBEDDED, -1)
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Dashboard.EXPLORE + id);

@@ -84,10 +84,9 @@ public class RemoteSession extends WebSocketAdapter {
         String keyspace = json.at(REST.RemoteShell.KEYSPACE).asString();
         String outputFormat = json.at(REST.RemoteShell.OUTPUT_FORMAT).asString();
         boolean infer = json.at(REST.RemoteShell.INFER).asBoolean();
-        boolean materialise = json.at(REST.RemoteShell.MATERIALISE).asBoolean();
         GraknSession factory = Grakn.session(Grakn.DEFAULT_URI, keyspace);
         GraqlSession graqlSession = new GraqlSession(
-                getSession(), factory, outputFormat, infer, materialise
+                getSession(), factory, outputFormat, infer
         );
         sessions.put(getSession(), graqlSession);
     }
