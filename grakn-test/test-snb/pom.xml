@@ -13,11 +13,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.ldbc.driver</groupId>
-            <artifactId>jeeves</artifactId>
-            <version>${ldbc-driver.version}</version>
-        </dependency>
-        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>janus-factory</artifactId>
             <version>${project.version}</version>
