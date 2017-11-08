@@ -71,7 +71,7 @@ update_classpath_global_var() {
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
 }
 
-pid_wait_until_terminated() {
+wait_until_terminated() {
   while kill -0 "$1" 2>/dev/null; do
     echo -n "." # output some sort of "progress bar"
     sleep $WAIT_INTERVAL_S
@@ -389,25 +389,28 @@ grakn_stop_and_wait_until_terminated() {
   local is_grakn_running=$?
   if [[ $is_grakn_running -eq 0 ]]; then
     if [[ -e "$GRAKN_PID" ]]; then
-      local pid=`cat $GRAKN_PID`
+      local pid=`cat "$GRAKN_PID"`
       kill "$pid"
       local status_kill=$?
       if [ $status_kill -eq 0 ]; then
         wait_until_terminated $pid
         local status_wait_until_terminated=$?
         if [ $status_wait_until_terminated -eq 0 ]; then
-          status=0
+          rm "$GRAKN_PID"
+          local status_delete_pid_after_termination=$?
+          if [ $status_delete_pid_after_termination -eq 0 ]; then
+            status=0
+          else
+            status=1 # unable to delete pid file after grakn is terminated
+          fi
         else
-          # wait failed for some reason
-          status=1
+          status=1 # wait failed for some reason
         fi
       else
-        # unable to kill for some reason
-        status=1
+        status=1 # unable to kill for some reason
       fi
     else
-      # unable to find PID file
-      status=1
+      status=1 # unable to find PID file
     fi
     print_status_message ${status}
     return $status
