@@ -19,20 +19,16 @@
 package ai.grakn.test.property.engine;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -53,28 +49,19 @@ import java.util.stream.Stream;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
 import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
-import static java.time.Duration.between;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -123,81 +110,6 @@ public class TaskManagerTest {
         failingTasks(tasks).forEach(task ->
                 assertThat("Task " + task + " should have failed.", engine.getTaskManager().storage().getState(task).status(), is(TaskStatus.FAILED))
         );
-    }
-
-    @Property(trials=10)
-    @Ignore("Stopping not implemented")
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(TaskState task) {
-        engine.getTaskManager().stopTask(task.getId());
-
-        engine.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        assertThat(completedTasks(), empty());
-    }
-
-    @Property(trials=10)
-    @Ignore("Stopping not implemented")
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(TaskState task) {
-        engine.getTaskManager().stopTask(task.getId());
-
-        engine.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        assertStatus(engine.getTaskManager(), task, TaskStatus.STOPPED);
-    }
-
-    @Property(trials=10)
-    @Ignore("Stopping not implemented")
-    public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(
-            @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task) {
-        whenTaskStarts(engine.getTaskManager()::stopTask);
-
-        engine.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        assertThat(completedTasks(), empty());
-        assertThat(cancelledTasks(), contains(task.getId()));
-    }
-
-    @Property(trials=10)
-    @Ignore("Stopping not implemented")
-    public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(
-            @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task) {
-        whenTaskStarts(engine.getTaskManager()::stopTask);
-
-        engine.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        assertStatus(engine.getTaskManager(), task, TaskStatus.STOPPED);
-    }
-
-    @Property(trials=10)
-    @Ignore("Stopping not implemented")
-    public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(TaskState task) {
-        whenTaskFinishes(engine.getTaskManager()::stopTask);
-
-        engine.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        assertThat(cancelledTasks(), empty());
-    }
-
-    @Property(trials=10)
-    @Ignore("Stopping not implemented")
-    public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(TaskState task) {
-        whenTaskFinishes(engine.getTaskManager()::stopTask);
-
-        engine.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        assertStatus(engine.getTaskManager(), task, COMPLETED, TaskStatus.FAILED);
     }
 
     @Property(trials=10)
@@ -253,70 +165,6 @@ public class TaskManagerTest {
     }
 
     @Property(trials=10)
-    @Ignore("Stopping not implemented")
-    public void whenRecurringTaskSubmitted_ItExecutesMoreThanOnce(
-            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
-
-        final int numberOfExecutions = 5;
-        final AtomicInteger startedCounter = new AtomicInteger(0);
-
-        whenTaskStarts(taskId -> {
-                    int numberTimesExecuted = startedCounter.incrementAndGet();
-                    if(numberTimesExecuted == numberOfExecutions){
-                        manager.stopTask(taskId);
-                    }
-                }
-        );
-
-        // Make task recurring
-        task.schedule(recurring(Instant.now(), Duration.ofMillis(100)));
-
-        // Execute task and wait for it to complete
-        manager.addTask(task, configuration(task));
-        waitForStatus(manager.storage(), ImmutableList.of(task), TaskStatus.STOPPED);
-
-        // Assert correct results
-        assertThat(manager.storage().getState(task.getId()).status(), is(TaskStatus.STOPPED));
-        assertThat(startedCounter.get(), equalTo(numberOfExecutions));
-    }
-
-    @Property(trials=10)
-    @Ignore("Stopping not implemented")
-    public void whenRecurringTaskSubmitted_ThereIsAnIntervalBetweenExecutions(
-            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
-
-        final int numberOfExecutions = 5;
-        final Duration interval = Duration.ofMillis(100);
-        final Instant[] lastExecutionTime = {null};
-        final AtomicInteger startedCounter = new AtomicInteger(0);
-
-        whenTaskStarts(taskId -> {
-            if(lastExecutionTime[0] != null) {
-                assertThat(between(lastExecutionTime[0], Instant.now()), greaterThanOrEqualTo(interval));
-            }
-
-            // Store the previous execution time for next round
-            lastExecutionTime[0] = manager.storage().getState(taskId).schedule().runAt();
-
-            // Stop the recurring task so this test does not run forever
-            if(startedCounter.incrementAndGet() == numberOfExecutions){
-                manager.stopTask(taskId);
-            }
-        });
-
-        // Make task recurring
-        task.schedule(recurring(interval));
-
-        // Execute task and wait for it to complete
-        manager.addTask(task, configuration(task));
-        waitForStatus(manager.storage(), ImmutableList.of(task), TaskStatus.STOPPED, TaskStatus.FAILED);
-
-        // Assert correct results
-        assertStatus(manager, task, TaskStatus.STOPPED);
-        assertThat(startedCounter.get(), equalTo(numberOfExecutions));
-    }
-
-    @Property(trials=10)
     public void whenRecurringTaskThrowsException_ItStopsExecuting(
             @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task) {
 
@@ -338,51 +186,6 @@ public class TaskManagerTest {
         // Assert correct state
         assertStatus(engine.getTaskManager(), task, TaskStatus.FAILED);
         assertThat(startedCounter.get(), equalTo(expectedExecutionsBeforeFailure));
-    }
-
-    @Property(trials=10)
-    @Ignore("Checkpoint not implemented")
-    public void whenATaskIsRestartedAfterExecution_ItIsResumed(
-            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task) {
-        ShortExecutionMockTask.resumedCounter.set(0);
-
-        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
-        task.markRunning(EngineID.me()).checkpoint(checkpoint);
-
-        engine.getTaskManager().addTask(task, configuration(task));
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        assertEquals(1, ShortExecutionMockTask.resumedCounter.get());
-    }
-
-    @Property(trials=10)
-    @Ignore("Checkpoint not implemented")
-    public void whenATaskIsRestartedAfterExecution_ItIsResumedFromLastCheckpoint(
-            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task) {
-        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
-        task.markRunning(EngineID.me()).checkpoint(checkpoint);
-
-        whenTaskResumes((c) -> assertThat(c, equalTo(checkpoint)));
-
-        // Execute task and wait for it to complete
-        engine.getTaskManager().addTask(task, configuration(task));
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        // Assert that status is not FAILED
-        assertStatus(engine.getTaskManager(), task, COMPLETED);
-    }
-
-    @Property(trials=10)
-    @Ignore("Checkpoint not implemented")
-    public void whenATaskIsStoppedDuringExecution_ItSavesItsLastCheckpoint(
-            @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task) {
-        whenTaskStarts(engine.getTaskManager()::stopTask);
-
-        engine.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        assertThat(engine.getTaskManager().storage().getState(task.getId()).checkpoint(), notNullValue());
     }
 
 

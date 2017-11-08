@@ -18,7 +18,6 @@
 #
 
 ai.grakn.generator.TaskStates
-ai.grakn.generator.TaskManagers
 
 ai.grakn.generator.Vars
 ai.grakn.generator.VarPatternAdmins
