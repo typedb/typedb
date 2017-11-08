@@ -38,7 +38,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;

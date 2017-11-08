@@ -32,7 +32,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Sets;
 import org.junit.Before;

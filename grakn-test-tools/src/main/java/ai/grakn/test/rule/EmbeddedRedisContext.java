@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.util;
+package ai.grakn.test.rule;
 
 import org.junit.rules.ExternalResource;
 import org.slf4j.LoggerFactory;

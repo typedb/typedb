@@ -24,7 +24,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.SNBKB;
 import java.util.List;
 import java.util.stream.Collectors;

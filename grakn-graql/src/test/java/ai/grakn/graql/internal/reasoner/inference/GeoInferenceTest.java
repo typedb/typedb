@@ -26,7 +26,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import java.util.List;
 
 import ai.grakn.util.GraknTestUtil;

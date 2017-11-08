@@ -21,7 +21,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.GraknTxTinker;
-import ai.grakn.test.TxFactoryContext;
+import ai.grakn.test.rule.TxFactoryContext;
 import org.junit.ClassRule;
 import org.junit.Test;
 

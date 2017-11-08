@@ -23,7 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;

@@ -34,7 +34,7 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxJanus;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import org.janusgraph.core.SchemaViolationException;

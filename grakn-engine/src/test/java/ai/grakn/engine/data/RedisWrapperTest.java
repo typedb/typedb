@@ -20,7 +20,7 @@ package ai.grakn.engine.data;
 
 import ai.grakn.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
-import ai.grakn.util.InMemoryRedisContext;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import org.junit.ClassRule;
 import org.junit.Test;
 import redis.clients.jedis.exceptions.JedisConnectionException;

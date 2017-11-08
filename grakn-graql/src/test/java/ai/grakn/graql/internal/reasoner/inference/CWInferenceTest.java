@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.CWKB;
 import ai.grakn.util.GraknTestUtil;
 import org.junit.BeforeClass;

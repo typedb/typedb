@@ -21,7 +21,7 @@ package ai.grakn.engine.config;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.InMemoryRedisContext;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.Iterables;
 import org.junit.ClassRule;

@@ -16,10 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.test.rule;
 
 import ai.grakn.GraknTx;
-import ai.grakn.util.EmbeddedCassandraContext;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;

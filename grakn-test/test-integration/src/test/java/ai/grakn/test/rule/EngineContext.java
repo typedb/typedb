@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.test.rule;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
@@ -30,9 +30,7 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.util.EmbeddedRedisContext;
 import ai.grakn.util.GraknTestUtil;
-import ai.grakn.util.InMemoryRedisContext;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;

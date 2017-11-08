@@ -20,7 +20,7 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.graql.internal.shell.ErrorMessage;
-import ai.grakn.test.DistributionContext;
+import ai.grakn.test.rule.DistributionContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;

@@ -28,7 +28,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.test.TxFactoryContext;
+import ai.grakn.test.rule.TxFactoryContext;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.After;
 import org.junit.BeforeClass;

@@ -1,6 +1,6 @@
 package ai.grakn.engine.lock;
 
-import ai.grakn.util.InMemoryRedisContext;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import com.google.common.base.Stopwatch;
 import org.junit.AfterClass;
 import org.junit.Assert;

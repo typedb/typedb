@@ -26,7 +26,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;

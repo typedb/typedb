@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
@@ -24,7 +24,6 @@ import ai.grakn.client.Client;
 import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.util.GraknVersion;
-import ai.grakn.util.InMemoryRedisContext;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import net.lingala.zip4j.core.ZipFile;

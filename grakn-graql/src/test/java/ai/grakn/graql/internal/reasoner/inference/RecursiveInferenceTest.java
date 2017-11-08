@@ -24,7 +24,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.MatrixKB;
 import ai.grakn.test.kbs.MatrixKBII;

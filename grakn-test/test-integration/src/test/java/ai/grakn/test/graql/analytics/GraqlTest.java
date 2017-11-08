@@ -41,7 +41,7 @@ import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;

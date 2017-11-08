@@ -30,7 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import org.junit.Before;

@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
-import ai.grakn.util.EmbeddedCassandraContext;
+import ai.grakn.test.rule.EmbeddedCassandraContext;
 import ai.grakn.util.ErrorMessage;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;

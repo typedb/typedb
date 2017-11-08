@@ -23,7 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.migration.export.Main;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.SampleKBLoader;
 import org.junit.BeforeClass;

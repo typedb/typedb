@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.lock;
 
-import ai.grakn.util.InMemoryRedisContext;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.experimental.theories.DataPoints;
