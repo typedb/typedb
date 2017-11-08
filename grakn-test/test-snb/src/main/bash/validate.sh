@@ -12,8 +12,7 @@ mvn exec:java --projects grakn-test/test-snb -Dexec.mainClass=com.ldbc.driver.Cl
     -vdb ${CSV_DATA}/validation_params.csv \
     -p ldbc.snb.interactive.parameters_dir ${CSV_DATA} \
     -p ai.grakn.uri ${ENGINE} \
-    -p ai.grakn.keyspace ${KEYSPACE}
-"
+    -p ai.grakn.keyspace ${KEYSPACE}"
 
 # check for errors from Grakn
 check-errors.sh fail
