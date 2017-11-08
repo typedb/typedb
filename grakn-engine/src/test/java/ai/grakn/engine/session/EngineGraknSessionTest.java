@@ -13,9 +13,9 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.TxFactoryContext;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.SimpleURI;
@@ -91,7 +91,7 @@ public class EngineGraknSessionTest {
 
     @Test
     public void closeGraphWhenOnlyOneTransactionIsOpen(){
-        assumeFalse(GraknTestSetup.usingTinker()); //Tinker does not have any connections to close
+        assumeFalse(GraknTestUtil.usingTinker()); //Tinker does not have any connections to close
 
         GraknSession factory = Grakn.session(sparkContext.uri(), SampleKBLoader.randomKeyspace());
         GraknTx graph = factory.open(GraknTxType.WRITE);

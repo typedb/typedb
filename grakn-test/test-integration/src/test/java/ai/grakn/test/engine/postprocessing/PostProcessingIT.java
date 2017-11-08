@@ -35,7 +35,7 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import org.janusgraph.core.SchemaViolationException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -70,7 +70,7 @@ public class PostProcessingIT {
     @Ignore("Submitted tasks appear to be lost when using redis task manager.")
     @Test
     public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws InvalidKBException, ExecutionException, InterruptedException {
-        assumeFalse(GraknTestSetup.usingTinker());
+        assumeFalse(GraknTestUtil.usingTinker());
 
         GraknSession session = engine.sessionWithNewKeyspace();
         Keyspace keyspace;

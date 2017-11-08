@@ -26,9 +26,10 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import java.util.List;
+
+import ai.grakn.util.GraknTestUtil;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,7 +50,7 @@ public class GeoInferenceTest {
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
     }
 
     @Test

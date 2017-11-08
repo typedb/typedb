@@ -26,8 +26,8 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
@@ -158,7 +158,7 @@ public class ReasoningTests {
 
     @Before
     public void onStartup() throws Exception {
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
     }
 
     //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.

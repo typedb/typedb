@@ -29,9 +29,9 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
@@ -366,7 +366,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     @Ignore
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
-        assumeTrue(GraknTestSetup.usingJanus());
+        assumeTrue(GraknTestUtil.usingJanus());
 
         String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -381,7 +381,7 @@ public class GraqlControllerReadOnlyTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
-        assumeTrue(GraknTestSetup.usingJanus());
+        assumeTrue(GraknTestUtil.usingJanus());
 
         String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -395,7 +395,7 @@ public class GraqlControllerReadOnlyTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
-        assumeTrue(GraknTestSetup.usingJanus());
+        assumeTrue(GraknTestUtil.usingJanus());
 
         String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -410,7 +410,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     @Ignore
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
-        assumeTrue(GraknTestSetup.usingJanus());
+        assumeTrue(GraknTestUtil.usingJanus());
 
         String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -425,7 +425,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     @Ignore // TODO: Fix this. Probably related to mocks and analytics
     public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
-        assumeTrue(GraknTestSetup.usingJanus());
+        assumeTrue(GraknTestUtil.usingJanus());
 
         String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();

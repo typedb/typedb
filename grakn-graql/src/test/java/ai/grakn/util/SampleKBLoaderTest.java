@@ -21,7 +21,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.GraknTxTinker;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.TxFactoryContext;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -74,9 +73,9 @@ public class SampleKBLoaderTest {
     public void whenBuildingGraph_EnsureBackendMatchesTheTestProfile(){
         try(GraknTx graph = SampleKBLoader.empty().tx()){
             //String comparison is used here because we do not have the class available at compile time
-            if(GraknTestSetup.usingTinker()){
+            if(GraknTestUtil.usingTinker()){
                 assertEquals(GraknTxTinker.class.getSimpleName(), graph.getClass().getSimpleName());
-            } else if (GraknTestSetup.usingJanus()) {
+            } else if (GraknTestUtil.usingJanus()) {
                 assertEquals("GraknTxJanus", graph.getClass().getSimpleName());
             } else {
                 throw new RuntimeException("Test run with unsupported graph backend");
