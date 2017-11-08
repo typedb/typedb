@@ -24,8 +24,10 @@ import ai.grakn.util.SimpleURI;
 import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.IOException;
+import java.net.URI;
 
 import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.COULD_NOT_REACH_ENGINE;
 import static ai.grakn.util.ErrorMessage.ENGINE_STARTUP_ERROR;
 import static ai.grakn.util.ErrorMessage.ENGINE_UNAVAILABLE;
 import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
@@ -62,6 +64,13 @@ public class GraknBackendException extends GraknException {
      */
     public static GraknBackendException unknown(Exception e){
         return new GraknBackendException(BACKEND_EXCEPTION.getMessage(), e);
+    }
+
+    /**
+     * Thrown when engine cannot be reached.
+     */
+    public static GraknBackendException cannotReach(URI uri){
+        return new GraknBackendException(COULD_NOT_REACH_ENGINE.getMessage(uri));
     }
 
     public static GraknBackendException serverStartupException(String message, Exception e){

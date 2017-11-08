@@ -53,7 +53,7 @@ public class QueryErrorTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @ClassRule
     public static final SampleKBContext empty = SampleKBContext.empty();

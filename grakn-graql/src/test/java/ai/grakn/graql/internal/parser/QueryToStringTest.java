@@ -46,7 +46,7 @@ public class QueryToStringTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Before
     public void setUp() {

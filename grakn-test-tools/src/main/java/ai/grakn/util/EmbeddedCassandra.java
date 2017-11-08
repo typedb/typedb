@@ -21,10 +21,12 @@ package ai.grakn.util;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
+import org.junit.rules.ExternalResource;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>
@@ -39,9 +41,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author fppt
  *
  */
-public class EmbeddedCassandra {
+public class EmbeddedCassandra extends ExternalResource {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandra.class);
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
+
+    private static AtomicInteger IN_CASSANDRA_CONTEXT = new AtomicInteger(0);
+
+    private EmbeddedCassandra() {
+
+    }
+
+    public static EmbeddedCassandra create() {
+        return new EmbeddedCassandra();
+    }
 
     /**
      * Starts an embedded version of cassandra
@@ -67,5 +79,20 @@ public class EmbeddedCassandra {
                 LOG.error("Cassandra already running! Attempting to continue.");
             }
         }
+    }
+
+    public static boolean inCassandraContext() {
+        return IN_CASSANDRA_CONTEXT.get() > 0;
+    }
+
+    @Override
+    protected void before() throws Throwable {
+        start();
+        IN_CASSANDRA_CONTEXT.incrementAndGet();
+    }
+
+    @Override
+    protected void after() {
+        IN_CASSANDRA_CONTEXT.decrementAndGet();
     }
 }

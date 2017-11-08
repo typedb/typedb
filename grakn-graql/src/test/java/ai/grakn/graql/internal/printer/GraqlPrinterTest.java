@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
 public class GraqlPrinterTest {
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Test
     public void testRelationOutput() {
