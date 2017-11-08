@@ -111,29 +111,76 @@ def shouldDeployLongRunningInstance() {
     return env.BRANCH_NAME == 'stable'
 }
 
+def mvn(String args) {
+    sh "mvn ${args}"
+}
+
+//Add all tests to job map
+void addTests(jobs) {
+    /* Request the test groupings.  Based on previous test results. */
+    /* see https://wiki.jenkins-ci.org/display/JENKINS/Parallel+Test+Executor+Plugin and demo on github
+    /* Using arbitrary parallelism of 4 and "generateInclusions" feature added in v1.8. */
+    def splits = splitTests parallelism: [$class: 'CountDrivenParallelism', size: 4], generateInclusions: true
+
+    def numSplits = splits.size()
+
+    // change timeout based on how many splits we have. e.g. 1 split = 120min, 3 splits = 60min
+    def testTimeout = 30 + 90 / numSplits;
+
+    for (int i = 0; i < numSplits; i++) {
+        def split = splits[i]
+
+        /* Loop over each record in splits to prepare the testGroups that we'll run in parallel. */
+        /* Split records returned from splitTests contain { includes: boolean, list: List<string>  }. */
+        /*     includes = whether list specifies tests to include (true) or tests to exclude (false). */
+        /*     list = list of tests for inclusion or exclusion. */
+        /* The list of inclusions is constructed based on results gathered from */
+        /* the previous successfully completed job. One additional record will exclude */
+        /* all known tests to run any tests not seen during the previous run.  */
+        jobs["split-${i}"] = {  // example, "split3"
+            graknNode {
+                String workspace = pwd()
+                checkout scm
+
+                slackGithub "Janus tests started"
+                /* Clean each test node to start. */
+                mvn 'clean'
+
+                def mavenVerify = 'verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true'
+
+                /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
+                /* Tell Maven to read the appropriate file. */
+                if (split.includes) {
+                    writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+                    mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
+
+                } else {
+                    writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+                    mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
+
+                } // if split
+
+                try {
+                    /* Call the Maven build with tests. */
+                    timeout(testTimeout) {
+                        stage('Run Janus test profile') {
+                            mvn mavenVerify
+                        }
+                    } // timeout
+
+                } finally {
+                    /* Archive the test results */
+                    junit "**/TEST*.xml"
+                } //try
+            } // node
+        } // testGroups
+    } // for
+}
+
 // This is a map that we fill with jobs to perform in parallel, name -> job closure
 jobs = [:]
 
-jobs['tests'] = {
-    // Run all tests
-    graknNode {
-        checkout scm
-
-        slackGithub "Janus tests started"
-
-        timeout(120) {
-            stage('Run Janus test profile') {
-                try {
-                    sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
-                } finally {
-                    junit "**/TEST*.xml"
-                }
-            }
-        }
-
-        slackGithub "Janus tests success", "good"
-    }
-}
+addTests(jobs)
 
 if (shouldRunAllTests()) {
 
@@ -161,7 +208,7 @@ if (shouldRunAllTests()) {
 
             timeout(60) {
                 stage('Run the benchmarks') {
-                    sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                    mvn "clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
                     archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
             }
