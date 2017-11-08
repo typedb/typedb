@@ -304,7 +304,7 @@ public class GraqlShell {
     private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
         String queries = loadQuery(graqlPath);
         List<Observable<QueryResponse>> all = new ArrayList<>();
-        Graql.parser().parseList(queries).forEach(query -> all.add(batchExecutorClient.add(query, keyspace, true)));
+        Graql.parser().parseList(queries).forEach(query -> all.add(batchExecutorClient.add(query, keyspace, false)));
         int completed = allObservable(all).toBlocking().first().size();
         System.out.println("Statements executed: " + completed);
         batchExecutorClient.close();

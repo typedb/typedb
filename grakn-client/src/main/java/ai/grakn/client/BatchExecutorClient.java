@@ -23,6 +23,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.github.rholder.retry.Attempt;
@@ -39,10 +40,6 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-
 import java.io.Closeable;
 import java.net.ConnectException;
 import java.util.Collection;
@@ -50,10 +47,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static com.codahale.metrics.MetricRegistry.name;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 /**
  * Client to batch load qraql queries into Grakn that mutate the graph.
@@ -81,6 +82,7 @@ public class BatchExecutorClient implements Closeable {
     private final MetricRegistry metricRegistry;
     private final Meter failureMeter;
     private final Timer addTimer;
+    private final Scheduler pool;
 
     private BatchExecutorClient(Builder builder) {
         context = HystrixRequestContext.initializeContext();
@@ -90,6 +92,10 @@ public class BatchExecutorClient implements Closeable {
         metricRegistry = builder.metricRegistry;
         timeoutMs = builder.timeoutMs;
         threadPoolCoreSize = builder.threadPoolCoreSize;
+        // Note that the pool on which the observables run is different from the Hystrix pool
+        // They need to be of comparable sizes and they should match the capabilities
+        // of the server
+        pool = Schedulers.from(Executors.newFixedThreadPool(threadPoolCoreSize));
         addTimer = metricRegistry.timer(name(BatchExecutorClient.class, "add"));
         failureMeter = metricRegistry.meter(name(BatchExecutorClient.class, "failure"));
     }
@@ -111,6 +117,7 @@ public class BatchExecutorClient implements Closeable {
                         LOG.trace("Executed {}", a.getValue());
                     }
                 })
+                .subscribeOn(pool)
                 .doOnTerminate(context::close);
         return keepErrors ? observable : ignoreErrors(observable);
     }
@@ -258,7 +265,7 @@ public class BatchExecutorClient implements Closeable {
      */
     private static class CommandQueries extends HystrixCommand<List<QueryResponse>> {
 
-        static final int QUEUE_MULTIPLIER = 16;
+        static final int QUEUE_MULTIPLIER = 1024;
 
         private final List<QueryWithId<?>> queries;
         private final Keyspace keyspace;
@@ -315,12 +322,11 @@ public class BatchExecutorClient implements Closeable {
                     }
                 });
             } catch (RetryException | ExecutionException e) {
-                LOG.error("Error while executing queries", e);
                 Throwable cause = e.getCause();
                 if (cause instanceof GraknClientException) {
                     throw (GraknClientException) cause;
                 } else {
-                    throw new RuntimeException("Unexpected exception while retrying", e);
+                    throw new RuntimeException("Unexpected exception while retrying, " + queryList.size() + " queries failed.", e);
                 }
             }
         }
