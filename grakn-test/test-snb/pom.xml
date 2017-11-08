@@ -30,6 +30,13 @@
             </exclusions>
         </dependency>
 
+        <!--
+            This dependency is duplicated from the main pom deliberately.
+            This is because com.ldbc.driver:jeeves provides its own (older) Guava dependency. This is included directly
+            in their distribution, not as a proper dependency so we can't actually exclude it. Instead, we make sure
+            that OUR guava dependency is loaded FIRST by putting it before the com.ldbc.driver:jeeves dependency.
+        -->
+        <!--suppress MavenDuplicateDependenciesInspection -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
