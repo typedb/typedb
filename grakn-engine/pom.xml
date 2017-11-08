@@ -65,11 +65,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <artifactId>jackson-core</artifactId>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
             <artifactId>jackson-databind</artifactId>
             <groupId>com.fasterxml.jackson.core</groupId>
             <version>${jackson.version}</version>
@@ -115,11 +110,6 @@
             </exclusions>
         </dependency>
         <!-- Used to format metrics for Prometheus -->
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient</artifactId>
-            <version>${prometheus.version}</version>
-        </dependency>
         <dependency>
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient_servlet</artifactId>
