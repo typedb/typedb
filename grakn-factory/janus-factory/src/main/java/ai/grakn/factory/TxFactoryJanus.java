@@ -18,8 +18,8 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
-import ai.grakn.Keyspace;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -99,8 +99,8 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     //This maps the storage backend to the needed value
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
-    TxFactoryJanus(Keyspace keyspace, String engineUrl, Properties properties) {
-        super(keyspace, engineUrl, properties);
+    TxFactoryJanus(GraknSession session) {
+        super(session);
     }
 
     @Override
@@ -115,16 +115,16 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
 
     @Override
     GraknTxJanus buildGraknGraphFromTinker(JanusGraph graph) {
-        return new GraknTxJanus(graph, super.keyspace, super.engineUrl, super.properties);
+        return new GraknTxJanus(session(), graph);
     }
 
     @Override
     JanusGraph buildTinkerPopGraph(boolean batchLoading) {
-        return newJanusGraph(super.keyspace, super.engineUrl, super.properties, batchLoading);
+        return newJanusGraph(batchLoading);
     }
 
-    private synchronized JanusGraph newJanusGraph(Keyspace keyspace, String address, Properties properties, boolean batchLoading){
-        JanusGraph JanusGraph = configureGraph(keyspace, address, properties, batchLoading);
+    private synchronized JanusGraph newJanusGraph(boolean batchLoading){
+        JanusGraph JanusGraph = configureGraph(batchLoading);
         buildJanusIndexes(JanusGraph);
         JanusGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
 
@@ -140,10 +140,10 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         return JanusGraph;
     }
 
-    private JanusGraph configureGraph(Keyspace keyspace, String address, Properties properties, boolean batchLoading){
+    private JanusGraph configureGraph(boolean batchLoading){
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().
-                set("storage.hostname", address).
-                set("storage.cassandra.keyspace", keyspace.getValue()).
+                set("storage.hostname", session().uri()).
+                set("storage.cassandra.keyspace", session().keyspace().getValue()).
                 set("storage.batch-loading", batchLoading);
 
         String storageBackend = "storage.backend";
@@ -152,7 +152,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
 
         //Load Passed in properties
-        properties.forEach((key, value) -> {
+        session().config().forEach((key, value) -> {
 
             //Overwrite storage
             if(key.equals(storageBackend)){
@@ -169,7 +169,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
 
 
 
-        LOG.debug("Opening graph on {}", address);
+        LOG.debug("Opening graph on {}", session().uri());
         return builder.open();
     }
 

@@ -47,7 +47,7 @@ import static javax.annotation.meta.When.NEVER;
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}
  */
 abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> implements TxFactory<G> {
-    protected final GraknSession session;
+    private final GraknSession session;
 
     private M graknTx = null;
     private M graknTxBatchLoading = null;
@@ -118,4 +118,7 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     @CheckReturnValue(when=NEVER)
     protected abstract G getGraphWithNewTransaction(G graph, boolean batchloading);
 
+    public GraknSession session(){
+        return session;
+    }
 }

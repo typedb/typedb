@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.InvalidKBException;
@@ -49,13 +50,18 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TxFactoryJanusTest extends JanusTestBase {
+    private final static GraknSession session = mock(GraknSession.class);
     private static JanusGraph sharedGraph;
 
     @BeforeClass
     public static void setupClass() throws InterruptedException {
         sharedGraph = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
+        when(session.uri()).thenReturn(Grakn.IN_MEMORY);
+        when(session.config()).thenReturn(TEST_PROPERTIES);
     }
 
     @Test
@@ -96,7 +102,8 @@ public class TxFactoryJanusTest extends JanusTestBase {
 
     @Test
     public void testSingleton(){
-        TxFactoryJanus factory = new TxFactoryJanus(Keyspace.of("anothertest"), Grakn.IN_MEMORY, TEST_PROPERTIES);
+        when(session.keyspace()).thenReturn(Keyspace.of("anothertest"));
+        TxFactoryJanus factory = new TxFactoryJanus(session);
         GraknTxJanus mg1 = factory.open(GraknTxType.BATCH);
         JanusGraph tinkerGraphMg1 = mg1.getTinkerPopGraph();
         mg1.close();
@@ -140,7 +147,9 @@ public class TxFactoryJanusTest extends JanusTestBase {
     public void testMultithreadedRetrievalOfGraphs(){
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
-        TxFactoryJanus factory = new TxFactoryJanus(Keyspace.of("simplekeyspace"), Grakn.IN_MEMORY, TEST_PROPERTIES);
+
+        when(session.keyspace()).thenReturn(Keyspace.of("simplekeyspace"));
+        TxFactoryJanus factory = new TxFactoryJanus(session);
 
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
@@ -173,7 +182,8 @@ public class TxFactoryJanusTest extends JanusTestBase {
 
     @Test
     public void testGraphNotClosed() throws InvalidKBException {
-        TxFactoryJanus factory = new TxFactoryJanus(Keyspace.of("stuff"), Grakn.IN_MEMORY, TEST_PROPERTIES);
+        when(session.keyspace()).thenReturn(Keyspace.of("stuff"));
+        TxFactoryJanus factory = new TxFactoryJanus(session);
         GraknTxJanus graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
@@ -187,7 +197,8 @@ public class TxFactoryJanusTest extends JanusTestBase {
 
     private static JanusGraph getGraph() {
         Keyspace name = Keyspace.of("hehe" + UUID.randomUUID().toString().replaceAll("-", ""));
-        janusGraphFactory = new TxFactoryJanus(name, Grakn.IN_MEMORY, TEST_PROPERTIES);
+        when(session.keyspace()).thenReturn(name);
+        janusGraphFactory = new TxFactoryJanus(session);
         Graph graph = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
         assertThat(graph, instanceOf(JanusGraph.class));
         return (JanusGraph) graph;

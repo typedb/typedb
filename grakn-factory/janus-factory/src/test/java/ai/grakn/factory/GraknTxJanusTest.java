@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -56,8 +57,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GraknTxJanusTest extends JanusTestBase {
+    private final static GraknSession session = mock(GraknSession.class);
     private GraknTx graknTx;
 
     @Before
@@ -65,6 +69,9 @@ public class GraknTxJanusTest extends JanusTestBase {
         if(graknTx == null || graknTx.isClosed()) {
             graknTx = janusGraphFactory.open(GraknTxType.WRITE);
         }
+
+        when(session.uri()).thenReturn(Grakn.IN_MEMORY);
+        when(session.config()).thenReturn(TEST_PROPERTIES);
     }
 
     @After
@@ -119,7 +126,8 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
-        GraknTxJanus graph = new TxFactoryJanus(Keyspace.of("test"), Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        when(session.keyspace()).thenReturn(Keyspace.of("test"));
+        GraknTxJanus graph = new TxFactoryJanus(session).open(GraknTxType.WRITE);
 
         String entityTypeLabel = "Hello";
 
@@ -137,7 +145,8 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
-        GraknTxJanus graph = new TxFactoryJanus(Keyspace.of("case"), Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        when(session.keyspace()).thenReturn(Keyspace.of("case"));
+        GraknTxJanus graph = new TxFactoryJanus(session).open(GraknTxType.WRITE);
         AttributeType<LocalDateTime> dateType = graph.putAttributeType("date", AttributeType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
         Attribute<LocalDateTime> date = dateType.putAttribute(now);

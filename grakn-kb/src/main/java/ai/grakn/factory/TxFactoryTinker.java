@@ -49,7 +49,7 @@ public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGrap
 
     @Override
     GraknTxTinker buildGraknGraphFromTinker(TinkerGraph graph) {
-        return new GraknTxTinker(super.session, graph);
+        return new GraknTxTinker(session(), graph);
     }
 
     @Override
