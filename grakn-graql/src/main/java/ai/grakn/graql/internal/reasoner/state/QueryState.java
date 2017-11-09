@@ -31,8 +31,10 @@ import java.util.Set;
 /**
  *
  * <p>
- * Base abstract class for resolution states corresponding to different forms of queries.
+ * Specialised class for resolution states corresponding to different forms of queries.
  * </p>
+ *
+ * @param <Q> the type of query that this state is corresponding to
  *
  * @author Kasper Piskorski
  *
@@ -61,7 +63,6 @@ public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryState
         }
         return subGoalIterator.hasNext()? subGoalIterator.next() : null;
     }
-
 
     /**
      * @return true if this state corresponds to an atomic state

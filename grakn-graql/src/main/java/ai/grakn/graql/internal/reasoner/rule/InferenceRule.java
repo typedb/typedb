@@ -299,13 +299,12 @@ public class InferenceRule {
     }
 
     /**
-     *
-     * @param parentAtom
-     * @param unifier
-     * @param parent
-     * @param visitedSubGoals
-     * @param cache
-     * @return
+     * @param parentAtom atom to which this rule is applied
+     * @param unifier unifier with parent state
+     * @param parent parent state
+     * @param visitedSubGoals set of visited sub goals
+     * @param cache query cache
+     * @return resolution subGoal formed from this rule
      */
     public QueryStateBase subGoal(Atom parentAtom, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache){
         Unifier ruleUnifierInverse = unifier.inverse();
@@ -315,11 +314,7 @@ public class InferenceRule {
                 .getSubstitution()
                 .unify(ruleUnifierInverse);
 
-        InferenceRule inferenceRule = this.propagateConstraints(parentAtom, ruleUnifierInverse);
-        return new RuleState(
-                inferenceRule.getBody().subGoal(partialSubPrime, unifier, parent, visitedSubGoals, cache),
-                inferenceRule
-        );
+        return new RuleState(this.propagateConstraints(parentAtom, ruleUnifierInverse), partialSubPrime, unifier, parent, visitedSubGoals, cache);
     }
 
     /**

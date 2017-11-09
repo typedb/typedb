@@ -81,6 +81,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -102,6 +104,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final ImmutableSet<Atomic> atomSet;
     private Answer substitution = null;
     private ImmutableMap<Var, Type> varTypeMap = null;
+
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
         this.tx = tx;
@@ -473,7 +477,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return true if this query is a ground query
      */
-    public boolean isGround(){
+    boolean isGround(){
         return getSubstitution().vars().containsAll(getVarNames());
     }
 
@@ -608,6 +612,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     Stream<ReasonerQueryImpl> getQueryStream(Answer sub){ return Stream.of(this);}
 
+    /**
+     * @param parent parent state
+     * @param subGoals set of visited sub goals
+     * @param cache query cache
+     * @return query state iterator (db iter + unifier + state iter) for this query
+     */
     public QueryStateIterator queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         Iterator<Answer> dbIterator;
         Iterator<QueryStateBase> subGoalIterator;
@@ -622,12 +632,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             dbIterator = Collections.emptyIterator();
             LinkedList<ReasonerQueryImpl> subQueries = new ResolutionPlan(this).queryPlan();
 
-            /*
             LOG.trace("CQ plan:\n" + subQueries.stream()
                     .map(sq -> sq.toString() + (sq.isRuleResolvable()? "*" : ""))
                     .collect(Collectors.joining("\n"))
             );
-            */
 
             subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
         }
