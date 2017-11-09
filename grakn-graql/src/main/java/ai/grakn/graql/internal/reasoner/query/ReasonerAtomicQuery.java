@@ -311,7 +311,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public QueryStateIterator queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
         Pair<Stream<Answer>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
-        Iterator<Answer> dbIterator = cacheEntry.getKey().iterator();
+        Iterator<Answer> dbIterator = cacheEntry.getKey()
+                .map(a -> a.explain(a.getExplanation().setQuery(this)))
+                .iterator();
+        MultiUnifier cacheUnifier = cacheEntry.getValue().inverse();
 
         Iterator<QueryStateBase> subGoalIterator;
         //if this is ground and exists in the db then do not resolve further
@@ -324,7 +327,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, subGoals, cache))
                     .iterator();
         }
-        return new QueryStateIterator(dbIterator, cacheEntry.getValue().inverse(), subGoalIterator);
+        return new QueryStateIterator(dbIterator, cacheUnifier, subGoalIterator);
     }
 
     @Override

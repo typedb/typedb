@@ -300,21 +300,21 @@ public class InferenceRule {
 
     /**
      * @param parentAtom atom to which this rule is applied
-     * @param unifier unifier with parent state
+     * @param ruleUnifier unifier with parent state
      * @param parent parent state
      * @param visitedSubGoals set of visited sub goals
      * @param cache query cache
      * @return resolution subGoal formed from this rule
      */
-    public QueryStateBase subGoal(Atom parentAtom, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache){
-        Unifier ruleUnifierInverse = unifier.inverse();
+    public QueryStateBase subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta
         Answer partialSubPrime = ((ReasonerQueryImpl) parentAtom.getParentQuery())
                 .getSubstitution()
                 .unify(ruleUnifierInverse);
 
-        return new RuleState(this.propagateConstraints(parentAtom, ruleUnifierInverse), partialSubPrime, unifier, parent, visitedSubGoals, cache);
+        return new RuleState(this.propagateConstraints(parentAtom, ruleUnifierInverse), partialSubPrime, ruleUnifier, parent, visitedSubGoals, cache);
     }
 
     /**
