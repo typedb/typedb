@@ -24,6 +24,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.kb.internal.computer.GraknComputerImpl;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Properties;
 
@@ -50,7 +53,8 @@ public class GraknSessionInMemory implements GraknSession {
 
     @Override
     public GraknComputer getGraphComputer() {
-        throw new UnsupportedOperationException("In memory grakn session does not support this function");
+        Graph graph = FactoryBuilder.getFactory(this, true).getTinkerPopGraph(false);
+        return new GraknComputerImpl(graph);
     }
 
     @Override
