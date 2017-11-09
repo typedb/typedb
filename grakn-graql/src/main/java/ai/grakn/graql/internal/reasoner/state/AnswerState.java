@@ -31,12 +31,12 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
  * @author Kasper Piskorski
  *
  */
-class AnswerState extends ResolutionState {
+public class AnswerState extends ResolutionState {
 
     private final InferenceRule rule;
     private final Unifier unifier;
 
-    AnswerState(Answer sub, Unifier u, QueryStateBase parent) {
+    public AnswerState(Answer sub, Unifier u, QueryStateBase parent) {
         super(sub, parent);
         this.unifier = u;
         this.rule = null;

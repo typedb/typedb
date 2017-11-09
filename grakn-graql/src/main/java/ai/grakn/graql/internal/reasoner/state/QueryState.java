@@ -22,9 +22,9 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.query.QueryStateIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -42,25 +42,20 @@ import java.util.Set;
 public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryStateBase{
 
     private final Q query;
-    private final Iterator<Answer> dbIterator;
-    private final Iterator<QueryStateBase> subGoalIterator;
+    private final Iterator<ResolutionState> subGoalIterator;
     private final MultiUnifier cacheUnifier;
 
     QueryState(Q query, Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
         this.query = query;
 
-        QueryStateIterator queryStateIterator = query.queryStateIterator(this, subGoals, cache);
-        this.dbIterator = queryStateIterator.dbIterator();
-        this.cacheUnifier = queryStateIterator.cacheUnifier();
-        this.subGoalIterator = queryStateIterator.subGoalIterator();
+        Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator = query.queryStateIterator(this, subGoals, cache);
+        this.subGoalIterator = queryStateIterator.getKey();
+        this.cacheUnifier = queryStateIterator.getValue();
     }
 
     @Override
     public ResolutionState generateSubGoal() {
-        if (dbIterator.hasNext()){
-            return new AnswerState(dbIterator.next(), getUnifier(), this);
-        }
         return subGoalIterator.hasNext()? subGoalIterator.next() : null;
     }
 

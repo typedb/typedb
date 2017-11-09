@@ -53,10 +53,12 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
+import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.CumulativeState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
+import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
@@ -626,14 +628,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return query state iterator (db iter + unifier + state iter) for this query
      */
-    public QueryStateIterator queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        Iterator<Answer> dbIterator;
+    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Iterator<AnswerState> dbIterator;
         Iterator<QueryStateBase> subGoalIterator;
-        MultiUnifier unifier = new MultiUnifierImpl();
 
         if(!this.isRuleResolvable()) {
             dbIterator = this.getQuery().stream()
                     .map(ans -> ans.explain(new JoinExplanation(this, ans)))
+                    .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                     .iterator();
             subGoalIterator = Collections.emptyIterator();
         } else {
@@ -647,7 +649,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
             subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
         }
-        return new QueryStateIterator(dbIterator, unifier, subGoalIterator);
+        return new Pair<>(
+                Iterators.concat(dbIterator, subGoalIterator),
+                new MultiUnifierImpl()
+        );
     }
 
 

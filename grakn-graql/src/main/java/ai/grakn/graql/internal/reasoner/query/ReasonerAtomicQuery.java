@@ -44,11 +44,14 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.AtomicState;
 import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
+import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Collections;
@@ -315,12 +318,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public QueryStateIterator queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
         Pair<Stream<Answer>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
-        Iterator<Answer> dbIterator = cacheEntry.getKey()
-                .map(a -> a.explain(a.getExplanation().setQuery(this)))
-                .iterator();
         MultiUnifier cacheUnifier = cacheEntry.getValue().inverse();
+        Iterator<AnswerState> dbIterator = cacheEntry.getKey()
+                .map(a -> a.explain(a.getExplanation().setQuery(this)))
+                .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
+                .iterator();
 
         Iterator<QueryStateBase> subGoalIterator;
         //if this is ground and exists in the db then do not resolve further
@@ -333,7 +337,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, subGoals, cache))
                     .iterator();
         }
-        return new QueryStateIterator(dbIterator, cacheUnifier, subGoalIterator);
+        return new Pair<>(
+                Iterators.concat(dbIterator, subGoalIterator),
+                cacheUnifier
+        );
     }
 
     @Override
