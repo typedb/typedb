@@ -84,7 +84,6 @@ import static ai.grakn.util.REST.RemoteShell.DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
 import static ai.grakn.util.REST.RemoteShell.INFER;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
-import static ai.grakn.util.REST.RemoteShell.MATERIALISE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
@@ -126,7 +125,7 @@ public class GraqlShell {
     private static final String CLEAN_COMMAND = "clean";
     private static final String HI_POP_COMMAND =
             HAS.name().substring(0, 1) + Integer.class.getSimpleName().substring(0, 1) +
-            Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
+                    Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
 
     private static final int QUERY_CHUNK_SIZE = 50000;
 
@@ -156,6 +155,7 @@ public class GraqlShell {
 
     /**
      * Run a Graql REPL
+     *
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql console --help}
      */
     public static void main(String[] args) {
@@ -180,7 +180,6 @@ public class GraqlShell {
         options.addOption("a", "active", true, "the number of active tasks (must be used with -b)");
         options.addOption("o", "output", true, "output format for results");
         options.addOption("n", "infer", false, "perform inference on results");
-        options.addOption("m", "materialise", false, "materialise inferred results");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -229,13 +228,12 @@ public class GraqlShell {
         }
 
         boolean infer = cmd.hasOption("n");
-        boolean materialise = cmd.hasOption("m");
 
         if (cmd.hasOption("b")) {
             try {
                 sendBatchRequest(client.loaderClient(keyspace, location), cmd.getOptionValue("b"), keyspace);
             } catch (NumberFormatException e) {
-                printUsage(options, "Cannot cast argument to an integer "+e.getMessage());
+                printUsage(options, "Cannot cast argument to an integer " + e.getMessage());
                 return false;
             } catch (Exception e) {
                 System.out.println("Batch failed \n" + CommonUtil
@@ -258,7 +256,7 @@ public class GraqlShell {
 
             GraqlShell shell = new GraqlShell(
                     historyFilename, keyspace, client, uri, outputFormat,
-                    infer, materialise
+                    infer
             );
 
             // Start shell
@@ -297,8 +295,8 @@ public class GraqlShell {
     }
 
     private static String loadQuery(String filePath) throws IOException {
-            List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
-            return lines.stream().collect(joining("\n"));
+        List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
+        return lines.stream().collect(joining("\n"));
     }
 
     private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
@@ -315,7 +313,7 @@ public class GraqlShell {
      */
     GraqlShell(
             String historyFilename, Keyspace keyspace,
-            GraqlClient client, URI uri, String outputFormat, boolean infer, boolean materialise
+            GraqlClient client, URI uri, String outputFormat, boolean infer
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
@@ -327,8 +325,7 @@ public class GraqlShell {
                 ACTION, ACTION_INIT,
                 KEYSPACE, keyspace.getValue(),
                 OUTPUT_FORMAT, outputFormat,
-                INFER, infer,
-                MATERIALISE, materialise
+                INFER, infer
         );
         session.sendJson(initJson);
 
@@ -475,7 +472,7 @@ public class GraqlShell {
         return fileCreated;
     }
 
-    private void printLicense(){
+    private void printLicense() {
         StringBuilder result = new StringBuilder("");
 
         //Get file from resources folder
@@ -520,6 +517,7 @@ public class GraqlShell {
 
     /**
      * Handle the given server message
+     *
      * @param message the message to handle
      */
     private void handleMessage(Json message) {
@@ -575,6 +573,7 @@ public class GraqlShell {
 
     /**
      * load the user's preferred editor to edit a query
+     *
      * @return the string written to the editor
      */
     private String runEditor() throws IOException {
