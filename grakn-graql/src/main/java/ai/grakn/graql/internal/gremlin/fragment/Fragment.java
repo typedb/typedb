@@ -236,6 +236,7 @@ public abstract class Fragment {
     public abstract double fragmentCost();
 
     public void setAccurateFragmentCost(double fragmentCost) {
+        System.out.println();
         System.out.println("this = " + this);
         System.out.println("fragmentCost = " + fragmentCost);
         System.out.println();
@@ -248,6 +249,10 @@ public abstract class Fragment {
      */
     public boolean hasFixedFragmentCost() {
         return false;
+    }
+
+    public Fragment getInverse() {
+        return this;
     }
 
     public Optional<Long> getShardCount(GraknTx tx) {

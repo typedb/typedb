@@ -30,9 +30,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 
 @AutoValue
-abstract class NeqFragment extends Fragment {
+public abstract class NeqFragment extends Fragment {
 
-    abstract Var other();
+    public abstract Var other();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -49,6 +49,11 @@ abstract class NeqFragment extends Fragment {
     public double fragmentCost() {
         // This is arbitrary - we imagine about half the results are filtered out
         return COST_NODE_NEQ;
+    }
+
+    @Override
+    public Fragment getInverse() {
+        return Fragments.neq(varProperty(), other(), start());
     }
 
     @Override
