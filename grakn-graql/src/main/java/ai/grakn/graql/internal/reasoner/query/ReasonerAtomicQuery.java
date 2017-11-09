@@ -49,6 +49,7 @@ import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Collections;
 import org.slf4j.Logger;
@@ -105,6 +106,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
+
+    @Override
+    public ReasonerAtomicQuery withSubstitution(Answer sub){
+        return new ReasonerAtomicQuery(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
+    }
 
     @Override
     public ReasonerAtomicQuery inferTypes() {
@@ -177,7 +183,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Stream<Answer> materialise(Answer answer) {
         //declaring a local variable cause otherwise PMD doesn't recognise the use of insert() and complains
-        ReasonerAtomicQuery queryToMaterialise = ReasonerQueries.atomic(this, answer);
+        ReasonerAtomicQuery queryToMaterialise = this.withSubstitution(answer);
         return queryToMaterialise
                 .insert()
                 .map(ans -> ans.explain(answer.getExplanation()));

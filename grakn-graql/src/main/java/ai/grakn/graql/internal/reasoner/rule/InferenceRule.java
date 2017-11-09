@@ -186,8 +186,8 @@ public class InferenceRule {
      */
     public InferenceRule withSubstitution(Answer sub){
         return new InferenceRule(
-                ReasonerQueries.atomic(getHead(), sub),
-                ReasonerQueries.create(getBody(), sub),
+                getHead().withSubstitution(sub),
+                getBody().withSubstitution(sub),
                 ruleId,
                 tx
         );
