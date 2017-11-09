@@ -18,6 +18,8 @@
 
 package ai.grakn.util;
 
+import ai.grakn.GraknSystemProperty;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 
@@ -29,6 +31,23 @@ import java.net.ServerSocket;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class GraknTestUtil {
+    private static String CONFIG = GraknSystemProperty.TEST_PROFILE.value();
+
+    /**
+     *
+     * @return true if the tests are running on tinker graph
+     */
+    public static boolean usingTinker() {
+        return "tinker".equals(CONFIG);
+    }
+
+    /**
+     *
+     * @return true if the tests are running on janus graph.
+     */
+    public static boolean usingJanus() {
+        return "janus".equals(CONFIG);
+    }
 
     /**
      * Gets a port which a service can bind to.

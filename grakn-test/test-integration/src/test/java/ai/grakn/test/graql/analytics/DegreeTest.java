@@ -32,8 +32,8 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.rule.EngineContext;
+import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestSetup.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -59,12 +58,12 @@ public class DegreeTest {
     public GraknSession factory;
 
     @ClassRule
-    public static final EngineContext context = usingTinker() ? null : EngineContext.createWithInMemoryRedis();
+    public static final EngineContext context = GraknTestUtil.usingTinker() ? null : EngineContext.createWithInMemoryRedis();
     private GraknTx tx;
 
     @Before
     public void setUp() {
-        factory = usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
+        factory = GraknTestUtil.usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
         tx = factory.open(GraknTxType.WRITE);
     }
 
@@ -113,7 +112,7 @@ public class DegreeTest {
         // compute degrees
         List<Long> list = new ArrayList<>(4);
         long workerNumber = 4L;
-        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
+        if (GraknTestUtil.usingTinker()) workerNumber = 1L;
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }

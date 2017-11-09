@@ -59,7 +59,6 @@ import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
@@ -107,7 +106,6 @@ public class GraqlController {
     @ApiImplicitParams({
             @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "body"),
             @ApiImplicitParam(name = INFER, value = "Enable inference", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = MATERIALISE, value = "Enable materialisation", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(
                     name = LIMIT_EMBEDDED,
                     value = "Limit of embedded objects in HAL response", dataType = "int", paramType = "query"
@@ -122,7 +120,6 @@ public class GraqlController {
         String queryString = mandatoryBody(request);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE));
         Optional<Boolean> infer = queryParameter(request, INFER).map(Boolean::parseBoolean);
-        Optional<Boolean> materialise = queryParameter(request, MATERIALISE).map(Boolean::parseBoolean);
         boolean multi = parseBoolean(queryParameter(request, MULTI).orElse("false"));
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
@@ -133,12 +130,11 @@ public class GraqlController {
             QueryBuilder builder = graph.graql();
 
             infer.ifPresent(builder::infer);
-            materialise.ifPresent(builder::materialise);
 
             QueryParser parser = builder.parser();
             defineAllVars.ifPresent(parser::defineAllVars);
             Object responseBody = executeQuery(graph, limitEmbedded, queryString,
-                    acceptType, multi, parser, materialise.orElse(false));
+                    acceptType, multi, parser);
 
             Object resp = respond(response, acceptType, responseBody);
 
@@ -186,7 +182,7 @@ public class GraqlController {
      * @param parser
      */
     private Object executeQuery(GraknTx graph, int limitEmbedded, String queryString,
-                                String acceptType, boolean multi, QueryParser parser, boolean materialise) {
+                                String acceptType, boolean multi, QueryParser parser) {
         Printer<?> printer;
 
         switch (acceptType) {
@@ -214,7 +210,7 @@ public class GraqlController {
             formatted = printer.graqlString(executeAndMonitor(query));
             commitQuery = !query.isReadOnly();
         }
-        if (commitQuery || materialise) graph.commit();
+        if (commitQuery) graph.commit();
         return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
     }
 

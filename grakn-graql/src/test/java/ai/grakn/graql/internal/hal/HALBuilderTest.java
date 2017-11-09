@@ -18,15 +18,14 @@
 
 package ai.grakn.graql.internal.hal;
 
-
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import mjson.Json;
 import org.junit.ClassRule;

@@ -31,7 +31,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.json.JsonMigrator;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.Sets;
 import org.junit.Before;

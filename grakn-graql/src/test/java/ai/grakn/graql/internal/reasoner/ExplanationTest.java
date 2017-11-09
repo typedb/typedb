@@ -27,10 +27,10 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
+import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -70,7 +70,7 @@ public class ExplanationTest {
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
         GraknTx tx = geoKB.tx();
         iqb = tx.graql().infer(true).materialise(false);
         polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
@@ -256,7 +256,7 @@ public class ExplanationTest {
 
         String queryString = "match " +
                 "($x, $y) isa cousins;" +
-                "limit 5; get;";
+                "limit 3; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 

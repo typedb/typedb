@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -82,7 +83,8 @@ public class BatchExecutorClient implements Closeable {
     private final MetricRegistry metricRegistry;
     private final Meter failureMeter;
     private final Timer addTimer;
-    private final Scheduler pool;
+    private final Scheduler scheduler;
+    private final ExecutorService executor;
 
     private BatchExecutorClient(Builder builder) {
         context = HystrixRequestContext.initializeContext();
@@ -95,7 +97,8 @@ public class BatchExecutorClient implements Closeable {
         // Note that the pool on which the observables run is different from the Hystrix pool
         // They need to be of comparable sizes and they should match the capabilities
         // of the server
-        pool = Schedulers.from(Executors.newFixedThreadPool(threadPoolCoreSize));
+        executor = Executors.newFixedThreadPool(threadPoolCoreSize);
+        scheduler = Schedulers.from(executor);
         addTimer = metricRegistry.timer(name(BatchExecutorClient.class, "add"));
         failureMeter = metricRegistry.meter(name(BatchExecutorClient.class, "failure"));
     }
@@ -117,7 +120,7 @@ public class BatchExecutorClient implements Closeable {
                         LOG.trace("Executed {}", a.getValue());
                     }
                 })
-                .subscribeOn(pool)
+                .subscribeOn(scheduler)
                 .doOnTerminate(context::close);
         return keepErrors ? observable : ignoreErrors(observable);
     }
@@ -135,6 +138,7 @@ public class BatchExecutorClient implements Closeable {
     @Override
     public void close() {
         context.close();
+        executor.shutdownNow();
     }
 
     public static Builder newBuilder() {
