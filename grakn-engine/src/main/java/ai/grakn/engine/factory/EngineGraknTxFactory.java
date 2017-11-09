@@ -66,11 +66,11 @@ public class EngineGraknTxFactory {
     }
 
     private EngineGraknTxFactory(Properties properties, LockProvider lockProvider, boolean loadSchema) {
+        this.openedSessions = new HashMap<>();
         this.properties = new Properties();
         this.properties.putAll(properties);
         this.engineURI = properties.getProperty(GraknConfigKey.SERVER_HOST_NAME.name()) + ":" + properties.getProperty(GraknConfigKey.SERVER_PORT.name());
         this.systemKeyspace = SystemKeyspaceImpl.create(this, lockProvider, loadSchema);
-        this.openedSessions = new HashMap<>();
     }
 
     public synchronized void refreshConnections(){
