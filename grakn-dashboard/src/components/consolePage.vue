@@ -82,8 +82,6 @@ export default {
     return {
       graqlResponse: undefined,
       halParser: {},
-      useReasoner: User.getReasonerStatus(),
-      materialiseReasoner: User.getMaterialiseStatus(),
       typeInstances: false,
       typeKeys: [],
       state: ConsolePageState,
@@ -102,13 +100,6 @@ export default {
     this.state.eventHub.$off('load-schema', this.onLoadSchema);
     this.state.eventHub.$off('clear-page', this.onClear);
   },
-
-  mounted() {
-    this.$nextTick(() => {
-            // code for previous attach() method.
-    });
-  },
-
   methods: {
         /*
          * Listener methods on emit from GraqlEditor

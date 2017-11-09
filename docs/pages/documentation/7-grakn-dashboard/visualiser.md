@@ -124,11 +124,9 @@ If you want to tidy your nodes by aligning them all horizontally or vertically, 
 
 #### Inference   
 
-There are 3 inference settings that can be changed.
+There is 1 inference setting that can be changed.
 
 * Activate inference - activates inference, per query. It is off by default, but turn this on when you need to run queries that use inference.
-* Materialise inference - persists the inference into the knowledge base, per query. This is off by default, but should be turned on when running a query when you want to add the results of inference back into the knowledge base.
-* Materialise All: Off by default. Activates and persists all inference across the knowledge base.
 
 #### Query Limit   
 
