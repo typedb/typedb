@@ -112,7 +112,6 @@ Graql query that should be executed on the server.
 
 + **keyspace** Keyspace where query should execute. Required.
 + **infer** Enables reasoner inference on the provided query. Required.
-+ **materialise** Enables materialisation of reasoner results from the provided query. Required.
 
 **Response Headers**
 
@@ -142,7 +141,7 @@ Graql query that should be executed on the server.
 **Request:**
 
 ```
-curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql/execute?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa person; limit 1;'
+curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql/execute?keyspace=grakn&infer=false" --data 'match $x isa person; limit 1;'
 ```
 
 **Response:**
@@ -172,7 +171,6 @@ Execute **read-only** graql queries on a Grakn knowledge base. Read-only queries
 
 - **keyspace** Keyspace where query should execute. Required.
 - **infer** Enables reasoner inference on the provided query. Required.
-- **materialise** Enables materialisation of reasoner results from the provided query. Required.
 - **query** Graql get query to be executed. Required.
 
 **Response Headers**
@@ -209,7 +207,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 **Request:**
 
 ```
-curl -H "Accept:application/graql+json" -X GET "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false&query=match%20%24x%20isa%20person;%20limit%201;"
+curl -H "Accept:application/graql+json" -X GET "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&query=match%20%24x%20isa%20person;%20limit%201;"
 ```
 
 **Response:**
@@ -249,7 +247,6 @@ Graql insert query that should be executed on the server.
 
 - **keyspace** Keyspace where query should execute. Required.
 - **infer** Enables reasoner inference on the provided query. Required.
-- **materialise** Enables materialisation of reasoner results from the provided query. Required.
 
 **Response Headers**
 
@@ -286,7 +283,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 **Request:**
 
 ```
-curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false;" --data 'insert $x isa person;' 
+curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql?keyspace=grakn&infer=false" --data 'insert $x isa person;'
 ```
 
 **Response:**
@@ -318,7 +315,6 @@ Graql delete query that should be executed on the server.
 
 - **keyspace** Keyspace where query should execute. Required.
 - **infer** Enables reasoner inference on the provided query. Required.
-- **materialise** Enables materialisation of reasoner results from the provided query. Required.
 
 **Response Headers**
 
@@ -344,7 +340,7 @@ Graql delete query that should be executed on the server.
 **Request:**
 
 ```
-curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa parentship; delete $x;'
+curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false" --data 'match $x isa parentship; delete $x;'
 ```
 
 **Response:**
@@ -399,7 +395,7 @@ Returns the HAL representation of the specified concept.
 **Request:**
 
 ```
-curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa parentship; delete $x;'
+curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false" --data 'match $x isa parentship; delete $x;'
 ```
 
 **Response:**

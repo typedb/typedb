@@ -3,10 +3,7 @@ package ai.grakn.test.benchmark;
 import ai.grakn.client.TaskClient;
 import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.test.EngineContext;
-import ai.grakn.util.SimpleURI;
-import java.time.Instant;
-import static java.time.Instant.now;
+import ai.grakn.test.rule.EngineContext;
 import mjson.Json;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -14,6 +11,10 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Instant;
+
+import static java.time.Instant.now;
 
 
 public class MutatorTaskBenchmark extends BenchmarkTest {
@@ -26,8 +27,7 @@ public class MutatorTaskBenchmark extends BenchmarkTest {
     public void setup() throws Throwable {
         engine = makeEngine();
         engine.before();
-        SimpleURI simpleURI = new SimpleURI(engine.uri());
-        client = TaskClient.of(simpleURI.getHost(), simpleURI.getPort());
+        client = TaskClient.of(engine.uri());
     }
 
     protected EngineContext makeEngine() {

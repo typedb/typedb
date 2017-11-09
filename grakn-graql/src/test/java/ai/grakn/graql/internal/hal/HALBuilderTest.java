@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.hal;
 
 
 import ai.grakn.concept.Concept;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import mjson.Json;
 import org.junit.ClassRule;

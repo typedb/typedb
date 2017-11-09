@@ -22,9 +22,9 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.redismock.RedisServer;
-import ai.grakn.test.TxFactoryContext;
+import ai.grakn.test.rule.TxFactoryContext;
 import ai.grakn.util.GraknVersion;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.Iterables;
 import org.junit.Before;
@@ -77,7 +77,7 @@ public class GraknEngineServerTest {
 
     @Test
     public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
-        RedisServer redisServer = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(conf.getProperty(GraknConfigKey.REDIS_HOST))).getPort()).server();
+        RedisServer redisServer = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(conf.getProperty(GraknConfigKey.REDIS_HOST))).getPort()).server();
         redisServer.start();
 
         try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf)) {

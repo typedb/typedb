@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.test.rule;
 
 import ai.grakn.GraknTx;
 import ai.grakn.util.SampleKBLoader;
@@ -38,7 +38,7 @@ import java.util.function.Consumer;
  *     Grakn unit tests.
  *
  *     This specific class extend {@link SampleKBLoader} and starts Cassandra instance via
- *     {@link ai.grakn.util.EmbeddedCassandra} if needed.
+ *     {@link EmbeddedCassandraContext} if needed.
  * </p>
  *
  * @author borislav, fppt
@@ -87,6 +87,6 @@ public class SampleKBContext extends CompositeTestRule {
     }
 
     private void checkInContext() {
-        Preconditions.checkState(TxFactoryContext.canUseTx(), "EmbeddedCassandra may not have started");
+        Preconditions.checkState(TxFactoryContext.canUseTx(), "EmbeddedCassandraContext may not have started");
     }
 }

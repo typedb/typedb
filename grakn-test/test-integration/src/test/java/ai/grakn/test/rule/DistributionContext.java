@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
@@ -24,7 +24,6 @@ import ai.grakn.client.Client;
 import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.util.GraknVersion;
-import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import net.lingala.zip4j.core.ZipFile;
@@ -87,19 +86,19 @@ public class DistributionContext extends CompositeTestRule {
 
         engineProcess.destroyForcibly();
         engineProcess = newEngineProcess(port, redisPort);
-        waitForEngine(port);
+        waitForEngine();
         return true;
     }
 
-    public int port(){
-        return port;
+    public SimpleURI uri(){
+        return new SimpleURI("localhost", port);
     }
 
     @Override
     protected List<TestRule> testRules() {
         return ImmutableList.of(
                 TxFactoryContext.create(),
-                MockRedisRule.create(redisPort)
+                InMemoryRedisContext.create(redisPort)
         );
     }
 
@@ -108,7 +107,7 @@ public class DistributionContext extends CompositeTestRule {
         assertPackageBuilt();
         unzipDistribution();
         engineProcess = newEngineProcess(port, redisPort);
-        waitForEngine(port);
+        waitForEngine();
     }
 
     @Override
@@ -172,10 +171,10 @@ public class DistributionContext extends CompositeTestRule {
     /**
      * Wait for the engine REST API to be available
      */
-    private static void waitForEngine(int port) {
+    private void waitForEngine() {
         long endTime = currentTimeMillis() + 120000;
         while (currentTimeMillis() < endTime) {
-            if (Client.serverIsRunning("localhost:" + port)) {
+            if (Client.serverIsRunning(uri())) {
                 return;
             }
             try {

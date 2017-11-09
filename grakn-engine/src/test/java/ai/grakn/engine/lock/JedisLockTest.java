@@ -1,6 +1,6 @@
 package ai.grakn.engine.lock;
 
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import com.google.common.base.Stopwatch;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -18,11 +18,11 @@ public class JedisLockTest {
     private static JedisPool jedisPool;
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create();
+    public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create();
 
     @BeforeClass
     public static void setupClass() {
-        jedisPool = mockRedisRule.jedisPool();
+        jedisPool = inMemoryRedisContext.jedisPool();
     }
 
     @AfterClass

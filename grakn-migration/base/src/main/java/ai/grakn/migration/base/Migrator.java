@@ -64,7 +64,7 @@ public class Migrator {
     public static final int OBSERVABLE_TIMEOUT_MINUTES = 2;
 
     private final QueryParser queryParser = Graql.withoutGraph().infer(false).parser();
-    private final String uri;
+    private final SimpleURI uri;
     private final Keyspace keyspace;
     private final int retries;
     private final boolean failFast;
@@ -80,7 +80,7 @@ public class Migrator {
      * @param uri Uri where one instance of Grakn Engine is running
      * @param keyspace The {@link Keyspace} where the data should be persisted
      */
-    public Migrator(String uri, Keyspace keyspace, int retries, boolean failFast, int maxDelayMs, int maxLines) {
+    public Migrator(SimpleURI uri, Keyspace keyspace, int retries, boolean failFast, int maxDelayMs, int maxLines) {
         this.uri = uri;
         this.keyspace = keyspace;
         this.retries = retries;
@@ -115,7 +115,7 @@ public class Migrator {
      * @param data Data being migrated
      */
     public void load(String template, Stream<Map<String, Object>> data) {
-        GraknClient graknClient = new GraknClient(new SimpleURI(uri));
+        GraknClient graknClient = new GraknClient(uri);
         try (BatchExecutorClient loader =
                 BatchExecutorClient.newBuilder()
                         .taskClient(graknClient)

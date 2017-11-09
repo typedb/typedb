@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.util.GraknTestUtil;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.builder.RequestSpecBuilder;
@@ -91,7 +92,7 @@ public class SparkContext extends ExternalResource {
         return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
-    public String uri() {
+    public SimpleURI uri() {
         return config.uri();
     }
 
