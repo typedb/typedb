@@ -38,7 +38,7 @@ public class DashboardControllerTest {
     private Response sendQueryExplain(String query) {
         return RestAssured.with()
                 .queryParam(QUERY, query)
-                .queryParam(KEYSPACE, genealogyKB.tx().getKeyspace().getValue())
+                .queryParam(KEYSPACE, genealogyKB.tx().keyspace().getValue())
                 .queryParam(INFER, true)
                 .queryParam(LIMIT_EMBEDDED, -1)
                 .accept(APPLICATION_HAL)
@@ -47,7 +47,7 @@ public class DashboardControllerTest {
 
     private Response sendQueryExplore(String id) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, genealogyKB.tx().getKeyspace().getValue())
+                .queryParam(KEYSPACE, genealogyKB.tx().keyspace().getValue())
                 .queryParam(INFER, true)
                 .queryParam(LIMIT_EMBEDDED, -1)
                 .accept(APPLICATION_HAL)

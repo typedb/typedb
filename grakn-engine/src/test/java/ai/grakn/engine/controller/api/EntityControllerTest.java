@@ -73,7 +73,7 @@ public class EntityControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.getEntityType(anyString())).thenAnswer(invocation ->
             sampleKB.tx().getEntityType(invocation.getArgument(0)));
@@ -84,15 +84,15 @@ public class EntityControllerTest {
 
         Mockito.doAnswer(e -> { sampleKB.tx().commit(); return null; } ).when(mockTx).commit();
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
     public void postEntityShouldExecuteSuccessfully() {
         String entityType = "production";
         Response response = with()
-            .post(REST.resolveTemplate(ENTITY_TYPE + "/" + entityType, mockTx.getKeyspace().getValue()));
+            .post(REST.resolveTemplate(ENTITY_TYPE + "/" + entityType, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -109,7 +109,7 @@ public class EntityControllerTest {
         // get their ids
         String entityConceptId;
         String attributeConceptId;
-        try (GraknTx tx = mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)) {
+        try (GraknTx tx = mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)) {
             entityConceptId = tx.getEntityType(person).addEntity().getId().getValue();
             attributeConceptId = tx.getAttributeType(realName).putAttribute(attributeValue).getId().getValue();
             tx.commit();
@@ -117,7 +117,7 @@ public class EntityControllerTest {
 
         // assign the attribute to the entity
         String path = API_PREFIX + "/entity/" + entityConceptId + "/attribute/" + attributeConceptId;
-        Response response = with().put(REST.resolveTemplate(path, mockTx.getKeyspace().getValue()));
+        Response response = with().put(REST.resolveTemplate(path, mockTx.keyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }
@@ -131,7 +131,7 @@ public class EntityControllerTest {
         // get their ids
         String entityConceptId;
         String attributeConceptId;
-        try (GraknTx tx = mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)) {
+        try (GraknTx tx = mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)) {
             entityConceptId = tx.getEntityType(person).addEntity().getId().getValue();
             attributeConceptId = tx.getAttributeType(realName).putAttribute(attributeValue).getId().getValue();
             tx.commit();
@@ -139,7 +139,7 @@ public class EntityControllerTest {
 
         // assign the attribute to the entity
         String path = API_PREFIX + "/entity/" + entityConceptId + "/attribute/" + attributeConceptId;
-        Response response = with().delete(REST.resolveTemplate(path, mockTx.getKeyspace().getValue()));
+        Response response = with().delete(REST.resolveTemplate(path, mockTx.keyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }

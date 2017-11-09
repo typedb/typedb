@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -44,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GraknTxTinkerFactoryTest {
     private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
@@ -59,6 +59,7 @@ public class GraknTxTinkerFactoryTest {
         } catch (IOException e) {
             throw GraknTxOperationException.invalidConfig(TEST_CONFIG);
         }
+        when(session.config()).thenReturn(TEST_PROPERTIES);
     }
 
     @Rule
@@ -66,7 +67,7 @@ public class GraknTxTinkerFactoryTest {
 
     @Before
     public void setupTinkerGraphFactory(){
-        tinkerGraphFactory = new TxFactoryTinker(session, Keyspace.of("test"), Grakn.IN_MEMORY, TEST_PROPERTIES);
+        tinkerGraphFactory = new TxFactoryTinker(session);
     }
 
     @Test
@@ -102,14 +103,10 @@ public class GraknTxTinkerFactoryTest {
     }
 
     @Test
-    public void whenCreatingFactoryWithNullKeyspace_Throw(){
-        expectedException.expect(NullPointerException.class);
-        tinkerGraphFactory = new TxFactoryTinker(null, null, null, null);
-    }
-
-    @Test
     public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw(){
-        TxFactoryTinker factory = new TxFactoryTinker(session, Keyspace.of("mytest"), Grakn.IN_MEMORY, TEST_PROPERTIES);
+        Keyspace mytest = Keyspace.of("mytest");
+        when(session.keyspace()).thenReturn(mytest);
+        TxFactoryTinker factory = new TxFactoryTinker(session);
         factory.open(GraknTxType.WRITE);
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("mytest"));
@@ -118,7 +115,7 @@ public class GraknTxTinkerFactoryTest {
 
     @Test
     public void whenGettingGraphFromFactoryClosingItAndGettingItAgain_ReturnGraph(){
-        TxFactoryTinker factory = new TxFactoryTinker(session, Keyspace.of("mytest"), Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryTinker factory = new TxFactoryTinker(session);
         GraknTx graph1 = factory.open(GraknTxType.WRITE);
         graph1.close();
         GraknTxTinker graph2 = factory.open(GraknTxType.WRITE);

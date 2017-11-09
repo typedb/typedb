@@ -21,14 +21,11 @@ package ai.grakn.factory;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Objects;
-import java.util.Properties;
 
 import static javax.annotation.meta.When.NEVER;
 
@@ -51,9 +48,6 @@ import static javax.annotation.meta.When.NEVER;
  */
 abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> implements TxFactory<G> {
     protected final GraknSession session;
-    protected final Keyspace keyspace;
-    protected final String engineUrl;
-    protected final Properties properties;
 
     private M graknTx = null;
     private M graknTxBatchLoading = null;
@@ -61,12 +55,8 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     G tx = null;
     private G txBatchLoading = null;
 
-    TxFactoryAbstract(GraknSession session, Keyspace keyspace, String engineUrl, Properties properties){
-        Objects.requireNonNull(keyspace);
+    TxFactoryAbstract(GraknSession session){
         this.session = session;
-        this.keyspace = keyspace;
-        this.engineUrl = engineUrl;
-        this.properties = properties;
     }
 
     abstract M buildGraknGraphFromTinker(G graph);

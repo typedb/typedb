@@ -334,7 +334,7 @@ public interface GraknTx extends AutoCloseable{
      * @return The {@link Keyspace} of the knowledge base.
      */
     @CheckReturnValue
-    Keyspace getKeyspace();
+    Keyspace keyspace();
 
     /**
      * Utility function to determine whether the graph has been closed.

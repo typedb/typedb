@@ -145,9 +145,9 @@ public class SystemKeyspaceTest {
 
         //Check only 2 graphs have been built
         for(GraknTx tx:txs){
-            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
+            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.keyspace()));
     }
 
     @Test
@@ -168,9 +168,9 @@ public class SystemKeyspaceTest {
 
         //Check only 2 graphs have been built
         for(GraknTx tx:txs){
-            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
+            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.keyspace()));
     }
     private Set<GraknTx> buildTxs(Function<String, GraknTx> txProvider, String ... keyspaces){
         Set<GraknTx> newTransactions = Arrays.stream(keyspaces)

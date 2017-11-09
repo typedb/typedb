@@ -71,11 +71,11 @@ public class ConceptControllerTest {
     public void setupMock() {
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
         when(mockTx.getConcept(any())).thenAnswer(invocation ->
                 sampleKB.tx().getConcept(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
     }
 
 
@@ -91,7 +91,7 @@ public class ConceptControllerTest {
         Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = with()
-                .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
+                .queryParam(KEYSPACE, mockTx.keyspace().getValue())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
@@ -102,7 +102,7 @@ public class ConceptControllerTest {
     public void gettingConceptByIdWithHAlAcceptType_ResponseContentTypeIsHAL() {
         Concept concept = sampleKB.tx().getEntityType("movie");
 
-        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
+        Response response = with().queryParam(KEYSPACE, mockTx.keyspace().getValue())
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
@@ -113,7 +113,7 @@ public class ConceptControllerTest {
     public void gettingConceptByIdWithInvalidAcceptType_ResponseStatusIs406() {
         Concept concept = sampleKB.tx().getEntityType("movie");
 
-        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace())
+        Response response = with().queryParam(KEYSPACE, mockTx.keyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .accept("invalid")
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
@@ -158,7 +158,7 @@ public class ConceptControllerTest {
 
     @Test
     public void gettingNonExistingElementById_ResponseStatusIs404() {
-        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
+        Response response = with().queryParam(KEYSPACE, mockTx.keyspace().getValue())
                 .queryParam(IDENTIFIER, "invalid")
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + "blah");
@@ -167,7 +167,7 @@ public class ConceptControllerTest {
     }
 
     private Response sendRequest(Concept concept, int numberEmbeddedComponents) {
-        return with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
+        return with().queryParam(KEYSPACE, mockTx.keyspace().getValue())
                 .queryParam(LIMIT_EMBEDDED, numberEmbeddedComponents)
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId().getValue());

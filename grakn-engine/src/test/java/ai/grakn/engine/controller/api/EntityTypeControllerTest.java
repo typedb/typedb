@@ -72,7 +72,7 @@ public class EntityTypeControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.putEntityType(anyString())).thenAnswer(invocation ->
             sampleKB.tx().putEntityType((String) invocation.getArgument(0)));
@@ -81,8 +81,8 @@ public class EntityTypeControllerTest {
         when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
             sampleKB.tx().getAttributeType(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
@@ -90,7 +90,7 @@ public class EntityTypeControllerTest {
         String production = "production";
 
         Response response = with()
-            .get(REST.resolveTemplate(ENTITY_TYPE + "/" + production, mockTx.getKeyspace().getValue()));
+            .get(REST.resolveTemplate(ENTITY_TYPE + "/" + production, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -106,7 +106,7 @@ public class EntityTypeControllerTest {
 
         Response response = with()
             .body(body.toString())
-            .post(REST.resolveTemplate(ENTITY_TYPE, mockTx.getKeyspace().getValue()));
+            .post(REST.resolveTemplate(ENTITY_TYPE, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -120,7 +120,7 @@ public class EntityTypeControllerTest {
     public void deleteEntityTypeShouldExecuteSuccessfully() throws Exception {
         String toBeDeleted = "production";
         Response response = with()
-            .delete(REST.resolveTemplate(ENTITY_TYPE + "/" + toBeDeleted, mockTx.getKeyspace().getValue()));
+            .delete(REST.resolveTemplate(ENTITY_TYPE + "/" + toBeDeleted, mockTx.keyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }
@@ -131,7 +131,7 @@ public class EntityTypeControllerTest {
         String runtime = "runtime";
 
         String path = REST.resolveTemplate(
-                ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT, mockTx.getKeyspace().getValue(), production, runtime
+                ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT, mockTx.keyspace().getValue(), production, runtime
         );
         Response response = with().put(path);
 

@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executors;
@@ -77,6 +78,9 @@ public class GraknSessionImpl implements GraknSession {
     private GraknTxAbstract<?> txBatch = null;
 
     private GraknSessionImpl(Keyspace keyspace, String engineUri, Properties properties, boolean remoteSubmissionNeeded){
+        Objects.requireNonNull(keyspace);
+        Objects.requireNonNull(engineUri);
+
         this.engineUri = engineUri;
         this.keyspace = keyspace;
 
@@ -141,7 +145,7 @@ public class GraknSessionImpl implements GraknSession {
         Properties inMemoryProperties = new Properties();
         inMemoryProperties.put(GraknConfigKey.SHARDING_THRESHOLD.name(), 100_000);
         inMemoryProperties.put(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(), 30_000);
-        inMemoryProperties.put(FactoryBuilder.KB_MODE, TxFactoryTinker.class.getName());
+        inMemoryProperties.put(FactoryBuilder.KB_MODE, FactoryBuilder.IN_MEMORY);
         return inMemoryProperties;
     }
 
@@ -186,6 +190,21 @@ public class GraknSessionImpl implements GraknSession {
         close(txBatch);
     }
 
+    @Override
+    public String uri() {
+        return engineUri;
+    }
+
+    @Override
+    public Keyspace keyspace() {
+        return keyspace;
+    }
+
+    @Override
+    public Properties config() {
+        return properties;
+    }
+
     private void close(GraknTxAbstract tx){
         if(tx != null){
             tx.closeSession();
@@ -211,7 +230,7 @@ public class GraknSessionImpl implements GraknSession {
      */
     TxFactory<?> configureTxFactory(String configType){
         if(Grakn.IN_MEMORY.equals(engineUri)){
-            return FactoryBuilder.getFactory(TxFactoryTinker.class.getName(), this, keyspace, Grakn.IN_MEMORY, properties);
+            return FactoryBuilder.getFactory(this, false);
         } else {
             return configureTxFactoryRemote(configType);
         }
@@ -225,12 +244,9 @@ public class GraknSessionImpl implements GraknSession {
     private TxFactory<?> configureTxFactoryRemote(String configType){
 
         if(REST.KBConfig.DEFAULT.equals(configType)) {
-            return FactoryBuilder.getFactory(this, keyspace, engineUri, properties);
+            return FactoryBuilder.getFactory(this, false);
         } else if(REST.KBConfig.COMPUTER.equals(configType)){
-            Properties computerProperties = new Properties();
-            computerProperties.putAll(properties);
-            computerProperties.setProperty(FactoryBuilder.KB_MODE, properties.get(FactoryBuilder.KB_ANALYTICS).toString());
-            return FactoryBuilder.getFactory(this, keyspace, engineUri, computerProperties);
+            return FactoryBuilder.getFactory(this, true);
         }
 
         throw new IllegalArgumentException("Config option [" + configType + "] not supported");

@@ -126,8 +126,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     void initSubGraph() {
         GraknTx graknTx = tx.orElseThrow(GraqlQueryException::noTx);
-        keySpace = graknTx.getKeyspace();
-        url = graknTx.admin().getEngineUrl();
+        keySpace = graknTx.keyspace();
+        url = graknTx.session().uri();
 
         if (this.isStatisticsQuery()) {
             includeAttribute = true;

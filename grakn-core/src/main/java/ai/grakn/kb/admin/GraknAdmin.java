@@ -199,10 +199,4 @@ public interface GraknAdmin {
      * @return the number of Shards the {@link Type} currently has.
      */
     long getShardCount(Type type);
-
-    /**
-     * Get the URL where the graph is located
-     * @return the URL where the graph is located
-     */
-    String getEngineUrl();
 }

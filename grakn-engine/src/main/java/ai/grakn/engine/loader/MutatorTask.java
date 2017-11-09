@@ -97,9 +97,9 @@ public class MutatorTask extends BackgroundTask {
                     String logs = result.get();
                     addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
                                     .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
-                            PostProcessingTask.createConfig(graph.getKeyspace(), logs));
+                            PostProcessingTask.createConfig(graph.keyspace(), logs));
                     addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
-                            UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
+                            UpdatingInstanceCountTask.createConfig(graph.keyspace(), logs));
                 }
                 return true;
             }

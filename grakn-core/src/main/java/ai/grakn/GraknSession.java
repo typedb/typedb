@@ -22,6 +22,7 @@ package ai.grakn;
 import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Properties;
 
 /**
  * <p>
@@ -66,4 +67,25 @@ public interface GraknSession extends AutoCloseable {
      * @throws GraknTxOperationException when more than 1 transaction is open on the graph
      */
     void close() throws GraknTxOperationException;
+
+    /**
+     * Used to determine the location of the Engine which this session is interacting with.
+     *
+     * @return the uri of the engine used to build this {@link GraknSession}
+     */
+    String uri();
+
+    /**
+     * Use to determine which {@link Keyspace} this {@link GraknSession} is interacting with.
+     *
+     * @return The {@link Keyspace} of the knowledge base this {@link GraknSession} is interacting with.
+     */
+    Keyspace keyspace();
+
+    /**
+     * The config options of this {@link GraknSession} which were passed in at the time of construction
+     *
+     * @return The config options of this {@link GraknSession}
+     */
+    Properties config();
 }

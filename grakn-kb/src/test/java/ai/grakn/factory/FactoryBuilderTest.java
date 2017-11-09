@@ -38,6 +38,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class FactoryBuilderTest {
     private final static GraknSession session = mock(GraknSession.class);
@@ -56,19 +57,27 @@ public class FactoryBuilderTest {
         } catch (IOException e) {
             throw GraknTxOperationException.invalidConfig(TEST_CONFIG);
         }
+        when(session.config()).thenReturn(TEST_PROPERTIES);
     }
 
     @Test
     public void whenBuildingInMemoryFactory_ReturnTinkerFactory(){
-        assertThat(FactoryBuilder.getFactory(session, KEYSPACE, ENGINE_URL, TEST_PROPERTIES), instanceOf(TxFactoryTinker.class));
+        assertThat(FactoryBuilder.getFactory(session, false), instanceOf(TxFactoryTinker.class));
     }
 
     @Test
     public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs(){
-        TxFactory mgf1 = FactoryBuilder.getFactory(session, KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf2 = FactoryBuilder.getFactory(session, KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf3 = FactoryBuilder.getFactory(session, Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf4 = FactoryBuilder.getFactory(session, Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
+        //Factory 1 & 2 Definition
+        when(session.keyspace()).thenReturn(KEYSPACE);
+        when(session.uri()).thenReturn(ENGINE_URL);
+        when(session.config()).thenReturn(TEST_PROPERTIES);
+        TxFactory mgf1 = FactoryBuilder.getFactory(session, false);
+        TxFactory mgf2 = FactoryBuilder.getFactory(session, false);
+
+        //Factory 3 & 4
+        when(session.keyspace()).thenReturn(Keyspace.of("key"));
+        TxFactory mgf3 = FactoryBuilder.getFactory(session, false);
+        TxFactory mgf4 = FactoryBuilder.getFactory(session, false);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);

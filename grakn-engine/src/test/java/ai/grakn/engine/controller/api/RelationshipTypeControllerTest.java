@@ -71,7 +71,7 @@ public class RelationshipTypeControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.putRelationshipType(anyString())).thenAnswer(invocation ->
             sampleKB.tx().putRelationshipType((String) invocation.getArgument(0)));
@@ -84,8 +84,8 @@ public class RelationshipTypeControllerTest {
             sampleKB.tx().getRole(invocation.getArgument(0)));
 
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
@@ -101,7 +101,7 @@ public class RelationshipTypeControllerTest {
         );
         Response response = with()
             .body(body.toString())
-            .post(REST.resolveTemplate(RELATIONSHIP_TYPE, mockTx.getKeyspace().getValue()));
+            .post(REST.resolveTemplate(RELATIONSHIP_TYPE, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -116,7 +116,7 @@ public class RelationshipTypeControllerTest {
         String hasGenre = "has-genre";
 
         Response response = with()
-            .get(REST.resolveTemplate(RELATIONSHIP_TYPE + "/" + hasGenre, mockTx.getKeyspace().getValue()));
+            .get(REST.resolveTemplate(RELATIONSHIP_TYPE + "/" + hasGenre, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 

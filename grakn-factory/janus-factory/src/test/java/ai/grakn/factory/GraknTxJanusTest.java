@@ -113,7 +113,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         graknTx.abort();
         assertTrue("Aborting transaction did not close the graph", graknTx.isClosed());
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(TX_CLOSED_ON_ACTION.getMessage("closed", graknTx.getKeyspace()));
+        expectedException.expectMessage(TX_CLOSED_ON_ACTION.getMessage("closed", graknTx.keyspace()));
         graknTx.putEntityType("This should fail");
     }
 
@@ -129,7 +129,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         graph.close();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(TX_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
+        expectedException.expectMessage(TX_CLOSED_ON_ACTION.getMessage("closed", graph.keyspace()));
 
         //noinspection ResultOfMethodCallIgnored
         graph.getEntityType(entityTypeLabel);

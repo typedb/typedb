@@ -30,7 +30,7 @@ public class HALPrinterTest {
     @Test
     public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {
         Json response = printHAL(academyKB.tx(), "match $x isa entity; limit 1; get;");
-        Keyspace keyspace = academyKB.tx().getKeyspace();
+        Keyspace keyspace = academyKB.tx().keyspace();
         assertEquals(1, response.asList().size());
 
         Json halObj = response.asJsonList().get(0).at("x");
@@ -166,11 +166,11 @@ public class HALPrinterTest {
 
     private Json getHALExploreRepresentation(GraknTx graph, String conceptId) {
         Concept concept = graph.getConcept(ConceptId.of(conceptId));
-        return Json.read(HALExploreConcept(concept, graph.getKeyspace(), 0, 5));
+        return Json.read(HALExploreConcept(concept, graph.keyspace(), 0, 5));
     }
 
     private Json printHAL(GraknTx graph, String queryString) {
-        Printer<?> printer = Printers.hal(graph.getKeyspace(), 5);
+        Printer<?> printer = Printers.hal(graph.keyspace(), 5);
         QueryParser parser = graph.graql().infer(true).parser();
         parser.defineAllVars(true);
         Query<?> query = parser.parseQuery(queryString);
@@ -178,7 +178,7 @@ public class HALPrinterTest {
     }
 
     private Json getHALRepresentationNoInference(GraknTx graph, String queryString) {
-        Printer<?> printer = Printers.hal(graph.getKeyspace(), 5);
+        Printer<?> printer = Printers.hal(graph.keyspace(), 5);
         QueryParser parser = graph.graql().infer(false).parser();
         Query<?> query = parser.parseQuery(queryString);
         return Json.read(printer.graqlString(query.execute()));

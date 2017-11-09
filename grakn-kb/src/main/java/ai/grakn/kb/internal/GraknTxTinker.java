@@ -20,12 +20,9 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
-import ai.grakn.Keyspace;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-
-import java.util.Properties;
 
 /**
  * <p>
@@ -43,8 +40,8 @@ import java.util.Properties;
 public class GraknTxTinker extends GraknTxAbstract<TinkerGraph> {
     private final TinkerGraph rootGraph;
 
-    public GraknTxTinker(GraknSession session, TinkerGraph tinkerGraph, Keyspace keyspace, String engineUrl, Properties properties){
-        super(session, tinkerGraph, keyspace, engineUrl, properties);
+    public GraknTxTinker(GraknSession session, TinkerGraph tinkerGraph){
+        super(session, tinkerGraph);
         rootGraph = tinkerGraph;
     }
 

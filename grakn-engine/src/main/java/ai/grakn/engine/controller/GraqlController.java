@@ -193,7 +193,7 @@ public class GraqlController {
                 printer = Printers.json();
                 break;
             case APPLICATION_HAL:
-                printer = Printers.hal(graph.getKeyspace(), limitEmbedded);
+                printer = Printers.hal(graph.keyspace(), limitEmbedded);
                 break;
             default:
                 throw GraknServerException.unsupportedContentType(acceptType);
