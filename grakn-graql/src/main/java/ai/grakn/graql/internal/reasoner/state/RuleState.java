@@ -46,9 +46,6 @@ public class RuleState extends ConjunctiveState{
     public InferenceRule getRule(){ return rule;}
 
     @Override
-    public boolean isRuleState(){ return true;}
-
-    @Override
     ResolutionState propagateAnswer(AnswerState state){
         Answer answer = state.getAnswer();
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState(), rule) : null;

@@ -68,4 +68,9 @@ public class CumulativeState extends QueryStateBase{
     public ResolutionState generateSubGoal(){
         return feederStateIterator.hasNext()? feederStateIterator.next() : null;
     }
+
+    @Override
+    Answer consumeAnswer(AnswerState state) {
+        return state.getSubstitution();
+    }
 }

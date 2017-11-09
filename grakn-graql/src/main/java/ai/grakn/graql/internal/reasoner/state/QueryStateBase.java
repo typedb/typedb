@@ -47,13 +47,6 @@ public abstract class QueryStateBase extends ResolutionState {
     }
 
     /**
-     * @return true if this state corresponds to an atomic state
-     */
-    boolean isAtomicState(){ return false; }
-
-    boolean isRuleState(){ return false; }
-
-    /**
      * @return set of already visited subGoals (atomic queries)
      */
     Set<ReasonerAtomicQuery> getVisitedSubGoals(){ return visitedSubGoals;}
@@ -74,4 +67,10 @@ public abstract class QueryStateBase extends ResolutionState {
      * @return new resolution state obtained by propagating the answer up the resolution tree
      */
     abstract ResolutionState propagateAnswer(AnswerState state);
+
+    /**
+     * @param state answer state providing the answer
+     * @return digested (acknowledged and cached) answer
+     */
+    abstract Answer consumeAnswer(AnswerState state);
 }

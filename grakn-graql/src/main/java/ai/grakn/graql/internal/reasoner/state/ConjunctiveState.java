@@ -26,8 +26,6 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
@@ -42,8 +40,6 @@ import java.util.Set;
  */
 public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ConjunctiveState.class);
-
     public ConjunctiveState(ReasonerQueryImpl q,
                             Answer sub,
                             Unifier u,
@@ -56,8 +52,14 @@ public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
     @Override
     MultiUnifier getCacheUnifier() { return new MultiUnifierImpl();}
 
+    @Override
     ResolutionState propagateAnswer(AnswerState state){
         Answer answer = state.getAnswer();
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
+    }
+
+    @Override
+    Answer consumeAnswer(AnswerState state) {
+        return state.getSubstitution();
     }
 }

@@ -65,11 +65,6 @@ public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryState
     }
 
     /**
-     * @return true if this state corresponds to an atomic state
-     */
-    boolean isAtomicState(){ return false; }
-
-    /**
      * @return query corresponding to this query state
      */
     Q getQuery(){ return query;}
