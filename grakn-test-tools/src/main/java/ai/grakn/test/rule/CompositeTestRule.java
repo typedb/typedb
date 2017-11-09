@@ -14,10 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.test;
+package ai.grakn.test.rule;
 
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TestRule;

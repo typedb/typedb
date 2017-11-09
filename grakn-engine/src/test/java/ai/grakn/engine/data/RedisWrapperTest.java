@@ -20,7 +20,7 @@ package ai.grakn.engine.data;
 
 import ai.grakn.util.SimpleURI;
 import ai.grakn.redismock.RedisServer;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import org.junit.ClassRule;
 import org.junit.Test;
 import redis.clients.jedis.exceptions.JedisConnectionException;
@@ -29,11 +29,11 @@ import static org.junit.Assert.assertNotNull;
 
 public class RedisWrapperTest {
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create();
+    public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create();
 
     @Test
     public void whenBuildingNoSentinelWellFormed_Succeeds() {
-        RedisServer server = mockRedisRule.server();
+        RedisServer server = inMemoryRedisContext.server();
         RedisWrapper redisWrapper = RedisWrapper.builder().setUseSentinel(false)
                 .addURI(new SimpleURI(server.getHost(), server.getBindPort()).toString())
                 .build();
@@ -58,7 +58,7 @@ public class RedisWrapperTest {
 
     @Test(expected = JedisConnectionException.class)
     public void whenBuildingSentinelWellFormed_JedisCantConnect() {
-        RedisServer server = mockRedisRule.server();
+        RedisServer server = inMemoryRedisContext.server();
         RedisWrapper.builder().setUseSentinel(true)
                 .addURI(new SimpleURI(server.getHost(), server.getBindPort()).toString())
                 .setMasterName("masterName")
@@ -67,7 +67,7 @@ public class RedisWrapperTest {
 
     @Test(expected = IllegalStateException.class)
     public void whenBuildingSentinelNoMaster_Fails() {
-        RedisServer server = mockRedisRule.server();
+        RedisServer server = inMemoryRedisContext.server();
         RedisWrapper.builder().setUseSentinel(true)
                 .addURI(new SimpleURI(server.getHost(), server.getBindPort()).toString())
                 .build();

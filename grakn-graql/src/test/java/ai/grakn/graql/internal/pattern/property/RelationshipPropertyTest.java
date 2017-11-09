@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMultiset;
 import org.junit.ClassRule;

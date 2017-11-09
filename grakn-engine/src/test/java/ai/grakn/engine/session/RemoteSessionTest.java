@@ -25,7 +25,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.test.TxFactoryContext;
+import ai.grakn.test.rule.TxFactoryContext;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
@@ -55,7 +55,6 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
 import static ai.grakn.util.REST.RemoteShell.INFER;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
-import static ai.grakn.util.REST.RemoteShell.MATERIALISE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static org.junit.Assert.assertNotNull;
@@ -76,8 +75,7 @@ public class RemoteSessionTest {
             ACTION, ACTION_INIT,
             KEYSPACE, "yes",
             OUTPUT_FORMAT, "graql",
-            INFER, false,
-            MATERIALISE, false
+            INFER, false
     );
 
     //Needed to start cass depending on profile

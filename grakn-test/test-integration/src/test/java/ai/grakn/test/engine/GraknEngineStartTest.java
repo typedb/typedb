@@ -19,7 +19,7 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.Keyspace;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;

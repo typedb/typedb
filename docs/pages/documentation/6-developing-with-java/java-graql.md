@@ -147,13 +147,6 @@ Reasoning can be configured using `QueryBuilder` objects in the following way:
 qb = tx.graql().infer(true);
 ```
 
-### Switching materialisation on
-
-```java
-//tx is a GraknTx instance
-qb = tx.graql().infer(true).materialise(true);
-```
-
 Once the `QueryBuilder` has been defined, the constructed queries will obey the specified reasoning variants.
     
 The table below summarises the available reasoning configuration options together with their defaults.
@@ -161,6 +154,5 @@ The table below summarises the available reasoning configuration options togethe
 | Option       | Description | Default
 | -------------------- |:--|:--|
 | `QueryBuilder::infer(boolean)` | controls whether reasoning should be turned on | False=Off |
-| `QueryBuilder::materialise(boolean)`       | controls whether inferred knowledge should be persisted to knowledge base | False=Off |
 
 {% include links.html %}

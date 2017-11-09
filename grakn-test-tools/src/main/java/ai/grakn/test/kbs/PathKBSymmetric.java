@@ -18,7 +18,7 @@
 
 package ai.grakn.test.kbs;
 
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 
 /**
  *

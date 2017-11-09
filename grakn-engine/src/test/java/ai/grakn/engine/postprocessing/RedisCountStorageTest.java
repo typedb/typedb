@@ -20,7 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.BeforeClass;
@@ -46,13 +46,13 @@ import static org.junit.Assert.assertEquals;
 public class RedisCountStorageTest {
 
     @ClassRule
-    public static final MockRedisRule mockRedisRule = MockRedisRule.create();
+    public static final InMemoryRedisContext IN_MEMORY_REDIS_CONTEXT = InMemoryRedisContext.create();
 
     private static RedisCountStorage redis;
 
     @BeforeClass
     public static void getConnection(){
-        redis = RedisCountStorage.create(mockRedisRule.jedisPool(), new MetricRegistry());
+        redis = RedisCountStorage.create(IN_MEMORY_REDIS_CONTEXT.jedisPool(), new MetricRegistry());
     }
 
     @Test

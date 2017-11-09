@@ -7,8 +7,8 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.TxFactoryContext;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.test.rule.TxFactoryContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
@@ -31,7 +31,6 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -55,29 +54,26 @@ public class GraqlControllerTest {
     }
 
     private Response sendQuery(String query, String acceptType) {
-        return sendQuery(query, acceptType, true, false, -1, sampleKB.tx().getKeyspace().getValue(), false);
+        return sendQuery(query, acceptType, true, -1, sampleKB.tx().getKeyspace().getValue(), false);
     }
 
     private Response sendQuery(String query,
                                String acceptType,
                                boolean reasoner,
-                               boolean materialise,
                                int limitEmbedded,
                                boolean multi) {
-        return sendQuery(query, acceptType, reasoner, materialise, limitEmbedded, sampleKB.tx().getKeyspace().getValue(), multi);
+        return sendQuery(query, acceptType, reasoner, limitEmbedded, sampleKB.tx().getKeyspace().getValue(), multi);
     }
 
 
     private Response sendQuery(String query,
                                String acceptType,
                                boolean reasoner,
-                               boolean materialise,
                                int limitEmbedded,
                                String keyspace, boolean multi) {
         return RestAssured.with()
                 .body(query)
                 .queryParam(INFER, reasoner)
-                .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .queryParam(MULTI, multi)
                 .queryParam(DEFINE_ALL_VARS, true)
@@ -158,7 +154,7 @@ public class GraqlControllerTest {
     public void whenRunningMultiIdempotentInsertQuery_JsonResponseIsTheSameAsJavaGraql() {
         String single = "insert $x label movie;";
         String queryString = single + "\n" + single;
-        Response resp = sendQuery(queryString, APPLICATION_JSON_GRAQL, true, false, -1, true);
+        Response resp = sendQuery(queryString, APPLICATION_JSON_GRAQL, true, -1, true);
         resp.then().statusCode(200);
         sampleKB.rollback();
         Stream<Query<?>> query = sampleKB.tx().graql().parser().parseList(queryString);
@@ -219,7 +215,7 @@ public class GraqlControllerTest {
     public void whenRunningQueryWithLimitEmbedded_HalResponseIsTheSameAsJava() {
         String queryString = "match $x isa movie; get;";
         int limitEmbedded = 42;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded, false);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, false, limitEmbedded, false);
         Printer printer = Printers.hal(sampleKB.tx().getKeyspace(), limitEmbedded);
         assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
     }
@@ -228,7 +224,7 @@ public class GraqlControllerTest {
     public void whenMatchingRules_ResponseStatusIs200() {
         String queryString = "match $x sub " + Schema.MetaSchema.RULE.getLabel().getValue() + "; get;";
         int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded, false);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, false, limitEmbedded, false);
         resp.then().statusCode(200);
     }
 
@@ -236,7 +232,7 @@ public class GraqlControllerTest {
     public void whenMatchingRuleExplanation_HALResponseContainsInferredRelation() {
         String queryString = "match ($x,$y) isa marriage; offset 0; limit 1; get;";
         int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, genealogyKB.tx().getKeyspace().getValue(), false);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, limitEmbedded, genealogyKB.tx().getKeyspace().getValue(), false);
         resp.then().statusCode(200);
         Json jsonResp = Json.read(resp.body().asString());
         jsonResp.asJsonList().stream()
@@ -257,7 +253,7 @@ public class GraqlControllerTest {
     public void whenMatchingJoinExplanation_HALResponseContainsInferredRelation() {
         String queryString = "match ($x,$y) isa siblings; $z isa person; offset 0; limit 2; get;";
         int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, genealogyKB.tx().getKeyspace().getValue(), false);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, limitEmbedded, genealogyKB.tx().getKeyspace().getValue(), false);
         resp.then().statusCode(200);
         Json jsonResp = Json.read(resp.body().asString());
         jsonResp.asJsonList().stream()
@@ -275,7 +271,7 @@ public class GraqlControllerTest {
     public void whenMatchingNotInferredRelation_HALResponseContainsRelation() {
         String queryString = "match ($x,$y) isa directed-by; offset 0; limit 25; get;";
         int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, true, false, limitEmbedded, false);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, limitEmbedded, false);
         resp.then().statusCode(200);
         Json jsonResp = Json.read(resp.body().asString());
         jsonResp.asJsonList().stream()
@@ -292,7 +288,7 @@ public class GraqlControllerTest {
     @Test
     public void whenMatchingSchema_NoInstancesInResponse() {
         String queryString = "match $x sub thing; get;";
-        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, -1, false);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, false, -1, false);
         Json jsonResp = Json.read(resp.body().asString());
         jsonResp.asJsonList().stream().map(map -> map.at("x")).forEach(thing -> {
             assertNotEquals("ENTITY", thing.at("_baseType").asString());
@@ -313,7 +309,7 @@ public class GraqlControllerTest {
 
     @Test
     public void whenAcceptHeaderIsInvalid_Return406Code() {
-        sendQuery("match $x isa movie; aggregate ask;", "application/msword", true, false, -1,
+        sendQuery("match $x isa movie; aggregate ask;", "application/msword", true, -1,
                 false).then().statusCode(406);
     }
 

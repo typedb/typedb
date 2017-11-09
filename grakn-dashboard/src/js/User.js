@@ -3,14 +3,13 @@ import EngineClient from './EngineClient';
 
 // Default constant values
 const DEFAULT_USE_REASONER = false;
-const DEFAULT_MATERIALISE = false;
 export const DEFAULT_KEYSPACE = 'grakn';
 const DEFAULT_QUERY_LIMIT = '30';
 
 
 export default {
 
-    // -------------- Reasoner and materialisation toggles ------------ //
+    // -------------- Reasoner toggles ------------ //
   setReasonerStatus(status) {
     localStorage.setItem('use_reasoner', status);
   },
@@ -25,10 +24,6 @@ export default {
     return (useReasoner === 'true');
   },
 
-  setMaterialiseStatus(status) {
-    localStorage.setItem('reasoner_materialise', status);
-  },
-
   getFreezeNodes() {
     const freezeNodes = localStorage.getItem('freeze_nodes');
     if (freezeNodes == null) {
@@ -40,15 +35,6 @@ export default {
 
   setFreezeNodes(status) {
     localStorage.setItem('freeze_nodes', status);
-  },
-
-  getMaterialiseStatus() {
-    const materialiseReasoner = localStorage.getItem('reasoner_materialise');
-    if (materialiseReasoner == null) {
-      this.setMaterialiseStatus(DEFAULT_MATERIALISE);
-      return DEFAULT_MATERIALISE;
-    }
-    return (materialiseReasoner === 'true');
   },
 
     // ---- Current Keyspace -----//

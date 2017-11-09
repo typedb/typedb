@@ -111,6 +111,13 @@ public interface Answer {
     Answer merge(Answer a2, boolean explanation);
 
     /**
+     * @param a2 answer with which explanation of this answer should be merged
+     * @return merged explanation of this and provided answer
+     */
+    @CheckReturnValue
+    AnswerExplanation mergeExplanation(Answer a2);
+
+    /**
      * explain this answer by providing explanation with preserving the structure of dependent answers
      *
      * @param exp explanation for this answer
@@ -162,7 +169,7 @@ public interface Answer {
      * @return set of all answers taking part in the derivation of this answer
      */
     @CheckReturnValue
-    Set<Answer> getAnswers();
+    Set<Answer> getPartialAnswers();
 
     /**
      * @return all explanations taking part in the derivation of this answer
