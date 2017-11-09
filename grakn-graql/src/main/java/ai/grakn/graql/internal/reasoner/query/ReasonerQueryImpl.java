@@ -133,6 +133,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
+     * @param sub substitution to be inserted into the query
+     * @return corresponding query with additional substitution
+     */
+    public ReasonerQueryImpl withSubstitution(Answer sub){
+        return new ReasonerQueryImpl(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
+    }
+
+    /**
      * @return corresponding reasoner query with inferred types
      */
     public ReasonerQueryImpl inferTypes() {

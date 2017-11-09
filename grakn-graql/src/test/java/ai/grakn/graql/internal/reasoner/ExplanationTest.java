@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -86,10 +85,10 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_TransitiveClosure() {
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), warsaw));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), masovia));
-        Answer answer3 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
-        Answer answer4 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), europe));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), warsaw));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), masovia));
+        Answer answer3 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
+        Answer answer4 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), europe));
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
@@ -135,8 +134,8 @@ public class ExplanationTest {
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y isa country;$y has name 'Poland'; get;";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), uw, Graql.var("y"), poland));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(var("x"), uw, var("y"), poland));
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
@@ -277,11 +276,8 @@ public class ExplanationTest {
 
     private void testExplanation(Answer answer){
         AnswerExplanation explanation = answer.getExplanation();
-
         if (explanation.isRuleExplanation()) {
-            //TODO test rewritten query once Marco's PR is in
-            Set<Answer> explAnswers = explanation.getAnswers();
-            answerConnectedness(explAnswers);
+            answerConnectedness(explanation.getAnswers());
         }
     }
 
@@ -297,7 +293,7 @@ public class ExplanationTest {
     }
 
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
-        return graph.graql().match(Graql.var("x").has(typeLabel, val)).get("x").findAny().get();
+        return graph.graql().match(var("x").has(typeLabel, val)).get("x").findAny().orElse(null);
     }
 
     private Answer findAnswer(Answer a, List<Answer> list){

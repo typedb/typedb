@@ -18,15 +18,25 @@
 
 package ai.grakn.graql.internal.hal;
 
-
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Printer;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static ai.grakn.graql.internal.hal.HALBuilder.explanationAnswersToHAL;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -36,6 +46,9 @@ public class HALBuilderTest {
 
     @ClassRule
     public static SampleKBContext sampleKB = MovieKB.context();
+
+    @ClassRule
+    public static SampleKBContext genealogyKB = GenealogyKB.context();
 
     @Test
     public void renderHALConceptData_producesCorrectHALObject() {
@@ -92,4 +105,57 @@ public class HALBuilderTest {
     }
 
 
+    @Test
+    public void whenExplainInferred_returnsLinkedExplanation() {
+        String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
+        List<Answer> answers = genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery).execute();
+        answers.forEach(answer -> {
+            String cousin1 = answer.get("x").getId().getValue();
+            String cousin2 = answer.get("y").getId().getValue();
+            String specificQuery = "match " +
+                    "$x id " + cousin1 + ";" +
+                    "$y id " + cousin2 + ";" +
+                    "(cousin: $x, cousin: $y) isa cousins; get;";
+            Printer<?> printer = Printers.hal(genealogyKB.tx().getKeyspace(), 5);
+            GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
+            Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
+
+            Json expl = explanationAnswersToHAL(specificAnswer.getExplanation().getAnswers(), printer);
+
+            Json siblings = expl.asJsonList().stream()
+                    .filter(x -> x.asJsonMap().values().stream()
+                                .map(entry->entry.asJsonMap().get("_type").asString())
+                                .anyMatch(sub->sub.equals("siblings")))
+                    .findFirst().orElse(Json.array());
+            // Two parents IDs
+            Set<String> siblingsSet = siblings.asJsonMap().values()
+                    .stream()
+                    .filter(x->x.asJsonMap().get("_type").asString().equals("person"))
+                    .map(x-> x.asJsonMap().get("_id").asString())
+                    .collect(Collectors.toSet());
+            Optional<Json> parentship1 = expl.asJsonList().stream()
+                    .filter(sub->sub.asJsonMap().values().stream().anyMatch(value->value.asJsonMap().get("_id").asString().equals(cousin1)))
+                    .findFirst();
+            Optional<Json> parentship2 = expl.asJsonList().stream()
+                    .filter(sub->sub.asJsonMap().values().stream().anyMatch(value->value.asJsonMap().get("_id").asString().equals(cousin2)))
+                    .findFirst();
+            assertTrue(parentship1.isPresent());
+            assertTrue(parentship2.isPresent());
+            Set<String> parentShipIds = parentship1.get().asJsonMap().values().stream().map(x->x.asJsonMap().get("_id").asString())
+                        .collect(Collectors.toSet());
+            Set<String> parentShip2Ids = parentship2.get().asJsonMap().values().stream().map(x->x.asJsonMap().get("_id").asString())
+                    .collect(Collectors.toSet());
+            // In parentshipIds all the 4 ids: 2 parents 2 children (that should be the cousins ids)
+            parentShipIds.addAll(parentShip2Ids);
+            // Check 2 ids in siblings are actually contained in parentship relationships
+            siblingsSet.forEach(id->{
+                assertTrue(parentShipIds.contains(id));
+            });
+            // Check 2 cousins ids are actually contained in parentship relationships
+            assertTrue(parentShipIds.contains(cousin1));
+            assertTrue(parentShipIds.contains(cousin2));
+
+        });
+
+    }
 }

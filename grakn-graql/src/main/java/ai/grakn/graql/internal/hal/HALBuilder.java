@@ -31,6 +31,8 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import com.google.common.collect.Iterables;
+
 import mjson.Json;
 
 import javax.annotation.Nullable;
@@ -68,11 +70,14 @@ public class HALBuilder {
         answers.forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();
             Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
-            List<Answer> userDefinedAnswers = ReasonerQueries.atomic(atom.rewriteWithRelationVariable()).getQuery().execute();
+            ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(atom.rewriteWithRelationVariable()).withSubstitution(answer);
+
+            List<Answer> userDefinedAnswers = rewrittenQuery.getQuery().execute();
             Answer inferredAnswer = new QueryAnswer();
 
             if (!userDefinedAnswers.isEmpty()) {
-                inferredAnswer =  userDefinedAnswers.get(0);
+                inferredAnswer = Iterables.getOnlyElement(userDefinedAnswers);
+
             } else if (expl.isRuleExplanation()) {
                 Atom headAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
 
