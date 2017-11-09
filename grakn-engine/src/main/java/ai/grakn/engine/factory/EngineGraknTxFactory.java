@@ -107,7 +107,7 @@ public class EngineGraknTxFactory {
      * @param keyspace the new {@link Keyspace} we want to create
      */
     public void initialiseNewKeyspace(Keyspace keyspace) {
-        FactoryBuilder.getFactory(keyspace, engineURI, properties).open(GraknTxType.WRITE).close();
+        session(keyspace).open(GraknTxType.WRITE).close();
     }
 
     public Properties properties() {
