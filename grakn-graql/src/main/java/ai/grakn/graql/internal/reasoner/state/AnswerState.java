@@ -74,7 +74,6 @@ class AnswerState extends ResolutionState {
             Answer answer;
             AtomicState parent = (AtomicState) getParentState();
             ReasonerAtomicQuery query = parent.getQuery();
-            //InferenceRule rule = parent.getCurrentRule();
             QueryCache<ReasonerAtomicQuery> cache = parent.getCache();
             if (rule == null) answer = getSubstitution();
             else{

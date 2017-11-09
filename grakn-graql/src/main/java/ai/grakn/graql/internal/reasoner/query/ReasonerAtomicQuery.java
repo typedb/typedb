@@ -324,7 +324,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, subGoals, cache))
                     .iterator();
         }
-        return new QueryStateIterator(dbIterator, cacheEntry.getValue(), subGoalIterator);
+        return new QueryStateIterator(dbIterator, cacheEntry.getValue().inverse(), subGoalIterator);
     }
 
     @Override

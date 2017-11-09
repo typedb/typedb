@@ -315,7 +315,6 @@ public class InferenceRule {
                 .getSubstitution()
                 .unify(ruleUnifierInverse);
 
-
         InferenceRule inferenceRule = this.propagateConstraints(parentAtom, ruleUnifierInverse);
         return new RuleState(
                 inferenceRule.getBody().subGoal(partialSubPrime, unifier, parent, visitedSubGoals, cache),
