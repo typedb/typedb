@@ -21,7 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
-import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.test.rule.EmbeddedCassandraContext;
 import ai.grakn.util.ErrorMessage;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -48,7 +48,7 @@ public abstract class JanusTestBase {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @ClassRule
-    public static final EmbeddedCassandra cassandra = EmbeddedCassandra.create();
+    public static final EmbeddedCassandraContext cassandra = EmbeddedCassandraContext.create();
 
     @BeforeClass
     public static void setupMain(){

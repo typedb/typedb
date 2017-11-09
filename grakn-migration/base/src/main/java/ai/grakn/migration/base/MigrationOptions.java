@@ -20,15 +20,18 @@ package ai.grakn.migration.base;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
-import static java.lang.Integer.parseInt;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import javax.annotation.Nullable;
+import ai.grakn.util.SimpleURI;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+
+import javax.annotation.Nullable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static java.lang.Integer.parseInt;
 
 /**
  * Configure the default migration options and access arguments passed by the user
@@ -90,8 +93,8 @@ public class MigrationOptions {
         return command.hasOption("c") ? command.getOptionValue("c") : null;
     }
 
-    public String getUri() {
-        return command.hasOption("u") ? command.getOptionValue("u") : Grakn.DEFAULT_URI;
+    public SimpleURI getUri() {
+        return command.hasOption("u") ? new SimpleURI(command.getOptionValue("u")) : Grakn.DEFAULT_URI;
     }
 
     public Options getOptions() {

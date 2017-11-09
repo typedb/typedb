@@ -7,7 +7,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.AcademyKB;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.Schema;

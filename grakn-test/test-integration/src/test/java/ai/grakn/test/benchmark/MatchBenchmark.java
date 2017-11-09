@@ -10,7 +10,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Setup;
