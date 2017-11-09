@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
@@ -174,7 +173,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             if(tx.isPresent()){
                 graknComputer = tx.get().session().getGraphComputer();
             } else {
-                graknComputer = Grakn.session(url, keySpace).getGraphComputer();
+                throw new IllegalStateException("Transaction has not been provided. Cannot initialise graph computer");
             }
         }
         return graknComputer;

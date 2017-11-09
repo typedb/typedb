@@ -19,7 +19,6 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -57,11 +56,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GraknTxJanusTest extends JanusTestBase {
-    private final static GraknSession session = mock(GraknSession.class);
     private GraknTx graknTx;
 
     @Before

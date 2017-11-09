@@ -19,7 +19,6 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.InvalidKBException;
@@ -50,11 +49,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TxFactoryJanusTest extends JanusTestBase {
-    private final static GraknSession session = mock(GraknSession.class);
     private static JanusGraph sharedGraph;
 
     @BeforeClass
