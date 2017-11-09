@@ -69,7 +69,8 @@ public class SampleKBLoader {
     private GraknTx tx;
 
     private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
-        factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
+
+        factory = FactoryBuilder.getFactory(new GraknSessionInMemory(randomKeyspace(), Grakn.IN_MEMORY, properties()), false);
         this.preLoad = preLoad;
     }
 
