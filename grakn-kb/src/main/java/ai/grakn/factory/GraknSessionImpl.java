@@ -146,6 +146,7 @@ public class GraknSessionImpl implements GraknSession {
         inMemoryProperties.put(GraknConfigKey.SHARDING_THRESHOLD.name(), 100_000);
         inMemoryProperties.put(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(), 30_000);
         inMemoryProperties.put(FactoryBuilder.KB_MODE, FactoryBuilder.IN_MEMORY);
+        inMemoryProperties.put(FactoryBuilder.KB_ANALYTICS, FactoryBuilder.IN_MEMORY);
         return inMemoryProperties;
     }
 
@@ -229,26 +230,10 @@ public class GraknSessionImpl implements GraknSession {
      * @return the factory
      */
     TxFactory<?> configureTxFactory(String configType){
-        if(Grakn.IN_MEMORY.equals(engineUri)){
-            return FactoryBuilder.getFactory(this, false);
-        } else {
-            return configureTxFactoryRemote(configType);
-        }
-    }
-
-    /**
-     *
-     * @param configType The type of {@link GraknTx} to produce, normal, or for analytics
-     * @return A new or existing {@link TxFactory} with the defined name connecting to the specified remote location
-     */
-    private TxFactory<?> configureTxFactoryRemote(String configType){
-
-        if(REST.KBConfig.DEFAULT.equals(configType)) {
-            return FactoryBuilder.getFactory(this, false);
-        } else if(REST.KBConfig.COMPUTER.equals(configType)){
+        if(REST.KBConfig.COMPUTER.equals(configType)){
             return FactoryBuilder.getFactory(this, true);
+        } else {
+            return FactoryBuilder.getFactory(this, false);
         }
-
-        throw new IllegalArgumentException("Config option [" + configType + "] not supported");
     }
 }
