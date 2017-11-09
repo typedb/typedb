@@ -25,7 +25,6 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Set;
 
@@ -91,8 +90,8 @@ class AnswerState extends ResolutionState {
     private Answer getMaterialisedAnswer(ReasonerAtomicQuery query, InferenceRule rule, QueryCache<ReasonerAtomicQuery> cache){
         Answer ans = getSubstitution();
 
-        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, ans);
-        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), ans);
+        ReasonerAtomicQuery subbedQuery = query.withSubstitution(ans);
+        ReasonerAtomicQuery ruleHead = rule.getHead().withSubstitution(ans);
 
         Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()?
                 unifier.keySet() :
