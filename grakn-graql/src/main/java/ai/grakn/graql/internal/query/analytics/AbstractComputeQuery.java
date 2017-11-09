@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -62,14 +61,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Optional<GraknTx> tx = Optional.empty();
     private GraknComputer graknComputer = null;
-    private Keyspace keySpace;
-
     boolean includeAttribute = false;
 
     Set<Label> subLabels = new HashSet<>();
     Set<Type> subTypes = new HashSet<>();
-
-    private String url;
 
     @Override
     public ComputeQuery<T> withTx(GraknTx tx) {
@@ -124,10 +119,6 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     void initSubGraph() {
-        GraknTx graknTx = tx.orElseThrow(GraqlQueryException::noTx);
-        keySpace = graknTx.keyspace();
-        url = graknTx.session().uri();
-
         if (this.isStatisticsQuery()) {
             includeAttribute = true;
         }
