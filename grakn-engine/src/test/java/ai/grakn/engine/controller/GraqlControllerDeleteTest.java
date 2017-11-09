@@ -36,7 +36,6 @@ import org.junit.Test;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,7 +58,7 @@ public class GraqlControllerDeleteTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -178,7 +177,6 @@ public class GraqlControllerDeleteTest {
     private Response sendRequest(String query){
         return RestAssured.with()
                 .queryParam(INFER, false)
-                .queryParam(MATERIALISE, false)
                 .accept(APPLICATION_TEXT)
                 .body(query)
                 .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, tx.getKeyspace().getValue()));

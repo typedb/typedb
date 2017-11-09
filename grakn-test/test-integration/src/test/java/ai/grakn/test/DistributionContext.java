@@ -23,21 +23,21 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.client.Client;
 import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.util.SimpleURI;
-import ai.grakn.redismock.RedisServer;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import org.junit.Assert;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static java.lang.System.currentTimeMillis;
@@ -49,7 +49,7 @@ import static java.util.stream.Collectors.joining;
  *
  * @author alexandraorth
  */
-public class DistributionContext extends ExternalResource {
+public class DistributionContext extends CompositeTestRule {
 
     private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
     private static final String ZIP = "grakn-dist-" + GraknVersion.VERSION + ".zip";
@@ -57,7 +57,6 @@ public class DistributionContext extends ExternalResource {
     private static final String TARGET_DIRECTORY = CURRENT_DIRECTORY + "/grakn-dist/target/";
     private static final String DIST_DIRECTORY = TARGET_DIRECTORY + "grakn-dist-" + GraknVersion.VERSION;
 
-    private RedisServer redisServer;
     private Process engineProcess;
     private int port = 4567;
     private boolean inheritIO = true;
@@ -97,19 +96,23 @@ public class DistributionContext extends ExternalResource {
     }
 
     @Override
+    protected List<TestRule> testRules() {
+        return ImmutableList.of(
+                TxFactoryContext.create(),
+                MockRedisRule.create(redisPort)
+        );
+    }
+
+    @Override
     public void before() throws Throwable {
         assertPackageBuilt();
         unzipDistribution();
-        GraknTestSetup.startCassandraIfNeeded();
-        redisServer = MockRedisRule.create(redisPort).server();
-        redisServer.start();
         engineProcess = newEngineProcess(port, redisPort);
         waitForEngine(port);
     }
 
     @Override
     public void after() {
-        redisServer.stop();
         engineProcess.destroyForcibly();
     }
 

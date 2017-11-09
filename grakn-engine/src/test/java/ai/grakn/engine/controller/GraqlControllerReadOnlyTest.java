@@ -53,7 +53,6 @@ import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
@@ -91,7 +90,7 @@ public class GraqlControllerReadOnlyTest {
     private static final JsonMapper jsonMapper = new JsonMapper();
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -181,27 +180,17 @@ public class GraqlControllerReadOnlyTest {
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage(QUERY)));
     }
 
-    @Test
-    public void GETGraqlMatchNoMaterialise_ResponseStatusIs200() {
-        Response response = RestAssured.with()
-                .body("match $x isa movie; get;")
-                .queryParam(INFER, true)
-                .accept(APPLICATION_TEXT)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
-
-        assertThat(response.statusCode(), equalTo(200));
-    }
 
     @Test
     public void GETGraqlMatchWithReasonerTrue_ReasonerIsOnWhenExecuting() {
-        sendRequest("match $x isa movie;", APPLICATION_TEXT, true, true, 0);
+        sendRequest("match $x isa movie;", APPLICATION_TEXT, true,  0);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> arg));
     }
 
     @Test
     public void GETGraqlMatchWithReasonerFalse_ReasonerIsOffWhenExecuting() {
-        sendRequest("match $x isa movie;", APPLICATION_TEXT, false, true, 0);
+        sendRequest("match $x isa movie;", APPLICATION_TEXT, false, 0);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> !arg));
     }
@@ -216,24 +205,11 @@ public class GraqlControllerReadOnlyTest {
         assertThat(response.statusCode(), equalTo(200));
     }
 
-    @Test
-    public void GETGraqlMatchWithMaterialiseFalse_MaterialiseIsOffWhenExecuting() {
-        sendRequest("match $x isa movie;", APPLICATION_TEXT, false, false, 0);
-
-        verify(mockQueryBuilder).materialise(booleanThat(arg -> !arg));
-    }
-
-    @Test
-    public void GETGraqlMatchWithMaterialiseTrue_MaterialiseIsOnWhenExecuting() {
-        sendRequest("match $x isa movie;", APPLICATION_TEXT, false, true, 0);
-
-        verify(mockQueryBuilder).materialise(booleanThat(arg -> arg));
-    }
 
     @Test
     public void GETGraqlMatchWithHALTypeAndNumberEmbedded1_ResponsesContainAtMost1Concept() {
         Response response =
-                sendRequest("match $x isa movie; get;", APPLICATION_HAL, false, true, 1);
+                sendRequest("match $x isa movie; get;", APPLICATION_HAL, false, 1);
 
         jsonResponse(response).asJsonList().forEach(e -> {
             Json embedded = e.asJsonMap().get("x").asJsonMap().get("_embedded");
@@ -454,20 +430,19 @@ public class GraqlControllerReadOnlyTest {
     }
 
     private Response sendRequest(String acceptType) {
-        return sendRequest("match $x isa movie; get;", acceptType, false, false, -1);
+        return sendRequest("match $x isa movie; get;", acceptType, false, -1);
     }
 
     private Response sendRequest(String match, String acceptType) {
-        return sendRequest(match, acceptType, false, false, -1);
+        return sendRequest(match, acceptType, false, -1);
     }
 
     private Response sendRequest(String match, String acceptType, boolean reasonser,
-                                 boolean materialise, int limitEmbedded) {
+                                  int limitEmbedded) {
         return RestAssured.with()
                 .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .body(match)
                 .queryParam(INFER, reasonser)
-                .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
                 .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));

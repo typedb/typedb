@@ -51,8 +51,7 @@ public class QueryClient extends Client {
     private int port;
     private String keyspace = "grakn";
     private boolean infer = true;
-    private boolean materialise = false;
-    
+
     /**
      * Default constructor - do not rely on the default values, plus use fluid setter methods to
      * initialize the host name and port. The default keyspace is <code>grakn</code> and the 
@@ -109,7 +108,7 @@ public class QueryClient extends Client {
     }
 
     public Json query(String query) {
-        return query(keyspace, query, infer, materialise);
+        return query(keyspace, query, infer);
     }
     
     /**
@@ -120,15 +119,13 @@ public class QueryClient extends Client {
      * @param keyspace The keyspace (database name) holding the knowledge graph.
      * @param query A valid Graqlq query.
      * @param infer Whether to use inference while performing the query.
-     * @param materialise Whether to save all inferences method during the query process.
      * @return The JSON response as specifying by the GRAKN Engine REST API.
      */
-    public Json query(String keyspace, String query, boolean infer, boolean materialise) {
+    public Json query(String keyspace, String query, boolean infer) {
         try {
             SimpleURI simpleUri = new SimpleURI(host, port);
             URI uri = UriBuilder.fromUri(simpleUri.toURI()).path(REST.resolveTemplate(ANY_GRAQL, keyspace))
                     .queryParam("infer", infer)
-                    .queryParam("materialise", materialise)
                     .build();
             HttpPost httpPost = new HttpPost(uri);
             httpPost.setEntity(new StringEntity(query));

@@ -11,20 +11,31 @@ QUEUE_PID=/tmp/grakn-queue.pid
 
 must_properly_start() {
   "${GRAKN_DIST_TMP}"/grakn server start
+  local grakn_server_start=$?
   local count_running_cassandra_process=`ps -ef | grep 'CassandraDaemon' | grep -v grep | awk '{ print $2}' | wc -l`
   local count_running_redis_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
   local count_running_grakn_process=`ps -ef | grep 'Grakn' | grep -v grep | awk '{ print $2}' | wc -l`
 
+  if [[ grakn_server_start -ne 0 ]]; then
+    echo "Error executing 'grakn server start'"
+    return 1
+  fi
   if [[ $count_running_cassandra_process -ne 1 ]]; then
     echo "Error in starting Cassandra: Expected to find 1 running Cassandra process. Found " $count_running_cassandra_process
     return 1
   fi
   if [[ $count_running_redis_process -ne 1 ]]; then
     echo "Error in starting Redis: Expected to find 1 running Redis process. Found " $count_running_redis_process
+    echo "--- Output of: ps -ef | grep 'redis-server' ---"
+    ps -ef | grep 'redis-server'
+    echo "--- End output of: ps -ef | grep 'redis-server' ---"
     return 1
   fi
   if [[ $count_running_grakn_process -ne 1 ]]; then
-    echo "Error in starting Grakn: Expected to find 1 running Redis process. Found " $count_running_grakn_process
+    echo "Error in starting Grakn: Expected to find 1 running Grakn process. Found " $count_running_grakn_process
+    echo "--- Output of: ps -ef | grep 'Grakn' ---"
+    ps -ef | grep 'Grakn'
+    echo "--- End output of: ps -ef | grep 'Grakn' ---"
     return 1
   fi
 
@@ -97,21 +108,31 @@ pid_files_must_not_exist() {
 
 must_properly_stop() {
   "${GRAKN_DIST_TMP}"/grakn server stop
-
+  local grakn_server_stop=$?
   local count_running_cassandra_process=`ps -ef | grep 'CassandraDaemon' | grep -v grep | awk '{ print $2}' | wc -l`
   local count_running_redis_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
   local count_running_grakn_process=`ps -ef | grep 'Grakn' | grep -v grep | awk '{ print $2}' | wc -l`
 
+  if [[ grakn_server_stop -ne 0 ]]; then
+    echo "Error executing 'grakn server stop'"
+    return 1
+  fi
   if [[ $count_running_cassandra_process -ne 0 ]]; then
     echo "Error in stopping Cassandra: Expected to find 0 running Cassandra process. Found " $count_running_cassandra_process
     return 1
   fi
   if [[ $count_running_redis_process -ne 0 ]]; then
     echo "Error in stopping Redis: Expected to find 0 running Redis process. Found " $count_running_redis_process
+    echo "--- Output of: ps -ef | grep 'redis-server' ---"
+    ps -ef | grep 'redis-server'
+    echo "--- End output of: ps -ef | grep 'redis-server' ---"
     return 1
   fi
   if [[ $count_running_grakn_process -ne 0 ]]; then
-    echo "Error in stopping Grakn: Expected to find 0 running Redis process. Found " $count_running_grakn_process
+    echo "Error in stopping Grakn: Expected to find 0 running Grakn process. Found " $count_running_grakn_process
+    echo "--- Output of: ps -ef | grep 'Grakn' ---"
+    ps -ef | grep 'Grakn'
+    echo "--- End output of: ps -ef | grep 'Grakn' ---"
     return 1
   fi
 
@@ -230,7 +251,7 @@ main() {
   local stop_status=$?
 
   if [[ $stop_status -ne 0 ]]; then
-    echo "Unable to start Grakn. Halting test."
+    echo "Unable to stop Grakn. Halting test."
     force_kill
     exit 1
   fi

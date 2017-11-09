@@ -23,9 +23,9 @@ import static org.junit.Assert.assertTrue;
 public class HALPrinterTest {
 
     @ClassRule
-    public static final SampleKBContext academyKB = SampleKBContext.preLoad(AcademyKB.get());
+    public static final SampleKBContext academyKB = AcademyKB.context();
 
-    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
+    public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     @Test
     public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {

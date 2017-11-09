@@ -33,6 +33,9 @@ import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import java.util.Collection;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -42,6 +45,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.var;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -50,13 +54,13 @@ public class ExplanationTest {
 
 
     @ClassRule
-    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = GeoKB.context();
 
     @ClassRule
-    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     @ClassRule
-    public static final SampleKBContext explanationKB = SampleKBContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext explanationKB = SampleKBContext.load("explanationTest.gql");
 
     private static Concept polibuda, uw;
     private static Concept warsaw;
@@ -100,10 +104,10 @@ public class ExplanationTest {
         assertEquals(queryAnswer3, answer3);
         assertEquals(queryAnswer4, answer4);
 
-        assertEquals(queryAnswer1.getAnswers().size(), 1);
-        assertEquals(queryAnswer2.getAnswers().size(), 3);
-        assertEquals(queryAnswer3.getAnswers().size(), 5);
-        assertEquals(queryAnswer4.getAnswers().size(), 7);
+        assertEquals(queryAnswer1.getPartialAnswers().size(), 1);
+        assertEquals(queryAnswer2.getPartialAnswers().size(), 3);
+        assertEquals(queryAnswer3.getPartialAnswers().size(), 5);
+        assertEquals(queryAnswer4.getPartialAnswers().size(), 7);
 
         assertTrue(queryAnswer1.getExplanation().isLookupExplanation());
         assertTrue(answerHasConsistentExplanations(queryAnswer1));
@@ -147,8 +151,8 @@ public class ExplanationTest {
 
         //(res), (uni, ctr) - (region, ctr)
         //                  - (uni, region) - {(city, region), (uni, city)
-        assertEquals(queryAnswer1.getAnswers().size(), 6);
-        assertEquals(queryAnswer2.getAnswers().size(), 6);
+        assertEquals(queryAnswer1.getPartialAnswers().size(), 6);
+        assertEquals(queryAnswer2.getPartialAnswers().size(), 6);
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
         assertEquals(4, queryAnswer1.getExplicitPath().size());
@@ -246,6 +250,52 @@ public class ExplanationTest {
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
 
+    @Test
+    public void testExplanationConsistency(){
+        GraknTx genealogyGraph = genealogyKB.tx();
+        QueryBuilder iqb = genealogyGraph.graql().infer(true);
+
+        String queryString = "match " +
+                "($x, $y) isa cousins;" +
+                "limit 3; get;";
+
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+
+        answers.forEach(answer -> {
+            testExplanation(answer);
+
+            String specificQuery = "match " +
+                    "$x id '" + answer.get(var("x")).getId().getValue() + "';" +
+                    "$y id '" + answer.get(var("y")).getId().getValue() + "';" +
+                    "(cousin: $x, cousin: $y) isa cousins;" +
+                    "limit 1; get;";
+            Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+            testExplanation(specificAnswer);
+        });
+
+    }
+
+    private void testExplanation(Answer answer){
+        AnswerExplanation explanation = answer.getExplanation();
+
+        if (explanation.isRuleExplanation()) {
+            //TODO test rewritten query once Marco's PR is in
+            Set<Answer> explAnswers = explanation.getAnswers();
+            answerConnectedness(explAnswers);
+        }
+    }
+
+    private void answerConnectedness(Collection<Answer> answers){
+        answers.forEach(a -> {
+            assertTrue(
+                    answers.stream()
+                            .filter(a2 -> !a2.equals(a))
+                            .filter(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
+                            .findFirst().isPresent()
+            );
+        });
+    }
+
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
         return graph.graql().match(Graql.var("x").has(typeLabel, val)).get("x").findAny().get();
     }
@@ -266,7 +316,7 @@ public class ExplanationTest {
     }
 
     private boolean answerHasConsistentExplanations(Answer ans){
-        Set<Answer> answers = ans.getAnswers().stream()
+        Set<Answer> answers = ans.getPartialAnswers().stream()
                 .filter(a -> !a.getExplanation().isJoinExplanation())
                 .collect(Collectors.toSet());
         for (Answer a : answers){

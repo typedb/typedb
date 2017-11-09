@@ -41,7 +41,7 @@ import static org.junit.Assert.assertEquals;
 public class RolePlayerFragmentSetTest {
 
     @ClassRule
-    public static final SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext sampleKB = MovieKB.context();
 
     private final Var a = Graql.var("a"), b = Graql.var("b"), c = Graql.var("c"), d = Graql.var("d");
 

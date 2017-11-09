@@ -19,13 +19,13 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknTx;
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.SampleKBLoader;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -44,52 +44,49 @@ import java.util.function.Consumer;
  * @author borislav, fppt
  *
  */
-public class SampleKBContext extends SampleKBLoader implements TestRule {
-    private boolean assumption = true;
+public class SampleKBContext extends CompositeTestRule {
+    private final SampleKBLoader loader;
 
-    private SampleKBContext(@Nullable Consumer<GraknTx> preLoad){
-        super(preLoad);
+    private SampleKBContext(SampleKBLoader loader){
+        this.loader = loader;
     }
 
     public static SampleKBContext empty(){
         return getContext(null);
     }
 
-    public static SampleKBContext preLoad(Consumer<GraknTx> build){
+    public static SampleKBContext load(Consumer<GraknTx> build){
         return getContext(build);
     }
 
-    public static SampleKBContext preLoad(String ... files){
+    public static SampleKBContext load(String ... files){
         return getContext((graknGraph) -> {
             for (String file : files) {
-                loadFromFile(graknGraph, file);
+                SampleKBLoader.loadFromFile(graknGraph, file);
             }
         });
     }
 
     private static SampleKBContext getContext(@Nullable Consumer<GraknTx> preLoad){
-        GraknTestSetup.startCassandraIfNeeded();
-        return new SampleKBContext(preLoad);
-    }
-
-    public SampleKBContext assumeTrue(boolean bool){
-        this.assumption = bool;
-        return this;
-    }
-
-    public static void loadFromFile(GraknTx graph, String file) {
-        SampleKBLoader.loadFromFile(graph, "../grakn-test-tools/src/main/graql/" + file);
+        return new SampleKBContext(SampleKBLoader.preLoad(preLoad));
     }
 
     @Override
-    public Statement apply(final Statement base, Description description) {
+    protected List<TestRule> testRules() {
+        return ImmutableList.of(TxFactoryContext.create());
+    }
 
-        return new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                org.junit.Assume.assumeTrue(assumption);
-                base.evaluate();
-            }
-        };
+    public GraknTx tx() {
+        checkInContext();
+        return loader.tx();
+    }
+
+    public void rollback() {
+        checkInContext();
+        loader.rollback();
+    }
+
+    private void checkInContext() {
+        Preconditions.checkState(TxFactoryContext.canUseTx(), "EmbeddedCassandra may not have started");
     }
 }

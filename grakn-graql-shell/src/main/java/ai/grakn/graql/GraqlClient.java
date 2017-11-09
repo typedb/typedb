@@ -68,6 +68,7 @@ class GraqlClient {
 
     public BatchExecutorClient loaderClient(Keyspace keyspace, String uriString) {
         return BatchExecutorClient.newBuilder()
+                .threadPoolCoreSize(Runtime.getRuntime().availableProcessors() * 8)
                 .taskClient(new GraknClient(new SimpleURI(uriString)))
                 .maxRetries(DEFAULT_MAX_RETRY)
                 .build();

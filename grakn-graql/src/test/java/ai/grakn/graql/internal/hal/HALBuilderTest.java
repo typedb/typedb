@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 public class HALBuilderTest {
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @Test
     public void renderHALConceptData_producesCorrectHALObject() {

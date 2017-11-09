@@ -38,7 +38,6 @@ import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonRespons
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -62,7 +61,7 @@ public class GraqlControllerInsertTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -205,7 +204,6 @@ public class GraqlControllerInsertTest {
         return RestAssured.with()
                 .accept(acceptType)
                 .queryParam(INFER, false)
-                .queryParam(MATERIALISE, false)
                 .body(query)
                 .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
     }
