@@ -19,16 +19,20 @@
 package ai.grakn.engine.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.factory.GraknSessionImpl;
 import com.google.common.annotations.VisibleForTesting;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -50,6 +54,7 @@ public class EngineGraknTxFactory {
     private final Properties properties;
     private final String engineURI;
     private final SystemKeyspace systemKeyspace;
+    private final Map<Keyspace, GraknSession> openedSessions;
 
     @VisibleForTesting //Only used for testing
     public static EngineGraknTxFactory createAndLoadSystemSchema(LockProvider lockProvider, Properties properties) {
@@ -65,6 +70,7 @@ public class EngineGraknTxFactory {
         this.properties.putAll(properties);
         this.engineURI = properties.getProperty(GraknConfigKey.SERVER_HOST_NAME.name()) + ":" + properties.getProperty(GraknConfigKey.SERVER_PORT.name());
         this.systemKeyspace = SystemKeyspaceImpl.create(this, lockProvider, loadSchema);
+        this.openedSessions = new HashMap<>();
     }
 
     public synchronized void refreshConnections(){
@@ -80,6 +86,21 @@ public class EngineGraknTxFactory {
             systemKeyspace.openKeyspace(keyspace);
         }
         return FactoryBuilder.getFactory(keyspace, engineURI, properties).open(type);
+    }
+
+    /**
+     * Retrieves the {@link GraknSession} needed to open the {@link GraknTx}.
+     * This will open a new one {@link GraknSession} if it hasn't been opened before
+     *
+     * @param keyspace The {@link Keyspace} of the {@link GraknSession} to retrieve
+     * @return a new or existing {@link GraknSession} connecting to the provided {@link Keyspace}
+     */
+    private GraknSession session(Keyspace keyspace){
+        if(!openedSessions.containsKey(keyspace)){
+            openedSessions.put(keyspace, new GraknSessionImpl(keyspace, engineURI));
+        }
+
+        return openedSessions.get(keyspace);
     }
 
     /**
