@@ -31,8 +31,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.rule.EngineContext;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixEventType;
@@ -173,7 +173,7 @@ public class BatchExecutorClientTest {
             int completed = allObservable(all).toBlocking().first().size();
             assertEquals(n, completed);
         }
-        if(GraknTestSetup.usingJanus()) {
+        if(GraknTestUtil.usingJanus()) {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
                 assertEquals(n, graph.getEntityType("name_tag").instances().count());
             }

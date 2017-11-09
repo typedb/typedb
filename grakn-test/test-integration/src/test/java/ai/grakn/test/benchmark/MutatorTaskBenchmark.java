@@ -3,7 +3,7 @@ package ai.grakn.test.benchmark;
 import ai.grakn.client.TaskClient;
 import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import mjson.Json;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.openjdk.jmh.annotations.Benchmark;

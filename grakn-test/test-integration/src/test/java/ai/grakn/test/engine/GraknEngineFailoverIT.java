@@ -29,7 +29,7 @@ import ai.grakn.util.SimpleURI;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.redisq.Redisq;
 import ai.grakn.redisq.RedisqBuilder;
-import ai.grakn.test.DistributionContext;
+import ai.grakn.test.rule.DistributionContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;

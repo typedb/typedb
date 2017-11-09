@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package ai.grakn.util;
+package ai.grakn.test.rule;
 
 import ai.grakn.redismock.RedisServer;
 import org.junit.rules.ExternalResource;
@@ -31,12 +31,12 @@ import java.util.Map;
  *
  * @author pluraliseseverythings
  */
-public class MockRedisRule extends ExternalResource {
+public class InMemoryRedisContext extends ExternalResource {
     private static final JedisPoolConfig DEFAULT_CONFIG = new JedisPoolConfig();
     private final Map<JedisPoolConfig, JedisPool> pools = new HashMap<>();
     private RedisServer server;
 
-    private MockRedisRule(int port) {
+    private InMemoryRedisContext(int port) {
         try {
             server = RedisServer.newRedisServer(port);
         } catch (IOException e) {
@@ -44,12 +44,12 @@ public class MockRedisRule extends ExternalResource {
         }
     }
 
-    public static MockRedisRule create(){
+    public static InMemoryRedisContext create(){
         return create(0);
     }
 
-    public static MockRedisRule create(int port){
-        return new MockRedisRule(port);
+    public static InMemoryRedisContext create(int port){
+        return new InMemoryRedisContext(port);
     }
 
     @Override
