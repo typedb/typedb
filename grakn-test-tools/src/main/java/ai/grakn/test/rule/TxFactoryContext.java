@@ -14,13 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.test;
+package ai.grakn.test.rule;
 
 import ai.grakn.GraknTx;
-import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableList;
 import org.junit.rules.TestRule;
 
@@ -42,14 +41,14 @@ public class TxFactoryContext extends CompositeTestRule {
 
     @Override
     protected List<TestRule> testRules() {
-        if (GraknTestSetup.usingJanus()) {
-            return ImmutableList.of(EmbeddedCassandra.create());
+        if (GraknTestUtil.usingJanus()) {
+            return ImmutableList.of(EmbeddedCassandraContext.create());
         } else {
             return ImmutableList.of();
         }
     }
 
     public static boolean canUseTx() {
-        return !GraknTestSetup.usingJanus() || EmbeddedCassandra.inCassandraContext();
+        return !GraknTestUtil.usingJanus() || EmbeddedCassandraContext.inCassandraContext();
     }
 }

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test;
+package ai.grakn.test.rule;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
@@ -30,9 +30,7 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.GraknTestUtil;
-import ai.grakn.util.MockRedisRule;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
@@ -76,9 +74,9 @@ public class EngineContext extends CompositeTestRule {
         int redisPort = redisURI.getPort();
 
         if (inMemoryRedis) {
-            redis = MockRedisRule.create(redisPort);
+            redis = InMemoryRedisContext.create(redisPort);
         } else {
-            redis = EmbeddedRedis.create(redisPort);
+            redis = EmbeddedRedisContext.create(redisPort);
         }
     }
 
@@ -100,10 +98,6 @@ public class EngineContext extends CompositeTestRule {
      */
     public static EngineContext createWithInMemoryRedis(){
         return new EngineContext(true);
-    }
-
-    public int port() {
-        return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
     public GraknEngineServer server() {
@@ -134,7 +128,7 @@ public class EngineContext extends CompositeTestRule {
         return server.getTaskManager();
     }
 
-    public String uri() {
+    public SimpleURI uri() {
         return config.uri();
     }
 
@@ -152,7 +146,7 @@ public class EngineContext extends CompositeTestRule {
 
     @Override
     public void before() throws Throwable {
-        RestAssured.baseURI = "http://" + config.uri();
+        RestAssured.baseURI = uri().toURI().toString();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.util;
+package ai.grakn.test.rule;
 
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.thrift.transport.TTransportException;
@@ -41,24 +41,26 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author fppt
  *
  */
-public class EmbeddedCassandra extends ExternalResource {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandra.class);
+public class EmbeddedCassandraContext extends ExternalResource {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandraContext.class);
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
 
     private static AtomicInteger IN_CASSANDRA_CONTEXT = new AtomicInteger(0);
 
-    private EmbeddedCassandra() {
+    private EmbeddedCassandraContext() {
 
     }
 
-    public static EmbeddedCassandra create() {
-        return new EmbeddedCassandra();
+    public static EmbeddedCassandraContext create() {
+        return new EmbeddedCassandraContext();
     }
 
-    /**
-     * Starts an embedded version of cassandra
-     */
-    public static void start(){
+    public static boolean inCassandraContext() {
+        return IN_CASSANDRA_CONTEXT.get() > 0;
+    }
+
+    @Override
+    protected void before() throws Throwable {
         if(CASSANDRA_RUNNING.compareAndSet(false, true)) {
             try {
                 LOG.info("starting cassandra...");
@@ -79,15 +81,6 @@ public class EmbeddedCassandra extends ExternalResource {
                 LOG.error("Cassandra already running! Attempting to continue.");
             }
         }
-    }
-
-    public static boolean inCassandraContext() {
-        return IN_CASSANDRA_CONTEXT.get() > 0;
-    }
-
-    @Override
-    protected void before() throws Throwable {
-        start();
         IN_CASSANDRA_CONTEXT.incrementAndGet();
     }
 

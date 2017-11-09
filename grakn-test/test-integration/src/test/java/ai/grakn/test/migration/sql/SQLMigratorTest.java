@@ -27,7 +27,7 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.sql.SQLMigrator;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
 import ai.grakn.util.SampleKBLoader;
 import org.jooq.exception.DataAccessException;

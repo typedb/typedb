@@ -25,10 +25,50 @@ import ai.grakn.client.QueryResponse;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
-import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
 import ai.grakn.util.CommonUtil;
-import static ai.grakn.util.ConcurrencyUtil.allObservable;
 import ai.grakn.util.GraknVersion;
+import ai.grakn.util.SimpleURI;
+import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import jline.console.ConsoleReader;
+import jline.console.completer.AggregateCompleter;
+import jline.console.history.FileHistory;
+import mjson.Json;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import rx.Observable;
+
+import javax.annotation.Nullable;
+import javax.ws.rs.core.UriBuilder;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
+import static ai.grakn.util.ConcurrencyUtil.allObservable;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
 import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
@@ -51,46 +91,10 @@ import static ai.grakn.util.REST.RemoteShell.TYPES;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static ai.grakn.util.Schema.BaseType.TYPE;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
-import com.google.common.base.Splitter;
-import com.google.common.base.StandardSystemProperty;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.URI;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.regex.Matcher;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
-import jline.console.ConsoleReader;
-import jline.console.completer.AggregateCompleter;
-import jline.console.history.FileHistory;
-import mjson.Json;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
-import rx.Observable;
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -215,10 +219,10 @@ public class GraqlShell {
         }
 
         Keyspace keyspace = Keyspace.of(cmd.getOptionValue("k", DEFAULT_KEYSPACE));
-        String uriString = cmd.getOptionValue("r", Grakn.DEFAULT_URI);
+        SimpleURI location = Optional.ofNullable(cmd.getOptionValue("r")).map(SimpleURI::new).orElse(Grakn.DEFAULT_URI);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
 
-        if (!client.serverIsRunning(uriString)) {
+        if (!client.serverIsRunning(location)) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
             return false;
         }
@@ -227,7 +231,7 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
-                sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"), keyspace);
+                sendBatchRequest(client.loaderClient(keyspace, location), cmd.getOptionValue("b"), keyspace);
             } catch (NumberFormatException e) {
                 printUsage(options, "Cannot cast argument to an integer " + e.getMessage());
                 return false;
@@ -248,7 +252,7 @@ public class GraqlShell {
                 queries = Optional.of(loadQueries(filePaths));
             }
 
-            URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
+            URI uri = UriBuilder.fromUri(location.toURI()).scheme("ws").path(REMOTE_SHELL_URI).build();
 
             GraqlShell shell = new GraqlShell(
                     historyFilename, keyspace, client, uri, outputFormat,

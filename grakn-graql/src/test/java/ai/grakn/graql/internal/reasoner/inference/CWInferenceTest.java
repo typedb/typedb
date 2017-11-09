@@ -21,9 +21,9 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.CWKB;
+import ai.grakn.util.GraknTestUtil;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -44,7 +44,7 @@ public class CWInferenceTest {
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
         qb = cwKB.tx().graql().infer(false);
         iqb = cwKB.tx().graql().infer(true).materialise(false);
     }

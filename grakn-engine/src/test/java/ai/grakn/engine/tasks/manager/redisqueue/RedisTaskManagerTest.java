@@ -31,8 +31,8 @@ import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
-import ai.grakn.test.SampleKBContext;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import com.codahale.metrics.MetricRegistry;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
@@ -93,14 +93,14 @@ public class RedisTaskManagerTest {
     public static final SampleKBContext sampleKB = SampleKBContext.empty();
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create();
+    public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create();
 
     @BeforeClass
     public static void setupClass() {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setBlockWhenExhausted(true);
         poolConfig.setMaxTotal(MAX_TOTAL);
-        jedisPool = mockRedisRule.jedisPool(poolConfig);
+        jedisPool = inMemoryRedisContext.jedisPool(poolConfig);
         assertFalse(jedisPool.isClosed());
         JedisLockProvider lockProvider = new JedisLockProvider(jedisPool);
         engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, CONFIG.getProperties());

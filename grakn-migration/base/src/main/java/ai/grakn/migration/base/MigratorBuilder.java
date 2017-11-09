@@ -19,6 +19,7 @@ package ai.grakn.migration.base;
 
 import ai.grakn.Keyspace;
 import ai.grakn.client.GraknClient;
+import ai.grakn.util.SimpleURI;
 
 /**
  * <p>
@@ -33,7 +34,7 @@ public class MigratorBuilder {
     private static final int DEFAULT_MAX_DELAY_MS = 500;
     private static final int DEFAULT_LINES = -1;
 
-    private String uri;
+    private SimpleURI uri;
     private Keyspace keyspace;
     private MigrationOptions migrationOptions = null;
 
@@ -43,7 +44,7 @@ public class MigratorBuilder {
     private int lines = DEFAULT_LINES;
 
 
-    public MigratorBuilder setUri(String uri) {
+    public MigratorBuilder setUri(SimpleURI uri) {
         this.uri = uri;
         return this;
     }

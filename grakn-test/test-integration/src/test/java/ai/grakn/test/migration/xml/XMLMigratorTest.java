@@ -11,7 +11,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.xml.XmlMigrator;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
 import ai.grakn.util.SampleKBLoader;
 import org.junit.After;
