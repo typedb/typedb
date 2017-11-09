@@ -24,8 +24,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.MatrixKB;
 import ai.grakn.test.kbs.MatrixKBII;
@@ -37,6 +36,8 @@ import ai.grakn.test.kbs.TailRecursionKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
 import java.util.List;
+
+import ai.grakn.util.GraknTestUtil;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -82,7 +83,7 @@ public class RecursiveInferenceTest {
 
     @Before
     public void onStartup() throws Exception {
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/

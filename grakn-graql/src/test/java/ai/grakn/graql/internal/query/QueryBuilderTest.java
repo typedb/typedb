@@ -27,7 +27,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import org.junit.After;
 import org.junit.ClassRule;

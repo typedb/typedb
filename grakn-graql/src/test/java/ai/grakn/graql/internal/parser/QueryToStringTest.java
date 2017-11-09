@@ -25,7 +25,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import org.junit.Before;
 import org.junit.ClassRule;

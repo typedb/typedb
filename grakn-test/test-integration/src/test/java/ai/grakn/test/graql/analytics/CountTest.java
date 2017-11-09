@@ -30,8 +30,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
-import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.rule.EngineContext;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import org.junit.Assert;
 import org.junit.Before;
@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.test.GraknTestSetup.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
@@ -53,11 +52,11 @@ public class CountTest {
     public GraknSession factory;
 
     @ClassRule
-    public static final EngineContext context = usingTinker() ? null : EngineContext.createWithInMemoryRedis();
+    public static final EngineContext context = GraknTestUtil.usingTinker() ? null : EngineContext.createWithInMemoryRedis();
 
     @Before
     public void setUp() {
-        factory = usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
+        factory = GraknTestUtil.usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
     }
 
     @Test
@@ -100,7 +99,7 @@ public class CountTest {
 
     @Test
     public void testConcurrentCount() throws Exception {
-        assumeFalse(GraknTestSetup.usingTinker());
+        assumeFalse(GraknTestUtil.usingTinker());
 
         String nameThing = "thingy";
         String nameAnotherThing = "another";

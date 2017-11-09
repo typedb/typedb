@@ -40,9 +40,9 @@ import ai.grakn.graql.internal.reasoner.query.QueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
@@ -85,7 +85,7 @@ public class AtomicQueryTest {
 
     @BeforeClass
     public static void setUpClass() {
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
     }
 
     @Test

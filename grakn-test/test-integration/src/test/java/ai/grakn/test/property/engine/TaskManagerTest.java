@@ -24,7 +24,7 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.generator.TaskStates;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;

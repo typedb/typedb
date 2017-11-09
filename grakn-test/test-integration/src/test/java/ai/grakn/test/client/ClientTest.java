@@ -23,7 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import org.junit.ClassRule;
 import org.junit.Test;
 
