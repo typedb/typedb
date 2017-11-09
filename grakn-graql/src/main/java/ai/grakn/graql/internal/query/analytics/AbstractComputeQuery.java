@@ -171,7 +171,11 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     GraknComputer getGraphComputer() {
         if (graknComputer == null) {
-            graknComputer = Grakn.session(url, keySpace).getGraphComputer();
+            if(tx.isPresent()){
+                graknComputer = tx.get().session().getGraphComputer();
+            } else {
+                graknComputer = Grakn.session(url, keySpace).getGraphComputer();
+            }
         }
         return graknComputer;
     }
