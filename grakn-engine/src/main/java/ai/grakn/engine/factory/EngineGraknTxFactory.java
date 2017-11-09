@@ -85,7 +85,7 @@ public class EngineGraknTxFactory {
         if(!keyspace.equals(SystemKeyspace.SYSTEM_KB_KEYSPACE)) {
             systemKeyspace.openKeyspace(keyspace);
         }
-        return FactoryBuilder.getFactory(keyspace, engineURI, properties).open(type);
+        return session(keyspace).open(type);
     }
 
     /**
@@ -99,7 +99,6 @@ public class EngineGraknTxFactory {
         if(!openedSessions.containsKey(keyspace)){
             openedSessions.put(keyspace,GraknSessionImpl.createEngineSession(keyspace, engineURI, properties));
         }
-
         return openedSessions.get(keyspace);
     }
 
