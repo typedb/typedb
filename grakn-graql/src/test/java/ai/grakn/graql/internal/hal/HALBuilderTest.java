@@ -116,7 +116,7 @@ public class HALBuilderTest {
                     "$x id " + cousin1 + ";" +
                     "$y id " + cousin2 + ";" +
                     "(cousin: $x, cousin: $y) isa cousins; get;";
-            Printer<?> printer = Printers.hal(genealogyKB.tx().getKeyspace(), 5);
+            Printer<?> printer = Printers.hal(genealogyKB.tx().keyspace(), 5);
             GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
             Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
 
