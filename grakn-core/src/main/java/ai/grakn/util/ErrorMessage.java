@@ -159,6 +159,8 @@ public enum ErrorMessage {
     //Templating
     TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
 
+    UNEXPECTED_RESULT("the concept [%s] could not be found in results"),
+
     //--------------------------------------------- Engine Errors -----------------------------------------------
     ILLEGAL_ARGUMENT_EXCEPTION("Illegal argument exception caused by [%s]"),
     NO_CONCEPT_IN_KEYSPACE("No concept with ID [%s] exists in keyspace [%s]"),
@@ -178,7 +180,7 @@ public enum ErrorMessage {
     INVALID_QUERY_USAGE("Only %s queries are allowed."),
     MISSING_TASK_ID("Could not retrieve id %s"),
     TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
-    ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s:%s]"),
+    ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s]"),
     AUTHENTICATION_FAILURE("Authentication parameters are incorrect or invalid"),
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
@@ -196,9 +198,10 @@ public enum ErrorMessage {
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
     ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
     ROLE_ID_IS_NOT_ROLE("Assignment of non-role id to a role variable in pattern [%s]."),
+    INVALID_UNIFIER_TYPE("Unifier type [%s] is invalid."),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]."),
-    RULE_CREATION_ARITY_ERROR("Arity mismatch when creating a rule."),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
+    NON_EXISTENT_UNIFIER("Could not proceed with unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal conversion of atom [%s]."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------

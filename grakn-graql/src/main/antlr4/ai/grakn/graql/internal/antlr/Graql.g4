@@ -68,7 +68,7 @@ property       : 'isa' variable                     # isa
                | 'val' predicate                    # propValue
                | 'when' '{' patterns '}'            # propWhen
                | 'then' '{' varPatterns '}'         # propThen
-               | 'has' label (resource=VARIABLE | predicate) ('as' relation=VARIABLE)?# propHas
+               | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)?# propHas
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey
                | '(' casting (',' casting)* ')'     # propRel
@@ -104,7 +104,7 @@ value          : STRING   # valueString
                | DATETIME # valueDateTime
                ;
 
-label          : identifier ;
+label          : identifier | IMPLICIT_IDENTIFIER;
 id             : identifier ;
 
 // Some keywords can also be used as identifiers
@@ -155,6 +155,8 @@ fragment SECOND        : [0-6][0-9] ('.' [0-9]+)? ;
 fragment ESCAPE_SEQ : '\\' . ;
 
 COMMENT : '#' .*? '\r'? ('\n' | EOF) -> channel(HIDDEN) ;
+
+IMPLICIT_IDENTIFIER : '@' [a-zA-Z0-9_-]+ ;
 
 WS : [ \t\r\n]+ -> channel(HIDDEN) ;
 

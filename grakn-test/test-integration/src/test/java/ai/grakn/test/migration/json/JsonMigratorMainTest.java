@@ -65,7 +65,7 @@ public class JsonMigratorMainTest {
     public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Before
     public void setup() {
@@ -112,7 +112,7 @@ public class JsonMigratorMainTest {
 
     @Test
     public void whenMigrationFailsOnTheServer_ErrorIsPrintedToSystemErr(){
-        run("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrongkeyspace");
+        run("-d", "-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrongkeyspace");
         String expectedMessage = GraknBackendException.noSuchKeyspace(Keyspace.of("wrongkeyspace")).getMessage();
         // TODO Temporarily checking sysOut. Change it so it goes to sysErr
         assertThat(sysOut.getLog(), containsString(expectedMessage));

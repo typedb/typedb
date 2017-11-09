@@ -21,20 +21,16 @@ package ai.grakn.test.engine;
 import ai.grakn.client.TaskClient;
 import ai.grakn.client.TaskResult;
 import ai.grakn.engine.TaskStatus;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskStorage;
 import ai.grakn.engine.tasks.manager.redisqueue.Task;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.redisq.Redisq;
 import ai.grakn.redisq.RedisqBuilder;
 import ai.grakn.test.DistributionContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -42,15 +38,6 @@ import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
-import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.fail;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isIn;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -59,6 +46,21 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
+
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
+import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isIn;
 
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineFailoverIT {
@@ -70,13 +72,13 @@ public class GraknEngineFailoverIT {
     private static SimpleURI redisURI = new SimpleURI("localhost", 5511);
 
     @ClassRule
-    public static final DistributionContext engine1 = DistributionContext.startSingleQueueEngineProcess().port(7890).redisPort(redisURI.getPort());
+    public static final DistributionContext engine1 = DistributionContext.create().port(7890).redisPort(redisURI.getPort());
 
     @ClassRule
-    public static final DistributionContext engine2 = DistributionContext.startSingleQueueEngineProcess().port(5678).redisPort(redisURI.getPort());
+    public static final DistributionContext engine2 = DistributionContext.create().port(5678).redisPort(5512);
 
     @ClassRule
-    public static final DistributionContext engine3 = DistributionContext.startSingleQueueEngineProcess().port(6789).redisPort(redisURI.getPort());
+    public static final DistributionContext engine3 = DistributionContext.create().port(6789).redisPort(5513);
 
     @Before
     public void getStorage() {

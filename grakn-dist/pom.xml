@@ -24,7 +24,7 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>0.17.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -95,17 +95,6 @@
             <groupId>ai.grakn</groupId>
             <artifactId>migration-json</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>migration-owl</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>

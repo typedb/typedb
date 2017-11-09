@@ -18,4 +18,4 @@ echo "Setting version using branch name"
 mvn versions:set -DnewVersion=${BRANCH_NAME} -DgenerateBackupPoms=false
 
 echo "Installing grakn"
-mvn clean install --batch-mode -Dmaven.repo.local=${WORKSPACE}/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT
+mvn clean install -T 14 --batch-mode -Dmaven.repo.local=${WORKSPACE}/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT

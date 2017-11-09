@@ -23,7 +23,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -66,12 +66,6 @@ public class RedisTaskManager implements TaskManager {
 
     private final Redisq<Task> redisq;
     private final RedisTaskStorage taskStorage;
-
-    public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-            EngineGraknTxFactory factory, LockProvider distributedLockClient,
-            MetricRegistry metricRegistry) {
-        this(engineId, config, jedisPool, 32, factory, distributedLockClient, metricRegistry);
-    }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
             int threads, EngineGraknTxFactory factory, LockProvider distributedLockClient,
@@ -149,6 +143,7 @@ public class RedisTaskManager implements TaskManager {
             throws StateFutureInitializationException, ExecutionException, InterruptedException {
         return redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue());
     }
+
 
     public void waitForTask(TaskId taskId, long timeout, TimeUnit timeUnit)
             throws StateFutureInitializationException, ExecutionException, InterruptedException, TimeoutException {

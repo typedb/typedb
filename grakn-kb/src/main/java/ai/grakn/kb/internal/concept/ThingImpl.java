@@ -70,13 +70,13 @@ import java.util.stream.Stream;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationshipType}
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
-    private final Cache<Label> cachedInternalType = new Cache<>(Cacheable.label(), () -> {
+    private final Cache<Label> cachedInternalType = Cache.createTxCache(this, Cacheable.label(), () -> {
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
         Optional<Type> type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
         return type.orElseThrow(() -> GraknTxOperationException.missingType(getId())).getLabel();
     });
 
-    private final Cache<V> cachedType = new Cache<>(Cacheable.concept(), () -> {
+    private final Cache<V> cachedType = Cache.createTxCache(this, Cacheable.concept(), () -> {
         Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 map(EdgeElement::target).
                 flatMap(CommonUtil::optionalToStream).
@@ -114,7 +114,13 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public void delete() {
-        Set<Relationship> relationships = castingsInstance().map(Casting::getRelationship).collect(Collectors.toSet());
+        //Remove links to relationships and return them
+        Set<Relationship> relationships = castingsInstance().map(casting -> {
+            Relationship relationship = casting.getRelationship();
+            Role role = casting.getRole();
+            relationship.removeRolePlayer(role, this);
+            return relationship;
+        }).collect(Collectors.toSet());
 
         vertex().tx().txCache().removedInstance(type().getId());
         deleteNode();
@@ -124,17 +130,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 relation.delete();
             } else {
                 RelationshipImpl rel = (RelationshipImpl) relation;
-                vertex().tx().txCache().trackForValidation(rel);
                 rel.cleanUp();
             }
         });
-    }
-
-    @Override
-    public void txCacheClear(){
-        //TODO: Clearing the caches at th Thing Level may not be needed. Need to experiment
-        cachedInternalType.clear();
-        cachedType.clear();
     }
 
     /**
@@ -180,7 +178,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     Stream<Casting> castingsInstance(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER).
-                map(edge -> vertex().tx().factory().buildCasting(edge));
+                map(edge -> Casting.withThing(edge, this));
     }
 
     <X extends Thing> Stream<X> getShortcutNeighbours(){

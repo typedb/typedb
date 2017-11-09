@@ -50,13 +50,13 @@ public class ExplanationTest {
 
 
     @ClassRule
-    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = GeoKB.context();
 
     @ClassRule
-    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     @ClassRule
-    public static final SampleKBContext explanationKB = SampleKBContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext explanationKB = SampleKBContext.load("explanationTest.gql");
 
     private static Concept polibuda, uw;
     private static Concept warsaw;
@@ -145,8 +145,10 @@ public class ExplanationTest {
         assertTrue(queryAnswer1.getExplanation().isJoinExplanation());
         assertTrue(queryAnswer2.getExplanation().isJoinExplanation());
 
-        assertEquals(queryAnswer1.getAnswers().size(), 7);
-        assertEquals(queryAnswer2.getAnswers().size(), 7);
+        //(res), (uni, ctr) - (region, ctr)
+        //                  - (uni, region) - {(city, region), (uni, city)
+        assertEquals(queryAnswer1.getAnswers().size(), 6);
+        assertEquals(queryAnswer2.getAnswers().size(), 6);
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
         assertEquals(4, queryAnswer1.getExplicitPath().size());

@@ -278,7 +278,7 @@ public class SchemaMutationTest extends TxTestBase {
 
         //Create a man which is a person and is therefore allowed to have a name
         EntityType man = tx.putEntityType("man").sup(person);
-        RelationshipType has_name = tx.putRelationshipType("has-name");
+        RelationshipType has_name = tx.getRelationshipType("@has-name");
 
         //Create a Man and name him Bob
         Attribute<String> nameBob = name.putAttribute("Bob");
@@ -286,7 +286,7 @@ public class SchemaMutationTest extends TxTestBase {
 
         //Get The Relationship which says that our man is name bob
         Relationship expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
-        Role hasNameOwner = tx.getRole("has-name-owner");
+        Role hasNameOwner = tx.getRole("@has-name-owner");
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
 

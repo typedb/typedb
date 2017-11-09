@@ -19,20 +19,18 @@
 package ai.grakn.engine.controller;
 
 
-import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.util.JWTHandler;
+import ai.grakn.util.GraknTestUtil;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.builder.RequestSpecBuilder;
 import org.junit.rules.ExternalResource;
 import spark.Service;
 
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import static ai.grakn.engine.HttpHandler.configureSpark;
 
 /**
  * Context that starts spark
@@ -48,24 +46,21 @@ public class SparkContext extends ExternalResource {
     private SparkContext(BiConsumer<Service, GraknEngineConfig> createControllers) {
         this.createControllers = createControllers;
 
-        int port = EngineTestHelper.findAvailablePort();
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, Integer.toString(port));
+        int port = GraknTestUtil.getEphemeralPort();
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
 
-        if ("0.0.0.0".equals(config.getProperty(GraknEngineConfig.SERVER_HOST_NAME))) {
-            config.setConfigProperty(GraknEngineConfig.SERVER_HOST_NAME, "localhost");
+        if ("0.0.0.0".equals(config.getProperty(GraknConfigKey.SERVER_HOST_NAME))) {
+            config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, "localhost");
         }
     }
 
     private Service startSparkCopyOnNewPort() {
         Service spark = Service.ignite();
 
-        String hostName = config.getProperty(GraknEngineConfig.SERVER_HOST_NAME);
+        String hostName = config.getProperty(GraknConfigKey.SERVER_HOST_NAME);
 
-        Optional<String> jwtProperty = config.tryProperty(JWT_SECRET_PROPERTY);
-
-        configureSpark(spark, hostName, port(), config.getPath(GraknEngineConfig.STATIC_FILES_PATH),
-                        config.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false), 64,
-                        jwtProperty.isPresent() ? JWTHandler.create(jwtProperty.get()) : null);
+        configureSpark(spark, hostName, port(), config.getPath(GraknConfigKey.STATIC_FILES_PATH),
+                        64);
 
         RestAssured.baseURI = "http://" + hostName + ":" + port();
 
@@ -83,12 +78,17 @@ public class SparkContext extends ExternalResource {
     }
 
     public SparkContext port(int port) {
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(port));
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
+        return this;
+    }
+
+    public SparkContext host(String host) {
+        config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, host);
         return this;
     }
 
     public int port() {
-        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
+        return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
     public String uri() {

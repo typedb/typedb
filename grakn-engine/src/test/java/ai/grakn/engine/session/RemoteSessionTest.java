@@ -24,7 +24,29 @@ import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.test.TxFactoryContext;
+import com.codahale.metrics.MetricRegistry;
+import mjson.Json;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
@@ -36,27 +58,9 @@ import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
 import static ai.grakn.util.REST.RemoteShell.MATERIALISE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
-import com.codahale.metrics.MetricRegistry;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
-import mjson.Json;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.Session;
-import org.junit.After;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
 import static org.mockito.ArgumentMatchers.any;
-import org.mockito.Mockito;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,6 +69,8 @@ import static org.mockito.Mockito.when;
  * @author Felix Chapman
  */
 public class RemoteSessionTest {
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
+    private static final Lock mockLock = mock(Lock.class);
 
     private static final Json INIT_JSON = Json.object(
             ACTION, ACTION_INIT,
@@ -74,12 +80,15 @@ public class RemoteSessionTest {
             MATERIALISE, false
     );
 
+    //Needed to start cass depending on profile
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EmbeddedCassandra.start();
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+
+    @ClassRule
+    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
         Properties properties = GraknEngineConfig.create().getProperties();
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(properties);
-        new SystemController(factory, spark, new GraknEngineStatus(), new MetricRegistry());
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, properties);
+        new SystemController(spark, properties, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
     }).port(4567);
 
     private final BlockingQueue<Json> responses = new LinkedBlockingDeque<>();
@@ -92,6 +101,8 @@ public class RemoteSessionTest {
             responses.offer(Json.read((String)invocation.getArgument(0)));
             return null;
         }).when(remoteEndpoint).sendString(any());
+
+        when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
     @After

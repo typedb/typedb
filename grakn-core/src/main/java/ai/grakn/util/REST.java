@@ -27,12 +27,18 @@ import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
  */
 public class REST {
 
+    public static String resolveTemplate(String pathTemplate, String... pathParams) {
+        // e.g. `/kb/:keyspace/commit_log` -> `/kb/%s/commit_log`
+        String format = pathTemplate.replaceAll(":[^/]+", "%s");
+        return String.format(format, (Object[]) pathParams);
+    }
+
     /**
      * Class containing URIs to REST endpoints.
      */
     public static class WebPath{
 
-        public static final String COMMIT_LOG_URI = "/commit_log";
+        public static final String COMMIT_LOG_URI = "/kb/:keyspace/commit_log";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
@@ -42,35 +48,36 @@ public class REST {
         public static class KB {
             @Deprecated
             public static final String GRAQL = "/kb/graql";
-            public static final String ANY_GRAQL = "/kb/graql/execute";
+            public static final String ANY_GRAQL = "/kb/:keyspace/graql";
         }
 
         /**
          * URIs to Tasks Controller endpoints
          */
         public static class Tasks {
-            public static final String TASKS = "/tasks";
-            public static final String GET = "/tasks/:id";
-            public static final String STOP = "/tasks/:id/stop";
+            public static final String TASK = "/task";
+            public static final String GET = "/task/:id";
+            public static final String STOP = "/task/:id/stop";
         }
 
         /**
          * URIs to System Controller endpoints
          */
         public static class System {
-            public static final String DELETE_KEYSPACE = "/deleteKeyspace";
-            public static final String INITIALISE = "/initialise";
+            public static final String KB = "/kb";
+            public static final String KB_KEYSPACE = "/kb/:keyspace";
             public static final String STATUS = "/status";
-            public static final String CONFIGURATION = "/configuration";
             public static final String METRICS = "/metrics";
-            public static final String KEYSPACES = "/keyspaces";
         }
 
         /**
          * URIs to concept controller endpoints
          */
+        @Deprecated
         public static class Concept {
+            @Deprecated
             public static final String CONCEPT = "/kb/concept/";
+            @Deprecated
             public static final String SCHEMA = "/kb/schema";
         }
 
@@ -78,7 +85,7 @@ public class REST {
          * URIs to api endpoints
          */
         public static class Api {
-            public static final String API_PREFIX = "/api";
+            public static final String API_PREFIX = System.KB_KEYSPACE;
 
             public static final String ATTRIBUTE_TYPE = API_PREFIX + "/attributeType";
             public static final String ENTITY_TYPE = API_PREFIX + "/entityType";
@@ -106,12 +113,6 @@ public class REST {
             public static final String EXPLORE = "/dashboard/explore/";
             public static final String EXPLAIN = "/dashboard/explain";
         }
-
-        public static final String NEW_SESSION_URI="/auth/session/";
-        public static final String IS_PASSWORD_PROTECTED_URI="/auth/enabled/";
-
-        public static final String ALL_USERS = "/user/all";
-        public static final String ONE_USER = "/user/one";
     }
 
     /**
@@ -188,8 +189,10 @@ public class REST {
         public static final class Graql {
             public static final String QUERY = "query";
             public static final String INFER = "infer";
+            public static final String MULTI = "multi";
             public static final String MATERIALISE = "materialise";
             public static final String LIMIT_EMBEDDED = "limitEmbedded";
+            public static final String DEFINE_ALL_VARS = "defineAllVars";
         }
     }
 
@@ -206,6 +209,7 @@ public class REST {
      */
     public static class HttpConn{
         public static final String POST_METHOD = "POST";
+        public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
         public static final String GET_METHOD = "GET";
     }
@@ -275,8 +279,6 @@ public class REST {
         public static final String ACTION_TYPES = "types";
         public static final String ACTION_DISPLAY = "display";
 
-        public static final String USERNAME = "username";
-        public static final String PASSWORD = "password";
         public static final String KEYSPACE = "keyspace";
         public static final String OUTPUT_FORMAT = "outputFormat";
         public static final String INFER = "infer";

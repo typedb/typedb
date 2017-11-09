@@ -30,16 +30,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import mjson.Json;
-import org.apache.commons.io.output.TeeOutputStream;
-import org.hamcrest.Matcher;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -47,32 +37,38 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Stream;
-
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import java.util.stream.Stream;
+import mjson.Json;
+import org.apache.commons.io.output.TeeOutputStream;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import org.hamcrest.Matcher;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.isEmptyString;
+import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class GraqlShellIT {
 
     @ClassRule
-    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(true);
-
+    public static final DistributionContext dist = DistributionContext.create().inheritIO(true);
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;
@@ -576,7 +572,6 @@ public class GraqlShellIT {
     }
 
     @Test
-    @Ignore("Causes Travis build to halt")
     public void whenRunningBatchLoad_LoadCompletes() throws Exception {
         runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
         runShellWithoutErrors("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
@@ -584,19 +579,6 @@ public class GraqlShellIT {
         assertShellMatches(ImmutableList.of("-k", "batch"),
                 "match $x isa movie; aggregate ask;",
                 containsString("True")
-        );
-    }
-
-    @Test
-    @Ignore("Causes Travis build to halt")
-    public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
-        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
-
-        assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
-                is("Status of batch: FAILED"),
-                is("Number batches completed: 1"),
-                containsString("Approximate queries executed:"),
-                containsString("All tasks completed")
         );
     }
 
@@ -620,22 +602,6 @@ public class GraqlShellIT {
 
         String err2 = runShell("", "-e", query).err();
         assertEquals(err1, err2);
-    }
-
-    @Test
-    public void testDuplicateRelation() throws Exception {
-        String err = runShell(
-                "define R sub " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue() + ", relates R1, relates R2; R1 sub role; R2 sub role;\n" +
-                        "define X sub entity, plays R1, plays R2;\n" +
-                        "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
-                        "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
-                        "commit\n"
-        ).err();
-
-        assertThat(err.toLowerCase(), allOf(
-                anyOf(containsString("exists"), containsString("one or more")),
-                containsString("relationships")
-        ));
     }
 
     @Test

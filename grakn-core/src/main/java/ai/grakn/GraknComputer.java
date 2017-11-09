@@ -33,12 +33,13 @@ import java.util.Set;
  * {@link GraphComputer} Used For Analytics Algorithms
  * </p>
  * <p>
- * <p>
  * Wraps a Tinkerpop {@link GraphComputer} which enables the execution of pregel programs.
  * These programs are defined either via a {@link MapReduce} or a {@link VertexProgram}.
+ * </p>
  * <p>
  * A {@link VertexProgram} is a computation executed on each vertex in parallel.
  * Vertices communicate with each other through message passing.
+ * </p>
  * <p>
  * {@link MapReduce} processed the vertices in a parallel manner by aggregating values emitted by vertices.
  * MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
@@ -54,9 +55,9 @@ public interface GraknComputer {
      * Execute the given vertex program using a graph computer.
      *
      * @param includesRolePlayerEdges whether the graph computer should include {@link ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edges
-     * @param types            instance types in the subgraph
-     * @param program          the vertex program
-     * @param mapReduce        a list of mapReduce job
+     * @param types                   instance types in the subgraph
+     * @param program                 the vertex program
+     * @param mapReduce               a list of mapReduce job
      * @return the result of the computation
      * @see ComputerResult
      */

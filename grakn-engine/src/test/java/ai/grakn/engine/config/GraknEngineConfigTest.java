@@ -18,8 +18,13 @@
 
 package ai.grakn.engine.config;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.SimpleURI;
+import com.google.common.collect.Iterables;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -33,25 +38,28 @@ import static junit.framework.TestCase.assertNotNull;
  */
 public class GraknEngineConfigTest {
 
-    private GraknEngineConfig configuration = GraknEngineConfig.create();
+    private static GraknEngineConfig configuration = GraknEngineConfig.create();
+
+    @ClassRule
+    public static MockRedisRule mockRedisRule = MockRedisRule.create(new SimpleURI(Iterables.getOnlyElement(configuration.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void whenGettingPropertyAndPropertyIsUndefinedInConfigurationFile_ExceptionIsThrown() {
-        String property = "invalid";
+        GraknConfigKey<String> key = GraknConfigKey.key("undefined");
 
         exception.expect(RuntimeException.class);
-        exception.expectMessage(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, GraknEngineConfig.getConfigFilePath()));
+        exception.expectMessage(
+                ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.name(), GraknEngineConfig.CONFIG_FILE_PATH)
+        );
 
-        configuration.getProperty(property);
+        configuration.getProperty(key);
     }
 
     @Test
     public void whenGettingExistingProperty_PropertyIsReturned(){
-        String property = "server.port";
-
-        assertNotNull(configuration.getProperty(property));
+        assertNotNull(configuration.getProperty(GraknConfigKey.SERVER_PORT));
     }
 }

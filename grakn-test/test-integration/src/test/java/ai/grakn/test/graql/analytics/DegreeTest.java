@@ -18,8 +18,9 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknTx;
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -47,25 +48,28 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestSetup.usingTinker;
+import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class DegreeTest {
 
+    public GraknSession factory;
+
     @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
-    private GraknSession factory;
+    public static final EngineContext context = usingTinker() ? null : EngineContext.createWithInMemoryRedis();
     private GraknTx tx;
 
     @Before
     public void setUp() {
-        factory = context.sessionWithNewKeyspace();
+        factory = usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
         tx = factory.open(GraknTxType.WRITE);
     }
 
     @Test
-    public void testDegrees() throws Exception {
+    public void testDegreesSimple() throws Exception {
         // create instances
         EntityType thingy = tx.putEntityType("thingy");
         EntityType anotherThing = tx.putEntityType("another");
@@ -216,28 +220,29 @@ public class DegreeTest {
     }
 
     @Test
-    public void testDegreeIsCorrect() throws InvalidKBException, ExecutionException, InterruptedException {
+    public void testDegreeTwoAttributes() throws InvalidKBException, ExecutionException, InterruptedException {
         // create a simple tx
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
         RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
-        Role target = tx.putRole("target");
-        Role value = tx.putRole("value");
-        RelationshipType hasName = tx.putRelationshipType("has-name").relates(value).relates(target);
+
         EntityType person = tx.putEntityType("person").plays(owner);
-        EntityType animal = tx.putEntityType("animal").plays(pet).plays(target);
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING).plays(value);
+        EntityType animal = tx.putEntityType("animal").plays(pet);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         AttributeType<String> altName =
-                tx.putAttributeType("alternate-name", AttributeType.DataType.STRING).plays(value);
+                tx.putAttributeType("alternate-name", AttributeType.DataType.STRING);
+
+        animal.attribute(name).attribute(altName);
 
         // add data to the tx
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
         Attribute coconut = name.putAttribute("coconut");
         Attribute stinky = altName.putAttribute("stinky");
-        Relationship daveOwnsCoco = mansBestFriend.addRelationship().addRolePlayer(owner, dave).addRolePlayer(pet, coco);
-        Relationship cocoName = hasName.addRelationship().addRolePlayer(target, coco).addRolePlayer(value, coconut);
-        Relationship cocoAltName = hasName.addRelationship().addRolePlayer(target, coco).addRolePlayer(value, stinky);
+        Relationship daveOwnsCoco = mansBestFriend.addRelationship()
+                .addRolePlayer(owner, dave)
+                .addRolePlayer(pet, coco);
+        coco.attribute(coconut).attribute(stinky);
 
         // manually compute the degree for small tx
         Map<ConceptId, Long> subGraphReferenceDegrees = new HashMap<>();
@@ -247,31 +252,29 @@ public class DegreeTest {
 
         // manually compute degree for almost full tx
         Map<ConceptId, Long> almostFullReferenceDegrees = new HashMap<>();
-        almostFullReferenceDegrees.put(coco.getId(), 3L);
+        almostFullReferenceDegrees.put(coco.getId(), 2L);
         almostFullReferenceDegrees.put(dave.getId(), 1L);
         almostFullReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
-        almostFullReferenceDegrees.put(cocoName.getId(), 2L);
-        almostFullReferenceDegrees.put(cocoAltName.getId(), 1L);
         almostFullReferenceDegrees.put(coconut.getId(), 1L);
 
         // manually compute degrees
-        Map<ConceptId, Long> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(coco.getId(), 3L);
-        referenceDegrees.put(dave.getId(), 1L);
-        referenceDegrees.put(coconut.getId(), 1L);
-        referenceDegrees.put(stinky.getId(), 1L);
-        referenceDegrees.put(daveOwnsCoco.getId(), 2L);
-        referenceDegrees.put(cocoName.getId(), 2L);
-        referenceDegrees.put(cocoAltName.getId(), 2L);
+        Map<ConceptId, Long> fullReferenceDegrees = new HashMap<>();
+        fullReferenceDegrees.put(coco.getId(), 3L);
+        fullReferenceDegrees.put(dave.getId(), 1L);
+        fullReferenceDegrees.put(coconut.getId(), 1L);
+        fullReferenceDegrees.put(stinky.getId(), 1L);
+        fullReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
 
         tx.commit();
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
 
-            // create a subgraph excluding resources and the relationship
+            // create a subgraph excluding attributes and their relationship
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
                     Label.of("mans-best-friend"));
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(subGraphTypes).execute();
-            assertFalse(degrees.isEmpty());
+            assertEquals(2, degrees.size());
+            System.out.println("degrees = " + degrees);
+
             degrees.forEach((key, value1) -> value1.forEach(
                     id -> {
                         assertTrue(subGraphReferenceDegrees.containsKey(ConceptId.of(id)));
@@ -279,11 +282,24 @@ public class DegreeTest {
                     }
             ));
 
-            // create a subgraph excluding resource type only
+            degrees = graph.graql().compute().degree().execute();
+            assertEquals(2, degrees.size());
+            System.out.println("degrees = " + degrees);
+
+            degrees.forEach((key, value1) -> value1.forEach(
+                    id -> {
+                        assertTrue(subGraphReferenceDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(subGraphReferenceDegrees.get(ConceptId.of(id)), key);
+                    }
+            ));
+
+            // create a subgraph excluding one attribute type only
             HashSet<Label> almostFullTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
-                    Label.of("mans-best-friend"), Label.of("has-name"), Label.of("name"));
+                    Label.of("mans-best-friend"), Label.of("@has-name"), Label.of("name"));
             degrees = graph.graql().compute().degree().in(almostFullTypes).execute();
-            assertFalse(degrees.isEmpty());
+            System.out.println("degrees = " + degrees);
+
+            assertEquals(2, degrees.size());
             degrees.forEach((key, value1) -> value1.forEach(
                     id -> {
                         assertTrue(almostFullReferenceDegrees.containsKey(ConceptId.of(id)));
@@ -292,12 +308,13 @@ public class DegreeTest {
             ));
 
             // full tx
-            degrees = graph.graql().compute().degree().execute();
-            assertFalse(degrees.isEmpty());
+            degrees = graph.graql().compute().degree().includeAttribute().of().execute();
+            assertEquals(3, degrees.size());
+            System.out.println("degrees = " + degrees);
             degrees.forEach((key, value1) -> value1.forEach(
                     id -> {
-                        assertTrue(referenceDegrees.containsKey(ConceptId.of(id)));
-                        assertEquals(referenceDegrees.get(ConceptId.of(id)), key);
+                        assertTrue(fullReferenceDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(fullReferenceDegrees.get(ConceptId.of(id)), key);
                     }
             ));
         }
@@ -498,45 +515,6 @@ public class DegreeTest {
                         assertEquals(referenceDegrees.get(ConceptId.of(id)), key);
                     }
             ));
-        }
-    }
-
-    @Test
-    public void testDegreeWithHasResourceEdges() {
-        EntityType thingy = tx.putEntityType("thingy");
-        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-        thingy.attribute(name);
-        Entity entity1 = thingy.addEntity();
-        entity1.attribute(name.putAttribute("1"));
-        tx.commit();
-
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in().execute();
-            assertEquals(degrees.size(), 1);
-            assertEquals(degrees.get(1L).size(), 2);
-        }
-
-        tx = factory.open(GraknTxType.WRITE);
-        Entity entity2 = thingy.addEntity();
-        Role role1 = tx.putRole("role1");
-        Role role2 = tx.putRole("role2");
-        thingy.plays(role1).plays(role2);
-        RelationshipType related = tx.putRelationshipType("related").relates(role1).relates(role2);
-        related.addRelationship()
-                .addRolePlayer(role1, entity1)
-                .addRolePlayer(role2, entity2);
-        tx.commit();
-
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in("thingy", "name").execute();
-            assertEquals(degrees.size(), 2);
-            assertEquals(degrees.get(0L).size(), 1);
-            assertEquals(degrees.get(1L).size(), 2);
-
-            Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().execute();
-            assertEquals(degrees2.size(), 2);
-            assertEquals(degrees2.get(2L).size(), 2);
-            assertEquals(degrees2.get(1L).size(), 2);
         }
     }
 

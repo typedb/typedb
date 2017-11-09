@@ -31,7 +31,7 @@ import static junit.framework.TestCase.assertEquals;
 public class MacroTestUtilities {
 
     public static void assertParseEquals(String template, Map<String, Object> data, String expected){
-        List<Query> result = Graql.parseTemplate(template, data).collect(Collectors.toList());
+        List<Query> result = Graql.parser().parseTemplate(template, data).collect(Collectors.toList());
         assertEquals(parse(expected), result.get(0));
     }
 }

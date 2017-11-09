@@ -46,7 +46,7 @@ public class QueryToStringTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Before
     public void setUp() {
@@ -104,12 +104,12 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithThenToString() {
-        assertValidToString(qb.insert(var("x").isa("a-rule-type").then(and(qb.parsePatterns("$x isa movie;")))));
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").then(and(qb.parser().parsePatterns("$x isa movie;")))));
     }
 
     @Test
     public void testQueryWithWhenToString() {
-        assertValidToString(qb.insert(var("x").isa("a-rule-type").when(and(qb.parsePatterns("$x isa movie;")))));
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").when(and(qb.parser().parsePatterns("$x isa movie;")))));
     }
 
     private void assertValidToString(InsertQuery query){

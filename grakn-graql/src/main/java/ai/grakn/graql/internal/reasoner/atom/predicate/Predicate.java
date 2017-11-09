@@ -17,8 +17,8 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 
 /**
@@ -36,14 +36,14 @@ public abstract class Predicate<T> extends AtomicBase {
 
     private final T predicate;
 
-    Predicate(VarPatternAdmin pattern, ReasonerQuery par) {
+    Predicate(VarPattern pattern, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = extractPredicate(pattern);
     }
 
     Predicate(Predicate pred) {
         super(pred);
-        this.predicate = extractPredicate(pred.getPattern().asVarPattern());
+        this.predicate = extractPredicate(pred.getPattern());
     }
 
     @Override
@@ -64,20 +64,28 @@ public abstract class Predicate<T> extends AtomicBase {
     }
 
     @Override
-    public boolean isEquivalent(Object obj){
+    public boolean isAlphaEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Predicate a2 = (Predicate) obj;
         return this.getPredicateValue().equals(a2.getPredicateValue());
     }
 
-    public boolean isCompatibleWith(Object obj){ return isEquivalent(obj);}
-
     @Override
-    public int equivalenceHashCode() {
+    public int alphaEquivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
         return hashCode;
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        return isAlphaEquivalent(obj);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
     }
 
     @Override
@@ -88,5 +96,5 @@ public abstract class Predicate<T> extends AtomicBase {
 
     public T getPredicate(){ return predicate;}
     public abstract String getPredicateValue();
-    protected abstract T extractPredicate(VarPatternAdmin pattern);
+    protected abstract T extractPredicate(VarPattern pattern);
 }

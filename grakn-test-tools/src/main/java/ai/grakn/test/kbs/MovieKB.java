@@ -26,6 +26,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.util.Schema;
 
 import java.time.LocalDate;
@@ -58,6 +59,10 @@ public class MovieKB extends TestKB {
 
     public static Consumer<GraknTx> get(){
         return new MovieKB().build();
+    }
+
+    public static SampleKBContext context(){
+        return new MovieKB().makeContext();
     }
 
     @Override
@@ -287,12 +292,12 @@ public class MovieKB extends TestKB {
     @Override
     protected void buildRules(GraknTx tx) {
         // These rules are totally made up for testing purposes and don't work!
-        Pattern when = tx.graql().parsePattern("$x plays actor");
-        Pattern then = tx.graql().parsePattern("$x isa person");
+        Pattern when = tx.graql().parser().parsePattern("$x plays actor");
+        Pattern then = tx.graql().parser().parsePattern("$x isa person");
         tx.putRule("expectation-rule", when, then);
 
-        when = tx.graql().parsePattern("$x has name 'materialize-when'");
-        then = tx.graql().parsePattern("$x has name 'materialize-then'");
+        when = tx.graql().parser().parsePattern("$x has name 'materialize-when'");
+        then = tx.graql().parser().parsePattern("$x has name 'materialize-then'");
         tx.putRule("materialize-rule", when, then);
     }
 

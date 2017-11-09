@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
@@ -31,7 +32,7 @@ import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.MockRedisRule;
 import com.codahale.metrics.MetricRegistry;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
@@ -76,7 +77,6 @@ public class RedisTaskManagerTest {
             .retryIfExceptionOfType(ai.grakn.exception.GraknBackendException.class)
             .withWaitStrategy(WaitStrategies.exponentialWait(10, 60, TimeUnit.SECONDS))
             .build();
-    private static final int PORT = 9899;
     private static final int MAX_TOTAL = 256;
     public static final GraknEngineConfig CONFIG = GraknEngineConfig.create();
     private static final MetricRegistry metricRegistry = new MetricRegistry();
@@ -92,15 +92,18 @@ public class RedisTaskManagerTest {
     @ClassRule
     public static final SampleKBContext sampleKB = SampleKBContext.empty();
 
+    @ClassRule
+    public static MockRedisRule mockRedisRule = MockRedisRule.create();
+
     @BeforeClass
     public static void setupClass() {
-        EmbeddedRedis.start(PORT);
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setBlockWhenExhausted(true);
         poolConfig.setMaxTotal(MAX_TOTAL);
-        jedisPool = new JedisPool(poolConfig, "localhost", 9899);
+        jedisPool = mockRedisRule.jedisPool(poolConfig);
         assertFalse(jedisPool.isClosed());
-        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(CONFIG.getProperties());
+        JedisLockProvider lockProvider = new JedisLockProvider(jedisPool);
+        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, CONFIG.getProperties());
         int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
         taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry);
@@ -113,7 +116,6 @@ public class RedisTaskManagerTest {
         taskManager.close();
         executor.awaitTermination(3, TimeUnit.SECONDS);
         jedisPool.close();
-        EmbeddedRedis.stop();
     }
 
     @Ignore // TODO: Fix (Bug #16193)

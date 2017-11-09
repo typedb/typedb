@@ -22,6 +22,7 @@ package ai.grakn.util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
+import mjson.Json;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -180,5 +181,44 @@ public class CommonUtil {
                 return ImmutableSet.of();
             }
         };
+    }
+
+    public static Collector<Object, ?, Json> toJsonArray() {
+        return new Collector<Object, Json, Json>() {
+
+            @Override
+            public Supplier<Json> supplier() {
+                return Json::array;
+            }
+
+            @Override
+            public BiConsumer<Json, Object> accumulator() {
+                return Json::add;
+            }
+
+            @Override
+            public BinaryOperator<Json> combiner() {
+                return Json::with;
+            }
+
+            @Override
+            public Function<Json, Json> finisher() {
+                return Function.identity();
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return ImmutableSet.of();
+            }
+        };
+    }
+
+    public static StringBuilder simplifyExceptionMessage(Throwable e) {
+        StringBuilder message = new StringBuilder(e.getMessage());
+        while(e.getCause() != null) {
+            e = e.getCause();
+            message.append("\n").append(e.getMessage());
+        }
+        return message;
     }
 }

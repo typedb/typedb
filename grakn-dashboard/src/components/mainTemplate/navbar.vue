@@ -5,11 +5,6 @@
             <div class="list-logo">
               <img @click="toggleSideBar" src="/img/logo-text.png" class="logo-img"></img>
             </div>
-            <!-- <div class="dynamic-center-left">
-                <keep-alive>
-                    <component :is="componentCenterLeft"></component>
-                </keep-alive>
-            </div> -->
             <div class="dynamic-center">
                 <keep-alive>
                     <component :is="componentCenter"></component>
@@ -130,7 +125,6 @@ nav a {
 </style>
 
 <script>
-import User from '../../js/User';
 import GraqlEditor from '../graqlEditor/graqlEditor.vue';
 import KeyspacesSelect from '../keyspacesSelect.vue';
 
@@ -143,7 +137,6 @@ export default {
   },
   data() {
     return {
-      isUserAuth: User.isAuthenticated(),
       hamburgerActive: false,
     };
   },
@@ -153,10 +146,6 @@ export default {
     });
   },
   methods: {
-    logout() {
-      User.logout();
-      this.$router.push('/login');
-    },
     toggleSideBar() {
       this.$emit('toogle-sidebar');
       this.hamburgerActive = !this.hamburgerActive;

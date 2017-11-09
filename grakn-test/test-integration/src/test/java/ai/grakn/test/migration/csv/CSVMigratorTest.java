@@ -27,9 +27,24 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.migration.base.Migrator;
+import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
+import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
+import static ai.grakn.test.migration.MigratorTestUtils.load;
 import ai.grakn.util.SampleKBLoader;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import junit.framework.TestCase;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -37,35 +52,28 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 
-import java.io.IOException;
-import java.util.stream.Stream;
-
-import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
-import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
-import static ai.grakn.test.migration.MigratorTestUtils.getFile;
-import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
-import static ai.grakn.test.migration.MigratorTestUtils.load;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 public class CSVMigratorTest {
 
     private GraknSession factory;
-    private Migrator migrator;
+    private Migrator defaultMigrator;
+    private Keyspace keyspace;
 
     @Rule
     public final SystemOutRule systemOutRule = new SystemOutRule().enableLog();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Before
     public void setup() {
-        Keyspace keyspace = SampleKBLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
-        migrator = Migrator.to(engine.uri(), keyspace);
+        defaultMigrator = new MigratorBuilder()
+                .setUri(engine.uri())
+                .setKeyspace(keyspace)
+                .setRetries(0)
+                .setFailFast(false)
+                .build();
     }
 
     @Test
@@ -90,9 +98,9 @@ public class CSVMigratorTest {
                 "   $type has type-id <type_id>                 ; " +
                 "insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;";
 
-        declareAndLoad(pokemonTemplate,  "multi-file/data/pokemon.csv");
-        declareAndLoad(pokemonTypeTemplate,  "multi-file/data/types.csv");
-        declareAndLoad(edgeTemplate,  "multi-file/data/edges.csv");
+        declareAndLoad(pokemonTemplate,  "multi-file/data/pokemon.csv", defaultMigrator);
+        declareAndLoad(pokemonTypeTemplate,  "multi-file/data/types.csv", defaultMigrator);
+        declareAndLoad(edgeTemplate,  "multi-file/data/edges.csv", defaultMigrator);
 
         assertPokemonGraphCorrect(factory);
     }
@@ -102,7 +110,7 @@ public class CSVMigratorTest {
         load(factory, getFile("csv", "pets/schema.gql"));
         String template = getFileAsString("csv", "pets/template.gql");
 
-        declareAndLoad(template,  "pets/data/pets.quotes");
+        declareAndLoad(template,  "pets/data/pets.quotes", defaultMigrator);
 
         assertPetGraphCorrect(factory);
     }
@@ -113,7 +121,7 @@ public class CSVMigratorTest {
         String template = getFileAsString("csv", "pets/template.gql");
 
         try(CSVMigrator m = new CSVMigrator(getFile("csv", "pets/data/pets.empty"))) {
-            migrator.load(template, m.setNullString("").convert());
+            defaultMigrator.load(template, m.setNullString("").convert());
         }
 
         try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
@@ -133,12 +141,37 @@ public class CSVMigratorTest {
     }
 
     @Test
+    public void whenLinesIsSetToN_OnlyFirstNLinesAreProcessed() {
+        load(factory, getFile("csv", "pets/schema.gql"));
+        String template = getFileAsString("csv", "pets/template.gql");
+
+        declareAndLoad(template,  "pets/data/pets.quotes", new MigratorBuilder()
+                .setUri(engine.uri())
+                .setKeyspace(keyspace)
+                .setRetries(0)
+                .setFailFast(false)
+                .setLines(3)
+                .build());
+
+        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
+            Collection<Entity> pets = graph.getEntityType("pet").instances().collect(Collectors.toSet());
+            TestCase.assertEquals(3, pets.size());
+
+            Collection<Entity> cats = graph.getEntityType("cat").instances().collect(Collectors.toSet());
+            TestCase.assertEquals(2, cats.size());
+
+            Collection<Entity> dogs = graph.getEntityType("dog").instances().collect(Collectors.toSet());
+            TestCase.assertEquals(0, dogs.size());
+        }
+    }
+
+    @Test
     public void whenParsedLineIsEmpty_ErrorIsNotThrownAndThoseLinesAreSkipped(){
         load(factory, getFile("csv", "pets/schema.gql"));
 
         // Only dont insert Puffball
         String template = "if (<name> != \"Puffball\") do { insert $x isa cat; }";
-        declareAndLoad(template, "pets/data/pets.quotes");
+        declareAndLoad(template, "pets/data/pets.quotes", defaultMigrator);
 
         GraknTx graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
         assertEquals(8, graph.getEntityType("pet").instances().count());
@@ -153,7 +186,7 @@ public class CSVMigratorTest {
         assertNotNull(graph.getEntityType("make"));
 
         String template = getFileAsString("csv", "single-file/template.gql");
-        declareAndLoad(template, "single-file/data/cars.csv");
+        declareAndLoad(template, "single-file/data/cars.csv", defaultMigrator);
 
         // test
         Stream<Entity> makes = graph.getEntityType("make").instances();
@@ -179,7 +212,7 @@ public class CSVMigratorTest {
         String missingKey = "missingKey";
         String template = "insert $x isa <" + missingKey + ">";
 
-        declareAndLoad(template, "pets/data/pets.csv");
+        declareAndLoad(template, "pets/data/pets.csv", defaultMigrator);
 
         // Verify that the logger received the missing key message
         assertThat(systemOutRule.getLog(), containsString(missingKey));
@@ -191,14 +224,14 @@ public class CSVMigratorTest {
 
         String template = "insert $x isa <MissingKey>";
 
-        declareAndLoad(template, "pets/data/pets.csv");
+        declareAndLoad(template, "pets/data/pets.csv", defaultMigrator);
 
         try(GraknTx graph = factory.open(GraknTxType.READ)){
             assertEquals(0, graph.admin().getMetaEntityType().instances().count());
         }
     }
 
-    private void declareAndLoad(String template, String file){
+    private void declareAndLoad(String template, String file, Migrator migrator){
         try(CSVMigrator m = new CSVMigrator(getFile("csv", file))) {
             migrator.load(template, m.convert());
         }

@@ -33,7 +33,7 @@ import static org.junit.Assume.assumeTrue;
 public class AdmissionsInferenceTest {
 
     @Rule
-    public final SampleKBContext admissionsKB = SampleKBContext.preLoad(AdmissionsKB.get());
+    public final SampleKBContext admissionsKB = AdmissionsKB.context();
 
     @BeforeClass
     public static void onStartup(){

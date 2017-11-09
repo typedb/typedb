@@ -19,30 +19,37 @@
 package ai.grakn.test;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknCreator;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.GraknTestUtil;
+import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.jayway.restassured.RestAssured;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TestRule;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
-import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.startRedis;
-import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 
 
@@ -53,34 +60,50 @@ import static ai.grakn.util.SampleKBLoader.randomKeyspace;
  *
  * @author alexandraorth
  */
-public class EngineContext extends ExternalResource {
+public class EngineContext extends CompositeTestRule {
+
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EngineContext.class);
 
     private GraknEngineServer server;
 
-    private final boolean startSingleQueueEngine;
-    private final boolean startStandaloneEngine;
-    private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
+    private final GraknEngineConfig config = createTestConfig();
     private JedisPool jedisPool;
 
-    private EngineContext(boolean startSingleQueueEngine, boolean startStandaloneEngine){
-        this.startSingleQueueEngine = startSingleQueueEngine;
-        this.startStandaloneEngine = startStandaloneEngine;
+    private final TestRule redis;
+
+    private EngineContext(boolean inMemoryRedis){
+        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
+        int redisPort = redisURI.getPort();
+
+        if (inMemoryRedis) {
+            redis = MockRedisRule.create(redisPort);
+        } else {
+            redis = EmbeddedRedis.create(redisPort);
+        }
     }
 
-    public static EngineContext noQueue(){
-        return new EngineContext( false, false);
+    /**
+     * Creates a {@link EngineContext} for testing which uses a real embedded redis.
+     * This should only be used for benchmark testing where performance and memory usage matters.
+     *
+     * @return a new {@link EngineContext} for testing
+     */
+    public static EngineContext createWithEmbeddedRedis(){
+        return new EngineContext(false);
     }
 
-    public static EngineContext singleQueueServer(){
-        return new EngineContext( true, false);
-    }
-
-    public static EngineContext inMemoryServer(){
-        return new EngineContext( true, true);
+    /**
+     * Creates a {@link EngineContext} for testing which uses an in-memory redis mock.
+     * This is the default test environment which should be used because starting an embedded redis is a costly process.
+     *
+     * @return a new {@link EngineContext} for testing
+     */
+    public static EngineContext createWithInMemoryRedis(){
+        return new EngineContext(true);
     }
 
     public int port() {
-        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
+        return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
     public GraknEngineServer server() {
@@ -92,7 +115,7 @@ public class EngineContext extends ExternalResource {
     }
 
     public RedisCountStorage redis() {
-        return redis(config.getProperty(REDIS_HOST));
+        return redis(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
     }
 
     public RedisCountStorage redis(String uri) {
@@ -103,7 +126,8 @@ public class EngineContext extends ExternalResource {
     public RedisCountStorage redis(String host, int port) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         this.jedisPool = new JedisPool(poolConfig, host, port);
-        return RedisCountStorage.create(jedisPool, new MetricRegistry());
+        MetricRegistry metricRegistry = new MetricRegistry();
+        return RedisCountStorage.create(jedisPool, metricRegistry);
     }
 
     public TaskManager getTaskManager(){
@@ -119,57 +143,99 @@ public class EngineContext extends ExternalResource {
     }
 
     @Override
+    protected List<TestRule> testRules() {
+        return ImmutableList.of(
+                TxFactoryContext.create(),
+                redis
+        );
+    }
+
+    @Override
     public void before() throws Throwable {
-        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");
-        if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
+        RestAssured.baseURI = "http://" + config.uri();
+        if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
 
-        try {
-            SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
-            startRedis(redisURI.getPort());
-            jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
+        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
 
-            @Nullable Class<? extends TaskManager> taskManagerClass = null;
+        jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
-            if(startSingleQueueEngine){
-                taskManagerClass = RedisTaskManager.class;
-            }
+        // To ensure consistency b/w test profiles and configuration files, when not using Janus
+        // for a unit tests in an IDE, add the following option:
+        // -Dgrakn.conf=../conf/test/tinker/grakn.properties
+        //
+        // When using janus, add -Dgrakn.test-profile=janus
+        //
+        // The reason is that the default configuration of Grakn uses the Janus factory while the default
+        // test profile is tinker: so when running a unit test within an IDE without any extra parameters,
+        // we end up wanting to use the JanusFactory but without starting Cassandra first.
+        LOG.info("starting engine...");
 
-            if (startStandaloneEngine){
-                taskManagerClass = StandaloneTaskManager.class;
-            }
+        // start engine
+        setRestAssuredUri(config);
+        server = GraknCreator.cleanGraknEngineServer(config);
+        server.start();
 
-            if (taskManagerClass != null) {
-                config.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
-                server = startEngine(config);
-            }
-        } catch (Exception e) {
-            stopRedis();
-            throw e;
-        }
-
+        LOG.info("engine started.");
     }
 
     @Override
     public void after() {
-        if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
+        if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
         noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
-            if(startSingleQueueEngine | startStandaloneEngine){
-                noThrow(() -> stopEngine(server), "Error closing engine");
-            }
-            getJedisPool().close();
-            stopRedis();
+            noThrow(() -> {
+                LOG.info("stopping engine...");
+
+                // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
+                clearGraphs(server);
+                server.close();
+
+                LOG.info("engine stopped.");
+
+                // There is no way to stop the embedded Casssandra, no such API offered.
+            }, "Error closing engine");
+            jedisPool.close();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
     }
 
-    public JedisPool getJedisPool() {
-        return jedisPool;
+    private static void clearGraphs(GraknEngineServer server) {
+        // Drop all keyspaces
+        final Set<String> keyspaceNames = new HashSet<String>();
+        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+            systemGraph.graql().match(var("x").isa("keyspace-name"))
+                    .forEach(x -> x.values().forEach(y -> {
+                        keyspaceNames.add(y.asAttribute().getValue().toString());
+                    }));
+        }
+
+        keyspaceNames.forEach(name -> {
+            GraknTx graph = server.factory().tx(name, GraknTxType.WRITE);
+            graph.admin().delete();
+        });
+        server.factory().refreshConnections();
     }
+
+    /**
+     * Create a configuration for use in tests, using random ports.
+     */
+    private static GraknEngineConfig createTestConfig() {
+        GraknEngineConfig config = GraknEngineConfig.create();
+
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, GraknTestUtil.getEphemeralPort());
+        config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + GraknTestUtil.getEphemeralPort()));
+
+        return config;
+    }
+
+    private static void setRestAssuredUri(GraknEngineConfig config) {
+        RestAssured.baseURI = "http://" + config.uri();
+    }
+
 }

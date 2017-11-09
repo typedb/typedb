@@ -73,22 +73,22 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicTest {
 
     @ClassRule
-    public static final SampleKBContext roleInferenceSet = SampleKBContext.preLoad("roleInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext roleInferenceSet = SampleKBContext.load("roleInferenceTest.gql");
 
     @ClassRule
-    public static final SampleKBContext typeInferenceSet = SampleKBContext.preLoad("typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext typeInferenceSet = SampleKBContext.load("typeInferenceTest.gql");
 
     @ClassRule
-    public static final SampleKBContext ruleApplicabilitySet = SampleKBContext.preLoad("ruleApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext ruleApplicabilitySet = SampleKBContext.load("ruleApplicabilityTest.gql");
 
     @ClassRule
-    public static final SampleKBContext resourceApplicabilitySet = SampleKBContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext resourceApplicabilitySet = SampleKBContext.load("resourceApplicabilityTest.gql");
 
     @ClassRule
-    public static final SampleKBContext reifiedResourceApplicabilitySet = SampleKBContext.preLoad("reifiedResourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext reifiedResourceApplicabilitySet = SampleKBContext.load("reifiedResourceApplicabilityTest.gql");
 
     @ClassRule
-    public static final SampleKBContext unificationTestSet = SampleKBContext.preLoad("unificationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext unificationTestSet = SampleKBContext.load("unificationTest.gql");
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -1206,8 +1206,8 @@ public class AtomicTest {
         String resource = "{$x has res1 $r;$r val 'f';}";
         String resource2 = "{$r has res1 $x;$x val 'f';}";
         String resource3 = "{$r has res1 'f';}";
-        String resource4 = "{$x has res1 $y as $r;$y val 'f';}";
-        String resource5 = "{$y has res1 $r as $x;$r val 'f';}";
+        String resource4 = "{$x has res1 $y via $r;$y val 'f';}";
+        String resource5 = "{$y has res1 $r via $x;$r val 'f';}";
         exactUnification(resource, resource2, true, true, graph);
         exactUnification(resource, resource3, true, true, graph);
         exactUnification(resource2, resource3, true, true, graph);
@@ -1218,11 +1218,14 @@ public class AtomicTest {
     public void testUnification_VariousTypeAtoms(){
         GraknTx graph = unificationTestSet.tx();
         String type = "{$x isa baseRoleEntity;}";
-        String type2 = "{$y isa $x;$x label 'baseRoleEntity';}";
-        String type3 = "{$y isa baseRoleEntity;}";
+        String type2 = "{$y isa baseRoleEntity;}";
+        String userDefinedType = "{$y isa $x;$x label 'baseRoleEntity';}";
+        String userDefinedType2 = "{$u isa $v;$v label 'baseRoleEntity';}";
+
         exactUnification(type, type2, true, true, graph);
-        exactUnification(type, type3, true, true, graph);
-        exactUnification(type2, type3, true, true, graph);
+        exactUnification(userDefinedType, userDefinedType2, true, true, graph);
+        //TODO user defined-generated test
+        //exactUnification(type, userDefinedType, true, true, graph);
     }
 
     @Test
@@ -1261,7 +1264,8 @@ public class AtomicTest {
                         .map(a -> a.unify(unifier2))
                         .map(a -> a.project(parentQuery2.getVarNames()))
                         .distinct()
-                        .collect(Collectors.toList()));
+                        .collect(Collectors.toList())
+        );
     }
 
     @Test
@@ -1307,8 +1311,8 @@ public class AtomicTest {
         String childPatternString = "(subRole1: $x, subRole2: $y) isa binary";
         InferenceRule testRule = new InferenceRule(
                 graph.putRule("Checking Rewrite & Unification",
-                        graph.graql().parsePattern(childPatternString),
-                        graph.graql().parsePattern(childPatternString)),
+                        graph.graql().parser().parsePattern(childPatternString),
+                        graph.graql().parser().parsePattern(childPatternString)),
                 graph)
                 .rewriteToUserDefined(parentAtom);
 
@@ -1334,11 +1338,11 @@ public class AtomicTest {
     public void testUnification_MatchAllParentAtom(){
         GraknTx graph = unificationTestSet.tx();
         String parentString = "{$r($a, $x);}";
-        String childString = "{(role1: $z, role2: $b) isa binary;}";
+        String childString = "{$rel (role1: $z, role2: $b) isa binary;}";
         Atom parent = ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
         Atom child = ReasonerQueries.atomic(conjunction(childString, graph), graph).getAtom();
 
-        MultiUnifier multiUnifier = child.getMultiUnifier(parent, false);
+        MultiUnifier multiUnifier = child.getMultiUnifier(parent, UnifierType.RULE);
         Unifier correctUnifier = new UnifierImpl(
                 ImmutableMap.of(
                         var("z"), var("a"),
@@ -1457,7 +1461,7 @@ public class AtomicTest {
     private void nonExistentUnifier(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery){
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = parentQuery.getAtom();
-        assertTrue(childAtom.getMultiUnifier(parentAtom, true).isEmpty());
+        assertTrue(childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).isEmpty());
     }
 
     private void nonExistentUnifier(String parentPatternString, String childPatternString, GraknTx graph){
@@ -1478,7 +1482,7 @@ public class AtomicTest {
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = parentQuery.getAtom();
 
-        Unifier unifier = childAtom.getMultiUnifier(parentAtom, true).getUnifier();
+        Unifier unifier = childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).getUnifier();
 
         List<Answer> childAnswers = childQuery.getQuery().execute();
         List<Answer> unifiedAnswers = childAnswers.stream()
@@ -1535,7 +1539,7 @@ public class AtomicTest {
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
-        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
+        Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

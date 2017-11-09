@@ -47,22 +47,22 @@ import java.util.stream.Stream;
  *
  */
 public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationship> implements RelationshipType {
-    private final Cache<Set<Role>> cachedRelates = new Cache<>(Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<Role>> cachedRelates = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     private RelationshipTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    private RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type, Boolean isImplicit) {
-        super(vertexElement, type, isImplicit);
+    private RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type) {
+        super(vertexElement, type);
     }
 
     public static RelationshipTypeImpl get(VertexElement vertexElement){
         return new RelationshipTypeImpl(vertexElement);
     }
 
-    public static RelationshipTypeImpl create(VertexElement vertexElement, RelationshipType type, Boolean isImplicit){
-        RelationshipTypeImpl relationType = new RelationshipTypeImpl(vertexElement, type, isImplicit);
+    public static RelationshipTypeImpl create(VertexElement vertexElement, RelationshipType type){
+        RelationshipTypeImpl relationType = new RelationshipTypeImpl(vertexElement, type);
         vertexElement.tx().txCache().trackForValidation(relationType);
         return relationType;
     }
@@ -71,18 +71,6 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     public Relationship addRelationship() {
         return addInstance(Schema.BaseType.RELATIONSHIP,
                 (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), true);
-    }
-
-    @Override
-    public void txCacheFlush(){
-        super.txCacheFlush();
-        cachedRelates.flush();
-    }
-
-    @Override
-    public void txCacheClear(){
-        super.txCacheClear();
-        cachedRelates.clear();
     }
 
     @Override
@@ -102,9 +90,6 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
         //Cache the relation type in the role
         ((RoleImpl) role).addCachedRelationType(this);
-
-        //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> vertex().tx().txCache().trackForValidation(instance));
 
         return this;
     }
@@ -136,24 +121,18 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         //Remove from roleTypeCache
         ((RoleImpl) role).deleteCachedRelationType(this);
 
-        //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> vertex().tx().txCache().trackForValidation(instance));
-
         return this;
     }
 
     @Override
     public void delete(){
-        //load the cache before deleting the concept
-        Set<Role> roles = cachedRelates.get();
-
-        super.delete();
-
-        roles.forEach(r -> {
+        cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
             vertex().tx().txCache().trackForValidation(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
+
+        super.delete();
     }
 
     @Override

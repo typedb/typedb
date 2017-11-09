@@ -20,6 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -30,18 +31,22 @@ import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
+import ai.grakn.util.SimpleURI;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.WebPath.System.INITIALISE;
 import static mjson.Json.read;
 
 /**
@@ -76,7 +81,9 @@ public class GraknSessionImpl implements GraknSession {
         this.engineUri = engineUri;
         this.keyspace = keyspace;
 
-        commitLogSubmitter = Executors.newSingleThreadScheduledExecutor();
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("commit-log-subbmit-%d").build();
+        commitLogSubmitter = Executors.newSingleThreadScheduledExecutor(namedThreadFactory);
         commitLogSubmitter.scheduleAtFixedRate(() -> {
             submitLogs(tx);
             submitLogs(txBatch);
@@ -85,7 +92,8 @@ public class GraknSessionImpl implements GraknSession {
         if(Grakn.IN_MEMORY.equals(engineUri)){
             properties = getTxInMemoryProperties();
         } else {
-            properties = getTxRemoteProperties(engineUri, keyspace);
+            SimpleURI uri = new SimpleURI(engineUri);
+            properties = getTxRemoteProperties(uri, keyspace);
         }
     }
 
@@ -94,11 +102,17 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build a {@link GraknTx}
      */
-    private static Properties getTxRemoteProperties(String engineUrl, Keyspace keyspace){
-        String restFactoryUri = engineUrl + INITIALISE + "?" + KEYSPACE_PARAM + "=" + keyspace;
+    private static Properties getTxRemoteProperties(SimpleURI uri, Keyspace keyspace){
+        URI keyspaceUri = UriBuilder.fromUri(uri.toURI()).path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue())).build();
+
         Properties properties = new Properties();
         //Get Specific Configs
-        properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
+        properties.putAll(read(contactEngine(Optional.of(keyspaceUri), REST.HttpConn.PUT_METHOD)).asMap());
+
+        //Overwrite Engine IP with something which is remotely accessible
+        properties.put(GraknConfigKey.SERVER_HOST_NAME.name(), uri.getHost());
+        properties.put(GraknConfigKey.SERVER_PORT.name(), uri.getPort());
+
         return properties;
     }
 
@@ -110,8 +124,8 @@ public class GraknSessionImpl implements GraknSession {
      */
     private static Properties getTxInMemoryProperties(){
         Properties inMemoryProperties = new Properties();
-        inMemoryProperties.put(GraknTxAbstract.SHARDING_THRESHOLD, 100_000);
-        inMemoryProperties.put(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS, 30_000);
+        inMemoryProperties.put(GraknConfigKey.SHARDING_THRESHOLD.name(), 100_000);
+        inMemoryProperties.put(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(), 30_000);
         inMemoryProperties.put(FactoryBuilder.KB_MODE, TxFactoryTinker.class.getName());
         return inMemoryProperties;
     }

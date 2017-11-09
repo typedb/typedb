@@ -68,7 +68,7 @@ public class MatchModifierTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Before
     public void setUp() {

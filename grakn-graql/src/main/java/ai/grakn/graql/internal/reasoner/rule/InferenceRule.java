@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
@@ -157,7 +158,7 @@ public class InferenceRule {
      *
      * @return true if the rule needs to be materialised
      */
-    public boolean requiresMaterialisation(Atom parentAtom) {
+    public boolean requiresMaterialisation(Atom parentAtom){
         if (requiresMaterialisation == null) {
             requiresMaterialisation = parentAtom.requiresMaterialisation()
                     || getHead().getAtom().requiresMaterialisation()
@@ -229,7 +230,7 @@ public class InferenceRule {
                     .peek(bodyAtoms::add)
                     .collect(toSet());
             headAtom = new ResourceAtom(
-                    headAtom.getPattern().asVarPattern(),
+                    headAtom.getPattern(),
                     headAtom.getPredicateVariable(),
                     resourceHead.getRelationVariable(),
                     resourceHead.getTypePredicate(),
@@ -301,14 +302,14 @@ public class InferenceRule {
     public MultiUnifier getMultiUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         if (parentAtom.getSchemaConcept() != null){
-            return childAtom.getMultiUnifier(parentAtom, false);
+            return childAtom.getMultiUnifier(parentAtom, UnifierType.RULE);
         }
         //case of match all atom (atom without type)
         else{
             Atom extendedParent = parentAtom
                     .addType(childAtom.getSchemaConcept())
                     .inferTypes();
-            return childAtom.getMultiUnifier(extendedParent, false);
+            return childAtom.getMultiUnifier(extendedParent, UnifierType.RULE);
         }
     }
 }

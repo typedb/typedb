@@ -29,7 +29,6 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.structure.AbstractElement;
-import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
@@ -100,8 +99,8 @@ public final class ElementFactory {
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------
-    public RelationshipTypeImpl buildRelationType(VertexElement vertex, RelationshipType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> RelationshipTypeImpl.create(v, type, isImplicit));
+    public RelationshipTypeImpl buildRelationType(VertexElement vertex, RelationshipType type){
+        return getOrBuildConcept(vertex, (v) -> RelationshipTypeImpl.create(v, type));
     }
 
     // -------------------------------------------- Building Relations
@@ -134,8 +133,8 @@ public final class ElementFactory {
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    public RoleImpl buildRole(VertexElement vertex, Role type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type, isImplicit));
+    public RoleImpl buildRole(VertexElement vertex, Role type){
+        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type));
     }
 
     /**
@@ -268,13 +267,7 @@ public final class ElementFactory {
         return new EdgeElement(tx, edge);
     }
 
-    Casting buildCasting(Edge edge){
-        return buildCasting(buildEdgeElement(edge));
-    }
 
-    public Casting buildCasting(EdgeElement edge) {
-        return new Casting(edge);
-    }
 
     Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement){
         return new Shard(shardOwner, vertexElement);
@@ -320,6 +313,7 @@ public final class ElementFactory {
             newConceptId = conceptIds[0].getValue();
         }
         vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
+        tx.txCache().writeOccured();
         return new VertexElement(tx, vertex);
     }
 }

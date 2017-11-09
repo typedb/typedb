@@ -44,10 +44,10 @@ import static org.junit.Assume.assumeTrue;
 public class QueryTest {
 
     @ClassRule
-    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = GeoKB.context();
 
     @ClassRule
-    public static final SampleKBContext genealogySchema = SampleKBContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext genealogySchema = SampleKBContext.load("genealogy/schema.gql");
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -230,7 +230,7 @@ public class QueryTest {
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
-        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
+        Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

@@ -23,11 +23,10 @@
   <parent>
       <artifactId>grakn</artifactId>
       <groupId>ai.grakn</groupId>
-      <version>0.17.0</version>
+      <version>1.0.0-SNAPSHOT</version>
   </parent>
   <packaging>pom</packaging>
   <modules>
-      <module>owl</module>
       <module>csv</module>
       <module>json</module>
       <module>base</module>

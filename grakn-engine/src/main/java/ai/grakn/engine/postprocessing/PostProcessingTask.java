@@ -18,10 +18,10 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
@@ -75,8 +75,7 @@ public class PostProcessingTask extends BackgroundTask {
                         .timer(name(PostProcessingTask.class, "execution-single")).time();
                 try {
                     Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
-                    int maxRetry = engineConfiguration()
-                            .getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+                    int maxRetry = engineConfiguration().getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
 
                     GraknTxMutators.runMutationWithRetry(factory(), keyspace, maxRetry,
                             (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
@@ -123,16 +122,18 @@ public class PostProcessingTask extends BackgroundTask {
 
             try {
                 // execute the provided post processing method
-                graph.admin().fixDuplicateResources(conceptIndex, conceptIds);
+                boolean commitNeeded = graph.admin().fixDuplicateResources(conceptIndex, conceptIds);
 
                 // ensure post processing was correctly executed
-                validateMerged(graph, conceptIndex, conceptIds).
-                        ifPresent(message -> {
-                            throw new RuntimeException(message);
-                        });
+                if(commitNeeded) {
+                    validateMerged(graph, conceptIndex, conceptIds).
+                            ifPresent(message -> {
+                                throw new RuntimeException(message);
+                            });
 
-                // persist merged concepts
-                graph.admin().commitNoLogs();
+                    // persist merged concepts
+                    graph.admin().commitSubmitNoLogs();
+                }
             } finally {
                 indexLock.unlock();
             }

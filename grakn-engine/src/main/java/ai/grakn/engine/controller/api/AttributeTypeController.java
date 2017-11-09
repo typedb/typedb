@@ -24,7 +24,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.internal.parser.QueryParserImpl;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -38,7 +38,6 @@ import java.util.Optional;
 import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
-import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
@@ -71,7 +70,7 @@ public class AttributeTypeController {
         String attributeTypeLabel = extractJsonField(requestBody, ATTRIBUTE_TYPE_OBJECT_JSON_FIELD, LABEL_JSON_FIELD).asString();
         String attributeTypeDataTypeRaw = extractJsonField(requestBody, ATTRIBUTE_TYPE_OBJECT_JSON_FIELD, TYPE_JSON_FIELD).asString();
         AttributeType.DataType<?> attributeTypeDataType = fromString(attributeTypeDataTypeRaw);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             AttributeType attributeType = tx.putAttributeType(attributeTypeLabel, attributeTypeDataType);
@@ -90,7 +89,7 @@ public class AttributeTypeController {
     private Json getAttributeType(Request request, Response response) {
         LOG.debug("getAttributeType - request received.");
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("getAttributeType - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<AttributeType> attributeType = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
@@ -113,7 +112,7 @@ public class AttributeTypeController {
 
     private AttributeType.DataType<?> fromString(String dataType) {
         Optional<AttributeType.DataType> fromStringOpt =
-            Optional.ofNullable(QueryParser.DATA_TYPES.get(dataType));
+            Optional.ofNullable(QueryParserImpl.DATA_TYPES.get(dataType));
 
         return fromStringOpt.orElseThrow(() ->
             GraknServerException.invalidQueryExplaination("invalid data type supplied: '" + dataType + "'")
@@ -122,7 +121,7 @@ public class AttributeTypeController {
 
     private String toString(AttributeType.DataType<?> dataType) {
         Optional<String> toStringOpt =
-            Optional.ofNullable(QueryParser.DATA_TYPES.inverse().get(dataType));
+            Optional.ofNullable(QueryParserImpl.DATA_TYPES.inverse().get(dataType));
 
         return toStringOpt.orElseThrow(() ->
             GraknServerException.invalidQueryExplaination("invalid data type supplied: '" + dataType + "'")

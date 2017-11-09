@@ -23,50 +23,45 @@ const graphPage = require('./components/graphPage/graphPage.vue');
 const consolePage = require('./components/consolePage.vue');
 const tasksPage = require('./components/tasksPage/tasksPage.vue');
 const configPage = require('./components/configPage.vue');
-const loginPage = require('./components/loginPage.vue');
 const notFoundPage = require('./components/notFoundPage.vue');
 
 // Routes
-const routes = [{
-  path: '/login',
-  component: loginPage,
-  login: true,
-},
-{
-  path: '/',
-  component: mainTemplate,
-  children: [{
-    path: '/graph',
-    component: graphPage,
-    name: 'Graph',
-    description: 'Graph visualiser page',
-  }, {
-    path: '/config',
-    component: configPage,
-    name: 'Config',
-    description: 'Engine configurations page',
-  }, {
-    path: '/console',
-    component: consolePage,
-    name: 'Console',
-    description: 'Graql console page',
+const routes = [
+  {
+    path: '/',
+    component: mainTemplate,
+    children: [{
+      path: '/graph',
+      component: graphPage,
+      name: 'Graph',
+      description: 'Graph visualiser page',
+    }, {
+      path: '/config',
+      component: configPage,
+      name: 'Config',
+      description: 'Engine configurations page',
+    }, {
+      path: '/console',
+      component: consolePage,
+      name: 'Console',
+      description: 'Graql console page',
+    },
+    {
+      path: '/tasks',
+      component: tasksPage,
+      name: 'Tasks',
+      description: 'Page to manage Engine tasks',
+    },
+    {
+      path: '',
+      redirect: '/graph',
+      description: 'Redirect to the first page. For now the graph page.',
+    }],
   },
   {
-    path: '/tasks',
-    component: tasksPage,
-    name: 'Tasks',
-    description: 'Page to manage Engine tasks',
-  },
-  {
-    path: '',
-    redirect: '/graph',
-    description: 'Redirect to the first page. For now the graph page.',
-  }],
-},
-{
-  path: '*',
-  component: notFoundPage,
-  description: 'Catch all the routes that are not mapped and show 404 page.',
-}];
+    path: '*',
+    component: notFoundPage,
+    description: 'Catch all the routes that are not mapped and show 404 page.',
+  }];
 
 export default routes;

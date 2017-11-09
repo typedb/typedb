@@ -18,7 +18,6 @@
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
@@ -32,10 +31,8 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.TxTestBase;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -44,14 +41,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -153,61 +147,6 @@ public class RelationshipTest extends TxTestBase {
         assertThat(relation.allRolePlayers().keySet(), Matchers.containsInAnyOrder(role1, role2, role3));
         assertThat(relation.rolePlayers(role1).collect(toSet()), containsInAnyOrder(rolePlayer1));
         assertThat(relation.rolePlayers(role2).collect(toSet()), containsInAnyOrder(rolePlayer2));
-    }
-
-    @Test
-    public void whenCreatingRelation_EnsureUniqueHashIsCreatedBasedOnRolePlayers() throws InvalidKBException {
-        Role role1 = tx.putRole("role type 1");
-        Role role2 = tx.putRole("role type 2");
-        EntityType type = tx.putEntityType("concept type").plays(role1).plays(role2);
-        RelationshipType relationshipType = tx.putRelationshipType("relation type").relates(role1).relates(role2);
-
-        relationshipType.addRelationship();
-        tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
-
-        relation = (RelationshipImpl) tx.getRelationshipType("relation type").instances().iterator().next();
-
-        role1 = tx.putRole("role type 1");
-        Thing thing1 = type.addEntity();
-
-        TreeMap<Role, Thing> roleMap = new TreeMap<>();
-        roleMap.put(role1, thing1);
-        roleMap.put(role2, null);
-
-        relation.addRolePlayer(role1, thing1);
-
-        tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
-
-        relation = (RelationshipImpl) tx.getRelationshipType("relation type").instances().iterator().next();
-        assertEquals(getFakeId(relation.type(), roleMap), relation.reified().get().getIndex());
-    }
-    private String getFakeId(RelationshipType relationshipType, TreeMap<Role, Thing> roleMap){
-        String itemIdentifier = "RelationType_" + relationshipType.getId() + "_Relation";
-        for(Map.Entry<Role, Thing> entry: roleMap.entrySet()){
-            itemIdentifier = itemIdentifier + "_" + entry.getKey().getId();
-            if(entry.getValue() != null) itemIdentifier += "_" + entry.getValue().getId();
-        }
-        return itemIdentifier;
-    }
-
-    @Test
-    public void whenAddingDuplicateRelations_Throw() throws InvalidKBException {
-        Role role1 = tx.putRole("role type 1");
-        Role role2 = tx.putRole("role type 2");
-        EntityType type = tx.putEntityType("concept type").plays(role1).plays(role2);
-        RelationshipType relationshipType = tx.putRelationshipType("My relation type").relates(role1).relates(role2);
-        Thing thing1 = type.addEntity();
-        Thing thing2 = type.addEntity();
-
-        relationshipType.addRelationship().addRolePlayer(role1, thing1).addRolePlayer(role2, thing2);
-        relationshipType.addRelationship().addRolePlayer(role1, thing1).addRolePlayer(role2, thing2);
-
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(containsString("You have created one or more relations"));
-
-        tx.commit();
     }
 
     @Test
@@ -326,26 +265,28 @@ public class RelationshipTest extends TxTestBase {
     }
 
     @Test
-    public void whenAddingDuplicateRelationsWithSameKeys_Throw(){
+    public void whenRemovingRolePlayerFromRelationship_EnsureRolePlayerIsRemoved(){
         Role role1 = tx.putRole("dark");
         Role role2 = tx.putRole("souls");
-        AttributeType<Long> attributeType = tx.putAttributeType("Death Number", AttributeType.DataType.LONG);
-        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relates(role1).relates(role2).key(attributeType);
+        RelationshipType relationshipType = tx.putRelationshipType("Dark Souls").relates(role1).relates(role2);
         EntityType entityType = tx.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
+        Entity e3 = entityType.addEntity();
+        Entity e4 = entityType.addEntity();
+        Entity e5 = entityType.addEntity();
+        Entity e6 = entityType.addEntity();
 
-        Attribute<Long> r1 = attributeType.putAttribute(1000000L);
+        Relationship relationship = relationshipType.addRelationship().
+                addRolePlayer(role1, e1).addRolePlayer(role1, e2).addRolePlayer(role1, e3).
+                addRolePlayer(role2, e4).addRolePlayer(role2, e5).addRolePlayer(role2, e6);
 
-        relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e2).attribute(r1);
-        relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e2).attribute(r1);
-
-        String message = ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage("");
-        message = message.substring(0, message.length() - 5);
-        expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(containsString(message));
-
-        tx.commit();
+        assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e2, e3, e4, e5, e6));
+        relationship.removeRolePlayer(role1, e2);
+        relationship.removeRolePlayer(role2, e1);
+        assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5, e6));
+        relationship.removeRolePlayer(role2, e6);
+        assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5));
     }
 }

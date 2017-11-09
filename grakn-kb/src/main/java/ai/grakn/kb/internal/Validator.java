@@ -18,18 +18,14 @@
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.structure.Casting;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -66,10 +62,8 @@ class Validator {
      * @return True if the data and schema conforms to our concept.
      */
     public boolean validate(){
-        //Validate Entity Types
-        //Not Needed
-        //Validate Entities
-        graknGraph.txCache().getModifiedEntities().forEach(this::validateThing);
+        //Validate Things
+        graknGraph.txCache().getModifiedThings().forEach(this::validateThing);
 
         //Validate RoleTypes
         graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
@@ -78,18 +72,9 @@ class Validator {
 
         //Validate Relationship Types
         graknGraph.txCache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
-        //Validate Relations
-        graknGraph.txCache().getModifiedRelationships().forEach(relation -> validateRelation(graknGraph, relation));
 
-        //Validate Rule Types
-        //Not Needed
         //Validate Rules
         graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
-
-        //Validate Attribute Types
-        //Not Needed
-        //Validate Attribute
-        graknGraph.txCache().getModifiedAttributes().forEach(this::validateThing);
 
         return errorsFound.size() == 0;
     }
@@ -106,19 +91,6 @@ class Validator {
         if (labelErrors.isEmpty()){
             errorsFound.addAll(ValidateGlobalRules.validateRuleOntologically(graph, rule));
         }
-    }
-
-    /**
-     * Validation rules exclusive to relations
-     * @param relationship The {@link Relationship} to validate
-     */
-    private void validateRelation(GraknTxAbstract<?> graph, Relationship relationship){
-        validateThing(relationship);
-        Optional<RelationshipReified> relationReified = ((RelationshipImpl) relationship).reified();
-        //TODO: We need new validation mechanisms for non-reified relations
-        relationReified.ifPresent(relationReified1 -> {
-            ValidateGlobalRules.validateRelationIsUnique(graph, relationReified1).ifPresent(errorsFound::add);
-        });
     }
 
     /**

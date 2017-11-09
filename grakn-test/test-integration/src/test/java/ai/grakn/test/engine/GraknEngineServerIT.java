@@ -19,17 +19,38 @@
 
 package ai.grakn.test.engine;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.client.TaskClient;
 import ai.grakn.engine.TaskId;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -38,28 +59,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-@Ignore("Ignored due to failing randomly on travis because of redis failures")
+@Ignore("Ignored due to redis related failiures")
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
 
@@ -67,10 +67,10 @@ public class GraknEngineServerIT {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine1 = EngineContext.singleQueueServer();
+    public static final EngineContext engine1 = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
-    public static final EngineContext engine2 = EngineContext.singleQueueServer();
+    public static final EngineContext engine2 = EngineContext.createWithInMemoryRedis();
 
     private TaskStateStorage storage;
 
@@ -86,6 +86,8 @@ public class GraknEngineServerIT {
         assertNotEquals(engine1.getTaskManager(), engine2.getTaskManager());
     }
 
+    //TODO: Repair this test. The test needs to be redefined
+    @Ignore("This test needs to be revisited due to test engine having to share redis now")
     @Property(trials=10)
     public void whenSendingTasksToTwoEngines_TheyAllComplete(
             List<TaskState> tasks1, List<TaskState> tasks2) {

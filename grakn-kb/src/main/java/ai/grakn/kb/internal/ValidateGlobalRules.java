@@ -20,7 +20,6 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
@@ -35,8 +34,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
 import ai.grakn.kb.internal.concept.RuleImpl;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
@@ -49,18 +46,15 @@ import ai.grakn.util.Schema;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 import static ai.grakn.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
-import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
@@ -111,11 +105,11 @@ class ValidateGlobalRules {
         //Gets here to make sure we traverse/read only once
         Thing thing = casting.getRolePlayer();
         Role role = casting.getRole();
-        Relationship relation = casting.getRelationship();
+        Relationship relationship = casting.getRelationship();
 
         //Actual checks
         roleNotAllowedToBePlayed(role, thing).ifPresent(errors::add);
-        roleNotLinkedToRelationShip(role, relation.type(), relation).ifPresent(errors::add);
+        roleNotLinkedToRelationShip(role, relationship.type(), relationship).ifPresent(errors::add);
 
         return errors;
     }
@@ -161,7 +155,7 @@ class ValidateGlobalRules {
                 if(rolePlayed.getLabel().equals(role.getLabel())){
                     satisfiesPlays = true;
 
-                    // Assert unique relation for this role type
+                    // Assert unique relationship for this role type
                     if (required && !CommonUtil.containsOnly(thing.relationships(role), 1)) {
                         return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel(), thing.relationships(role).count()));
                     }
@@ -204,8 +198,8 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param relationshipType the relation type to be validated
-     * @return Error messages if the role type sub structure does not match the relation type sub structure
+     * @param relationshipType the {@link RelationshipType} to be validated
+     * @return Error messages if the role type sub structure does not match the {@link RelationshipType} sub structure
      */
     static Set<String> validateRelationTypesToRolesSchema(RelationshipType relationshipType){
         RelationshipTypeImpl superRelationType = (RelationshipTypeImpl) relationshipType.sup();
@@ -261,86 +255,16 @@ class ValidateGlobalRules {
             for (Map.Entry<Role, Boolean> playsEntry : plays.entrySet()) {
                 if(playsEntry.getValue()){
                     Role role = playsEntry.getKey();
-                    // Assert there is a relation for this type
-                    Stream<Relationship> relations = thing.relationships(role);
+                    // Assert there is a relationship for this type
+                    Stream<Relationship> relationships = thing.relationships(role);
 
-                    if(!CommonUtil.containsOnly(relations, 1)){
+                    if(!CommonUtil.containsOnly(relationships, 1)){
                         Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.getLabel());
                         return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.getId(), resourceTypeLabel));
                     }
                 }
             }
             currentConcept = (TypeImpl) currentConcept.sup();
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * @param graph graph used to ensure the {@link Relationship} is unique
-     * @param relationReified The {@link Relationship} whose hash needs to be set.
-     * @return An error message if the {@link Relationship} is not unique.
-     */
-    static Optional<String> validateRelationIsUnique(GraknTxAbstract<?> graph, RelationshipReified relationReified){
-        Iterator<AttributeType> keys = relationReified.type().keys().iterator();
-        if(keys.hasNext()){
-            return validateKeyControlledRelation(graph, relationReified, keys);
-        } else {
-            return validateNonKeyControlledRelation(graph, relationReified);
-        }
-    }
-
-    /**
-     * Checks that a {@link Relationship} which is bound to a {@link Attribute} as a key actually is unique to that key.
-     * The check for if the key is actually connected to the relation is done in {@link #validateInstancePlaysAllRequiredRoles}
-     *
-     * @param graph the {@link GraknTx} used to check for uniqueness
-     * @param relationReified the {@link Relationship} to check
-     * @param keys the {@link AttributeType} indicating the key which the relation must be bound to and unique to
-     * @return An error message if the {@link Relationship} is not unique.
-     */
-    private static Optional<String> validateKeyControlledRelation(GraknTxAbstract<?> graph, RelationshipReified relationReified, Iterator<AttributeType> keys) {
-        TreeMap<String, String> resources = new TreeMap<>();
-        while(keys.hasNext()){
-            Optional<Attribute<?>> foundResource = relationReified.attributes(keys.next()).findAny();
-            //Lack of resource key is handled by another method.
-            //Handling the lack of a key here would result in duplicate error messages
-            foundResource.ifPresent(resource -> resources.put(resource.type().getId().getValue(), resource.getId().getValue()));
-        }
-
-        String hash = RelationshipReified.generateNewHash(relationReified.type(), resources);
-
-        return setRelationUnique(graph, relationReified, hash);
-    }
-
-    /**
-     * Checks if {@link Relationship}s which are not bound to {@link Attribute}s as keys are unique by their
-     * {@link Role}s and the {@link Thing}s which play those roles.
-     *
-     * @param graph the {@link GraknTx} used to check for uniqueness
-     * @param relationReified the {@link Relationship} to check
-     * @return An error message if the {@link Relationship} is not unique.
-     */
-    private static Optional<String> validateNonKeyControlledRelation(GraknTxAbstract<?> graph, RelationshipReified relationReified){
-        String hash = RelationshipReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
-        return setRelationUnique(graph, relationReified, hash);
-    }
-
-    /**
-     * Checks is a {@link Relationship} is unique by searching the {@link GraknTx} for another {@link Relationship} with the same
-     * hash.
-     *
-     * @param graph the {@link GraknTx} used to check for uniqueness
-     * @param relationReified The candidate unique {@link Relationship}
-     * @param hash The hash to use to find other potential {@link Relationship}s
-     * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
-     */
-    private static Optional<String> setRelationUnique(GraknTxAbstract<?> graph, RelationshipReified relationReified, String hash){
-        Optional<RelationshipImpl> foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
-
-        if(!foundRelation.isPresent()){
-            relationReified.setHash(hash);
-        } else if(foundRelation.get().reified().isPresent() && !foundRelation.get().reified().get().equals(relationReified)){
-            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }
         return Optional.empty();
     }

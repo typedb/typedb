@@ -5,7 +5,7 @@
     <parent>
         <artifactId>grakn-test</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.17.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,9 +13,16 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.ldbc.driver</groupId>
-            <artifactId>jeeves</artifactId>
-            <version>${ldbc-driver.version}</version>
+            <groupId>ai.grakn</groupId>
+            <artifactId>migration-csv</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <!--Excluded because we provide logback logger-->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-nop</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -26,6 +33,21 @@
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-nop</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.ldbc.driver</groupId>
+            <artifactId>jeeves</artifactId>
+            <version>${ldbc-driver.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava-collections</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

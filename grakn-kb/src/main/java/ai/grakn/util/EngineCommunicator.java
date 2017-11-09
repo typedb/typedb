@@ -18,7 +18,7 @@
 
 package ai.grakn.util;
 
-import ai.grakn.Grakn;
+import ai.grakn.exception.GraknBackendException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +28,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 
 /**
@@ -47,24 +49,23 @@ import java.nio.charset.StandardCharsets;
  */
 public class EngineCommunicator {
     private static final Logger LOG = LoggerFactory.getLogger(EngineCommunicator.class);
-    private static final String DEFAULT_PROTOCOL = "http://";
     private static final int MAX_RETRY = 5;
 
     /**
      *
-     * @param engineUrl The location of engine.
+     * @param engineUri The location of engine.
      * @param restType The type of request to make to engine.
      * @param body The body to attach to the request
      * @return The result of the request
      */
-    public static String contactEngine(String engineUrl, String restType, @Nullable String body){
-        if(engineUrl.equals(Grakn.IN_MEMORY)) {
+    public static String contactEngine(Optional<URI> engineUri, String restType, @Nullable String body){
+        if(!engineUri.isPresent()) {
             return "Engine not contacted due to in memory graph being used";
         }
 
         for(int i = 0; i < MAX_RETRY; i++) {
             try {
-                URL url = new URL(DEFAULT_PROTOCOL + engineUrl);
+                URL url = engineUri.get().toURL();
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setRequestMethod(restType);
@@ -76,8 +77,8 @@ public class EngineCommunicator {
                     }
                 }
 
-                if (connection.getResponseCode() != 200) {
-                    throw new IllegalArgumentException(ErrorMessage.INVALID_ENGINE_RESPONSE.getMessage(engineUrl, connection.getResponseCode()));
+                if (!statusCodeIsSuccessful(connection.getResponseCode())) {
+                    throw new IllegalArgumentException(ErrorMessage.INVALID_ENGINE_RESPONSE.getMessage(url, connection.getResponseCode()));
                 }
 
                 //Reading from Connection
@@ -90,10 +91,14 @@ public class EngineCommunicator {
                 }
                 return sb.toString();
             } catch (IOException e) {
-                LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUrl), e);
+                LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUri), e);
             }
         }
-        throw new RuntimeException(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUrl));
+        throw GraknBackendException.cannotReach(engineUri.get());
+    }
+
+    private static boolean statusCodeIsSuccessful(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
     }
 
     /**
@@ -102,7 +107,7 @@ public class EngineCommunicator {
      * @param restType The type of resquest to make to engine.
      * @return The result of the request
      */
-    public static String contactEngine(String engineUrl, String restType){
+    public static String contactEngine(Optional<URI> engineUrl, String restType){
         return contactEngine(engineUrl, restType, null);
     }
 

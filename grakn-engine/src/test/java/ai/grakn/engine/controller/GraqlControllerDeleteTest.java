@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
@@ -33,11 +34,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,7 +59,7 @@ public class GraqlControllerDeleteTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -73,7 +72,11 @@ public class GraqlControllerDeleteTest {
 
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
-        when(mockQueryBuilder.parse(any()))
+
+        QueryParser mockParser = mock(QueryParser.class);
+
+        when(mockQueryBuilder.parser()).thenReturn(mockParser);
+        when(mockParser.parseQuery(any()))
                 .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
         tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
@@ -112,21 +115,9 @@ public class GraqlControllerDeleteTest {
     }
 
     @Test
-    public void DELETEWithNoKeyspace_ResponseStatusIs400(){
-        String query = "match $x isa person; limit 1; delete;";
-
-        Response response = RestAssured.with()
-                .body(query)
-                .post(REST.WebPath.KB.ANY_GRAQL);
-
-        assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
-    }
-
-    @Test
     public void DELETEWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, "some-kb"));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -186,11 +177,10 @@ public class GraqlControllerDeleteTest {
 
     private Response sendRequest(String query){
         return RestAssured.with()
-                .queryParam(KEYSPACE, tx.getKeyspace().getValue())
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
                 .accept(APPLICATION_TEXT)
                 .body(query)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, tx.getKeyspace().getValue()));
     }
 }

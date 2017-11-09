@@ -18,8 +18,10 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 
+import ai.grakn.graql.VarPattern;
 import java.util.HashSet;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -68,16 +70,34 @@ public interface Atomic {
     default boolean isResource(){ return false;}
 
     /**
-     * @return true if atom alpha-equivalent
+     * @return true if obj alpha-equivalent
      */
     @CheckReturnValue
-    boolean isEquivalent(Object obj);
+    boolean isAlphaEquivalent(Object obj);
+
+    /**
+     * @return true if obj structurally equivalent
+     */
+    @CheckReturnValue
+    boolean isStructurallyEquivalent(Object obj);
+
+    /**
+     * @return true if obj compatible
+     */
+    @CheckReturnValue
+    default boolean isCompatibleWith(Object obj){return isAlphaEquivalent(obj);}
 
     /**
      * @return alpha-equivalence hash code
      */
     @CheckReturnValue
-    int equivalenceHashCode();
+    int alphaEquivalenceHashCode();
+
+    /**
+     * @return structural-equivalence hash code
+     */
+    @CheckReturnValue
+    int structuralEquivalenceHashCode();
 
     /**
      * @return true if the atomic is user defined (all its variables are user defined)
@@ -125,13 +145,13 @@ public interface Atomic {
      * @return the corresponding base pattern
      * */
     @CheckReturnValue
-    PatternAdmin getPattern();
+    VarPattern getPattern();
 
     /**
      * @return the base pattern combined with possible predicate patterns
      */
     @CheckReturnValue
-    PatternAdmin getCombinedPattern();
+    Pattern getCombinedPattern();
 
     /**
      * @return the query the atomic is contained in
@@ -162,4 +182,7 @@ public interface Atomic {
      */
     @CheckReturnValue
     Atomic inferTypes();
+
+    @CheckReturnValue
+    Atomic inferTypes(Answer sub);
 }

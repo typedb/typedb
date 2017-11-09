@@ -24,6 +24,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -33,7 +34,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_TYPE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ROLE_ARRAY_JSON_FIELD;
@@ -60,7 +60,7 @@ public class RelationshipTypeControllerTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -100,9 +100,8 @@ public class RelationshipTypeControllerTest {
             )
         );
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
-            .post(RELATIONSHIP_TYPE);
+            .post(REST.resolveTemplate(RELATIONSHIP_TYPE, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -117,8 +116,7 @@ public class RelationshipTypeControllerTest {
         String hasGenre = "has-genre";
 
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get(RELATIONSHIP_TYPE + "/" + hasGenre);
+            .get(REST.resolveTemplate(RELATIONSHIP_TYPE + "/" + hasGenre, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 

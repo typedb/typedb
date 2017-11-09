@@ -36,7 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -148,7 +147,7 @@ public interface GraknAdmin {
      * @return the commit log that would have been submitted if it is needed.
      * @throws InvalidKBException when the graph does not conform to the object concept
      */
-    Optional<String> commitNoLogs() throws InvalidKBException;
+    Optional<String> commitSubmitNoLogs() throws InvalidKBException;
 
     /**
      * Check if there are duplicate resources in the provided set of vertex IDs
@@ -165,13 +164,6 @@ public interface GraknAdmin {
      * @return True if a commit is required.
      */
     boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds);
-
-    /**
-     * Updates the counts of all the types
-     *
-     * @param conceptCounts The concepts and the changes to put on their counts
-     */
-    void updateConceptCounts(Map<ConceptId, Long> conceptCounts);
 
     /**
      * Creates a new shard for the concept
@@ -198,6 +190,15 @@ public interface GraknAdmin {
      * Should be used with caution as this will invalidate any pending transactions
      */
     void delete();
+
+    /**
+     * Returns the current number of shards the provided {@link Type} has. This is used in creating more
+     * efficient query plans.
+     *
+     * @param type The {@link Type} which may contain some shards.
+     * @return the number of Shards the {@link Type} currently has.
+     */
+    long getShardCount(Type type);
 
     /**
      * Get the URL where the graph is located

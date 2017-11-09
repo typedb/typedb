@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.17.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -61,6 +61,21 @@
             <artifactId>jackson-annotations</artifactId>
             <groupId>com.fasterxml.jackson.core</groupId>
             <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <artifactId>httpclient</artifactId>
+            <groupId>org.apache.httpcomponents</groupId>
+            <version>${httpclient.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.reactivex</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>${reactivex.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sharegov</groupId>
+            <artifactId>mjson</artifactId>
+            <version>${mjson.version}</version>
         </dependency>
     </dependencies>
 

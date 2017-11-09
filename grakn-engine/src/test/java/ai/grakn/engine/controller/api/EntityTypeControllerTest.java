@@ -24,6 +24,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -35,9 +36,9 @@ import org.junit.Test;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_TYPE_OBJECT_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
+import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -60,7 +61,7 @@ public class EntityTypeControllerTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -89,8 +90,7 @@ public class EntityTypeControllerTest {
         String production = "production";
 
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get(ENTITY_TYPE + "/" + production);
+            .get(REST.resolveTemplate(ENTITY_TYPE + "/" + production, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -105,9 +105,8 @@ public class EntityTypeControllerTest {
         Json body = Json.object(ENTITY_TYPE_OBJECT_JSON_FIELD, Json.object(LABEL_JSON_FIELD, entityType));
 
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
-            .post(ENTITY_TYPE);
+            .post(REST.resolveTemplate(ENTITY_TYPE, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -121,8 +120,7 @@ public class EntityTypeControllerTest {
     public void deleteEntityTypeShouldExecuteSuccessfully() throws Exception {
         String toBeDeleted = "production";
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .delete(ENTITY_TYPE + "/" + toBeDeleted);
+            .delete(REST.resolveTemplate(ENTITY_TYPE + "/" + toBeDeleted, mockTx.getKeyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }
@@ -132,9 +130,10 @@ public class EntityTypeControllerTest {
         String production = "production";
         String runtime = "runtime";
 
-        Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .put("/api/entityType/" + production + "/attributeType/" + runtime);
+        String path = REST.resolveTemplate(
+                ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT, mockTx.getKeyspace().getValue(), production, runtime
+        );
+        Response response = with().put(path);
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }

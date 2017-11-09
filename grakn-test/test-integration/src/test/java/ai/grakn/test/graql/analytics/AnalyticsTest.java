@@ -18,10 +18,10 @@
 
 package ai.grakn.test.graql.analytics;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -35,26 +35,22 @@ import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestSetup.usingTinker;
+import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 public class AnalyticsTest {
-
-    @ClassRule
-    public static final EngineContext context = EngineContext.inMemoryServer();
-    private GraknSession factory;
 
     private static final String thingy = "thingy";
     private static final String anotherThing = "anotherThing";
@@ -67,40 +63,18 @@ public class AnalyticsTest {
     private String relationId12;
     private String relationId24;
 
-    @Rule
-    public ExpectedException expectedEx = ExpectedException.none();
+    public GraknSession factory;
+
+    @ClassRule
+    public static final EngineContext context = usingTinker() ? null : EngineContext.createWithInMemoryRedis();
 
     @Before
     public void setUp() {
-        factory = context.sessionWithNewKeyspace();
+        factory = usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
     }
 
-    @Ignore
-    @Test
-    public void testImplicitResourceRelation() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
-            Label resourceLabel = Label.of("someResource");
-            AttributeType<Long> someResource = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
-            EntityType thingy = graph.putEntityType("thingy");
-            thingy.attribute(someResource);
-
-            Entity thisThing = thingy.addEntity();
-            Attribute thisAttribute = someResource.putAttribute(1L);
-            thisThing.attribute(thisAttribute);
-            graph.commit();
-        }
-
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees;
-            degrees = graph.graql().compute().degree().of("thingy").in("someResource").execute();
-            assertEquals(1, degrees.size());
-            assertEquals(1, degrees.get(1L).size());
-
-            degrees = graph.graql().compute().degree().in("thingy", "someResource").execute();
-            assertEquals(1, degrees.size());
-            assertEquals(2, degrees.get(1L).size());
-        }
-    }
+    @Rule
+    public ExpectedException expectedEx = ExpectedException.none();
 
     @Test
     public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
@@ -109,9 +83,11 @@ public class AnalyticsTest {
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = graph.putEntityType("thingy");
 
-            graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
-            Role degreeOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
-            Role degreeValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
+            AttributeType<Long> attribute = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
+            thingy.attribute(attribute);
+
+            Role degreeOwner = graph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId).getValue());
+            Role degreeValue = graph.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId).getValue());
             RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
@@ -135,7 +111,7 @@ public class AnalyticsTest {
     @Test
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
-        expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
+        expectedEx.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().count().in("rule", "thing").execute();
         }
@@ -144,7 +120,7 @@ public class AnalyticsTest {
     @Test
     public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
-        expectedEx.expectMessage(GraqlQueryException.roleAndRuleDoNotHaveInstance().getMessage());
+        expectedEx.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("role")).getMessage());
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().count().in("role").execute();
         }

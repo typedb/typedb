@@ -25,8 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
-
-import java.util.function.Consumer;
+import ai.grakn.test.SampleKBContext;
 
 /**
  *
@@ -55,8 +54,8 @@ public class CWKB extends TestKB {
 
     private static Thing colonelWest, Nono, America, Tomahawk;
 
-    public static Consumer<GraknTx> get() {
-        return new CWKB().build();
+    public static SampleKBContext context() {
+        return new CWKB().makeContext();
     }
 
     @Override
@@ -169,41 +168,39 @@ public class CWKB extends TestKB {
     @Override
     protected void buildRules(GraknTx tx) {
         //R1: "It is a crime for an American to sell weapons to hostile nations"
-        Pattern R1_LHS = tx.graql().parsePattern("{" +
+        Pattern R1_LHS = tx.graql().parser().parsePattern("{" +
                         "$x isa person;$x has nationality 'American';" +
                         "$y isa weapon;" +
                         "$z isa country;$z has alignment 'hostile';" +
                         "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;}");
 
-        Pattern R1_RHS = tx.graql().parsePattern("{$x isa criminal;}");
+        Pattern R1_RHS = tx.graql().parser().parsePattern("{$x isa criminal;}");
         tx.putRule("R1: It is a crime for an American to sell weapons to hostile nations" , R1_LHS, R1_RHS);
 
         //R2: "Missiles are a kind of a weapon"
-        Pattern R2_LHS = tx.graql().parsePattern("{$x isa missile;}");
-        Pattern R2_RHS = tx.graql().parsePattern("{$x isa weapon;}");
+        Pattern R2_LHS = tx.graql().parser().parsePattern("{$x isa missile;}");
+        Pattern R2_RHS = tx.graql().parser().parsePattern("{$x isa weapon;}");
         tx.putRule("R2: Missiles are a kind of a weapon\"" , R2_LHS, R2_RHS);
 
         //R3: "If a country is an enemy of America then it is hostile"
-        Pattern R3_LHS = tx.graql().parsePattern(
-                "{$x isa country;" +
+        Pattern R3_LHS = tx.graql().parser().parsePattern("{$x isa country;" +
                 "($x, $y) isa is-enemy-of;" +
                 "$y isa country;$y has name 'America';}");
-        Pattern R3_RHS = tx.graql().parsePattern("{$x has alignment 'hostile';}");
+        Pattern R3_RHS = tx.graql().parser().parsePattern("{$x has alignment 'hostile';}");
         tx.putRule("R3: If a country is an enemy of America then it is hostile" , R3_LHS, R3_RHS);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
-        Pattern R4_LHS = tx.graql().parsePattern("{$x isa rocket;$x has propulsion 'gsp';}");
-        Pattern R4_RHS = tx.graql().parsePattern("{$x isa missile;}");
+        Pattern R4_LHS = tx.graql().parser().parsePattern("{$x isa rocket;$x has propulsion 'gsp';}");
+        Pattern R4_RHS = tx.graql().parser().parsePattern("{$x isa missile;}");
         tx.putRule("R4: If a rocket is self-propelled and guided, it is a missile" , R4_LHS, R4_RHS);
 
-        Pattern R5_LHS = tx.graql().parsePattern(
-                "{$x isa person;" +
+        Pattern R5_LHS = tx.graql().parser().parsePattern("{$x isa person;" +
                 "$y isa country;" +
                 "$z isa weapon;" +
                 "($x, $y) isa is-paid-by;" +
                 "($y, $z) isa owns;}");
 
-        Pattern R5_RHS = tx.graql().parsePattern("{(seller: $x, buyer: $y, transaction-item: $z) isa transaction;}");
+        Pattern R5_RHS = tx.graql().parser().parsePattern("{(seller: $x, buyer: $y, transaction-item: $z) isa transaction;}");
         tx.putRule("R5: If a country pays a person and that country now owns a weapon then the person has sold the country a weapon" , R5_LHS, R5_RHS);
     }
 }

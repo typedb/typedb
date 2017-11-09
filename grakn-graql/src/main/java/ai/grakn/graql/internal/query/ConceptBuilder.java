@@ -182,6 +182,10 @@ public class ConceptBuilder {
 
         if (has(ID)) {
             concept = executor.tx().getConcept(use(ID));
+
+            if (has(LABEL)) {
+                concept.asSchemaConcept().setLabel(use(LABEL));
+            }
         } else if (has(LABEL)) {
             concept = executor.tx().getSchemaConcept(use(LABEL));
         }

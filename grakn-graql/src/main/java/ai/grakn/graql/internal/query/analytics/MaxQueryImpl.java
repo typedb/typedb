@@ -47,6 +47,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
+        getAllSubTypes();
+
         AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());

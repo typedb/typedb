@@ -57,7 +57,7 @@ public class PostProcessingTest {
     private GraknSession session;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @BeforeClass
     public static void onlyRunOnTinker(){
@@ -84,7 +84,7 @@ public class PostProcessingTest {
         AttributeType<String> attributeType = graph.putAttributeType(sample, AttributeType.DataType.STRING);
 
         Attribute<String> attribute = attributeType.putAttribute(value);
-        graph.admin().commitNoLogs();
+        graph.admin().commitSubmitNoLogs();
         graph = session.open(GraknTxType.WRITE);
 
         assertEquals(1, attributeType.instances().count());

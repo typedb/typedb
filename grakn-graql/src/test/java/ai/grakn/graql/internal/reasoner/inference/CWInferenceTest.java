@@ -37,10 +37,10 @@ public class CWInferenceTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static SampleKBContext cwKB = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwKB = CWKB.context();
 
     @ClassRule
-    public static SampleKBContext cwKB2 = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwKB2 = CWKB.context();
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -207,10 +207,10 @@ public class CWInferenceTest {
 
         tx.putEntityType("region");
 
-        Pattern R6_LHS = and(tx.graql().parsePatterns("$x isa region;"));
-        Pattern R6_RHS = and(tx.graql().parsePatterns("$x isa country;"));
+        Pattern R6_LHS = and(tx.graql().parser().parsePatterns("$x isa region;"));
+        Pattern R6_RHS = and(tx.graql().parser().parsePatterns("$x isa country;"));
         tx.putRule("R6: If something is a region it is a country", R6_LHS, R6_RHS);
-        tx.admin().commitNoLogs();
+        tx.admin().commitSubmitNoLogs();
 
         String queryString = "match $x isa criminal; get;";
         String explicitQuery = "match " +

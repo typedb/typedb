@@ -5,7 +5,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.17.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -46,6 +46,9 @@
                     don't contain stack traces! -->
                     <trimStackTrace>false</trimStackTrace>
                     <argLine>-XX:+HeapDumpOnOutOfMemoryError</argLine>
+
+                    <!-- Added this config to try and help sort out flaky tests -->
+                    <runOrder>random</runOrder>
                 </configuration>
             </plugin>
             <plugin>

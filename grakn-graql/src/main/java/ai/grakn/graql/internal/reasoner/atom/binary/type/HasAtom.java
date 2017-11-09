@@ -19,10 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom.binary.type;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import java.util.Collection;
@@ -33,7 +35,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty} property.
+ * TypeAtom corresponding to graql a {@link HasAttributeTypeProperty} property.
  * </p>
  *
  * @author Kasper Piskorski
@@ -41,14 +43,9 @@ import java.util.stream.Collectors;
  */
 public class HasAtom extends TypeAtom {
 
-    public HasAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) { super(pattern, predicateVar, p, par);}
+    public HasAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) { super(pattern, predicateVar, p, par);}
     private HasAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
-        super(
-                var.has(predicateVar).admin(),
-                predicateVar,
-                p,
-                par
-        );
+        super(var.has(predicateVar), predicateVar, p, par);
     }
     private HasAtom(TypeAtom a) { super(a);}
 
@@ -63,5 +60,17 @@ public class HasAtom extends TypeAtom {
         return vars.isEmpty()?
                 Collections.singleton(this) :
                 vars.stream().map(v -> new HasAtom(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Atom rewriteWithTypeVariable() {
+        return new HasAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+    }
+
+    @Override
+    public Atom rewriteToUserDefined(Atom parentAtom) {
+        return parentAtom.getPredicateVariable().isUserDefinedName()?
+                new HasAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :
+                this;
     }
 }

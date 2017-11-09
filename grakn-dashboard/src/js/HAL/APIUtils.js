@@ -43,9 +43,6 @@ function buildLabel(attribute) {
     case API.ATTRIBUTE:
       label = attribute[API.KEY_VALUE];
       break;
-    case API.GENERATED_RELATIONSHIP_TYPE:
-      label = attribute[API.KEY_TYPE] || '';
-      break;
 
     default:
       label = attribute[API.KEY_TYPE];

@@ -2,10 +2,12 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.TxFactoryContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
@@ -16,6 +18,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
@@ -24,9 +27,13 @@ import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static junit.framework.TestCase.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DashboardControllerTest {
-
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
+    private static final Lock mockLock = mock(Lock.class);
     private Printer<Json> jsonPrinter;
 
     private Response sendQueryExplain(String query) {
@@ -50,19 +57,23 @@ public class DashboardControllerTest {
                 .get(REST.WebPath.Dashboard.EXPLORE + id);
     }
 
+    //Needed to start cass depending on profile
+    @ClassRule
+    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
     @ClassRule
-    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
+    public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create().getProperties());
         new DashboardController(factory, spark);
     });
 
     @Before
     public void setUp() {
         jsonPrinter = Printers.json();
+        when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
     @Test
@@ -77,11 +88,13 @@ public class DashboardControllerTest {
         Response explainResponse = sendQueryExplain(queryString);
         explainResponse.then().statusCode(200);
         Json jsonResponse = Json.read(explainResponse.asString());
-        jsonResponse.asJsonList().forEach(concept -> {
-            assertTrue(concept.has("_baseType"));
-            assertTrue(concept.has("_type"));
-            assertTrue(concept.has("_id"));
-        });
+        jsonResponse.asJsonList()
+                .stream().flatMap(obj -> obj.asJsonMap().values().stream())
+                .forEach(concept -> {
+                    assertTrue(concept.has("_baseType"));
+                    assertTrue(concept.has("_links"));
+                    assertTrue(concept.has("_id"));
+                });
     }
 
     @Test

@@ -25,9 +25,15 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+
+import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * <p>
@@ -41,27 +47,54 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * @author fppt
  */
-public class Casting {
+public class Casting implements CacheOwner{
+    private final Set<Cache> registeredCaches = new HashSet<>();
     private final EdgeElement edgeElement;
-    private final Cache<Role> cachedRoleType = new Cache<>(Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
-    private final Cache<RelationshipType> cachedRelationType = new Cache<>(Cacheable.concept(), () -> (RelationshipType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
-
-    private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> edge().target().
+    private final Cache<Role> cachedRole = Cache.createTxCache(this, Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
+    private final Cache<Thing> cachedInstance = Cache.createTxCache(this, Cacheable.concept(), () -> edge().target().
             flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
     );
 
-    private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> edge().source().
+    private final Cache<Relationship> cachedRelationship = Cache.createTxCache(this, Cacheable.concept(), () -> edge().source().
             flatMap(vertexElement -> edge().tx().factory().<Relationship>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()))
     );
 
-    public Casting(EdgeElement edgeElement){
+    private final Cache<RelationshipType> cachedRelationshipType = Cache.createTxCache(this, Cacheable.concept(), () -> {
+        if(cachedRelationship.isPresent()){
+            return cachedRelationship.get().type();
+        } else {
+            return (RelationshipType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID)));
+        }
+    });
+
+    private Casting(EdgeElement edgeElement, @Nullable Relationship relationship, @Nullable Role role, @Nullable Thing thing){
         this.edgeElement = edgeElement;
+        if(relationship != null) this.cachedRelationship.set(relationship);
+        if(role != null) this.cachedRole.set(role);
+        if(thing != null) this.cachedInstance.set(thing);
+    }
+
+    public static Casting create(EdgeElement edgeElement, Relationship relationship, Role role, Thing thing) {
+        return new Casting(edgeElement, relationship, role, thing);
+    }
+
+    public static Casting withThing(EdgeElement edgeElement, Thing thing){
+        return new Casting(edgeElement, null, null, thing);
+    }
+
+    public static Casting withRelationship(EdgeElement edgeElement, Relationship relationship) {
+        return new Casting(edgeElement, relationship, null, null);
     }
 
     private EdgeElement edge(){
         return edgeElement;
+    }
+
+    @Override
+    public Collection<Cache> caches(){
+        return registeredCaches;
     }
 
     /**
@@ -69,7 +102,7 @@ public class Casting {
      * @return The {@link Role} the {@link Thing} is playing
      */
     public Role getRole(){
-        return cachedRoleType.get();
+        return cachedRole.get();
     }
 
     /**
@@ -77,7 +110,7 @@ public class Casting {
      * @return The {@link RelationshipType} the {@link Thing} is taking part in
      */
     public RelationshipType getRelationshipType(){
-        return cachedRelationType.get();
+        return cachedRelationshipType.get();
     }
 
     /**
@@ -85,7 +118,7 @@ public class Casting {
      * @return The {@link Relationship} which is linking the {@link Role} and the instance
      */
     public Relationship getRelationship(){
-        return cachedRelation.get();
+        return cachedRelationship.get();
     }
 
     /**
@@ -102,6 +135,13 @@ public class Casting {
      */
     public int hashCode() {
         return edge().id().hashCode();
+    }
+
+    /**
+     * Deletes this {@link Casting} effectively removing a {@link Thing} from playing a {@link Role} in a {@link Relationship}
+     */
+    public void delete(){
+        edge().delete();
     }
 
     /**

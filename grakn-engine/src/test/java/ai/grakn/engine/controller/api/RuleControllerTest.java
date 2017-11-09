@@ -24,6 +24,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -33,7 +34,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.RULE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.THEN_JSON_FIELD;
@@ -54,7 +54,7 @@ public class RuleControllerTest {
     private static EngineGraknTxFactory factory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -88,8 +88,7 @@ public class RuleControllerTest {
         String expectationRule = "expectation-rule";
 
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .get(RULE + "/" + expectationRule);
+            .get(REST.resolveTemplate(RULE + "/" + expectationRule, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -109,9 +108,8 @@ public class RuleControllerTest {
             THEN_JSON_FIELD, then
         ));
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
-            .post(RULE);
+            .post(REST.resolveTemplate(RULE, mockTx.getKeyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
