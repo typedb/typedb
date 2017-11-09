@@ -97,7 +97,7 @@ public class EngineGraknTxFactory {
      */
     private GraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, new GraknSessionImpl(keyspace, engineURI));
+            openedSessions.put(keyspace,GraknSessionImpl.createEngineSession(keyspace, engineURI, properties));
         }
 
         return openedSessions.get(keyspace);
