@@ -22,17 +22,18 @@ package ai.grakn.graql;
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
-import static ai.grakn.util.REST.RemoteShell.ACTION;
-import static ai.grakn.util.REST.RemoteShell.ACTION_END;
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+
+import static ai.grakn.util.REST.RemoteShell.ACTION;
+import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -65,7 +66,7 @@ public class GraqlShellTest {
 
         batchExecutorClient = mock(BatchExecutorClient.class);
 
-        when(client.loaderClient(any(Keyspace.class), anyString())).thenReturn(batchExecutorClient);
+        when(client.loaderClient(any(Keyspace.class), any())).thenReturn(batchExecutorClient);
     }
 
    @Test

@@ -29,6 +29,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.SampleKBLoader;
+import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
@@ -128,7 +129,7 @@ public class DocTestUtil {
                     })
             ).build();
 
-    public static GraknSession getTestGraph(String uri, String knowledgeBaseName) {
+    public static GraknSession getTestGraph(SimpleURI uri, String knowledgeBaseName) {
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
         GraknSession session = Grakn.session(uri, keyspace);
 

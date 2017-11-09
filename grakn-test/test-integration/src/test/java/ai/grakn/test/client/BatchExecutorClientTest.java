@@ -196,8 +196,7 @@ public class BatchExecutorClientTest {
             nameTag.attribute(nameTagId);
             graph.admin().commitSubmitNoLogs();
 
-            String spec = "http://" + engine.uri();
-            GraknClient graknClient = new GraknClient(new SimpleURI(spec));
+            GraknClient graknClient = new GraknClient(engine.uri());
             return spy(
                     BatchExecutorClient.newBuilder().taskClient(graknClient).maxDelay(maxDelay)
                             .build());

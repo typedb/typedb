@@ -100,10 +100,6 @@ public class EngineContext extends CompositeTestRule {
         return new EngineContext(true);
     }
 
-    public int port() {
-        return config.getProperty(GraknConfigKey.SERVER_PORT);
-    }
-
     public GraknEngineServer server() {
         return server;
     }
@@ -132,7 +128,7 @@ public class EngineContext extends CompositeTestRule {
         return server.getTaskManager();
     }
 
-    public String uri() {
+    public SimpleURI uri() {
         return config.uri();
     }
 
@@ -150,7 +146,7 @@ public class EngineContext extends CompositeTestRule {
 
     @Override
     public void before() throws Throwable {
-        RestAssured.baseURI = "http://" + config.uri();
+        RestAssured.baseURI = uri().toURI().toString();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }

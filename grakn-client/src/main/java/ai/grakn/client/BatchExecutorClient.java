@@ -145,8 +145,8 @@ public class BatchExecutorClient implements Closeable {
         return new Builder();
     }
 
-    public static Builder newBuilderforURI(String simpleURI) {
-        return new Builder().taskClient(new GraknClient(new SimpleURI(simpleURI)));
+    public static Builder newBuilderforURI(SimpleURI simpleURI) {
+        return new Builder().taskClient(new GraknClient(simpleURI));
     }
 
     /**

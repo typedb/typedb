@@ -18,6 +18,8 @@
 
 package ai.grakn;
 
+import ai.grakn.util.SimpleURI;
+
 import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -85,7 +87,7 @@ public class Grakn {
      * Constant to be passed to {@link #session(String, String)} to specify the default localhost Grakn Engine location.
      * This default constant, which is set to localhost: 4567 cannot be changed in development"
      */
-    public static final String DEFAULT_URI = "localhost:4567";
+    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost", 4567);
 
     private static final String GRAKN_SESSION_IMPLEMENTATION = "ai.grakn.factory.GraknSessionImpl";
 
@@ -128,6 +130,16 @@ public class Grakn {
     @CheckReturnValue
     public static GraknSession session(String location, String keyspace) {
         return session(location, Keyspace.of(keyspace));
+    }
+
+    @CheckReturnValue
+    public static GraknSession session(SimpleURI location, String keyspace) {
+        return session(location.toString(), Keyspace.of(keyspace));
+    }
+
+    @CheckReturnValue
+    public static GraknSession session(SimpleURI location, Keyspace keyspace) {
+        return session(location.toString(), keyspace);
     }
 
     @CheckReturnValue
