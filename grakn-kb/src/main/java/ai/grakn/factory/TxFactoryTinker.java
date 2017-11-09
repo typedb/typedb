@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.kb.internal.GraknTxTinker;
@@ -41,8 +42,8 @@ import java.util.Properties;
  */
 public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGraph> {
 
-    TxFactoryTinker(Keyspace keyspace, String engineUrl, Properties properties){
-        super(keyspace, engineUrl, properties);
+    TxFactoryTinker(GraknSession session, Keyspace keyspace, String engineUrl, Properties properties){
+        super(session, keyspace, engineUrl, properties);
     }
 
     private boolean isClosed(TinkerGraph innerGraph) {
@@ -51,7 +52,7 @@ public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGrap
 
     @Override
     GraknTxTinker buildGraknGraphFromTinker(TinkerGraph graph) {
-        return new GraknTxTinker(graph, super.keyspace, super.engineUrl, properties);
+        return new GraknTxTinker(super.session, graph, super.keyspace, super.engineUrl, properties);
     }
 
     @Override

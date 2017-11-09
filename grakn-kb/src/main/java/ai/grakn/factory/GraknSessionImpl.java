@@ -211,7 +211,7 @@ public class GraknSessionImpl implements GraknSession {
      */
     TxFactory<?> configureTxFactory(String configType){
         if(Grakn.IN_MEMORY.equals(engineUri)){
-            return FactoryBuilder.getFactory(TxFactoryTinker.class.getName(), keyspace, Grakn.IN_MEMORY, properties);
+            return FactoryBuilder.getFactory(TxFactoryTinker.class.getName(), this, keyspace, Grakn.IN_MEMORY, properties);
         } else {
             return configureTxFactoryRemote(configType);
         }
@@ -225,12 +225,12 @@ public class GraknSessionImpl implements GraknSession {
     private TxFactory<?> configureTxFactoryRemote(String configType){
 
         if(REST.KBConfig.DEFAULT.equals(configType)) {
-            return FactoryBuilder.getFactory(keyspace, engineUri, properties);
+            return FactoryBuilder.getFactory(this, keyspace, engineUri, properties);
         } else if(REST.KBConfig.COMPUTER.equals(configType)){
             Properties computerProperties = new Properties();
             computerProperties.putAll(properties);
             computerProperties.setProperty(FactoryBuilder.KB_MODE, properties.get(FactoryBuilder.KB_ANALYTICS).toString());
-            return FactoryBuilder.getFactory(keyspace, engineUri, computerProperties);
+            return FactoryBuilder.getFactory(this, keyspace, engineUri, computerProperties);
         }
 
         throw new IllegalArgumentException("Config option [" + configType + "] not supported");

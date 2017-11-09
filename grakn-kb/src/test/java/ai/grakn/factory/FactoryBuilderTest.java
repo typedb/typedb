@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
@@ -36,8 +37,10 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class FactoryBuilderTest {
+    private final static GraknSession session = mock(GraknSession.class);
     private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
     private final static String ENGINE_URL = Grakn.IN_MEMORY;
@@ -47,7 +50,7 @@ public class FactoryBuilderTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
-    public static void setupProperties(){
+    public static void setup(){
         try (InputStream in = new FileInputStream(TEST_CONFIG)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
@@ -57,15 +60,15 @@ public class FactoryBuilderTest {
 
     @Test
     public void whenBuildingInMemoryFactory_ReturnTinkerFactory(){
-        assertThat(FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES), instanceOf(TxFactoryTinker.class));
+        assertThat(FactoryBuilder.getFactory(session, KEYSPACE, ENGINE_URL, TEST_PROPERTIES), instanceOf(TxFactoryTinker.class));
     }
 
     @Test
     public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs(){
-        TxFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf3 = FactoryBuilder.getFactory(Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf4 = FactoryBuilder.getFactory(Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf1 = FactoryBuilder.getFactory(session, KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf2 = FactoryBuilder.getFactory(session, KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf3 = FactoryBuilder.getFactory(session, Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf4 = FactoryBuilder.getFactory(session, Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);

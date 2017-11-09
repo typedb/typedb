@@ -19,6 +19,7 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -107,6 +108,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
     //----------------------------- Shared Variables
+    private final GraknSession session;
     private final CommitLog commitLog;
     private final Keyspace keyspace;
     private final String engineUri;
@@ -129,7 +131,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
     private @Nullable GraphTraversalSource graphTraversalSource = null;
 
-    public GraknTxAbstract(G graph, Keyspace keyspace, String engineUri, Properties properties) {
+    public GraknTxAbstract(GraknSession session, G graph, Keyspace keyspace, String engineUri, Properties properties) {
+        this.session = session;
         this.graph = graph;
         this.keyspace = keyspace;
         this.engineUri = engineUri;
@@ -144,6 +147,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         txCache().openTx(GraknTxType.WRITE);
 
         if (initialiseMetaConcepts()) close(true, false);
+    }
+
+    @Override
+    public GraknSession session(){
+        return session;
     }
 
     @Override

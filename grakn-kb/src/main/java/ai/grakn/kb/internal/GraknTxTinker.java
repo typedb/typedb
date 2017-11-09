@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.util.ErrorMessage;
@@ -42,8 +43,8 @@ import java.util.Properties;
 public class GraknTxTinker extends GraknTxAbstract<TinkerGraph> {
     private final TinkerGraph rootGraph;
 
-    public GraknTxTinker(TinkerGraph tinkerGraph, Keyspace keyspace, String engineUrl, Properties properties){
-        super(tinkerGraph, keyspace, engineUrl, properties);
+    public GraknTxTinker(GraknSession session, TinkerGraph tinkerGraph, Keyspace keyspace, String engineUrl, Properties properties){
+        super(session, tinkerGraph, keyspace, engineUrl, properties);
         rootGraph = tinkerGraph;
     }
 

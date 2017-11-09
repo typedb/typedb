@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
@@ -59,10 +60,10 @@ public class FactoryBuilder {
         throw new UnsupportedOperationException();
     }
 
-    public static TxFactory<?> getFactory(Keyspace keyspace, String engineUrl, Properties properties){
+    public static TxFactory<?> getFactory(GraknSession session, Keyspace keyspace, String engineUrl, Properties properties){
         try{
             String factoryType = factoryMapper.get(properties.get(KB_MODE).toString());
-            return getFactory(factoryType, keyspace, engineUrl, properties);
+            return getFactory(factoryType, session, keyspace, engineUrl, properties);
         } catch(MissingResourceException e){
             throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
         }
@@ -74,7 +75,7 @@ public class FactoryBuilder {
      *                    A valid example includes: ai.grakn.factory.TxFactoryTinker
      * @return A graph factory which produces the relevant expected graph.
     */
-    static TxFactory<?> getFactory(String factoryType, Keyspace keyspace, String engineUrl, Properties properties){
+    static TxFactory<?> getFactory(String factoryType, GraknSession session, Keyspace keyspace, String engineUrl, Properties properties){
         String key = factoryType + keyspace;
         Log.debug("Get factory for " + key);
         TxFactory<?> factory = openFactories.get(key);
@@ -82,24 +83,25 @@ public class FactoryBuilder {
             return factory;
         }
 
-        return newFactory(key, factoryType, keyspace, engineUrl, properties);
+        return newFactory(key, factoryType, session, keyspace, engineUrl, properties);
     }
 
     /**
      *
      * @param key A unique string identifying this factory
      * @param factoryType The type of the factory to initialise. Any factory which implements {@link TxFactory}
+     * @param session The {@link GraknSession} creating this factory
      * @param keyspace The keyspace of the graph
      * @param engineUrl The location of the running engine instance
      * @param properties Additional properties to apply to the graph
      * @return A new factory bound to a specific keyspace
      */
-    private static synchronized TxFactory<?> newFactory(String key, String factoryType, Keyspace keyspace, String engineUrl, Properties properties){
+    private static synchronized TxFactory<?> newFactory(String key, String factoryType, GraknSession session, Keyspace keyspace, String engineUrl, Properties properties){
         TxFactory<?> txFactory;
         try {
             txFactory = (TxFactory<?>) Class.forName(factoryType)
-                    .getDeclaredConstructor(Keyspace.class, String.class, Properties.class)
-                    .newInstance(keyspace, engineUrl, properties);
+                    .getDeclaredConstructor(GraknSession.class, Keyspace.class, String.class, Properties.class)
+                    .newInstance(session, keyspace, engineUrl, properties);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
         }

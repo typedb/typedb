@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -53,8 +54,8 @@ import java.util.function.Supplier;
  * @author fppt
  */
 public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
-    public GraknTxJanus(JanusGraph graph, Keyspace keyspace, String engineUrl, Properties properties){
-        super(graph, keyspace, engineUrl, properties);
+    public GraknTxJanus(GraknSession session, JanusGraph graph, Keyspace keyspace, String engineUrl, Properties properties){
+        super(session, graph, keyspace, engineUrl, properties);
     }
 
     @Override
