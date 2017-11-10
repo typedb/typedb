@@ -168,7 +168,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    private Stream<Rule> getPotentialRules(){
+    protected Stream<Rule> getPotentialRules(){
         return RuleUtils.getRulesWithType(getSchemaConcept(), tx());
     }
 

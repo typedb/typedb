@@ -46,10 +46,10 @@ public class ReasonerQueries {
      * @return reasoner query constructed from provided conjunctive pattern
      */
     public static ReasonerQueryImpl create(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
-        ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, tx);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, tx).inferTypes();
         return query.isAtomic()?
-                new ReasonerAtomicQuery(pattern, tx).inferTypes() :
-                query.inferTypes();
+                new ReasonerAtomicQuery(query.getAtoms(), tx) :
+                query;
     }
 
     /**

@@ -37,11 +37,11 @@ public class CWKB extends TestKB {
     private static AttributeType<String> key;
 
     private static EntityType person;
-    private static EntityType weapon;
     private static EntityType rocket;
     private static EntityType country;
-    
-    private static AttributeType<String> alignment, propulsion, nationality;
+
+    private static AttributeType<String> propulsion;
+    private static AttributeType<String> nationality;
 
     private static RelationshipType isEnemyOf;
     private static RelationshipType isPaidBy;
@@ -50,7 +50,6 @@ public class CWKB extends TestKB {
     private static Role enemySource, enemyTarget;
     private static Role owner, ownedItem;
     private static Role payee, payer;
-    private static Role seller, buyer, transactionItem;
 
     private static Thing colonelWest, Nono, America, Tomahawk;
 
@@ -65,56 +64,52 @@ public class CWKB extends TestKB {
         //Resources
         nationality = tx.putAttributeType("nationality", AttributeType.DataType.STRING);
         propulsion = tx.putAttributeType("propulsion", AttributeType.DataType.STRING);
-        alignment = tx.putAttributeType("alignment", AttributeType.DataType.STRING);
+        AttributeType<String> alignment = tx.putAttributeType("alignment", AttributeType.DataType.STRING);
 
         //Roles
         owner = tx.putRole("item-owner");
         ownedItem = tx.putRole("owned-item");
-        seller = tx.putRole("seller");
-        buyer = tx.putRole("buyer");
         payee = tx.putRole("payee");
         payer = tx.putRole("payer");
         enemySource = tx.putRole("enemy-source");
         enemyTarget = tx.putRole("enemy-target");
-        transactionItem = tx.putRole("transaction-item");
+        Role seller = tx.putRole("seller");
+        Role buyer = tx.putRole("buyer");
+        Role transactionItem = tx.putRole("transaction-item");
+
+        EntityType baseEntity = tx.putEntityType("baseEntity")
+                .attribute(key);
 
         //Entitites
         person = tx.putEntityType("person")
+                .sup(baseEntity)
                 .plays(seller)
                 .plays(payee)
-                .attribute(key)
                 .attribute(nationality);
 
         tx.putEntityType("criminal")
-                .plays(seller)
-                .plays(payee)
-                .attribute(key)
-                .attribute(nationality);
+                .sup(person);
 
-        weapon = tx.putEntityType("weapon")
+        EntityType weapon = tx.putEntityType("weapon")
+                .sup(baseEntity)
                 .plays(transactionItem)
-                .plays(ownedItem)
-                .attribute(key);
+                .plays(ownedItem);
 
         rocket = tx.putEntityType("rocket")
-                .plays(transactionItem)
-                .plays(ownedItem)
-                .attribute(key)
+                .sup(weapon)
                 .attribute(propulsion);
 
         tx.putEntityType("missile")
-                .sup(weapon)
-                .plays(transactionItem)
-                .attribute(propulsion)
-                .attribute(key);
+                .sup(weapon) //sup(rocket)?
+                .attribute(propulsion);
 
         country = tx.putEntityType("country")
+                .sup(baseEntity)
                 .plays(buyer)
                 .plays(owner)
                 .plays(enemyTarget)
                 .plays(payer)
                 .plays(enemySource)
-                .attribute(key)
                 .attribute(alignment);
 
         //Relations
