@@ -27,6 +27,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.NeqFragment;
 import ai.grakn.test.SampleKBContext;
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
@@ -36,12 +37,16 @@ import org.junit.Test;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class QueryPlannerTest {
 
     private static final Var x = var("x");
     private static final Var y = var("y");
     private static final Var z = var("z");
+
+    private static final Var superType = var("superType");
+    private static final Var subType = var("subType");
 
     private static final String thingy = "thingy";
     private static final String thingy0 = "thingy0";
@@ -63,9 +68,6 @@ public class QueryPlannerTest {
         EntityType superType1 = graph.putEntityType(thingy)
                 .sub(entityType0)
                 .sub(entityType1);
-//                .sub(entityType2)
-//                .sub(entityType3);
-
 
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
@@ -96,6 +98,7 @@ public class QueryPlannerTest {
         tx.admin().shard(tx.getEntityType(thingy2).getId());
         tx.admin().shard(tx.getEntityType(thingy2).getId());
         tx.admin().shard(tx.getEntityType(thingy2).getId());
+
         tx.admin().shard(tx.getEntityType(thingy3).getId());
         tx.admin().shard(tx.getEntityType(thingy3).getId());
         tx.admin().shard(tx.getEntityType(thingy3).getId());
@@ -103,14 +106,17 @@ public class QueryPlannerTest {
         tx.admin().shard(tx.getEntityType(thingy3).getId());
         tx.admin().shard(tx.getEntityType(thingy3).getId());
 
-        Pattern pattern = and(
+        Pattern pattern;
+        ImmutableList<Fragment> plan;
+
+        pattern = and(
                 x.isa(thingy1),
                 y.isa(thingy2),
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
-        ImmutableList<Fragment> plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
+        plan = getPlan(pattern);
         assertEquals(x, plan.get(3).end());
+        assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof NeqFragment).count());
 
         //TODO: should uncomment the following after updating cost of out-isa fragment
 //        varName = plan.get(7).end().getValue();
@@ -122,48 +128,53 @@ public class QueryPlannerTest {
         pattern = and(
                 x.isa(thingy),
                 y.isa(thingy2),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        assertEquals(x, plan.get(3).end());
+
+        pattern = and(
+                x.isa(thingy),
+                y.isa(thingy2),
+                z.isa(thingy3),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        assertEquals(x, plan.get(4).end());
+
+        pattern = and(
+                x.isa(superType),
+                superType.label(thingy),
+                y.isa(thingy2),
+                subType.sub(superType),
+                z.isa(subType),
+                var().rel(x).rel(y));
+        plan = getPlan(pattern);
+        assertTrue(x.equals(plan.get(5).end()) || z.equals(plan.get(5).end()));
+
+        tx.admin().shard(tx.getEntityType(thingy).getId());
+        tx.admin().shard(tx.getEntityType(thingy).getId());
+        tx.admin().shard(tx.getEntityType(thingy).getId());
+
+//        System.out.println("==========================================================");
+//        plan = getPlan(pattern);
+//        System.out.println("plan = " + plan);
+//        assertEquals(y, plan.get(4).end());
+//
+//        tx.admin().shard(tx.getEntityType(thingy1).getId());
+//        tx.admin().shard(tx.getEntityType(thingy1).getId());
+//        tx.admin().shard(tx.getEntityType(thingy1).getId());
+//
+//        plan = getPlan(pattern);
+//        System.out.println("plan = " + plan);
+//        assertEquals(y, plan.get(4).end());
+//
+//        pattern = and(
+//                x.isa(var(thingy)), var(thingy).label(thingy),
+//                y.isa(thingy2),
 //                z.isa(thingy3),
-                var().rel(x).rel(y));//.rel(z));
-        plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
-//        assertEquals(x, plan.get(4).end());
-
-        pattern = and(
-                x.isa(var("superType")),
-                var("superType").label(thingy),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var("subType").sub(var("superType")),
-                var("zzzz").isa(var("subType")),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
-        assertEquals(x, plan.get(5).end());
-
-        tx.admin().shard(tx.getEntityType(thingy).getId());
-        tx.admin().shard(tx.getEntityType(thingy).getId());
-        tx.admin().shard(tx.getEntityType(thingy).getId());
-
-        plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
-        assertEquals(y, plan.get(4).end());
-
-        tx.admin().shard(tx.getEntityType(thingy1).getId());
-        tx.admin().shard(tx.getEntityType(thingy1).getId());
-        tx.admin().shard(tx.getEntityType(thingy1).getId());
-
-        plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
-        assertEquals(y, plan.get(4).end());
-
-        pattern = and(
-                x.isa(var(thingy)), var(thingy).label(thingy),
-                y.isa(thingy2),
-                z.isa(thingy3),
-                var("xxx").sub(thingy),
-                var().rel(x).rel(y).rel(z));
-        plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
+//                var("xxx").sub(thingy),
+//                var().rel(x).rel(y).rel(z));
+//        plan = getPlan(pattern);
+//        System.out.println("plan = " + plan);
 //        assertEquals(x, plan.get(4).end());
     }
 

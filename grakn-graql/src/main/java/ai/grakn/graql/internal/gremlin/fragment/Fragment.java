@@ -236,10 +236,6 @@ public abstract class Fragment {
     public abstract double fragmentCost();
 
     public void setAccurateFragmentCost(double fragmentCost) {
-        System.out.println();
-        System.out.println("this = " + this);
-        System.out.println("fragmentCost = " + fragmentCost);
-        System.out.println();
         accurateFragmentCost = Optional.of(fragmentCost);
     }
 
