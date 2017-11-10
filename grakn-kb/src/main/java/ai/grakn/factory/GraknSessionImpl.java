@@ -77,7 +77,7 @@ public class GraknSessionImpl implements GraknSession {
     private GraknTxAbstract<?> tx = null;
     private GraknTxAbstract<?> txBatch = null;
 
-    private GraknSessionImpl(Keyspace keyspace, String engineUri, Properties properties, boolean remoteSubmissionNeeded){
+    GraknSessionImpl(Keyspace keyspace, String engineUri, Properties properties, boolean remoteSubmissionNeeded){
         Objects.requireNonNull(keyspace);
         Objects.requireNonNull(engineUri);
 
@@ -100,8 +100,7 @@ public class GraknSessionImpl implements GraknSession {
             if (Grakn.IN_MEMORY.equals(engineUri)) {
                 properties = getTxInMemoryProperties();
             } else {
-                SimpleURI uri = new SimpleURI(engineUri);
-                properties = getTxRemoteProperties(uri, keyspace);
+                properties = getTxProperties();
             }
         }
         this.properties = properties;
@@ -114,6 +113,11 @@ public class GraknSessionImpl implements GraknSession {
 
     public static GraknSessionImpl createEngineSession(Keyspace keyspace, String engineUri, Properties properties){
         return new GraknSessionImpl(keyspace, engineUri, properties, false);
+    }
+
+    Properties getTxProperties(){
+        SimpleURI uri = new SimpleURI(engineUri);
+        return getTxRemoteProperties(uri, keyspace);
     }
 
     /**
@@ -141,7 +145,7 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build an in-memory {@link GraknTx}
      */
-    private static Properties getTxInMemoryProperties(){
+    static Properties getTxInMemoryProperties(){
         Properties inMemoryProperties = new Properties();
         inMemoryProperties.put(GraknConfigKey.SHARDING_THRESHOLD.name(), 100_000);
         inMemoryProperties.put(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(), 30_000);
