@@ -161,7 +161,7 @@ public class EngineContext extends CompositeTestRule {
         //
         // When using janus, add -Dgrakn.test-profile=janus
         //
-        // The reason is that the default configuration of Grakn uses the Janus session while the default
+        // The reason is that the default configuration of Grakn uses the Janus Factory while the default
         // test profile is tinker: so when running a unit test within an IDE without any extra parameters,
         // we end up wanting to use the JanusFactory but without starting Cassandra first.
         LOG.info("starting engine...");

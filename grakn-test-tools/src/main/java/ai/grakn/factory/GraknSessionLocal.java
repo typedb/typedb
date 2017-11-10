@@ -43,19 +43,19 @@ import java.util.Properties;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class GraknSessionTest extends GraknSessionImpl{
+public class GraknSessionLocal extends GraknSessionImpl{
     private final static String JANUS_CONFIG_LOCATION = CommonUtil.getProjectPath() + "/../conf/test/janus/grakn.properties";
 
-    private GraknSessionTest(Keyspace keyspace, String engineUri, Properties properties) {
+    private GraknSessionLocal(Keyspace keyspace, String engineUri, Properties properties) {
         super(keyspace, engineUri, properties, false);
     }
 
-    public static GraknSessionTest create(Keyspace keyspace) {
-        return new GraknSessionTest(keyspace, "fake-engine-uri", null);
+    public static GraknSessionLocal create(Keyspace keyspace) {
+        return new GraknSessionLocal(keyspace, "fake-engine-uri", null);
     }
 
-    public static GraknSessionTest create(Keyspace keyspace, String engineUri, Properties properties) {
-        return new GraknSessionTest(keyspace, engineUri, properties);
+    public static GraknSessionLocal create(Keyspace keyspace, String engineUri, Properties properties) {
+        return new GraknSessionLocal(keyspace, engineUri, properties);
     }
 
     @Override
