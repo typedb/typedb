@@ -96,7 +96,7 @@ public class Grakn {
     /**
      * Constant to be passed to {@link #session(String, String)} to specify an in-memory graph.
      */
-    public static final String IN_MEMORY = "in-memory-kb";
+    public static final String IN_MEMORY = "in-memory";
 
     private static final Map<String, GraknSession> clients = new HashMap<>();
 
