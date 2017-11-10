@@ -37,9 +37,7 @@ public class AnswerState extends ResolutionState {
     private final Unifier unifier;
 
     public AnswerState(Answer sub, Unifier u, QueryStateBase parent) {
-        super(sub, parent);
-        this.unifier = u;
-        this.rule = null;
+        this(sub, u, parent, null);
     }
 
     AnswerState(Answer sub, Unifier u, QueryStateBase parent, InferenceRule rule) {
