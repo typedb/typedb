@@ -10,7 +10,7 @@ def stopAllRunningBuildsForThisJob() {
     def job = Jenkins.instance.getItemByFullName(env.JOB_NAME)
 
     for (build in job.builds) {
-        if (build.isBuilding() && build.getNumber() != env.BUILD_NUMBER) {
+        if (build.isBuilding() && build.getNumber() != env.BUILD_NUMBER.toInteger()) {
             build.doStop()
         }
     }
