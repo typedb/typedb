@@ -2,6 +2,10 @@
 
 import static Constants.*
 
+def isMainBranch() {
+    return env.BRANCH_NAME in ['master', 'stable']
+}
+
 // Jenkins normally serializes every variable in a Jenkinsfile so it can pause and resume jobs.
 // This method contains variables representing 'jobs', which cannot be serialized.
 // The `@NonCPS` annotation stops Jenkins trying to serialize the variables in this method.
@@ -16,7 +20,9 @@ def stopAllRunningBuildsForThisJob() {
     }
 }
 
-stopAllRunningBuildsForThisJob()
+if (!isMainBranch()) {
+    stopAllRunningBuildsForThisJob()
+}
 
 // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
 // `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
@@ -119,7 +125,7 @@ def buildGrakn() {
 }
 
 def shouldRunAllTests() {
-    return env.BRANCH_NAME in ['master', 'stable']
+    return isMainBranch()
 }
 
 def shouldDeployLongRunningInstance() {
