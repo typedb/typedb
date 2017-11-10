@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.util;
+package ai.grakn.factory;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknSession;
@@ -26,6 +26,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
+import ai.grakn.util.SampleKBLoader;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Properties;

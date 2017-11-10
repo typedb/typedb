@@ -26,6 +26,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.factory.GraknSessionInMemory;
 import ai.grakn.factory.TxFactory;
 import ai.grakn.graql.Query;
 import ai.grakn.kb.internal.GraknTxTinker;
