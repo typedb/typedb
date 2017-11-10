@@ -516,13 +516,15 @@ public class RelationshipAtom extends IsaAtom {
                     .collect(toSet());
 
             ImmutableList.Builder<RelationshipType> builder = ImmutableList.builder();
-            //sort the types in order to prioritise relations with higher chance of yielding answers
+            //prioritise relations with higher chance of yielding answers
             compatibleConfigurations.asMap().entrySet().stream()
-                    //sort by number of allowed roles
+                    //prioritise relations with more allowed roles
                     .sorted(Comparator.comparing(e -> -e.getValue().size()))
+                    //prioritise relations with number of roles equal to arity
                     .sorted(Comparator.comparing(e -> e.getKey().relates().count() != getRelationPlayers().size()))
-                    .sorted(Comparator.comparing(e -> e.getKey().isImplicit()))
-                    //sort by number of types untyped role players can have
+                    //prioritise relations having more instances
+                    .sorted(Comparator.comparing(e -> -tx().admin().getShardCount(e.getKey())))
+                    //prioritise relations with highest number of possible types played by untyped role players
                     .map(e -> {
                         if (untypedNeighbours.isEmpty()) return new Pair<>(e.getKey(), 0L);
 
@@ -538,11 +540,12 @@ public class RelationshipAtom extends IsaAtom {
                                 e.getKey(),
                                 rs.stream().flatMap(Role::playedByTypes).filter(typesFromNeighbour::contains).count()
                         );
-
                     })
                     .sorted(Comparator.comparing(p -> -p.getValue()))
+                    //prioritise non-implicit relations
+                    .sorted(Comparator.comparing(e -> e.getKey().isImplicit()))
                     .map(Pair::getKey)
-                    //all supers are also compatible
+                    //retain super types only
                     .filter(t -> Sets.intersection(supers(t), compatibleConfigurations.keySet()).isEmpty())
                     .forEach(builder::add);
             this.possibleRelations = builder.build();
