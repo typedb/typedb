@@ -16,9 +16,8 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.analytics;
+package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -32,7 +31,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.rule.EngineContext;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -48,23 +47,22 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class DegreeTest {
 
-    public GraknSession factory;
+    public GraknSession session;
+    private GraknTx tx;
 
     @ClassRule
-    public static final EngineContext context = GraknTestUtil.usingTinker() ? null : EngineContext.createWithInMemoryRedis();
-    private GraknTx tx;
+    public final static SessionContext sessionContext = SessionContext.create();
 
     @Before
     public void setUp() {
-        factory = GraknTestUtil.usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
-        tx = factory.open(GraknTxType.WRITE);
+        session = sessionContext.newSession();
+        tx = session.open(GraknTxType.WRITE);
     }
 
     @Test
@@ -98,7 +96,7 @@ public class DegreeTest {
                 .addRolePlayer(role2, tx.getConcept(entity4))
                 .getId();
         tx.commit();
-        tx = factory.open(GraknTxType.READ);
+        tx = session.open(GraknTxType.READ);
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -119,7 +117,7 @@ public class DegreeTest {
         tx.close();
 
         Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
                 return graph.graql().compute().degree().execute();
             }
         }).collect(Collectors.toSet());
@@ -133,7 +131,7 @@ public class DegreeTest {
             ));
         });
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thingy").execute();
 
             assertEquals(2, degrees2.size());
@@ -207,7 +205,7 @@ public class DegreeTest {
         dog.addEntity();
         tx.commit();
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             // set subgraph
             HashSet<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
                     Label.of("mans-best-friend"));
@@ -265,7 +263,7 @@ public class DegreeTest {
         fullReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
 
         tx.commit();
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // create a subgraph excluding attributes and their relationship
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
@@ -343,7 +341,7 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
         tx.commit();
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // compute and persist degrees
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
@@ -406,7 +404,7 @@ public class DegreeTest {
         referenceDegrees2.put(daveOwnsCoco.getId(), 2L);
 
         tx.commit();
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // create a subgraph with assertion on assertion
             HashSet<Label> ct =
@@ -469,7 +467,7 @@ public class DegreeTest {
 
         tx.commit();
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
             assertTrue(degrees.get(3L).contains(relationId.getValue()));
             assertTrue(degrees.get(1L).contains(marlonId.getValue()));
@@ -505,7 +503,7 @@ public class DegreeTest {
 
         tx.commit();
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value) -> value.forEach(
@@ -549,7 +547,7 @@ public class DegreeTest {
         // validate
         tx.commit();
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             // check degree for dave owning cats
             //TODO: should we count the relationship even if there is no cat attached?
             HashSet<Label> ct = Sets.newHashSet(Label.of("mans-best-friend"), Label.of("cat"),

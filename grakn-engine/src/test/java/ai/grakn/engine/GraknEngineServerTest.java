@@ -22,7 +22,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.redismock.RedisServer;
-import ai.grakn.test.rule.TxFactoryContext;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.util.SimpleURI;
@@ -61,7 +61,7 @@ public class GraknEngineServerTest {
     @Rule
     public final SystemOutRule stdout = new SystemOutRule();
     @Rule
-    public final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+    public final SessionContext sessionContext = SessionContext.create();
 
     private final GraknEngineConfig conf = GraknEngineConfig.create();
     private final RedisWrapper redisWrapper = mock(RedisWrapper.class);

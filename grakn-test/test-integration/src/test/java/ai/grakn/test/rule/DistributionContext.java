@@ -97,7 +97,7 @@ public class DistributionContext extends CompositeTestRule {
     @Override
     protected List<TestRule> testRules() {
         return ImmutableList.of(
-                TxFactoryContext.create(),
+                SessionContext.create(),
                 InMemoryRedisContext.create(redisPort)
         );
     }

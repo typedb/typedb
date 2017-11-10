@@ -63,7 +63,7 @@ import static mjson.Json.read;
  *     The deployment of engine decides on the backend and this class will handle producing the correct graphs.
  * </p>
  *
- * @author fppt
+ * @author Filipe Peliz Pinto Teixeira
  */
 public class GraknSessionImpl implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
@@ -71,16 +71,19 @@ public class GraknSessionImpl implements GraknSession {
     private final String engineUri;
     private final Keyspace keyspace;
     private final Properties properties;
+    private final boolean remoteSubmissionNeeded;
     private ScheduledExecutorService commitLogSubmitter;
+
 
     //References so we don't have to open a tx just to check the count of the transactions
     private GraknTxAbstract<?> tx = null;
     private GraknTxAbstract<?> txBatch = null;
 
-    private GraknSessionImpl(Keyspace keyspace, String engineUri, Properties properties, boolean remoteSubmissionNeeded){
+    GraknSessionImpl(Keyspace keyspace, String engineUri, Properties properties, boolean remoteSubmissionNeeded){
         Objects.requireNonNull(keyspace);
         Objects.requireNonNull(engineUri);
 
+        this.remoteSubmissionNeeded = remoteSubmissionNeeded;
         this.engineUri = engineUri;
         this.keyspace = keyspace;
 
@@ -100,8 +103,7 @@ public class GraknSessionImpl implements GraknSession {
             if (Grakn.IN_MEMORY.equals(engineUri)) {
                 properties = getTxInMemoryProperties();
             } else {
-                SimpleURI uri = new SimpleURI(engineUri);
-                properties = getTxRemoteProperties(uri, keyspace);
+                properties = getTxProperties();
             }
         }
         this.properties = properties;
@@ -114,6 +116,11 @@ public class GraknSessionImpl implements GraknSession {
 
     public static GraknSessionImpl createEngineSession(Keyspace keyspace, String engineUri, Properties properties){
         return new GraknSessionImpl(keyspace, engineUri, properties, false);
+    }
+
+    Properties getTxProperties(){
+        SimpleURI uri = new SimpleURI(engineUri);
+        return getTxRemoteProperties(uri, keyspace);
     }
 
     /**
@@ -141,7 +148,7 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build an in-memory {@link GraknTx}
      */
-    private static Properties getTxInMemoryProperties(){
+    static Properties getTxInMemoryProperties(){
         Properties inMemoryProperties = new Properties();
         inMemoryProperties.put(GraknConfigKey.SHARDING_THRESHOLD.name(), 100_000);
         inMemoryProperties.put(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(), 30_000);
@@ -184,7 +191,7 @@ public class GraknSessionImpl implements GraknSession {
         }
 
         //Stop submitting commit logs automatically
-        commitLogSubmitter.shutdown();
+        if(remoteSubmissionNeeded) commitLogSubmitter.shutdown();
 
         //Close the main tx connections
         close(tx);
@@ -209,7 +216,7 @@ public class GraknSessionImpl implements GraknSession {
     private void close(GraknTxAbstract tx){
         if(tx != null){
             tx.closeSession();
-            submitLogs(tx);
+            if(remoteSubmissionNeeded) submitLogs(tx);
         }
     }
 
