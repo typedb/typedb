@@ -83,10 +83,10 @@ public class GraqlControllerInsertTest {
 
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.tx(eq(mockTx.getKeyspace()), any())).thenReturn(mockTx);
+        when(mockFactory.tx(eq(mockTx.keyspace()), any())).thenReturn(mockTx);
     }
 
     @Test
@@ -205,6 +205,6 @@ public class GraqlControllerInsertTest {
                 .accept(acceptType)
                 .queryParam(INFER, false)
                 .body(query)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.keyspace().getValue()));
     }
 }

@@ -97,7 +97,7 @@ public class GraknTxPropertyTest {
 
         exception.expect(InvocationTargetException.class);
         exception.expectCause(isA(GraknTxOperationException.class));
-        exception.expectCause(hasProperty("message", is(ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", graph.keyspace()))));
 
         method.invoke(graph, params);
     }
@@ -256,7 +256,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknTx graph) {
         graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).open(GraknTxType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isSchemaConcept());
@@ -268,7 +268,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknTx graph, @From(MetaLabels.class) Label label) {
         graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).open(GraknTxType.WRITE);
         assertNotNull(graph.getSchemaConcept(label));
         graph.close();
     }

@@ -53,7 +53,7 @@ public class HALBuilderTest {
     @Test
     public void renderHALConceptData_producesCorrectHALObject() {
         Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
-        String halString = HALBuilder.renderHALConceptData(concept, false, 0, sampleKB.tx().getKeyspace(), 0, 10);
+        String halString = HALBuilder.renderHALConceptData(concept, false, 0, sampleKB.tx().keyspace(), 0, 10);
         Json halObject = Json.read(halString);
         assertTrue(halObject.has("_id"));
         assertTrue(halObject.has("_type"));
@@ -66,7 +66,7 @@ public class HALBuilderTest {
     @Test
     public void renderHALConceptDataWithSeparationDegree0_producedHALWithoutEmbedded() {
         Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
-        String halString = HALBuilder.renderHALConceptData(concept, false, 0, sampleKB.tx().getKeyspace(), 0, 10);
+        String halString = HALBuilder.renderHALConceptData(concept, false, 0, sampleKB.tx().keyspace(), 0, 10);
         Json halObject = Json.read(halString);
         assertFalse(halObject.has("_embedded"));
     }
@@ -74,7 +74,7 @@ public class HALBuilderTest {
     @Test
     public void renderHALConceptDataWithSeparationDegree1_producedHALWithEmbedded() {
         Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
-        String halString = HALBuilder.renderHALConceptData(concept, false, 1, sampleKB.tx().getKeyspace(), 0, 10);
+        String halString = HALBuilder.renderHALConceptData(concept, false, 1, sampleKB.tx().keyspace(), 0, 10);
         Json halObject = Json.read(halString);
         assertTrue(halObject.has("_embedded"));
     }
@@ -82,7 +82,7 @@ public class HALBuilderTest {
     @Test
     public void testHALExploreConceptWithThing_producesCorrectHALObject() {
         Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
-        String halString = HALBuilder.HALExploreConcept(concept, sampleKB.tx().getKeyspace(), 0, 10);
+        String halString = HALBuilder.HALExploreConcept(concept, sampleKB.tx().keyspace(), 0, 10);
 
         //Check Explore Thing embeds thing's attributes
         Json halObject = Json.read(halString);
@@ -94,7 +94,7 @@ public class HALBuilderTest {
     @Test
     public void testHALExploreConceptWithSchemaConcept_producesCorrectHALObject() {
         Concept concept = sampleKB.tx().getEntityType("movie");
-        String halString = HALBuilder.HALExploreConcept(concept, sampleKB.tx().getKeyspace(), 0, 10);
+        String halString = HALBuilder.HALExploreConcept(concept, sampleKB.tx().keyspace(), 0, 10);
 
         //Check Explore Schema Concept embeds attribute types and roles played by concept
         Json halObject = Json.read(halString);
@@ -116,7 +116,7 @@ public class HALBuilderTest {
                     "$x id " + cousin1 + ";" +
                     "$y id " + cousin2 + ";" +
                     "(cousin: $x, cousin: $y) isa cousins; get;";
-            Printer<?> printer = Printers.hal(genealogyKB.tx().getKeyspace(), 5);
+            Printer<?> printer = Printers.hal(genealogyKB.tx().keyspace(), 5);
             GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
             Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
 

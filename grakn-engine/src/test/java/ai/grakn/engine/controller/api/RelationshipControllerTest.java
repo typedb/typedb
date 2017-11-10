@@ -47,7 +47,7 @@ public class RelationshipControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.getRelationshipType(anyString())).thenAnswer(invocation ->
             sampleKB.tx().getRelationshipType(invocation.getArgument(0)));
@@ -59,8 +59,8 @@ public class RelationshipControllerTest {
             sampleKB.tx().getRole(invocation.getArgument(0)));
         Mockito.doAnswer(e -> { sampleKB.tx().commit(); return null; } ).when(mockTx).commit();
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
@@ -68,7 +68,7 @@ public class RelationshipControllerTest {
         String directedBy = "directed-by";
 
         Response response = with()
-            .post(REST.resolveTemplate(RELATIONSHIP_TYPE + "/" + directedBy, mockTx.getKeyspace().getValue()));
+            .post(REST.resolveTemplate(RELATIONSHIP_TYPE + "/" + directedBy, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -85,14 +85,14 @@ public class RelationshipControllerTest {
 
         String entityConceptId;
         String relationshipConceptId;
-        try (GraknTx tx = mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)) {
+        try (GraknTx tx = mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)) {
             entityConceptId = tx.getEntityType(entityTypeLabel).addEntity().getId().getValue();
             relationshipConceptId = tx.getRelationshipType(relationshipTypeLabel).addRelationship().getId().getValue();
             tx.commit();
         }
 
         String path = REST.resolveTemplate(
-                RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT, mockTx.getKeyspace().getValue(), relationshipConceptId,
+                RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT, mockTx.keyspace().getValue(), relationshipConceptId,
                 entityConceptId, roleLabel
         );
         Response response = with().put(path);

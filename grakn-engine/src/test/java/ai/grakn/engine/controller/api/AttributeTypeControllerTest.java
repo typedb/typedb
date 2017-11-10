@@ -73,7 +73,7 @@ public class AttributeTypeControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.putAttributeType(anyString(), any())).thenAnswer(invocation -> {
             String label = invocation.getArgument(0);
@@ -83,8 +83,8 @@ public class AttributeTypeControllerTest {
         when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
             sampleKB.tx().getAttributeType(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
@@ -99,7 +99,7 @@ public class AttributeTypeControllerTest {
         );
         Response response = with()
             .body(body.toString())
-            .post(REST.resolveTemplate(ATTRIBUTE_TYPE, mockTx.getKeyspace().getValue()));
+            .post(REST.resolveTemplate(ATTRIBUTE_TYPE, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -113,7 +113,7 @@ public class AttributeTypeControllerTest {
         String attributeTypeLabel = "tmdb-vote-count";
         String attributeTypeDataType = "long";
         Response response = with()
-            .get(REST.resolveTemplate(ATTRIBUTE_TYPE + "/" + attributeTypeLabel, mockTx.getKeyspace().getValue()));
+            .get(REST.resolveTemplate(ATTRIBUTE_TYPE + "/" + attributeTypeLabel, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 

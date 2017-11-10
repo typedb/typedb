@@ -98,7 +98,7 @@ public class EngineGraknSessionTest {
         factory.close();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.getKeyspace()));
+        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.keyspace()));
 
         graph.putEntityType("A thingy");
     }
