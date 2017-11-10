@@ -73,7 +73,7 @@ public class SampleKBContext extends CompositeTestRule {
 
     @Override
     protected List<TestRule> testRules() {
-        return ImmutableList.of(TxFactoryContext.create());
+        return ImmutableList.of(SessionContext.create());
     }
 
     public GraknTx tx() {
@@ -87,6 +87,6 @@ public class SampleKBContext extends CompositeTestRule {
     }
 
     private void checkInContext() {
-        Preconditions.checkState(TxFactoryContext.canUseTx(), "EmbeddedCassandraContext may not have started");
+        Preconditions.checkState(SessionContext.canUseTx(), "EmbeddedCassandraContext may not have started");
     }
 }

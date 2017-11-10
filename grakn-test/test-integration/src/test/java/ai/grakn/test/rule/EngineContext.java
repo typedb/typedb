@@ -139,7 +139,7 @@ public class EngineContext extends CompositeTestRule {
     @Override
     protected List<TestRule> testRules() {
         return ImmutableList.of(
-                TxFactoryContext.create(),
+                SessionContext.create(),
                 redis
         );
     }

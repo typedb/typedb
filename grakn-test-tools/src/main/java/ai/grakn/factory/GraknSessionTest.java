@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Keyspace;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
 
@@ -43,7 +44,7 @@ import java.util.Properties;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class GraknSessionTest extends GraknSessionImpl{
-    private final static String JANUS_CONFIG_LOCATION = "../../conf/test/grakn.properties";
+    private final static String JANUS_CONFIG_LOCATION = CommonUtil.getProjectPath() + "/../../conf/test/janus/grakn.properties";
 
     private GraknSessionTest(Keyspace keyspace, String engineUri, Properties properties) {
         super(keyspace, engineUri, properties, false);

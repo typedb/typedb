@@ -25,7 +25,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.test.rule.TxFactoryContext;
+import ai.grakn.test.rule.SessionContext;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
@@ -80,7 +80,7 @@ public class RemoteSessionTest {
 
     //Needed to start cass depending on profile
     @ClassRule
-    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+    public static final SessionContext sessionContext = SessionContext.create();
 
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {

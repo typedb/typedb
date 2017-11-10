@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -30,7 +29,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
-import ai.grakn.test.rule.EngineContext;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import org.junit.Assert;
@@ -43,7 +42,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
@@ -52,11 +50,11 @@ public class CountTest {
     public GraknSession factory;
 
     @ClassRule
-    public static final EngineContext context = GraknTestUtil.usingTinker() ? null : EngineContext.createWithInMemoryRedis();
+    public final static SessionContext sessionContext = SessionContext.create();
 
     @Before
     public void setUp() {
-        factory = GraknTestUtil.usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
+        factory = sessionContext.newSession();
     }
 
     @Test

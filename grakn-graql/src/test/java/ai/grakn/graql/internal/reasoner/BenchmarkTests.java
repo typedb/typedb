@@ -24,7 +24,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.test.rule.TxFactoryContext;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.MatrixKBII;
 import ai.grakn.test.kbs.PathKB;
@@ -41,7 +41,7 @@ public class BenchmarkTests {
 
     //Needed to start cass depending on profile
     @ClassRule
-    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+    public static final SessionContext sessionContext = SessionContext.create();
 
     /**
      * 2-rule transitive test with transitivity expressed in terms of two linear rules
