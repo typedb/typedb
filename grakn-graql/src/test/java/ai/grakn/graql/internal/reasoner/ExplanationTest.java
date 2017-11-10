@@ -271,7 +271,6 @@ public class ExplanationTest {
             Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
             testExplanation(specificAnswer);
         });
-
     }
 
     private void testExplanation(Answer answer){

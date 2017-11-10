@@ -18,39 +18,37 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.concept.Role;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import java.util.Iterator;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Set;
 
 /**
  *
  * <p>
- * Query state produced by {@link AtomicState} when an atomic query {@link ReasonerAtomicQuery} contains {@link Role} variables which may require role hierarchy expansion.
+ * Resolution state corresponding to a rule application.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-class RoleExpansionState extends ResolutionState {
+public class RuleState extends ConjunctiveState{
 
-    private final Iterator<AnswerState> answerStateIterator;
+    private final InferenceRule rule;
 
-    RoleExpansionState(Answer sub, Unifier u, Set<Var> toExpand, QueryStateBase parent) {
-        super(sub, parent);
-        this.answerStateIterator = getSubstitution()
-                .expandHierarchies(toExpand)
-                .map(ans -> new AnswerState(ans, u, getParentState()))
-                .iterator();
+    public RuleState(InferenceRule rule, Answer sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
+        super(rule.getBody(), sub, unifier, parent, visitedSubGoals, cache);
+        this.rule = rule;
     }
+
+    public InferenceRule getRule(){ return rule;}
 
     @Override
-    public ResolutionState generateSubGoal() {
-        if (!answerStateIterator.hasNext()) return null;
-        AnswerState state = answerStateIterator.next();
-        return getParentState() != null? getParentState().propagateAnswer(state) : state;
+    ResolutionState propagateAnswer(AnswerState state){
+        Answer answer = state.getAnswer();
+        return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState(), rule) : null;
     }
+
 }

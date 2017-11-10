@@ -158,7 +158,7 @@ public class RelationshipAtom extends IsaAtom {
     /**
      * @return set constituting the role player var names
      */
-    public Set<Var> getRolePlayers() {
+    private Set<Var> getRolePlayers() {
         return getRelationPlayers().stream().map(c -> c.getRolePlayer().var()).collect(toSet());
     }
 
