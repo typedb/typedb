@@ -103,13 +103,6 @@ def buildGrakn() {
 }
 
 def shouldRunAllTests() {
-    /*
-              _
-       ______/ \-.   _
-    .*/return/*  o\_*/true/*
-     |  ___  \_/\---'
-     |_||  |_||
-     */
     return env.BRANCH_NAME in ['master', 'stable']
 }
 
