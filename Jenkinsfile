@@ -2,15 +2,21 @@
 
 import static Constants.*
 
-def job = Jenkins.instance.getItemByFullName(env.JOB_NAME)
+// Jenkins normally serializes every variable in a Jenkinsfile so it can pause and resume jobs.
+// This method contains variables representing 'jobs', which cannot be serialized.
+// The `@NonCPS` annotation stops Jenkins trying to serialize the variables in this method.
+@NonCPS
+def stopAllRunningBuildsForThisJob() {
+    def job = Jenkins.instance.getItemByFullName(env.JOB_NAME)
 
-// Kill all running builds for this job
-for (build in job.builds) {
-    if (build.isBuilding() && build.getNumber() != env.BUILD_NUMBER) {
-        build.doStop()
+    for (build in job.builds) {
+        if (build.isBuilding() && build.getNumber() != env.BUILD_NUMBER) {
+            build.doStop()
+        }
     }
 }
 
+stopAllRunningBuildsForThisJob()
 
 // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
 // `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
