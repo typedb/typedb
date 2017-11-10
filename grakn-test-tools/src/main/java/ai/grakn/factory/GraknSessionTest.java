@@ -44,7 +44,7 @@ import java.util.Properties;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class GraknSessionTest extends GraknSessionImpl{
-    private final static String JANUS_CONFIG_LOCATION = CommonUtil.getProjectPath() + "/../../conf/test/janus/grakn.properties";
+    private final static String JANUS_CONFIG_LOCATION = CommonUtil.getProjectPath() + "/../conf/test/janus/grakn.properties";
 
     private GraknSessionTest(Keyspace keyspace, String engineUri, Properties properties) {
         super(keyspace, engineUri, properties, false);
