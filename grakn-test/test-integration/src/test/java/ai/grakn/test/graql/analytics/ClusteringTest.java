@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -32,7 +31,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
-import ai.grakn.test.rule.EngineContext;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
@@ -48,7 +47,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -71,19 +69,19 @@ public class ClusteringTest {
     private ConceptId entityId3;
     private ConceptId entityId4;
 
-    public GraknSession factory;
+    public GraknSession session;
 
     @ClassRule
-    public static final EngineContext context = GraknTestUtil.usingTinker() ? null : EngineContext.createWithInMemoryRedis();
+    public final static SessionContext sessionContext = SessionContext.create();
 
     @Before
     public void setUp() {
-        factory = GraknTestUtil.usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
+        session = sessionContext.newSession();
     }
 
     @Test
     public void testConnectedComponentOnEmptyGraph() throws Exception {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             // test on an empty rule.graph()
             Map<String, Long> sizeMap = Graql.compute().withTx(graph).cluster().includeAttribute().execute();
             assertTrue(sizeMap.isEmpty());
@@ -100,7 +98,7 @@ public class ClusteringTest {
 
         addSchemaAndEntities();
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             sizeMap = Graql.compute().withTx(graph).cluster().includeAttribute().clusterSize(1L).execute();
             assertEquals(0, sizeMap.size());
             memberMap = graph.graql().compute().cluster().members().clusterSize(1L).execute();
@@ -109,7 +107,7 @@ public class ClusteringTest {
 
         addResourceRelations();
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             sizeMap = graph.graql().compute().cluster().includeAttribute().clusterSize(1L).execute();
             assertEquals(5, sizeMap.size());
 
@@ -125,7 +123,7 @@ public class ClusteringTest {
         addSchemaAndEntities();
         addResourceRelations();
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
             graph.getEntityType(thing).attribute(attributeType);
@@ -136,7 +134,7 @@ public class ClusteringTest {
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             Map<String, Set<String>> result = graph.graql().compute()
                     .cluster().in(thing, anotherThing, aResourceTypeLabel,
                             Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
@@ -159,7 +157,7 @@ public class ClusteringTest {
         // add something, test again
         addSchemaAndEntities();
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             sizeMap = Graql.compute().withTx(graph).cluster().includeAttribute().execute();
             assertEquals(1, sizeMap.size());
             assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
@@ -172,7 +170,7 @@ public class ClusteringTest {
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             sizeMap = graph.graql().compute().cluster().includeAttribute().execute();
             Map<Long, Integer> populationCount00 = new HashMap<>();
             sizeMap.values().forEach(value -> populationCount00.put(value,
@@ -213,7 +211,7 @@ public class ClusteringTest {
         }
 
         Set<Map<String, Long>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
                 return Graql.compute().withTx(graph).cluster().execute();
             }
         }).collect(Collectors.toSet());
@@ -224,7 +222,7 @@ public class ClusteringTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
@@ -275,7 +273,7 @@ public class ClusteringTest {
     }
 
     private void addResourceRelations() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             Entity entity1 = graph.getConcept(entityId1);
             Entity entity2 = graph.getConcept(entityId2);

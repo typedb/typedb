@@ -47,14 +47,14 @@ import static org.junit.Assume.assumeFalse;
 
 public class CountTest {
 
-    public GraknSession factory;
+    public GraknSession session;
 
     @ClassRule
     public final static SessionContext sessionContext = SessionContext.create();
 
     @Before
     public void setUp() {
-        factory = sessionContext.newSession();
+        session = sessionContext.newSession();
     }
 
     @Test
@@ -63,31 +63,31 @@ public class CountTest {
         String nameAnotherThing = "another";
 
         // assert the graph is empty
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             Assert.assertEquals(0L, Graql.compute().count().withTx(graph).execute().longValue());
             Assert.assertEquals(0L, graph.graql().compute().count().includeAttribute().execute().longValue());
         }
 
         // add 2 instances
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType thingy = graph.putEntityType(nameThing);
             thingy.addEntity();
             thingy.addEntity();
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             Assert.assertEquals(2L,
                     Graql.compute().withTx(graph).count().in(nameThing).execute().longValue());
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType anotherThing = graph.putEntityType(nameAnotherThing);
             anotherThing.addEntity();
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             // assert computer returns the correct count of instances
             Assert.assertEquals(2L,
                     Graql.compute().withTx(graph).count().in(nameThing).includeAttribute().execute().longValue());
@@ -102,7 +102,7 @@ public class CountTest {
         String nameThing = "thingy";
         String nameAnotherThing = "another";
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType thingy = graph.putEntityType(nameThing);
             thingy.addEntity();
             thingy.addEntity();
@@ -121,13 +121,13 @@ public class CountTest {
         // collecting the result in the end so engine won't stop before the test finishes
         Set<Long> result;
         result = list.parallelStream()
-                .map(i -> executeCount(factory))
+                .map(i -> executeCount(session))
                 .collect(Collectors.toSet());
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(3L, result.iterator().next().longValue());
 
         result = list.parallelStream()
-                .map(i -> executeCount(factory))
+                .map(i -> executeCount(session))
                 .collect(Collectors.toSet());
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(3L, result.iterator().next().longValue());
@@ -135,7 +135,7 @@ public class CountTest {
 
     @Test
     public void testHasResourceEdges() {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
             person.attribute(name);
@@ -145,7 +145,7 @@ public class CountTest {
         }
 
         long count;
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
             assertEquals(1L, count);
 
@@ -171,7 +171,7 @@ public class CountTest {
             assertEquals(1L, count);
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             // manually construct the relation type and instance
             EntityType person = graph.getEntityType("person");
@@ -193,7 +193,7 @@ public class CountTest {
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
             assertEquals(2L, count);
 
@@ -225,7 +225,7 @@ public class CountTest {
 
     @Test
     public void testHasResourceVerticesAndEdges() {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             // manually construct the relation type and instance
             EntityType person = graph.putEntityType("person");
@@ -252,7 +252,7 @@ public class CountTest {
         }
 
         long count;
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
             assertEquals(1L, count);
 
@@ -275,7 +275,7 @@ public class CountTest {
             assertEquals(1L, count);
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType person = graph.getEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
             Entity aPerson = person.addEntity();
@@ -283,7 +283,7 @@ public class CountTest {
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().includeAttribute().execute();
             assertEquals(5L, count);
 

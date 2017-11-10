@@ -1,6 +1,5 @@
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -16,7 +15,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
-import ai.grakn.test.rule.EngineContext;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
@@ -34,7 +33,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.analytics.Utility.getResourceEdgeId;
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -56,20 +54,20 @@ public class ShortestPathTest {
     private ConceptId relationId34;
     private ConceptId relationId1A12;
 
-    public GraknSession factory;
+    public GraknSession session;
 
     @ClassRule
-    public static final EngineContext context = GraknTestUtil.usingTinker() ? null : EngineContext.createWithInMemoryRedis();
+    public final static SessionContext sessionContext = SessionContext.create();
 
     @Before
     public void setUp() {
-        factory = GraknTestUtil.usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
+        session = sessionContext.newSession();
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() throws Exception {
         // test on an empty graph
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId2).execute();
         }
     }
@@ -77,7 +75,7 @@ public class ShortestPathTest {
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() throws Exception {
         addSchemaAndEntities();
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
         }
     }
@@ -85,7 +83,7 @@ public class ShortestPathTest {
     @Test
     public void testShortestPathExceptionPathNotFound() throws Exception {
         addSchemaAndEntities();
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             assertFalse(graph.graql().compute().path().from(entityId1).to(entityId5).execute().isPresent());
         }
     }
@@ -96,7 +94,7 @@ public class ShortestPathTest {
         List<String> computedPath;
         addSchemaAndEntities();
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             // directly connected vertices
             correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue());
             computedPath = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
@@ -157,7 +155,7 @@ public class ShortestPathTest {
             list.add(i);
         }
         Set<List<String>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
                 return graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1)
                         .execute().get().stream().map(concept -> concept.getId().getValue())
                         .collect(Collectors.toList());
@@ -172,7 +170,7 @@ public class ShortestPathTest {
         List<String> computedPath;
         addSchemaAndEntities2();
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(),
                     entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
             computedPath = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
@@ -203,7 +201,7 @@ public class ShortestPathTest {
         ConceptId startId;
         ConceptId endId;
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Role role1 = graph.putRole("role1");
@@ -246,7 +244,7 @@ public class ShortestPathTest {
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
             assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
         }
@@ -256,7 +254,7 @@ public class ShortestPathTest {
     public void testResourceEdges() {
         ConceptId startId;
         ConceptId endId;
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
             person.attribute(name);
@@ -269,7 +267,7 @@ public class ShortestPathTest {
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             Optional<List<Concept>> result = graph.graql().compute()
                     .path().from(startId).includeAttribute().to(endId).execute();
             assertEquals(3, result.get().size());
@@ -296,7 +294,7 @@ public class ShortestPathTest {
         List<ConceptId> pathPower3Power1 = new ArrayList<>();
         List<ConceptId> pathPerson3Power3 = new ArrayList<>();
 
-        try (GraknTx tx = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
             EntityType person = tx.putEntityType("person");
             AttributeType<Long> power = tx.putAttributeType("power", AttributeType.DataType.LONG);
 
@@ -346,7 +344,7 @@ public class ShortestPathTest {
             tx.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             Optional<List<Concept>> result;
 
             // Path from power3 to power3
@@ -415,7 +413,7 @@ public class ShortestPathTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -455,7 +453,7 @@ public class ShortestPathTest {
     }
 
     private void addSchemaAndEntities2() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Entity entity1 = entityType.addEntity();

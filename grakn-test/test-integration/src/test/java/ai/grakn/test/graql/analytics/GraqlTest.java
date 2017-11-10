@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -41,8 +40,7 @@ import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
-import ai.grakn.test.rule.EngineContext;
-import ai.grakn.util.GraknTestUtil;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.Before;
@@ -59,7 +57,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -77,20 +74,20 @@ public class GraqlTest {
     private String relationId12;
     private String relationId24;
 
-    public GraknSession factory;
+    public GraknSession session;
 
     @ClassRule
-    public static final EngineContext context = GraknTestUtil.usingTinker() ? null : EngineContext.createWithInMemoryRedis();
+    public final static SessionContext sessionContext = SessionContext.create();
 
     @Before
     public void setUp() {
-        factory = GraknTestUtil.usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
+        session = sessionContext.newSession();
     }
 
     @Test
     public void testGraqlCount() throws InvalidKBException, InterruptedException, ExecutionException {
         addSchemaAndEntities();
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             assertEquals(6L,
                     ((Long) graph.graql().parse("compute count;").execute()).longValue());
             assertEquals(3L,
@@ -101,7 +98,7 @@ public class GraqlTest {
     @Test
     public void testDegrees() throws Exception {
         addSchemaAndEntities();
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery>parse("compute degrees;").execute();
 
             Map<String, Long> correctDegrees = new HashMap<>();
@@ -124,21 +121,21 @@ public class GraqlTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithStatistics() {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithDegree() {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute degrees of thingy;").execute();
         }
     }
 
     @Test
     public void testStatisticsMethods() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Label resourceTypeId = Label.of("my-resource");
 
             AttributeType<Long> resource = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
@@ -164,7 +161,7 @@ public class GraqlTest {
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             // use graql to compute various statistics
             Optional<? extends Number> result =
                     graph.graql().<SumQuery>parse("compute sum of my-resource;").execute();
@@ -183,7 +180,7 @@ public class GraqlTest {
 
     @Test
     public void testConnectedComponents() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
                     graph.graql().<ClusterQuery<Map<String, Long>>>parse("compute cluster;").execute();
             assertTrue(sizeMap.isEmpty());
@@ -197,7 +194,7 @@ public class GraqlTest {
     public void testPath() throws InvalidKBException {
         addSchemaAndEntities();
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             PathQuery query =
                     graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
 
@@ -214,19 +211,19 @@ public class GraqlTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.putEntityType(thingy);
             graph.commit();
         }
 
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
     @Test(expected = GraqlSyntaxException.class)
     public void testErrorWhenNoSubgrapForAnalytics() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();
             graph.graql().parse("compute min;").execute();
             graph.graql().parse("compute max;").execute();
@@ -237,7 +234,7 @@ public class GraqlTest {
 
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.putAttributeType("number", AttributeType.DataType.LONG);
             graph.commit();
         }
@@ -248,14 +245,14 @@ public class GraqlTest {
                 "compute mean of number;"));
 
         analyticsCommands.forEach(command -> {
-            try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
                 // insert a node but do not commit it
                 graph.graql().parse("define thingy sub entity;").execute();
                 // use analytics
                 graph.graql().parse(command).execute();
             }
 
-            try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
                 // see if the node was commited
                 assertNull(graph.getEntityType("thingy"));
             }
@@ -263,7 +260,7 @@ public class GraqlTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
