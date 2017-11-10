@@ -1,6 +1,22 @@
 #!groovy
 
-import static Constants.*;
+import static Constants.*
+
+// Jenkins normally serializes every variable in a Jenkinsfile so it can pause and resume jobs.
+// This method contains variables representing 'jobs', which cannot be serialized.
+// The `@NonCPS` annotation stops Jenkins trying to serialize the variables in this method.
+@NonCPS
+def stopAllRunningBuildsForThisJob() {
+    def job = Jenkins.instance.getItemByFullName(env.JOB_NAME)
+
+    for (build in job.builds) {
+        if (build.isBuilding() && build.getNumber() != env.BUILD_NUMBER.toInteger()) {
+            build.doStop()
+        }
+    }
+}
+
+stopAllRunningBuildsForThisJob()
 
 // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
 // `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
@@ -23,7 +39,7 @@ def slackGithub(String message, String color = null) {
 
     String author = "authored by - ${user}"
     String link = "(<${env.BUILD_URL}|Open>)"
-    String branch = env.BRANCH_NAME;
+    String branch = env.BRANCH_NAME
 
     String formattedMessage = "${message} on ${branch}: ${env.JOB_NAME} #${env.BUILD_NUMBER} ${link}\n${author}"
 
@@ -222,7 +238,7 @@ if (shouldRunAllTests()) {
 }
 
 // Execute all jobs in parallel
-parallel(jobs);
+parallel(jobs)
 
 if (shouldRunAllTests()) {
     graknNode {
