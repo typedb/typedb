@@ -95,6 +95,8 @@ public class QueryPlannerTest {
     @Test
     public void shardCountIsUsed() {
         // force the concept to get a new shard
+        // shards of thing = 2 (thing = 1 and thing itself)
+        // thing 2 = 4, thing3 = 7
         tx.admin().shard(tx.getEntityType(thingy2).getId());
         tx.admin().shard(tx.getEntityType(thingy2).getId());
         tx.admin().shard(tx.getEntityType(thingy2).getId());
@@ -150,32 +152,50 @@ public class QueryPlannerTest {
         plan = getPlan(pattern);
         assertTrue(x.equals(plan.get(5).end()) || z.equals(plan.get(5).end()));
 
+        tx.admin().shard(tx.getEntityType(thingy1).getId());
+        tx.admin().shard(tx.getEntityType(thingy1).getId());
         tx.admin().shard(tx.getEntityType(thingy).getId());
-        tx.admin().shard(tx.getEntityType(thingy).getId());
-        tx.admin().shard(tx.getEntityType(thingy).getId());
+        // now thing = 5, thing1 = 3
 
-//        System.out.println("==========================================================");
-//        plan = getPlan(pattern);
-//        System.out.println("plan = " + plan);
-//        assertEquals(y, plan.get(4).end());
-//
-//        tx.admin().shard(tx.getEntityType(thingy1).getId());
-//        tx.admin().shard(tx.getEntityType(thingy1).getId());
-//        tx.admin().shard(tx.getEntityType(thingy1).getId());
-//
-//        plan = getPlan(pattern);
-//        System.out.println("plan = " + plan);
-//        assertEquals(y, plan.get(4).end());
-//
-//        pattern = and(
-//                x.isa(var(thingy)), var(thingy).label(thingy),
-//                y.isa(thingy2),
-//                z.isa(thingy3),
-//                var("xxx").sub(thingy),
-//                var().rel(x).rel(y).rel(z));
-//        plan = getPlan(pattern);
-//        System.out.println("plan = " + plan);
-//        assertEquals(x, plan.get(4).end());
+        pattern = and(
+                x.isa(thingy),
+                y.isa(thingy2),
+                z.isa(thingy3),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+        assertEquals(y, plan.get(4).end());
+
+        pattern = and(
+                x.isa(thingy1),
+                y.isa(thingy2),
+                z.isa(thingy3),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+        assertEquals(x, plan.get(3).end());
+
+        tx.admin().shard(tx.getEntityType(thingy1).getId());
+        tx.admin().shard(tx.getEntityType(thingy1).getId());
+        // now thing = 7, thing1 = 5
+
+        pattern = and(
+                x.isa(thingy),
+                y.isa(thingy2),
+                z.isa(thingy3),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+        assertEquals(y, plan.get(4).end());
+
+        pattern = and(
+                x.isa(thingy1),
+                y.isa(thingy2),
+                z.isa(thingy3),
+                var().rel(x).rel(y).rel(z));
+        plan = getPlan(pattern);
+        System.out.println("plan = " + plan);
+        assertEquals(y, plan.get(3).end());
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
