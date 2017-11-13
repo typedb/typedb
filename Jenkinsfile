@@ -128,7 +128,7 @@ def shouldDeployLongRunningInstance() {
 }
 
 def mvn(String args) {
-    sh "mvn ${args}"
+    sh "mvn --batch-mode ${args}"
 }
 
 Closure createTestJob(split, i, testTimeout) {
@@ -215,7 +215,7 @@ if (shouldRunAllTests()) {
 
             timeout(60) {
                 stage('Run the benchmarks') {
-                    mvn "clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${pwd}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                    mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${pwd}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
                     archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
             }
