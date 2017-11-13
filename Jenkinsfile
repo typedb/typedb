@@ -52,12 +52,12 @@ def slackGithub(String message, String color = null) {
     slackSend channel: "#github", color: color, message: formattedMessage
 }
 
-def runIntegrationTest(String workspace, String moduleName) {
-    String modulePath = "${workspace}/grakn-test/${moduleName}"
+def runIntegrationTest(String moduleName) {
+    String modulePath = "${pwd}/grakn-test/${moduleName}"
 
     stage(moduleName) {
         withPath("${modulePath}:${modulePath}/src/main/bash") {
-            withGrakn(workspace) {
+            withGrakn {
                 timeout(180) {
                     stage('Load') {
                         sh "load.sh"
@@ -73,7 +73,7 @@ def runIntegrationTest(String workspace, String moduleName) {
     }
 }
 
-def withGrakn(String workspace, Closure closure) {
+def withGrakn(Closure closure) {
     //Stages allow you to organise and group things within Jenkins
     try {
         timeout(15) {
@@ -92,7 +92,7 @@ def graknNode(Closure closure) {
     //Everything is wrapped in a try catch so we can handle any test failures
     //If one test fails then all the others will stop. I.e. we fail fast
     node {
-        withScripts(workspace) {
+        withScripts {
             try {
                 closure()
             } catch (error) {
@@ -112,8 +112,8 @@ def withPath(String path, Closure closure) {
 }
 
 
-def withScripts(String workspace, Closure closure) {
-    withPath("${workspace}/grakn-test/test-integration/src/test/bash", closure)
+def withScripts(Closure closure) {
+    withPath("${pwd}/grakn-test/test-integration/src/test/bash", closure)
 }
 
 def ssh(String command) {
@@ -139,7 +139,6 @@ def mvn(String args) {
 Closure createTestJob(split, i, testTimeout) {
     return {
         graknNode {
-            String workspace = pwd()
             checkout scm
 
             slackGithub "Janus tests started"
@@ -151,11 +150,11 @@ Closure createTestJob(split, i, testTimeout) {
             /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
             /* Tell Maven to read the appropriate file. */
             if (split.includes) {
-                writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-                mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
+                writeFile file: "${pwd}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+                mavenVerify += " -Dsurefire.includesFile=${pwd}/parallel-test-includes-${i}.txt"
             } else {
-                writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
-                mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
+                writeFile file: "${pwd}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+                mavenVerify += " -Dsurefire.excludesFile=${pwd}/parallel-test-excludes-${i}.txt"
 
             }
 
@@ -216,13 +215,12 @@ if (shouldRunAllTests()) {
 
     jobs['benchmarks'] = {
         graknNode {
-            String workspace = pwd()
             checkout scm
             unstash 'dist'
 
             timeout(60) {
                 stage('Run the benchmarks') {
-                    mvn "clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                    mvn "clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${pwd}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
                     archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
             }
@@ -236,11 +234,10 @@ if (shouldRunAllTests()) {
         // Add each integration test as a parallel job
         jobs[moduleName] = {
             graknNode {
-                String workspace = pwd()
                 checkout scm
                 unstash 'dist'
 
-                runIntegrationTest(workspace, mod)
+                runIntegrationTest(mod)
             }
         }
     }
