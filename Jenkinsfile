@@ -90,6 +90,7 @@ def withGrakn(Closure closure) {
         closure()
     } finally {
         archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
+        archiveArtifacts artifacts: 'grakn-package/logs/grakn-postprocessing.log'
         archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
     }
 }
