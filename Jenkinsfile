@@ -103,6 +103,21 @@ def buildGrakn() {
 }
 
 def shouldRunAllTests() {
+    return true
+    /*
+       ___      ___
+      /   \____/   \
+     /    / __ \    \
+    /    |  ..  |    \
+    \___/|      |\___/\
+       | |_|  |_|      \
+       | |/|__|\|       \
+       |   |__|         |\
+       |   |__|   |_/  /  \
+       | @ |  | @ || @ |   '
+       |   |~~|   ||   |
+       'ooo'  'ooo''ooo'
+     */
     return env.BRANCH_NAME in ['master', 'stable']
 }
 
