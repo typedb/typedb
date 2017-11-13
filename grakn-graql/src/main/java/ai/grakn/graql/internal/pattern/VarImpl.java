@@ -23,10 +23,12 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Default implementation of {@link Var}.
@@ -35,6 +37,16 @@ import java.util.Set;
  */
 @AutoValue
 abstract class VarImpl extends AbstractVarPattern implements Var {
+
+    private static final Pattern VALID_VAR = Pattern.compile("[a-zA-Z0-9_-]+");
+
+    static VarImpl of(String value, Kind kind) {
+        Preconditions.checkArgument(
+                VALID_VAR.matcher(value).matches(), "Var value [%s] is invalid. Must match regex %s", value, VALID_VAR
+        );
+
+        return new AutoValue_VarImpl(value, kind);
+    }
 
     @Override
     public boolean isUserDefinedName() {
@@ -46,7 +58,7 @@ abstract class VarImpl extends AbstractVarPattern implements Var {
         if (isUserDefinedName()) {
             return this;
         } else {
-            return new AutoValue_VarImpl(getValue(), Kind.UserDefined);
+            return VarImpl.of(getValue(), Kind.UserDefined);
         }
     }
 
