@@ -28,7 +28,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.NeqFragment;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -58,7 +58,7 @@ public class QueryPlannerTest {
     private GraknTx tx;
 
     @ClassRule
-    public static final SampleKBContext context = SampleKBContext.preLoad(graph -> {
+    public static final SampleKBContext context = SampleKBContext.load(graph -> {
 
         EntityType entityType0 = graph.putEntityType(thingy0);
         EntityType entityType1 = graph.putEntityType(thingy1);
