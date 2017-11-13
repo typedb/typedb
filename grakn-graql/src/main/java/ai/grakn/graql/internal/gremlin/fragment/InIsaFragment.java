@@ -127,7 +127,7 @@ abstract class InIsaFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return accurateFragmentCost.orElse(COST_INSTANCES_PER_TYPE);
     }
 

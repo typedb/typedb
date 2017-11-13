@@ -233,11 +233,15 @@ public abstract class Fragment {
     /**
      * Get the cost for executing the fragment.
      */
-    public abstract double fragmentCost();
+    public double fragmentCost() {
+        return accurateFragmentCost.orElse(internalFragmentCost());
+    }
 
     public void setAccurateFragmentCost(double fragmentCost) {
         accurateFragmentCost = Optional.of(fragmentCost);
     }
+
+    public abstract double internalFragmentCost();
 
     /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.

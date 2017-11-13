@@ -51,7 +51,7 @@ public abstract class NeqFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         // This is arbitrary - we imagine about half the results are filtered out
         return COST_NODE_NEQ;
     }

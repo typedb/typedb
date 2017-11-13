@@ -57,7 +57,7 @@ public abstract class OutSubFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return accurateFragmentCost.orElse(COST_SAME_AS_PREVIOUS);
     }
 

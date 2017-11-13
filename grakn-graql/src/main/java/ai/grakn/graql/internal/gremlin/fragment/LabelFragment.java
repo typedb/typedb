@@ -65,7 +65,7 @@ abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_NODE_INDEX;
     }
 

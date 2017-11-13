@@ -65,7 +65,7 @@ abstract class OutIsaFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_SAME_AS_PREVIOUS;
     }
 

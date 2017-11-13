@@ -57,7 +57,7 @@ public abstract class InSubFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return accurateFragmentCost.orElse(COST_SUBTYPES_PER_TYPE);
     }
 

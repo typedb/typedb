@@ -101,7 +101,7 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return roleLabels() != null ? COST_ROLE_PLAYERS_PER_ROLE : COST_ROLE_PLAYERS_PER_RELATION;
     }
 
