@@ -3,23 +3,6 @@
 import static Constants.*
 
 def isMainBranch() {
-    /* Todo says
-     __
-    '. \
-     '- \
-      / /_         .---.
-     / | \\,.\/--.//    )
-     |  \//        )/  /
-      \  ' ^ ^    /    )____.----..  6
-       '.____.    .___/            \._)
-          .\/.                      )
-           '\ */return true/*       /
-           _/ \/    ).        )    (
-          /#  .!    |        /\    /
-          \  C// #  /'-----''/ #  /
-       .   'C/ |    |    |   |    |mrf  ,
-       \), .. .'OOO-'. ..'OOO'OOO-'. ..\(,
-         */
     return env.BRANCH_NAME in ['master', 'stable']
 }
 
