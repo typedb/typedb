@@ -29,7 +29,7 @@ import ai.grakn.util.SimpleURI;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.redisq.Redisq;
 import ai.grakn.redisq.RedisqBuilder;
-import ai.grakn.test.DistributionContext;
+import ai.grakn.test.rule.DistributionContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
@@ -99,7 +99,7 @@ public class GraknEngineFailoverIT {
     @Property(trials=10)
     public void whenSubmittingTasksToOneEngine_TheyComplete(List<TaskState> tasks1) throws Exception {
         // Create & Send tasks to rest api
-        Set<TaskResult> tasks = sendTasks(engine1.port(), tasks1);
+        Set<TaskResult> tasks = sendTasks(engine1.uri(), tasks1);
 
         // Wait for those tasks to complete
         waitForStatus(tasks, COMPLETED, FAILED);
@@ -114,8 +114,8 @@ public class GraknEngineFailoverIT {
     public void whenSubmittingTasksToTwoEngines_TheyComplete(
             List<TaskState> tasks1, List<TaskState> tasks2) throws Exception {
         // Create & Send tasks to rest api
-        Set<TaskResult> taskIds1 = sendTasks(engine1.port(), tasks1);
-        Set<TaskResult> taskIds2 = sendTasks(engine2.port(), tasks2);
+        Set<TaskResult> taskIds1 = sendTasks(engine1.uri(), tasks1);
+        Set<TaskResult> taskIds2 = sendTasks(engine2.uri(), tasks2);
 
         Set<TaskResult> allTasks = new HashSet<>();
         allTasks.addAll(taskIds1);
@@ -136,7 +136,7 @@ public class GraknEngineFailoverIT {
     public void whenSubmittingTasksToOneEngineAndRandomlyKillingTheOthers_TheyComplete(
             @Size(min=10000, max=20000) List<TaskState> tasks) throws Exception {
 
-        Set<TaskResult> taskIds = sendTasks(engine1.port(), tasks);
+        Set<TaskResult> taskIds = sendTasks(engine1.uri(), tasks);
 
         // Giving some time, the subscriptions to Redis are started asynchronously
         int interval = 3000;
@@ -168,8 +168,8 @@ public class GraknEngineFailoverIT {
         });
     }
 
-    private Set<TaskResult> sendTasks(int port, List<TaskState> tasks) {
-        TaskClient engineClient = TaskClient.of("localhost", port);
+    private Set<TaskResult> sendTasks(SimpleURI uri, List<TaskState> tasks) {
+        TaskClient engineClient = TaskClient.of(uri);
         return tasks.stream().map(t -> {
             try {
                 return engineClient.sendTask(

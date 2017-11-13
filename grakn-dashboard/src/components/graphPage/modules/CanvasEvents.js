@@ -43,16 +43,13 @@ function doubleClick(param) {
   const nodeObj = visualiser.getNode(node);
 
   if (eventKeys.shiftKey) {
-    requestExplore(nodeObj);
+    if (nodeObj.baseType !== API.INFERRED_RELATIONSHIP_TYPE) { requestExplore(nodeObj); }
   } else {
     EngineClient.request({
       url: nodeObj.href,
-    }).then(resp => CanvasHandler.onGraphResponse(resp, false, false, node), (err) => {
-      EventHub.$emit('error-message', err.message);
-    });
-    if (nodeObj.baseType === API.GENERATED_RELATIONSHIP_TYPE) {
-      visualiser.deleteNode(node);
-    }
+    }).then(resp => CanvasHandler.onGraphResponse(resp, false, false, false, node))
+    .then((instances) => { CanvasHandler.loadInstancesAttributes(0, instances); })
+    .catch((err) => { EventHub.$emit('error-message', err.message); });
   }
 }
 
@@ -77,7 +74,7 @@ function requestExplore(nodeObj) {
   if (nodeObj.explore) {
     EngineClient.request({
       url: nodeObj.explore,
-    }).then(resp => CanvasHandler.onGraphResponse(resp, false, true, nodeObj.id), (err) => {
+    }).then(resp => CanvasHandler.onGraphResponse(resp, false, true, true, nodeObj.id), (err) => {
       EventHub.$emit('error-message', err.message);
     });
   }

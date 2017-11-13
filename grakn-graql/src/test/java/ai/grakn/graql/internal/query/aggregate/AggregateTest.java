@@ -26,7 +26,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.matcher.MovieMatchers;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import org.junit.Assert;
 import org.junit.Before;
@@ -57,7 +57,7 @@ import static org.junit.Assert.assertEquals;
 public class AggregateTest {
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

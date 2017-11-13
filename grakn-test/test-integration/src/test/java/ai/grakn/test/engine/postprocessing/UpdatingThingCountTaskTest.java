@@ -8,11 +8,11 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -85,7 +85,7 @@ public class UpdatingThingCountTaskTest {
         try(GraknTx graknTx = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             et1 = graknTx.putEntityType("et1");
             et2 = graknTx.putEntityType("et2");
-            graknTx.admin().commitNoLogs();
+            graknTx.admin().commitSubmitNoLogs();
         }
 
         checkShardCount(keyspace, et1, 1);

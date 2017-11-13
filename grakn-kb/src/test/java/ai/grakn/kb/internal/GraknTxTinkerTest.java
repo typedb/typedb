@@ -56,11 +56,11 @@ public class GraknTxTinkerTest extends TxTestBase {
             future.get();
         }
 
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
         assertEquals(20, tx.getEntityType("Thing").instances().count());
     }
     private synchronized void addRandomEntity(){
-        try(GraknTx graph = Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE)){
+        try(GraknTx graph = Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE)){
             graph.getEntityType("Thing").addEntity();
             graph.commit();
         }
@@ -72,7 +72,7 @@ public class GraknTxTinkerTest extends TxTestBase {
         assertNotNull(tx.getEntityType("entity type"));
         tx.admin().delete();
         assertTrue(tx.isClosed());
-        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
         assertNull(tx.getEntityType("entity type"));
         assertNotNull(tx.getMetaEntityType());
     }
@@ -83,7 +83,7 @@ public class GraknTxTinkerTest extends TxTestBase {
         graph.close();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
+        expectedException.expectMessage(ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", graph.keyspace()));
 
         graph.putEntityType("Thingy");
     }

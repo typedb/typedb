@@ -32,6 +32,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.google.common.annotations.VisibleForTesting;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 import spark.Service;
@@ -69,26 +70,33 @@ public class GraknCreator {
     protected static EngineID engineId() {
         return EngineID.me();
     }
+
     protected static Service sparkService() {
         return Service.ignite();
     }
+
     protected static GraknEngineStatus graknEngineStatus() {
         return new GraknEngineStatus();
     }
-    protected static MetricRegistry metricRegistry() { return new MetricRegistry(); }
+
+    protected static MetricRegistry metricRegistry() {
+        return new MetricRegistry();
+    }
+
     protected static ExecutorService executorService() {
         return TasksController.taskExecutor();
     }
+
     protected static GraknEngineConfig graknEngineConfig() {
         return GraknEngineConfig.create();
     }
 
     static synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime) {
         if (graknEngineServer == null) {
-            EngineGraknTxFactory factory = instantiateGraknTxFactory(GRAKN_ENGINE_CONFIG);
             RedisWrapper redisWrapper = instantiateRedis(GRAKN_ENGINE_CONFIG);
             Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
             LockProvider lockProvider = instantiateLock(jedisPool);
+            EngineGraknTxFactory factory = instantiateGraknTxFactory(GRAKN_ENGINE_CONFIG, lockProvider);
             TaskManager taskManager = instantiateTaskManager(METRIC_REGISTRY, GRAKN_ENGINE_CONFIG, ENGINE_ID, factory, jedisPool, lockProvider);
             HttpHandler httpHandler = new HttpHandler(GRAKN_ENGINE_CONFIG, SPARK_SERVICE, factory, METRIC_REGISTRY, GRAKN_ENGINE_STATUS, taskManager, EXECUTOR_SERVICE);
             graknEngineServer = new GraknEngineServer(GRAKN_ENGINE_CONFIG, taskManager, factory, lockProvider, GRAKN_ENGINE_STATUS, redisWrapper, EXECUTOR_SERVICE, httpHandler, ENGINE_ID);
@@ -131,15 +139,15 @@ public class GraknCreator {
         return new JedisLockProvider(jedisPool);
     }
 
-    static synchronized EngineGraknTxFactory instantiateGraknTxFactory(GraknEngineConfig config) {
+    static synchronized EngineGraknTxFactory instantiateGraknTxFactory(GraknEngineConfig config, LockProvider lockProvider) {
         if (engineGraknTxFactory == null) {
-            engineGraknTxFactory = engineGraknTxFactory(config);
+            engineGraknTxFactory = engineGraknTxFactory(config, lockProvider);
         }
         return engineGraknTxFactory;
     }
 
-    protected static EngineGraknTxFactory engineGraknTxFactory(GraknEngineConfig config) {
-        return EngineGraknTxFactory.create(config.getProperties());
+    protected static EngineGraknTxFactory engineGraknTxFactory(GraknEngineConfig config, LockProvider lockProvider) {
+        return EngineGraknTxFactory.create(lockProvider, config.getProperties());
     }
 
     /**
@@ -149,8 +157,8 @@ public class GraknCreator {
      * @param jedisPool
      */
     private static synchronized TaskManager instantiateTaskManager(MetricRegistry metricRegistry, GraknEngineConfig config, EngineID engineId, EngineGraknTxFactory factory,
-                                                           final Pool<Jedis> jedisPool,
-                                                           final LockProvider lockProvider) {
+                                                                   final Pool<Jedis> jedisPool,
+                                                                   final LockProvider lockProvider) {
         if (taskManager == null) {
             taskManager = taskManager(config, factory, jedisPool, lockProvider, engineId, metricRegistry);
         }
@@ -172,6 +180,22 @@ public class GraknCreator {
         return new RedisTaskManager(engineId, config, jedisPool, consumers, factory, lockProvider, metricRegistry);
     }
 
+    @VisibleForTesting
+    public static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config) {
+        return cleanGraknEngineServer(config, redisWrapper(config));
+    }
 
+    @VisibleForTesting
+    public static synchronized GraknEngineServer cleanGraknEngineServer(GraknEngineConfig config, RedisWrapper redisWrapper) {
+        Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
+        LockProvider lockProvider = lockProvider(jedisPool);
+        EngineGraknTxFactory factory = engineGraknTxFactory(config, lockProvider);
+        MetricRegistry metricRegistry = metricRegistry();
+        EngineID engineID = engineId();
+        TaskManager taskManager = taskManager(config, factory, jedisPool, lockProvider, engineID, metricRegistry);
+        GraknEngineStatus graknEngineStatus = graknEngineStatus();
+        ExecutorService executorService = executorService();
+        HttpHandler httpHandler = new HttpHandler(config, sparkService(), factory, metricRegistry, graknEngineStatus, taskManager, executorService);
+        return new GraknEngineServer(config, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, executorService, httpHandler, engineID);
+    }
 }
-

@@ -23,7 +23,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;
@@ -31,25 +32,22 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 public class ClientTest {
+    @ClassRule
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Test
-    public void graknEngineRunning() throws Throwable {
-        EngineContext engine = EngineContext.createWithInMemoryRedis();
-        engine.before();
-
+    public void whenGraknEngineIsRunning_ClientCanConnect() throws Throwable {
         boolean running = Client.serverIsRunning(engine.uri());
         assertTrue(running);
 
         // Check that we've loaded the schema
-        try(GraknTx graph = engine.server().factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
-            assertNotNull(graph.getAttributeType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
+        try(GraknTx tx = engine.server().factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)){
+            assertNotNull(tx.getAttributeType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
         }
-
-        engine.after();
     }
 
     @Test
-    public void graknEngineNotRunning() throws Exception {
+    public void whenGraknEngineIsNotRunningOnSpecifiedURI_ClientCannotConnect() throws Exception {
         boolean running = Client.serverIsRunning(Grakn.DEFAULT_URI);
         assertFalse(running);
     }

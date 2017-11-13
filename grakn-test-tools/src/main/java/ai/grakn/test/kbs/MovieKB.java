@@ -26,6 +26,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
 
 import java.time.LocalDate;
@@ -58,6 +59,10 @@ public class MovieKB extends TestKB {
 
     public static Consumer<GraknTx> get(){
         return new MovieKB().build();
+    }
+
+    public static SampleKBContext context(){
+        return new MovieKB().makeContext();
     }
 
     @Override

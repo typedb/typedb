@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
@@ -36,11 +36,8 @@ import org.junit.Test;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonResponse;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -64,7 +61,7 @@ public class GraqlControllerInsertTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -86,10 +83,10 @@ public class GraqlControllerInsertTest {
 
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.tx(eq(mockTx.getKeyspace()), any())).thenReturn(mockTx);
+        when(mockFactory.tx(eq(mockTx.keyspace()), any())).thenReturn(mockTx);
     }
 
     @Test
@@ -130,21 +127,9 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTWithNoKeyspace_ResponseStatusIs400(){
-        String query = "insert $x isa person;";
-
-        Response response = RestAssured.with()
-                .body(query)
-                .post(REST.WebPath.KB.ANY_GRAQL);
-
-        assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
-    }
-
-    @Test
     public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, "some-kb"));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -218,10 +203,8 @@ public class GraqlControllerInsertTest {
     private Response sendRequest(String query, String acceptType){
         return RestAssured.with()
                 .accept(acceptType)
-                .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .queryParam(INFER, false)
-                .queryParam(MATERIALISE, false)
                 .body(query)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.keyspace().getValue()));
     }
 }

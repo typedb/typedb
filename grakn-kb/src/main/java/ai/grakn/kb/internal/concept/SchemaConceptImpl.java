@@ -113,22 +113,45 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         return cachedSuperType.get();
     }
 
+
+    /**
+     *
+     * @return The supertypes of this
+     */
+    @Override
+    public Stream<T> sups() {
+        return this.filterSuperSet(this.superSet());
+    }
+
     /**
      *
      * @return All outgoing sub parents including itself
      */
     public Stream<T> superSet() {
         Set<T> superSet= new HashSet<>();
+
         superSet.add(getThis());
         T superParent = sup();
 
         while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
             superSet.add(superParent);
+
             //noinspection unchecked
             superParent = (T) superParent.sup();
         }
 
         return superSet.stream();
+    }
+
+
+    /**
+     * Filters the supers not to return meta schema nodes defined in {@link Schema.MetaSchema}
+     * @param superSet
+     * @return filtered supertypes
+     */
+    public Stream<T> filterSuperSet(Stream<T> superSet) {
+        return superSet.filter(concept -> !Schema.MetaSchema.isMetaLabel(concept.getLabel()));
+
     }
 
     /**
@@ -268,6 +291,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         }
         return getThis();
     }
+
 
     /**
      * Checks if changing the super is allowed. This passed if:

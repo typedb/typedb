@@ -18,15 +18,13 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.Keyspace;
+import ai.grakn.GraknSession;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Properties;
 
 /**
  * <p>
@@ -50,11 +48,11 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
 
-    TxFactoryJanusHadoop(Keyspace keyspace, String engineUrl, Properties properties) {
-        super(keyspace, engineUrl, properties);
+    TxFactoryJanusHadoop(GraknSession session) {
+        super(session);
 
-        properties.setProperty(CLUSTER_KEYSPACE, keyspace.getValue());
-        properties.setProperty(INPUT_KEYSPACE, keyspace.getValue());
+        session().config().setProperty(CLUSTER_KEYSPACE, session().keyspace().getValue());
+        session().config().setProperty(INPUT_KEYSPACE, session().keyspace().getValue());
     }
 
     @Override
@@ -64,16 +62,16 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
 
     @Override
     HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
-        LOG.warn("Hadoop graph ignores parameter address [" + super.engineUrl + "]");
+        LOG.warn("Hadoop graph ignores parameter address [" + session().uri() + "]");
 
         //Load Defaults
         TxFactoryJanus.DEFAULT_PROPERTIES.forEach((key, value) -> {
-            if(!properties.containsKey(key)){
-                properties.put(key, value);
+            if(!session().config().containsKey(key)){
+                session().config().put(key, value);
             }
         });
 
-        return (HadoopGraph) GraphFactory.open(properties);
+        return (HadoopGraph) GraphFactory.open(session().config());
     }
 
     //TODO: Get rid of the need for batch loading parameter

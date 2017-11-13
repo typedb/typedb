@@ -19,15 +19,15 @@
 package ai.grakn.engine.controller;
 
 
-import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.util.SimpleURI;
+import ai.grakn.util.GraknTestUtil;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.builder.RequestSpecBuilder;
 import org.junit.rules.ExternalResource;
 import spark.Service;
 
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -47,7 +47,7 @@ public class SparkContext extends ExternalResource {
     private SparkContext(BiConsumer<Service, GraknEngineConfig> createControllers) {
         this.createControllers = createControllers;
 
-        int port = EngineTestHelper.findAvailablePort();
+        int port = GraknTestUtil.getEphemeralPort();
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
 
         if ("0.0.0.0".equals(config.getProperty(GraknConfigKey.SERVER_HOST_NAME))) {
@@ -83,11 +83,16 @@ public class SparkContext extends ExternalResource {
         return this;
     }
 
+    public SparkContext host(String host) {
+        config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, host);
+        return this;
+    }
+
     public int port() {
         return config.getProperty(GraknConfigKey.SERVER_PORT);
     }
 
-    public String uri() {
+    public SimpleURI uri() {
         return config.uri();
     }
 

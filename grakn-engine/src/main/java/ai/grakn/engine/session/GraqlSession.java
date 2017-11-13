@@ -71,7 +71,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 class GraqlSession {
     private final Session session;
     private final boolean infer;
-    private final boolean materialise;
     private GraknTx tx;
     private final GraknSession factory;
     private final String outputFormat;
@@ -89,12 +88,11 @@ class GraqlSession {
 
     GraqlSession(
             Session session, GraknSession factory, String outputFormat,
-            boolean infer, boolean materialise
+            boolean infer
     ) {
         Preconditions.checkNotNull(session);
 
         this.infer = infer;
-        this.materialise = materialise;
         this.session = session;
         this.factory = factory;
         this.outputFormat = outputFormat;
@@ -218,7 +216,7 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                queries = tx.graql().infer(infer).materialise(materialise).parser().parseList(queryString).collect(toList());
+                queries = tx.graql().infer(infer).parser().parseList(queryString).collect(toList());
 
                 // Return results unless query is cancelled
                 queries.stream().flatMap(query -> query.resultsString(printer)).forEach(this::sendQueryResult);
@@ -371,7 +369,7 @@ class GraqlSession {
                 return Printers.json();
             case "hal":
                 // TODO: Make this parameter configurable
-                return Printers.hal(tx.getKeyspace(), 100);
+                return Printers.hal(tx.keyspace(), 100);
             case "graql":
             default:
                 return Printers.graql(true, resources);

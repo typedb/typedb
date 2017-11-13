@@ -21,14 +21,10 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.GraknTxTinker;
-import ai.grakn.test.GraknTestSetup;
-import org.junit.Before;
+import ai.grakn.test.rule.SessionContext;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,17 +35,13 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class SampleKBLoaderTest {
 
-    //TODO: Put this somewhere common
-    @Before
-    public void setup(){
-        GraknTestSetup.startCassandraIfNeeded();
-    }
+    @ClassRule
+    public static SessionContext sessionContext = SessionContext.create();
 
     @Test
     public void whenCreatingEmptyGraph_EnsureGraphIsEmpty(){
@@ -81,44 +73,12 @@ public class SampleKBLoaderTest {
     public void whenBuildingGraph_EnsureBackendMatchesTheTestProfile(){
         try(GraknTx graph = SampleKBLoader.empty().tx()){
             //String comparison is used here because we do not have the class available at compile time
-            if(GraknTestSetup.usingTinker()){
+            if(GraknTestUtil.usingTinker()){
                 assertEquals(GraknTxTinker.class.getSimpleName(), graph.getClass().getSimpleName());
-            } else if (GraknTestSetup.usingJanus()) {
+            } else if (GraknTestUtil.usingJanus()) {
                 assertEquals("GraknTxJanus", graph.getClass().getSimpleName());
             } else {
                 throw new RuntimeException("Test run with unsupported graph backend");
-            }
-        }
-    }
-
-    @Test
-    public void whenCreatingGraphWithPreLoadingFiles_EnsureGraphContainsPreLoadedEntities(){
-        //Create some rubbish files
-        String [] files = new String[10];
-        String [] typeNames = new String[10];
-        try {
-            for(int i = 0; i < files.length; i ++) {
-                File temp = File.createTempFile("some-graql-file-" + i, ".gql");
-                temp.deleteOnExit();
-
-                try(BufferedWriter out = new BufferedWriter(new FileWriter(temp))){
-                    typeNames[i]= "my-entity-type-" + i;
-                    out.write("define " + typeNames[i] + " sub entity;");
-                }
-
-                files[i] = temp.getAbsolutePath();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        //Load the data in
-        SampleKBLoader loader = SampleKBLoader.preLoad(files);
-
-        //Check the data is there
-        try (GraknTx graph = loader.tx()){
-            for (String typeName : typeNames) {
-                assertNotNull(graph.getEntityType(typeName));
             }
         }
     }

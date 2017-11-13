@@ -32,6 +32,14 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>annotations</artifactId>
+        </dependency>
+        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-core</artifactId>
             <version>${project.version}</version>
@@ -48,11 +56,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.sharegov</groupId>
-            <artifactId>mjson</artifactId>
-            <version>${mjson.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.theoryinpractise</groupId>
             <artifactId>halbuilder-standard</artifactId>
             <version>${halbuilder-standard.version}</version>
@@ -62,6 +65,10 @@
             <artifactId>commons-math3</artifactId>
             <version>${commons-math.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
         </dependency>
     </dependencies>
     <build>

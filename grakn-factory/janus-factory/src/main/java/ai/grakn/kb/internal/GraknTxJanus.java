@@ -18,27 +18,23 @@
 
 package ai.grakn.kb.internal;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.kb.internal.concept.ConceptImpl;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.util.JanusGraphCleanup;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
-import java.util.Properties;
 import java.util.function.Supplier;
 
 /**
@@ -56,24 +52,8 @@ import java.util.function.Supplier;
  * @author fppt
  */
 public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
-    public GraknTxJanus(JanusGraph graph, Keyspace keyspace, String engineUrl, Properties properties){
-        super(graph, keyspace, engineUrl, properties);
-    }
-
-    /**
-     * Uses {@link JanusGraphVertex#isModified()}
-     *
-     * @param concept A concept in the graph
-     * @return true if the concept has been modified
-     */
-    @Override
-    public boolean isConceptModified(Concept concept) {
-        //TODO: Clean this crap up
-        if(concept instanceof ConceptImpl) {
-            JanusGraphVertex vertex = (JanusGraphVertex) ((ConceptImpl) concept).vertex().element();
-            return vertex.isModified() || vertex.isNew();
-        }
-        return true;
+    public GraknTxJanus(GraknSession session, JanusGraph graph){
+        super(session, graph);
     }
 
     @Override

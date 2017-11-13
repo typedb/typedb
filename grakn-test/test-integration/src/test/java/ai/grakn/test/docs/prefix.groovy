@@ -51,13 +51,13 @@ if (false) {
 // Initialise graphs and fields that the code samples will use
 
 uri = JavaDocsTest.engine.uri()
-host = "localhost"
-port = JavaDocsTest.engine.port()
+host = uri.host
+port = uri.port
 
 tx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).open(GraknTxType.WRITE)
 
 _otherTx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).open(GraknTxType.WRITE)
-keyspace = _otherTx.getKeyspace()
+keyspace = _otherTx.keyspace()
 _otherTx.close()
 
 callback = {x -> x}

@@ -38,9 +38,9 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -97,7 +97,7 @@ public class InsertQueryTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieKB = MovieKB.context();
 
     @Before
     public void setUp() {
@@ -297,7 +297,7 @@ public class InsertQueryTest {
     @Test
     public void testKeyCorrectUsage() throws InvalidKBException {
         // This should only run on tinker because it commits
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
 
         qb.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
@@ -309,7 +309,7 @@ public class InsertQueryTest {
 
     @Test
     public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidKBException {
-        assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
+        assumeTrue(GraknTestUtil.usingTinker()); // This should only run on tinker because it commits
 
         qb.define(
                 label("a-new-type").sub("entity").key("a-new-attribute-type"),
@@ -327,7 +327,7 @@ public class InsertQueryTest {
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
     @Test
     public void testKeyUniqueValue() throws InvalidKBException {
-        assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
+        assumeTrue(GraknTestUtil.usingTinker()); // This should only run on tinker because it commits
 
         qb.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
@@ -345,7 +345,7 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyRequiredOwner() throws InvalidKBException {
-        assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
+        assumeTrue(GraknTestUtil.usingTinker()); // This should only run on tinker because it commits
 
         qb.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),

@@ -25,8 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
-
-import java.util.function.Consumer;
+import ai.grakn.test.rule.SampleKBContext;
 
 /**
  *
@@ -51,8 +50,8 @@ public class GeoKB extends TestKB {
     private static Thing Imperial;
     private static Thing UCL;
 
-    public static Consumer<GraknTx> get(){
-        return new GeoKB().build();
+    public static SampleKBContext context(){
+        return new GeoKB().makeContext();
     }
 
     @Override

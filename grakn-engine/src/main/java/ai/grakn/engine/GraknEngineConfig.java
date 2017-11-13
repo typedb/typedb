@@ -20,8 +20,9 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.GraknVersion;
-import com.google.common.base.StandardSystemProperty;
+import ai.grakn.util.SimpleURI;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ public class GraknEngineConfig {
 
     public static final int WEBSOCKET_TIMEOUT = 3600000;
 
-    public static final Path PROJECT_PATH = getProjectPath();
+    public static final Path PROJECT_PATH = CommonUtil.getProjectPath();
     public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
@@ -112,17 +113,6 @@ public class GraknEngineConfig {
         return PROJECT_PATH.resolve(getProperty(pathKey));
     }
 
-    /**
-     * @return The project path. If it is not specified as a JVM parameter it will be set equal to
-     * user.dir folder.
-     */
-    private static Path getProjectPath() {
-        if (GraknSystemProperty.CURRENT_DIRECTORY.value() == null) {
-            GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
-        }
-        return Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
-    }
-
     public Properties getProperties() {
         return prop;
     }
@@ -131,8 +121,8 @@ public class GraknEngineConfig {
         return key.parse(Optional.ofNullable(prop.getProperty(key.name())), CONFIG_FILE_PATH);
     }
 
-    public String uri() {
-        return getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + getProperty(GraknConfigKey.SERVER_PORT);
+    public SimpleURI uri() {
+        return new SimpleURI(getProperty(GraknConfigKey.SERVER_HOST_NAME), getProperty(GraknConfigKey.SERVER_PORT));
     }
 
     private static String loadGraknAsciiFile(Path projectPath, Path graknAsciiPath) {

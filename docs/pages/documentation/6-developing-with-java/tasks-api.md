@@ -28,10 +28,10 @@ import ai.grakn.client.TaskClient;
 
 # Basic Usage
 
-The task client provides only one constructor that accepts the host and port where a single engine is running.
+The task client provides only one constructor that accepts the URI where a single engine is running.
 
 ```java
-TaskClient loader = TaskClient.of(host, port);
+TaskClient loader = TaskClient.of(uri);
 ```
 
 ## Creating a task
@@ -53,7 +53,7 @@ The creating of tasks requires a number of parameters:
 The `TaskClient.sendTask()` function accepts all of the above as arguments:
 
 ```java
-TaskClient client = TaskClient.of(host, port);
+TaskClient client = TaskClient.of(uri);
 
 Class taskClass = ShortExecutionMockTask.class;
 String creator = this.getClass().getName();

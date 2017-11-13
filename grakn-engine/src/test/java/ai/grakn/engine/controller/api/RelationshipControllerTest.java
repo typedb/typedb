@@ -4,8 +4,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -16,9 +17,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_OBJECT_JSON_FIELD;
-import static ai.grakn.util.REST.WebPath.Api.API_PREFIX;
+import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT;
 import static ai.grakn.util.REST.WebPath.Api.RELATIONSHIP_TYPE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,7 +35,7 @@ public class RelationshipControllerTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -47,7 +47,7 @@ public class RelationshipControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.getRelationshipType(anyString())).thenAnswer(invocation ->
             sampleKB.tx().getRelationshipType(invocation.getArgument(0)));
@@ -59,8 +59,8 @@ public class RelationshipControllerTest {
             sampleKB.tx().getRole(invocation.getArgument(0)));
         Mockito.doAnswer(e -> { sampleKB.tx().commit(); return null; } ).when(mockTx).commit();
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
@@ -68,8 +68,7 @@ public class RelationshipControllerTest {
         String directedBy = "directed-by";
 
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .post(RELATIONSHIP_TYPE + "/" + directedBy);
+            .post(REST.resolveTemplate(RELATIONSHIP_TYPE + "/" + directedBy, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -86,17 +85,17 @@ public class RelationshipControllerTest {
 
         String entityConceptId;
         String relationshipConceptId;
-        try (GraknTx tx = mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)) {
+        try (GraknTx tx = mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)) {
             entityConceptId = tx.getEntityType(entityTypeLabel).addEntity().getId().getValue();
             relationshipConceptId = tx.getRelationshipType(relationshipTypeLabel).addRelationship().getId().getValue();
             tx.commit();
         }
 
-        Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-            .put(API_PREFIX + "/relationship/" + relationshipConceptId +
-                "/entity/" + entityConceptId +
-                "/role/" + roleLabel);
+        String path = REST.resolveTemplate(
+                RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT, mockTx.keyspace().getValue(), relationshipConceptId,
+                entityConceptId, roleLabel
+        );
+        Response response = with().put(path);
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }

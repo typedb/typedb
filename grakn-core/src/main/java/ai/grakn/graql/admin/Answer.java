@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
 
+import com.google.common.collect.ImmutableMap;
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
@@ -71,16 +72,8 @@ public interface Answer {
     @CheckReturnValue
     Concept get(Var var);
 
-    Concept put(Var var, Concept con);
-
-    Concept remove(Var var);
-
     @CheckReturnValue
-    Map<Var, Concept> map();
-
-    void putAll(Answer a);
-
-    void putAll(Map<Var, Concept> m2);
+    ImmutableMap<Var, Concept> map();
 
     @CheckReturnValue
     boolean containsKey(Var var);
@@ -116,6 +109,13 @@ public interface Answer {
      */
     @CheckReturnValue
     Answer merge(Answer a2, boolean explanation);
+
+    /**
+     * @param a2 answer with which explanation of this answer should be merged
+     * @return merged explanation of this and provided answer
+     */
+    @CheckReturnValue
+    AnswerExplanation mergeExplanation(Answer a2);
 
     /**
      * explain this answer by providing explanation with preserving the structure of dependent answers
@@ -160,12 +160,6 @@ public interface Answer {
     AnswerExplanation getExplanation();
 
     /**
-     * @param e explanation to be set for this answer
-     * @return answer with provided explanation
-     */
-    Answer setExplanation(AnswerExplanation e);
-
-    /**
      * @return set of answers corresponding to the explicit path
      */
     @CheckReturnValue
@@ -175,7 +169,7 @@ public interface Answer {
      * @return set of all answers taking part in the derivation of this answer
      */
     @CheckReturnValue
-    Set<Answer> getAnswers();
+    Set<Answer> getPartialAnswers();
 
     /**
      * @return all explanations taking part in the derivation of this answer

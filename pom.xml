@@ -109,10 +109,12 @@
         <apache-http-core.version>4.4.6</apache-http-core.version>
         <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
         <pf4j.version>1.3.0</pf4j.version>
-        <redisq.version>0.0.5</redisq.version>
-      <jersey.version>1.19</jersey.version>
+        <httpclient.version>4.5.1</httpclient.version>
+        <jersey.version>1.19</jersey.version>
         <hystrix-core.version>1.5.12</hystrix-core.version>
         <failsafe.version>1.0.4</failsafe.version>
+        <redisq.version>0.0.6-SNAPSHOT</redisq.version>
+        <reactivex.version>1.3.2</reactivex.version>
     </properties>
 
     <organization>
@@ -202,52 +204,50 @@
         <url>https://github.com/graknlabs/grakn/tree/master</url>
     </scm>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>ai.grakn</groupId>
+                <artifactId>redisq</artifactId>
+                <version>${redisq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.auto.value</groupId>
+                <artifactId>auto-value</artifactId>
+                <version>${auto-value.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>annotations</artifactId>
+                <version>${findbugs.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>redisq</artifactId>
-            <version>${redisq.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.auto.value</groupId>
-            <artifactId>auto-value</artifactId>
-            <version>${auto-value.version}</version>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <!-- SLF4J is the logging API all modules should use -->
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>annotations</artifactId>
-            <version>${findbugs.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-all</artifactId>
-            <version>${hamcrest.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -259,26 +259,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <!--Jaino used for conditionals in log files-->
-        <dependency>
-            <groupId>org.codehaus.janino</groupId>
-            <artifactId>janino</artifactId>
-            <version>${janino.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <!--Mockito needs this-->
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <version>${bytebuddy.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy-agent</artifactId>
-            <version>${bytebuddy.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -415,6 +395,8 @@
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
                     <argLine>-Xmx1024m</argLine>
+                    <!-- Added this config to try and help sort out flaky tests -->
+                    <runOrder>random</runOrder>
                 </configuration>
             </plugin>
             <plugin>

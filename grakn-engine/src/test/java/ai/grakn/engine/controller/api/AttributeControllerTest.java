@@ -22,8 +22,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -34,7 +35,6 @@ import org.junit.Test;
 
 import static ai.grakn.util.REST.Request.ATTRIBUTE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.VALUE_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 import static com.jayway.restassured.RestAssured.with;
@@ -59,7 +59,7 @@ public class AttributeControllerTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKBContext = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKBContext = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -70,13 +70,13 @@ public class AttributeControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
             sampleKBContext.tx().getAttributeType(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
@@ -86,9 +86,8 @@ public class AttributeControllerTest {
 
         Json requestBody = Json.object(VALUE_JSON_FIELD, attributeValue);
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(requestBody.toString())
-            .post(ATTRIBUTE_TYPE + "/" + attributeType);
+            .post(REST.resolveTemplate(ATTRIBUTE_TYPE + "/" + attributeType, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 

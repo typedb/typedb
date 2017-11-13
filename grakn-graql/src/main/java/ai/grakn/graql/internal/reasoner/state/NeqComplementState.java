@@ -60,7 +60,7 @@ public class NeqComplementState extends AtomicState {
     public NeqComplementState(ReasonerAtomicQuery q,
                               Answer sub,
                               Unifier u,
-                              QueryState parent,
+                              QueryStateBase parent,
                               Set<ReasonerAtomicQuery> subGoals,
                               QueryCache<ReasonerAtomicQuery> cache) {
         super(q, sub, u, parent, subGoals, cache);

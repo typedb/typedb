@@ -25,37 +25,28 @@ import ai.grakn.client.QueryResponse;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
-import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
-import static ai.grakn.util.ConcurrencyUtil.allObservable;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.GraknVersion;
-import static ai.grakn.util.REST.RemoteShell.ACTION;
-import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
-import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_DISPLAY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_END;
-import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
-import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
-import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
-import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
-import static ai.grakn.util.REST.RemoteShell.DISPLAY;
-import static ai.grakn.util.REST.RemoteShell.ERROR;
-import static ai.grakn.util.REST.RemoteShell.INFER;
-import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
-import static ai.grakn.util.REST.RemoteShell.MATERIALISE;
-import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
-import static ai.grakn.util.REST.RemoteShell.QUERY;
-import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
-import static ai.grakn.util.REST.RemoteShell.TYPES;
-import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
-import static ai.grakn.util.Schema.BaseType.TYPE;
-import static ai.grakn.util.Schema.ImplicitType.HAS;
+import ai.grakn.util.SimpleURI;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import jline.console.ConsoleReader;
+import jline.console.completer.AggregateCompleter;
+import jline.console.history.FileHistory;
+import mjson.Json;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import rx.Observable;
+
+import javax.annotation.Nullable;
+import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -74,23 +65,36 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
+import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
+import static ai.grakn.util.ConcurrencyUtil.allObservable;
+import static ai.grakn.util.REST.RemoteShell.ACTION;
+import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
+import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
+import static ai.grakn.util.REST.RemoteShell.ACTION_DISPLAY;
+import static ai.grakn.util.REST.RemoteShell.ACTION_END;
+import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
+import static ai.grakn.util.REST.RemoteShell.ACTION_INIT;
+import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
+import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
+import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
+import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
+import static ai.grakn.util.REST.RemoteShell.DISPLAY;
+import static ai.grakn.util.REST.RemoteShell.ERROR;
+import static ai.grakn.util.REST.RemoteShell.INFER;
+import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
+import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
+import static ai.grakn.util.REST.RemoteShell.QUERY;
+import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
+import static ai.grakn.util.REST.RemoteShell.TYPES;
+import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
+import static ai.grakn.util.Schema.BaseType.TYPE;
+import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
-import jline.console.ConsoleReader;
-import jline.console.completer.AggregateCompleter;
-import jline.console.history.FileHistory;
-import mjson.Json;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
-import rx.Observable;
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -121,7 +125,7 @@ public class GraqlShell {
     private static final String CLEAN_COMMAND = "clean";
     private static final String HI_POP_COMMAND =
             HAS.name().substring(0, 1) + Integer.class.getSimpleName().substring(0, 1) +
-            Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
+                    Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
 
     private static final int QUERY_CHUNK_SIZE = 50000;
 
@@ -151,6 +155,7 @@ public class GraqlShell {
 
     /**
      * Run a Graql REPL
+     *
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql console --help}
      */
     public static void main(String[] args) {
@@ -175,7 +180,6 @@ public class GraqlShell {
         options.addOption("a", "active", true, "the number of active tasks (must be used with -b)");
         options.addOption("o", "output", true, "output format for results");
         options.addOption("n", "infer", false, "perform inference on results");
-        options.addOption("m", "materialise", false, "materialise inferred results");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -215,26 +219,25 @@ public class GraqlShell {
         }
 
         Keyspace keyspace = Keyspace.of(cmd.getOptionValue("k", DEFAULT_KEYSPACE));
-        String uriString = cmd.getOptionValue("r", Grakn.DEFAULT_URI);
+        SimpleURI location = Optional.ofNullable(cmd.getOptionValue("r")).map(SimpleURI::new).orElse(Grakn.DEFAULT_URI);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
 
-        if (!client.serverIsRunning(uriString)) {
+        if (!client.serverIsRunning(location)) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
             return false;
         }
 
         boolean infer = cmd.hasOption("n");
-        boolean materialise = cmd.hasOption("m");
 
         if (cmd.hasOption("b")) {
             try {
-                try {
-                    sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"), keyspace.getValue());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                sendBatchRequest(client.loaderClient(keyspace, location), cmd.getOptionValue("b"), keyspace);
             } catch (NumberFormatException e) {
-                printUsage(options, "Cannot cast argument to an integer "+e.getMessage());
+                printUsage(options, "Cannot cast argument to an integer " + e.getMessage());
+                return false;
+            } catch (Exception e) {
+                System.out.println("Batch failed \n" + CommonUtil
+                        .simplifyExceptionMessage(e));
                 return false;
             }
             return true;
@@ -249,11 +252,11 @@ public class GraqlShell {
                 queries = Optional.of(loadQueries(filePaths));
             }
 
-            URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
+            URI uri = UriBuilder.fromUri(location.toURI()).scheme("ws").path(REMOTE_SHELL_URI).build();
 
             GraqlShell shell = new GraqlShell(
                     historyFilename, keyspace, client, uri, outputFormat,
-                    infer, materialise
+                    infer
             );
 
             // Start shell
@@ -292,14 +295,14 @@ public class GraqlShell {
     }
 
     private static String loadQuery(String filePath) throws IOException {
-            List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
-            return lines.stream().collect(joining("\n"));
+        List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
+        return lines.stream().collect(joining("\n"));
     }
 
-    private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, String keyspace) throws IOException {
+    private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
         String queries = loadQuery(graqlPath);
         List<Observable<QueryResponse>> all = new ArrayList<>();
-        Graql.parser().parseList(queries).forEach(query -> batchExecutorClient.add(query, keyspace, true));
+        Graql.parser().parseList(queries).forEach(query -> all.add(batchExecutorClient.add(query, keyspace, false)));
         int completed = allObservable(all).toBlocking().first().size();
         System.out.println("Statements executed: " + completed);
         batchExecutorClient.close();
@@ -310,7 +313,7 @@ public class GraqlShell {
      */
     GraqlShell(
             String historyFilename, Keyspace keyspace,
-            GraqlClient client, URI uri, String outputFormat, boolean infer, boolean materialise
+            GraqlClient client, URI uri, String outputFormat, boolean infer
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
@@ -322,8 +325,7 @@ public class GraqlShell {
                 ACTION, ACTION_INIT,
                 KEYSPACE, keyspace.getValue(),
                 OUTPUT_FORMAT, outputFormat,
-                INFER, infer,
-                MATERIALISE, materialise
+                INFER, infer
         );
         session.sendJson(initJson);
 
@@ -470,7 +472,7 @@ public class GraqlShell {
         return fileCreated;
     }
 
-    private void printLicense(){
+    private void printLicense() {
         StringBuilder result = new StringBuilder("");
 
         //Get file from resources folder
@@ -515,6 +517,7 @@ public class GraqlShell {
 
     /**
      * Handle the given server message
+     *
      * @param message the message to handle
      */
     private void handleMessage(Json message) {
@@ -570,6 +573,7 @@ public class GraqlShell {
 
     /**
      * load the user's preferred editor to edit a query
+     *
      * @return the string written to the editor
      */
     private String runEditor() throws IOException {

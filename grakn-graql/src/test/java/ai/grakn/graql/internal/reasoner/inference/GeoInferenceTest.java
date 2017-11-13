@@ -26,9 +26,10 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import java.util.List;
+
+import ai.grakn.util.GraknTestUtil;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,11 +46,11 @@ import static org.hamcrest.Matchers.empty;
 public class GeoInferenceTest {
 
     @Rule
-    public final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get());
+    public final SampleKBContext geoKB = GeoKB.context();
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
     }
 
     @Test
@@ -74,7 +75,6 @@ public class GeoInferenceTest {
         String explicitQuery = "match " +
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';}; get;";
-
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
@@ -269,10 +269,10 @@ public class GeoInferenceTest {
         String queryString = "match ($r1: $x, $r2: $y) isa is-located-in; get;";
 
         List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
-
         answers.forEach(ans -> assertEquals(ans.size(), 4));
         assertEquals(answers.size(), 408);
+
+        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
         answers2.forEach(ans -> assertEquals(ans.size(), 4));
         assertCollectionsEqual(answers, answers2);
     }
@@ -287,9 +287,10 @@ public class GeoInferenceTest {
                 "$x2 id '" + masovia.getId().getValue() + "'; get;";
 
         List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 20);
         answers.forEach(ans -> assertEquals(ans.size(), 5));
+
+        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
         answers2.forEach(ans -> assertEquals(ans.size(), 5));
         assertCollectionsEqual(answers, answers2);
     }

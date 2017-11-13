@@ -28,23 +28,25 @@ import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
-import static ai.grakn.util.ConcurrencyUtil.allObservableWithTimeout;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
+
+import static ai.grakn.util.ConcurrencyUtil.allObservableWithTimeout;
+import static com.codahale.metrics.MetricRegistry.name;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * <p>
@@ -62,7 +64,7 @@ public class Migrator {
     public static final int OBSERVABLE_TIMEOUT_MINUTES = 2;
 
     private final QueryParser queryParser = Graql.withoutGraph().infer(false).parser();
-    private final String uri;
+    private final SimpleURI uri;
     private final Keyspace keyspace;
     private final int retries;
     private final boolean failFast;
@@ -78,7 +80,7 @@ public class Migrator {
      * @param uri Uri where one instance of Grakn Engine is running
      * @param keyspace The {@link Keyspace} where the data should be persisted
      */
-    public Migrator(String uri, Keyspace keyspace, int retries, boolean failFast, int maxDelayMs, int maxLines) {
+    public Migrator(SimpleURI uri, Keyspace keyspace, int retries, boolean failFast, int maxDelayMs, int maxLines) {
         this.uri = uri;
         this.keyspace = keyspace;
         this.retries = retries;
@@ -113,7 +115,7 @@ public class Migrator {
      * @param data Data being migrated
      */
     public void load(String template, Stream<Map<String, Object>> data) {
-        GraknClient graknClient = new GraknClient(new SimpleURI(uri));
+        GraknClient graknClient = new GraknClient(uri);
         try (BatchExecutorClient loader =
                 BatchExecutorClient.newBuilder()
                         .taskClient(graknClient)
@@ -133,7 +135,7 @@ public class Migrator {
                         totalMeter.mark();
                         // We add get a hot observable. It starts immediately
                         Observable<QueryResponse> addObservable =
-                                loader.add(q, keyspace.getValue(), failFast);
+                                loader.add(q, keyspace, failFast);
                         allObservables.add(addObservable);
                         subscribeToReportOutcome(failFast, addObservable);
                     });

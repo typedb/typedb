@@ -18,15 +18,18 @@
 
 package ai.grakn.client;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.TaskId;
 import ai.grakn.util.REST;
+import ai.grakn.util.SimpleURI;
 import mjson.Json;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -101,9 +104,9 @@ public class Client {
             properties.load(stream);
         }
 
-        String host = properties.getProperty("server.host");
-        int port = Integer.parseInt(properties.getProperty("server.port"));
-        if (serverIsRunning(host, port)) {
+        String host = properties.getProperty(GraknConfigKey.SERVER_HOST_NAME.name());
+        int port = Integer.parseInt(properties.getProperty(GraknConfigKey.SERVER_PORT.name()));
+        if (serverIsRunning(new SimpleURI(host, port))) {
             LOG.info("Server " + host + ":" + port + " is running");
             return EngineStatus.Running;
         } else {
@@ -112,19 +115,14 @@ public class Client {
         }
     }
 
-    public static boolean serverIsRunning(String hostAndPort) {
-        String[] split = hostAndPort.split(":", 2);
-        return serverIsRunning(split[0], Integer.parseInt(split[1]));
-    }
-
     /**
      * Check if Grakn Engine has been started
      *
      * @return true if Grakn Engine running, false otherwise
      */
-    public static boolean serverIsRunning(String host, int port) {
+    public static boolean serverIsRunning(SimpleURI uri) {
         try {
-            URL url = new URL("http", host, port, REST.WebPath.System.CONFIGURATION);
+            URL url = UriBuilder.fromUri(uri.toURI()).path(REST.WebPath.System.KB).build().toURL();
 
             HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
 
@@ -154,7 +152,7 @@ public class Client {
         URL mappedUrl;
         if ((originalUrl.getProtocol() + originalUrl.getHost()).equals(QUAD_ZERO_ROUTE)) {
             mappedUrl = new URL(
-                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.System.CONFIGURATION);
+                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.System.KB);
         } else {
             mappedUrl = originalUrl;
         }

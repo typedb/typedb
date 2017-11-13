@@ -17,14 +17,16 @@
  */
 package ai.grakn.client;
 
+import ai.grakn.util.REST;
+import ai.grakn.util.SimpleURI;
 import mjson.Json;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 
+import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 import static ai.grakn.util.REST.WebPath.KB.ANY_GRAQL;
@@ -49,14 +51,13 @@ public class QueryClient extends Client {
     private int port;
     private String keyspace = "grakn";
     private boolean infer = true;
-    private boolean materialise = false;
-    
+
     /**
      * Default constructor - do not rely on the default values, plus use fluid setter methods to
      * initialize the host name and port. The default keyspace is <code>grakn</code> and the 
      * default protocol is <code>http</code>.
      */
-    public QueryClient() {        
+    public QueryClient() {
     }
 
     /**
@@ -107,7 +108,7 @@ public class QueryClient extends Client {
     }
 
     public Json query(String query) {
-        return query(keyspace, query, infer, materialise);
+        return query(keyspace, query, infer);
     }
     
     /**
@@ -118,18 +119,13 @@ public class QueryClient extends Client {
      * @param keyspace The keyspace (database name) holding the knowledge graph.
      * @param query A valid Graqlq query.
      * @param infer Whether to use inference while performing the query.
-     * @param materialise Whether to save all inferences method during the query process.
      * @return The JSON response as specifying by the GRAKN Engine REST API.
      */
-    public Json query(String keyspace, String query, boolean infer, boolean materialise) {
+    public Json query(String keyspace, String query, boolean infer) {
         try {
-            URI uri = new URIBuilder(ANY_GRAQL)
-                    .setScheme(DEFAULT_SCHEME_NAME)
-                    .setPort(port)
-                    .setHost(host)
-                    .addParameter("keyspace", keyspace)
-                    .addParameter("infer", Boolean.toString(infer))
-                    .addParameter("materialise", Boolean.toString(materialise))
+            SimpleURI simpleUri = new SimpleURI(host, port);
+            URI uri = UriBuilder.fromUri(simpleUri.toURI()).path(REST.resolveTemplate(ANY_GRAQL, keyspace))
+                    .queryParam("infer", infer)
                     .build();
             HttpPost httpPost = new HttpPost(uri);
             httpPost.setEntity(new StringEntity(query));

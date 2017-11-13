@@ -32,9 +32,9 @@ import ai.grakn.graql.admin.Answer;
 public abstract class ResolutionState {
 
     private final Answer sub;
-    private final QueryState parentState;
+    private final QueryStateBase parentState;
 
-    ResolutionState(Answer sub, QueryState parent){
+    ResolutionState(Answer sub, QueryStateBase parent){
         this.sub = sub;
         this.parentState = parent;
     }
@@ -64,5 +64,5 @@ public abstract class ResolutionState {
     /**
      * @return parent state of this state
      */
-    QueryState getParentState(){ return parentState;}
+    QueryStateBase getParentState(){ return parentState;}
 }

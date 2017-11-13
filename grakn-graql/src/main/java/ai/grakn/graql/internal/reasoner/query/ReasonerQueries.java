@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
 
@@ -47,10 +46,10 @@ public class ReasonerQueries {
      * @return reasoner query constructed from provided conjunctive pattern
      */
     public static ReasonerQueryImpl create(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
-        ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, tx);
+        ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, tx).inferTypes();
         return query.isAtomic()?
-                new ReasonerAtomicQuery(pattern, tx).inferTypes() :
-                query.inferTypes();
+                new ReasonerAtomicQuery(query.getAtoms(), tx) :
+                query;
     }
 
     /**
@@ -98,7 +97,7 @@ public class ReasonerQueries {
      * @return reasoner query with the substitution contained in the query
      */
     public static ReasonerQueryImpl create(ReasonerQueryImpl q, Answer sub){
-        return create(Sets.union(q.getAtoms(), sub.toPredicates(q)), q.tx());
+        return q.withSubstitution(sub).inferTypes();
     }
 
     /**
@@ -136,6 +135,6 @@ public class ReasonerQueries {
      * @return atomic query with the substitution contained in the query
      */
     public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, Answer sub){
-        return new ReasonerAtomicQuery(Sets.union(q.getAtoms(), sub.toPredicates(q)), q.tx()).inferTypes();
+        return q.withSubstitution(sub).inferTypes();
     }
 }

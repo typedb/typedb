@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -36,20 +37,20 @@ import java.util.stream.Collectors;
 public class JoinExplanation extends Explanation {
 
     public JoinExplanation(){ super();}
+    public JoinExplanation(Set<Answer> answers){ super(answers);}
     public JoinExplanation(ReasonerQueryImpl q, Answer mergedAnswer){
         super(q, q.selectAtoms().stream()
+                .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
                 .map(ReasonerQueries::atomic)
                 .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(aq)))
                 .collect(Collectors.toSet())
         );
     }
 
-    private JoinExplanation(JoinExplanation exp){
-        super(exp.getQuery(), exp.getAnswers());
-    }
-
     @Override
-    public AnswerExplanation copy(){ return new JoinExplanation(this);}
+    public AnswerExplanation withAnswers(Set<Answer> answers) {
+        return new JoinExplanation(answers);
+    }
 
     @Override
     public boolean isJoinExplanation(){ return true;}

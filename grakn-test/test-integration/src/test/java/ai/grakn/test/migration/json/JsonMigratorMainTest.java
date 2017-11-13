@@ -30,7 +30,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.migration.json.JsonMigrator;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -77,7 +77,7 @@ public class JsonMigratorMainTest {
 
     @Test
     public void jsonMigratorCalledWithCorrectArgs_DataMigratedCorrectly(){
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace.getValue());
+        runAndAssertDataCorrect("-u", engine.uri().toString(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace.getValue());
     }
 
     @Test
@@ -88,7 +88,7 @@ public class JsonMigratorMainTest {
 
     @Test
     public void jsonMigratorCalledWithNoTemplate_ErrorIsPrintedToSystemErr(){
-        run("-input", "", "-u", engine.uri());
+        run("-input", "", "-u", engine.uri().toString());
         assertThat(sysErr.getLog(), containsString("Template file missing (-t)"));
     }
 
@@ -100,19 +100,19 @@ public class JsonMigratorMainTest {
 
     @Test
     public void jsonMigratorCalledInvalidInputFile_ErrorIsPrintedToSystemErr(){
-        run("-input", dataFile + "wrong", "-template", templateFile + "wrong", "-u", engine.uri());
+        run("-input", dataFile + "wrong", "-template", templateFile + "wrong", "-u", engine.uri().toString());
         assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
     @Test
     public void jsonMigratorCalledInvalidTemplateFile_ErrorIsPrintedToSystemErr(){
-        run("-input", dataFile, "-template", templateFile + "wrong", "-u", engine.uri());
+        run("-input", dataFile, "-template", templateFile + "wrong", "-u", engine.uri().toString());
         assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
     @Test
     public void whenMigrationFailsOnTheServer_ErrorIsPrintedToSystemErr(){
-        run("-d", "-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrongkeyspace");
+        run("-d", "-u", engine.uri().toString(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrongkeyspace");
         String expectedMessage = GraknBackendException.noSuchKeyspace(Keyspace.of("wrongkeyspace")).getMessage();
         // TODO Temporarily checking sysOut. Change it so it goes to sysErr
         assertThat(sysOut.getLog(), containsString(expectedMessage));

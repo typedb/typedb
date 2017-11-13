@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
@@ -30,8 +31,8 @@ import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
-import ai.grakn.test.SampleKBContext;
-import ai.grakn.util.MockRedisRule;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.test.rule.InMemoryRedisContext;
 import com.codahale.metrics.MetricRegistry;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
@@ -92,16 +93,17 @@ public class RedisTaskManagerTest {
     public static final SampleKBContext sampleKB = SampleKBContext.empty();
 
     @ClassRule
-    public static MockRedisRule mockRedisRule = MockRedisRule.create();
+    public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create();
 
     @BeforeClass
     public static void setupClass() {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setBlockWhenExhausted(true);
         poolConfig.setMaxTotal(MAX_TOTAL);
-        jedisPool = mockRedisRule.jedisPool(poolConfig);
+        jedisPool = inMemoryRedisContext.jedisPool(poolConfig);
         assertFalse(jedisPool.isClosed());
-        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(CONFIG.getProperties());
+        JedisLockProvider lockProvider = new JedisLockProvider(jedisPool);
+        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, CONFIG.getProperties());
         int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
         taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry);

@@ -112,7 +112,6 @@ Graql query that should be executed on the server.
 
 + **keyspace** Keyspace where query should execute. Required.
 + **infer** Enables reasoner inference on the provided query. Required.
-+ **materialise** Enables materialisation of reasoner results from the provided query. Required.
 
 **Response Headers**
 
@@ -142,7 +141,7 @@ Graql query that should be executed on the server.
 **Request:**
 
 ```
-curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql/execute?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa person; limit 1;'
+curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql/execute?keyspace=grakn&infer=false" --data 'match $x isa person; limit 1;'
 ```
 
 **Response:**
@@ -172,7 +171,6 @@ Execute **read-only** graql queries on a Grakn knowledge base. Read-only queries
 
 - **keyspace** Keyspace where query should execute. Required.
 - **infer** Enables reasoner inference on the provided query. Required.
-- **materialise** Enables materialisation of reasoner results from the provided query. Required.
 - **query** Graql get query to be executed. Required.
 
 **Response Headers**
@@ -209,7 +207,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 **Request:**
 
 ```
-curl -H "Accept:application/graql+json" -X GET "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false&query=match%20%24x%20isa%20person;%20limit%201;"
+curl -H "Accept:application/graql+json" -X GET "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&query=match%20%24x%20isa%20person;%20limit%201;"
 ```
 
 **Response:**
@@ -249,7 +247,6 @@ Graql insert query that should be executed on the server.
 
 - **keyspace** Keyspace where query should execute. Required.
 - **infer** Enables reasoner inference on the provided query. Required.
-- **materialise** Enables materialisation of reasoner results from the provided query. Required.
 
 **Response Headers**
 
@@ -286,7 +283,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 **Request:**
 
 ```
-curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false;" --data 'insert $x isa person;' 
+curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql?keyspace=grakn&infer=false" --data 'insert $x isa person;'
 ```
 
 **Response:**
@@ -318,7 +315,6 @@ Graql delete query that should be executed on the server.
 
 - **keyspace** Keyspace where query should execute. Required.
 - **infer** Enables reasoner inference on the provided query. Required.
-- **materialise** Enables materialisation of reasoner results from the provided query. Required.
 
 **Response Headers**
 
@@ -344,7 +340,7 @@ Graql delete query that should be executed on the server.
 **Request:**
 
 ```
-curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa parentship; delete $x;'
+curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false" --data 'match $x isa parentship; delete $x;'
 ```
 
 **Response:**
@@ -399,7 +395,7 @@ Returns the HAL representation of the specified concept.
 **Request:**
 
 ```
-curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa parentship; delete $x;'
+curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false" --data 'match $x isa parentship; delete $x;'
 ```
 
 **Response:**
@@ -501,7 +497,7 @@ Server: Jetty(9.3.6.v20151106)
 }
 ```
 
-## `/tasks`
+## `/task`
 
 #### `GET /`
 
@@ -529,7 +525,7 @@ Get tasks executing on the server or cluster that match all of the provided crit
 **Request:**
 
 ```
-curl -X GET "http://localhost:4567/tasks" 
+curl -X GET "http://localhost:4567/task"
 ```
 
 **Response:**
@@ -577,7 +573,7 @@ Get detailed information about the specified task that has been submitted to the
 **Request:**
 
 ```
-curl -X GET "http://localhost:4567/tasks/04e16459-ac56-4be5-b9d4-32ead920ce93" 
+curl -X GET "http://localhost:4567/task/04e16459-ac56-4be5-b9d4-32ead920ce93"
 ```
 
 **Response:**
@@ -650,7 +646,7 @@ Attempt to stop a given task from executing. Note that this does not guarantee t
 **Request:**
 
 ```
-curl -X GET "http://localhost:4567/tasks/04e16459-ac56-4be5-b9d4-32ead920ce93" 
+curl -X GET "http://localhost:4567/task/04e16459-ac56-4be5-b9d4-32ead920ce93"
 ```
 
 **Response:**
@@ -665,7 +661,7 @@ Server: Jetty(9.3.6.v20151106)
 {}
 ```
 
-#### `POST /tasks`
+#### `POST /task`
 
 Send tasks to be executed on the server or cluster. 
 
@@ -719,7 +715,7 @@ One of the most common uses of the tasks API is to submit batch loading tasks to
 **Request:**
 
 ```
-curl -X POST "http://localhost:4567/tasks" --data '{"tasks":[{"creator":"ai.grakn.client.BatchExecutorClient","runAt":"1498667812828","configuration":{"keyspace":"grakn","mutations":["insert $p0 isa person has identifier \"Elizabeth Niesz\";"],"batchNumber":0},"limit":"10000","className":"ai.grakn.engine.loader.MutatorTask"}]}' -g 
+curl -X POST "http://localhost:4567/task" --data '{"tasks":[{"creator":"ai.grakn.client.BatchExecutorClient","runAt":"1498667812828","configuration":{"keyspace":"grakn","mutations":["insert $p0 isa person has identifier \"Elizabeth Niesz\";"],"batchNumber":0},"limit":"10000","className":"ai.grakn.engine.loader.MutatorTask"}]}' -g
 ```
 
 **Response:**

@@ -44,12 +44,17 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.AtomicState;
 import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
-import ai.grakn.graql.internal.reasoner.state.QueryState;
+import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
+import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +97,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
-    ReasonerAtomicQuery(Atom at) {
+    public ReasonerAtomicQuery(Atom at) {
         super(at);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
@@ -106,6 +111,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
+    public ReasonerAtomicQuery withSubstitution(Answer sub){
+        return new ReasonerAtomicQuery(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
+    }
+
+    @Override
     public ReasonerAtomicQuery inferTypes() {
         return new ReasonerAtomicQuery(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), tx());
     }
@@ -117,8 +127,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public String toString(){
-        return getAtoms(Atom.class)
-                .map(Atomic::toString).collect(Collectors.joining(", "));
+        return getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(", "));
     }
 
     @Override
@@ -177,10 +186,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Stream<Answer> materialise(Answer answer) {
         //declaring a local variable cause otherwise PMD doesn't recognise the use of insert() and complains
-        ReasonerAtomicQuery queryToMaterialise = ReasonerQueries.atomic(this, answer);
+        ReasonerAtomicQuery queryToMaterialise = this.withSubstitution(answer);
         return queryToMaterialise
                 .insert()
-                .map(ans -> ans.setExplanation(answer.getExplanation()));
+                .map(ans -> ans.explain(answer.getExplanation()));
     }
 
     private Stream<Answer> getIdPredicateAnswerStream(Stream<Answer> stream){
@@ -271,7 +280,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, cache.getAnswerStream(this));
         if(queryAdmissible) {
 
-            Iterator<Pair<InferenceRule, Unifier>> ruleIterator = getRuleIterator();
+            Iterator<Pair<InferenceRule, Unifier>> ruleIterator = getRuleStream().iterator();
             while(ruleIterator.hasNext()) {
                 Pair<InferenceRule, Unifier> ruleContext = ruleIterator.next();
 
@@ -302,10 +311,36 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public AtomicState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public AtomicState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return getAtoms(NeqPredicate.class).findFirst().isPresent()?
                 new NeqComplementState(this, sub, u, parent, subGoals, cache) :
                 new AtomicState(this, sub, u, parent, subGoals, cache);
+    }
+
+    @Override
+    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+        Pair<Stream<Answer>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
+        MultiUnifier cacheUnifier = cacheEntry.getValue().inverse();
+        Iterator<AnswerState> dbIterator = cacheEntry.getKey()
+                .map(a -> a.explain(a.getExplanation().setQuery(this)))
+                .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
+                .iterator();
+
+        Iterator<QueryStateBase> subGoalIterator;
+        //if this is ground and exists in the db then do not resolve further
+        if(subGoals.contains(this)
+                || (this.isGround() && dbIterator.hasNext())){
+            subGoalIterator = Collections.emptyIterator();
+        } else {
+            subGoals.add(this);
+            subGoalIterator = this.getRuleStream()
+                    .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, subGoals, cache))
+                    .iterator();
+        }
+        return new Pair<>(
+                Iterators.concat(dbIterator, subGoalIterator),
+                cacheUnifier
+        );
     }
 
     @Override
@@ -317,13 +352,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     /**
-     * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are meta roles
+     * @return stream of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
-    public Iterator<Pair<InferenceRule, Unifier>> getRuleIterator(){
+    private Stream<Pair<InferenceRule, Unifier>> getRuleStream(){
         return getAtom().getApplicableRules()
                 .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
-                .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()))
-                .iterator();
+                .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
     }
 
     /**

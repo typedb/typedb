@@ -22,6 +22,7 @@ package ai.grakn.client;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import mjson.Json;
@@ -30,15 +31,14 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -54,10 +54,9 @@ import static ai.grakn.util.REST.Response.Task.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static ai.grakn.util.REST.WebPath.Tasks.TASK;
 import static java.lang.String.format;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
-import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -73,16 +72,14 @@ public class TaskClient extends Client {
     private final Logger LOG = LoggerFactory.getLogger(TaskClient.class);
 
     private final HttpClient httpClient = HttpClients.createDefault();
-    private final String host;
-    private final int port;
+    private final SimpleURI uri;
 
-    private TaskClient(String host, int port) {
-        this.host = host;
-        this.port = port;
+    private TaskClient(SimpleURI uri) {
+        this.uri = uri;
     }
 
-    public static TaskClient of(String host, int port) {
-        return new TaskClient(host, port);
+    public static TaskClient of(SimpleURI uri) {
+        return new TaskClient(uri);
     }
 
     /**
@@ -103,10 +100,7 @@ public class TaskClient extends Client {
     TaskResult sendTask(String taskClass, String creator, Instant runAt, Duration interval,
             Json configuration, long limit, boolean wait) {
         try {
-            URIBuilder uri = new URIBuilder(TASKS)
-                    .setScheme(DEFAULT_SCHEME_NAME)
-                    .setHost(host)
-                    .setPort(port);
+            URI uri = UriBuilder.fromUri(this.uri.toURI()).path(TASK).build();
 
             Builder<String, String> taskBuilder = ImmutableMap.builder();
             taskBuilder.put(TASK_CLASS_NAME_PARAMETER, taskClass);
@@ -125,7 +119,7 @@ public class TaskClient extends Client {
             Json jsonTask = Json.make(taskBuilder.build());
             jsonTask.set(CONFIGURATION_PARAM, configuration);
 
-            HttpPost httpPost = new HttpPost(uri.build());
+            HttpPost httpPost = new HttpPost(uri);
             httpPost.setHeader(CONTENT_TYPE, APPLICATION_JSON.getMimeType());
             // This is a special case of sending a list of task
             // TODO update the client to support a list
@@ -149,9 +143,7 @@ public class TaskClient extends Client {
                     .setStackTrace(responseElement.has(EXCEPTION) ? responseElement.at(EXCEPTION).asString() : "")
                     .build();
         } catch (IOException e) {
-            throw GraknBackendException.engineUnavailable(host, port, e);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+            throw GraknBackendException.engineUnavailable(uri, e);
         }
     }
 
@@ -164,11 +156,7 @@ public class TaskClient extends Client {
      */
     public TaskStatus getStatus(TaskId id) {
         try {
-            URI uri = new URIBuilder(convert(GET, id))
-                    .setScheme(DEFAULT_SCHEME_NAME)
-                    .setPort(port)
-                    .setHost(host)
-                    .build();
+            URI uri = UriBuilder.fromUri(this.uri.toURI()).path(convert(GET, id)).build();
 
             HttpGet httpGet = new HttpGet(uri);
             HttpResponse response = httpClient.execute(httpGet);
@@ -184,10 +172,8 @@ public class TaskClient extends Client {
 
             Json jsonResponse = asJsonHandler.handleResponse(response);
             return TaskStatus.valueOf(jsonResponse.at("status").asString());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
         } catch (IOException e) {
-            throw GraknBackendException.engineUnavailable(host, port, e);
+            throw GraknBackendException.engineUnavailable(uri, e);
         }
     }
 
@@ -198,11 +184,7 @@ public class TaskClient extends Client {
      */
     public boolean stopTask(TaskId id) {
         try {
-            URI uri = new URIBuilder(convert(STOP, id))
-                    .setScheme(DEFAULT_SCHEME_NAME)
-                    .setPort(port)
-                    .setHost(host)
-                    .build();
+            URI uri = UriBuilder.fromUri(this.uri.toURI()).path(convert(STOP, id)).build();
 
             HttpPut httpPut = new HttpPut(uri);
 
@@ -215,10 +197,8 @@ public class TaskClient extends Client {
             }
 
             return isOk;
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
         } catch (IOException e) {
-            throw GraknBackendException.engineUnavailable(host, port, e);
+            throw GraknBackendException.engineUnavailable(uri, e);
         }
     }
 

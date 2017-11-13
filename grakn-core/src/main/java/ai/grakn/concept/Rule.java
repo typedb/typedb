@@ -96,6 +96,12 @@ public interface Rule extends SchemaConcept {
     Rule sup(Rule superRule);
 
     /**
+     * @return All the super-types of this this {@link Rule}
+     */
+    @Override
+    Stream<Rule> sups();
+
+    /**
      * Adds another subtype to this {@link Rule}
      *
      * @param type The sub of this {@link Rule}

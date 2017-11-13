@@ -20,8 +20,8 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.graql.internal.shell.ErrorMessage;
-import ai.grakn.test.DistributionContext;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.rule.DistributionContext;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
@@ -30,16 +30,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import mjson.Json;
-import org.apache.commons.io.output.TeeOutputStream;
-import org.hamcrest.Matcher;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -47,26 +37,33 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Stream;
-
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import java.util.stream.Stream;
+import mjson.Json;
+import org.apache.commons.io.output.TeeOutputStream;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import org.hamcrest.Matcher;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.isEmptyString;
+import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class GraqlShellIT {
 
@@ -91,7 +88,7 @@ public class GraqlShellIT {
         trueErr = System.err;
 
         // TODO: Get these tests working consistently on Jenkins - causes timeouts
-        assumeFalse(GraknTestSetup.usingJanus());
+        assumeFalse(GraknTestUtil.usingJanus());
     }
 
     @Before
@@ -349,7 +346,7 @@ public class GraqlShellIT {
     @Test
     public void testRollback() throws Exception {
         // Tinker graph doesn't support rollback
-        assumeFalse(GraknTestSetup.usingTinker());
+        assumeFalse(GraknTestUtil.usingTinker());
 
         String[] result = runShellWithoutErrors("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
 
@@ -401,7 +398,7 @@ public class GraqlShellIT {
     @Test
     public void testRollbackSemicolon() throws Exception {
         // Tinker graph doesn't support rollback
-        assumeFalse(GraknTestSetup.usingTinker());
+        assumeFalse(GraknTestUtil.usingTinker());
 
         String result = runShellWithoutErrors(
                 "insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n"
@@ -575,7 +572,6 @@ public class GraqlShellIT {
     }
 
     @Test
-    @Ignore("Causes Travis build to halt")
     public void whenRunningBatchLoad_LoadCompletes() throws Exception {
         runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
         runShellWithoutErrors("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
@@ -583,19 +579,6 @@ public class GraqlShellIT {
         assertShellMatches(ImmutableList.of("-k", "batch"),
                 "match $x isa movie; aggregate ask;",
                 containsString("True")
-        );
-    }
-
-    @Test
-    @Ignore("Causes Travis build to halt")
-    public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
-        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
-
-        assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
-                is("Status of batch: FAILED"),
-                is("Number batches completed: 1"),
-                containsString("Approximate queries executed:"),
-                containsString("All tasks completed")
         );
     }
 

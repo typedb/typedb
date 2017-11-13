@@ -23,11 +23,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -50,7 +49,7 @@ public class PatternTest {
     private GraknTx tx = rule.tx();
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -120,7 +119,6 @@ public class PatternTest {
         var("-1");
     }
 
-    @Ignore //TODO: FIX THIS TEST
     @Test
     public void whenCreatingAVarWithAnInvalidName_Throw() {
         assertExceptionThrown(Graql::var, "");

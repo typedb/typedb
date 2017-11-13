@@ -22,9 +22,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
-import ai.grakn.test.SampleKBContext;
-
-import java.util.function.Consumer;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 
 /**
  *
@@ -50,8 +49,8 @@ public class AdmissionsKB extends TestKB {
     private static AttributeType<String> admissionStatus;
     private static AttributeType<String> decisionType;
 
-    public static Consumer<GraknTx> get() {
-        return new AdmissionsKB().build();
+    public static SampleKBContext context() {
+        return new AdmissionsKB().makeContext();
     }
 
     @Override
@@ -141,6 +140,6 @@ public class AdmissionsKB extends TestKB {
 
     @Override
     protected void buildRules(GraknTx tx) {
-        SampleKBContext.loadFromFile(tx, "admission-rules.gql");
+        SampleKBLoader.loadFromFile(tx, "admission-rules.gql");
     }
 }

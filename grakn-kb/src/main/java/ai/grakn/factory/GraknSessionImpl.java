@@ -29,21 +29,26 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
-import static ai.grakn.util.EngineCommunicator.contactEngine;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.WebPath.System.INITIALISE;
+import ai.grakn.util.SimpleURI;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static mjson.Json.read;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -58,38 +63,64 @@ import org.slf4j.LoggerFactory;
  *     The deployment of engine decides on the backend and this class will handle producing the correct graphs.
  * </p>
  *
- * @author fppt
+ * @author Filipe Peliz Pinto Teixeira
  */
 public class GraknSessionImpl implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
     private static final int LOG_SUBMISSION_PERIOD = 1;
-    private final ScheduledExecutorService commitLogSubmitter;
     private final String engineUri;
     private final Keyspace keyspace;
     private final Properties properties;
+    private final boolean remoteSubmissionNeeded;
+    private ScheduledExecutorService commitLogSubmitter;
+
 
     //References so we don't have to open a tx just to check the count of the transactions
     private GraknTxAbstract<?> tx = null;
     private GraknTxAbstract<?> txBatch = null;
 
-    //This constructor must remain public because it is accessed via reflection
-    public GraknSessionImpl(Keyspace keyspace, String engineUri){
+    GraknSessionImpl(Keyspace keyspace, String engineUri, Properties properties, boolean remoteSubmissionNeeded){
+        Objects.requireNonNull(keyspace);
+        Objects.requireNonNull(engineUri);
+
+        this.remoteSubmissionNeeded = remoteSubmissionNeeded;
         this.engineUri = engineUri;
         this.keyspace = keyspace;
 
-        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("commit-log-subbmit-%d").build();
-        commitLogSubmitter = Executors.newSingleThreadScheduledExecutor(namedThreadFactory);
-        commitLogSubmitter.scheduleAtFixedRate(() -> {
-            submitLogs(tx);
-            submitLogs(txBatch);
-        }, 0, LOG_SUBMISSION_PERIOD, TimeUnit.SECONDS);
-
-        if(Grakn.IN_MEMORY.equals(engineUri)){
-            properties = getTxInMemoryProperties();
-        } else {
-            properties = getTxRemoteProperties(engineUri, keyspace);
+        //Create commit log submitter if needed
+        if(remoteSubmissionNeeded) {
+            ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                    .setNameFormat("commit-log-subbmit-%d").build();
+            commitLogSubmitter = Executors.newSingleThreadScheduledExecutor(namedThreadFactory);
+            commitLogSubmitter.scheduleAtFixedRate(() -> {
+                submitLogs(tx);
+                submitLogs(txBatch);
+            }, 0, LOG_SUBMISSION_PERIOD, TimeUnit.SECONDS);
         }
+
+        //Set properties directly or via a remote call
+        if(properties == null) {
+            if (Grakn.IN_MEMORY.equals(engineUri)) {
+                properties = getTxInMemoryProperties();
+            } else {
+                properties = getTxProperties();
+            }
+        }
+        this.properties = properties;
+    }
+
+    //This must remain public because it is accessed via reflection
+    public static GraknSessionImpl create(Keyspace keyspace, String engineUri){
+        return new GraknSessionImpl(keyspace, engineUri, null, true);
+    }
+
+    public static GraknSessionImpl createEngineSession(Keyspace keyspace, String engineUri, Properties properties){
+        return new GraknSessionImpl(keyspace, engineUri, properties, false);
+    }
+
+    Properties getTxProperties(){
+        SimpleURI uri = new SimpleURI(engineUri);
+        return getTxRemoteProperties(uri, keyspace);
     }
 
     /**
@@ -97,11 +128,17 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build a {@link GraknTx}
      */
-    private static Properties getTxRemoteProperties(String engineUrl, Keyspace keyspace){
-        String restFactoryUri = engineUrl + INITIALISE + "?" + KEYSPACE_PARAM + "=" + keyspace;
+    private static Properties getTxRemoteProperties(SimpleURI uri, Keyspace keyspace){
+        URI keyspaceUri = UriBuilder.fromUri(uri.toURI()).path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue())).build();
+
         Properties properties = new Properties();
         //Get Specific Configs
-        properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
+        properties.putAll(read(contactEngine(Optional.of(keyspaceUri), REST.HttpConn.PUT_METHOD)).asMap());
+
+        //Overwrite Engine IP with something which is remotely accessible
+        properties.put(GraknConfigKey.SERVER_HOST_NAME.name(), uri.getHost());
+        properties.put(GraknConfigKey.SERVER_PORT.name(), uri.getPort());
+
         return properties;
     }
 
@@ -111,11 +148,12 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build an in-memory {@link GraknTx}
      */
-    private static Properties getTxInMemoryProperties(){
+    static Properties getTxInMemoryProperties(){
         Properties inMemoryProperties = new Properties();
-        inMemoryProperties.put(GraknConfigKey.SHARDING_THRESHOLD, 100_000);
-        inMemoryProperties.put(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS, 30_000);
-        inMemoryProperties.put(FactoryBuilder.KB_MODE, TxFactoryTinker.class.getName());
+        inMemoryProperties.put(GraknConfigKey.SHARDING_THRESHOLD.name(), 100_000);
+        inMemoryProperties.put(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(), 30_000);
+        inMemoryProperties.put(FactoryBuilder.KB_MODE, FactoryBuilder.IN_MEMORY);
+        inMemoryProperties.put(FactoryBuilder.KB_ANALYTICS, FactoryBuilder.IN_MEMORY);
         return inMemoryProperties;
     }
 
@@ -153,17 +191,32 @@ public class GraknSessionImpl implements GraknSession {
         }
 
         //Stop submitting commit logs automatically
-        commitLogSubmitter.shutdown();
+        if(remoteSubmissionNeeded) commitLogSubmitter.shutdown();
 
         //Close the main tx connections
         close(tx);
         close(txBatch);
     }
 
+    @Override
+    public String uri() {
+        return engineUri;
+    }
+
+    @Override
+    public Keyspace keyspace() {
+        return keyspace;
+    }
+
+    @Override
+    public Properties config() {
+        return properties;
+    }
+
     private void close(GraknTxAbstract tx){
         if(tx != null){
             tx.closeSession();
-            submitLogs(tx);
+            if(remoteSubmissionNeeded) submitLogs(tx);
         }
     }
 
@@ -184,29 +237,10 @@ public class GraknSessionImpl implements GraknSession {
      * @return the factory
      */
     TxFactory<?> configureTxFactory(String configType){
-        if(Grakn.IN_MEMORY.equals(engineUri)){
-            return FactoryBuilder.getFactory(TxFactoryTinker.class.getName(), keyspace, Grakn.IN_MEMORY, properties);
+        if(REST.KBConfig.COMPUTER.equals(configType)){
+            return FactoryBuilder.getFactory(this, true);
         } else {
-            return configureTxFactoryRemote(configType);
+            return FactoryBuilder.getFactory(this, false);
         }
-    }
-
-    /**
-     *
-     * @param configType The type of {@link GraknTx} to produce, normal, or for analytics
-     * @return A new or existing {@link TxFactory} with the defined name connecting to the specified remote location
-     */
-    private TxFactory<?> configureTxFactoryRemote(String configType){
-
-        if(REST.KBConfig.DEFAULT.equals(configType)) {
-            return FactoryBuilder.getFactory(keyspace, engineUri, properties);
-        } else if(REST.KBConfig.COMPUTER.equals(configType)){
-            Properties computerProperties = new Properties();
-            computerProperties.putAll(properties);
-            computerProperties.setProperty(FactoryBuilder.KB_MODE, properties.get(FactoryBuilder.KB_ANALYTICS).toString());
-            return FactoryBuilder.getFactory(keyspace, engineUri, computerProperties);
-        }
-
-        throw new IllegalArgumentException("Config option [" + configType + "] not supported");
     }
 }

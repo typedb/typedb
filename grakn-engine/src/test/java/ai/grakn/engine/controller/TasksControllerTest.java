@@ -19,9 +19,6 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.TaskId;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.controller.Utilities.createTask;
-import static ai.grakn.engine.controller.Utilities.exception;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -29,6 +26,36 @@ import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableMap;
+import com.jayway.restassured.config.ObjectMapperConfig;
+import com.jayway.restassured.config.RestAssuredConfig;
+import com.jayway.restassured.mapper.ObjectMapper;
+import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
+import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
+import com.jayway.restassured.response.Response;
+import com.jayway.restassured.specification.RequestSpecification;
+import mjson.Json;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import javax.ws.rs.core.UriBuilder;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.controller.Utilities.createTask;
+import static ai.grakn.engine.controller.Utilities.exception;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.REST.Request.CONFIGURATION_PARAM;
@@ -40,39 +67,15 @@ import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
-import com.google.common.collect.ImmutableMap;
+import static ai.grakn.util.REST.WebPath.Tasks.TASK;
 import static com.jayway.restassured.RestAssured.with;
-import com.jayway.restassured.config.ObjectMapperConfig;
-import com.jayway.restassured.config.RestAssuredConfig;
-import com.jayway.restassured.mapper.ObjectMapper;
-import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
-import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
-import com.jayway.restassured.response.Response;
-import com.jayway.restassured.specification.RequestSpecification;
-import java.time.Duration;
-import java.time.Instant;
 import static java.time.Instant.now;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import mjson.Json;
-import org.apache.http.HttpStatus;
-import org.apache.http.entity.ContentType;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import org.mockito.Mockito;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -456,7 +459,7 @@ public class TasksControllerTest {
         RequestSpecification request = with()
                 .config(new RestAssuredConfig().objectMapperConfig(new ObjectMapperConfig(jsonMapper)))
                 .body(tasksList);
-        return request.post(String.format("http://%s%s", ctx.uri(), TASKS));
+        return request.post(UriBuilder.fromUri(ctx.uri().toURI()).path(TASK).build());
     }
 
     private Response get(TaskId taskId){

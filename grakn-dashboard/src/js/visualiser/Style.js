@@ -70,7 +70,6 @@ export default class Style {
     let colourObject;
         // User defined schema & instances
     switch (baseType) {
-      case API.GENERATED_RELATIONSHIP_TYPE:
       case API.INFERRED_RELATIONSHIP_TYPE:
         colourObject = {
           background: '#20a194',
@@ -123,7 +122,6 @@ export default class Style {
     let shape;
     switch (baseType) {
       case API.RELATIONSHIP:
-      case API.GENERATED_RELATIONSHIP_TYPE:
       case API.INFERRED_RELATIONSHIP_TYPE:
       case API.ROLE_TYPE:
         shape = 'dot';
@@ -138,7 +136,6 @@ export default class Style {
     let size;
     switch (baseType) {
       case API.RELATIONSHIP:
-      case API.GENERATED_RELATIONSHIP_TYPE:
       case API.INFERRED_RELATIONSHIP_TYPE:
         size = 8;
         break;

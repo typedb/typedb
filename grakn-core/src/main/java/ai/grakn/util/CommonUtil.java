@@ -19,12 +19,17 @@
 
 package ai.grakn.util;
 
+import ai.grakn.GraknSystemProperty;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
+import mjson.Json;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
@@ -45,6 +50,17 @@ import java.util.stream.Stream;
 public class CommonUtil {
 
     private CommonUtil() {}
+
+    /**
+     * @return The project path. If it is not specified as a JVM parameter it will be set equal to
+     * user.dir folder.
+     */
+    public static Path getProjectPath() {
+        if (GraknSystemProperty.CURRENT_DIRECTORY.value() == null) {
+            GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
+        }
+        return Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
+    }
 
     /**
      * @param optional the optional to change into a stream
@@ -180,5 +196,44 @@ public class CommonUtil {
                 return ImmutableSet.of();
             }
         };
+    }
+
+    public static Collector<Object, ?, Json> toJsonArray() {
+        return new Collector<Object, Json, Json>() {
+
+            @Override
+            public Supplier<Json> supplier() {
+                return Json::array;
+            }
+
+            @Override
+            public BiConsumer<Json, Object> accumulator() {
+                return Json::add;
+            }
+
+            @Override
+            public BinaryOperator<Json> combiner() {
+                return Json::with;
+            }
+
+            @Override
+            public Function<Json, Json> finisher() {
+                return Function.identity();
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return ImmutableSet.of();
+            }
+        };
+    }
+
+    public static StringBuilder simplifyExceptionMessage(Throwable e) {
+        StringBuilder message = new StringBuilder(e.getMessage());
+        while(e.getCause() != null) {
+            e = e.getCause();
+            message.append("\n").append(e.getMessage());
+        }
+        return message;
     }
 }

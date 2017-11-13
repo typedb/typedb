@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.Keyspace;
+import ai.grakn.GraknSession;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.shaded.minlog.Log;
@@ -26,7 +26,6 @@ import org.apache.tinkerpop.shaded.minlog.Log;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.MissingResourceException;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -45,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author fppt
  */
 public class FactoryBuilder {
+    static final String IN_MEMORY = "in-memory";
     static final String KB_MODE = "knowledge-base.mode";
     static final String KB_ANALYTICS = "knowledge-base.analytics";
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
@@ -59,10 +59,15 @@ public class FactoryBuilder {
         throw new UnsupportedOperationException();
     }
 
-    public static TxFactory<?> getFactory(Keyspace keyspace, String engineUrl, Properties properties){
+    public static TxFactory<?> getFactory(GraknSession session, boolean isComputerFactory){
         try{
-            String factoryType = factoryMapper.get(properties.get(KB_MODE).toString());
-            return getFactory(factoryType, keyspace, engineUrl, properties);
+            String factoryKey = session.config().get(KB_MODE).toString();
+            if(isComputerFactory){
+                factoryKey = session.config().get(FactoryBuilder.KB_ANALYTICS).toString();
+            }
+
+            String factoryType = factoryMapper.get(factoryKey);
+            return getFactory(factoryType, session);
         } catch(MissingResourceException e){
             throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
         }
@@ -74,32 +79,30 @@ public class FactoryBuilder {
      *                    A valid example includes: ai.grakn.factory.TxFactoryTinker
      * @return A graph factory which produces the relevant expected graph.
     */
-    static TxFactory<?> getFactory(String factoryType, Keyspace keyspace, String engineUrl, Properties properties){
-        String key = factoryType + keyspace;
+    private static TxFactory<?> getFactory(String factoryType, GraknSession session){
+        String key = factoryType + session.keyspace();
         Log.debug("Get factory for " + key);
         TxFactory<?> factory = openFactories.get(key);
         if (factory != null) {
             return factory;
         }
 
-       return newFactory(key, factoryType, keyspace, engineUrl, properties);
+        return newFactory(key, factoryType, session);
     }
 
     /**
      *
      * @param key A unique string identifying this factory
      * @param factoryType The type of the factory to initialise. Any factory which implements {@link TxFactory}
-     * @param keyspace The keyspace of the graph
-     * @param engineUrl The location of the running engine instance
-     * @param properties Additional properties to apply to the graph
+     * @param session The {@link GraknSession} creating this factory
      * @return A new factory bound to a specific keyspace
      */
-    private static synchronized TxFactory<?> newFactory(String key, String factoryType, Keyspace keyspace, String engineUrl, Properties properties){
+    private static synchronized TxFactory<?> newFactory(String key, String factoryType, GraknSession session){
         TxFactory<?> txFactory;
         try {
             txFactory = (TxFactory<?>) Class.forName(factoryType)
-                    .getDeclaredConstructor(Keyspace.class, String.class, Properties.class)
-                    .newInstance(keyspace, engineUrl, properties);
+                    .getDeclaredConstructor(GraknSession.class)
+                    .newInstance(session);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
         }

@@ -19,10 +19,12 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
-import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.test.rule.EmbeddedCassandraContext;
 import ai.grakn.util.ErrorMessage;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
@@ -32,7 +34,11 @@ import java.io.InputStream;
 import java.util.Properties;
 import java.util.UUID;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 public abstract class JanusTestBase {
+    protected final static GraknSession session = mock(GraknSession.class);
     private final static String CONFIG_LOCATION = "../../conf/main/grakn.properties";
     private final static Keyspace TEST_SHARED = Keyspace.of("shared");
     static TxFactoryJanus janusGraphFactory;
@@ -41,20 +47,25 @@ public abstract class JanusTestBase {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
+    @ClassRule
+    public static final EmbeddedCassandraContext cassandra = EmbeddedCassandraContext.create();
+
     @BeforeClass
     public static void setupMain(){
-        EmbeddedCassandra.start();
-
         try (InputStream in = new FileInputStream(CONFIG_LOCATION)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(CONFIG_LOCATION), e);
         }
 
-        janusGraphFactory = new TxFactoryJanus(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
+        when(session.keyspace()).thenReturn(TEST_SHARED);
+        when(session.uri()).thenReturn(Grakn.IN_MEMORY);
+        when(session.config()).thenReturn(TEST_PROPERTIES);
+        janusGraphFactory = new TxFactoryJanus(session);
     }
 
     TxFactoryJanus newFactory(){
-        return new TxFactoryJanus(Keyspace.of("hoho" + UUID.randomUUID().toString().replace("-", "")), Grakn.IN_MEMORY, TEST_PROPERTIES);
+        when(session.keyspace()).thenReturn(Keyspace.of("hoho" + UUID.randomUUID().toString().replace("-", "")));
+        return new TxFactoryJanus(session);
     }
 }

@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
 import ai.grakn.migration.csv.CSVMigrator;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -69,41 +69,41 @@ public class CSVMigratorMainTest {
 
     @Test
     public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsNotSet_DontThrow(){
-        run("-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
+        run("-u", engine.uri().toString(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsNotSet_DontThrowAndContinue(){
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFileBroken, "-template", templateFile, "-keyspace", keyspace.getValue());
+        runAndAssertDataCorrect("-u", engine.uri().toString(), "-input", dataFileBroken, "-template", templateFile, "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void runningCSVMigrationFromScript_PetDataMigratedCorrectly(){
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace.getValue());
+        runAndAssertDataCorrect("-u", engine.uri().toString(), "-input", dataFile, "-template", templateFile, "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void usingTabsAsSeparatorInCSVMigratorScript_PetDataMigratedCorrectly(){
         String tsvFile = getFile("csv", "pets/data/pets.tsv").getAbsolutePath();
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", keyspace.getValue());
+        runAndAssertDataCorrect("-u", engine.uri().toString(), "-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void usingSpacesAsSeparatorInCSVMigratorScript_PetDataMigratedCorrectly(){
         String tsvFile = getFile("csv", "pets/data/pets.spaces").getAbsolutePath();
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", keyspace.getValue());
+        runAndAssertDataCorrect("-u", engine.uri().toString(), "-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void usingSingleQuotesForStringInCSVMigratorScript_PetDataMigratedCorrectly(){
         String quoteFile = getFile("csv", "pets/data/pets.singlequotes").getAbsolutePath();
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", quoteFile, "-template", templateFile, "-quote", "\'", "-keyspace", keyspace.getValue());
+        runAndAssertDataCorrect("-u", engine.uri().toString(), "-input", quoteFile, "-template", templateFile, "-quote", "\'", "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void usingNullsInTemplateInCSVMigratorScript_PetDataMigratedCorrectly(){
         String nullTemplate = getFile("csv", "pets/template-null.gql").getAbsolutePath();
-        runAndAssertDataCorrect("-u", engine.uri(), "-input", dataFile, "-template", nullTemplate, "-keyspace", keyspace.getValue(), "-null", "");
+        runAndAssertDataCorrect("-u", engine.uri().toString(), "-input", dataFile, "-template", nullTemplate, "-keyspace", keyspace.getValue(), "-null", "");
     }
 
     @Test
@@ -117,7 +117,7 @@ public class CSVMigratorMainTest {
     public void usingPropertiesFileInCSVMigratorScript_PetDataMigratedCorrectly(){
         load(factory, getFile("csv", "multi-file/schema.gql"));
         String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
-        run("csv", "-u", engine.uri(), "-config", configurationFile, "-keyspace", keyspace.getValue());
+        run("csv", "-u", engine.uri().toString(), "-config", configurationFile, "-keyspace", keyspace.getValue());
 
         assertPokemonGraphCorrect(factory);
     }
@@ -131,13 +131,13 @@ public class CSVMigratorMainTest {
 
     @Test
     public void csvMigratorCalledWithNoTemplate_ErrorIsPrintedToSystemErr(){
-        run("-input", dataFile, "-u", engine.uri());
+        run("-input", dataFile, "-u", engine.uri().toString());
         assertThat(sysErr.getLog(), containsString("Template file missing (-t)"));
     }
 
     @Test
     public void csvMigratorCalledWithInvalidTemplateFile_ErrorIsPrintedToSystemErr(){
-        run("-input", dataFile + "wrong", "-template", templateFile + "wrong", "-u", engine.uri());
+        run("-input", dataFile + "wrong", "-template", templateFile + "wrong", "-u", engine.uri().toString());
         assertThat(sysErr.getLog(), containsString("Cannot find file"));
     }
 

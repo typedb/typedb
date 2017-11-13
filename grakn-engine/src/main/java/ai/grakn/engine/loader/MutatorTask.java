@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.loader;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.postprocessing.GraknTxMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
@@ -29,18 +29,20 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Task that will mutate data in a graph. It uses the engine running on the
@@ -90,14 +92,14 @@ public class MutatorTask extends BackgroundTask {
                     }
                 });
 
-                Optional<String> result = graph.admin().commitNoLogs();
+                Optional<String> result = graph.admin().commitSubmitNoLogs();
                 if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
                     String logs = result.get();
                     addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
                                     .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
-                            PostProcessingTask.createConfig(graph.getKeyspace(), logs));
+                            PostProcessingTask.createConfig(graph.keyspace(), logs));
                     addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
-                            UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
+                            UpdatingInstanceCountTask.createConfig(graph.keyspace(), logs));
                 }
                 return true;
             }

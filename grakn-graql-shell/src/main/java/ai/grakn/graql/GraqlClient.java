@@ -23,11 +23,12 @@ import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.Client;
 import ai.grakn.client.GraknClient;
 import ai.grakn.util.SimpleURI;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Future;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 /**
  * Connects a Graql websocket to a remote URI
@@ -66,14 +67,15 @@ class GraqlClient {
         }
     }
 
-    public BatchExecutorClient loaderClient(Keyspace keyspace, String uriString) {
+    public BatchExecutorClient loaderClient(Keyspace keyspace, SimpleURI uri) {
         return BatchExecutorClient.newBuilder()
-                .taskClient(new GraknClient(new SimpleURI(uriString)))
+                .threadPoolCoreSize(Runtime.getRuntime().availableProcessors() * 8)
+                .taskClient(new GraknClient(uri))
                 .maxRetries(DEFAULT_MAX_RETRY)
                 .build();
     }
 
-    public boolean serverIsRunning(String uri) {
+    public boolean serverIsRunning(SimpleURI uri) {
         return Client.serverIsRunning(uri);
     }
 }
