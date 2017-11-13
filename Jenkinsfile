@@ -59,7 +59,7 @@ def slackGithub(String message, String color = null) {
 }
 
 def runIntegrationTest(String moduleName) {
-    String modulePath = "${pwd}/grakn-test/${moduleName}"
+    String modulePath = "${pwd()}/grakn-test/${moduleName}"
 
     stage(moduleName) {
         withPath("${modulePath}:${modulePath}/src/main/bash") {
@@ -98,7 +98,7 @@ def graknNode(Closure closure) {
     //Everything is wrapped in a try catch so we can handle any test failures
     //If one test fails then all the others will stop. I.e. we fail fast
     node {
-        withPath("${pwd}/grakn-test/test-integration/src/test/bash") {
+        withPath("${pwd()}/grakn-test/test-integration/src/test/bash") {
             try {
                 closure()
             } finally {
@@ -147,11 +147,11 @@ Closure createTestJob(split, i, testTimeout) {
             /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
             /* Tell Maven to read the appropriate file. */
             if (split.includes) {
-                writeFile file: "${pwd}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-                mavenVerify += " -Dsurefire.includesFile=${pwd}/parallel-test-includes-${i}.txt"
+                writeFile file: "${pwd()}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+                mavenVerify += " -Dsurefire.includesFile=${pwd()()}/parallel-test-includes-${i}.txt"
             } else {
-                writeFile file: "${pwd}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
-                mavenVerify += " -Dsurefire.excludesFile=${pwd}/parallel-test-excludes-${i}.txt"
+                writeFile file: "${pwd()()}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+                mavenVerify += " -Dsurefire.excludesFile=${pwd()}/parallel-test-excludes-${i}.txt"
 
             }
 
@@ -230,7 +230,7 @@ def runBuild() {
 
                 timeout(60) {
                     stage('Run the benchmarks') {
-                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${pwd}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${pwd()}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
                         archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                     }
                 }
