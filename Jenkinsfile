@@ -92,7 +92,7 @@ def graknNode(Closure closure) {
     //Everything is wrapped in a try catch so we can handle any test failures
     //If one test fails then all the others will stop. I.e. we fail fast
     node {
-        withScripts {
+        withPath("${pwd}/grakn-test/test-integration/src/test/bash") {
             try {
                 closure()
             } catch (error) {
@@ -109,11 +109,6 @@ def graknNode(Closure closure) {
 
 def withPath(String path, Closure closure) {
     return withEnv(["PATH+EXTRA=${path}"], closure)
-}
-
-
-def withScripts(Closure closure) {
-    withPath("${pwd}/grakn-test/test-integration/src/test/bash", closure)
 }
 
 def ssh(String command) {
