@@ -163,7 +163,6 @@ public class QueryPlannerTest {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
         assertEquals(y, plan.get(4).end());
 
         pattern = and(
@@ -172,7 +171,6 @@ public class QueryPlannerTest {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
         assertEquals(x, plan.get(3).end());
 
         tx.admin().shard(tx.getEntityType(thingy1).getId());
@@ -185,7 +183,6 @@ public class QueryPlannerTest {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
         assertEquals(y, plan.get(4).end());
 
         pattern = and(
@@ -194,7 +191,6 @@ public class QueryPlannerTest {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        System.out.println("plan = " + plan);
         assertEquals(y, plan.get(3).end());
     }
 

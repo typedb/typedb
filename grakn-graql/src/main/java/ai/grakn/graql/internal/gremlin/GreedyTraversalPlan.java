@@ -97,10 +97,8 @@ public class GreedyTraversalPlan {
         final Set<Node> connectedNodes = new HashSet<>();
         final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
 
-        Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(
-                plan, query, allNodes, connectedNodes, nodesWithFixedCost, tx);
-
-        connectedFragmentSets.forEach(fragmentSet -> {
+//        Collection<Set<Fragment>> connectedFragmentSets =
+        getConnectedFragmentSets(plan, query, allNodes, connectedNodes, nodesWithFixedCost, tx).forEach(fragmentSet -> {
 
             Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
             Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
@@ -118,7 +116,7 @@ public class GreedyTraversalPlan {
 
             Set<Weighted<DirectedEdge<Node>>> edgeSet = edgeFragmentSet.stream()
                     .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
-                    .collect(Collectors.toSet());// make sure previous steps are done
+                    .collect(Collectors.toSet()); // make sure previous steps are all done
 
             edgeSet.forEach(weightedDirectedEdge -> {
                 if (nodesWithFixedCost.containsKey(weightedDirectedEdge.val.source) &&
@@ -160,6 +158,7 @@ public class GreedyTraversalPlan {
     private static void addUnvisitedNodeFragments(List<Fragment> plan,
                                                   Map<NodeId, Node> allNodes,
                                                   Collection<Node> connectedNodes) {
+
         Set<Node> nodeWithFragment = connectedNodes.stream()
                 .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
                         !node.getFragmentsWithDependencyVisited().isEmpty())
@@ -226,7 +225,7 @@ public class GreedyTraversalPlan {
         });
         return fragmentSetMap.values();
     }
-    
+
     private static void processFragmentWithFixedCost(List<Fragment> plan,
                                                      Map<NodeId, Node> allNodes,
                                                      Set<Node> connectedNodes,
@@ -287,45 +286,25 @@ public class GreedyTraversalPlan {
             }
             return false;
         }).collect(Collectors.toSet());
+
         if (!validSubFragments.isEmpty()) {
-            removeSubFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, allFragments, validSubFragments);
-        }
-    }
-
-    private static void removeSubFragment(List<Fragment> plan,
-                                          Map<NodeId, Node> allNodes,
-                                          Set<Node> connectedNodes,
-                                          Map<Node, Double> nodesWithFixedCost,
-                                          Set<Fragment> allFragments,
-                                          Set<Fragment> validSubFragments) {
-        final Set<Fragment> subFragmentSet = new HashSet<>();
-        validSubFragments.forEach(fragment -> {
-            Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
-            plan.add(fragment);
-            connectedNodes.add(superType);
-            nodesWithFixedCost.put(
-                    Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
-                    nodesWithFixedCost.get(superType));
-            subFragmentSet.add(fragment);
-        });
-        subFragmentSet.forEach(inSubFragment -> {
-            allFragments.remove(inSubFragment);
-            allFragments.remove(Fragments.outSub(
-                    inSubFragment.varProperty(), inSubFragment.end(), inSubFragment.start()));
-
-        });
-
-        validSubFragments = allFragments.stream().filter(fragment -> {
-            if (fragment instanceof InSubFragment) {
+            final Set<Fragment> subFragmentSet = new HashSet<>();
+            validSubFragments.forEach(fragment -> {
                 Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
-                if (nodesWithFixedCost.containsKey(superType) && nodesWithFixedCost.get(superType) > 0D) {
-                    return true;
-                }
-            }
-            return false;
-        }).collect(Collectors.toSet());
-        if (!validSubFragments.isEmpty()) {
-            removeSubFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, allFragments, validSubFragments);
+                plan.add(fragment);
+                connectedNodes.add(superType);
+                nodesWithFixedCost.put(
+                        Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
+                        nodesWithFixedCost.get(superType));
+                subFragmentSet.add(fragment);
+            });
+            subFragmentSet.forEach(inSubFragment -> {
+                allFragments.remove(inSubFragment);
+                allFragments.remove(Fragments.outSub(
+                        inSubFragment.varProperty(), inSubFragment.end(), inSubFragment.start()));
+
+            });
+            processSubFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, allFragments);
         }
     }
 
@@ -362,6 +341,7 @@ public class GreedyTraversalPlan {
     private static double branchWeight(Node node, Arborescence<Node> arborescence,
                                        Map<Node, Set<Node>> edgesParentToChild,
                                        Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
+
         if (!node.getNodeWeight().isPresent()) {
             node.setNodeWeight(Optional.of(
                     getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent) + nodeFragmentWeight(node)));
