@@ -297,7 +297,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     @Override
     public String visitVarLiteral(GraqlTemplateParser.VarLiteralContext ctx){
-        Var var = var(ctx.getText());
+        Var var = var(ctx.getText().substring(1));
 
         if(!scope.hasSeen(var)){
             scope.markAsSeen(var);

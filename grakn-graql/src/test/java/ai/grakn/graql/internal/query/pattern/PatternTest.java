@@ -27,7 +27,6 @@ import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -120,7 +119,6 @@ public class PatternTest {
         var("-1");
     }
 
-    @Ignore //TODO: FIX THIS TEST
     @Test
     public void whenCreatingAVarWithAnInvalidName_Throw() {
         assertExceptionThrown(Graql::var, "");
