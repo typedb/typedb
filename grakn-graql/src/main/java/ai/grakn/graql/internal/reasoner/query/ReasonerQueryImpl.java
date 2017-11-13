@@ -116,19 +116,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .build();
     }
 
+    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
+        this.tx = tx;
+        this.atomSet = ImmutableSet.<Atomic>builder()
+                .addAll(atoms.stream().map(at -> AtomicFactory.create(at, this)).iterator())
+                .build();
+    }
+
     ReasonerQueryImpl(List<Atom> atoms, GraknTx tx){
         this.tx = tx;
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream()
                         .flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints()))
                         .map(at -> AtomicFactory.create(at, this)).iterator())
-                .build();
-    }
-
-    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
-        this.tx = tx;
-        this.atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(atoms.stream().map(at -> AtomicFactory.create(at, this)).iterator())
                 .build();
     }
 

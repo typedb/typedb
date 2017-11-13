@@ -90,7 +90,7 @@ public abstract class TypeAtom extends Binary{
         return getTypePredicate() == null
                 //disjoint atom
                 || !this.getNeighbours(Atom.class).findFirst().isPresent()
-                || isRuleResolvable();
+                || getPotentialRules().findFirst().isPresent();
     }
 
     @Override
