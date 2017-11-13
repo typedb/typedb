@@ -29,50 +29,26 @@
 # ================================================
 
 # ================================================
-# global variables
-# ================================================
-
-# globals
-WAIT_INTERVAL_S=2
-
-# Grakn globals
-# TODO: clean up
-if [ -z "${GRAKN_HOME}" ]; then
-    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
-    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-    GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
-    GRAKN_PID=/tmp/grakn.pid
-    GRAKN_STARTUP_TIMEOUT_S=120
-fi
-
-# Storage globals
-STORAGE_PID=/tmp/grakn-storage.pid
-STORAGE_STARTUP_TIMEOUT_S=60
-
-# Queue globals
-QUEUE_STARTUP_TIMEOUT_S=10
-
-# ================================================
 # common helper functions
 # ================================================
 update_classpath_global_var() {
   # Define CLASSPATH, exclude slf4j as we use logback
-  for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
+  for jar in ./services/lib/*.jar; do
       if [[ $jar != *slf4j-log4j12* ]] ; then
           CLASSPATH="$CLASSPATH":"$jar"
       fi
   done
 
   # Add path containing grakn.properties and logback.xml
-  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
-  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
+  CLASSPATH="$CLASSPATH":./conf
+  CLASSPATH="$CLASSPATH":./services/grakn
 }
 
 # ================================================
 # storage helper functions
 # ================================================
 storage_start_process() {
-  "${GRAKN_HOME}"/services/cassandra/cassandra -p $STORAGE_PID > /dev/null 2>&1
+  ./services/cassandra/cassandra -p $STORAGE_PID > /dev/null 2>&1
   return $?
 }
 
@@ -94,7 +70,7 @@ storage_wait_until_ready() {
   while [ $now_s -le $stop_s ]; do
       echo -n "."
       # The \r\n deletion bit is necessary for Cygwin compatibility
-      status_thrift=`"${GRAKN_HOME}"/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'`
+      status_thrift=`./services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'`
       if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
           return 0
       fi
@@ -172,13 +148,8 @@ queue_start_process() {
       queue_bin="redis-server-linux"
   fi
 
-  # run queue
-  # queue needs to be ran with $GRAKN_HOME as the working directory
-  # otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
-  pushd "$GRAKN_HOME" > /dev/null
-  "${GRAKN_HOME}"/services/redis/$queue_bin "${GRAKN_HOME}"/services/redis/redis.conf
+  ./services/redis/$queue_bin ./services/redis/redis.conf
   local status=$?
-  popd > /dev/null
 
   return $status
 }
@@ -252,7 +223,7 @@ queue_stop_process() {
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
         queue_bin="redis-cli-linux"
     fi
-    "${GRAKN_HOME}/services/redis/"$queue_bin shutdown
+    ./services/redis/$queue_bin shutdown
     local status=$?
     print_status_message ${status}
   else
@@ -270,7 +241,7 @@ queue_wipe_all_data() {
       queue_bin="redis-cli-linux"
   fi
 
-  "${GRAKN_HOME}/services/redis/"$queue_bin flushall
+  ./services/redis/$queue_bin flushall
 }
 
 # ================================================
@@ -278,7 +249,7 @@ queue_wipe_all_data() {
 # ================================================
 grakn_start_process() {
   local status=
-  java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" \
+  java -cp "${CLASSPATH}" -Dgrakn.dir="./services" -Dgrakn.conf="${GRAKN_CONFIG}" \
     ai.grakn.engine.GraknEngineServer > /dev/null 2>&1 &
   status=$?
   pid=`ps -ef | grep GraknEngineServer | grep -v grep | awk '{ print $2}'`
@@ -303,7 +274,9 @@ print_status_message() {
 }
 
 grakn_check_if_ready() {
-  java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.client.Client > /dev/null 2>&1
+  local host=`cat ./conf/grakn.properties| grep server.host | awk -F "=" '{print $2}'`
+  local port=`cat ./conf/grakn.properties| grep server.port | awk -F "=" '{print $2}'`
+  curl $host:$port/configuration > /dev/null 2>&1
   return $?
 }
 
@@ -375,8 +348,8 @@ grakn_stop_process() {
 }
 
 grakn_wipe_all_data() {
-  rm -r "${GRAKN_HOME}"/logs
-  mkdir "${GRAKN_HOME}"/logs
+  rm -r ./logs
+  mkdir ./logs
 }
 
 # ================================================
@@ -523,7 +496,7 @@ cli_case_grakn_server_clean() {
 }
 
 cli_case_grakn_version() {
-  java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell --version
+  java -cp ${CLASSPATH} -Dgrakn.dir="./services" ai.grakn.graql.GraqlShell --version
 }
 
 cli_case_grakn_help() {
@@ -624,16 +597,46 @@ handle_ctrl_c() {
 }
 
 # =============================================
+# misc helper methods
+# =============================================
+print_grakn_logo() {
+  # cat ASCII logo, or fail silently if it's somehow missing
+  cat ./services/grakn/grakn-ascii.txt 2> /dev/null
+}
+
+# =============================================
 # main routine
 # =============================================
+
+# Common global variables
+WAIT_INTERVAL_S=2
+
+# Grakn global variables
+# TODO: clean up
+if [ -z "${GRAKN_HOME}" ]; then
+    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
+fi
+
+GRAKN_CONFIG="../conf/grakn.properties"
+GRAKN_PID=/tmp/grakn.pid
+GRAKN_STARTUP_TIMEOUT_S=120
+
+# Storage global variables
+STORAGE_PID=/tmp/grakn-storage.pid
+STORAGE_STARTUP_TIMEOUT_S=60
+
+# Queue global variables
+QUEUE_STARTUP_TIMEOUT_S=10
+
+pushd "$GRAKN_HOME" > /dev/null
 
 update_classpath_global_var
 
 # temporarily disabling trap as it's probably not needed
 # trap handle_ctrl_c INT # run handle_ctrl_c when receiving CTRL+C
 
-echo "Grakn: Database For AI"
-echo ""
+print_grakn_logo
 
 case "$1" in
   server)
@@ -662,3 +665,5 @@ case "$1" in
     cli_case_grakn_help
   ;;
 esac
+
+popd > /dev/null

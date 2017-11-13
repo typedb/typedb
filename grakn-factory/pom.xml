@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.17.0</version>
+        <version>0.17.1</version>
     </parent>
     <packaging>pom</packaging>
 

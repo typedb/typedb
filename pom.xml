@@ -25,7 +25,7 @@
     <groupId>ai.grakn</groupId>
     <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
-    <version>0.17.0</version>
+    <version>0.17.1</version>
     <name>Grakn</name>
     <description>A distributed semantic graph database.</description>
     <url>https://grakn.ai/pages/platform/index.html</url>
