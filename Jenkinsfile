@@ -84,9 +84,6 @@ def graknNode(Closure closure) {
         withPath("${pwd}/grakn-test/test-integration/src/test/bash") {
             try {
                 closure()
-            } catch (error) {
-                slackGithub "Build Failure", "danger"
-                throw error
             } finally {
                 stage('Tear Down') {
                     sh 'tear-down.sh'
@@ -125,7 +122,6 @@ Closure createTestJob(split, i, testTimeout) {
         graknNode {
             checkout scm
 
-            slackGithub "Janus tests started"
             /* Clean each test node to start. */
             mvn 'clean'
 
@@ -198,8 +194,6 @@ def run() {
 
         // Build grakn so it can be used by benchmarks and integration tests
         graknNode {
-            slackGithub "Build started"
-
             checkout scm
 
             stage('Build Grakn') {
@@ -242,25 +236,30 @@ def run() {
     // Execute all jobs in parallel
     parallel(jobs)
 
-    if (shouldRunAllTests()) {
-        graknNode {
-            // only deploy long-running instance on stable branch if all tests pass
-            if (shouldDeployLongRunningInstance()) {
-                checkout scm
-                unstash 'dist'
+    graknNode {
+        // only deploy long-running instance on stable branch if all tests pass
+        if (shouldDeployLongRunningInstance()) {
+            checkout scm
+            unstash 'dist'
 
-                stage('Deploy Grakn') {
-                    sshagent(credentials: ['jenkins-aws-ssh']) {
-                        sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
-                        sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
-                        ssh "'bash -s' < scripts/start-long-running-instance.sh"
-                    }
+            stage('Deploy Grakn') {
+                sshagent(credentials: ['jenkins-aws-ssh']) {
+                    sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                    sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                    ssh "'bash -s' < scripts/start-long-running-instance.sh"
                 }
             }
-
-            slackGithub "Build Success", "good"
         }
+
+        slackGithub "Build Success", "good"
     }
 }
 
-run()
+try {
+    run()
+} catch (Exception e) {
+    node {
+        slackGithub "Build Failure", "danger"
+    }
+    throw e
+}
