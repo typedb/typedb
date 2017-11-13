@@ -45,6 +45,7 @@ public abstract class AtomicBase implements Atomic {
 
     private final Var varName;
     private final VarPattern atomPattern;
+    private Pattern combinedPattern = null;
     private ReasonerQuery parent = null;
 
     protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
@@ -82,8 +83,13 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public VarPattern getPattern(){ return atomPattern;}
 
+    protected Pattern combinedPattern(){ return atomPattern;}
+
     @Override
-    public Pattern getCombinedPattern(){ return getPattern();}
+    public Pattern getCombinedPattern(){
+        if (combinedPattern == null) combinedPattern = combinedPattern();
+        return combinedPattern;
+    }
 
     @Override
     public ReasonerQuery getParentQuery(){ return parent;}

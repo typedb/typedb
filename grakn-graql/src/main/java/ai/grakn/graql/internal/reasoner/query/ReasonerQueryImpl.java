@@ -234,18 +234,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return tx;
     }
 
-    /**
-     * @return conjunctive pattern composed of constituent atom patterns
-     */
-    public Conjunction<PatternAdmin> getBasePattern(){
-        return Patterns.conjunction(
-                getAtoms().stream()
-                        .map(Atomic::getPattern)
-                        .flatMap(p -> p.admin().varPatterns().stream())
-                        .collect(Collectors.toSet())
-        );
-    }
-
     @Override
     public Conjunction<PatternAdmin> getPattern() {
         return Patterns.conjunction(

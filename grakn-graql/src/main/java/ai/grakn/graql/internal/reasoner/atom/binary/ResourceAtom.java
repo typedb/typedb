@@ -207,7 +207,7 @@ public class ResourceAtom extends Binary{
     public Var getRelationVariable(){ return relationVariable;}
 
     @Override
-    public Pattern getCombinedPattern() {
+    protected Pattern combinedPattern(){
         Set<VarPatternAdmin> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
                 .map(VarPattern::admin)

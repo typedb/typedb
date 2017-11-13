@@ -165,10 +165,9 @@ public final class ResolutionPlan {
                 .forEach(at -> at.getVarProperties().forEach(p -> propertyMap.put(p, at)));
         Set<VarProperty> properties = propertyMap.keySet();
 
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getBasePattern(), tx);
+        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), tx);
 
         ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
-
         return ImmutableList.<Atom>builder().addAll(
                 fragments.stream()
                         .map(Fragment::varProperty)

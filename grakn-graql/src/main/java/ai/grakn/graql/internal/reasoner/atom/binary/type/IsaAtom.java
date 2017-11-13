@@ -76,8 +76,8 @@ public class IsaAtom extends TypeAtom {
     }
 
     @Override
-    public Pattern getCombinedPattern(){
-        if (getPredicateVariable().isUserDefinedName()) return super.getCombinedPattern();
+    protected Pattern combinedPattern(){
+        if (getPredicateVariable().isUserDefinedName()) return super.combinedPattern();
         return getSchemaConcept() != null? getVarName().isa(getSchemaConcept().getLabel().getValue()): getVarName().isa(getPredicateVariable());
     }
 
@@ -85,13 +85,13 @@ public class IsaAtom extends TypeAtom {
         ConceptId typeId = type.getId();
         Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
 
-        VarPattern newPattern = getPattern().isa(typeVariable);
         IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
-        return new Pair<>(newPattern, newPredicate);
+        return new Pair<>(getPattern(), newPredicate);
     }
 
     @Override
     public IsaAtom addType(SchemaConcept type) {
+        if (getTypeId() != null) return this;
         Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
         return new IsaAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
     }
