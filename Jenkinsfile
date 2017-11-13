@@ -222,17 +222,14 @@ if (shouldRunAllTests()) {
         }
     }
 
-    for (String moduleName : integrationTests) {
-        // We have to re-assign so this variable is always the same in the closure
-        String mod = moduleName
-
+    integrationTests.each { String moduleName ->
         // Add each integration test as a parallel job
         jobs[moduleName] = {
             graknNode {
                 checkout scm
                 unstash 'dist'
 
-                runIntegrationTest(mod)
+                runIntegrationTest(moduleName)
             }
         }
     }
