@@ -143,10 +143,8 @@ Closure createTestJob(split, i, testTimeout) {
             checkout scm
 
             slackGithub "Janus tests started"
-            /* Clean each test node to start. */
-            mvn 'clean'
 
-            def mavenVerify = 'verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true'
+            def mavenVerify = 'clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true'
 
             /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
             /* Tell Maven to read the appropriate file. */
