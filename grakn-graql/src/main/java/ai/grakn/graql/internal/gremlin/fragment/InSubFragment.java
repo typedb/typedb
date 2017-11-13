@@ -62,6 +62,11 @@ public abstract class InSubFragment extends Fragment {
     }
 
     @Override
+    public Fragment getInverse() {
+        return Fragments.outSub(varProperty(), end(), start());
+    }
+
+    @Override
     public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
                                                            Map<Node, Map<Node, Fragment>> edges) {
         return directedEdges(NodeId.NodeType.SUB, nodes, edges);

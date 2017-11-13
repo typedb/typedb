@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.gremlin.fragment.InSubFragment;
 import ai.grakn.graql.internal.gremlin.spanningtree.Arborescence;
 import ai.grakn.graql.internal.gremlin.spanningtree.ChuLiuEdmonds;
@@ -97,11 +96,9 @@ public class GreedyTraversalPlan {
         final Set<Node> connectedNodes = new HashSet<>();
         final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
 
-//        Collection<Set<Fragment>> connectedFragmentSets =
         getConnectedFragmentSets(plan, query, allNodes, connectedNodes, nodesWithFixedCost, tx).forEach(fragmentSet -> {
 
-            Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
-            Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
+            final Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
 
             final Set<Node> startingNodeSet = new HashSet<>();
             final Set<Fragment> edgeFragmentSet = new HashSet<>();
@@ -114,24 +111,8 @@ public class GreedyTraversalPlan {
                 }
             });
 
-            Set<Weighted<DirectedEdge<Node>>> edgeSet = edgeFragmentSet.stream()
-                    .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
-                    .collect(Collectors.toSet()); // make sure previous steps are all done
-
-            edgeSet.forEach(weightedDirectedEdge -> {
-                if (nodesWithFixedCost.containsKey(weightedDirectedEdge.val.source) &&
-                        nodesWithFixedCost.get(weightedDirectedEdge.val.source) > 0 &&
-                        weightedDirectedEdge.val.destination.getNodeId().getNodeType() == NodeId.NodeType.ISA) {
-
-                    edges.get(weightedDirectedEdge.val.destination).get(weightedDirectedEdge.val.source)
-                            .setAccurateFragmentCost(nodesWithFixedCost.get(weightedDirectedEdge.val.source));
-                    weightedDirectedEdge.weight = -nodesWithFixedCost.get(weightedDirectedEdge.val.source);
-                    startingNodeSet.add(weightedDirectedEdge.val.source);
-                }
-                weightedGraph.add(weightedDirectedEdge);
-                connectedNodes.add(weightedDirectedEdge.val.destination);
-                connectedNodes.add(weightedDirectedEdge.val.source);
-            });
+            Set<Weighted<DirectedEdge<Node>>> weightedGraph = buildWeightedGraph(
+                    allNodes, connectedNodes, nodesWithFixedCost, edges, startingNodeSet, edgeFragmentSet);
 
             // if there is no edge fragment
             if (!weightedGraph.isEmpty()) {
@@ -271,6 +252,7 @@ public class GreedyTraversalPlan {
         }
     }
 
+    // if in-sub starts from an indexed supertype, update the fragment cost of in-isa starting from the subtypes
     private static void processSubFragment(List<Fragment> plan,
                                            Map<NodeId, Node> allNodes,
                                            Set<Node> connectedNodes,
@@ -300,12 +282,38 @@ public class GreedyTraversalPlan {
             });
             subFragmentSet.forEach(inSubFragment -> {
                 allFragments.remove(inSubFragment);
-                allFragments.remove(Fragments.outSub(
-                        inSubFragment.varProperty(), inSubFragment.end(), inSubFragment.start()));
+                allFragments.remove(inSubFragment.getInverse());
 
             });
             processSubFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, allFragments);
         }
+    }
+
+    private static Set<Weighted<DirectedEdge<Node>>> buildWeightedGraph(Map<NodeId, Node> allNodes,
+                                                                        Set<Node> connectedNodes,
+                                                                        Map<Node, Double> nodesWithFixedCost,
+                                                                        Map<Node, Map<Node, Fragment>> edges,
+                                                                        Set<Node> startingNodeSet,
+                                                                        Set<Fragment> edgeFragmentSet) {
+
+        final Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
+        edgeFragmentSet.stream()
+                .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
+                .forEach(weightedDirectedEdge -> {
+                    if (nodesWithFixedCost.containsKey(weightedDirectedEdge.val.source) &&
+                            nodesWithFixedCost.get(weightedDirectedEdge.val.source) > 0 &&
+                            weightedDirectedEdge.val.destination.getNodeId().getNodeType() == NodeId.NodeType.ISA) {
+
+                        edges.get(weightedDirectedEdge.val.destination).get(weightedDirectedEdge.val.source)
+                                .setAccurateFragmentCost(nodesWithFixedCost.get(weightedDirectedEdge.val.source));
+                        weightedDirectedEdge.weight = -nodesWithFixedCost.get(weightedDirectedEdge.val.source);
+                        startingNodeSet.add(weightedDirectedEdge.val.source);
+                    }
+                    weightedGraph.add(weightedDirectedEdge);
+                    connectedNodes.add(weightedDirectedEdge.val.destination);
+                    connectedNodes.add(weightedDirectedEdge.val.source);
+                });
+        return weightedGraph;
     }
 
     private static void greedyTraversal(List<Fragment> plan, Arborescence<Node> arborescence,
