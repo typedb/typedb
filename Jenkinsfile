@@ -107,6 +107,25 @@ def graknNode(Closure closure) {
     }
 }
 
+def archiveArtifactsS3 (String artifacts) {
+    step([$class: 'S3BucketPublisher',
+	  consoleLogLevel: 'INFO',
+	  pluginFailureResultConstraint: 'FAILURE',
+	  entries: [[
+	      sourceFile: '${artifacts}',
+	      bucket: 'performance-logs.grakn.ai',
+	      selectedRegion: 'eu-west-1',
+	      noUploadOnFailure: true,
+	      managedArtifacts: true,
+	      flatten: true,
+	      showDirectlyInBrowser: true,
+	      keepForever: true
+	  ]],
+	  profileName: 'use-iam',
+	  dontWaitForConcurrentBuildCompletion: false,
+    ])
+}
+
 def withPath(String path, Closure closure) {
     return withEnv(["PATH+EXTRA=${path}"], closure)
 }
@@ -219,11 +238,11 @@ if (shouldRunAllTests()) {
             String workspace = pwd()
             checkout scm
             unstash 'dist'
-
             timeout(60) {
                 stage('Run the benchmarks') {
                     mvn "clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
                     archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+		    archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
             }
         }
