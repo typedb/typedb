@@ -30,6 +30,22 @@
     <artifactId>grakn-core</artifactId>
     
     <dependencies>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>redisq</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>annotations</artifactId>
+        </dependency>
         <!-- Tinkerpop3 core -->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
@@ -76,6 +92,10 @@
             <groupId>org.sharegov</groupId>
             <artifactId>mjson</artifactId>
             <version>${mjson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
         </dependency>
     </dependencies>
 

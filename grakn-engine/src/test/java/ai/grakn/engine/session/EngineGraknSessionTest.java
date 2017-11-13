@@ -13,7 +13,7 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.test.rule.TxFactoryContext;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.test.rule.InMemoryRedisContext;
@@ -52,7 +52,7 @@ public class EngineGraknSessionTest {
 
     //Needed to start cass depending on profile
     @ClassRule
-    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+    public static final SessionContext sessionContext = SessionContext.create();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -98,7 +98,7 @@ public class EngineGraknSessionTest {
         factory.close();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.getKeyspace()));
+        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.keyspace()));
 
         graph.putEntityType("A thingy");
     }

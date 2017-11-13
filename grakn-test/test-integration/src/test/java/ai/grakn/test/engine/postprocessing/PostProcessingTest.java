@@ -118,7 +118,7 @@ public class PostProcessingTest {
         PostProcessingTask task = new PostProcessingTask();
         TaskConfiguration configuration = TaskConfiguration.of(
                 Json.object(
-                        KEYSPACE, graph.getKeyspace().getValue(),
+                        KEYSPACE, graph.keyspace().getValue(),
                         REST.Request.COMMIT_LOG_FIXING, Json.object(
                                 Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))

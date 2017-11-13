@@ -64,7 +64,7 @@ public class TaskClientTest {
 
     @Before
     public void setUp() {
-        client = TaskClient.of("localhost", ctx.port());
+        client = TaskClient.of(ctx.uri());
         Mockito.when(manager.storage()).thenReturn(Mockito.mock(TaskStateStorage.class));
     }
 

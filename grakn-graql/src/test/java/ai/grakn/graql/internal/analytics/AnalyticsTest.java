@@ -16,9 +16,8 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graql.analytics;
+package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -30,7 +29,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.rule.EngineContext;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import org.junit.Before;
@@ -44,7 +43,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -62,14 +60,14 @@ public class AnalyticsTest {
     private String relationId12;
     private String relationId24;
 
-    public GraknSession factory;
+    public GraknSession session;
 
     @ClassRule
-    public static final EngineContext context = GraknTestUtil.usingTinker() ? null : EngineContext.createWithInMemoryRedis();
+    public final static SessionContext sessionContext = SessionContext.create();
 
     @Before
     public void setUp() {
-        factory = GraknTestUtil.usingTinker() ? Grakn.session(Grakn.IN_MEMORY, randomKeyspace()) : context.sessionWithNewKeyspace();
+        session = sessionContext.newSession();
     }
 
     @Rule
@@ -77,7 +75,7 @@ public class AnalyticsTest {
 
     @Test
     public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = graph.putEntityType("thingy");
@@ -99,7 +97,7 @@ public class AnalyticsTest {
         }
 
         // the null role-player caused analytics to fail at some stage
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().degree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -111,7 +109,7 @@ public class AnalyticsTest {
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().count().in("rule", "thing").execute();
         }
     }
@@ -120,7 +118,7 @@ public class AnalyticsTest {
     public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("role")).getMessage());
-        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().count().in("role").execute();
         }
     }
@@ -138,7 +136,7 @@ public class AnalyticsTest {
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
         Set<?> result = queryList.parallelStream().map(query -> {
-            try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
                 return graph.graql().parse(query).execute();
             }
         }).collect(Collectors.toSet());
@@ -146,7 +144,7 @@ public class AnalyticsTest {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 

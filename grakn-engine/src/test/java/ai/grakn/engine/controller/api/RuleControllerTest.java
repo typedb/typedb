@@ -65,7 +65,7 @@ public class RuleControllerTest {
     public void setupMock() {
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.graql()).thenAnswer(invocation -> sampleKB.tx().graql());
 
@@ -79,8 +79,8 @@ public class RuleControllerTest {
         when(mockTx.getRule(anyString())).thenAnswer(invocation ->
             sampleKB.tx().getRule(invocation.getArgument(0)));
 
-        when(factory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-        when(factory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
+        when(factory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(factory.tx(mockTx.keyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
@@ -88,7 +88,7 @@ public class RuleControllerTest {
         String expectationRule = "expectation-rule";
 
         Response response = with()
-            .get(REST.resolveTemplate(RULE + "/" + expectationRule, mockTx.getKeyspace().getValue()));
+            .get(REST.resolveTemplate(RULE + "/" + expectationRule, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -109,7 +109,7 @@ public class RuleControllerTest {
         ));
         Response response = with()
             .body(body.toString())
-            .post(REST.resolveTemplate(RULE, mockTx.getKeyspace().getValue()));
+            .post(REST.resolveTemplate(RULE, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 

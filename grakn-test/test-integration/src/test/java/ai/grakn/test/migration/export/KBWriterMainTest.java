@@ -60,14 +60,14 @@ public class KBWriterMainTest {
 
     @Test
     public void exportCalledWithSchemaFlag_DataPrintedToSystemOut(){
-        run("export", "-u", engine.uri(), "-schema", "-keyspace", keyspace.getValue());
+        run("export", "-u", engine.uri().toString(), "-schema", "-keyspace", keyspace.getValue());
 
         assertThat(sysOut.getLog(), containsString("sub entity"));
     }
 
     @Test
     public void exportCalledWithDataFlag_DataPrintedToSystemOutTest(){
-        run("export", "-u", engine.uri(), "-data", "-keyspace", keyspace.getValue());
+        run("export", "-u", engine.uri().toString(), "-data", "-keyspace", keyspace.getValue());
 
         assertThat(sysOut.getLog(), containsString("isa movie"));
     }
@@ -88,7 +88,7 @@ public class KBWriterMainTest {
 
     @Test
     public void exportCalledWithIncorrectURI_ErrorIsPrintedToSystemErr(){
-        run("export", "-u", engine.uri().substring(1), "-data", "-keyspace", keyspace.getValue());
+        run("export", "-u", engine.uri().toString().substring(1), "-data", "-keyspace", keyspace.getValue());
 
         assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn server start'?"));
     }

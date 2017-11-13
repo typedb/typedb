@@ -100,10 +100,6 @@ public class EngineContext extends CompositeTestRule {
         return new EngineContext(true);
     }
 
-    public int port() {
-        return config.getProperty(GraknConfigKey.SERVER_PORT);
-    }
-
     public GraknEngineServer server() {
         return server;
     }
@@ -132,7 +128,7 @@ public class EngineContext extends CompositeTestRule {
         return server.getTaskManager();
     }
 
-    public String uri() {
+    public SimpleURI uri() {
         return config.uri();
     }
 
@@ -143,14 +139,14 @@ public class EngineContext extends CompositeTestRule {
     @Override
     protected List<TestRule> testRules() {
         return ImmutableList.of(
-                TxFactoryContext.create(),
+                SessionContext.create(),
                 redis
         );
     }
 
     @Override
     public void before() throws Throwable {
-        RestAssured.baseURI = "http://" + config.uri();
+        RestAssured.baseURI = uri().toURI().toString();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
@@ -165,7 +161,7 @@ public class EngineContext extends CompositeTestRule {
         //
         // When using janus, add -Dgrakn.test-profile=janus
         //
-        // The reason is that the default configuration of Grakn uses the Janus factory while the default
+        // The reason is that the default configuration of Grakn uses the Janus Factory while the default
         // test profile is tinker: so when running a unit test within an IDE without any extra parameters,
         // we end up wanting to use the JanusFactory but without starting Cassandra first.
         LOG.info("starting engine...");

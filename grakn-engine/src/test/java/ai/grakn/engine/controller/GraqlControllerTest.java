@@ -7,10 +7,9 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.test.rule.TxFactoryContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
@@ -21,6 +20,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
@@ -54,7 +54,7 @@ public class GraqlControllerTest {
     }
 
     private Response sendQuery(String query, String acceptType) {
-        return sendQuery(query, acceptType, true, -1, sampleKB.tx().getKeyspace().getValue(), false);
+        return sendQuery(query, acceptType, true, -1, sampleKB.tx().keyspace().getValue(), false);
     }
 
     private Response sendQuery(String query,
@@ -62,7 +62,7 @@ public class GraqlControllerTest {
                                boolean reasoner,
                                int limitEmbedded,
                                boolean multi) {
-        return sendQuery(query, acceptType, reasoner, limitEmbedded, sampleKB.tx().getKeyspace().getValue(), multi);
+        return sendQuery(query, acceptType, reasoner, limitEmbedded, sampleKB.tx().keyspace().getValue(), multi);
     }
 
 
@@ -81,27 +81,25 @@ public class GraqlControllerTest {
                 .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace));
     }
 
-    //Needed to start cass depending on profile
-    @ClassRule
-    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
 
-    @ClassRule
     public static SampleKBContext sampleKB = MovieKB.context();
 
     public static SampleKBContext genealogyKB = GenealogyKB.context();
 
-    @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
                 .createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create().getProperties());
         new GraqlController(factory, spark, new MetricRegistry());
     });
 
+    @ClassRule
+    public static final RuleChain chain = RuleChain.emptyRuleChain().around(sampleKB).around(genealogyKB).around(sparkContext);
+
     @Before
     public void setUp() {
         jsonPrinter = Printers.json();
         graqlPrinter = Printers.graql(false);
-        halPrinter = Printers.hal(sampleKB.tx().getKeyspace(), -1);
+        halPrinter = Printers.hal(sampleKB.tx().keyspace(), -1);
         when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
@@ -216,7 +214,7 @@ public class GraqlControllerTest {
         String queryString = "match $x isa movie; get;";
         int limitEmbedded = 42;
         Response resp = sendQuery(queryString, APPLICATION_HAL, false, limitEmbedded, false);
-        Printer printer = Printers.hal(sampleKB.tx().getKeyspace(), limitEmbedded);
+        Printer printer = Printers.hal(sampleKB.tx().keyspace(), limitEmbedded);
         assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
     }
 
@@ -232,7 +230,7 @@ public class GraqlControllerTest {
     public void whenMatchingRuleExplanation_HALResponseContainsInferredRelation() {
         String queryString = "match ($x,$y) isa marriage; offset 0; limit 1; get;";
         int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, true, limitEmbedded, genealogyKB.tx().getKeyspace().getValue(), false);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, limitEmbedded, genealogyKB.tx().keyspace().getValue(), false);
         resp.then().statusCode(200);
         Json jsonResp = Json.read(resp.body().asString());
         jsonResp.asJsonList().stream()
@@ -253,7 +251,7 @@ public class GraqlControllerTest {
     public void whenMatchingJoinExplanation_HALResponseContainsInferredRelation() {
         String queryString = "match ($x,$y) isa siblings; $z isa person; offset 0; limit 2; get;";
         int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, true, limitEmbedded, genealogyKB.tx().getKeyspace().getValue(), false);
+        Response resp = sendQuery(queryString, APPLICATION_HAL, true, limitEmbedded, genealogyKB.tx().keyspace().getValue(), false);
         resp.then().statusCode(200);
         Json jsonResp = Json.read(resp.body().asString());
         jsonResp.asJsonList().stream()

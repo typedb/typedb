@@ -80,10 +80,10 @@ public class GraqlControllerDeleteTest {
 
         tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(tx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(tx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
         when(tx.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.tx(eq(tx.getKeyspace()), any())).thenReturn(tx);
+        when(mockFactory.tx(eq(tx.keyspace()), any())).thenReturn(tx);
     }
 
     @Test
@@ -179,6 +179,6 @@ public class GraqlControllerDeleteTest {
                 .queryParam(INFER, false)
                 .accept(APPLICATION_TEXT)
                 .body(query)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, tx.getKeyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, tx.keyspace().getValue()));
     }
 }

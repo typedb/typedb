@@ -34,17 +34,4 @@
         <module>test-integration</module>
         <module>test-snb</module>
     </modules>
-
-    <dependencies>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-graql</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-client</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
 </project>

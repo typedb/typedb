@@ -18,25 +18,33 @@
 
 package ai.grakn.test.rule;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
+import ai.grakn.factory.GraknSessionLocal;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableList;
 import org.junit.rules.TestRule;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 
 /**
- * Context for tests that use {@link GraknTx}s. Will make sure that any dependencies such as cassandra are running
+ * Context for tests that use {@link GraknTx}s and {@link ai.grakn.GraknSession}s.
+ * Will make sure that any dependencies such as cassandra are running
  *
  * @author Felix Chapman
  */
-public class TxFactoryContext extends CompositeTestRule {
+public class SessionContext extends CompositeTestRule {
+    private Set<GraknSession> openedSessions = new HashSet<>();
 
-    private TxFactoryContext() {
+    private SessionContext() {
     }
 
-    public static TxFactoryContext create() {
-        return new TxFactoryContext();
+    public static SessionContext create() {
+        return new SessionContext();
     }
 
     @Override
@@ -50,5 +58,16 @@ public class TxFactoryContext extends CompositeTestRule {
 
     public static boolean canUseTx() {
         return !GraknTestUtil.usingJanus() || EmbeddedCassandraContext.inCassandraContext();
+    }
+
+    public GraknSession newSession(){
+        GraknSessionLocal session = GraknSessionLocal.create(randomKeyspace());
+        openedSessions.add(session);
+        return session;
+    }
+
+    @Override
+    public void after(){
+        openedSessions.forEach(GraknSession::close);
     }
 }

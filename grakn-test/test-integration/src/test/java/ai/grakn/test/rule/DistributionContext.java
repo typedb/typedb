@@ -86,18 +86,18 @@ public class DistributionContext extends CompositeTestRule {
 
         engineProcess.destroyForcibly();
         engineProcess = newEngineProcess(port, redisPort);
-        waitForEngine(port);
+        waitForEngine();
         return true;
     }
 
-    public int port(){
-        return port;
+    public SimpleURI uri(){
+        return new SimpleURI("localhost", port);
     }
 
     @Override
     protected List<TestRule> testRules() {
         return ImmutableList.of(
-                TxFactoryContext.create(),
+                SessionContext.create(),
                 InMemoryRedisContext.create(redisPort)
         );
     }
@@ -107,7 +107,7 @@ public class DistributionContext extends CompositeTestRule {
         assertPackageBuilt();
         unzipDistribution();
         engineProcess = newEngineProcess(port, redisPort);
-        waitForEngine(port);
+        waitForEngine();
     }
 
     @Override
@@ -171,10 +171,10 @@ public class DistributionContext extends CompositeTestRule {
     /**
      * Wait for the engine REST API to be available
      */
-    private static void waitForEngine(int port) {
+    private void waitForEngine() {
         long endTime = currentTimeMillis() + 120000;
         while (currentTimeMillis() < endTime) {
-            if (Client.serverIsRunning("localhost:" + port)) {
+            if (Client.serverIsRunning(uri())) {
                 return;
             }
             try {

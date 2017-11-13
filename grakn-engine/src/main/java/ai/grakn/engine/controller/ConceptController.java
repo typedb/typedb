@@ -149,7 +149,7 @@ public class ConceptController {
         Concept concept = tx.getConcept(conceptId);
 
         if (notPresent(concept)) {
-            throw GraknServerException.noConceptFound(conceptId, tx.getKeyspace());
+            throw GraknServerException.noConceptFound(conceptId, tx.keyspace());
         }
 
         return concept;

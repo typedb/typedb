@@ -180,7 +180,7 @@ public class ValidatorTest extends TxTestBase {
         }
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
 
         // now try to delete all assertions and then the movie
         godfather = tx.getEntityType("movie").instances().iterator().next();
@@ -194,7 +194,7 @@ public class ValidatorTest extends TxTestBase {
         godfather.delete();
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
 
         assertionIds.forEach(id -> assertNull(tx.getConcept(id)));
 

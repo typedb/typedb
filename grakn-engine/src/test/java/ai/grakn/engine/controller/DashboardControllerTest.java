@@ -6,9 +6,8 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.test.rule.TxFactoryContext;
 import ai.grakn.test.kbs.GenealogyKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
@@ -16,6 +15,7 @@ import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
@@ -38,7 +38,7 @@ public class DashboardControllerTest {
     private Response sendQueryExplain(String query) {
         return RestAssured.with()
                 .queryParam(QUERY, query)
-                .queryParam(KEYSPACE, genealogyKB.tx().getKeyspace().getValue())
+                .queryParam(KEYSPACE, genealogyKB.tx().keyspace().getValue())
                 .queryParam(INFER, true)
                 .queryParam(LIMIT_EMBEDDED, -1)
                 .accept(APPLICATION_HAL)
@@ -47,25 +47,22 @@ public class DashboardControllerTest {
 
     private Response sendQueryExplore(String id) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, genealogyKB.tx().getKeyspace().getValue())
+                .queryParam(KEYSPACE, genealogyKB.tx().keyspace().getValue())
                 .queryParam(INFER, true)
                 .queryParam(LIMIT_EMBEDDED, -1)
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Dashboard.EXPLORE + id);
     }
 
-    //Needed to start cass depending on profile
-    @ClassRule
-    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
-
-    @ClassRule
     public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
-    @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create().getProperties());
         new DashboardController(factory, spark);
     });
+
+    @ClassRule
+    public static final RuleChain chain = RuleChain.emptyRuleChain().around(genealogyKB).around(sparkContext);
 
     @Before
     public void setUp() {

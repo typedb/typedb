@@ -29,46 +29,41 @@
 # ================================================
 
 # ================================================
-# global variables
-# ================================================
-
-# globals
-WAIT_INTERVAL_S=2
-
-# Grakn globals
-# TODO: clean up
-if [ -z "${GRAKN_HOME}" ]; then
-    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
-    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-fi
-
-GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
-GRAKN_PID=/tmp/grakn.pid
-GRAKN_STARTUP_TIMEOUT_S=120
-GRAKN_SHUTDOWN_TIMEOUT_S=120
-
-# Storage globals
-STORAGE_PID=/tmp/grakn-storage.pid
-STORAGE_STARTUP_TIMEOUT_S=60
-
-# Queue globals
-QUEUE_PID=/tmp/grakn-queue.pid # If you want to change it, be sure to change it in redis.conf as well
-QUEUE_STARTUP_TIMEOUT_S=10
-
-# ================================================
 # common helper functions
 # ================================================
 update_classpath_global_var() {
   # Define CLASSPATH, exclude slf4j as we use logback
-  for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
+  for jar in ./services/lib/*.jar; do
       if [[ $jar != *slf4j-log4j12* ]] ; then
           CLASSPATH="$CLASSPATH":"$jar"
       fi
   done
 
   # Add path containing grakn.properties and logback.xml
-  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
-  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
+  CLASSPATH="$CLASSPATH":./conf
+  CLASSPATH="$CLASSPATH":./services/grakn
+}
+
+wait_until_terminated() {
+  while kill -0 "$1" 2>/dev/null; do
+    echo -n "." # output some sort of "progress bar"
+    sleep $WAIT_INTERVAL_S
+  done
+}
+
+print_status_message() {
+  if [ $1 -eq 0 ] ; then
+      echo "SUCCESS"
+  else
+      echo "FAILED!"
+  fi
+}
+
+print_failure_diagnostics() {
+  echo "======== Failure Diagnostics ========"
+  echo "Grakn pid = '`cat $GRAKN_PID`' (from $GRAKN_PID), '`grakn_get_pid_by_ps_ef`' (from ps -ef)"
+  echo "Queue pid = '`cat $QUEUE_PID`' (from $QUEUE_PID), '`queue_get_pid_by_ps_ef`' (from ps -ef)"
+  echo "Storage pid = '`cat $STORAGE_PID`' (from $STORAGE_PID)"
 }
 
 wait_until_terminated() {
@@ -97,7 +92,7 @@ print_failure_diagnostics() {
 # storage helper functions
 # ================================================
 storage_start_process() {
-  "${GRAKN_HOME}"/services/cassandra/cassandra -p $STORAGE_PID > /dev/null 2>&1
+  ./services/cassandra/cassandra -p $STORAGE_PID > /dev/null 2>&1
   return $?
 }
 
@@ -119,7 +114,7 @@ storage_wait_until_ready() {
   while [ $now_s -le $stop_s ]; do
       echo -n "."
       # The \r\n deletion bit is necessary for Cygwin compatibility
-      status_thrift=`"${GRAKN_HOME}"/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'`
+      status_thrift=`./services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'`
       if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
           return 0
       fi
@@ -195,13 +190,8 @@ queue_start_process() {
       queue_bin="redis-server-linux"
   fi
 
-  # run queue
-  # queue needs to be ran with $GRAKN_HOME as the working directory
-  # otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
-  pushd "$GRAKN_HOME" > /dev/null
-  "${GRAKN_HOME}"/services/redis/$queue_bin "${GRAKN_HOME}"/services/redis/redis.conf
+  ./services/redis/$queue_bin ./services/redis/redis.conf
   local status=$?
-  popd > /dev/null
 
   return $status
 }
@@ -281,7 +271,7 @@ queue_stop_and_wait_until_terminated() {
     fi
 
     local pid=`cat $QUEUE_PID`
-    "${GRAKN_HOME}/services/redis/"$queue_bin shutdown
+    ./services/redis/$queue_bin shutdown
     wait_until_terminated $pid
     local status=$?
     print_status_message ${status}
@@ -300,7 +290,7 @@ queue_wipe_all_data() {
       queue_bin="redis-cli-linux"
   fi
 
-  "${GRAKN_HOME}/services/redis/"$queue_bin flushall
+  ./services/redis/$queue_bin flushall
 }
 
 # ================================================
@@ -308,7 +298,7 @@ queue_wipe_all_data() {
 # ================================================
 grakn_start_process() {
   local status=
-  java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" \
+  java -cp "${CLASSPATH}" -Dgrakn.dir="./services" -Dgrakn.conf="${GRAKN_CONFIG}" \
     ai.grakn.engine.Grakn > /dev/null 2>&1 &
   status=$?
   pid=`grakn_get_pid_by_ps_ef`
@@ -329,8 +319,8 @@ grakn_check_if_running_by_pidfile() {
 }
 
 grakn_check_if_ready() {
-  local host=`cat "${GRAKN_HOME}"/conf/grakn.properties | grep server.host | awk -F "=" '{print $2}'`
-  local port=`cat "${GRAKN_HOME}"/conf/grakn.properties | grep server.port | awk -F "=" '{print $2}'`
+  local host=`cat ./conf/grakn.properties| grep server.host | awk -F "=" '{print $2}'`
+  local port=`cat ./conf/grakn.properties| grep server.port | awk -F "=" '{print $2}'`
   curl $host:$port/configuration > /dev/null 2>&1
   return $? # curl would return 0 upon a successful response or nonzero otherwise
 }
@@ -421,8 +411,8 @@ grakn_stop_and_wait_until_terminated() {
 }
 
 grakn_wipe_all_data() {
-  rm -r "${GRAKN_HOME}"/logs
-  mkdir "${GRAKN_HOME}"/logs
+  rm -r ./logs
+  mkdir ./logs
 }
 
 # ================================================
@@ -575,7 +565,7 @@ cli_case_grakn_server_clean() {
 }
 
 cli_case_grakn_version() {
-  java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell --version
+  java -cp ${CLASSPATH} -Dgrakn.dir="./services" ai.grakn.graql.GraqlShell --version
 }
 
 cli_case_grakn_help() {
@@ -731,12 +721,36 @@ handle_ctrl_c() {
 # =============================================
 print_grakn_logo() {
   # cat ASCII logo, or fail silently if it's somehow missing
-  cat "${GRAKN_HOME}"/services/grakn/grakn-ascii.txt 2> /dev/null
+  cat ./services/grakn/grakn-ascii.txt 2> /dev/null
 }
 
 # =============================================
 # main routine
 # =============================================
+
+# Common global variables
+WAIT_INTERVAL_S=2
+
+# Grakn global variables
+# TODO: clean up
+if [ -z "${GRAKN_HOME}" ]; then
+    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
+fi
+
+GRAKN_CONFIG="../conf/grakn.properties"
+GRAKN_PID=/tmp/grakn.pid
+GRAKN_STARTUP_TIMEOUT_S=120
+
+# Storage global variables
+STORAGE_PID=/tmp/grakn-storage.pid
+STORAGE_STARTUP_TIMEOUT_S=60
+
+# Queue global variables
+QUEUE_STARTUP_TIMEOUT_S=10
+QUEUE_PID=/tmp/grakn-queue.pid
+
+pushd "$GRAKN_HOME" > /dev/null
 
 update_classpath_global_var
 
@@ -772,3 +786,5 @@ case "$1" in
     cli_case_grakn_help
   ;;
 esac
+
+popd > /dev/null

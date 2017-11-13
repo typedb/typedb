@@ -70,13 +70,13 @@ public class AttributeControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
             sampleKBContext.tx().getAttributeType(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.keyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
@@ -87,7 +87,7 @@ public class AttributeControllerTest {
         Json requestBody = Json.object(VALUE_JSON_FIELD, attributeValue);
         Response response = with()
             .body(requestBody.toString())
-            .post(REST.resolveTemplate(ATTRIBUTE_TYPE + "/" + attributeType, mockTx.getKeyspace().getValue()));
+            .post(REST.resolveTemplate(ATTRIBUTE_TYPE + "/" + attributeType, mockTx.keyspace().getValue()));
 
         Json responseBody = Json.read(response.body().asString());
 

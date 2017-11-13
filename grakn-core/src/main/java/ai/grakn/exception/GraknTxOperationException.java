@@ -160,7 +160,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when attempting to open a transaction which is already open
      */
     public static GraknTxOperationException transactionOpen(GraknTx tx){
-        return new GraknTxOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.getKeyspace()));
+        return new GraknTxOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.keyspace()));
     }
 
     /**
@@ -174,7 +174,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when attempting to mutate a read only transaction
      */
     public static GraknTxOperationException transactionReadOnly(GraknTx tx){
-        return new GraknTxOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.getKeyspace()));
+        return new GraknTxOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
     }
 
     /**
@@ -189,7 +189,7 @@ public class GraknTxOperationException extends GraknException{
      */
     public static GraknTxOperationException transactionClosed(GraknTx tx, String reason){
         if(reason == null){
-            return new GraknTxOperationException(ErrorMessage.TX_CLOSED.getMessage(tx.getKeyspace()));
+            return new GraknTxOperationException(ErrorMessage.TX_CLOSED.getMessage(tx.keyspace()));
         } else {
             return new GraknTxOperationException(reason);
         }
@@ -199,7 +199,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when the graph can not be closed due to an unknown reason.
      */
     public static GraknTxOperationException closingFailed(GraknTx tx, Exception e){
-        return new GraknTxOperationException(CLOSE_FAILURE.getMessage(tx.getKeyspace()), e);
+        return new GraknTxOperationException(CLOSE_FAILURE.getMessage(tx.keyspace()), e);
     }
 
     /**

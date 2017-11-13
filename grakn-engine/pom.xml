@@ -32,6 +32,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
+        </dependency>
+        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-module-sdk</artifactId>
             <version>${project.version}</version>
@@ -59,11 +63,6 @@
                     <groupId>org.slf4j</groupId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <artifactId>jackson-core</artifactId>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <artifactId>jackson-databind</artifactId>
@@ -111,11 +110,6 @@
             </exclusions>
         </dependency>
         <!-- Used to format metrics for Prometheus -->
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient</artifactId>
-            <version>${prometheus.version}</version>
-        </dependency>
         <dependency>
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient_servlet</artifactId>

@@ -21,7 +21,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.GraknTxTinker;
-import ai.grakn.test.rule.TxFactoryContext;
+import ai.grakn.test.rule.SessionContext;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 public class SampleKBLoaderTest {
 
     @ClassRule
-    public static TxFactoryContext txFactoryContext = TxFactoryContext.create();
+    public static SessionContext sessionContext = SessionContext.create();
 
     @Test
     public void whenCreatingEmptyGraph_EnsureGraphIsEmpty(){

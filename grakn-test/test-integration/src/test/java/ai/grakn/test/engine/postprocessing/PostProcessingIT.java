@@ -90,7 +90,7 @@ public class PostProcessingIT {
         Set<Future> futures = new HashSet<>();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            keyspace = graph.getKeyspace();
+            keyspace = graph.keyspace();
 
             //Create Simple Schema
             for (int i = 0; i < numEntTypes; i++) {

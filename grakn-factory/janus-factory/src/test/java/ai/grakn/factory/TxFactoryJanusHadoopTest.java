@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.util.ErrorMessage;
@@ -33,8 +34,11 @@ import java.util.Properties;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TxFactoryJanusHadoopTest {
+    private final static GraknSession session = mock(GraknSession.class);
     private final static Properties TEST_PROPERTIES = new Properties();
 
     private TxFactoryJanusHadoop factory;
@@ -48,7 +52,10 @@ public class TxFactoryJanusHadoopTest {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
         }
 
-        factory = new TxFactoryJanusHadoop(Keyspace.of("rubbish"), "rubbish", TEST_PROPERTIES);
+        when(session.keyspace()).thenReturn(Keyspace.of("rubbish"));
+        when(session.uri()).thenReturn("rubbish");
+        when(session.config()).thenReturn(TEST_PROPERTIES);
+        factory = new TxFactoryJanusHadoop(session);
     }
 
     @Test(expected=UnsupportedOperationException.class)
