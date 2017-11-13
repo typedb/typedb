@@ -41,6 +41,10 @@ def runIntegrationTest(String workspace, String moduleName) {
                         sh "load.sh"
                     }
                 }
+                // ARCHIVE EVERYTHING
+                if (moduleName == 'test-snb') {
+                    archiveArtifacts artifact: 'grakn-package'
+                }
                 timeout(360) {
                     stage('Validate') {
                         sh "validate.sh"
