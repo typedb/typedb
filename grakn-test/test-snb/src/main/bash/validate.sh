@@ -6,7 +6,10 @@ LDBC_VALIDATION_CONFIG=${WORKSPACE}/grakn-test/test-snb/src/main/bash/readwrite_
 
 # execute validation
 mvn install -DskipTests --also-make --projects grakn-test/test-snb
-mvn exec:java --projects grakn-test/test-snb -Dexec.mainClass=com.ldbc.driver.Client -Dexec.args="
+mvn exec:java --projects grakn-test/test-snb \
+    -Dexec.mainClass=com.ldbc.driver.Client \
+    -Dlogback.configurationFile=${WORKSPACE}/conf/test/logback-test.xml \
+    -Dexec.args="
     -db ai.grakn.GraknDb \
     -P ${LDBC_VALIDATION_CONFIG} \
     -vdb ${CSV_DATA}/validation_params.csv \
