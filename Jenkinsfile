@@ -188,7 +188,7 @@ void addTests(jobs) {
 }
 
 // Main script to run
-def run() {
+def runBuild() {
 
     //This sets properties in the Jenkins server.
     properties([
@@ -273,7 +273,7 @@ def run() {
 }
 
 try {
-    run()
+    runBuild()
 } catch (Exception e) {
     node {
         slackGithub "Build Failure", "danger"
