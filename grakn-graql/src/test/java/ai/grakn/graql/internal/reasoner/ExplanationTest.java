@@ -268,6 +268,7 @@ public class ExplanationTest {
                     "(cousin: $x, cousin: $y) isa cousins;" +
                     "limit 1; get;";
             Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+            assertEquals(answer, specificAnswer);
             testExplanation(specificAnswer);
         });
     }

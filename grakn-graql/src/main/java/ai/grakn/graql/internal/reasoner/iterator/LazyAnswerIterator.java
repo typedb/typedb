@@ -58,11 +58,10 @@ public class LazyAnswerIterator extends LazyIterator<Answer> {
         Iterator<Answer> transform = Iterators.transform(iterator(), input -> {
             if (input == null) return null;
             if (input.getExplanation() == null || input.getExplanation().isLookupExplanation()){
-                input.explain(exp);
+                return input.explain(exp);
             } else {
-                input.getExplanation().setQuery(exp.getQuery());
+                return input.explain(input.getExplanation().setQuery(exp.getQuery()));
             }
-            return input;
         });
         return new LazyAnswerIterator(transform);
     }

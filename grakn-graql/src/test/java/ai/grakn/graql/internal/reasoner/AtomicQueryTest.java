@@ -32,7 +32,6 @@ import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -128,14 +127,6 @@ public class AtomicQueryTest {
         assertExists(qb.parse(explicitQuery));
     }
 
-    private Concept getConceptByResourceValue(GraknTx graph, String id){
-        Set<Concept> instances = graph.getAttributesByValue(id)
-                .stream().flatMap(Attribute::ownerInstances).collect(Collectors.toSet());
-        if (instances.size() != 1)
-            throw new IllegalStateException("Something wrong, multiple instances with given res value");
-        return instances.iterator().next();
-    }
-
     @Test
     public void testWhenCopying_TheCopyIsAlphaEquivalent(){
         GraknTx graph = geoKB.tx();
@@ -214,6 +205,54 @@ public class AtomicQueryTest {
      *
      * ##################################
      */
+
+    @Test
+    public void testExactUnification_BinaryRelationWithSubs(){
+        GraknTx graph =  unificationWithTypesSet.tx();
+
+
+        Concept x1 = getConceptByResourceValue(graph, "x1");
+        Concept x2 = getConceptByResourceValue(graph, "x2");
+
+        String basePatternString = "{($x1, $x2) isa binary;}";
+        String basePatternString2 = "{($y1, $y2) isa binary;}";
+
+        ReasonerAtomicQuery xbaseQuery = ReasonerQueries.atomic(conjunction(basePatternString, graph), graph);
+        ReasonerAtomicQuery ybaseQuery = ReasonerQueries.atomic(conjunction(basePatternString2, graph), graph);
+
+        Answer xAnswer = new QueryAnswer(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
+        Answer flippedXAnswer = new QueryAnswer(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
+
+        Answer yAnswer = new QueryAnswer(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
+        Answer flippedYAnswer = new QueryAnswer(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
+
+        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(xbaseQuery, xAnswer);
+        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(xbaseQuery, flippedXAnswer);
+
+        Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier = new UnifierImpl(ImmutableMultimap.of(
+                var("x1"), var("x2"),
+                var("x2"), var("x1")
+        ));
+        assertTrue(unifier.containsAll(correctUnifier));
+
+        ReasonerAtomicQuery yChildQuery = ReasonerQueries.atomic(ybaseQuery, yAnswer);
+        ReasonerAtomicQuery yChildQuery2 = ReasonerQueries.atomic(ybaseQuery, flippedYAnswer);
+
+        Unifier unifier2 = yChildQuery.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier2 = new UnifierImpl(ImmutableMultimap.of(
+                var("y1"), var("x1"),
+                var("y2"), var("x2")
+        ));
+        assertTrue(unifier2.containsAll(correctUnifier2));
+
+        Unifier unifier3 = yChildQuery2.getMultiUnifier(parentQuery).getUnifier();
+        Unifier correctUnifier3 = new UnifierImpl(ImmutableMultimap.of(
+                var("y1"), var("x2"),
+                var("y2"), var("x1")
+        ));
+        assertTrue(unifier3.containsAll(correctUnifier3));
+    }
 
     @Test //only a single unifier exists
     public void testExactUnification_BinaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
@@ -598,11 +637,11 @@ public class AtomicQueryTest {
     @Test
     public void testUnification_ResourcesWithTypes(){
         GraknTx graph = unificationTestSet.tx();
-        String parentQuery = "{$x has res1 $r; $x isa baseRoleEntity;}";
+        String parentQuery = "{$x has resource $r; $x isa baseRoleEntity;}";
 
-        String childQuery = "{$r has res1 $x; $r isa subRoleEntity;}";
-        String childQuery2 = "{$x1 has res1 $x; $x1 isa subSubRoleEntity;}";
-        String baseQuery = "{$r has res1 $x; $r isa entity;}";
+        String childQuery = "{$r has resource $x; $r isa subRoleEntity;}";
+        String childQuery2 = "{$x1 has resource $x; $x1 isa subSubRoleEntity;}";
+        String baseQuery = "{$r has resource $x; $r isa entity;}";
 
         queryUnification(parentQuery, childQuery, false, false, true, graph);
         queryUnification(parentQuery, childQuery2, false, false, true, graph);
@@ -698,8 +737,8 @@ public class AtomicQueryTest {
     @Test
     public void testEquivalence_DifferentHasVariants(){
         GraknTx graph = unificationTestSet.tx();
-        String patternString = "{$x has res1;}";
-        String patternString2 = "{$y has res1;}";
+        String patternString = "{$x has resource;}";
+        String patternString2 = "{$y has resource;}";
         String patternString3 = "{$x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + ";}";
 
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
@@ -853,10 +892,10 @@ public class AtomicQueryTest {
     @Test
     public void testEquivalence_DifferentResourceVariants(){
         GraknTx graph = unificationTestSet.tx();
-        String patternString = "{$x has res1 'value';}";
-        String patternString2 = "{$y has res1 $r;$r val 'value';}";
-        String patternString3 = "{$y has res1 $r;}";
-        String patternString4 = "{$y has res1 'value2';}";
+        String patternString = "{$x has resource 'value';}";
+        String patternString2 = "{$y has resource $r;$r val 'value';}";
+        String patternString3 = "{$y has resource $r;}";
+        String patternString4 = "{$y has resource 'value2';}";
 
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
@@ -879,13 +918,13 @@ public class AtomicQueryTest {
     @Test
     public void testEquivalence_ResourcesWithSubstitution(){
         GraknTx graph = unificationTestSet.tx();
-        String patternString = "{$x has res1 $y;}";
-        String patternString2 = "{$y has res1 $z; $y id 'X';}";
-        String patternString3 = "{$z has res1 $u; $z id 'Y';}";
+        String patternString = "{$x has resource $y;}";
+        String patternString2 = "{$y has resource $z; $y id 'X';}";
+        String patternString3 = "{$z has resource $u; $z id 'Y';}";
 
-        String patternString4 = "{$y has res1 $r;$r id 'X';}";
-        String patternString5 = "{$r has res1 $x;$x id 'X';}";
-        String patternString6 = "{$y has res1 $x;$x id 'Y';}";
+        String patternString4 = "{$y has resource $r;$r id 'X';}";
+        String patternString5 = "{$r has resource $x;$x id 'X';}";
+        String patternString6 = "{$y has resource $x;$x id 'Y';}";
 
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
@@ -925,15 +964,15 @@ public class AtomicQueryTest {
     @Test //tests alpha-equivalence of queries with resources with multi predicate
     public void testEquivalence_MultiPredicateResources(){
         GraknTx graph = unificationTestSet.tx();
-        String patternString = "{$z has res1 $u;$a val >23; $a val <27;}";
-        String patternString2 = "{$x isa baseRoleEntity;$x has res1 $a;$a val >23; $a val <27;}";
-        String patternString3 = "{$e isa baseRoleEntity;$e has res1 > 23;}";
-        String patternString4 = "{$p isa baseRoleEntity;$p has res1 $a;$a val >23;}";
-        String patternString5 = "{$x isa baseRoleEntity;$x has res1 $y;$y val >27;$y val <23;}";
-        String patternString6 = "{$a isa baseRoleEntity;$a has res1 $p;$p val <27;$p val >23;}";
-        String patternString7 = "{$x isa baseRoleEntity, has res1 $a;$a val >23; $a val <27;}";
-        String patternString8 = "{$x isa baseRoleEntity, has res1 $z1;$z1 val >23; $z2 val <27;}";
-        String patternString9 = "{$x isa $type;$type label baseRoleEntity;$x has res1 $a;$a val >23; $a val <27;}";
+        String patternString = "{$z has resource $u;$a val >23; $a val <27;}";
+        String patternString2 = "{$x isa baseRoleEntity;$x has resource $a;$a val >23; $a val <27;}";
+        String patternString3 = "{$e isa baseRoleEntity;$e has resource > 23;}";
+        String patternString4 = "{$p isa baseRoleEntity;$p has resource $a;$a val >23;}";
+        String patternString5 = "{$x isa baseRoleEntity;$x has resource $y;$y val >27;$y val <23;}";
+        String patternString6 = "{$a isa baseRoleEntity;$a has resource $p;$p val <27;$p val >23;}";
+        String patternString7 = "{$x isa baseRoleEntity, has resource $a;$a val >23; $a val <27;}";
+        String patternString8 = "{$x isa baseRoleEntity, has resource $z1;$z1 val >23; $z2 val <27;}";
+        String patternString9 = "{$x isa $type;$type label baseRoleEntity;$x has resource $a;$a val >23; $a val <27;}";
 
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
@@ -991,11 +1030,11 @@ public class AtomicQueryTest {
     @Test //tests alpha-equivalence of resource atoms with different predicates
     public void testEquivalence_resourcesWithDifferentPredicates() {
         GraknTx graph = unificationTestSet.tx();
-        String patternString = "{$x has res1 $r;$r val > 1099;}";
-        String patternString2 = "{$x has res1 $r;$r val < 1099;}";
-        String patternString3 = "{$x has res1 $r;$r val = 1099;}";
-        String patternString4 = "{$x has res1 $r;$r val '1099';}";
-        String patternString5 = "{$x has res1 $r;$r val > $var;}";
+        String patternString = "{$x has resource $r;$r val > 1099;}";
+        String patternString2 = "{$x has resource $r;$r val < 1099;}";
+        String patternString3 = "{$x has resource $r;$r val = 1099;}";
+        String patternString4 = "{$x has resource $r;$r val '1099';}";
+        String patternString5 = "{$x has resource $r;$r val > $var;}";
 
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
@@ -1230,20 +1269,12 @@ public class AtomicQueryTest {
         queryEquivalence(query5, query6, false, true);
     }
 
-    @Test
-    public void traversalTest(){
-        GraknTx graph = unificationTestSet.tx();
-        String patternString = "{(role1: $x, role2: $y);$x id 'a';$y id 'b';}";
-        String patternString2 = "{(role1: $x, role2: $y);$y id 'c';$x id 'd';}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
-
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
-
-        GreedyTraversalPlan.createTraversal(query.getPattern(), graph);
-        GreedyTraversalPlan.createTraversal(query2.getPattern(), graph);
-        System.out.println();
+    private Concept getConceptByResourceValue(GraknTx graph, String id){
+        Set<Concept> instances = graph.getAttributesByValue(id)
+                .stream().flatMap(Attribute::ownerInstances).collect(Collectors.toSet());
+        if (instances.size() != 1)
+            throw new IllegalStateException("Something wrong, multiple instances with given res value");
+        return instances.iterator().next();
     }
 
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean expectation){

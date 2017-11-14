@@ -365,9 +365,9 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public Stream<IdPredicate> getPartialSubstitutions() {
-        Set<Var> rolePlayers = getRolePlayers();
+        Set<Var> varNames = getVarNames();
         return getPredicates(IdPredicate.class)
-                .filter(pred -> rolePlayers.contains(pred.getVarName()));
+                .filter(pred -> varNames.contains(pred.getVarName()));
     }
 
     public Stream<IdPredicate> getRolePredicates(){
@@ -871,13 +871,19 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public MultiUnifier getMultiUnifier(Atom pAtom, UnifierComparison unifierType) {
-        if (this.equals(pAtom))  return new MultiUnifierImpl();
-
         Unifier baseUnifier = super.getUnifier(pAtom);
         Set<Unifier> unifiers = new HashSet<>();
         if (pAtom.isRelation()) {
             assert(pAtom instanceof RelationshipAtom); // This is safe due to the check above
             RelationshipAtom parentAtom = (RelationshipAtom) pAtom;
+
+            //NB: if two atoms are equal and their sub and type mappings are equal we return the identity unifier
+            //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
+            if (this.equals(parentAtom)
+                    && this.getPartialSubstitutions().collect(toSet()).equals(parentAtom.getPartialSubstitutions().collect(toSet()))
+                    && this.getTypeConstraints().collect(toSet()).equals(parentAtom.getTypeConstraints().collect(toSet()))){
+                return new MultiUnifierImpl();
+            }
 
             boolean unifyRoleVariables = parentAtom.getRelationPlayers().stream()
                     .map(RelationPlayer::getRole)
