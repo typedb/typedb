@@ -155,6 +155,11 @@ public final class ResolutionPlan {
     }
 
     /**
+     * @return corresponding atom plan
+     */
+    public ImmutableList<Atom> plan(){ return plan;}
+
+    /**
      * @param query for which the plan should be constructed
      * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
      */
