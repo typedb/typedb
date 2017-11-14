@@ -91,68 +91,8 @@ print_failure_diagnostics() {
 # ================================================
 # storage helper functions
 # ================================================
-storage_start_process() {
-  ./services/cassandra/cassandra -p $STORAGE_PID > /dev/null 2>&1
-  return $?
-}
 
-storage_check_if_running_by_pidfile() {
-  local status=
-  if [ -e $STORAGE_PID ] && ps -p `cat $STORAGE_PID` > /dev/null ; then
-    status=0 # storage running
-  else
-    status=1 # storage not running
-  fi
-  return $status
-}
 
-storage_wait_until_ready() {
-  local now_s=`date '+%s'`
-  local stop_s=$(( $now_s + $STORAGE_STARTUP_TIMEOUT_S ))
-  local status_thrift=
-
-  while [ $now_s -le $stop_s ]; do
-      echo -n "."
-      # The \r\n deletion bit is necessary for Cygwin compatibility
-      status_thrift=`./services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'`
-      if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
-          return 0
-      fi
-      sleep $WAIT_INTERVAL_S
-      now_s=`date '+%s'`
-  done
-
-  return 1
-}
-
-storage_start_and_wait_until_ready() {
-  storage_check_if_running_by_pidfile
-  is_storage_running=$?
-
-  if [ $is_storage_running -eq 0 ]; then
-    echo "Storage is already running"
-    return 0 # storage is already running. no need to do anything
-  else
-    # otherwise attempt to start
-    echo -n "Starting Storage..."
-    storage_start_process
-    local exec_storage_bin=$?
-
-    # check storage status and wait until ready
-    local status=
-    if [ $exec_storage_bin -eq 0 ] ; then
-      # exec storage bin successful. now wait until ready
-      storage_wait_until_ready
-      status=$?
-    else
-      # exec storage bin failed
-      status=1
-    fi
-
-    print_status_message ${status}
-    return $status
-  fi
-}
 
 storage_stop_and_wait_until_terminated() {
   echo -n "Stopping Storage..."
@@ -179,38 +119,6 @@ storage_wipe_all_data() {
   mkdir -p db/cassandra/data db/cassandra/commitlog db/cassandra/saved_caches
 }
 
-# ================================================
-# queue helper functions
-# ================================================
-queue_start_process() {
-  local queue_bin=""
-  if [ "$(uname)" == "Darwin" ]; then
-      queue_bin="redis-server-osx"
-  elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-      queue_bin="redis-server-linux"
-  fi
-
-  ./services/redis/$queue_bin ./services/redis/redis.conf
-  local status=$?
-
-  return $status
-}
-
-queue_get_pid_by_ps_ef() {
-  ps -ef | grep 'redis-server' | grep -v grep | awk '{print $2}'
-}
-
-queue_check_if_running_by_ps_ef() {
-  local status=
-  local count_running_queue_process=`queue_get_pid_by_ps_ef | wc -l`
-  if [ $count_running_queue_process -gt 0 ] ; then
-    status=0 # queue running
-  else
-    status=1 # queue not running
-  fi
-  return $status
-}
-
 queue_wait_until_ready() {
   local now_s=`date '+%s'`
   local stop_s=$(( $now_s + $QUEUE_STARTUP_TIMEOUT_S ))
@@ -227,35 +135,6 @@ queue_wait_until_ready() {
   done
 
   return 1
-}
-
-queue_start_and_wait_until_ready() {
-  queue_check_if_running_by_ps_ef
-  is_queue_running=$?
-
-  if [ $is_queue_running -eq 0 ]; then
-    echo "Queue is already running"
-    return 0 # queue is already running. no need to do anything
-  else
-    # otherwise attempt to start
-    echo -n "Starting Queue..."
-    queue_start_process
-    local exec_queue_bin=$?
-
-    # check queue status and wait until ready
-    local status=
-    if [ $exec_queue_bin -eq 0 ] ; then
-      # exec queue bin successful. now wait until ready
-      queue_wait_until_ready
-      status=$?
-    else
-      # exec queue bin failed
-      status=1
-    fi
-
-    print_status_message ${status}
-    return $status
-  fi
 }
 
 queue_stop_and_wait_until_terminated() {
@@ -308,14 +187,6 @@ grakn_start_process() {
 
 grakn_get_pid_by_ps_ef() {
   ps -ef | grep Grakn | grep -v grep | awk '{ print $2}'
-}
-
-grakn_check_if_running_by_pidfile() {
-  if [ -e "$GRAKN_PID" ] && ps -p `cat $GRAKN_PID` > /dev/null ; then
-    return 0
-  else
-    return 1
-  fi
 }
 
 grakn_check_if_ready() {
@@ -446,26 +317,6 @@ cli_case_grakn_server_start_grakn() {
   return $grakn
 }
 
-cli_case_grakn_server_start_queue() {
-  queue_start_and_wait_until_ready
-  queue=$?
-  # log
-  if [ $queue -ne 0 ] ; then
-    echo "Unable to start Queue"
-  fi
-  return $queue
-}
-
-cli_case_grakn_server_start_storage() {
-  storage_start_and_wait_until_ready
-  storage=$?
-  # log
-  if [ $storage -ne 0 ] ; then
-    echo "Unable to start Storage"
-  fi
-  return $storage
-}
-
 cli_case_grakn_server_start_all() {
   cli_case_grakn_server_start_storage
   local storage=$?
@@ -484,49 +335,6 @@ cli_case_grakn_server_start_all() {
   fi
 
   return $status
-}
-
-cli_case_grakn_server_help() {
-  echo "Usage: grakn server COMMAND
-
-COMMAND:
-start [grakn|queue|storage]  Start Grakn (or optionally, only one of the component)
-stop [grakn|queue|storage]   Stop Grakn (or optionally, only one of the component)
-status                         Check if Grakn is running
-clean                          DANGEROUS: wipe data completely
-
-Tips:
-- Start Grakn with 'grakn server start'
-- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively
-"
-}
-cli_case_grakn_server_status() {
-  storage_check_if_running_by_pidfile
-  if [ $? -eq 0 ] ; then
-    echo "Storage: RUNNING"
-  else
-    echo "Storage: NOT RUNNING"
-  fi
-
-  queue_check_if_running_by_ps_ef
-  if [ $? -eq 0 ] ; then
-    echo "Queue: RUNNING"
-  else
-    echo "Queue: NOT RUNNING"
-  fi
-
-  grakn_check_if_ready
-  if [ $? -eq 0 ] ; then
-    echo "Grakn: RUNNING"
-  else
-    echo "Grakn: NOT RUNNING"
-  fi
-
-  case $1 in
-    --verbose)
-      print_failure_diagnostics
-    ;;
-  esac
 }
 
 cli_case_grakn_server_clean() {
@@ -564,23 +372,6 @@ cli_case_grakn_server_clean() {
   fi
 }
 
-cli_case_grakn_version() {
-  java -cp ${CLASSPATH} -Dgrakn.dir="./services" ai.grakn.graql.GraqlShell --version
-}
-
-cli_case_grakn_help() {
-  echo "Usage: grakn COMMAND
-
-COMMAND:
-server     Manage Grakn components
-version    Print Grakn version
-help       Print this message
-
-Tips:
-- Start Grakn with 'grakn server start' (by default, the dashboard will be accessible at http://localhost:4567)
-- You can then perform queries by opening a console with 'graql console'"
-}
-
 cli_case_grakn_server_start() {
   # attempt to start. check if there's any failure
   # abort and terminate if so
@@ -595,20 +386,6 @@ cli_case_grakn_server_start() {
       else
         # failure detected. attempt to terminate every component gracefully
         echo "Unable to start Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
-        print_failure_diagnostics
-
-        exit 1
-      fi
-    ;;
-    queue)
-      cli_case_grakn_server_start_queue
-      status=$?
-      if [ $status -eq 0 ] ; then
-        # do nothing
-        exit 0
-      else
-        # failure detected. attempt to terminate every component gracefully
-        echo "Unable to start Queue. Please run 'grakn server status' or check the logs located under 'logs' directory."
         print_failure_diagnostics
 
         exit 1
@@ -630,17 +407,6 @@ cli_case_grakn_server_start() {
     ;;
     *)
       cli_case_grakn_server_start_all
-      status=$?
-      if [ $status -eq 0 ] ; then
-        # do nothing
-        exit 0
-      else
-        # failure detected. attempt to terminate every component gracefully
-        echo "Unable to start Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
-        print_failure_diagnostics
-
-        exit 1
-      fi
     ;;
   esac
 }
@@ -769,21 +535,21 @@ case "$1" in
         cli_case_grakn_server_stop $3
       ;;
       status)
-        cli_case_grakn_server_status
+        java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${CLASSPATH} ${GRAKN_HOME} $1 $2 $3
       ;;
       clean)
         cli_case_grakn_server_clean
       ;;
       help|*)
-        cli_case_grakn_server_help
+        java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${CLASSPATH} ${GRAKN_HOME} $1 $2 $3
       ;;
     esac
   ;;
   version)
-    cli_case_grakn_version
+    java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${CLASSPATH} ${GRAKN_HOME} $1 $2 $3
   ;;
   *|help)
-    cli_case_grakn_help
+    java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${CLASSPATH} ${GRAKN_HOME} $1 $2 $3
   ;;
 esac
 

@@ -1,18 +1,38 @@
 package ai.grakn.dist;
 
+import ai.grakn.util.GraknVersion;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
-@RunWith(PowerMockRunner.class)
-@Ignore
 public class DistApplicationIT {
 
+    private DistApplication underTest;
+    private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
+
+    @Before
+    public void setup() {
+        underTest = new DistApplication(new PrintStream(outContent));
+
+        System.setOut(new PrintStream(outContent));
+    }
+
+    @After
+    public void after() {
+        System.setOut(null);
+    }
+
+    @Ignore
     @Test
     public void server_start() {
         DistApplication.main(new String[]{"server","start"});
@@ -20,6 +40,8 @@ public class DistApplicationIT {
         DistApplication.main(new String[]{"server","start","queue"});
         DistApplication.main(new String[]{"server","start","storage"});
     }
+
+    @Ignore
     @Test
     public void server_stop() {
         DistApplication.main(new String[]{"server","stop"});
@@ -29,34 +51,55 @@ public class DistApplicationIT {
     }
     @Test
     public void server_status() {
-        DistApplication.main(new String[]{"server","status"});
+        exit.checkAssertionAfterwards(() -> {
+            Assert.assertTrue(outContent.toString().startsWith("Storage: "));
+        });
+        underTest.run(new String[]{"server","status"});
     }
+
+    @Ignore
     @Test
     public void server_clean() {
         DistApplication.main(new String[]{"server","clean"});
     }
     @Test
     public void server_help() {
-        DistApplication.main(new String[]{"server","help"});
+        exit.checkAssertionAfterwards(() -> {
+            Assert.assertTrue(outContent.toString().startsWith("Usage: grakn server COMMAND"));
+        });
+        underTest.run(new String[]{"server","help"});
     }
 
     @Test
     public void noArguments() {
-        DistApplication.main(new String[]{});
+        exit.checkAssertionAfterwards(() -> {
+            Assert.assertTrue(outContent.toString().startsWith("Usage: grakn COMMAND"));
+        });
+        underTest.run(new String[]{""});
     }
 
-    @PrepareForTest({System.class,DistApplication.class})
-    @Test(expected = RuntimeException.class)
-    public void version() {
-        PowerMockito.mockStatic(System.class);
-        Mockito.doThrow(RuntimeException.class).when(System.class);
+    @Test
+    public void wrongArguments() {
+        exit.checkAssertionAfterwards(() -> {
+            Assert.assertTrue(outContent.toString().startsWith("Usage: grakn COMMAND"));
+        });
+        underTest.run(new String[]{"WRONG ARG"});
+    }
 
-        DistApplication.main(new String[]{"version"});
+    @Test
+    public void version() {
+        exit.expectSystemExitWithStatus(0);
+
+        exit.checkAssertionAfterwards(() -> Assert.assertEquals(GraknVersion.VERSION+"\n", outContent.toString()));
+        underTest.run(new String[]{"version"});
     }
 
     @Test
     public void help() {
-        DistApplication.main(new String[]{"help"});
+        exit.checkAssertionAfterwards(() -> {
+            Assert.assertTrue(outContent.toString().startsWith("Usage: grakn COMMAND"));
+        });
+        underTest.run(new String[]{"help"});
     }
 
 }
