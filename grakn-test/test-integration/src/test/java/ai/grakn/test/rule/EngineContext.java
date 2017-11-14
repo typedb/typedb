@@ -137,7 +137,7 @@ public class EngineContext extends CompositeTestRule {
     }
 
     @Override
-    protected List<TestRule> testRules() {
+    protected final List<TestRule> testRules() {
         return ImmutableList.of(
                 SessionContext.create(),
                 redis
@@ -145,7 +145,7 @@ public class EngineContext extends CompositeTestRule {
     }
 
     @Override
-    public void before() throws Throwable {
+    protected final void before() throws Throwable {
         RestAssured.baseURI = uri().toURI().toString();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
@@ -175,7 +175,7 @@ public class EngineContext extends CompositeTestRule {
     }
 
     @Override
-    public void after() {
+    protected final void after() {
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
