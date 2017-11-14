@@ -132,26 +132,4 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
         VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
         return new IsaAtom(isaVar, typeVariable, predicate, parent);
     }
-
-    // TODO: These are overridden so we ignore `directType`, which ideally shouldn't be necessary
-    @Override
-    public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof IsaProperty) {
-            IsaProperty that = (IsaProperty) o;
-            return this.type().equals(that.type());
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= this.type().hashCode();
-        return h;
-    }
-
 }
