@@ -172,6 +172,14 @@ public interface GraknAdmin {
     void shard(ConceptId conceptId);
 
     /**
+     * Gets the config option which determines the number of instances a {@link Type} must have before the {@link Type}
+     * if automatically sharded.
+     *
+     * @return the number of instances a {@link Type} must have before it is shareded
+     */
+    long shardingThreshold();
+
+    /**
      *
      * @param key The concept property tp search by.
      * @param value The value of the concept

@@ -19,6 +19,7 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -199,6 +200,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public Keyspace keyspace() {
         return session().keyspace();
+    }
+
+    @Override
+    public long shardingThreshold(){
+        return Long.parseLong(session().config().getProperty(GraknConfigKey.SHARDING_THRESHOLD.name()));
     }
 
     public TxCache txCache() {
