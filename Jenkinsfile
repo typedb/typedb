@@ -251,9 +251,10 @@ def runBuild() {
     parallel(jobs)
 
     graknNode {
+        checkout scm
+
         // only deploy long-running instance on stable branch if all tests pass
         if (shouldDeployLongRunningInstance()) {
-            checkout scm
             unstash 'dist'
 
             stage('Deploy Grakn') {
