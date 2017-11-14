@@ -77,7 +77,7 @@ import static org.apache.http.HttpHeaders.CACHE_CONTROL;
  * this controller is accessed. The controller provides the necessary config needed in order to
  * build a {@link GraknTx}.
  *
- * This controller also allows the retrieval of all keyspaces opened so far. </p>
+ * This controller also allows the retrieval of all {@link Keyspace}s opened so far. </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
