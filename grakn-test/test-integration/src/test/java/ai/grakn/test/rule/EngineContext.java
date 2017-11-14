@@ -232,4 +232,7 @@ public class EngineContext extends CompositeTestRule {
         RestAssured.baseURI = "http://" + config.uri();
     }
 
+    public JedisPool getJedisPool() {
+        return jedisPool;
+    }
 }

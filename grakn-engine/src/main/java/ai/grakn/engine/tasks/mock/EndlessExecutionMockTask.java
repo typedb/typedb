@@ -20,7 +20,6 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import java.time.Duration;
 
 /**
@@ -44,6 +43,4 @@ public class EndlessExecutionMockTask extends MockBackgroundTask {
         }
     }
 
-    @Override
-    protected void executeResumeInner(TaskCheckpoint checkpoint) {}
 }

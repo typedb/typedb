@@ -24,6 +24,7 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -106,7 +107,8 @@ public class RedisTaskManagerTest {
         engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, CONFIG.getProperties());
         int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
-        taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry);
+        PostProcessor postProcessor = PostProcessor.create(CONFIG, jedisPool, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry);
+        taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknTxFactory, metricRegistry, postProcessor);
         CompletableFuture<Void> cf = taskManager.start();
         cf.join();
     }

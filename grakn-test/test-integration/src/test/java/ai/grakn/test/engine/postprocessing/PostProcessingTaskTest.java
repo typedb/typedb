@@ -22,9 +22,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
@@ -40,7 +39,6 @@ import org.junit.Test;
 
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static org.mockito.Mockito.mock;
@@ -57,16 +55,16 @@ public class PostProcessingTaskTest {
     private String mockResourceIndex;
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
-    private Consumer<TaskCheckpoint> mockConsumer;
     private TaskSubmitter mockTaskSubmitter;
+    private PostProcessor postProcessor;
 
     @Before
     public void mockPostProcessing(){
-        mockConsumer = mock(Consumer.class);
         mockResourceIndex = UUID.randomUUID().toString();
         mockTaskSubmitter = mock(RedisTaskManager.class);
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
+        postProcessor = PostProcessor.create(engine.config(), engine.getJedisPool(), engine.server().factory(), engine.server().lockProvider(), METRIC_REGISTRY);
         String keyspace = "testing";
         when(mockConfiguration.json()).thenReturn(Json.object(
                 KEYSPACE, keyspace,
@@ -83,8 +81,8 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY);
+        task.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+                METRIC_REGISTRY, postProcessor);
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -94,8 +92,8 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY);
+        task.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+                METRIC_REGISTRY, postProcessor);
         task.start();
 
         verify(mockConfiguration, times(2)).json();
@@ -106,10 +104,10 @@ public class PostProcessingTaskTest {
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
-        task1.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY);
-        task2.initialize(mockConsumer, mockConfiguration, mockTaskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), METRIC_REGISTRY);
+        task1.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+                METRIC_REGISTRY, postProcessor);
+        task2.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+                METRIC_REGISTRY, postProcessor);
 
         Thread pp1 = new Thread(task1::start);
         Thread pp2 = new Thread(task2::start);

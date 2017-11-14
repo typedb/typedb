@@ -23,7 +23,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.postprocessing.GraknTxMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.graql.Graql;
@@ -98,8 +97,8 @@ public class MutatorTask extends BackgroundTask {
                     addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
                                     .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
                             PostProcessingTask.createConfig(graph.keyspace(), logs));
-                    addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
-                            UpdatingInstanceCountTask.createConfig(graph.keyspace(), logs));
+
+                    postProcessor().updateCounts(graph.keyspace(), Json.read(logs));
                 }
                 return true;
             }
