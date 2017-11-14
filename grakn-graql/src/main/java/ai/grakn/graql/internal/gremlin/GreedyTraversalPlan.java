@@ -225,7 +225,7 @@ public class GreedyTraversalPlan {
             if (fragment.getShardCount(tx).isPresent()) {
                 long shardCount = fragment.getShardCount(tx).get();
                 if (shardCount > 0) {
-                    logInstanceCount = Math.log(shardCount + SHARD_LOAD_FACTOR) + DEFAULT_SHARD_COST;
+                    logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) + DEFAULT_SHARD_COST;
                 }
             }
             nodesWithFixedCost.put(start, logInstanceCount);

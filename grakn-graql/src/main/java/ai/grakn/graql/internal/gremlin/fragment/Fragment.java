@@ -99,7 +99,8 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
-    public static final double SHARD_LOAD_FACTOR = 0.25 - 1.0; // there is at least one shard
+    // By default we assume the latest shard is 25% full
+    public static final double SHARD_LOAD_FACTOR = 0.25;
 
     private static final long DEFAULT_SHARDING_THRESHOLD = 10_000L;
     public static final double DEFAULT_SHARD_COST = Math.log(DEFAULT_SHARDING_THRESHOLD);
