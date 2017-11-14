@@ -221,47 +221,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.5.0</version>
-                <executions>
-                    <execution>
-                        <id>npm install</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <skip>${maven.javadoc.skip}</skip>
-                            <executable>./npm-install-retry/bin/npm-install-retry</executable>
-                            <arguments>
-                                <argument>--</argument>
-                                <argument>-g</argument>
-                                <argument>--prefix=./npm/</argument>
-                                <argument>raml2html@3.0.1</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>raml2html</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <skip>${maven.javadoc.skip}</skip>
-                            <executable>npm/bin/raml2html</executable>
-                            <arguments>
-                                <argument>-i</argument>
-                                <argument>${project.build.directory}/jaxrs-raml/engine-apis.raml</argument>
-                                <argument>-o</argument>
-                                <argument>${project.build.directory}/jaxrs-raml/engine-apis.html</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
         <pluginManagement>
         	<plugins>
