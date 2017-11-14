@@ -33,6 +33,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static ai.grakn.util.REST.Request.Graql.MULTI;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
@@ -73,7 +74,8 @@ public class GraknClient {
             Response.StatusType status = response.getStatusInfo();
             String entity = response.getEntity(String.class);
             if (!status.getFamily().equals(Family.SUCCESSFUL)) {
-                throw new GraknClientException("Failed graqlExecute. Error status: " + status.getStatusCode() + ", error info: " + entity, response.getStatusInfo());
+                String queries = queryList.stream().map(Object::toString).collect(Collectors.joining("\n"));
+                throw new GraknClientException("Failed graqlExecute. Error status: " + status.getStatusCode() + ", error info: " + entity + "\nqueries: " + queries, response.getStatusInfo());
             }
             LOG.debug("Received {}", status.getStatusCode());
             return QueryResponse.from(queryList, entity);
