@@ -41,8 +41,8 @@ def slackGithub(String message, String color = null) {
     slackSend channel: "#github", color: color, message: formattedMessage
 }
 
-def runIntegrationTest(String moduleName) {
-    String modulePath = "${pwd()}/grakn-test/${moduleName}"
+def runIntegrationTest(String workspace, String moduleName) {
+    String modulePath = "${workspace}/grakn-test/${moduleName}"
 
     stage(moduleName) {
         withPath("${modulePath}:${modulePath}/src/main/bash") {
@@ -82,9 +82,10 @@ def graknNode(Closure closure) {
     //Everything is wrapped in a try catch so we can handle any test failures
     //If one test fails then all the others will stop. I.e. we fail fast
     node {
-        withPath("${pwd()}/grakn-test/test-integration/src/test/bash") {
+        String workspace = pwd()
+        withPath("${workspace}/grakn-test/test-integration/src/test/bash") {
             try {
-                closure()
+                closure(workspace)
             } finally {
                 stage('Tear Down') {
                     sh 'tear-down.sh'
@@ -120,7 +121,7 @@ def mvn(String args) {
 
 Closure createTestJob(split, i, testTimeout) {
     return {
-        graknNode {
+        graknNode { workspace ->
             checkout scm
 
             def mavenVerify = 'clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true'
@@ -128,11 +129,11 @@ Closure createTestJob(split, i, testTimeout) {
             /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
             /* Tell Maven to read the appropriate file. */
             if (split.includes) {
-                writeFile file: "${pwd()}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-                mavenVerify += " -Dsurefire.includesFile=${pwd()}/parallel-test-includes-${i}.txt"
+                writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+                mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
             } else {
-                writeFile file: "${pwd()}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
-                mavenVerify += " -Dsurefire.excludesFile=${pwd()}/parallel-test-excludes-${i}.txt"
+                writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+                mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
             }
 
             try {
@@ -190,7 +191,7 @@ def runBuild() {
     if (shouldRunAllTests()) {
 
         // Build grakn so it can be used by benchmarks and integration tests
-        graknNode {
+        graknNode { workspace ->
             checkout scm
 
             stage('Build Grakn') {
@@ -204,13 +205,13 @@ def runBuild() {
         }
 
         jobs['benchmarks'] = {
-            graknNode {
+            graknNode { workspace ->
                 checkout scm
                 unstash 'dist'
 
                 timeout(60) {
                     stage('Run the benchmarks') {
-                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${pwd()}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
                         archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                     }
                 }
@@ -220,11 +221,11 @@ def runBuild() {
         INTEGRATION_TESTS.each { String moduleName ->
             // Add each integration test as a parallel job
             jobs[moduleName] = {
-                graknNode {
+                graknNode { String workspace ->
                     checkout scm
                     unstash 'dist'
 
-                    runIntegrationTest(moduleName)
+                    runIntegrationTest(workspace, moduleName)
                 }
             }
         }
@@ -233,7 +234,7 @@ def runBuild() {
     // Execute all jobs in parallel
     parallel(jobs)
 
-    graknNode {
+    graknNode { workspace ->
         checkout scm
 
         // only deploy long-running instance on stable branch if all tests pass
