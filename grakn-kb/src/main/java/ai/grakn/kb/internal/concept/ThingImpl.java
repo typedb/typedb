@@ -273,7 +273,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             throw GraknTxOperationException.hasNotAllowed(this, attribute);
         }
 
-        EdgeElement attributeEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
+        EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         return vertex().tx().factory().buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
     }
 
