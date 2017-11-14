@@ -58,6 +58,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -142,7 +143,7 @@ public class TasksController {
             @ApiImplicitParam(name = REST.Request.LIMIT_PARAM, value = "Limit the number of entries in the returned result.", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = REST.Request.OFFSET_PARAM, value = "Use in conjunction with limit for pagination.", dataType = "integer", paramType = "query")
     })
-    private Json getTasks(Request request, Response response) {
+    private String getTasks(Request request, Response response) throws JsonProcessingException {
         TaskStatus status = null;
         String className = request.queryParams(REST.Request.TASK_CLASS_NAME_PARAMETER);
         String creator = request.queryParams(REST.Request.TASK_CREATOR_PARAMETER);
@@ -163,15 +164,12 @@ public class TasksController {
 
         Context context = getTasksTimer.time();
         try {
-            Json result = Json.array();
-            manager.storage()
-                    .getTasks(status, className, creator, null, limit, offset).stream()
-                    .map(this::serialiseStateSubset)
-                    .forEach(result::add);
+            Set<TaskState> tasks = manager.storage().
+                    getTasks(status, className, creator, null, limit, offset);
 
             response.status(HttpStatus.SC_OK);
             response.type(APPLICATION_JSON);
-            return result;
+            return objectMapper.writeValueAsString(tasks);
         } finally {
             context.stop();
         }
@@ -443,14 +441,6 @@ public class TasksController {
         } else {
             response.status(404);
         }
-    }
-
-    // TODO: Return 'schedule' object as its own object
-    private Json serialiseStateSubset(TaskState state) {
-        return Json.object()
-                .set(ID, state.getId().getValue())
-                .set(STATUS, state.status().name())
-                .set(EXCEPTION, state.exception());
     }
 
     private static class TaskStateWithConfiguration {
