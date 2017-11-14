@@ -39,8 +39,14 @@ import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 
+/**
+ * A fragment representing traversing an isa edge from instance to type.
+ *
+ * @author Felix Chapman
+ */
+
 @AutoValue
-abstract class OutIsaFragment extends Fragment {
+public abstract class OutIsaFragment extends Fragment {
 
     @Override
     public abstract Var end();

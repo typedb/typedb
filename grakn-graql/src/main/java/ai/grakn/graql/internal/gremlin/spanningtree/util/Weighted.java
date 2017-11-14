@@ -31,7 +31,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class Weighted<T> implements Comparable<Weighted<T>> {
     public final T val;
-    public double weight;
+    public final double weight;
 
     public Weighted(T val, double weight) {
         checkNotNull(val);

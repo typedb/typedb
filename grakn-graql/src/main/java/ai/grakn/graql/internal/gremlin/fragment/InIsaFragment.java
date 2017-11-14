@@ -48,8 +48,14 @@ import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.VertexProperty.IS_IMPLICIT;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 
+/**
+ * A fragment representing traversing an isa edge from type to instance.
+ *
+ * @author Felix Chapman
+ */
+
 @AutoValue
-abstract class InIsaFragment extends Fragment {
+public abstract class InIsaFragment extends Fragment {
 
     @Override
     public abstract Var end();
@@ -128,7 +134,7 @@ abstract class InIsaFragment extends Fragment {
 
     @Override
     public double internalFragmentCost() {
-        return accurateFragmentCost.orElse(COST_INSTANCES_PER_TYPE);
+        return COST_INSTANCES_PER_TYPE;
     }
 
     @Override

@@ -104,7 +104,7 @@ public abstract class Fragment {
     private static final long DEFAULT_SHARDING_THRESHOLD = 10_000L;
     public static final double DEFAULT_SHARD_COST = Math.log(DEFAULT_SHARDING_THRESHOLD);
 
-    Optional<Double> accurateFragmentCost = Optional.empty();
+    private Optional<Double> accurateFragmentCost = Optional.empty();
 
     /*
      * This is the memoized result of {@link #vars()}
