@@ -39,7 +39,6 @@ import io.prometheus.client.exporter.common.TextFormat;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -56,7 +55,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -158,19 +156,11 @@ public class SystemController {
     @Path("/kb/{keyspace}")
     @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
-    private String putKeyspace(Request request, Response response) {
+    private String putKeyspace(Request request, Response response) throws JsonProcessingException {
         Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         systemKeyspace.openKeyspace(keyspace);
         response.status(HttpServletResponse.SC_OK);
-
-        // Make a copy of the properties object
-        Properties properties = new Properties();
-        properties.putAll(this.config.getProperties());
-
-        // Turn the properties into a Json object
-        Json jsonConfig = Json.make(properties);
-
-        return jsonConfig.toString();
+        return objectMapper.writeValueAsString(config);
     }
 
     @DELETE

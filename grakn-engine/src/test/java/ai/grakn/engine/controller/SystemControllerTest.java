@@ -23,9 +23,10 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspaceFake;
 import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
-import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -92,8 +93,8 @@ public class SystemControllerTest {
     }
 
     @Test
-    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() {
-        when().put("/kb/myks").then().statusCode(SC_OK).body(is(Json.make(config.getProperties()).toString()));
+    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() throws JsonProcessingException {
+        when().put("/kb/myks").then().statusCode(SC_OK).body(is(new ObjectMapper().writeValueAsString(config)));
     }
 
     @Test

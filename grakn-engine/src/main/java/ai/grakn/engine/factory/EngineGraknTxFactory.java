@@ -68,7 +68,7 @@ public class EngineGraknTxFactory {
     private EngineGraknTxFactory(GraknEngineConfig engineConfig, LockProvider lockProvider, boolean loadSchema) {
         this.openedSessions = new HashMap<>();
         this.engineConfig = engineConfig;
-        this.engineURI = engineConfig.getProperties().getProperty(GraknConfigKey.SERVER_HOST_NAME.name()) + ":" + engineConfig.getProperties().getProperty(GraknConfigKey.SERVER_PORT.name());
+        this.engineURI = engineConfig.properties().getProperty(GraknConfigKey.SERVER_HOST_NAME.name()) + ":" + engineConfig.properties().getProperty(GraknConfigKey.SERVER_PORT.name());
         this.systemKeyspace = SystemKeyspaceImpl.create(this, lockProvider, loadSchema);
     }
 
@@ -96,7 +96,7 @@ public class EngineGraknTxFactory {
      */
     private GraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace,GraknSessionImpl.createEngineSession(keyspace, engineURI, engineConfig.getProperties()));
+            openedSessions.put(keyspace,GraknSessionImpl.createEngineSession(keyspace, engineURI, engineConfig.properties()));
         }
         return openedSessions.get(keyspace);
     }
