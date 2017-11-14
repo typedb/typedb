@@ -48,7 +48,7 @@ abstract class AttributeIndexFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_NODE_INDEX;
     }
 

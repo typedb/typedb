@@ -210,8 +210,7 @@ public class RelationshipAtom extends IsaAtom {
         if (obj == this) return true;
         RelationshipAtom a2 = (RelationshipAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && getVarName().equals(a2.getVarName())
-                && getPredicateVariable().equals(a2.getPredicateVariable())
+                && getVarNames().equals(a2.getVarNames())
                 && getRelationPlayers().equals(a2.getRelationPlayers());
     }
 
@@ -221,6 +220,7 @@ public class RelationshipAtom extends IsaAtom {
             hashCode = 1;
             hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
             hashCode = hashCode * 37 + getVarNames().hashCode();
+            hashCode = hashCode * 37 + getRelationPlayers().hashCode();
         }
         return hashCode;
     }

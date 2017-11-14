@@ -18,13 +18,13 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
@@ -54,6 +54,7 @@ import static org.junit.Assume.assumeTrue;
 
 public class PostProcessingTest {
 
+    private PostProcessor postProcessor;
     private GraknSession session;
 
     @ClassRule
@@ -67,6 +68,7 @@ public class PostProcessingTest {
     @Before
     public void setUp() throws Exception {
         session = engine.sessionWithNewKeyspace();
+        postProcessor = PostProcessor.create(engine.config(), engine.getJedisPool(), engine.server().factory(), engine.server().lockProvider(), new MetricRegistry());
     }
 
     @After
@@ -130,8 +132,8 @@ public class PostProcessingTest {
             public void runTask(TaskState taskState, TaskConfiguration configuration) {
             }
         };
-        task.initialize(null, configuration, taskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), new MetricRegistry());
+        task.initialize(configuration, taskSubmitter, engine.config(), engine.server().factory(),
+                new MetricRegistry(), postProcessor);
 
         task.start();
 

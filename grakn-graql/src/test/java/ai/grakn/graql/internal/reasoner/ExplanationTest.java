@@ -255,7 +255,7 @@ public class ExplanationTest {
         QueryBuilder iqb = genealogyGraph.graql().infer(true);
         String queryString = "match " +
                 "($x, $y) isa cousins;" +
-                "limit 5; get;";
+                "limit 3; get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 

@@ -99,16 +99,27 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
+    // By default we assume the latest shard is 25% full
+    public static final double SHARD_LOAD_FACTOR = 0.25;
+
+    private static final long DEFAULT_SHARDING_THRESHOLD = 10_000L;
+    public static final double DEFAULT_SHARD_COST = Math.log(DEFAULT_SHARDING_THRESHOLD);
+
+    private Optional<Double> accurateFragmentCost = Optional.empty();
+
     /*
      * This is the memoized result of {@link #vars()}
      */
-    private @Nullable ImmutableSet<Var> vars = null;
-  
+    private @Nullable
+    ImmutableSet<Var> vars = null;
+
     /**
      * @param transform map defining id transform var -> new id
      * @return transformed fragment with id predicates transformed according to the transform
      */
-    public Fragment transform(Map<Var, ConceptId> transform){ return this;}
+    public Fragment transform(Map<Var, ConceptId> transform) {
+        return this;
+    }
 
     /**
      * Get the corresponding property
@@ -158,8 +169,7 @@ public abstract class Fragment {
      */
     public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
             GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph,
-            Collection<Var> vars, @Nullable Var currentVar
-    ) {
+            Collection<Var> vars, @Nullable Var currentVar) {
         if (currentVar != null) {
             if (!currentVar.equals(start())) {
                 if (vars.contains(start())) {
@@ -224,7 +234,15 @@ public abstract class Fragment {
     /**
      * Get the cost for executing the fragment.
      */
-    public abstract double fragmentCost();
+    public double fragmentCost() {
+        return accurateFragmentCost.orElse(internalFragmentCost());
+    }
+
+    public void setAccurateFragmentCost(double fragmentCost) {
+        accurateFragmentCost = Optional.of(fragmentCost);
+    }
+
+    public abstract double internalFragmentCost();
 
     /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
@@ -232,6 +250,14 @@ public abstract class Fragment {
      */
     public boolean hasFixedFragmentCost() {
         return false;
+    }
+
+    public Fragment getInverse() {
+        return this;
+    }
+
+    public Optional<Long> getShardCount(GraknTx tx) {
+        return Optional.empty();
     }
 
     /**

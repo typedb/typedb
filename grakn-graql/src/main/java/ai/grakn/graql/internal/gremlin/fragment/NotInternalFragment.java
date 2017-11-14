@@ -49,7 +49,7 @@ abstract class NotInternalFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_NODE_NOT_INTERNAL;
     }
 }

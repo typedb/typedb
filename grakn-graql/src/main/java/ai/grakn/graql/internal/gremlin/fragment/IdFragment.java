@@ -79,7 +79,7 @@ abstract class IdFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_NODE_INDEX;
     }
 

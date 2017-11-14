@@ -20,14 +20,14 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * Main task Mock class- keeps track of completed and failed tasks
@@ -41,7 +41,6 @@ public abstract class MockBackgroundTask extends BackgroundTask {
     private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
     private static Consumer<TaskId> onTaskStart;
     private static Consumer<TaskId> onTaskFinish;
-    private static Consumer<TaskCheckpoint> onTaskResume;
 
     protected final AtomicBoolean cancelled = new AtomicBoolean(false);
     protected final Object sync = new Object();
@@ -78,20 +77,11 @@ public abstract class MockBackgroundTask extends BackgroundTask {
         if (onTaskFinish != null) onTaskFinish.accept(taskId);
     }
 
-    public static void whenTaskResumes(Consumer<TaskCheckpoint> onTaskResume) {
-        MockBackgroundTask.onTaskResume = onTaskResume;
-    }
-
-    private static void onTaskResume(TaskCheckpoint checkpoint) {
-        if (onTaskResume != null) onTaskResume.accept(checkpoint);
-    }
-
     public static void clearTasks() {
         COMPLETED_TASKS.clear();
         CANCELLED_TASKS.clear();
         onTaskStart = null;
         onTaskFinish = null;
-        onTaskResume = null;
     }
 
     private TaskId id;
@@ -105,8 +95,6 @@ public abstract class MockBackgroundTask extends BackgroundTask {
         }
         this.id = TaskId.of(id.asString());
         onTaskStart(this.id);
-
-        saveCheckpoint(TaskCheckpoint.of(json));
 
         boolean wasCancelled = cancelled.get();
 
@@ -137,17 +125,5 @@ public abstract class MockBackgroundTask extends BackgroundTask {
         return true;
     }
 
-    @Override
-    public final boolean resume(TaskCheckpoint lastCheckpoint){
-        onTaskResume(lastCheckpoint);
-
-        executeResumeInner(lastCheckpoint);
-
-        return true;
-    }
-
     protected abstract void executeStartInner(TaskId id);
-    protected abstract void executeResumeInner(TaskCheckpoint checkpoint);
-
-
 }

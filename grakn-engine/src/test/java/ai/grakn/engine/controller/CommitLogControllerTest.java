@@ -19,16 +19,13 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import com.jayway.restassured.http.ContentType;
 import mjson.Json;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -50,10 +47,11 @@ public class CommitLogControllerTest {
 
     private static final int DELAY = 100;
     private final TaskManager taskManager = mock(TaskManager.class);
+    private final PostProcessor postProcessor = mock(PostProcessor.class);
 
     @Rule
     public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new CommitLogController(spark, DELAY, taskManager);
+        new CommitLogController(spark, DELAY, taskManager, postProcessor);
     });
 
     @Test
@@ -69,8 +67,7 @@ public class CommitLogControllerTest {
     @Test
     public void whenPostingToCommitLogEndpoint_ReceiveBodyWithTasks() {
         given().body(BODY).when().post("/kb/myks/commit_log").then()
-                .body("postProcessingTaskId", isA(String.class))
-                .body("countingTaskId", isA(String.class));
+                .body("postProcessingTaskId", isA(String.class));
     }
 
     @Test
@@ -82,6 +79,6 @@ public class CommitLogControllerTest {
     public void whenPostingToCommitLogEndpoint_SubmitTwoTasks() {
         given().body(BODY).post("/kb/myks/commit_log");
 
-        verify(taskManager, Mockito.times(2)).addTask(any(), any());
+        verify(taskManager, Mockito.times(1)).addTask(any(), any());
     }
 }

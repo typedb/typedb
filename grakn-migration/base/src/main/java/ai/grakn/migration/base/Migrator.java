@@ -131,7 +131,7 @@ public class Migrator {
             }
             queryStream
                     .forEach(q -> {
-                        LOG.debug("Adding query {}", q);
+                        LOG.trace("Adding query {}", q);
                         totalMeter.mark();
                         // We add get a hot observable. It starts immediately
                         Observable<QueryResponse> addObservable =
@@ -148,7 +148,7 @@ public class Migrator {
     private void subscribeToReportOutcome(boolean failFast, Observable<QueryResponse> addObservable) {
         addObservable.subscribe(
                 taskResult -> {
-                    LOG.debug("Successfully executed: {}", taskResult);
+                    LOG.trace("Successfully executed: {}", taskResult);
                     successMeter.mark();
                 },
                 error -> {

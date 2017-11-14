@@ -35,6 +35,7 @@ import ai.grakn.engine.controller.api.RelationshipTypeController;
 import ai.grakn.engine.controller.api.RoleController;
 import ai.grakn.engine.controller.api.RuleController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknBackendException;
@@ -68,8 +69,9 @@ public class HttpHandler {
     private final GraknEngineStatus graknEngineStatus;
     private final TaskManager taskManager;
     private final ExecutorService taskExecutor;
+    private final PostProcessor postProcessor;
 
-    public HttpHandler(GraknEngineConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, ExecutorService taskExecutor) {
+    public HttpHandler(GraknEngineConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, ExecutorService taskExecutor, PostProcessor postProcessor) {
         this.prop = prop;
         this.spark = spark;
         this.factory = factory;
@@ -77,6 +79,7 @@ public class HttpHandler {
         this.graknEngineStatus = graknEngineStatus;
         this.taskManager = taskManager;
         this.taskExecutor = taskExecutor;
+        this.postProcessor = postProcessor;
     }
 
 
@@ -94,7 +97,7 @@ public class HttpHandler {
         new ConceptController(factory, spark, metricRegistry);
         new DashboardController(factory, spark);
         new SystemController(spark, factory.properties(), factory.systemKeyspace(), graknEngineStatus, metricRegistry);
-        new CommitLogController(spark, postProcessingDelay, taskManager);
+        new CommitLogController(spark, postProcessingDelay, taskManager, postProcessor);
         new TasksController(spark, taskManager, metricRegistry, taskExecutor);
         new EntityController(factory, spark);
         new EntityTypeController(factory, spark);

@@ -20,15 +20,13 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.postprocessing.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
-import java.util.function.Consumer;
+
 import javax.annotation.Nullable;
 
 /**
@@ -42,35 +40,29 @@ public abstract class BackgroundTask {
     TaskSubmitter taskSubmitter = null;
     private @Nullable
     TaskConfiguration configuration = null;
-    private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
     private @Nullable GraknEngineConfig engineConfig = null;
     private @Nullable
     EngineGraknTxFactory factory = null;
-    private @Nullable RedisCountStorage redis = null;
     private @Nullable MetricRegistry metricRegistry = null;
-    private @Nullable LockProvider lockProvider = null;
+    private @Nullable PostProcessor postProcessor = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
      *
-     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
-     *                       the task to resume from this point should it crash.
      * @param configuration  The configuration needed to execute the task
      * @param taskSubmitter  Allows followup tasks to be submitted for processing
      * @param metricRegistry Metric registry
      */
     public final void initialize(
-            Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
-            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
-            EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry)  {
+            TaskConfiguration configuration,
+            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig,
+            EngineGraknTxFactory factory, MetricRegistry metricRegistry, PostProcessor postProcessor)  {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
-        this.saveCheckpoint = saveCheckpoint;
         this.engineConfig = engineConfig;
-        this.redis = redis;
-        this.lockProvider = lockProvider;
         this.metricRegistry = metricRegistry;
         this.factory = factory;
+        this.postProcessor = postProcessor;
     }
 
     /**
@@ -96,75 +88,39 @@ public abstract class BackgroundTask {
     }
 
     /**
-     * Called to suspend the execution of a currently running task. The object may be destroyed after this call.
-     * <p>
-     * This implementation always throws {@link UnsupportedOperationException}.
-     *
-     * @throws UnsupportedOperationException if pausing the task is not supported
-     *
-     * TODO: stop running
-     */
-    public void pause() {
-        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be paused");
-    }
-
-    /**
-     * This method may be called when resuming from a paused state or recovering from a crash or failure of any kind.
-     * <p>
-     * This implementation always throws {@link UnsupportedOperationException}.
-     *
-     * @param lastCheckpoint The last checkpoint as sent to saveCheckpoint.
-     *
-     * @throws UnsupportedOperationException if resuming the task is not supported
-     */
-    public boolean resume(TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be resumed");
-    }
-
-    public final void saveCheckpoint(TaskCheckpoint checkpoint) {
-        Preconditions.checkNotNull(saveCheckpoint, "BackgroundTask#initialise must be called before saving checkpoints");
-        saveCheckpoint.accept(checkpoint);
-    }
-
-    /**
      * Submit a new task for execution
      * @param taskState state describing the task
      */
     public final void addTask(TaskState taskState, TaskConfiguration configuration) {
-        Preconditions.checkNotNull(taskSubmitter, "BackgroundTask#initialise must be called before adding tasks");
-        taskSubmitter.addTask(taskState, configuration);
+        taskSubmitter().addTask(taskState, configuration);
     }
 
-    /**
-     * Get the configuration needed to execute the task
-     */
+    private TaskSubmitter taskSubmitter(){
+        return defaultNullCheck(taskSubmitter);
+    }
+
     public final TaskConfiguration configuration() {
-        Preconditions.checkNotNull(configuration, "BackgroundTask#initialise must be called before retrieving configuration");
-        return configuration;
+        return defaultNullCheck(configuration);
     }
 
     public final GraknEngineConfig engineConfiguration() {
-        Preconditions.checkNotNull(engineConfig, "BackgroundTask#initialise must be called before retrieving engine configuration");
-        return engineConfig;
-    }
-
-    public final RedisCountStorage redis() {
-        Preconditions.checkNotNull(redis, "BackgroundTask#initialise must be called before retrieving redis connection");
-        return redis;
+        return defaultNullCheck(engineConfig);
     }
 
     public final EngineGraknTxFactory factory(){
-        Preconditions.checkNotNull(factory, "BackgroundTask#initialise must be called before retrieving the engine factory");
-        return factory;
+        return defaultNullCheck(factory);
     }
 
     public final MetricRegistry metricRegistry() {
-        Preconditions.checkNotNull(metricRegistry, "BackgroundTask#initialise must be called before retrieving metrics registry");
-        return metricRegistry;
+        return defaultNullCheck(metricRegistry);
     }
 
-    public LockProvider getLockProvider() {
-        Preconditions.checkNotNull(lockProvider, "Lock provider was null, possible race condition in initialisation");
-        return lockProvider;
+    public final PostProcessor postProcessor(){
+        return defaultNullCheck(postProcessor);
+    }
+
+    private static <X> X defaultNullCheck(X someThing){
+        Preconditions.checkNotNull(someThing, String.format("BackgroundTask#initialise must be called before retrieving {%s}", someThing.getClass().getSimpleName()));
+        return someThing;
     }
 }
