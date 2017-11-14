@@ -19,10 +19,14 @@ mvn exec:java --projects grakn-test/test-snb \
 
 # check for errors from LDBC
 FAILURES=$(cat ${CSV_DATA}/validation_params-failed-actual.json)
+EXPECTED=$(cat ${CSV_DATA}/validation_params-failed-expected.json)
 if [ "${FAILURES}" == "[ ]" ]; then
         echo "Validation completed without failures."
 else
         echo "There were failures during validation."
+        echo "Actual:"
         echo ${FAILURES}
+        echo "Expected:"
+        echo ${EXPECTED}
         exit 1
 fi
