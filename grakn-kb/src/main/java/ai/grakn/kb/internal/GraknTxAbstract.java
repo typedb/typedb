@@ -204,7 +204,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public long shardingThreshold(){
-        return Long.parseLong(session().config().getProperty(GraknConfigKey.SHARDING_THRESHOLD.name()));
+        return Long.parseLong(session().config().get(GraknConfigKey.SHARDING_THRESHOLD.name()).toString());
     }
 
     public TxCache txCache() {

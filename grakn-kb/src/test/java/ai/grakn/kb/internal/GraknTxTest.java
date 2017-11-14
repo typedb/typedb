@@ -132,7 +132,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned(){
-        assertEquals(0L, tx.admin().shardingThreshold());
+        assertEquals(100000L, tx.admin().shardingThreshold());
     }
 
     @Test
