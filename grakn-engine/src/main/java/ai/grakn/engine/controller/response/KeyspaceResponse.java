@@ -33,6 +33,7 @@ import javax.annotation.CheckReturnValue;
 @AutoValue
 public abstract class KeyspaceResponse {
 
+    @CheckReturnValue
     @JsonValue
     public abstract String getValue();
 

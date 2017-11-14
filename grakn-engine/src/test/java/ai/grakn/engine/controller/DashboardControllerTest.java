@@ -57,7 +57,7 @@ public class DashboardControllerTest {
     public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create().getProperties());
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create());
         new DashboardController(factory, spark);
     });
 

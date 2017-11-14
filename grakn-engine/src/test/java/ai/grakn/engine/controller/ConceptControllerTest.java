@@ -23,8 +23,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
@@ -63,7 +63,7 @@ public class ConceptControllerTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(spark, mockFactory.properties(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
+        new SystemController(spark, mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
         new ConceptController(mockFactory, spark, metricRegistry);
     });
 

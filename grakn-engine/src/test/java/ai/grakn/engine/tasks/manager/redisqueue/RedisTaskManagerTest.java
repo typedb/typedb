@@ -104,7 +104,7 @@ public class RedisTaskManagerTest {
         jedisPool = inMemoryRedisContext.jedisPool(poolConfig);
         assertFalse(jedisPool.isClosed());
         JedisLockProvider lockProvider = new JedisLockProvider(jedisPool);
-        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, CONFIG.getProperties());
+        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, CONFIG);
         int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
         PostProcessor postProcessor = PostProcessor.create(CONFIG, jedisPool, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry);
