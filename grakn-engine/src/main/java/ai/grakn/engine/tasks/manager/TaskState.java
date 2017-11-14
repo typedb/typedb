@@ -116,14 +116,14 @@ public class TaskState implements Serializable {
     }
 
     public static TaskState of(TaskId id, TaskStatus taskStatus) {
-        return new TaskState(null, null, null, id.value(), null, taskStatus);
+        return new TaskState(null, null, null, id, null, taskStatus);
     }
 
     @JsonCreator
     public TaskState(@JsonProperty("taskClass") Class<?> taskClass,
             @JsonProperty("creator") String creator,
             @JsonProperty("schedule") TaskSchedule schedule,
-            @JsonProperty("id") String id,
+            @JsonProperty("id") TaskId id,
             @JsonProperty("priority") Priority priority,
             @JsonProperty("status") TaskStatus status) {
         this.status = status;
@@ -131,7 +131,7 @@ public class TaskState implements Serializable {
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
         this.creator = creator;
         this.schedule = schedule;
-        this.taskId = id;
+        this.taskId = id.value();
         this.priority = priority;
     }
 
@@ -140,7 +140,7 @@ public class TaskState implements Serializable {
             TaskSchedule schedule,
             TaskId id,
             Priority priority) {
-        this(taskClass, creator, schedule, id.value(), priority, CREATED);
+        this(taskClass, creator, schedule, id, priority, CREATED);
     }
 
     private TaskState(TaskState taskState) {
