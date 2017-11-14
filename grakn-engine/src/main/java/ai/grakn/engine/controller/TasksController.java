@@ -342,7 +342,7 @@ public class TasksController {
                 manager.addTask(state, TaskConfiguration.of(taskState.getConfiguration()));
                 singleTaskReturnJson.set("code", HttpStatus.SC_OK);
             }
-            singleTaskReturnJson.set("id", id.getValue());
+            singleTaskReturnJson.set("id", id.value());
         } catch (Exception e) {
             LOG.error("Server error while adding the task", e);
             singleTaskReturnJson.set("code", HttpStatus.SC_INTERNAL_SERVER_ERROR);

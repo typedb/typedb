@@ -51,5 +51,5 @@ public abstract class TaskId {
      */
     @CheckReturnValue
     @JsonValue
-    public abstract String getValue();
+    public abstract String value();
 }

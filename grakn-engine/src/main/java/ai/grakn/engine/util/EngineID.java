@@ -29,8 +29,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
 
-import static org.apache.commons.lang.StringEscapeUtils.escapeJava;
-
 /**
  * <p>
  *     Assigns a random ID to the current instance of Engine.
@@ -65,10 +63,5 @@ public abstract class EngineID implements Serializable {
         String value = hostName+"-"+UUID.randomUUID().toString();
 
         return EngineID.of(value);
-    }
-
-    @Override
-    public String toString() {
-        return escapeJava(getValue());
     }
 }

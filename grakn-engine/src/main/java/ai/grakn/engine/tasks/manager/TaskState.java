@@ -116,7 +116,7 @@ public class TaskState implements Serializable {
     }
 
     public static TaskState of(TaskId id, TaskStatus taskStatus) {
-        return new TaskState(null, null, null, id.getValue(), null, taskStatus);
+        return new TaskState(null, null, null, id.value(), null, taskStatus);
     }
 
     @JsonCreator
@@ -140,7 +140,7 @@ public class TaskState implements Serializable {
             TaskSchedule schedule,
             TaskId id,
             Priority priority) {
-        this(taskClass, creator, schedule, id.getValue(), priority, CREATED);
+        this(taskClass, creator, schedule, id.value(), priority, CREATED);
     }
 
     private TaskState(TaskState taskState) {

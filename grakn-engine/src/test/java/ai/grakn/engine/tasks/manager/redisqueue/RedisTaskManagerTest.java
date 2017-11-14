@@ -175,7 +175,7 @@ public class RedisTaskManagerTest {
         return TaskConfiguration.of(Json.object(
                 KEYSPACE, "keyspace",
                 COMMIT_LOG_COUNTING, 3,
-                "id", generate.getValue()
+                "id", generate.value()
         ));
     }
 }
