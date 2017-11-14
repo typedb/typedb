@@ -19,27 +19,26 @@
 package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.postprocessing.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.google.common.base.Preconditions;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
+import java.util.function.Consumer;
+
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.TaskStatus.STOPPED;
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Consumer from a redis queue
@@ -50,27 +49,25 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
 
     private final static Logger LOG = LoggerFactory.getLogger(RedisTaskQueueConsumer.class);
 
-    private RedisTaskManager redisTaskManager;
-    private EngineID engineId;
-    private GraknEngineConfig config;
-    private RedisCountStorage redisCountStorage;
-    private MetricRegistry metricRegistry;
-    private EngineGraknTxFactory factory;
-    private LockProvider lockProvider;
+    private final RedisTaskManager redisTaskManager;
+    private final EngineID engineId;
+    private final GraknEngineConfig config;
+    private final MetricRegistry metricRegistry;
+    private final EngineGraknTxFactory factory;
+    private final PostProcessor postProcessor;
 
 
     public RedisTaskQueueConsumer(
             RedisTaskManager redisTaskManager, EngineID engineId,
             GraknEngineConfig config,
-            RedisCountStorage redisCountStorage, MetricRegistry metricRegistry,
-            EngineGraknTxFactory factory, LockProvider lockProvider) {
+            MetricRegistry metricRegistry,
+            EngineGraknTxFactory factory, PostProcessor postProcessor) {
         this.redisTaskManager = redisTaskManager;
         this.engineId = engineId;
         this.config = config;
-        this.redisCountStorage = redisCountStorage;
         this.metricRegistry = metricRegistry;
         this.factory = factory;
-        this.lockProvider = lockProvider;
+        this.postProcessor = postProcessor;
     }
 
     private void checkPreconditions() {
@@ -78,9 +75,8 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
             Preconditions.checkNotNull(metricRegistry);
             Preconditions.checkNotNull(engineId);
             Preconditions.checkNotNull(config);
-            Preconditions.checkNotNull(redisCountStorage);
             Preconditions.checkNotNull(redisTaskManager);
-            Preconditions.checkNotNull(lockProvider);
+            Preconditions.checkNotNull(postProcessor);
         } catch (NullPointerException e) {
             throw new IllegalStateException(
                     String.format("%s was started but the state wasn't set explicitly",
@@ -98,10 +94,6 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
     }
 
 
-    private Consumer<TaskCheckpoint> saveCheckpoint(TaskState taskState, TaskStateStorage storage) {
-        return checkpoint -> storage.updateState(taskState.checkpoint(checkpoint));
-    }
-
     @Override
     public void accept(Task task) {
         checkPreconditions();
@@ -113,9 +105,8 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
         BackgroundTask runningTask;
         try {
             runningTask = taskState.taskClass().newInstance();
-            runningTask.initialize(saveCheckpoint(taskState, redisTaskManager.storage()),
-                    taskConfiguration, redisTaskManager, config, redisCountStorage, factory,
-                    lockProvider, metricRegistry);
+            runningTask.initialize(taskConfiguration, redisTaskManager, config, factory,
+                    metricRegistry, postProcessor);
             metricRegistry.meter(name(RedisTaskQueueConsumer.class, "initialized")).mark();
             if (taskShouldResume(task)) {
                 // Not implemented

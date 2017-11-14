@@ -158,4 +158,8 @@ public class GraknEngineServer implements AutoCloseable {
     public HttpHandler getHttpHandler() {
         return httpHandler;
     }
+
+    public LockProvider lockProvider(){
+        return lockProvider;
+    }
 }

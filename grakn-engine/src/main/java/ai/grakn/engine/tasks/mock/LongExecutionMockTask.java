@@ -20,7 +20,6 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -30,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class LongExecutionMockTask extends MockBackgroundTask {
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
-    public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
     @Override
     protected void executeStartInner(TaskId id) {
@@ -44,8 +42,4 @@ public class LongExecutionMockTask extends MockBackgroundTask {
         startedCounter.incrementAndGet();
     }
 
-    @Override
-    protected void executeResumeInner(TaskCheckpoint checkpoint) {
-        resumedCounter.incrementAndGet();
-    }
 }

@@ -7,31 +7,33 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
-import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.test.rule.EngineContext;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.Schema;
+import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 
-public class UpdatingThingCountTaskTest {
+public class PostProcessorTest {
+
+    private PostProcessor postProcessor;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
+
+    @Before
+    public void setupPostProcessor(){
+        postProcessor = PostProcessor.create(engine.config(), engine.getJedisPool(), engine.server().factory(), engine.server().lockProvider(), new MetricRegistry());
+    }
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {
@@ -58,21 +60,12 @@ public class UpdatingThingCountTaskTest {
     private void createAndExecuteCountTask(Keyspace keyspace, ConceptId conceptId, long count){
         Json instanceCounts = Json.array();
         instanceCounts.add(Json.object(COMMIT_LOG_CONCEPT_ID, conceptId.getValue(), COMMIT_LOG_SHARDING_COUNT, count));
-        Json configuration = Json.object(
-                KEYSPACE, keyspace.getValue(),
-                COMMIT_LOG_COUNTING, instanceCounts
-        );
+
+        Json fakeCommitLog = Json.object();
+        fakeCommitLog.set(REST.Request.COMMIT_LOG_COUNTING, instanceCounts);
 
         //Start up the Job
-        TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now(), TaskState.Priority.HIGH);
-        engine.getTaskManager().addTask(task, TaskConfiguration.of(configuration));
-
-        // Wait for task to complete
-        waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
-
-        // Check that task has ran
-        // STOPPED because it is a recurring task
-        assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
+        postProcessor.updateCounts(keyspace, fakeCommitLog);
     }
 
     @Test
