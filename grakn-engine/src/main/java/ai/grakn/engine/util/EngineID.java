@@ -19,6 +19,7 @@
 package ai.grakn.engine.util;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,22 +38,21 @@ import static org.apache.commons.lang.StringEscapeUtils.escapeJava;
  *
  * @author Denis Lobanov, Felix Chapman
  */
-public class EngineID implements Serializable {
-
+@AutoValue
+public abstract class EngineID implements Serializable {
     private static final long serialVersionUID = 8846772120873129437L;
-
     private static final Logger LOG = LoggerFactory.getLogger(EngineID.class);
 
-    private final String value;
+    @CheckReturnValue
+    @JsonValue
+    public abstract String getValue();
 
-    private EngineID(String value) {
-        this.value = value;
-    }
-
+    @CheckReturnValue
     public static EngineID of(String value) {
-        return new EngineID(value);
+        return new AutoValue_EngineID(value);
     }
 
+    @CheckReturnValue
     public static EngineID me() {
         String hostName = "";
         try {
@@ -67,29 +67,8 @@ public class EngineID implements Serializable {
         return EngineID.of(value);
     }
 
-    @CheckReturnValue
-    @JsonValue
-    public String value() {
-        return value;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        EngineID engineID = (EngineID) o;
-
-        return value.equals(engineID.value);
-    }
-
-    @Override
-    public int hashCode() {
-        return value.hashCode();
-    }
-
     @Override
     public String toString() {
-        return escapeJava(value);
+        return escapeJava(getValue());
     }
 }
