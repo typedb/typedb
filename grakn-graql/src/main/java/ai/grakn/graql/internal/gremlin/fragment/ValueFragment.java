@@ -51,7 +51,7 @@ abstract class ValueFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         if (predicate().isSpecific()) {
             return COST_NODE_INDEX_VALUE;
         } else {

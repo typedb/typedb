@@ -65,6 +65,10 @@ public class Node {
         return nodes.get(nodeId);
     }
 
+    public NodeId getNodeId() {
+        return nodeId;
+    }
+
     public Set<Fragment> getFragmentsWithoutDependency() {
         return fragmentsWithoutDependency;
     }

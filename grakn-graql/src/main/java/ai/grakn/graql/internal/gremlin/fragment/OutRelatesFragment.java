@@ -54,7 +54,7 @@ abstract class OutRelatesFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_ROLE_PLAYERS_PER_RELATION;
     }
 
