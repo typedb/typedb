@@ -23,11 +23,13 @@ import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.controller.response.KeyspaceResponse;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.prometheus.client.CollectorRegistry;
@@ -54,9 +56,10 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-import static ai.grakn.util.CommonUtil.toJsonArray;
 import static ai.grakn.util.REST.Request.FORMAT;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
@@ -77,13 +80,14 @@ import static org.apache.http.HttpHeaders.CACHE_CONTROL;
  *
  * This controller also allows the retrieval of all keyspaces opened so far. </p>
  *
- * @author fppt
+ * @author Filipe Peliz Pinto Teixeira
  */
 public class SystemController {
 
     private static final String PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4";
     private static final String PROMETHEUS = "prometheus";
     private static final String JSON = "json";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
     private final GraknEngineStatus graknEngineStatus;
@@ -126,9 +130,12 @@ public class SystemController {
     @GET
     @Path(KB)
     @ApiOperation(value = "Get all the key spaces that have been opened")
-    private String getKeyspaces(Request request, Response response) {
+    private String getKeyspaces(Request request, Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
-        return systemKeyspace.keyspaces().stream().map(Keyspace::getValue).collect(toJsonArray()).toString();
+        Set<KeyspaceResponse> keyspaces = systemKeyspace.keyspaces().stream().
+                map(k -> KeyspaceResponse.of(k.getValue())).
+                collect(Collectors.toSet());
+        return objectMapper.writeValueAsString(keyspaces);
     }
 
     @GET
