@@ -18,9 +18,11 @@
 
 package ai.grakn.engine.util;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -65,6 +67,8 @@ public class EngineID implements Serializable {
         return EngineID.of(value);
     }
 
+    @CheckReturnValue
+    @JsonValue
     public String value() {
         return value;
     }

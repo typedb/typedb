@@ -33,6 +33,8 @@ import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -71,7 +73,7 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.ID;
 import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
-import static ai.grakn.util.REST.Response.Task.STATUS;
+import static ai.grakn.util.REST.WebPath.System.STATUS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASK;
@@ -93,6 +95,7 @@ public class TasksController {
 
     private static final Logger LOG = LoggerFactory.getLogger(TasksController.class);
     private static final TaskState.Priority DEFAULT_TASK_PRIORITY = TaskState.Priority.LOW;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final int MAX_THREADS = 10;
     private static final Duration MAX_EXECUTION_TIME = Duration.ofSeconds(30);
@@ -178,13 +181,15 @@ public class TasksController {
     @Path("/{id}")
     @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = REST.Request.UUID_PARAMETER, value = "ID of task.", required = true, dataType = "string", paramType = "path")
-    private Json getTask(Request request, Response response) {
+    private String getTask(Request request, Response response) throws JsonProcessingException {
         String id = request.params("id");
         Context context = getTaskTimer.time();
         try {
             response.status(200);
             response.type(APPLICATION_JSON);
-            return serialiseStateSubset(manager.storage().getState(TaskId.of(id)));
+
+            TaskState state = manager.storage().getState(TaskId.of(id));
+            return objectMapper.writeValueAsString(state);
         } finally {
             context.stop();
         }
