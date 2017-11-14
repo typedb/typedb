@@ -146,11 +146,10 @@ Closure createTestJob(split, i, testTimeout) {
             /* Tell Maven to read the appropriate file. */
             if (split.includes) {
                 writeFile file: "${pwd()}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-                mavenVerify += " -Dsurefire.includesFile=${pwd()()}/parallel-test-includes-${i}.txt"
+                mavenVerify += " -Dsurefire.includesFile=${pwd()}/parallel-test-includes-${i}.txt"
             } else {
-                writeFile file: "${pwd()()}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+                writeFile file: "${pwd()}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
                 mavenVerify += " -Dsurefire.excludesFile=${pwd()}/parallel-test-excludes-${i}.txt"
-
             }
 
             try {
