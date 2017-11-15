@@ -76,8 +76,8 @@ public class IsaAtom extends TypeAtom {
     }
 
     @Override
-    protected Pattern combinedPattern(){
-        if (getPredicateVariable().isUserDefinedName()) return super.combinedPattern();
+    protected Pattern createCombinedPattern(){
+        if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() != null? getVarName().isa(getSchemaConcept().getLabel().getValue()): getVarName().isa(getPredicateVariable());
     }
 

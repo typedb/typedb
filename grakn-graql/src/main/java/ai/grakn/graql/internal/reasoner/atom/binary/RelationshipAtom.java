@@ -180,8 +180,8 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    protected Pattern combinedPattern(){
-        if (getPredicateVariable().isUserDefinedName()) return super.combinedPattern();
+    protected Pattern createCombinedPattern(){
+        if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() != null? relationPattern().isa(getSchemaConcept().getLabel().getValue()) : relationPattern();
     }
 
