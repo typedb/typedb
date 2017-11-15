@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
@@ -103,9 +104,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return var properties this atom (its pattern) contains
      */
-    public Set<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(VarPatternAdmin::getProperties).collect(Collectors.toSet());
-    }
+    public abstract Stream<VarProperty> getVarProperties();
 
     /**
      * @return partial substitutions for this atom (NB: instances)

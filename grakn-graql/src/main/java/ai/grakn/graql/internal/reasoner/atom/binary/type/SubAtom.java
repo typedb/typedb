@@ -23,6 +23,9 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
+import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -31,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -47,6 +51,11 @@ public class SubAtom extends TypeAtom {
     private SubAtom(SubAtom a) { super(a);}
     private SubAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
         this(var.sub(predicateVar), predicateVar, p, par);
+    }
+
+    @Override
+    public Stream<VarProperty> getVarProperties() {
+        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(SubProperty.class));
     }
 
     @Override

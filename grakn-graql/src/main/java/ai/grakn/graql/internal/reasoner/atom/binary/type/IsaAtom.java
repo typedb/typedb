@@ -27,6 +27,9 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -37,6 +40,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -58,6 +62,11 @@ public class IsaAtom extends TypeAtom {
         this(var.isa(predicateVar).admin(), predicateVar, p, par);
     }
     protected IsaAtom(TypeAtom a) { super(a);}
+
+    @Override
+    public Stream<VarProperty> getVarProperties() {
+        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(IsaProperty.class));
+    }
 
     @Override
     public boolean isAllowedToFormRuleHead(){

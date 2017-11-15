@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import com.google.common.collect.Sets;
 

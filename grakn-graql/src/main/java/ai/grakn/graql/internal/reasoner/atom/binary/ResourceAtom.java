@@ -30,6 +30,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
@@ -45,6 +46,7 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import com.sun.xml.internal.bind.v2.runtime.property.AttributeProperty;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -92,6 +94,11 @@ public class ResourceAtom extends Binary{
                         .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
                         .iterator()
         ).build();
+    }
+
+    @Override
+    public Stream<VarProperty> getVarProperties() {
+        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(HasAttributeProperty.class));
     }
 
     @Override
