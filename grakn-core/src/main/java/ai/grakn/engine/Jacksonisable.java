@@ -28,6 +28,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * <p>
  *     Use to pass the necessary annotation to all objects which we use Jackson for serliasation and deserilisation
  * </p>
+ *
+ * @author Filipe Peliz Pinto Teixeira
  */
 @JsonIgnoreProperties(value={ "@id", "roles", "types", "graql", "rules" }, allowGetters=true)
 public interface Jacksonisable {
