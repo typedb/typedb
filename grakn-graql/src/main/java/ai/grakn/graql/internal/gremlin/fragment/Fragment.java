@@ -102,9 +102,6 @@ public abstract class Fragment {
     // By default we assume the latest shard is 25% full
     public static final double SHARD_LOAD_FACTOR = 0.25;
 
-    private static final long DEFAULT_SHARDING_THRESHOLD = 10_000L;
-    public static final double DEFAULT_SHARD_COST = Math.log(DEFAULT_SHARDING_THRESHOLD);
-
     private Optional<Double> accurateFragmentCost = Optional.empty();
 
     /*
