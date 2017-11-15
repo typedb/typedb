@@ -19,6 +19,9 @@
 package ai.grakn;
 
 import ai.grakn.exception.GraknTxOperationException;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
@@ -36,11 +39,13 @@ import java.util.regex.Pattern;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @AutoValue
 public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
     private static final int MAX_LENGTH = 48;
     private static final long serialVersionUID = 2726154016735929123L;
 
+    @JsonProperty("name")
     public abstract String getValue();
 
     @Override
@@ -54,7 +59,8 @@ public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
      * @return The matching {@link Keyspace}
      */
     @CheckReturnValue
-    public static Keyspace of(String value){
+    @JsonCreator
+    public static Keyspace of(@JsonProperty("name") String value){
         if(!Pattern.matches("[a-z_][a-z_0-9]*", value) || value.length() > MAX_LENGTH) {
             throw GraknTxOperationException.invalidKeyspace(value);
         }

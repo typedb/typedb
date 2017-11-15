@@ -174,7 +174,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlMatchWithNoQuery_ResponseStatusIs400() {
         Response response = RestAssured.with()
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.keyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage(QUERY)));
@@ -200,7 +200,7 @@ public class GraqlControllerReadOnlyTest {
         Response response = RestAssured.with()
                 .body("match $x isa movie; get;")
                 .accept(APPLICATION_TEXT)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.keyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -445,7 +445,7 @@ public class GraqlControllerReadOnlyTest {
                 .queryParam(INFER, reasonser)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.keyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
     }
 
     protected static String exception(Response response) {

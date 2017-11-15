@@ -38,18 +38,16 @@ public class REST {
      */
     public static class WebPath{
 
+        public static final String KB = "/kb";
+        public static final String KB_KEYSPACE = "/kb/:keyspace";
+        public static final String KEYSPACE_TYPE = "/kb/:keyspace/type";
+        public static final String KEYSPACE_ROLE = "/kb/:keyspace/role";
+        public static final String KEYSPACE_RULE = "/kb/:keyspace/rule";
+        public static final String KEYSPACE_GRAQL = "/kb/:keyspace/graql";
+
         public static final String COMMIT_LOG_URI = "/kb/:keyspace/commit_log";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
-
-        /**
-         * URIs to visualiser controller
-         */
-        public static class KB {
-            @Deprecated
-            public static final String GRAQL = "/kb/graql";
-            public static final String ANY_GRAQL = "/kb/:keyspace/graql";
-        }
 
         /**
          * URIs to Tasks Controller endpoints
@@ -64,8 +62,6 @@ public class REST {
          * URIs to System Controller endpoints
          */
         public static class System {
-            public static final String KB = "/kb";
-            public static final String KB_KEYSPACE = "/kb/:keyspace";
             public static final String STATUS = "/status";
             public static final String METRICS = "/metrics";
         }
@@ -85,7 +81,7 @@ public class REST {
          * URIs to api endpoints
          */
         public static class Api {
-            public static final String API_PREFIX = System.KB_KEYSPACE;
+            public static final String API_PREFIX = KB_KEYSPACE;
 
             public static final String ATTRIBUTE_TYPE = API_PREFIX + "/attributeType";
             public static final String ENTITY_TYPE = API_PREFIX + "/entityType";
@@ -109,7 +105,6 @@ public class REST {
          * URIs to dashboard controller endpoints
          */
         public static class Dashboard {
-            public static final String TYPES = "/dashboard/types/";
             public static final String EXPLORE = "/dashboard/explore/";
             public static final String EXPLAIN = "/dashboard/explain";
         }
@@ -119,9 +114,6 @@ public class REST {
      * Class containing request fields and content types.
      */
     public static class Request {
-        // Attributes set and used on the server-side
-        public static final String USER_ATTR = "user";
-        
         // Request parameters
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
@@ -133,7 +125,6 @@ public class REST {
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_RUN_WAIT_PARAMETER = "wait";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
-        public static final String BATCH_NUMBER = "batchNumber";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
         public static final String TASKS_PARAM = "tasks";

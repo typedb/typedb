@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller.response;
 
-import ai.grakn.util.REST;
 import ai.grakn.util.REST.WebPath;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -26,60 +25,32 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Set;
 
 /**
  * <p>
- *     Response object representing {@link ai.grakn.Keyspace}
+ *     Response object representing a collection of {@link Keyspace}s
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AutoValue
-public abstract class Keyspace {
+public abstract class Keyspaces {
 
     @CheckReturnValue
-    public abstract ai.grakn.Keyspace value();
+    @JsonProperty
+    public abstract Set<Keyspace> keyspaces();
 
     @CheckReturnValue
     @JsonCreator
-    public static Keyspace of(ai.grakn.Keyspace value){
-        return new AutoValue_Keyspace(value);
+    public static Keyspaces of(@JsonProperty("keyspaces") Set<Keyspace> keyspaces){
+        return new AutoValue_Keyspaces(keyspaces);
     }
 
     @CheckReturnValue
     @JsonProperty("@id")
     public String id(){
-        return REST.resolveTemplate(WebPath.KB_KEYSPACE, name());
-    }
-
-    @CheckReturnValue
-    @JsonProperty
-    public String name(){
-        return value().getValue();
-    }
-
-    @CheckReturnValue
-    @JsonProperty
-    public String types(){
-        return REST.resolveTemplate(WebPath.KEYSPACE_TYPE, name());
-    }
-
-    @CheckReturnValue
-    @JsonProperty
-    public String roles(){
-        return REST.resolveTemplate(WebPath.KEYSPACE_ROLE, name());
-    }
-
-    @CheckReturnValue
-    @JsonProperty
-    public String rules(){
-        return REST.resolveTemplate(WebPath.KEYSPACE_RULE, name());
-    }
-
-    @CheckReturnValue
-    @JsonProperty
-    public String graql(){
-        return REST.resolveTemplate(WebPath.KEYSPACE_GRAQL, name());
+        return WebPath.KB;
     }
 }

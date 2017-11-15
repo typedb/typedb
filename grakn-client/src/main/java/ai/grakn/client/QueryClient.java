@@ -29,7 +29,6 @@ import org.apache.http.impl.client.HttpClients;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
-import static ai.grakn.util.REST.WebPath.KB.ANY_GRAQL;
 import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
 import static org.apache.http.HttpStatus.SC_OK;
 
@@ -124,7 +123,7 @@ public class QueryClient extends Client {
     public Json query(String keyspace, String query, boolean infer) {
         try {
             SimpleURI simpleUri = new SimpleURI(host, port);
-            URI uri = UriBuilder.fromUri(simpleUri.toURI()).path(REST.resolveTemplate(ANY_GRAQL, keyspace))
+            URI uri = UriBuilder.fromUri(simpleUri.toURI()).path(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace))
                     .queryParam("infer", infer)
                     .build();
             HttpPost httpPost = new HttpPost(uri);

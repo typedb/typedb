@@ -24,8 +24,10 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.response.Keyspace;
+import ai.grakn.engine.controller.response.Keyspaces;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.exception.GraknServerException;
+import ai.grakn.util.REST;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
@@ -62,8 +64,6 @@ import static ai.grakn.util.REST.Request.FORMAT;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.WebPath.System.KB;
-import static ai.grakn.util.REST.WebPath.System.KB_KEYSPACE;
 import static ai.grakn.util.REST.WebPath.System.METRICS;
 import static ai.grakn.util.REST.WebPath.System.STATUS;
 import static org.apache.http.HttpHeaders.CACHE_CONTROL;
@@ -106,10 +106,10 @@ public class SystemController {
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
 
-        spark.get(KB, this::getKeyspaces);
-        spark.get(KB_KEYSPACE, this::getKeyspace);
-        spark.put(KB_KEYSPACE, this::putKeyspace);
-        spark.delete(KB_KEYSPACE, this::deleteKeyspace);
+        spark.get(REST.WebPath.KB, this::getKeyspaces);
+        spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
+        spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
+        spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
         spark.get(METRICS, this::getMetrics);
         spark.get(STATUS, this::getStatus);
 
@@ -126,14 +126,14 @@ public class SystemController {
     }
 
     @GET
-    @Path(KB)
+    @Path(REST.WebPath.KB)
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
         Set<Keyspace> keyspaces = systemKeyspace.keyspaces().stream().
                 map(Keyspace::of).
                 collect(Collectors.toSet());
-        return objectMapper.writeValueAsString(keyspaces);
+        return objectMapper.writeValueAsString(Keyspaces.of(keyspaces));
     }
 
     @GET

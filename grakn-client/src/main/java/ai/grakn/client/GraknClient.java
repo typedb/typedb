@@ -64,7 +64,7 @@ public class GraknClient {
             throws GraknClientException {
         String body = queryList.stream().map(Object::toString).reduce("; ", String::concat).substring(2);
         URI fullURI = UriBuilder.fromUri(uri.toURI())
-                .path(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace.getValue()))
+                .path(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()))
                 .queryParam(MULTI, true)
                 .build();
         ClientResponse response = client.resource(fullURI)
@@ -86,7 +86,7 @@ public class GraknClient {
 
     public Optional<Keyspace> keyspace(String keyspace) throws GraknClientException {
         URI fullURI = UriBuilder.fromUri(uri.toURI())
-                .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace))
+                .path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace))
                 .build();
         ClientResponse response = client.resource(fullURI)
                 .accept(APPLICATION_JSON)
