@@ -124,8 +124,6 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
 
         Var varName = var.var().asUserDefined();
         VarPatternAdmin typePattern = this.type();
-
-        //TODO do not force user definedness
         Var typeVariable = typePattern.var();
 
         IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
@@ -155,4 +153,5 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
         h ^= this.type().hashCode();
         return h;
     }
+
 }

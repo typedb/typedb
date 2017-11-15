@@ -111,7 +111,7 @@ public class AtomicTest {
         GraknTx graph = unificationTestSet.tx();
         String atomString = "{$x isa baseRoleEntity;}";
         String relString = "{($x, $y, $z) isa binary;}";
-        String resString = "{$x has res1 'value';}";
+        String resString = "{$x has resource 'value';}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(atomString, graph), graph).getAtom();
         Atom relation = ReasonerQueries.atomic(conjunction(relString, graph), graph).getAtom();
@@ -1203,11 +1203,11 @@ public class AtomicTest {
     @Test
     public void testUnification_VariousResourceAtoms(){
         GraknTx graph = unificationTestSet.tx();
-        String resource = "{$x has res1 $r;$r val 'f';}";
-        String resource2 = "{$r has res1 $x;$x val 'f';}";
-        String resource3 = "{$r has res1 'f';}";
-        String resource4 = "{$x has res1 $y via $r;$y val 'f';}";
-        String resource5 = "{$y has res1 $r via $x;$r val 'f';}";
+        String resource = "{$x has resource $r;$r val 'f';}";
+        String resource2 = "{$r has resource $x;$x val 'f';}";
+        String resource3 = "{$r has resource 'f';}";
+        String resource4 = "{$x has resource $y via $r;$y val 'f';}";
+        String resource5 = "{$y has resource $r via $x;$r val 'f';}";
         exactUnification(resource, resource2, true, true, graph);
         exactUnification(resource, resource3, true, true, graph);
         exactUnification(resource2, resource3, true, true, graph);
@@ -1271,15 +1271,15 @@ public class AtomicTest {
     @Test
     public void testUnification_ResourceWithIndirectValuePredicate(){
         GraknTx graph = unificationTestSet.tx();
-        String resource = "{$x has res1 $r;$r val 'f';}";
-        String resource2 = "{$r has res1 $x;$x val 'f';}";
-        String resource3 = "{$r has res1 'f';}";
+        String resource = "{$x has resource $r;$r val 'f';}";
+        String resource2 = "{$r has resource $x;$x val 'f';}";
+        String resource3 = "{$r has resource 'f';}";
 
         ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction(resource, graph), graph);
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, graph), graph);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, graph), graph);
 
-        String type = "{$x isa res1;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").getId().getValue()  + "';}";
+        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").getId().getValue()  + "';}";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, graph), graph);
         Atom typeAtom = typeQuery.getAtom();
 
