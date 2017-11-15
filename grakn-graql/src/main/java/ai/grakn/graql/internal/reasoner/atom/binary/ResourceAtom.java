@@ -96,9 +96,7 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(HasAttributeProperty.class));
-    }
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
     public RelationshipAtom toRelationshipAtom(){
