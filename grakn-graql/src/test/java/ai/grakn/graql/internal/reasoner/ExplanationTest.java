@@ -253,7 +253,6 @@ public class ExplanationTest {
     public void testExplanationConsistency(){
         GraknTx genealogyGraph = genealogyKB.tx();
         QueryBuilder iqb = genealogyGraph.graql().infer(true);
-
         String queryString = "match " +
                 "($x, $y) isa cousins;" +
                 "limit 3; get;";
@@ -269,6 +268,7 @@ public class ExplanationTest {
                     "(cousin: $x, cousin: $y) isa cousins;" +
                     "limit 1; get;";
             Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+            assertEquals(answer, specificAnswer);
             testExplanation(specificAnswer);
         });
     }
