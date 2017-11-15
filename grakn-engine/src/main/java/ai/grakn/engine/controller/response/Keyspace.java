@@ -31,14 +31,18 @@ import javax.annotation.CheckReturnValue;
  * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
-public abstract class KeyspaceResponse {
+public abstract class Keyspace {
 
     @CheckReturnValue
+    public abstract ai.grakn.Keyspace value();
+
+    @CheckReturnValue
+    public static Keyspace of(ai.grakn.Keyspace value){
+        return new AutoValue_Keyspace(value);
+    }
+
     @JsonValue
-    public abstract String getValue();
-
-    @CheckReturnValue
-    public static KeyspaceResponse of(String value){
-        return new AutoValue_KeyspaceResponse(value);
+    public String name(){
+        return value().getValue();
     }
 }
