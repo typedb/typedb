@@ -65,11 +65,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <artifactId>jackson-databind</artifactId>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>${netty-all.version}</version>
@@ -149,6 +144,12 @@
                     <artifactId>jackson-datatype-joda</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <!-- Used for Response Serialisation -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
         </dependency>
 
         <dependency>

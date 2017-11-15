@@ -29,8 +29,8 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
@@ -95,7 +95,7 @@ public class GraqlControllerReadOnlyTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(spark, mockFactory.properties(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
+        new SystemController(spark, mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
         new GraqlController(mockFactory, spark, metricRegistry);
     });
 
@@ -119,7 +119,7 @@ public class GraqlControllerReadOnlyTest {
 
         when(mockFactory.tx(eq(mockTx.keyspace()), any())).thenReturn(mockTx);
         when(mockFactory.systemKeyspace()).thenReturn(mockSystemKeyspace);
-        when(mockFactory.properties()).thenReturn(sparkContext.config().getProperties());
+        when(mockFactory.config()).thenReturn(sparkContext.config());
     }
 
     @Test

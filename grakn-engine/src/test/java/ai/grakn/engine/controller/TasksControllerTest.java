@@ -318,7 +318,7 @@ public class TasksControllerTest {
         Response response = get(task.getId());
         Json json = response.as(Json.class, jsonMapper);
 
-        assertThat(json.at("id").asString(), equalTo(task.getId().getValue()));
+        assertThat(json.at("id").asString(), equalTo(task.getId().value()));
     }
 
     @Test
@@ -365,7 +365,7 @@ public class TasksControllerTest {
         Response response = get(task.getId());
         Json json = response.as(Json.class, jsonMapper);
 
-        assertThat(json.at("id").asString(), equalTo(task.getId().getValue()));
+        assertThat(json.at("id").asString(), equalTo(task.getId().value()));
         assertThat(json.at(TASK_RUN_INTERVAL_PARAMETER).asLong(), equalTo(task.schedule().interval().get().toMillis()));
     }
 
@@ -379,7 +379,7 @@ public class TasksControllerTest {
         Response response = get(task.getId());
         Json json = response.as(Json.class, jsonMapper);
 
-        assertThat(json.at("id").asString(), equalTo(task.getId().getValue()));
+        assertThat(json.at("id").asString(), equalTo(task.getId().value()));
     }
 
     @Test
@@ -393,7 +393,7 @@ public class TasksControllerTest {
         Response response = get(task.getId());
         Json json = response.as(Json.class, jsonMapper);
 
-        assertThat(json.at("id").asString(), equalTo(task.getId().getValue()));
+        assertThat(json.at("id").asString(), equalTo(task.getId().value()));
         assertThat(json.at(TASK_RUN_AT_PARAMETER).asLong(), equalTo(runAt.toEpochMilli()));
     }
 
@@ -407,7 +407,7 @@ public class TasksControllerTest {
         Response response = get(task.getId());
         Json json = response.as(Json.class, jsonMapper);
 
-        assertThat(json.at("id").asString(), equalTo(task.getId().getValue()));
+        assertThat(json.at("id").asString(), equalTo(task.getId().value()));
         assertThat(json.at(TASK_STATUS_PARAMETER).asString(), equalTo(FAILED.name()));
     }
 
@@ -463,7 +463,7 @@ public class TasksControllerTest {
     }
 
     private Response get(TaskId taskId){
-        return with().get(GET.replace(ID_PARAMETER, taskId.getValue()));
+        return with().get(GET.replace(ID_PARAMETER, taskId.value()));
     }
 
     private Json makeJsonTask(Map<String, String> configuration, Map<String, String> params) {

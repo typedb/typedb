@@ -115,6 +115,8 @@
         <failsafe.version>1.0.4</failsafe.version>
         <redisq.version>0.0.6-SNAPSHOT</redisq.version>
         <reactivex.version>1.3.2</reactivex.version>
+        <!--TODO: Delete Jackson dependency when we change to dropwizard-->
+        <jackson.version>2.9.2</jackson.version>
     </properties>
 
     <organization>
@@ -210,6 +212,26 @@
                 <groupId>ai.grakn</groupId>
                 <artifactId>redisq</artifactId>
                 <version>${redisq.version}</version>
+            </dependency>
+            <dependency>
+                <artifactId>jackson-databind</artifactId>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.module</groupId>
+                <artifactId>jackson-module-scala_2.10</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>

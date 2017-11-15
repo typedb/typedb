@@ -131,7 +131,7 @@ public class TaskState implements Serializable {
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
         this.creator = creator;
         this.schedule = schedule;
-        this.taskId = id.getValue();
+        this.taskId = id.value();
         this.priority = priority;
     }
 

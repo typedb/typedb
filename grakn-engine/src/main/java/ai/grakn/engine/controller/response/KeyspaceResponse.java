@@ -14,41 +14,31 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.engine;
+package ai.grakn.engine.controller.response;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
-import java.util.UUID;
 
 /**
- * An identifier for a task
+ * <p>
+ *     Response object representing {@link ai.grakn.Keyspace}
+ * </p>
  *
- * @author Felix Chapman
+ * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
-public abstract class TaskId {
+public abstract class KeyspaceResponse {
 
-    @CheckReturnValue
-    @JsonCreator
-    public static TaskId of(String value) {
-        return new AutoValue_TaskId(value);
-    }
-
-    @CheckReturnValue
-    public static TaskId generate() {
-        return new AutoValue_TaskId(UUID.randomUUID().toString());
-    }
-
-    /**
-     * Get the string value of the task ID
-     */
     @CheckReturnValue
     @JsonValue
-    public abstract String value();
+    public abstract String getValue();
+
+    @CheckReturnValue
+    public static KeyspaceResponse of(String value){
+        return new AutoValue_KeyspaceResponse(value);
+    }
 }

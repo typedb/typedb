@@ -23,15 +23,14 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspaceFake;
 import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
-import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.when;
@@ -51,14 +50,14 @@ import static org.mockito.Mockito.mock;
  */
 public class SystemControllerTest {
 
-    private static final Properties properties = GraknEngineConfig.create().getProperties();
+    private static final GraknEngineConfig config = GraknEngineConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
 
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark, properties, systemKeyspace, status, metricRegistry);
+        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
     });
 
     @Before
@@ -94,8 +93,8 @@ public class SystemControllerTest {
     }
 
     @Test
-    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() {
-        when().put("/kb/myks").then().statusCode(SC_OK).body(is(Json.make(properties).toString()));
+    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() throws JsonProcessingException {
+        when().put("/kb/myks").then().statusCode(SC_OK).body(is(new ObjectMapper().writeValueAsString(config)));
     }
 
     @Test
