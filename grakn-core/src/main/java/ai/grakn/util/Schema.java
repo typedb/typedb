@@ -20,6 +20,7 @@ package ai.grakn.util;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
@@ -133,7 +134,8 @@ public final class Schema {
         ATTRIBUTE(Attribute.class),
 
         //Internal
-        SHARD(Vertex.class);
+        SHARD(Vertex.class),
+        CONCEPT(Concept.class);
 
         private final Class classType;
 
