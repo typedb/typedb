@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import com.google.common.collect.Sets;
 
@@ -84,11 +83,11 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public VarPattern getPattern(){ return atomPattern;}
 
-    protected Pattern combinedPattern(){ return atomPattern;}
+    protected Pattern createCombinedPattern(){ return atomPattern;}
 
     @Override
     public Pattern getCombinedPattern(){
-        if (combinedPattern == null) combinedPattern = combinedPattern();
+        if (combinedPattern == null) combinedPattern = createCombinedPattern();
         return combinedPattern;
     }
 

@@ -39,7 +39,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -187,8 +186,8 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    protected Pattern combinedPattern(){
-        if (getPredicateVariable().isUserDefinedName()) return super.combinedPattern();
+    protected Pattern createCombinedPattern(){
+        if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() != null? relationPattern().isa(getSchemaConcept().getLabel().getValue()) : relationPattern();
     }
 

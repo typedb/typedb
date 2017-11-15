@@ -46,7 +46,6 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import com.sun.xml.internal.bind.v2.runtime.property.AttributeProperty;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -214,7 +213,7 @@ public class ResourceAtom extends Binary{
     public Var getRelationVariable(){ return relationVariable;}
 
     @Override
-    protected Pattern combinedPattern(){
+    protected Pattern createCombinedPattern(){
         Set<VarPatternAdmin> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
                 .map(VarPattern::admin)
