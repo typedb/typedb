@@ -23,6 +23,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -31,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -48,6 +50,11 @@ public class HasAtom extends TypeAtom {
         super(var.has(predicateVar), predicateVar, p, par);
     }
     private HasAtom(TypeAtom a) { super(a);}
+
+    @Override
+    public Stream<VarProperty> getVarProperties() {
+        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(HasAttributeTypeProperty.class));
+    }
 
     @Override
     public Atomic copy(){

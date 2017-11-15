@@ -38,6 +38,7 @@ import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -136,6 +137,11 @@ public class RelationshipAtom extends IsaAtom {
         this.roleLabels = a.roleLabels;
         this.roleVarMap = a.roleVarMap;
         this.possibleRelations = a.possibleRelations;
+    }
+
+    @Override
+    public Stream<VarProperty> getVarProperties() {
+        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(RelationshipProperty.class));
     }
 
     @Override

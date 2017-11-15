@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -29,12 +30,16 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
+import com.google.common.collect.UnmodifiableIterator;
+import java.util.HashSet;
 import java.util.Set;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ResolutionPlanTest {
 
@@ -121,6 +126,55 @@ public class ResolutionPlanTest {
         );
         ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
         assertEquals(plan, correctPlan);
+    }
+
+    @Test
+    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent(){
+        GraknTx testTx = testContext.tx();
+        String queryString = "{" +
+                "(role1:$x, role2: $y) isa relation;" +
+                "(role1:$y, role2: $z) isa anotherRelation;" +
+                "(role1:$z, role2: $w) isa relation;" +
+                "(role1:$w, role2: $u) isa anotherRelation;" +
+                "(role1:$u, role2: $v) isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
+
+        UnmodifiableIterator<Atom> iterator = plan.iterator();
+        Set<Var> vars = new HashSet<>();
+        iterator.next().getVarNames().forEach(vars::add);
+        while(iterator.hasNext()){
+            Atom next = iterator.next();
+            Set<Var> varNames = next.getVarNames();
+            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
+            varNames.forEach(vars::add);
+        }
+    }
+
+    @Test
+    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain(){
+        GraknTx testTx = testContext.tx();
+        String queryString = "{" +
+                "(role1:$x, role2: $y) isa relation;" +
+                "(role1:$y, role2: $z) isa anotherRelation;" +
+                "(role1:$z, role2: $w) isa yetAnotherRelation;" +
+                "(role1:$w, role2: $u) isa relation;" +
+                "(role1:$u, role2: $v) isa anotherRelation;" +
+                "(role1:$v, role2: $q) isa yetAnotherRelation;"+
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
+
+        UnmodifiableIterator<Atom> iterator = plan.iterator();
+        Set<Var> vars = new HashSet<>();
+        iterator.next().getVarNames().forEach(vars::add);
+        while(iterator.hasNext()){
+            Atom next = iterator.next();
+            Set<Var> varNames = next.getVarNames();
+            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
+            varNames.forEach(vars::add);
+        }
     }
 
     private Atom getAtom(ReasonerQueryImpl query, String typeString, GraknTx tx){
