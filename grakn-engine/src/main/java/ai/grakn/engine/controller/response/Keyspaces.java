@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.controller.response;
 
+import ai.grakn.engine.Jacksonisable;
 import ai.grakn.util.REST.WebPath;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
@@ -34,9 +34,8 @@ import java.util.Set;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 @AutoValue
-public abstract class Keyspaces {
+public abstract class Keyspaces implements Jacksonisable{
 
     @CheckReturnValue
     @JsonProperty
