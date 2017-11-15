@@ -23,6 +23,7 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,7 +114,8 @@ public class GraknEngineConfig {
         return PROJECT_PATH.resolve(getProperty(pathKey));
     }
 
-    public Properties getProperties() {
+    @JsonValue
+    public Properties properties() {
         return prop;
     }
 

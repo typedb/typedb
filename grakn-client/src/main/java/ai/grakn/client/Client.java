@@ -161,7 +161,7 @@ public class Client {
     }
 
     protected String convert(String uri, TaskId id){
-        return uri.replace(ID_PARAMETER, id.getValue());
+        return uri.replace(ID_PARAMETER, id.value());
     }
 
     protected String exceptionFrom(HttpResponse response) throws IOException {

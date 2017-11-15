@@ -34,7 +34,7 @@ import java.io.Serializable;
  *     Also contains a static method for producing concept IDs from Strings.
  * </p>
  *
- * @author fppt
+ * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
 public abstract class ConceptId implements Comparable<ConceptId>, Serializable {

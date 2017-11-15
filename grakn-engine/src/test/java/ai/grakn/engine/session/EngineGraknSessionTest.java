@@ -47,7 +47,7 @@ public class EngineGraknSessionTest {
     //Needed so that Grakn.session() can return a session
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark, config.getProperties(), systemKeyspace, status, metricRegistry);
+        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
     });
 
     //Needed to start cass depending on profile
@@ -60,7 +60,7 @@ public class EngineGraknSessionTest {
     @BeforeClass
     public static void beforeClass() {
         JedisLockProvider lockProvider = new JedisLockProvider(inMemoryRedisContext.jedisPool());
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
+        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config);
     }
 
     @Test

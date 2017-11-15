@@ -50,7 +50,7 @@ abstract public class Task implements Serializable, Document {
     @Override
     @JsonIgnore
     public String getIdAsString() {
-        return getTaskState().getId().getValue();
+        return getTaskState().getId().value();
     }
 
     /**

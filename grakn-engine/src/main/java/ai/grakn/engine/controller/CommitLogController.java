@@ -25,6 +25,8 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -45,9 +47,10 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 /**
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
  *
- * @author Filipe Teixeira
+ * @author Filipe Peliz Pinto Teixeira
  */
 public class CommitLogController {
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     private final TaskManager manager;
     private final PostProcessor postProcessor;
     private final int postProcessingDelay;
@@ -68,7 +71,7 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_FIXING, value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body"),
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
-    private Json submitConcepts(Request req, Response res) {
+    private String submitConcepts(Request req, Response res) throws JsonProcessingException {
         res.type(REST.Response.ContentType.APPLICATION_JSON);
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, KEYSPACE_PARAM));
@@ -83,9 +86,6 @@ public class CommitLogController {
                 CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, Json.read(req.body()))))
                 .join();
 
-        return Json.object(
-                "postProcessingTaskId", postProcessingTaskState.getId().getValue(),
-                "keyspace", keyspace.getValue()
-        );
+        return objectMapper.writeValueAsString(postProcessingTaskState);
     }
 }

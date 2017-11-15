@@ -52,7 +52,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.gremlin.fragment.Fragment.DEFAULT_SHARD_COST;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 
@@ -225,7 +224,8 @@ public class GreedyTraversalPlan {
             if (fragment.getShardCount(tx).isPresent()) {
                 long shardCount = fragment.getShardCount(tx).get();
                 if (shardCount > 0) {
-                    logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) + DEFAULT_SHARD_COST;
+                    logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
+                            Math.log(tx.admin().shardingThreshold());
                 }
             }
             nodesWithFixedCost.put(start, logInstanceCount);

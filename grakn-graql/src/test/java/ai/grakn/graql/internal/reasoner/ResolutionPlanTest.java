@@ -153,7 +153,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
-    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_differentCombination(){
+    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain(){
         GraknTx testTx = testContext.tx();
         String queryString = "{" +
                 "(role1:$x, role2: $y) isa relation;" +
