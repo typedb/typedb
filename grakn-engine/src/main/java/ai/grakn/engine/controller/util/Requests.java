@@ -19,11 +19,12 @@
 package ai.grakn.engine.controller.util;
 
 import ai.grakn.exception.GraknServerException;
-import java.util.Optional;
-import java.util.function.Function;
-
 import mjson.Json;
 import spark.Request;
+
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Utility class for handling http requests
@@ -113,4 +114,29 @@ public class Requests {
         return currentField;
     }
 
+    /**
+     * Checks that the Request is of the valid type
+     *
+     * @param request
+     * @param contentTypes
+     */
+    public static void validateRequest(Request request, String... contentTypes){
+        String acceptType = getAcceptType(request);
+
+        if(!Arrays.asList(contentTypes).contains(acceptType)){
+            throw GraknServerException.unsupportedContentType(acceptType);
+        }
+    }
+
+    /**
+     * Gets the accepted type of the request
+     *
+     * @param request
+     * @return
+     */
+    public static String getAcceptType(Request request) {
+        // TODO - we are not handling multiple values here and we should!
+        String header = request.headers("Accept");
+        return header == null ? "" : request.headers("Accept").split(",")[0];
+    }
 }

@@ -38,14 +38,21 @@ public class REST {
      */
     public static class WebPath{
 
+        /**
+         * Keyspace Specific Operations
+         */
         public static final String KB = "/kb";
         public static final String KB_KEYSPACE = "/kb/:keyspace";
         public static final String KEYSPACE_TYPE = "/kb/:keyspace/type";
         public static final String KEYSPACE_ROLE = "/kb/:keyspace/role";
         public static final String KEYSPACE_RULE = "/kb/:keyspace/rule";
         public static final String KEYSPACE_GRAQL = "/kb/:keyspace/graql";
-
         public static final String COMMIT_LOG_URI = "/kb/:keyspace/commit_log";
+
+        /**
+         * Concept Specific operations
+         */
+        public static final String CONCEPT_ID = "/kb/:keyspace/concept/:id";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 

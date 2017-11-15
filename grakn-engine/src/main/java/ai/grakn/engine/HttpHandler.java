@@ -21,12 +21,12 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
-import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.api.AttributeController;
 import ai.grakn.engine.controller.api.AttributeTypeController;
+import ai.grakn.engine.controller.api.ConceptController;
 import ai.grakn.engine.controller.api.EntityController;
 import ai.grakn.engine.controller.api.EntityTypeController;
 import ai.grakn.engine.controller.api.RelationshipController;

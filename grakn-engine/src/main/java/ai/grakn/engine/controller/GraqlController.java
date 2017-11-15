@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
@@ -122,7 +123,7 @@ public class GraqlController {
         Optional<Boolean> infer = queryParameter(request, INFER).map(Boolean::parseBoolean);
         boolean multi = parseBoolean(queryParameter(request, MULTI).orElse("false"));
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        String acceptType = getAcceptType(request);
+        String acceptType = Requests.getAcceptType(request);
 
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
@@ -216,12 +217,6 @@ public class GraqlController {
 
     private Object executeAndMonitor(Query<?> query) {
         return query.execute();
-    }
-
-    static String getAcceptType(Request request) {
-        // TODO - we are not handling multiple values here and we should!
-        String header = request.headers("Accept");
-        return header == null ? "" : request.headers("Accept").split(",")[0];
     }
 
 }

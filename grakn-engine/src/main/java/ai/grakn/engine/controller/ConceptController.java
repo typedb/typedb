@@ -24,9 +24,9 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import io.swagger.annotations.ApiImplicitParam;
@@ -36,7 +36,6 @@ import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import spark.Request;
 import spark.Response;
-import spark.Service;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.GET;
@@ -46,7 +45,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static ai.grakn.GraknTxType.READ;
-import static ai.grakn.engine.controller.GraqlController.getAcceptType;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
@@ -58,13 +56,10 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
+import static ai.grakn.util.REST.Response.Json.ATTRIBUTES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.ENTITIES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.RELATIONSHIPS_JSON_FIELD;
-import static ai.grakn.util.REST.Response.Json.ATTRIBUTES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.ROLES_JSON_FIELD;
-import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
-import static ai.grakn.util.REST.WebPath.Concept.SCHEMA;
-import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -78,11 +73,11 @@ import static java.util.stream.Collectors.toList;
 public class ConceptController {
 
     private static final int separationDegree = 1;
-    private final EngineGraknTxFactory factory;
-    private final Timer conceptIdGetTimer;
-    private final Timer schemaGetTimer;
+    private EngineGraknTxFactory factory;
+    private Timer conceptIdGetTimer;
+    private Timer schemaGetTimer;
 
-    public ConceptController(EngineGraknTxFactory factory, Service spark,
+    /*public ConceptController(EngineGraknTxFactory factory, Service spark,
                              MetricRegistry metricRegistry){
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
@@ -91,7 +86,7 @@ public class ConceptController {
         spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
         spark.get(SCHEMA,  this::schema);
 
-    }
+    }*/
 
     @GET
     @Path("concept/{id}")
@@ -156,7 +151,7 @@ public class ConceptController {
     }
 
     static void validateRequest(Request request, String... contentTypes){
-        String acceptType = getAcceptType(request);
+        String acceptType = Requests.getAcceptType(request);
 
         if(!Arrays.asList(contentTypes).contains(acceptType)){
             throw GraknServerException.unsupportedContentType(acceptType);
