@@ -44,15 +44,16 @@ import static org.mockito.Mockito.when;
 public class ConceptControllerTest {
     private static final Lock mockLock = mock(Lock.class);
     private static final LockProvider mockLockProvider = mock(LockProvider.class);
-    private static final EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create());
     private static final Keyspace keyspance = SampleKBLoader.randomKeyspace();
 
+    private static EngineGraknTxFactory factory;
     private static EntityType entityType;
     private static Entity entity;
 
     public static SessionContext sessionContext = SessionContext.create();
 
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create());
         new ConceptController(factory, spark, new MetricRegistry());
     });
 
