@@ -82,7 +82,7 @@ public class DistApplication {
     public static void main(String[] args) {
         if(args.length<1) throw new RuntimeException("Errors in 'grakn' bash script");
 
-        GRAKN_HOME = GraknSystemProperty.CURRENT_DIRECTORY.value();
+        GRAKN_HOME = args[0];
 //        System.out.println(System.getProperty("java.class.path"));
 //        System.out.println(System.getProperty("java.library.path"));
 //        System.out.println();

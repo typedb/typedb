@@ -174,7 +174,7 @@ force_kill() {
   fi
 
   echo "Wiping out keyspaces..."
-  wipe_out_keyspaces
+#  wipe_out_keyspaces
 
   echo "Wiping out PID files..."
   wipe_out_files
