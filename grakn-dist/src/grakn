@@ -45,7 +45,7 @@ update_classpath_global_var() {
 }
 
 # =============================================
-# misc helper methods
+# helper
 # =============================================
 print_grakn_logo() {
   # cat ASCII logo, or fail silently if it's somehow missing
