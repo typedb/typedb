@@ -33,11 +33,19 @@ String statusHeader(String message) {
     return "${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
 }
 
-String statusNotification(String message) {
+String statusNotification(String message, format='slack') {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
 
     String author = "authored by - ${user}"
-    String link = "(<${env.BUILD_URL}|Open>)"
+
+    String link
+    if (format == 'slack') {
+        link = "(<${env.BUILD_URL}|Open>)"
+    } else if (format == 'html') {
+        link = '<a href="${env.BUILD_URL}">Open</a>'
+    } else {
+        throw new IllegalArgumentException("Unrecognised format ${slack}")
+    }
 
     return "${statusHeader(message)} ${link}\n${author}"
 }
@@ -268,7 +276,7 @@ try {
         if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
             emailext (
                     subject: statusHeader(message),
-                    body: statusNotification(message),
+                    body: statusNotification(message, format='html'),
                     recipientProviders: [[$class: 'CulpritsRecipientProvider']]
             )
         }
