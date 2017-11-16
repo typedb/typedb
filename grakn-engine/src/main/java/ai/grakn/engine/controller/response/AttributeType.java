@@ -37,9 +37,9 @@ public abstract class AttributeType extends Type{
     public static AttributeType createEmbedded(
             ai.grakn.Keyspace keyspace,
             ConceptId conceptId,
+            Label label,
             SchemaConcept superConcept,
             Set<SchemaConcept> subConcepts,
-            Label label,
             Boolean isImplicit,
             Boolean isAbstract,
             Set<Role> rolesPlayed,

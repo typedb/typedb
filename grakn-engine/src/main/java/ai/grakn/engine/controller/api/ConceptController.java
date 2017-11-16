@@ -52,7 +52,7 @@ import static com.codahale.metrics.MetricRegistry.name;
  *     Endpoints used to query for {@link ai.grakn.concept.Concept}s
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira,
+ * @author Filipe Peliz Pinto Teixeira
  */
 public class ConceptController {
     private static final int separationDegree = 1;

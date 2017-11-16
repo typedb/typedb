@@ -47,9 +47,9 @@ public abstract class RelationshipType extends Type{
     public static RelationshipType createEmbedded(
             ai.grakn.Keyspace keyspace,
             ConceptId conceptId,
+            Label label,
             SchemaConcept superConcept,
             Set<SchemaConcept> subConcepts,
-            Label label,
             Boolean isImplicit,
             Boolean isAbstract,
             Set<Role> rolesPlayed,

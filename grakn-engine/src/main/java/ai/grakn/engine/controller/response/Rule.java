@@ -53,9 +53,9 @@ public abstract class Rule extends SchemaConcept{
     public static Rule createEmbedded(
             ai.grakn.Keyspace keyspace,
             ConceptId conceptId,
+            Label label,
             SchemaConcept superConcept,
             Set<SchemaConcept> subConcepts,
-            Label label,
             Boolean isImplicit,
             String when,
             String then){

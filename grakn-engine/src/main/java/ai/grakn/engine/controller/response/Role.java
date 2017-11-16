@@ -61,9 +61,9 @@ public abstract class Role extends SchemaConcept{
     public static Role createEmbedded(
         ai.grakn.Keyspace keyspace,
         ConceptId conceptId,
+        Label label,
         SchemaConcept superConcept,
         Set<SchemaConcept> subConcepts,
-        Label label,
         Boolean isImplicit,
         Set<RelationshipType> relationshipTypes,
         Set<Type> roleplayerTypes){

@@ -18,6 +18,7 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -50,6 +51,13 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     ConceptId getId();
+
+    /**
+     * Used for determining which {@link Keyspace} a {@link Concept} was created in and is bound to.
+     *
+     * @return The {@link Keyspace} this {@link Concept} belongs to.
+     */
+    Keyspace keyspace();
 
     //------------------------------------- Other ---------------------------------
     /**

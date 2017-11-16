@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
@@ -110,6 +111,11 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     @Override
     public ConceptId getId() {
         return ConceptId.of(edge().id().getValue());
+    }
+
+    @Override
+    public Keyspace keyspace() {
+        return edge().tx().keyspace();
     }
 
     @Override

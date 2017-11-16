@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -209,6 +210,11 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     @Override
     public ConceptId getId() {
         return structure().getId();
+    }
+
+    @Override
+    public Keyspace keyspace() {
+        return structure().keyspace();
     }
 
     @Override
