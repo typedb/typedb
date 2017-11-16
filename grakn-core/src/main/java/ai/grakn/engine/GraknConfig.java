@@ -50,9 +50,9 @@ public class GraknConfig {
     private final Properties prop;
 
     /**
-     * The path to the config file currently in use. Default: ../conf/main/grakn.properties
+     * The path to the config file currently in use. Default: ./conf/main/grakn.properties
      */
-    private static final Path DEFAULT_CONFIG_FILE = Paths.get("..", "conf", "main", "grakn.properties");
+    private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "conf", "main", "grakn.properties");
 
     public static final int WEBSOCKET_TIMEOUT = 3600000;
 

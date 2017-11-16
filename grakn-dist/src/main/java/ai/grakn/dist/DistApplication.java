@@ -80,9 +80,9 @@ public class DistApplication {
     private static String CLASSPATH;
 
     public static void main(String[] args) {
-        if(args.length<1) throw new RuntimeException("Errors in 'grakn' bash script");
+//        if(args.length<1) throw new RuntimeException("Errors in 'grakn' bash script");
 
-        GRAKN_HOME = args[0];
+        GRAKN_HOME = GraknSystemProperty.CURRENT_DIRECTORY.value();
 //        System.out.println(System.getProperty("java.class.path"));
 //        System.out.println(System.getProperty("java.library.path"));
 //        System.out.println();
@@ -96,16 +96,14 @@ public class DistApplication {
         CLASSPATH = getClassPath(GRAKN_HOME);
         GRAKN_CONFIG = GraknEngineConfig.create();
         GRAKN_CONFIG_PATH = GraknSystemProperty.CONFIGURATION_FILE.value();
-        LOG.info(GRAKN_HOME);
-        LOG.info(CLASSPATH);
-        LOG.info(GRAKN_CONFIG_PATH);
+//        System.out.println(GRAKN_CONFIG_PATH);
 
+        String arg0 = args.length > 0 ? args[0] : "";
         String arg1 = args.length > 1 ? args[1] : "";
         String arg2 = args.length > 2 ? args[2] : "";
-        String arg3 = args.length > 3 ? args[3] : "";
 
         DistApplication application = new DistApplication(new Scanner(System.in),System.out);
-        application.run(new String[]{arg1,arg2,arg3});
+        application.run(new String[]{arg0,arg1,arg2});
     }
 
     // TODO: check all the output for failing starting stuff
@@ -469,7 +467,7 @@ public class DistApplication {
         output.print("Starting Grakn...");
         output.flush();
 
-        String command = "java -cp " + CLASSPATH + " -Dgrakn.dir=" + GRAKN_HOME + "/services -Dgrakn.conf="+GRAKN_CONFIG_PATH+" ai.grakn.engine.Grakn &";
+        String command = "java -cp " + CLASSPATH + " -Dgrakn.dir=" + GRAKN_HOME + " -Dgrakn.conf="+GRAKN_CONFIG_PATH+" ai.grakn.engine.Grakn &";
 //        LOG.info(command);
 
         executeAndWait(new String[]{
