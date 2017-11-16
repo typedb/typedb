@@ -27,11 +27,13 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.concurrent.locks.Lock;
 
@@ -48,10 +50,14 @@ public class ConceptControllerTest {
     private static EntityType entityType;
     private static Entity entity;
 
-    @ClassRule
+    public static SessionContext sessionContext = SessionContext.create();
+
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         new ConceptController(factory, spark, new MetricRegistry());
     });
+
+    @ClassRule
+    public static final RuleChain chain = RuleChain.emptyRuleChain().around(sessionContext).around(sparkContext);
 
     @BeforeClass
     public static void setUp() {
@@ -66,12 +72,12 @@ public class ConceptControllerTest {
     }
 
     @Test
-    public static void whenGettingConceptByIdAndConceptExists_ConceptIsReturned(){
+    public void whenGettingConceptByIdAndConceptExists_ConceptIsReturned(){
 
     }
 
     @Test
-    public static void whenGettingConceptByIdAndConceptDoeNotExist_EmptyResponse(){
+    public void whenGettingConceptByIdAndConceptDoeNotExist_EmptyResponse(){
 
     }
 }
