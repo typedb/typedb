@@ -115,7 +115,7 @@ public class HALBuilderTest {
             String specificQuery = "match " +
                     "$x id " + cousin1 + ";" +
                     "$y id " + cousin2 + ";" +
-                    "(cousin: $x, cousin: $y) isa cousins; get;";
+                    "(cousin: $x, cousin: $y) isa cousins; limit 1;get;";
             Printer<?> printer = Printers.hal(genealogyKB.tx().keyspace(), 5);
             GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
             Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());

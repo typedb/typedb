@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -82,9 +81,9 @@ public class RemoteSessionTest {
     public static final SessionContext sessionContext = SessionContext.create();
 
     public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        Properties properties = GraknEngineConfig.create().getProperties();
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, properties);
-        new SystemController(spark, properties, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
+        GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, graknEngineConfig);
+        new SystemController(spark, graknEngineConfig, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
     }).port(4567);
 
     @ClassRule

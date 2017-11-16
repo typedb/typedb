@@ -102,9 +102,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return var properties this atom (its pattern) contains
      */
-    public Set<VarProperty> getVarProperties() {
-        return getPattern().admin().getProperties().collect(Collectors.toSet());
-    }
+    public abstract Stream<VarProperty> getVarProperties();
 
     /**
      * @return partial substitutions for this atom (NB: instances)

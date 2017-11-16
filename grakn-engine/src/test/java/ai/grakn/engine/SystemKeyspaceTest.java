@@ -66,7 +66,7 @@ public class SystemKeyspaceTest {
     // the janus profile.
     @Rule
     public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark, config.getProperties(), systemKeyspace, status, metricRegistry);
+        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
     }).host("0.0.0.0").port(4567);
 
     //Needed to start cass depending on profile
@@ -83,7 +83,7 @@ public class SystemKeyspaceTest {
 
     @BeforeClass
     public static void setup(){
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
+        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config);
         systemKeyspace = SystemKeyspaceImpl.create(graknFactory, lockProvider, false);
 
         Lock lock = mock(Lock.class);

@@ -61,7 +61,7 @@ public class BackgroundTaskTestUtils {
     private final static Logger LOG = LoggerFactory.getLogger(BackgroundTaskTestUtils.class);
 
     public static TaskConfiguration configuration(TaskState taskState){
-        return TaskConfiguration.of(Json.object("id", taskState.getId().getValue()));
+        return TaskConfiguration.of(Json.object("id", taskState.getId().value()));
     }
 
     public static TaskState createTask() {

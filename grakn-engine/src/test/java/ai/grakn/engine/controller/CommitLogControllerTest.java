@@ -29,7 +29,6 @@ import org.mockito.Mockito;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_OK;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -67,12 +66,7 @@ public class CommitLogControllerTest {
     @Test
     public void whenPostingToCommitLogEndpoint_ReceiveBodyWithTasks() {
         given().body(BODY).when().post("/kb/myks/commit_log").then()
-                .body("postProcessingTaskId", isA(String.class));
-    }
-
-    @Test
-    public void whenPostingToCommitLogEndpoint_ReceiveBodyWithKeyspace() {
-        given().body(BODY).when().post("/kb/myks/commit_log").then().body("keyspace", is("myks"));
+                .body("id", isA(String.class));
     }
 
     @Test

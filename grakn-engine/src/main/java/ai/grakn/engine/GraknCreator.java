@@ -149,7 +149,7 @@ public class GraknCreator {
     }
 
     protected static EngineGraknTxFactory engineGraknTxFactory(GraknEngineConfig config, LockProvider lockProvider) {
-        return EngineGraknTxFactory.create(lockProvider, config.getProperties());
+        return EngineGraknTxFactory.create(lockProvider, config);
     }
 
     /**
