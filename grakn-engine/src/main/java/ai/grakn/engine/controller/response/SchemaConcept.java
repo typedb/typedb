@@ -20,7 +20,6 @@ package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.Label;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
 import java.util.Set;
