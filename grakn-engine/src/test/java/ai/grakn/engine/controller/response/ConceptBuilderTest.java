@@ -21,7 +21,6 @@ package ai.grakn.engine.controller.response;
 import ai.grakn.GraknTx;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.Schema;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -64,22 +63,19 @@ public class ConceptBuilderTest {
         assertTrue(entityWrapper.isPresent());
 
         //Check internal data
-        assertEquals(entity.getId(), entityWrapper.get().conceptId());
-        assertEquals(entity.keyspace(), entityWrapper.get().keyspace());
-        assertEquals(Schema.BaseType.CONCEPT, entityWrapper.get().baseType());
-        assertEquals(entity.getId().getValue(), entityWrapper.get().uniqueId());
+        assertEquals(entity.getId(), entityWrapper.get().id());
 
         //Check Links to other concepts
-        Set<String> attributeIds = entity.attributes().map(a -> a.getId().getValue()).collect(Collectors.toSet());
-        Set<String> attributeWrapperIds = entityWrapper.get().attributesLinked().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        Set<Link> attributeIds = entity.attributes().map(Link::create).collect(Collectors.toSet());
+        Set<Link> attributeWrapperIds = entityWrapper.get().attributes();
         assertEquals(attributeIds, attributeWrapperIds);
 
-        Set<String> keyIds = entity.keys().map(a -> a.getId().getValue()).collect(Collectors.toSet());
-        Set<String> keyWrapperIds = entityWrapper.get().keysLinked().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        Set<Link> keyIds = entity.keys().map(Link::create).collect(Collectors.toSet());
+        Set<Link> keyWrapperIds = entityWrapper.get().keys();
         assertEquals(keyIds, keyWrapperIds);
 
-        Set<String> relationshipIds = entity.relationships().map(a -> a.getId().getValue()).collect(Collectors.toSet());
-        Set<String> relationshipWrapperIds = entityWrapper.get().relationshipsLinked().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        Set<Link> relationshipIds = entity.relationships().map(Link::create).collect(Collectors.toSet());
+        Set<Link> relationshipWrapperIds = entityWrapper.get().relationships();
         assertEquals(relationshipIds, relationshipWrapperIds);
     }
 
@@ -92,22 +88,18 @@ public class ConceptBuilderTest {
         assertTrue(entityTypeWrapper.isPresent());
 
         //Check internal data
-        assertEquals(entityType.getId(), entityTypeWrapper.get().conceptId());
-        assertEquals(entityType.keyspace(), entityTypeWrapper.get().keyspace());
-        assertEquals(Schema.BaseType.TYPE, entityTypeWrapper.get().baseType());
-        assertEquals(entityType.getLabel().getValue(), entityTypeWrapper.get().uniqueId());
+        assertEquals(entityType.getId(), entityTypeWrapper.get().id());
+        assertEquals(entityType.getLabel(), entityTypeWrapper.get().label());
         assertEquals(entityType.isAbstract(), entityTypeWrapper.get().isAbstract());
         assertEquals(entityType.isImplicit(), entityTypeWrapper.get().implicit());
-        assertEquals(entityType.getLabel(), entityTypeWrapper.get().label());
-        assertEquals(entityType.sup().getId(), entityTypeWrapper.get().superConcept().conceptId());
 
         //Check Links to other concepts
-        Set<String> supIds = entityType.subs().map(a -> a.getId().getValue()).collect(Collectors.toSet());
-        Set<String> supWrapperIds = entityTypeWrapper.get().subConcepts().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        Set<Link> supIds = entityType.subs().map(Link::create).collect(Collectors.toSet());
+        Set<Link> supWrapperIds = entityTypeWrapper.get().subs();
         assertEquals(supIds, supWrapperIds);
 
-        Set<String> playIds = entityType.plays().map(a -> a.getId().getValue()).collect(Collectors.toSet());
-        Set<String> playWrapperIds = entityTypeWrapper.get().rolesPlayed().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        Set<Link> playIds = entityType.plays().map(Link::create).collect(Collectors.toSet());
+        Set<Link> playWrapperIds = entityTypeWrapper.get().plays();
         assertEquals(playIds, playWrapperIds);
     }
 }

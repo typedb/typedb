@@ -55,30 +55,20 @@ public abstract class Link implements Jacksonisable{
         return new AutoValue_Link(id);
     }
 
-    public static Link create(ai.grakn.concept.Type type){
+    public static Link create(ai.grakn.concept.SchemaConcept schemaConcept){
+        String type = Schema.BaseType.TYPE.name().toLowerCase(Locale.getDefault());
+        if(schemaConcept.isRule()){
+            type = Schema.BaseType.RULE.name().toLowerCase(Locale.getDefault());
+        } else if(schemaConcept.isRole()){
+            type = Schema.BaseType.ROLE.name().toLowerCase(Locale.getDefault());
+        }
+
         String id = REST.resolveTemplate(
                 WebPath.CONCEPT_ID,
-                type.keyspace().getValue(),
-                Schema.BaseType.TYPE.name().toLowerCase(Locale.getDefault()),
-                type.getLabel().getValue());
+                schemaConcept.keyspace().getValue(),
+                type,
+                schemaConcept.getLabel().getValue());
         return new AutoValue_Link(id);
     }
 
-    public static Link create(ai.grakn.concept.Rule rule){
-        String id = REST.resolveTemplate(
-                WebPath.CONCEPT_ID,
-                rule.keyspace().getValue(),
-                Schema.BaseType.TYPE.name().toLowerCase(Locale.getDefault()),
-                rule.getLabel().getValue());
-        return new AutoValue_Link(id);
-    }
-
-    public static Link create(ai.grakn.concept.Role role){
-        String id = REST.resolveTemplate(
-                WebPath.CONCEPT_ID,
-                role.keyspace().getValue(),
-                Schema.BaseType.TYPE.name().toLowerCase(Locale.getDefault()),
-                role.getLabel().getValue());
-        return new AutoValue_Link(id);
-    }
 }
