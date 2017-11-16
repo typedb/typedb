@@ -213,6 +213,8 @@ void addTests(jobs) {
 // Main script to run
 def runBuild() {
 
+    throw new RuntimeException("WHOOPS I BROKE IT")
+
     //This sets properties in the Jenkins server.
     properties([
             pipelineTriggers([
