@@ -310,7 +310,7 @@ try {
     node {
         String message = "Build Failure"
 
-        if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
+        if (isMainBranch()) {
             emailext (
                     subject: statusHeader(message),
                     body: statusNotification(message),
