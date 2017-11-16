@@ -267,14 +267,12 @@ def runBuild() {
 }
 
 try {
-    throw new RuntimeException("e")
     runBuild()
 } catch (Exception e) {
     node {
-        checkout scm
         String message = "Build Failure"
 
-        if (true || (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS")) {
+        if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
             emailext (
                     subject: statusHeader(message),
                     body: statusNotification(message, 'html'),
