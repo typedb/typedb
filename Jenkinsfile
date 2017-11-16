@@ -305,7 +305,7 @@ def runBuild() {
 }
 
 try {
-//    runBuild()
+    runBuild()
 } catch (Exception e) {
     node {
         String message = "Build Failure"
