@@ -278,7 +278,7 @@ try {
         if (true || (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS")) {
             emailext (
                     subject: statusHeader(message),
-                    body: statusNotification(message, format='html'),
+                    body: statusNotification(message, 'html'),
                     recipientProviders: [[$class: 'CulpritsRecipientProvider']]
             )
         }
