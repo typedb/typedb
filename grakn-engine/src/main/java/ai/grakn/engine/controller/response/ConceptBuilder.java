@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.response;
 
 import ai.grakn.exception.GraknBackendException;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,48 +46,38 @@ public class ConceptBuilder {
         Concept response = null;
 
         if(concept.isSchemaConcept()){
-            ai.grakn.concept.SchemaConcept schemaConcept = concept.asSchemaConcept();
-            SchemaConcept sup = buildLinkOnlySchemaConcept(schemaConcept.sup());
-
-            Set<SchemaConcept> subs = schemaConcept.subs().
-                    map(ConceptBuilder::<SchemaConcept>buildLinkOnlySchemaConcept).
-                    collect(Collectors.toSet());
-
-            if(schemaConcept.isRole()){
-                response = buildRole(schemaConcept.asRole(), sup, subs);
-            } else if(schemaConcept.isRule()){
-                response = buildRule(schemaConcept.asRule(), sup, subs);
-            } else { //In this case it's a type
-                ai.grakn.concept.Type type = schemaConcept.asType();
-
-                Set<Role> rolesPlayed = type.plays().
-                        map(ConceptBuilder::<Role>buildLinkOnlySchemaConcept).
-                        collect(Collectors.toSet());
-
-                Set<AttributeType> attributes = type.attributes().
-                        map(ConceptBuilder::<AttributeType>buildLinkOnlyType).
-                        collect(Collectors.toSet());
-
-                Set<AttributeType> keys = type.keys().
-                        map(ConceptBuilder::<AttributeType>buildLinkOnlyType).
-                        collect(Collectors.toSet());
-
-
-            }
-
+            response = buildSchemaConcept(concept.asSchemaConcept());
+        } else if (concept.isThing()) {
+            response = buildThing(concept.asThing());
         } else {
             throw GraknBackendException.convertingUnknownConcept(concept);
         }
 
-
         return Optional.of((X) response);
     }
 
+    //TODO: This will scale poorly with super nodes. Need to introduce some sort of paging maybe?
+    private static Thing buildThing(ai.grakn.concept.Thing thing) {
+        Set<Attribute> attributes = thing.attributes().map(ConceptBuilder::<Attribute>buildThingLink).collect(Collectors.toSet());
+        Set<Attribute> keys = thing.attributes().map(ConceptBuilder::<Attribute>buildThingLink).collect(Collectors.toSet());
+        Set<Relationship> relationships = thing.relationships().map(ConceptBuilder::<Relationship>buildThingLink).collect(Collectors.toSet());
+
+        if(thing.isAttribute()){
+            return buildAttribute(thing.asAttribute(), attributes, keys, relationships);
+        } else if (thing.isRelationship()){
+            return buildRelationship(thing.asRelationship(), attributes, keys, relationships);
+        } else if (thing.isEntity()){
+            return buildEntity(thing.asEntity(), attributes, keys, relationships);
+        } else {
+            throw GraknBackendException.convertingUnknownConcept(thing);
+        }
+    }
+
     private static SchemaConcept buildSchemaConcept(ai.grakn.concept.SchemaConcept schemaConcept){
-        SchemaConcept sup = buildLinkOnlySchemaConcept(schemaConcept.sup());
+        SchemaConcept sup = buildSchemaLink(schemaConcept.sup());
 
         Set<SchemaConcept> subs = schemaConcept.subs().
-                map(ConceptBuilder::<SchemaConcept>buildLinkOnlySchemaConcept).
+                map(ConceptBuilder::<SchemaConcept>buildSchemaLink).
                 collect(Collectors.toSet());
 
         if(schemaConcept.isRole()){
@@ -98,17 +89,35 @@ public class ConceptBuilder {
         }
     }
 
+    private static Entity buildEntity(ai.grakn.concept.Entity entity, Set<Attribute> attributes, Set<Attribute> keys, Set<Relationship> relationships){
+        return Entity.createEmbedded(entity.keyspace(), entity.getId(), attributes, keys, relationships);
+    }
+
+    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Set<Attribute> attributes, Set<Attribute> keys, Set<Relationship> relationships){
+        return Attribute.createEmbedded(attribute.keyspace(), attribute.getId(), attributes, keys, relationships, attribute.getValue().toString());
+    }
+
+    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Set<Attribute> attributes, Set<Attribute> keys, Set<Relationship> relationships){
+        //Get all the role players and roles part of this relationship
+        Set<RolePlayer> roleplayers = new HashSet<>();
+        relationship.allRolePlayers().forEach((role, things) -> {
+            Role roleLink = buildSchemaLink(role);
+            things.forEach(thing -> roleplayers.add(RolePlayer.create(roleLink, buildThingLink(thing))));
+        });
+        return Relationship.createEmbedded(relationship.keyspace(), relationship.getId(), attributes, keys, relationships, roleplayers);
+    }
+
     private static Type buildType(ai.grakn.concept.Type type, SchemaConcept sup, Set<SchemaConcept> subs){
         Set<Role> roles = type.plays().
-                map(ConceptBuilder::<Role>buildLinkOnlySchemaConcept).
+                map(ConceptBuilder::<Role>buildSchemaLink).
                 collect(Collectors.toSet());
 
         Set<AttributeType> attributes = type.attributes().
-                map(ConceptBuilder::<AttributeType>buildLinkOnlyType).
+                map(ConceptBuilder::<AttributeType>buildTypeLink).
                 collect(Collectors.toSet());
 
         Set<AttributeType> keys = type.keys().
-                map(ConceptBuilder::<AttributeType>buildLinkOnlyType).
+                map(ConceptBuilder::<AttributeType>buildTypeLink).
                 collect(Collectors.toSet());
 
         if(type.isAttributeType()){
@@ -128,7 +137,7 @@ public class ConceptBuilder {
                 collect(Collectors.toSet());
 
         Set<Type> playedByTypes = role.playedByTypes().
-                map(ConceptBuilder::<Type>buildLinkOnlyType).collect(Collectors.toSet());
+                map(ConceptBuilder::<Type>buildTypeLink).collect(Collectors.toSet());
 
         return Role.createEmbedded(role.keyspace(), role.getId(), role.getLabel(),
                 sup, subs, role.isImplicit(), relationshipTypes, playedByTypes);
@@ -157,7 +166,7 @@ public class ConceptBuilder {
                                               Set<SchemaConcept> subs, Set<Role> plays, Set<AttributeType> attributes,
                                               Set<AttributeType> keys){
         Set<Role> relates = relationshipType.relates().
-                map(ConceptBuilder::<Role>buildLinkOnlySchemaConcept).
+                map(ConceptBuilder::<Role>buildSchemaLink).
                 collect(Collectors.toSet());
 
         return RelationshipType.createEmbedded(relationshipType.keyspace(), relationshipType.getId(), relationshipType.getLabel(),
@@ -167,20 +176,20 @@ public class ConceptBuilder {
     /**
      * Builds  a {@link SchemaConcept} response which can only serialise into a link representation.
      */
-    private static <X extends SchemaConcept> X buildLinkOnlySchemaConcept(ai.grakn.concept.SchemaConcept schemaConcept){
+    private static <X extends SchemaConcept> X buildSchemaLink(ai.grakn.concept.SchemaConcept schemaConcept){
         if(schemaConcept.isRole()){
             return (X) Role.createLinkOnly(schemaConcept.keyspace(), schemaConcept.getId(), schemaConcept.getLabel());
         } else if (schemaConcept.isRule()){
             return (X) Rule.createLinkOnly(schemaConcept.keyspace(), schemaConcept.getId(), schemaConcept.getLabel());
         } else {
-            return (X) buildLinkOnlyType(schemaConcept.asType());
+            return (X) buildTypeLink(schemaConcept.asType());
         }
     }
 
     /**
      * Builds  a {@link Type} response which can only serialise into a link representation.
      */
-    private static <X extends Type> X buildLinkOnlyType(ai.grakn.concept.Type type){
+    private static <X extends Type> X buildTypeLink(ai.grakn.concept.Type type){
         if (type.isAttributeType()){
             return (X) AttributeType.createLinkOnly(type.keyspace(), type.getId(), type.getLabel());
         } else if (type.isEntityType()){
@@ -189,6 +198,21 @@ public class ConceptBuilder {
             return (X) RelationshipType.createLinkOnly(type.keyspace(), type.getId(), type.getLabel());
         } else {
             throw GraknBackendException.convertingUnknownConcept(type);
+        }
+    }
+
+    /**
+     * Builds  a {@link Thing} response which can only serialise into a link representation.
+     */
+    private static <X extends Thing> X buildThingLink(ai.grakn.concept.Thing thing){
+        if (thing.isAttribute()){
+            return (X) Attribute.createLinkOnly(thing.keyspace(), thing.getId());
+        } else if (thing.isEntity()){
+            return (X) Entity.createLinkOnly(thing.keyspace(), thing.getId());
+        } else if (thing.isRelationship()){
+            return (X) Relationship.createLinkOnly(thing.keyspace(), thing.getId());
+        } else {
+            throw GraknBackendException.convertingUnknownConcept(thing);
         }
     }
 }
