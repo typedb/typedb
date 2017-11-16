@@ -44,21 +44,6 @@ update_classpath_global_var() {
   CLASSPATH="$CLASSPATH":./services/grakn
 }
 
-print_failure_diagnostics() {
-  echo "======== Failure Diagnostics ========"
-  echo "Grakn pid = '`cat $GRAKN_PID`' (from $GRAKN_PID), '`grakn_get_pid_by_ps_ef`' (from ps -ef)"
-  echo "Queue pid = '`cat $QUEUE_PID`' (from $QUEUE_PID), '`queue_get_pid_by_ps_ef`' (from ps -ef)"
-  echo "Storage pid = '`cat $STORAGE_PID`' (from $STORAGE_PID)"
-}
-
-print_failure_diagnostics() {
-  echo "======== Failure Diagnostics ========"
-  echo "Grakn pid = '`cat $GRAKN_PID`' (from $GRAKN_PID), '`grakn_get_pid_by_ps_ef`' (from ps -ef)"
-  echo "Queue pid = '`cat $QUEUE_PID`' (from $QUEUE_PID), '`queue_get_pid_by_ps_ef`' (from ps -ef)"
-  echo "Storage pid = '`cat $STORAGE_PID`' (from $STORAGE_PID)"
-}
-
-
 # =============================================
 # misc helper methods
 # =============================================
@@ -84,37 +69,10 @@ pushd "$GRAKN_HOME" > /dev/null
 
 update_classpath_global_var
 
-# temporarily disabling trap as it's probably not needed
-# trap handle_ctrl_c INT # run handle_ctrl_c when receiving CTRL+C
-
 print_grakn_logo
 
-case "$1" in
-  server)
-    case "$2" in
-      start)
-        java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${GRAKN_HOME} $1 $2 $3
-      ;;
-      stop)
-        java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${GRAKN_HOME} $1 $2 $3
-      ;;
-      status)
-        java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${GRAKN_HOME} $1 $2 $3
-      ;;
-      clean)
-        cli_case_grakn_server_clean
-      ;;
-      help|*)
-        java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${GRAKN_HOME} $1 $2 $3
-      ;;
-    esac
-  ;;
-  version)
-    java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${GRAKN_HOME} $1 $2 $3
-  ;;
-  *|help)
-    java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.dist.DistApplication ${GRAKN_HOME} $1 $2 $3
-  ;;
-esac
+GRAKN_CONFIG="../conf/grakn.properties"
+
+java -cp ${CLASSPATH} -Dgrakn.dir="./services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.dist.DistApplication ${GRAKN_HOME} $1 $2 $3
 
 popd > /dev/null

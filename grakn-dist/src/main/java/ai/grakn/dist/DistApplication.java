@@ -41,7 +41,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
@@ -83,10 +82,23 @@ public class DistApplication {
     public static void main(String[] args) {
         if(args.length<1) throw new RuntimeException("Errors in 'grakn' bash script");
 
-        GRAKN_HOME = args[0];
-        CLASSPATH = getClassPath();
+        GRAKN_HOME = GraknSystemProperty.CURRENT_DIRECTORY.value();
+//        System.out.println(System.getProperty("java.class.path"));
+//        System.out.println(System.getProperty("java.library.path"));
+//        System.out.println();
+//        System.out.println(GraknSystemProperty.CONFIGURATION_FILE.value());
+//        System.out.println(System.getenv());
+//        System.out.println(System.getProperties());
+//        System.out.println(System.getProperty("exec.args"));
+//
+//        System.out.println(GraknSystemProperty.CURRENT_DIRECTORY.value());
+//        System.out.println(GraknSystemProperty.CONFIGURATION_FILE.value());
+        CLASSPATH = getClassPath(GRAKN_HOME);
         GRAKN_CONFIG = GraknEngineConfig.create();
         GRAKN_CONFIG_PATH = GraknSystemProperty.CONFIGURATION_FILE.value();
+        LOG.info(GRAKN_HOME);
+        LOG.info(CLASSPATH);
+        LOG.info(GRAKN_CONFIG_PATH);
 
         String arg1 = args.length > 1 ? args[1] : "";
         String arg2 = args.length > 2 ? args[2] : "";
@@ -98,17 +110,9 @@ public class DistApplication {
 
     // TODO: check all the output for failing starting stuff
     // TODO strip out PID line
+    // TODO: test clean
 
     public void run(String[] args) {
-
-//        output.println(System.getProperty("java.class.path"));
-//        output.println(System.getProperty("java.library.path"));
-//        output.println(GraknSystemProperty.CURRENT_DIRECTORY.value());
-//        output.println(GraknSystemProperty.CONFIGURATION_FILE.value());
-//        output.println(System.getenv());
-//        output.println(System.getProperties());
-//        output.println(System.getProperty("exec.args"));
-
 
         String arg0 = args.length > 0 ? args[0] : "";
         String arg1 = args.length > 1 ? args[1] : "";
@@ -126,14 +130,15 @@ public class DistApplication {
         }
     }
 
-    private static String getClassPath(){
+    public static String getClassPath(String graknHome){
         FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
-        Stream<File> jars = Stream.of(new File(GRAKN_HOME + "/services/lib").listFiles(jarFiles));
-        File conf = new File(GRAKN_HOME + "/conf/");
-        File graknLogback = new File(GRAKN_HOME + "/services/grakn/");
+        Stream<File> jars = Stream.of(new File(graknHome + "/services/lib").listFiles(jarFiles));
+        File conf = new File(graknHome + "/conf/");
+        File graknLogback = new File(graknHome + "/services/grakn/");
         return ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(File::getAbsolutePath)
+                .sorted() // we need to sort otherwise it doesn't load logback configuration
                 .collect(joining(":"));
     }
 
@@ -169,7 +174,7 @@ public class DistApplication {
                 cli_case_grakn_server_stop(arg2);
                 break;
             case "status":
-                cli_case_grakn_server_status();
+                cli_case_grakn_server_status(arg2);
                 break;
             case "clean":
                 cli_case_grakn_server_clean();
@@ -464,22 +469,18 @@ public class DistApplication {
         output.print("Starting Grakn...");
         output.flush();
 
-        String command = "java -cp " + CLASSPATH + " -Dgrakn.dir=" + GRAKN_HOME + "/services -Dgrakn.conf="+GRAKN_CONFIG_PATH+" ai.grakn.engine.Grakn";
-        LOG.info(command);
+        String command = "java -cp " + CLASSPATH + " -Dgrakn.dir=" + GRAKN_HOME + "/services -Dgrakn.conf="+GRAKN_CONFIG_PATH+" ai.grakn.engine.Grakn &";
+//        LOG.info(command);
 
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 command}, null, null);
 
-        OutputCommand outputCommand = executeAndWait(new String[]{
-                "/bin/sh",
-                "-c",
-                "ps -ef | grep " + Grakn.class.getName() + " | grep -v grep | awk '{ print $2}' "
-        }, null, null);
+        String pid = getPidOf(Grakn.class.getName());
 
         try {
-            Files.write(Paths.get(GRAKN_PID),outputCommand.output.getBytes(StandardCharsets.UTF_8));
+            Files.write(Paths.get(GRAKN_PID),pid.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             output.println("Cannot write Grakn PID on a file");
         }
@@ -516,6 +517,14 @@ public class DistApplication {
 
         output.println("FAILED!");
         output.println("Unable to start Grakn");
+    }
+
+    private String getPidOf(String processName) {
+        return executeAndWait(new String[]{
+                    "/bin/sh",
+                    "-c",
+                    "ps -ef | grep " + processName + " | grep -v grep | awk '{ print $2}' "
+            }, null, null).output;
     }
 
     private boolean grakn_check_if_ready(String host, int port) {
@@ -709,7 +718,7 @@ public class DistApplication {
                 "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n");
     }
 
-    private void cli_case_grakn_server_status() {
+    private void cli_case_grakn_server_status(String arg2) {
         if (storage_check_if_running_by_pidfile()) {
             output.println("Storage: RUNNING");
         } else {
@@ -727,7 +736,24 @@ public class DistApplication {
         } else {
             output.println("Grakn: NOT RUNNING");
         }
-        // TODO: case $1 --verbose print_failure_diagnostics
+        if(arg2.equals("--verbose")) {
+            output.println("======== Failure Diagnostics ========");
+            output.println("Grakn pid = '"+get_pid_from_file(GRAKN_PID)+"' (from "+GRAKN_PID+"), '"+getPidOf(Grakn.class.getName())+"' (from ps -ef)");
+            output.println("Queue pid = '"+get_pid_from_file(QUEUE_PID)+"' (from "+QUEUE_PID+"), '"+getPidOf("redis-server")+"' (from ps -ef)");
+            output.println("Storage pid = '"+get_pid_from_file(STORAGE_PID)+"' (from "+STORAGE_PID+"), '"+getPidOf("CassandraDaemon")+"' (from ps -ef)");
+        }
+    }
+
+    private String get_pid_from_file(String fileName) {
+        String pid="";
+        if (Files.exists(Paths.get(fileName))) {
+            try {
+                pid = new String(Files.readAllBytes(Paths.get(fileName))).trim();
+            } catch (IOException e) {
+                // DO NOTHING
+            }
+        }
+        return pid;
     }
 
     private OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
@@ -735,7 +761,7 @@ public class DistApplication {
         StringBuffer outputS = new StringBuffer();
         int exitValue = 1;
 
-        LOG.info(Arrays.toString(cmdarray));
+//        LOG.info(Arrays.toString(cmdarray));
         Process p;
         BufferedReader reader = null;
         try {
@@ -768,7 +794,7 @@ public class DistApplication {
             }
         }
         OutputCommand outputCommand = new OutputCommand(outputS.toString().trim(), exitValue);
-        LOG.info(outputCommand.toString());
+//        LOG.info(outputCommand.toString());
         return outputCommand;
     }
 

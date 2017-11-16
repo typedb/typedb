@@ -20,6 +20,9 @@ public class DistApplicationIT {
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final ByteArrayInputStream inContent = null;
 
+    // TODO: test pid files
+    // TODO: test log files
+
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
@@ -52,12 +55,14 @@ public class DistApplicationIT {
         DistApplication.main(new String[]{"server","stop","queue"});
         DistApplication.main(new String[]{"server","stop","storage"});
     }
+    @Ignore
     @Test
     public void server_status() {
         exit.checkAssertionAfterwards(() -> {
             Assert.assertTrue(outContent.toString().startsWith("Storage: "));
         });
         underTest.run(new String[]{"server","status"});
+        underTest.run(new String[]{"server","status","--verbose"}); //TODO:
     }
 
     @Ignore
@@ -65,6 +70,7 @@ public class DistApplicationIT {
     public void server_clean() {
         DistApplication.main(new String[]{"server","clean"});
     }
+    @Ignore
     @Test
     public void server_help() {
         exit.checkAssertionAfterwards(() -> {
@@ -73,6 +79,7 @@ public class DistApplicationIT {
         underTest.run(new String[]{"server","help"});
     }
 
+    @Ignore
     @Test
     public void noArguments() {
         exit.checkAssertionAfterwards(() -> {
@@ -81,6 +88,7 @@ public class DistApplicationIT {
         underTest.run(new String[]{""});
     }
 
+    @Ignore
     @Test
     public void wrongArguments() {
         exit.checkAssertionAfterwards(() -> {
@@ -89,6 +97,7 @@ public class DistApplicationIT {
         underTest.run(new String[]{"WRONG ARG"});
     }
 
+    @Ignore
     @Test
     public void version() {
         exit.expectSystemExitWithStatus(0);
@@ -97,6 +106,7 @@ public class DistApplicationIT {
         underTest.run(new String[]{"version"});
     }
 
+    @Ignore
     @Test
     public void help() {
         exit.checkAssertionAfterwards(() -> {
