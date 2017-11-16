@@ -28,6 +28,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.assertEquals;
@@ -61,48 +62,53 @@ public class ConceptBuilderTest {
         Optional<Entity> entityWrapper = ConceptBuilder.build(entity);
 
         assertTrue(entityWrapper.isPresent());
+
+        //Check internal data
         assertEquals(entity.getId(), entityWrapper.get().conceptId());
         assertEquals(entity.keyspace(), entityWrapper.get().keyspace());
-        assertEquals(Schema.BaseType.ENTITY, entityWrapper.get().baseType());
+        assertEquals(Schema.BaseType.CONCEPT, entityWrapper.get().baseType());
         assertEquals(entity.getId().getValue(), entityWrapper.get().uniqueId());
-        assertEquals(entity.attributes().collect(Collectors.toSet()), entityWrapper.get().attributesLinked());
-        assertEquals(entity.keys().collect(Collectors.toSet()), entityWrapper.get().keysLinked());
-        assertEquals(entity.relationships().collect(Collectors.toSet()), entityWrapper.get().relationshipsLinked());
+
+        //Check Links to other concepts
+        Set<String> attributeIds = entity.attributes().map(a -> a.getId().getValue()).collect(Collectors.toSet());
+        Set<String> attributeWrapperIds = entityWrapper.get().attributesLinked().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        assertEquals(attributeIds, attributeWrapperIds);
+
+        Set<String> keyIds = entity.keys().map(a -> a.getId().getValue()).collect(Collectors.toSet());
+        Set<String> keyWrapperIds = entityWrapper.get().keysLinked().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        assertEquals(keyIds, keyWrapperIds);
+
+        Set<String> relationshipIds = entity.relationships().map(a -> a.getId().getValue()).collect(Collectors.toSet());
+        Set<String> relationshipWrapperIds = entityWrapper.get().relationshipsLinked().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        assertEquals(relationshipIds, relationshipWrapperIds);
     }
 
     @Test
     public void whenWrappingEntityType_EnsureEntityTypeDetailsAreWrapped(){
+        ai.grakn.concept.EntityType entityType = tx.getEntityType("person");
 
-    }
+        Optional<EntityType> entityTypeWrapper = ConceptBuilder.build(entityType);
 
-    @Test
-    public void whenWrappingRelationship_EnsureRelationshipDetailsAreWrapped(){
+        assertTrue(entityTypeWrapper.isPresent());
 
-    }
+        //Check internal data
+        assertEquals(entityType.getId(), entityTypeWrapper.get().conceptId());
+        assertEquals(entityType.keyspace(), entityTypeWrapper.get().keyspace());
+        assertEquals(Schema.BaseType.TYPE, entityTypeWrapper.get().baseType());
+        assertEquals(entityType.getLabel().getValue(), entityTypeWrapper.get().uniqueId());
+        assertEquals(entityType.isAbstract(), entityTypeWrapper.get().isAbstract());
+        assertEquals(entityType.isImplicit(), entityTypeWrapper.get().isImplicit());
+        assertEquals(entityType.getLabel(), entityTypeWrapper.get().label());
+        assertEquals(entityType.sup().getId(), entityTypeWrapper.get().superConcept().conceptId());
 
-    @Test
-    public void whenWrappingRelationshipType_EnsureRelationshipTypeDetailsAreWrapped(){
+        //Check Links to other concepts
+        Set<String> supIds = entityType.subs().map(a -> a.getId().getValue()).collect(Collectors.toSet());
+        Set<String> supWrapperIds = entityTypeWrapper.get().subConcepts().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        assertEquals(supIds, supWrapperIds);
 
-    }
-
-    @Test
-    public void whenWrappingAttribute_EnsureAttributeDetailsAreWrapped(){
-
-    }
-
-    @Test
-    public void whenWrappingAttributeType_EnsureAttributeTypeDetailsAreWrapped(){
-
-    }
-
-    @Test
-    public void whenWrappingRole_EnsureRoleDetailsAreWrapped(){
-
-    }
-
-    @Test
-    public void whenWrappingRuleType_EnsureRuleDetailsAreWrapped(){
-
+        Set<String> playIds = entityType.plays().map(a -> a.getId().getValue()).collect(Collectors.toSet());
+        Set<String> playWrapperIds = entityTypeWrapper.get().rolesPlayed().stream().map(a -> a.conceptId().getValue()).collect(Collectors.toSet());
+        assertEquals(playIds, playWrapperIds);
     }
 }
 
