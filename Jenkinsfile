@@ -295,7 +295,13 @@ try {
     runBuild()
 } catch (Exception e) {
     node {
-        slackGithub "Build Failure", "danger"
+        if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
+            slackGithub "@here Build Failure", "danger"
+        } else {
+            slackGithub "Build Failure", "danger"
+        }
     }
+
+
     throw e
 }
