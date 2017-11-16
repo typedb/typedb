@@ -9,20 +9,23 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Scanner;
 
 public class DistApplicationIT {
 
     private DistApplication underTest;
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    private final ByteArrayInputStream inContent = null;
 
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Before
     public void setup() {
-        underTest = new DistApplication(new PrintStream(outContent));
+        underTest = new DistApplication(new Scanner(inContent),new PrintStream(outContent));
 
         System.setOut(new PrintStream(outContent));
     }

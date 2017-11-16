@@ -130,7 +130,7 @@
             <outputDirectory>services/lib</outputDirectory>
             <unpack>false</unpack>
             <scope>runtime</scope>
-            <useProjectArtifact>true</useProjectArtifact>
+            <useProjectArtifact>false</useProjectArtifact>
             <includes>
                 <include>*:*:jar:*</include>
             </includes>
