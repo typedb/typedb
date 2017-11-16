@@ -39,7 +39,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  *
@@ -63,9 +62,7 @@ public class IsaAtom extends TypeAtom {
     protected IsaAtom(TypeAtom a) { super(a);}
 
     @Override
-    public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(IsaProperty.class));
-    }
+    public Class<? extends VarProperty> getVarPropertyClass() { return IsaProperty.class;}
 
     @Override
     public boolean isAllowedToFormRuleHead(){

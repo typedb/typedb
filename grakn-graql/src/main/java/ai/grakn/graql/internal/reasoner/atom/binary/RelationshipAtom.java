@@ -140,9 +140,7 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(RelationshipProperty.class));
-    }
+    public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
 
     @Override
     public RelationshipAtom toRelationshipAtom(){ return this;}
