@@ -67,7 +67,7 @@ class Constants {
 }
 
 String statusHeader(String message) {
-    return "${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} ${link}\n${author}"
+    return "${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
 }
 
 String statusNotification(String message) {
