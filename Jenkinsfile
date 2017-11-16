@@ -38,16 +38,15 @@ String statusNotification(String message, String format='slack') {
 
     String author = "authored by - ${user}"
 
-    String link
     if (format == 'slack') {
-        link = "(<${env.BUILD_URL}|Open>)"
+        String link = "(<${env.BUILD_URL}|Open>)"
+        return "${statusHeader(message)} ${link}\n${author}"
     } else if (format == 'html') {
-        link = '<a href="${env.BUILD_URL}">Open</a>'
+        String link = '<a href="${env.BUILD_URL}">Open</a>'
+        return "<p>${statusHeader(message)} ${link}\n${author}</p>"
     } else {
         throw new RuntimeException("Unrecognised format ${format}")
     }
-
-    return "${statusHeader(message)} ${link}\n${author}"
 }
 
 def slackGithub(String message, String color = null) {
@@ -279,6 +278,7 @@ try {
             emailext (
                     subject: statusHeader(message),
                     body: statusNotification(message, 'html'),
+                    mimeType: 'text/html',
                     recipientProviders: [[$class: 'CulpritsRecipientProvider']]
             )
         }
