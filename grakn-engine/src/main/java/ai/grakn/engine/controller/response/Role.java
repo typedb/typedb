@@ -20,11 +20,10 @@ package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.util.Schema;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -37,41 +36,22 @@ import java.util.Set;
 @AutoValue
 public abstract class Role extends SchemaConcept{
 
-    @Nullable
-    public abstract Set<RelationshipType> relationshipTypes();
-
-    @Nullable
-    public abstract Set<Type> roleplayerTypes();
+    @JsonProperty
+    public abstract Set<Link> relationships();
 
     @JsonProperty
-    public Set<String> relationships(){
-        return extractIds(relationshipTypes());
-    }
+    public abstract Set<Link> roleplayers();
 
-    @JsonProperty
-    public Set<String> roleplayers(){
-        return extractIds(roleplayerTypes());
-    }
-
-    @Override
-    public Schema.BaseType baseType(){
-        return Schema.BaseType.ROLE;
-    }
-
-    public static Role createEmbedded(
-        ai.grakn.Keyspace keyspace,
-        ConceptId conceptId,
-        Label label,
-        SchemaConcept superConcept,
-        Set<SchemaConcept> subConcepts,
-        Boolean isImplicit,
-        Set<RelationshipType> relationshipTypes,
-        Set<Type> roleplayerTypes){
-
-        return new AutoValue_Role(keyspace, conceptId, superConcept, subConcepts, label, isImplicit, relationshipTypes, roleplayerTypes);
-    }
-
-    public static Role createLinkOnly(ai.grakn.Keyspace keyspace, ConceptId conceptId, Label label){
-        return new AutoValue_Role(keyspace, conceptId, null, null, label, null, null, null);
+    @JsonCreator
+    public static Role create(
+            ConceptId id,
+            @JsonProperty("@id") Link selfLink,
+            Label label,
+            Boolean implicit,
+            @JsonProperty("super") Link sup,
+            Set<Link> subs,
+            Set<Link> relationships,
+            Set<Link> roleplayers){
+        return new AutoValue_Role(id, selfLink, label, implicit, sup, subs, relationships, roleplayers);
     }
 }

@@ -97,7 +97,7 @@ public class ConceptBuilderTest {
         assertEquals(Schema.BaseType.TYPE, entityTypeWrapper.get().baseType());
         assertEquals(entityType.getLabel().getValue(), entityTypeWrapper.get().uniqueId());
         assertEquals(entityType.isAbstract(), entityTypeWrapper.get().isAbstract());
-        assertEquals(entityType.isImplicit(), entityTypeWrapper.get().isImplicit());
+        assertEquals(entityType.isImplicit(), entityTypeWrapper.get().implicit());
         assertEquals(entityType.getLabel(), entityTypeWrapper.get().label());
         assertEquals(entityType.sup().getId(), entityTypeWrapper.get().superConcept().conceptId());
 

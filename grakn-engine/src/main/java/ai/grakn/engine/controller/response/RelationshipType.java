@@ -20,10 +20,10 @@ package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -36,31 +36,22 @@ import java.util.Set;
 @AutoValue
 public abstract class RelationshipType extends Type{
 
-    @Nullable
-    public abstract Set<Role> rolesLinked();
-
     @JsonProperty
-    public Set<String> relates(){
-        return extractIds(rolesLinked());
-    }
+    public abstract Set<Link> relates();
 
-    public static RelationshipType createEmbedded(
-            ai.grakn.Keyspace keyspace,
-            ConceptId conceptId,
+    @JsonCreator
+    public static RelationshipType create(
+            ConceptId id,
+            @JsonProperty("@id") Link selfLink,
             Label label,
-            SchemaConcept superConcept,
-            Set<SchemaConcept> subConcepts,
-            Boolean isImplicit,
-            Boolean isAbstract,
-            Set<Role> rolesPlayed,
-            Set<AttributeType> attributesLinked,
-            Set<AttributeType> keysLinked,
-            Set<Role> rolesLinked){
-
-        return new AutoValue_RelationshipType(keyspace, conceptId, superConcept, subConcepts, label, isImplicit, isAbstract, rolesPlayed, attributesLinked, keysLinked, rolesLinked);
-    }
-
-    public static RelationshipType createLinkOnly(ai.grakn.Keyspace keyspace, ConceptId conceptId, Label label){
-        return new AutoValue_RelationshipType(keyspace, conceptId, null, null, label, null, null, null, null, null, null);
+            Boolean implicit,
+            @JsonProperty("super") Link sup,
+            Set<Link> subs,
+            @JsonProperty("abstract") Boolean isAbstract,
+            Set<Link> plays,
+            Set<Link> attributes,
+            Set<Link> keys,
+            Set<Link> relates){
+        return new AutoValue_RelationshipType(id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys, relates);
     }
 }

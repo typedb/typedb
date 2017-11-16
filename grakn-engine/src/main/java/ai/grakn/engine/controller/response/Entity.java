@@ -19,6 +19,8 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import java.util.Set;
@@ -33,17 +35,13 @@ import java.util.Set;
 @AutoValue
 public abstract class Entity extends Thing {
 
-    public static Entity createEmbedded(
-            ai.grakn.Keyspace keyspace,
-            ConceptId conceptId,
-            Set<Attribute> attributesLinked,
-            Set<Attribute> keysLinked,
-            Set<Relationship> relationshipsLinked){
-
-        return new AutoValue_Entity(keyspace, conceptId, attributesLinked, keysLinked, relationshipsLinked);
-    }
-
-    public static Entity createLinkOnly(ai.grakn.Keyspace keyspace, ConceptId conceptId){
-        return new AutoValue_Entity(keyspace, conceptId, null, null, null);
+    @JsonCreator
+    public static Entity create(
+            ConceptId id,
+            @JsonProperty("@id") Link selfLink,
+            Set<Link> attributes,
+            Set<Link> keys,
+            Set<Link> relationships){
+        return new AutoValue_Entity(id, selfLink, attributes, keys, relationships);
     }
 }

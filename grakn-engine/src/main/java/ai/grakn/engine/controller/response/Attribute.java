@@ -19,10 +19,10 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -36,21 +36,16 @@ import java.util.Set;
 public abstract class Attribute extends Thing {
 
     @JsonProperty
-    @Nullable
     public abstract String value();
 
-    public static Attribute createEmbedded(
-            ai.grakn.Keyspace keyspace,
-            ConceptId conceptId,
-            Set<Attribute> attributesLinked,
-            Set<Attribute> keysLinked,
-            Set<Relationship> relationshipsLinked,
+    @JsonCreator
+    public static Attribute create(
+            ConceptId id,
+            @JsonProperty("@id") Link selfLink,
+            Set<Link> attributes,
+            Set<Link> keys,
+            Set<Link> relationships,
             String value){
-
-        return new AutoValue_Attribute(keyspace, conceptId, attributesLinked, keysLinked, relationshipsLinked, value);
-    }
-
-    public static Attribute createLinkOnly(ai.grakn.Keyspace keyspace, ConceptId conceptId){
-        return new AutoValue_Attribute(keyspace, conceptId, null, null, null, null);
+        return new AutoValue_Attribute(id, selfLink, attributes, keys, relationships, value);
     }
 }

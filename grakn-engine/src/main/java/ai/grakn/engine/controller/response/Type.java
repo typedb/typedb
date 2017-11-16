@@ -18,10 +18,8 @@
 
 package ai.grakn.engine.controller.response;
 
-import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -33,36 +31,16 @@ import java.util.Set;
  */
 public abstract class Type extends SchemaConcept{
 
-    @Nullable
     @JsonProperty("abstract")
     public abstract Boolean isAbstract();
 
-    @Nullable
-    public abstract Set<Role> rolesPlayed();
-
-    @Nullable
-    public abstract Set<AttributeType> attributesLinked();
-
-    @Nullable
-    public abstract Set<AttributeType> keysLinked();
+    @JsonProperty
+    public abstract Set<Link> plays();
 
     @JsonProperty
-    public Set<String> plays(){
-        return extractIds(rolesPlayed());
-    }
+    public abstract Set<Link> attributes();
 
     @JsonProperty
-    public Set<String> attributes(){
-        return extractIds(attributesLinked());
-    }
+    public abstract Set<Link> keys();
 
-    @JsonProperty
-    public Set<String> keys(){
-        return extractIds(keysLinked());
-    }
-
-    @Override
-    public Schema.BaseType baseType(){
-        return Schema.BaseType.TYPE;
-    }
 }

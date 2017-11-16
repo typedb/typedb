@@ -20,14 +20,7 @@ package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.Jacksonisable;
-import ai.grakn.util.REST;
-import ai.grakn.util.REST.WebPath;
-import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -38,27 +31,10 @@ import java.util.stream.Collectors;
  */
 public abstract class Concept implements Jacksonisable{
 
-    public abstract ai.grakn.Keyspace keyspace();
-
-    public abstract ConceptId conceptId();
-
-    public Schema.BaseType baseType(){
-        return Schema.BaseType.CONCEPT;
-    }
-
-    public String uniqueId(){
-        return conceptId().getValue();
-    }
+    @JsonProperty("id")
+    public abstract ConceptId id();
 
     @JsonProperty("@id")
-    public String id(){
-        return REST.resolveTemplate(WebPath.CONCEPT_ID,
-                keyspace().getValue(),
-                baseType().getClassType().getName().toLowerCase(Locale.getDefault()),
-                uniqueId());
-    }
+    public abstract Link selfLink();
 
-    public static Set<String> extractIds(Set<? extends Concept> concepts){
-        return concepts.stream().map(Concept::id).collect(Collectors.toSet());
-    }
 }

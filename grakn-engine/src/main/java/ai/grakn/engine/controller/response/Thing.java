@@ -20,7 +20,6 @@ package ai.grakn.engine.controller.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -32,27 +31,12 @@ import java.util.Set;
  */
 public abstract class Thing extends Concept {
 
-    @Nullable
-    public abstract Set<Attribute> attributesLinked();
-
-    @Nullable
-    public abstract Set<Attribute> keysLinked();
-
-    @Nullable
-    public abstract Set<Relationship> relationshipsLinked();
+    @JsonProperty
+    public abstract Set<Link> attributes();
 
     @JsonProperty
-    public Set<String> attributes(){
-       return extractIds(attributesLinked());
-    }
+    public abstract Set<Link> keys();
 
     @JsonProperty
-    public Set<String> keys(){
-        return extractIds(keysLinked());
-    }
-
-    @JsonProperty
-    public Set<String> relationships(){
-        return extractIds(relationshipsLinked());
-    }
+    public abstract Set<Link> relationships();
 }

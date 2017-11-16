@@ -32,21 +32,13 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class RolePlayer implements Jacksonisable{
 
-    public abstract Role roleLinked();
-
-    public abstract Thing thingLinked();
+    @JsonProperty
+    public abstract Link role();
 
     @JsonProperty
-    public String role(){
-        return roleLinked().id();
-    }
+    public abstract Link thing();
 
-    @JsonProperty
-    public String thing(){
-        return thingLinked().id();
-    }
-
-    public static RolePlayer create(Role role, Thing thing){
+    public static RolePlayer create(Link role, Link thing){
         return new AutoValue_RolePlayer(role, thing);
     }
 }
