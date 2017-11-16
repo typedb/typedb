@@ -53,7 +53,6 @@ public class REST {
          * Concept Specific operations
          */
         public static final String CONCEPT_ID = "/kb/:keyspace/:base-type/:id";
-        public static final String TYPE_LABEL = "/kb/:keyspace/type/:label";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 

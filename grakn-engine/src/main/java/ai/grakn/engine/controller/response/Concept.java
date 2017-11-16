@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.Jacksonisable;
 import ai.grakn.util.REST;
 import ai.grakn.util.REST.WebPath;
 import ai.grakn.util.Schema;
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public abstract class Concept {
+public abstract class Concept implements Jacksonisable{
 
     public abstract ai.grakn.Keyspace keyspace();
 

@@ -37,6 +37,7 @@ import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -143,13 +144,24 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return vertex().property(Schema.VertexProperty.INDEX);
     }
 
-    /**
-     *
-     * @return All the {@link Attribute} that this Thing is linked with
-     */
+    @Override
     public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
         Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::getId).collect(Collectors.toSet());
         return attributes(getShortcutNeighbours(), attributeTypesIds);
+    }
+
+    @Override
+    public Stream<Attribute<?>> keys(AttributeType... attributeTypes){
+        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::getId).collect(Collectors.toSet());
+        Set<ConceptId> keyTypeIds = type().keys().map(Concept::getId).collect(Collectors.toSet());
+
+        if(!attributeTypesIds.isEmpty()){
+            keyTypeIds = Sets.intersection(attributeTypesIds, keyTypeIds);
+        }
+
+        if(keyTypeIds.isEmpty()) return Stream.empty();
+
+        return attributes(getShortcutNeighbours(), keyTypeIds);
     }
 
     /**

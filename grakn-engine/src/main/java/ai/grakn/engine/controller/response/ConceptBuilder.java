@@ -40,7 +40,7 @@ public class ConceptBuilder {
      * @param concept The {@link ai.grakn.concept.Concept} to be converted into a response object
      * @return the response object wrapper {@link Concept}
      */
-    public static <X extends Concept> Optional<X> build(ai.grakn.Keyspace keyspace, ai.grakn.concept.Concept concept){
+    public static <X extends Concept> Optional<X> build(ai.grakn.concept.Concept concept){
         if(concept == null) return Optional.empty();
 
         Concept response = null;
@@ -59,7 +59,7 @@ public class ConceptBuilder {
     //TODO: This will scale poorly with super nodes. Need to introduce some sort of paging maybe?
     private static Thing buildThing(ai.grakn.concept.Thing thing) {
         Set<Attribute> attributes = thing.attributes().map(ConceptBuilder::<Attribute>buildThingLink).collect(Collectors.toSet());
-        Set<Attribute> keys = thing.attributes().map(ConceptBuilder::<Attribute>buildThingLink).collect(Collectors.toSet());
+        Set<Attribute> keys = thing.keys().map(ConceptBuilder::<Attribute>buildThingLink).collect(Collectors.toSet());
         Set<Relationship> relationships = thing.relationships().map(ConceptBuilder::<Relationship>buildThingLink).collect(Collectors.toSet());
 
         if(thing.isAttribute()){
