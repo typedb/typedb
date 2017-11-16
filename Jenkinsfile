@@ -44,7 +44,7 @@ String statusNotification(String message, format='slack') {
     } else if (format == 'html') {
         link = '<a href="${env.BUILD_URL}">Open</a>'
     } else {
-        throw new IllegalArgumentException("Unrecognised format ${format}")
+        throw new RuntimeException("Unrecognised format ${format}")
     }
 
     return "${statusHeader(message)} ${link}\n${author}"
