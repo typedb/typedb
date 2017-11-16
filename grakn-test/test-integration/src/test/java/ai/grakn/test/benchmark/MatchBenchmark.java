@@ -31,8 +31,8 @@ public class MatchBenchmark extends BenchmarkTest {
 
     @Setup
     public void setup() throws Throwable {
-        GraknTx graphEntity = sessionContext.newSession().open(GraknTxType.WRITE);
         GraknSession session = sessionContext.newSession();
+        GraknTx graphEntity = session.open(GraknTxType.WRITE);
         EntityType entityType = graphEntity.putEntityType(BENCHMARK_ENTITY_TYPE);
         AttributeType<String> attributeType =
                 graphEntity.putAttributeType(BENCHMARK_ATTRIBUTE_TYPE, AttributeType.DataType.STRING);

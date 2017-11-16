@@ -171,7 +171,7 @@ public class EngineContext extends CompositeTestRule {
         server = GraknCreator.cleanGraknEngineServer(config);
         server.start();
 
-        LOG.info("engine started.");
+        LOG.info("engine started on " + uri());
     }
 
     @Override
