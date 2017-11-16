@@ -166,6 +166,8 @@ Closure createTestJob(split, i, testTimeout) {
         graknNode { workspace ->
             checkout scm
 
+            throw new RuntimeException("WHOOPS I BROKE IT")
+
             def mavenVerify = 'clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
 
             /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
@@ -213,8 +215,6 @@ void addTests(jobs) {
 // Main script to run
 def runBuild() {
 
-    throw new RuntimeException("WHOOPS I BROKE IT")
-
     //This sets properties in the Jenkins server.
     properties([
             pipelineTriggers([
@@ -238,6 +238,8 @@ def runBuild() {
         graknNode { workspace ->
             checkout scm
 
+            throw new RuntimeException("WHOOPS I BROKE IT")
+
             stage('Build Grakn') {
                 buildGrakn()
 
@@ -251,6 +253,8 @@ def runBuild() {
         jobs['benchmarks'] = {
             graknNode { workspace ->
                 checkout scm
+
+                throw new RuntimeException("WHOOPS I BROKE IT")
                 unstash 'dist'
 
                 timeout(60) {
@@ -267,6 +271,8 @@ def runBuild() {
             jobs[moduleName] = {
                 graknNode { String workspace ->
                     checkout scm
+
+                    throw new RuntimeException("WHOOPS I BROKE IT")
                     unstash 'dist'
 
                     runIntegrationTest(workspace, moduleName)
