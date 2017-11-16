@@ -33,7 +33,7 @@ String statusHeader(String message) {
     return "${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
 }
 
-String statusNotification(String message, format='slack') {
+String statusNotification(String message, String format='slack') {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
 
     String author = "authored by - ${user}"
