@@ -22,6 +22,7 @@ import ai.grakn.concept.ConceptId;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -34,6 +35,7 @@ import java.util.Set;
 @AutoValue
 public abstract class Relationship extends Thing {
 
+    @Nullable
     @JsonProperty
     public abstract Set<RolePlayer> roleplayers();
 

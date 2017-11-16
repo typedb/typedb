@@ -24,6 +24,7 @@ import ai.grakn.util.REST.WebPath;
 import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,7 +53,7 @@ public abstract class Concept {
     public String id(){
         return REST.resolveTemplate(WebPath.CONCEPT_ID,
                 keyspace().getValue(),
-                baseType().getClassType().getName().toLowerCase(),
+                baseType().getClassType().getName().toLowerCase(Locale.getDefault()),
                 uniqueId());
     }
 
