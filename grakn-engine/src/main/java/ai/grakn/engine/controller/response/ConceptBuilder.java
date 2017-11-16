@@ -94,12 +94,12 @@ public class ConceptBuilder {
         } else if(schemaConcept.isRule()){
             return buildRule(schemaConcept.asRule(), sup, subs);
         } else {
-            return buildType(schemaConcept.asType());
+            return buildType(schemaConcept.asType(), sup, subs);
         }
     }
 
-    private static Type buildType(ai.grakn.concept.Type type){
-        Set<Role> rolesPlayed = type.plays().
+    private static Type buildType(ai.grakn.concept.Type type, SchemaConcept sup, Set<SchemaConcept> subs){
+        Set<Role> roles = type.plays().
                 map(ConceptBuilder::<Role>buildLinkOnlySchemaConcept).
                 collect(Collectors.toSet());
 
@@ -112,11 +112,11 @@ public class ConceptBuilder {
                 collect(Collectors.toSet());
 
         if(type.isAttributeType()){
-
+            return buildAttributeType(type.asAttributeType(), sup, subs, roles, attributes, keys);
         } else if (type.isEntityType()){
-
+            return buildEntityType(type.asEntityType(), sup, subs, roles, attributes, keys);
         } else if (type.isRelationshipType()){
-
+            return buildRelationshipType(type.asRelationshipType(), sup, subs, roles, attributes, keys);
         } else {
             throw GraknBackendException.convertingUnknownConcept(type);
         }
