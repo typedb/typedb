@@ -66,16 +66,21 @@ class Constants {
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
 }
 
-def slackGithub(String message, String color = null) {
+String statusHeader(String message) {
+    return "${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} ${link}\n${author}"
+}
+
+String statusNotification(String message) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
 
     String author = "authored by - ${user}"
     String link = "(<${env.BUILD_URL}|Open>)"
-    String branch = env.BRANCH_NAME
 
-    String formattedMessage = "${message} on ${branch}: ${env.JOB_NAME} #${env.BUILD_NUMBER} ${link}\n${author}"
+    return "${statusHeader(message)} ${link}\n${author}"
+}
 
-    slackSend channel: "#github", color: color, message: formattedMessage
+def slackGithub(String message, String color = null) {
+    slackSend channel: "#github", color: color, message: statusNotification(message)
 }
 
 def runIntegrationTest(String workspace, String moduleName) {
@@ -295,10 +300,17 @@ try {
     runBuild()
 } catch (Exception e) {
     node {
+        String message = "Build Failure"
         if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
-            slackGithub "@here Build Failure", "danger"
+            slackGithub "@here ${message}", "danger"
+
+            emailext (
+                    subject: statusHeader(message),
+                    body: statusNotification(message),
+                    recipientProviders: [[$class: 'CulpritsRecipientProvider']]
+            )
         } else {
-            slackGithub "Build Failure", "danger"
+            slackGithub message, "danger"
         }
     }
 
