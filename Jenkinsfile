@@ -301,17 +301,16 @@ try {
 } catch (Exception e) {
     node {
         String message = "Build Failure"
-        if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
-            slackGithub "@here ${message}", "danger"
 
+        if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
             emailext (
                     subject: statusHeader(message),
                     body: statusNotification(message),
                     recipientProviders: [[$class: 'CulpritsRecipientProvider']]
             )
-        } else {
-            slackGithub message, "danger"
         }
+
+        slackGithub message, "danger"
     }
 
 
