@@ -125,7 +125,6 @@ public class REST {
         // Request parameters
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE = "keyspace";
-        public static final String KEYSPACE_PARAM = KEYSPACE;
         public static final String TASK_STATUS_PARAMETER = "status";
         public static final String TASK_CLASS_NAME_PARAMETER = "className";
         public static final String TASK_CREATOR_PARAMETER = "creator";
