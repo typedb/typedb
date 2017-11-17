@@ -58,7 +58,7 @@ public class TxFactoryJanusTest extends JanusTestBase {
     public static void setupClass() throws InterruptedException {
         sharedGraph = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
         when(session.uri()).thenReturn(Grakn.IN_MEMORY);
-        when(session.config()).thenReturn(TEST_PROPERTIES);
+        when(session.config()).thenReturn(TEST_CONFIG);
     }
 
     @Test

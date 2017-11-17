@@ -1,7 +1,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Printer;
@@ -88,7 +88,7 @@ public class GraqlControllerTest {
 
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
-                .createAndLoadSystemSchema(mockLockProvider, GraknEngineConfig.create());
+                .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
         new GraqlController(factory, spark, new MetricRegistry());
     });
 

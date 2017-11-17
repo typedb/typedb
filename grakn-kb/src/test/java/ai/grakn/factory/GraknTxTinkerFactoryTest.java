@@ -22,6 +22,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
@@ -32,10 +33,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
+import java.io.File;
+import java.nio.file.Paths;
 
 import static ai.grakn.util.ErrorMessage.TRANSACTION_ALREADY_OPEN;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -46,20 +45,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GraknTxTinkerFactoryTest {
-    private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
-    private final static Properties TEST_PROPERTIES = new Properties();
+    private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
+    private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
     private final static GraknSession session = mock(GraknSession.class);
     private TxFactory tinkerGraphFactory;
 
 
     @BeforeClass
     public static void setup(){
-        try (InputStream in = new FileInputStream(TEST_CONFIG)){
-            TEST_PROPERTIES.load(in);
-        } catch (IOException e) {
-            throw GraknTxOperationException.invalidConfig(TEST_CONFIG);
-        }
-        when(session.config()).thenReturn(TEST_PROPERTIES);
+        when(session.config()).thenReturn(TEST_CONFIG);
     }
 
     @Rule

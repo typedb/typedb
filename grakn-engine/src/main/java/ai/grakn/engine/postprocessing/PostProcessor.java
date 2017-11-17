@@ -22,7 +22,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.util.REST;
@@ -62,7 +62,7 @@ import static com.codahale.metrics.MetricRegistry.name;
  */
 public class PostProcessor {
     private final static Logger LOG = LoggerFactory.getLogger(PostProcessor.class);
-    private final GraknEngineConfig engineConfig;
+    private final GraknConfig engineConfig;
     private final MetricRegistry metricRegistry;
     private final LockProvider lockProvider;
     private final RedisCountStorage redis;
@@ -71,7 +71,7 @@ public class PostProcessor {
     @Deprecated
     private static final String LOCK_KEY = "/post-processing-lock";
 
-    private PostProcessor(GraknEngineConfig engineConfig, Pool<Jedis> jedisPool, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry){
+    private PostProcessor(GraknConfig engineConfig, Pool<Jedis> jedisPool, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry){
         this.engineConfig = engineConfig;
         this.metricRegistry = metricRegistry;
         this.lockProvider = lockProvider;
@@ -79,7 +79,7 @@ public class PostProcessor {
         this.factory = factory;
     }
 
-    public static PostProcessor create(GraknEngineConfig engineConfig, Pool<Jedis> jedisPool, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry){
+    public static PostProcessor create(GraknConfig engineConfig, Pool<Jedis> jedisPool, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry){
         return new PostProcessor(engineConfig, jedisPool, factory, lockProvider, metricRegistry);
     }
 

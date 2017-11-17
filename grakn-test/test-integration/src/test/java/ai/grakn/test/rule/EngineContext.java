@@ -23,8 +23,8 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknCreator;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
@@ -64,7 +64,7 @@ public class EngineContext extends CompositeTestRule {
 
     private GraknEngineServer server;
 
-    private final GraknEngineConfig config = createTestConfig();
+    private final GraknConfig config = createTestConfig();
     private JedisPool jedisPool;
 
     private final TestRule redis;
@@ -104,7 +104,7 @@ public class EngineContext extends CompositeTestRule {
         return server;
     }
 
-    public GraknEngineConfig config() {
+    public GraknConfig config() {
         return config;
     }
 
@@ -219,8 +219,8 @@ public class EngineContext extends CompositeTestRule {
     /**
      * Create a configuration for use in tests, using random ports.
      */
-    private static GraknEngineConfig createTestConfig() {
-        GraknEngineConfig config = GraknEngineConfig.create();
+    private static GraknConfig createTestConfig() {
+        GraknConfig config = GraknConfig.create();
 
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, GraknTestUtil.getEphemeralPort());
         config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + GraknTestUtil.getEphemeralPort()));
@@ -228,7 +228,7 @@ public class EngineContext extends CompositeTestRule {
         return config;
     }
 
-    private static void setRestAssuredUri(GraknEngineConfig config) {
+    private static void setRestAssuredUri(GraknConfig config) {
         RestAssured.baseURI = "http://" + config.uri();
     }
 

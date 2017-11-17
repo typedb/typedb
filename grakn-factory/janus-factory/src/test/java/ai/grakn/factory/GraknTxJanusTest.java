@@ -68,7 +68,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         }
 
         when(session.uri()).thenReturn(Grakn.IN_MEMORY);
-        when(session.config()).thenReturn(TEST_PROPERTIES);
+        when(session.config()).thenReturn(TEST_CONFIG);
     }
 
     @After

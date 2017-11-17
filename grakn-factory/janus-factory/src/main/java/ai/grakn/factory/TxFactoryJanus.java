@@ -152,7 +152,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
 
         //Load Passed in properties
-        session().config().forEach((key, value) -> {
+        session().config().properties().forEach((key, value) -> {
 
             //Overwrite storage
             if(key.equals(storageBackend)){
