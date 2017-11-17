@@ -43,6 +43,7 @@ import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.ENTITY_TYPE_OBJECT_JSON_FIELD;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT;
@@ -73,7 +74,7 @@ public class EntityTypeController {
     private Json getEntityType(Request request, Response response) {
         LOG.debug("getEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, "keyspace");
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("getEntityType - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<EntityType> entityType = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
@@ -96,7 +97,7 @@ public class EntityTypeController {
         LOG.debug("postEntityType - request received");
         Json requestBody = Json.read(mandatoryBody(request));
         String entityTypeLabel = extractJsonField(requestBody, ENTITY_TYPE_OBJECT_JSON_FIELD, LABEL_JSON_FIELD).asString();
-        String keyspace = mandatoryPathParameter(request, "keyspace");
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             EntityType entityType = tx.putEntityType(entityTypeLabel);
@@ -113,7 +114,7 @@ public class EntityTypeController {
     public Json deleteEntityType(Request request, Response response) {
         LOG.debug("deleteEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, "keyspace");
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("deleteEntityType - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
@@ -136,7 +137,7 @@ public class EntityTypeController {
         LOG.debug("assignAttributeTypeToEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, "keyspace");
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("assignAttributeTypeToEntityType - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
         BiConsumer<EntityType, AttributeType> whenFound = (entity, attribute) -> {
             entity.attribute(attribute);
@@ -162,7 +163,7 @@ public class EntityTypeController {
         LOG.debug("deleteAttributeTypeToEntityTypeAssignment - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, "keyspace");
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("deleteAttributeTypeToEntityTypeAssignment - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
 
         BiConsumer<EntityType, AttributeType> whenFound = (entity, attribute) -> {

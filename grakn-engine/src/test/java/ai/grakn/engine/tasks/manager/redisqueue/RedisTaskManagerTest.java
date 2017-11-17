@@ -64,6 +64,7 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.fail;
@@ -172,7 +173,7 @@ public class RedisTaskManagerTest {
 
     private TaskConfiguration testConfig(TaskId generate) {
         return TaskConfiguration.of(Json.object(
-                "keyspace", "keyspace",
+                KEYSPACE, "keyspace",
                 COMMIT_LOG_COUNTING, 3,
                 "id", generate.value()
         ));

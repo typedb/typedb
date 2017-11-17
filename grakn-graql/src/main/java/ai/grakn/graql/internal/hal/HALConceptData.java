@@ -100,7 +100,7 @@ public class HALConceptData {
         // If limit -1, we don't append the limit parameter to the URI string
         String limitParam = (this.limit >= 0) ? "&" + REST.Request.Concept.LIMIT_EMBEDDED + "=" + this.limit : "";
 
-        return "?" + "keyspace" + "=" + this.keyspace + "&" + REST.Request.Concept.OFFSET_EMBEDDED + "=" + offset + limitParam;
+        return "?" + REST.Request.KEYSPACE + "=" + this.keyspace + "&" + REST.Request.Concept.OFFSET_EMBEDDED + "=" + offset + limitParam;
     }
 
 

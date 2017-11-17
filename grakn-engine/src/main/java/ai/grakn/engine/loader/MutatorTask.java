@@ -28,6 +28,7 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.util.REST;
 import com.codahale.metrics.Timer.Context;
 import mjson.Json;
 import org.slf4j.Logger;
@@ -59,7 +60,7 @@ public class MutatorTask extends BackgroundTask {
     public boolean start() {
         Collection<Query> inserts = getInserts(configuration());
         metricRegistry().histogram(name(MutatorTask.class, "jobs")).update(inserts.size());
-        Keyspace keyspace = Keyspace.of(configuration().json().at("keyspace").asString());
+        Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
         int maxRetry = engineConfiguration().getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
 
         GraknTxMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->

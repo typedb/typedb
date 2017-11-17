@@ -41,6 +41,7 @@ import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.TYPE_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
@@ -69,7 +70,7 @@ public class AttributeTypeController {
         String attributeTypeLabel = extractJsonField(requestBody, ATTRIBUTE_TYPE_OBJECT_JSON_FIELD, LABEL_JSON_FIELD).asString();
         String attributeTypeDataTypeRaw = extractJsonField(requestBody, ATTRIBUTE_TYPE_OBJECT_JSON_FIELD, TYPE_JSON_FIELD).asString();
         AttributeType.DataType<?> attributeTypeDataType = fromString(attributeTypeDataTypeRaw);
-        String keyspace = mandatoryPathParameter(request, "keyspace");
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             AttributeType attributeType = tx.putAttributeType(attributeTypeLabel, attributeTypeDataType);
@@ -88,7 +89,7 @@ public class AttributeTypeController {
     private Json getAttributeType(Request request, Response response) {
         LOG.debug("getAttributeType - request received.");
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, "keyspace");
+        String keyspace = mandatoryPathParameter(request, KEYSPACE);
         LOG.debug("getAttributeType - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<AttributeType> attributeType = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
