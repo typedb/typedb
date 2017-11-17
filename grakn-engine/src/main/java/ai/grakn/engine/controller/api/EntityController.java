@@ -42,7 +42,7 @@ import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
 import static ai.grakn.util.REST.Request.ENTITY_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_TYPE_LABEL_PARAMETER;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_ATTRIBUTE_ASSIGNMENT;
 import static ai.grakn.util.REST.WebPath.Api.ENTITY_TYPE;
 
@@ -69,7 +69,7 @@ public class EntityController {
     private Json postEntity(Request request, Response response) {
         LOG.debug("postEntity - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, ENTITY_TYPE_LABEL_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE_PARAM);
         LOG.debug("postEntity - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
@@ -94,7 +94,7 @@ public class EntityController {
         LOG.debug("assignAttributeToEntity - request received.");
         String entityConceptId = mandatoryPathParameter(request, ENTITY_CONCEPT_ID_PARAMETER);
         String attributeConceptId = mandatoryPathParameter(request, ATTRIBUTE_CONCEPT_ID_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE_PARAM);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             LOG.debug("assignAttributeToEntity - attempting to find attributeConceptId " + attributeConceptId + " and entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
             Optional<Entity> entityOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(entityConceptId)));
@@ -125,7 +125,7 @@ public class EntityController {
         LOG.debug("deleteAttributeToEntityAssignment - request received.");
         String entityConceptId = mandatoryPathParameter(request, ENTITY_CONCEPT_ID_PARAMETER);
         String attributeConceptId = mandatoryPathParameter(request, ATTRIBUTE_CONCEPT_ID_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE_PARAM);
 
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             LOG.debug("deleteAttributeToEntityAssignment - attempting to find attributeConceptId " + attributeConceptId + " and entityConceptId " + entityConceptId + ", in keyspace " + keyspace);

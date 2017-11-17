@@ -61,7 +61,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.REST.Request.FORMAT;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.WebPath.System.METRICS;
 import static ai.grakn.util.REST.WebPath.System.STATUS;
@@ -137,9 +137,9 @@ public class SystemController {
 
     @GET
     @Path("/kb/{keyspace}")
-    @ApiImplicitParam(name = KEYSPACE, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
     private String getKeyspace(Request request, Response response) {
-        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE));
+        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
 
         if (systemKeyspace.containsKeyspace(keyspace)) {
             response.status(HttpServletResponse.SC_OK);
@@ -153,9 +153,9 @@ public class SystemController {
     @PUT
     @Path("/kb/{keyspace}")
     @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
-    @ApiImplicitParam(name = KEYSPACE, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
     private String putKeyspace(Request request, Response response) throws JsonProcessingException {
-        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE));
+        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         systemKeyspace.openKeyspace(keyspace);
         response.status(HttpServletResponse.SC_OK);
         return objectMapper.writeValueAsString(config);
@@ -164,9 +164,9 @@ public class SystemController {
     @DELETE
     @Path("/kb/{keyspace}")
     @ApiOperation(value = "Delete a keyspace from the system graph.")
-    @ApiImplicitParam(name = KEYSPACE, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
     private boolean deleteKeyspace(Request request, Response response) {
-        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE));
+        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         boolean deletionComplete = systemKeyspace.deleteKeyspace(keyspace);
         if (deletionComplete) {
             LOG.info("Keyspace {} deleted", keyspace);

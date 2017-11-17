@@ -69,7 +69,7 @@ public class PostProcessingTask extends BackgroundTask {
                 Context contextSingle = metricRegistry()
                         .timer(name(PostProcessingTask.class, "execution-single")).time();
                 try {
-                    Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
+                    Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE_PARAM).asString());
                     int maxRetry = engineConfiguration().getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
 
                     GraknTxMutators.runMutationWithRetry(factory(), keyspace, maxRetry,
@@ -121,7 +121,7 @@ public class PostProcessingTask extends BackgroundTask {
      */
     public static TaskConfiguration createConfig(Keyspace keyspace, String config){
         Json postProcessingConfiguration = Json.object();
-        postProcessingConfiguration.set(REST.Request.KEYSPACE, keyspace.getValue());
+        postProcessingConfiguration.set(REST.Request.KEYSPACE_PARAM, keyspace.getValue());
         postProcessingConfiguration.set(REST.Request.COMMIT_LOG_FIXING, Json.read(config).at(REST.Request.COMMIT_LOG_FIXING));
         return TaskConfiguration.of(postProcessingConfiguration);
     }

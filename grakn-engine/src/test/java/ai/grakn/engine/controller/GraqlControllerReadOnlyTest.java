@@ -54,7 +54,7 @@ import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
@@ -440,7 +440,7 @@ public class GraqlControllerReadOnlyTest {
     private Response sendRequest(String match, String acceptType, boolean reasonser,
                                   int limitEmbedded) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, mockTx.keyspace().getValue())
+                .queryParam(KEYSPACE_PARAM, mockTx.keyspace().getValue())
                 .body(match)
                 .queryParam(INFER, reasonser)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)

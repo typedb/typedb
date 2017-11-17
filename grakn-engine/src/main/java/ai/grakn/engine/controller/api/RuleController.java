@@ -36,7 +36,7 @@ import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.RULE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.RULE_OBJECT_JSON_FIELD;
@@ -65,7 +65,7 @@ public class RuleController {
     private Json getRule(Request request, Response response) {
         LOG.debug("getRule - request received.");
         String ruleLabel = mandatoryPathParameter(request, RULE_LABEL_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE_PARAM);
         LOG.debug("getRule - attempting to find rule " + ruleLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<Rule> rule = Optional.ofNullable(tx.getRule(ruleLabel));
@@ -93,7 +93,7 @@ public class RuleController {
         String when = extractJsonField(requestBody, RULE_OBJECT_JSON_FIELD, WHEN_JSON_FIELD).asString();
         String then = extractJsonField(requestBody, RULE_OBJECT_JSON_FIELD, THEN_JSON_FIELD).asString();
 
-        String keyspace = mandatoryPathParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE_PARAM);
         LOG.debug("postRule - attempting to add a new rule " + ruleLabel + " on keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Rule rule = tx.putRule(

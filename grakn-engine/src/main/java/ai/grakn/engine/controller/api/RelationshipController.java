@@ -40,7 +40,7 @@ import java.util.Optional;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_CONCEPT_ID_PARAMETER;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.RELATIONSHIP_TYPE_LABEL_PARAMETER;
@@ -72,7 +72,7 @@ public class RelationshipController {
     private Json postRelationship(Request request, Response response) {
         LOG.debug("postRelationship - request received.");
         String relationshipTypeLabel = mandatoryPathParameter(request, RELATIONSHIP_TYPE_LABEL_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE_PARAM);
         LOG.debug("postRelationship - attempting to find entityType " + relationshipTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<RelationshipType> relationshipTypeOptional = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
@@ -98,7 +98,7 @@ public class RelationshipController {
         String relationshipConceptId = mandatoryPathParameter(request, RELATIONSHIP_CONCEPT_ID_PARAMETER);
         String roleLabel = mandatoryPathParameter(request, ROLE_LABEL_PARAMETER);
         String entityConceptId = mandatoryPathParameter(request, ENTITY_CONCEPT_ID_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, KEYSPACE_PARAM);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             LOG.debug("assignEntityAndRoleToRelationship - attempting to find roleLabel " + roleLabel + " and relationshipConceptId " + relationshipConceptId + ", in keyspace " + keyspace);
             Optional<Relationship> relationshipOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(relationshipConceptId)));
