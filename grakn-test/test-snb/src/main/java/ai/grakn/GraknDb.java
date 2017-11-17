@@ -29,7 +29,6 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate4AddForum;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate5AddForumMembership;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate6AddPost;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate7AddComment;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate8AddFriendship;
 
 import java.io.IOException;
 import java.util.Map;
@@ -68,7 +67,7 @@ public class GraknDb extends Db {
         registerOperationHandler(LdbcUpdate5AddForumMembership.class, GraknUpdateQueryHandlers.LdbcUpdate5AddForumMembershipHandler.class);
         registerOperationHandler(LdbcUpdate6AddPost.class, GraknUpdateQueryHandlers.LdbcUpdate6AddPostHandler.class);
         registerOperationHandler(LdbcUpdate7AddComment.class, GraknUpdateQueryHandlers.LdbcUpdate7AddCommentHandler.class);
-        registerOperationHandler(LdbcUpdate8AddFriendship.class, GraknUpdateQueryHandlers.LdbcUpdate8AddFriendshipHandler.class);
+//        registerOperationHandler(LdbcUpdate8AddFriendship.class, GraknUpdateQueryHandlers.LdbcUpdate8AddFriendshipHandler.class);
 
         // TODO: disabling because they are slow
 //        registerOperationHandler(LdbcQuery1.class, GraknQueryHandlers.LdbcQuery1Handler.class);
