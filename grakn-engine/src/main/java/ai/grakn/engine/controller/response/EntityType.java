@@ -42,7 +42,7 @@ public abstract class EntityType extends Type{
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("label") Label label,
             @JsonProperty("implicit") Boolean implicit,
-            @JsonProperty("sup") Link sup,
+            @JsonProperty("super") Link sup,
             @JsonProperty("subs") Set<Link> subs,
             @JsonProperty("abstract") Boolean isAbstract,
             @JsonProperty("plays") Set<Link> plays,

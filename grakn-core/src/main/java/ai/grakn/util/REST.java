@@ -120,6 +120,7 @@ public class REST {
      */
     public static class Request {
         // Request parameters
+        public static final String LABEL_PARAMETER = ":label";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
         public static final String TASK_STATUS_PARAMETER = "status";

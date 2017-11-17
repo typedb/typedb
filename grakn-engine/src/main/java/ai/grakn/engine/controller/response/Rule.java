@@ -48,7 +48,7 @@ public abstract class Rule extends SchemaConcept{
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("label") Label label,
             @JsonProperty("implicit") Boolean implicit,
-            @JsonProperty("sup") Link sup,
+            @JsonProperty("super") Link sup,
             @JsonProperty("subs") Set<Link> subs,
             @JsonProperty("when") String when,
             @JsonProperty("then") String then){

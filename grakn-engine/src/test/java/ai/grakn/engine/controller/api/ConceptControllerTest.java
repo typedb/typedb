@@ -157,6 +157,6 @@ public class ConceptControllerTest {
         assertEquals(SC_OK, response.statusCode());
         String content = response.thenReturn().body().asString();
 
-        assertEquals(entityWrapper, objectMapper.readValue(content, clazz));
+        assertEquals(wrapper, objectMapper.readValue(content, clazz));
     }
 }

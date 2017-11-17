@@ -22,30 +22,33 @@ package ai.grakn.engine.controller.api;
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST.WebPath;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.httpclient.HttpStatus;
 import spark.Request;
 import spark.Response;
 import spark.Service;
 
 import java.util.Optional;
+import java.util.function.Function;
 
 import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.LABEL_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static com.codahale.metrics.MetricRegistry.name;
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
 
 /**
  * <p>
@@ -65,31 +68,37 @@ public class ConceptController {
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
 
         spark.get(WebPath.CONCEPT_ID,  this::getConceptById);
+        spark.get(WebPath.TYPE_LABEL,  this::getSchemaByLabel);
+        spark.get(WebPath.RULE_LABEL,  this::getSchemaByLabel);
+        spark.get(WebPath.ROLE_LABEL,  this::getSchemaByLabel);
+    }
+
+    private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
+        Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        Label label = Label.of(Requests.mandatoryPathParameter(request, LABEL_PARAMETER));
+        return getConcept(response, keyspace, (tx) -> tx.getSchemaConcept(label));
     }
 
     private String getConceptById(Request request, Response response) throws JsonProcessingException {
         Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
-
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         ConceptId conceptId = ConceptId.of(Requests.mandatoryPathParameter(request, ID_PARAMETER));
+        return getConcept(response, keyspace, (tx) -> tx.getConcept(conceptId));
+    }
 
-        try(GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()){
-            Optional<Concept> concept = getConcept(tx, conceptId);
-            response.status(HttpStatus.SC_OK);
+    private String getConcept(Response response, Keyspace keyspace, Function<GraknTx, ai.grakn.concept.Concept> getter) throws JsonProcessingException {
+        try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()) {
+            ai.grakn.concept.Concept concept = getter.apply(tx);
 
-            if(concept.isPresent()){
-                return objectMapper.writeValueAsString(concept.get());
+            Optional<Concept> conceptWrapper = ConceptBuilder.build(concept);
+            if(conceptWrapper.isPresent()){
+                response.status(SC_OK);
+                return objectMapper.writeValueAsString(conceptWrapper.get());
             } else {
+                response.status(SC_NOT_FOUND);
                 return "";
             }
         }
-    }
-
-    private static Optional<ai.grakn.engine.controller.response.Concept> getConcept(GraknTx tx, ConceptId conceptId){
-        ai.grakn.concept.Concept concept = tx.getConcept(conceptId);
-        if (concept == null) {
-            throw GraknServerException.noConceptFound(conceptId, tx.keyspace());
-        }
-        return ConceptBuilder.build(concept);
     }
 }
