@@ -24,7 +24,8 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.apache.commons.io.FileUtils;
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 
 /**
@@ -140,7 +142,7 @@ public class GraknConfig {
         Path asciiPath = projectPath.resolve(graknAsciiPath);
         try {
             File asciiFile = asciiPath.toFile();
-            return FileUtils.readFileToString(asciiFile);
+            return Files.readLines(asciiFile, Charsets.UTF_8).stream().collect(Collectors.joining("\n"));
         } catch (IOException e) {
             // couldn't find Grakn ASCII art. Let's just fail gracefully
             LOG.warn("Oops, unable to find Grakn ASCII art. Will just display nothing then.");

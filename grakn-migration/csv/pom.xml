@@ -30,12 +30,10 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
-            <version>${csv.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-base</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>
