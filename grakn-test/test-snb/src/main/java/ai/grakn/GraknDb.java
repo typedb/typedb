@@ -22,13 +22,10 @@ import com.ldbc.driver.DbConnectionState;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.control.LoggingService;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageReplies;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate1AddPerson;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate2AddPostLike;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate3AddCommentLike;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate4AddForum;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate5AddForumMembership;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate6AddPost;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate7AddComment;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate8AddFriendship;
 
 import java.io.IOException;
 import java.util.Map;
@@ -60,14 +57,14 @@ public class GraknDb extends Db {
         registerOperationHandler(LdbcShortQuery7MessageReplies.class, GraknShortQueryHandlers.LdbcShortQuery7MessageRepliesHandler.class);
 
         // IMPORTANT: the other queries are dependent on these update queries having executed
-        registerOperationHandler(LdbcUpdate1AddPerson.class, GraknUpdateQueryHandlers.LdbcUpdate1AddPersonHandler.class);
-        registerOperationHandler(LdbcUpdate2AddPostLike.class, GraknUpdateQueryHandlers.LdbcUpdate2AddPostLikeHandler.class);
-        registerOperationHandler(LdbcUpdate3AddCommentLike.class, GraknUpdateQueryHandlers.LdbcUpdate3AddCommentLikeHandler.class);
-        registerOperationHandler(LdbcUpdate4AddForum.class, GraknUpdateQueryHandlers.LdbcUpdate4AddForumHandler.class);
+//        registerOperationHandler(LdbcUpdate1AddPerson.class, GraknUpdateQueryHandlers.LdbcUpdate1AddPersonHandler.class);
+//        registerOperationHandler(LdbcUpdate2AddPostLike.class, GraknUpdateQueryHandlers.LdbcUpdate2AddPostLikeHandler.class);
+//        registerOperationHandler(LdbcUpdate3AddCommentLike.class, GraknUpdateQueryHandlers.LdbcUpdate3AddCommentLikeHandler.class);
+//        registerOperationHandler(LdbcUpdate4AddForum.class, GraknUpdateQueryHandlers.LdbcUpdate4AddForumHandler.class);
         registerOperationHandler(LdbcUpdate5AddForumMembership.class, GraknUpdateQueryHandlers.LdbcUpdate5AddForumMembershipHandler.class);
         registerOperationHandler(LdbcUpdate6AddPost.class, GraknUpdateQueryHandlers.LdbcUpdate6AddPostHandler.class);
         registerOperationHandler(LdbcUpdate7AddComment.class, GraknUpdateQueryHandlers.LdbcUpdate7AddCommentHandler.class);
-//        registerOperationHandler(LdbcUpdate8AddFriendship.class, GraknUpdateQueryHandlers.LdbcUpdate8AddFriendshipHandler.class);
+        registerOperationHandler(LdbcUpdate8AddFriendship.class, GraknUpdateQueryHandlers.LdbcUpdate8AddFriendshipHandler.class);
 
         // TODO: disabling because they are slow
 //        registerOperationHandler(LdbcQuery1.class, GraknQueryHandlers.LdbcQuery1Handler.class);
