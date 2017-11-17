@@ -35,7 +35,6 @@ import java.util.Optional;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.LABEL_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ROLE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.ROLE_OBJECT_JSON_FIELD;
@@ -62,7 +61,7 @@ public class RoleController {
     private Json getRole(Request request, Response response) {
         LOG.debug("getRole - request received.");
         String roleLabel = mandatoryPathParameter(request, ROLE_LABEL_PARAMETER);
-        String keyspace = mandatoryPathParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, "keyspace");
         LOG.debug("getRole - attempting to find role " + roleLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<Role> role = Optional.ofNullable(tx.getRole(roleLabel));

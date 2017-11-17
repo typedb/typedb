@@ -21,8 +21,14 @@ package ai.grakn.engine.controller.api;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -47,8 +53,15 @@ public class ConceptControllerTest {
     private static final Keyspace keyspance = SampleKBLoader.randomKeyspace();
 
     private static EngineGraknTxFactory factory;
+    private static Role role1;
+    private static Role role2;
+    private static Rule rule;
+    private static RelationshipType relationshipType;
+    private static Relationship relationship;
     private static EntityType entityType;
     private static Entity entity;
+    private static AttributeType<String> attributeType;
+    private static Attribute<String> attribute;
 
     public static SessionContext sessionContext = SessionContext.create();
 
@@ -66,11 +79,22 @@ public class ConceptControllerTest {
 
         //Load Silly Sample Data
         try(GraknTx tx = factory.tx(keyspance, GraknTxType.WRITE)){
-            entityType = tx.putEntityType("My Special Entity Type");
-            entity = entityType.addEntity();
+            role1 = tx.putRole("My Special Role 1");
+            role2 = tx.putRole("My Special Role 2");
+
+            attributeType = tx.putAttributeType("My Attribute Type", AttributeType.DataType.STRING);
+            attribute = attributeType.putAttribute("An attribute");
+
+            entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).attribute(attributeType);
+            entity = entityType.addEntity().attribute(attribute);
+
+            relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
+            relationship = relationshipType.addRelationship().addRolePlayer(role1, entity).addRolePlayer(role2, entity);
+
             tx.commit();
         }
     }
+
 
     @Test
     public void whenGettingConceptByIdAndConceptExists_ConceptIsReturned(){

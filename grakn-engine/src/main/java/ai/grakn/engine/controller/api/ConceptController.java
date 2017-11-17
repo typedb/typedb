@@ -36,13 +36,12 @@ import spark.Response;
 import spark.Service;
 
 import static ai.grakn.GraknTxType.READ;
-import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static com.codahale.metrics.MetricRegistry.name;
@@ -64,13 +63,13 @@ public class ConceptController {
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
 
-        spark.get(WebPath.CONCEPT_ID,  this::conceptById);
+        spark.get(WebPath.CONCEPT_ID,  this::getConceptById);
     }
 
-    private Json conceptById(Request request, Response response){
+    private Json getConceptById(Request request, Response response){
         Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
 
-        Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(request, KEYSPACE));
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, "keyspace"));
         ConceptId conceptId = ConceptId.of(Requests.mandatoryPathParameter(request, ID_PARAMETER));
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);

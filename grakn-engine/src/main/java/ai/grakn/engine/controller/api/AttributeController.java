@@ -40,7 +40,6 @@ import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.util.REST.Request.ATTRIBUTE_OBJECT_JSON_FIELD;
 import static ai.grakn.util.REST.Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.CONCEPT_ID_JSON_FIELD;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.VALUE_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Api.ATTRIBUTE_TYPE;
 
@@ -67,7 +66,7 @@ public class AttributeController {
         String attributeTypeLabel = mandatoryPathParameter(request, ATTRIBUTE_TYPE_LABEL_PARAMETER);
         Json requestBody = Json.read(mandatoryBody(request));
         String attributeValue = extractJsonField(requestBody, VALUE_JSON_FIELD).asString();
-        String keyspace = mandatoryPathParameter(request, KEYSPACE);
+        String keyspace = mandatoryPathParameter(request, "keyspace");
         LOG.debug("postAttribute - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));

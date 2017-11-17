@@ -48,7 +48,7 @@ public abstract class Link implements Jacksonisable{
 
     public static Link create(ai.grakn.concept.Thing thing){
         String id = REST.resolveTemplate(
-                WebPath.CONCEPT_ID,
+                WebPath.CONCEPT_LINK,
                 thing.keyspace().getValue(),
                 Schema.BaseType.CONCEPT.name().toLowerCase(Locale.getDefault()),
                 thing.getId().getValue());
@@ -64,7 +64,7 @@ public abstract class Link implements Jacksonisable{
         }
 
         String id = REST.resolveTemplate(
-                WebPath.CONCEPT_ID,
+                WebPath.CONCEPT_LINK,
                 schemaConcept.keyspace().getValue(),
                 type,
                 schemaConcept.getLabel().getValue());

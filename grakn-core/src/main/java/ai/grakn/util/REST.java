@@ -52,7 +52,8 @@ public class REST {
         /**
          * Concept Specific operations
          */
-        public static final String CONCEPT_ID = "/kb/:keyspace/:base-type/:id";
+        public static final String CONCEPT_LINK = "/kb/:keyspace/:base-type/:id";
+        public static final String CONCEPT_ID = "/kb/:keyspace/concept/:id";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
@@ -136,7 +137,6 @@ public class REST {
         public static final String OFFSET_PARAM = "offset";
         public static final String TASKS_PARAM = "tasks";
         public static final String CONFIGURATION_PARAM = "configuration";
-        public static final String KEYSPACE = "keyspace";
         public static final String FORMAT = "format";
         public static final String UUID_PARAMETER = "uuid";
 

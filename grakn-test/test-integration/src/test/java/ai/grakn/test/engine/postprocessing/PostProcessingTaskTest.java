@@ -40,7 +40,6 @@ import org.junit.Test;
 import java.util.Set;
 import java.util.UUID;
 
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -67,7 +66,7 @@ public class PostProcessingTaskTest {
         postProcessor = PostProcessor.create(engine.config(), engine.getJedisPool(), engine.server().factory(), engine.server().lockProvider(), METRIC_REGISTRY);
         String keyspace = "testing";
         when(mockConfiguration.json()).thenReturn(Json.object(
-                KEYSPACE, keyspace,
+                "keyspace", keyspace,
                 REST.Request.COMMIT_LOG_FIXING, Json.object(
                         Schema.BaseType.ATTRIBUTE.name(), Json.object(mockResourceIndex, mockResourceSet)
                 )));
