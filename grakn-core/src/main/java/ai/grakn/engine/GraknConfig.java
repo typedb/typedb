@@ -22,7 +22,6 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.commons.io.FileUtils;
@@ -88,8 +87,6 @@ public class GraknConfig {
 
     private GraknConfig(Properties prop) {
         this.prop = prop;
-        // TODO: Does anyone use this property?
-        setConfigProperty(GraknConfigKey.VERSION, GraknVersion.VERSION);
     }
 
     public void write(File path) throws IOException {

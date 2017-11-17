@@ -45,8 +45,6 @@ public abstract class GraknConfigKey<T> {
     private static final Function<Optional<String>, Optional<Boolean>> BOOL = required(Boolean::parseBoolean);
     private static final Function<Optional<String>, Optional<Long>> LONG = required(Long::parseLong);
 
-    public static final GraknConfigKey<String> VERSION = key("grakn.version");
-
     public static final GraknConfigKey<Integer> WEBSERVER_THREADS = key("webserver.threads", INT);
 
     public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
