@@ -26,6 +26,7 @@ import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -66,8 +67,6 @@ import static ai.grakn.util.REST.Request.TASK_PRIORITY_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.WebPath.Tasks.GET;
-import static ai.grakn.util.REST.WebPath.Tasks.TASK;
 import static com.jayway.restassured.RestAssured.with;
 import static java.time.Instant.now;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -459,11 +458,11 @@ public class TasksControllerTest {
         RequestSpecification request = with()
                 .config(new RestAssuredConfig().objectMapperConfig(new ObjectMapperConfig(jsonMapper)))
                 .body(tasksList);
-        return request.post(UriBuilder.fromUri(ctx.uri().toURI()).path(TASK).build());
+        return request.post(UriBuilder.fromUri(ctx.uri().toURI()).path(REST.WebPath.TASK).build());
     }
 
     private Response get(TaskId taskId){
-        return with().get(GET.replace(ID_PARAMETER, taskId.value()));
+        return with().get(REST.WebPath.TASK_ID.replace(ID_PARAMETER, taskId.value()));
     }
 
     private Json makeJsonTask(Map<String, String> configuration, Map<String, String> params) {

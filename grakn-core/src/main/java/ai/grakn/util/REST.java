@@ -54,25 +54,24 @@ public class REST {
          */
         public static final String CONCEPT_LINK = "/kb/:keyspace/:base-type/:id";
         public static final String CONCEPT_ID = "/kb/:keyspace/concept/:id";
+        public static final String TYPE_LABEL = "/kb/:keyspace/type/:label";
+        public static final String RULE_LABEL = "/kb/:keyspace/rule/:label";
+        public static final String ROLE_LABEL = "/kb/:keyspace/role/:label";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
         /**
          * URIs to Tasks Controller endpoints
          */
-        public static class Tasks {
-            public static final String TASK = "/task";
-            public static final String GET = "/task/:id";
-            public static final String STOP = "/task/:id/stop";
-        }
+        public static final String TASK = "/task";
+        public static final String TASK_ID = "/task/:id";
+        public static final String TASK_ID_STOP = "/task/:id/stop";
 
         /**
          * URIs to System Controller endpoints
          */
-        public static class System {
-            public static final String STATUS = "/status";
-            public static final String METRICS = "/metrics";
-        }
+        public static final String STATUS = "/status";
+        public static final String METRICS = "/metrics";
 
         /**
          * URIs to concept controller endpoints
@@ -81,8 +80,6 @@ public class REST {
         public static class Concept {
             @Deprecated
             public static final String CONCEPT = "/kb/concept/";
-            @Deprecated
-            public static final String SCHEMA = "/kb/schema";
         }
 
         /**
@@ -208,7 +205,7 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
-        public static final String GET_METHOD = "GET";
+        public static final String GET_METHOD = "TASK_ID";
     }
 
     /**

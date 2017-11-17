@@ -63,8 +63,6 @@ import java.util.stream.Collectors;
 import static ai.grakn.util.REST.Request.FORMAT;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.WebPath.System.METRICS;
-import static ai.grakn.util.REST.WebPath.System.STATUS;
 import static org.apache.http.HttpHeaders.CACHE_CONTROL;
 
 
@@ -109,8 +107,8 @@ public class SystemController {
         spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
         spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
         spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
-        spark.get(METRICS, this::getMetrics);
-        spark.get(STATUS, this::getStatus);
+        spark.get(REST.WebPath.METRICS, this::getMetrics);
+        spark.get(REST.WebPath.STATUS, this::getStatus);
 
         final TimeUnit rateUnit = TimeUnit.SECONDS;
         final TimeUnit durationUnit = TimeUnit.SECONDS;

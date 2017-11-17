@@ -126,7 +126,7 @@ public class Client {
 
             HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
 
-            connection.setRequestMethod("GET");
+            connection.setRequestMethod("TASK_ID");
 
             try {
                 connection.connect();
