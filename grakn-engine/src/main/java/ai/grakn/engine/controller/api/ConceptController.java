@@ -21,26 +21,26 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.controller.response.Concept;
+import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST.WebPath;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import mjson.Json;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.httpclient.HttpStatus;
 import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import java.util.Optional;
+
 import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
-import static ai.grakn.engine.controller.util.Requests.queryParameter;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
@@ -55,7 +55,7 @@ import static com.codahale.metrics.MetricRegistry.name;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class ConceptController {
-    private static final int separationDegree = 1;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     private EngineGraknTxFactory factory;
     private Timer conceptIdGetTimer;
 
@@ -67,27 +67,29 @@ public class ConceptController {
         spark.get(WebPath.CONCEPT_ID,  this::getConceptById);
     }
 
-    private Json getConceptById(Request request, Response response){
+    private String getConceptById(Request request, Response response) throws JsonProcessingException {
         Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         ConceptId conceptId = ConceptId.of(Requests.mandatoryPathParameter(request, ID_PARAMETER));
-        int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
-        int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        try(GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()){
-            Concept concept = getConcept(tx, conceptId);
 
+        try(GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()){
+            Optional<Concept> concept = getConcept(tx, conceptId);
             response.status(HttpStatus.SC_OK);
 
-            return Json.read(renderHALConceptData(concept, false, separationDegree, keyspace, offset, limit));
+            if(concept.isPresent()){
+                return objectMapper.writeValueAsString(concept.get());
+            } else {
+                return "";
+            }
         }
     }
 
-    private static Concept getConcept(GraknTx tx, ConceptId conceptId){
-        Concept concept = tx.getConcept(conceptId);
+    private static Optional<ai.grakn.engine.controller.response.Concept> getConcept(GraknTx tx, ConceptId conceptId){
+        ai.grakn.concept.Concept concept = tx.getConcept(conceptId);
         if (concept == null) {
             throw GraknServerException.noConceptFound(conceptId, tx.keyspace());
         }
-        return concept;
+        return ConceptBuilder.build(concept);
     }
 }

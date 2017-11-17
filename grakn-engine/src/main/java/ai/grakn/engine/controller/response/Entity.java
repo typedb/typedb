@@ -37,11 +37,11 @@ public abstract class Entity extends Thing {
 
     @JsonCreator
     public static Entity create(
-            ConceptId id,
+            @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            Set<Link> attributes,
-            Set<Link> keys,
-            Set<Link> relationships){
+            @JsonProperty("attributes") Set<Link> attributes,
+            @JsonProperty("keys") Set<Link> keys,
+            @JsonProperty("relationships") Set<Link> relationships){
         return new AutoValue_Entity(id, selfLink, attributes, keys, relationships);
     }
 }

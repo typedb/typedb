@@ -22,9 +22,9 @@ import ai.grakn.engine.Jacksonisable;
 import ai.grakn.util.REST;
 import ai.grakn.util.REST.WebPath;
 import ai.grakn.util.Schema;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonValue;
 
 import java.util.Locale;
 
