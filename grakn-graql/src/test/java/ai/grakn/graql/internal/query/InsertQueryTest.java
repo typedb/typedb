@@ -215,7 +215,7 @@ public class InsertQueryTest {
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
         assertEquals(ImmutableSet.of(var("x"), var("z")), result.vars());
-        assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
+        assertThat(result.concepts(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
     @Test
