@@ -38,9 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -59,8 +57,6 @@ import java.util.stream.Collectors;
  * @author fppt
  */
 public class SampleKBLoader {
-    private static final AtomicBoolean propertiesLoaded = new AtomicBoolean(false);
-    private static Properties graphConfig;
 
     private final TxFactory<?> factory;
     private @Nullable Consumer<GraknTx> preLoad;
