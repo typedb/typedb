@@ -44,14 +44,14 @@ public abstract class Rule extends SchemaConcept{
 
     @JsonCreator
     public static Rule create(
-            ConceptId id,
+            @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            Label label,
-            Boolean implicit,
-            @JsonProperty("super") Link sup,
-            Set<Link> subs,
-            String when,
-            String then){
+            @JsonProperty("label") Label label,
+            @JsonProperty("implicit") Boolean implicit,
+            @JsonProperty("sup") Link sup,
+            @JsonProperty("subs") Set<Link> subs,
+            @JsonProperty("when") String when,
+            @JsonProperty("then") String then){
         return new AutoValue_Rule(id, selfLink, label, implicit, sup, subs, when, then);
     }
 }

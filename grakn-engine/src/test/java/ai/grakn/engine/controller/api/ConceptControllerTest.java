@@ -25,19 +25,24 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.response.Attribute;
 import ai.grakn.engine.controller.response.AttributeType;
+import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.response.Entity;
 import ai.grakn.engine.controller.response.EntityType;
 import ai.grakn.engine.controller.response.Relationship;
 import ai.grakn.engine.controller.response.RelationshipType;
 import ai.grakn.engine.controller.response.Role;
+import ai.grakn.engine.controller.response.Rule;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.graql.Pattern;
 import ai.grakn.test.rule.SessionContext;
+import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.Response;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -46,6 +51,8 @@ import org.junit.rules.RuleChain;
 import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -55,7 +62,7 @@ public class ConceptControllerTest {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Lock mockLock = mock(Lock.class);
     private static final LockProvider mockLockProvider = mock(LockProvider.class);
-    private static final Keyspace keyspance = SampleKBLoader.randomKeyspace();
+    private static final Keyspace keyspace = SampleKBLoader.randomKeyspace();
 
     private static EngineGraknTxFactory factory;
     private static Role roleWrapper1;
@@ -67,6 +74,7 @@ public class ConceptControllerTest {
     private static AttributeType attributeTypeWrapper;
     private static Attribute attributeWrapper1;
     private static Attribute attributeWrapper2;
+    private static Rule ruleWrapper;
 
     public static SessionContext sessionContext = SessionContext.create();
 
@@ -83,7 +91,7 @@ public class ConceptControllerTest {
         when(mockLockProvider.getLock(any())).thenReturn(mockLock);
 
         //Load Silly Sample Data
-        try(GraknTx tx = factory.tx(keyspance, GraknTxType.WRITE)){
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)){
             //Build The Sample KB
             ai.grakn.concept.Role role1 = tx.putRole("My Special Role 1");
             ai.grakn.concept.Role role2 = tx.putRole("My Special Role 2");
@@ -97,6 +105,10 @@ public class ConceptControllerTest {
 
             ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
             ai.grakn.concept.Relationship relationship = relationshipType.addRelationship().addRolePlayer(role1, entity).addRolePlayer(role2, entity);
+
+            Pattern when = tx.graql().parser().parsePattern("$x isa \"My Special Entity Type\"");
+            Pattern then = tx.graql().parser().parsePattern("$x isa \"My Special Entity Type\"");
+            ai.grakn.concept.Rule rule = tx.putRule("My Special Snowflake of a Rule", when, then);
 
             //Manually Serialise The Concepts
             roleWrapper1 = ConceptBuilder.<Role>build(role1).get();
@@ -112,19 +124,39 @@ public class ConceptControllerTest {
             attributeWrapper1 = ConceptBuilder.<Attribute>build(attribute1).get();
             attributeWrapper2 = ConceptBuilder.<Attribute>build(attribute2).get();
 
+            ruleWrapper = ConceptBuilder.<Rule>build(rule).get();
+
             tx.commit();
         }
     }
 
     @Test
-    public void whenGettingConceptByIdAndConceptExists_ConceptIsReturned() throws IOException {
-        String request = entityWrapper.selfLink().id();
-        String content = RestAssured.when().get(request).thenReturn().body().asString();
-        assertEquals(entityWrapper, objectMapper.readValue(content, ai.grakn.engine.controller.response.Entity.class));
+    public void whenGettingConceptWhichExists_ConceptIsReturned() throws IOException {
+        assertExists(roleWrapper1, Role.class);
+        assertExists(roleWrapper2, Role.class);
+        assertExists(relationshipTypeWrapper, RelationshipType.class);
+        assertExists(relationshipWrapper, Relationship.class);
+        assertExists(entityTypeWrapper, EntityType.class);
+        assertExists(entityWrapper, Entity.class);
+        assertExists(attributeTypeWrapper, AttributeType.class);
+        assertExists(attributeWrapper1, Attribute.class);
+        assertExists(attributeWrapper2, Attribute.class);
+        assertExists(ruleWrapper, Rule.class);
     }
 
     @Test
     public void whenGettingConceptByIdAndConceptDoeNotExist_EmptyResponse(){
+        String request = REST.resolveTemplate(REST.WebPath.CONCEPT_ID, keyspace.getValue(), "bob's smelly uncle");
+        RestAssured.when().get(request).then().statusCode(SC_NOT_FOUND);
+    }
 
+    //We can't use the class of the wrapper because it will be an AutoValue class
+    private static void assertExists(Concept wrapper, Class clazz) throws IOException {
+        String request = wrapper.selfLink().id();
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.statusCode());
+        String content = response.thenReturn().body().asString();
+
+        assertEquals(entityWrapper, objectMapper.readValue(content, clazz));
     }
 }

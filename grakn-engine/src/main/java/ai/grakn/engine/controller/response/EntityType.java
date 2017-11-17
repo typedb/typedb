@@ -38,16 +38,16 @@ public abstract class EntityType extends Type{
 
     @JsonCreator
     public static EntityType create(
-            ConceptId id,
+            @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            Label label,
-            Boolean implicit,
-            @JsonProperty("super") Link sup,
-            Set<Link> subs,
+            @JsonProperty("label") Label label,
+            @JsonProperty("implicit") Boolean implicit,
+            @JsonProperty("sup") Link sup,
+            @JsonProperty("subs") Set<Link> subs,
             @JsonProperty("abstract") Boolean isAbstract,
-            Set<Link> plays,
-            Set<Link> attributes,
-            Set<Link> keys){
+            @JsonProperty("plays") Set<Link> plays,
+            @JsonProperty("attributes") Set<Link> attributes,
+            @JsonProperty("keys") Set<Link> keys){
         return new AutoValue_EntityType(id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys);
     }
 }

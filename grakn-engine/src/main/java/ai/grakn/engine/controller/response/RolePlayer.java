@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.engine.Jacksonisable;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
@@ -38,7 +39,8 @@ public abstract class RolePlayer implements Jacksonisable{
     @JsonProperty
     public abstract Link thing();
 
-    public static RolePlayer create(Link role, Link thing){
+    @JsonCreator
+    public static RolePlayer create(@JsonProperty("role") Link role, @JsonProperty("thing") Link thing){
         return new AutoValue_RolePlayer(role, thing);
     }
 }

@@ -40,12 +40,12 @@ public abstract class Attribute extends Thing {
 
     @JsonCreator
     public static Attribute create(
-            ConceptId id,
+            @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            Set<Link> attributes,
-            Set<Link> keys,
-            Set<Link> relationships,
-            String value){
+            @JsonProperty("attributes") Set<Link> attributes,
+            @JsonProperty("keys") Set<Link> keys,
+            @JsonProperty("relationships") Set<Link> relationships,
+            @JsonProperty("value") String value){
         return new AutoValue_Attribute(id, selfLink, attributes, keys, relationships, value);
     }
 }

@@ -40,12 +40,12 @@ public abstract class Relationship extends Thing {
 
     @JsonCreator
     public static Relationship create(
-            ConceptId id,
+            @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            Set<Link> attributes,
-            Set<Link> keys,
-            Set<Link> relationships,
-            Set<RolePlayer> roleplayers){
+            @JsonProperty("attributes") Set<Link> attributes,
+            @JsonProperty("keys") Set<Link> keys,
+            @JsonProperty("relationships") Set<Link> relationships,
+            @JsonProperty("roleplayers") Set<RolePlayer> roleplayers){
         return new AutoValue_Relationship(id, selfLink, attributes, keys, relationships, roleplayers);
     }
 }

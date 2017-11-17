@@ -44,14 +44,14 @@ public abstract class Role extends SchemaConcept{
 
     @JsonCreator
     public static Role create(
-            ConceptId id,
+            @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            Label label,
-            Boolean implicit,
+            @JsonProperty("label") Label label,
+            @JsonProperty("implicit") Boolean implicit,
             @JsonProperty("super") Link sup,
-            Set<Link> subs,
-            Set<Link> relationships,
-            Set<Link> roleplayers){
+            @JsonProperty("subs") Set<Link> subs,
+            @JsonProperty("relationships") Set<Link> relationships,
+            @JsonProperty("roleplayers") Set<Link> roleplayers){
         return new AutoValue_Role(id, selfLink, label, implicit, sup, subs, relationships, roleplayers);
     }
 }
