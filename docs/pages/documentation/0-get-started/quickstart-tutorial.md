@@ -139,7 +139,7 @@ Having started Grakn engine and the Graql shell in its interactive mode, we are 
 Find all the people in the knowledge base, and list their `identifier` attributes (a string that represents their full name):
 
 ```graql
-match $p isa person, has identifier $i; get;
+match $p isa person, $p has identifier $i; get;
 ```
 
 {% include note.html content="In queries, Graql variables start with a `$`, which represent wildcards, and are returned as results in `get` queries. A variable name can contain alphanumeric characters, dashes and underscores." %}
