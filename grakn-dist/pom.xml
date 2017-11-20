@@ -59,12 +59,6 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql-shell</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!--Migrations-->
