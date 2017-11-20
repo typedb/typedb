@@ -40,7 +40,6 @@ import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import org.junit.BeforeClass;
@@ -59,7 +58,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ConceptControllerTest {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Lock mockLock = mock(Lock.class);
     private static final LockProvider mockLockProvider = mock(LockProvider.class);
     private static final Keyspace keyspace = SampleKBLoader.randomKeyspace();
@@ -155,8 +153,6 @@ public class ConceptControllerTest {
         String request = wrapper.selfLink().id();
         Response response = RestAssured.when().get(request);
         assertEquals(SC_OK, response.statusCode());
-        String content = response.thenReturn().body().asString();
-
-        assertEquals(wrapper, objectMapper.readValue(content, clazz));
+        assertEquals(wrapper, response.as(clazz));
     }
 }

@@ -46,6 +46,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.LABEL_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -88,6 +89,8 @@ public class ConceptController {
     }
 
     private String getConcept(Response response, Keyspace keyspace, Function<GraknTx, ai.grakn.concept.Concept> getter) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()) {
             ai.grakn.concept.Concept concept = getter.apply(tx);
 

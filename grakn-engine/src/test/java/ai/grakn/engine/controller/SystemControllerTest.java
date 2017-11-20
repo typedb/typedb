@@ -106,8 +106,7 @@ public class SystemControllerTest {
     @Test
     public void whenCallingPutKBEndpointOnNonExistentKeyspace_KeyspaceAppearsInList() throws IOException {
         RestAssured.put("/kb/myks");
-        String content = when().get("/kb").thenReturn().body().asString();
-        Keyspaces keyspaces = objectMapper.readValue(content, Keyspaces.class);
+        Keyspaces keyspaces = when().get("/kb").as(Keyspaces.class);
         assertThat(keyspaces.keyspaces(), not(empty()));
     }
 
