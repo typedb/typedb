@@ -99,7 +99,6 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         }
 
         if (hasReifiedRelationship()) {
-            // TODO: Replace with actual reification syntax
             repr.add("via").add(relationship().getPrintableName());
         }
 

@@ -331,7 +331,9 @@ public class InsertQueryTest {
 
         qb.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING)
+                label("a-new-resource-type")
+                        .sub(label(Schema.MetaSchema.ATTRIBUTE.getLabel()))
+                        .datatype(AttributeType.DataType.STRING)
         ).execute();
 
         qb.insert(

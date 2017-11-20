@@ -32,12 +32,10 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-base</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>${jool.version}</version>
         </dependency>
     </dependencies>
 </project>
