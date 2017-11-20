@@ -48,6 +48,7 @@ import static ai.grakn.SNB.$authorId;
 import static ai.grakn.SNB.$birthday;
 import static ai.grakn.SNB.$browserUsed;
 import static ai.grakn.SNB.$comment;
+import static ai.grakn.SNB.$commentId;
 import static ai.grakn.SNB.$content;
 import static ai.grakn.SNB.$creationDate;
 import static ai.grakn.SNB.$date;
@@ -400,9 +401,9 @@ public class GraknShortQueryHandlers {
                 graph.graql().match(
                         $message.isa(MESSAGE).has(MESSAGE_ID, operation.messageId()),
                         var().rel(PRODUCT, $message).rel(CREATOR, $author1).isa(HAS_CREATOR),
-                        var().rel(ORIGINAL, $message).rel(REPLY, $comment).isa(REPLY_OF)/*,
+                        var().rel(ORIGINAL, $message).rel(REPLY, $comment).isa(REPLY_OF),
                         var().rel($comment).rel($commentId).isa(key(MESSAGE_ID)),
-                        var().rel($comment).rel($content).isa(has(CONTENT)),
+                        var().rel($comment).rel($content).isa(has(CONTENT))/*,
                         var().rel($comment).rel($date).isa(has(CREATION_DATE)),
                         var().rel(PRODUCT, $comment).rel(CREATOR, $author2).isa(HAS_CREATOR),
                         var().rel($author2).rel($personId).isa(key(PERSON_ID)),
