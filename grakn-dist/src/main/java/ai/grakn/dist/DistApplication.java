@@ -21,7 +21,7 @@ package ai.grakn.dist;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.Grakn;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
@@ -63,7 +63,7 @@ public class DistApplication {
 
     private static final long WAIT_INTERVAL_S=2;
 
-    private final GraknEngineConfig graknConfig;
+    private final GraknConfig graknConfig;
     private final String configPath;
 
     private boolean storageIsStarted;
@@ -144,7 +144,7 @@ public class DistApplication {
         this.output = output;
         this.homePath = homePath;
         this.configPath = configPath;
-        this.graknConfig = GraknEngineConfig.read(new File(configPath));
+        this.graknConfig = GraknConfig.read(new File(configPath));
     }
 
     private void version() {
