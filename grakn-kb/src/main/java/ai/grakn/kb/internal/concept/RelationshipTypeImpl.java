@@ -70,7 +70,12 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     @Override
     public Relationship addRelationship() {
         return addInstance(Schema.BaseType.RELATIONSHIP,
-                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), true);
+                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), false, true);
+    }
+
+    public Relationship addRelationshipInferred() {
+        return addInstance(Schema.BaseType.RELATIONSHIP,
+                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), true, true);
     }
 
     @Override

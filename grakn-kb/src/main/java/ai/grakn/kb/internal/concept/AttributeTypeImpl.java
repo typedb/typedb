@@ -115,27 +115,39 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @SuppressWarnings("unchecked")
     @Override
     public Attribute<D> putAttribute(D value) {
+        return putAttribute(value, false);
+    }
+
+    public Attribute<D> putAttributeInferred(D value) {
+        return putAttribute(value, true);
+    }
+
+    private Attribute<D> putAttribute(D value, boolean isInferred) {
         Objects.requireNonNull(value);
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             Object persistenceValue = castValue(value);
-            AttributeImpl<D> resource = vertex().tx().factory().buildResource(vertex, type, persistenceValue);
+            AttributeImpl<D> attribute = vertex().tx().factory().buildAttribute(vertex, type, persistenceValue);
+
+            if(isInferred && !attribute.isInferred()){
+                throw GraknTxOperationException.nonInferredAttributeExists(attribute);
+            }
 
             try{
-                resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
+                attribute.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
             } catch (PropertyNotUniqueException e){
                 //This happens when another attribute ends up being created between checking if the attribute exists and
                 // creating the actual attribute. In this case we dynamically merge
-                resource.delete();
+                attribute.delete();
                 return getAttribute(value);
             }
 
-            return resource;
+            return attribute;
         };
 
         return putInstance(Schema.BaseType.ATTRIBUTE,
-                () -> getAttribute(value), instanceBuilder);
+                () -> getAttribute(value), instanceBuilder, isInferred);
     }
 
     /**

@@ -104,11 +104,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param producer The factory method to produce the instance if it doesn't exist
      * @return A new or already existing instance
      */
-    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<VertexElement, T, V> producer) {
+    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<VertexElement, T, V> producer, boolean isInferred) {
         preCheckForInstanceCreation();
 
         V instance = finder.get();
-        if(instance == null) instance = addInstance(instanceBaseType, producer, false);
+        if(instance == null) instance = addInstance(instanceBaseType, producer, isInferred, false);
         return instance;
     }
 
@@ -120,7 +120,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param checkNeeded indicates if a check is necessary before adding the instance
      * @return A new instance
      */
-    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean checkNeeded){
+    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean isInferred, boolean checkNeeded){
         if(checkNeeded) preCheckForInstanceCreation();
 
         if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
@@ -128,6 +128,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             vertex().tx().txCache().addedInstance(getId());
+            if(isInferred) vertex().property(Schema.VertexProperty.IS_INFERRED, true);
         }
         return producer.apply(instanceVertex, getThis());
     }
