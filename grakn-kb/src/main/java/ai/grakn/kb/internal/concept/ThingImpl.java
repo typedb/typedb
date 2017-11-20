@@ -109,6 +109,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }
     }
 
+    public boolean isInferred(){
+        return vertex().propertyBoolean(Schema.VertexProperty.IS_INFERRED);
+    }
+
     /**
      * Deletes the concept as an Thing
      */

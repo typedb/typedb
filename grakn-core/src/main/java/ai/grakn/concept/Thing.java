@@ -109,6 +109,14 @@ public interface Thing extends Concept{
      */
     Thing deleteAttribute(Attribute attribute);
 
+    /**
+     * Used to indicate if this {@link Thing} has been created as the result of a {@link Rule} inference.
+     * @see Rule
+     *
+     * @return true if this {@link Thing} exists due to a rule
+     */
+    boolean isInferred();
+
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue

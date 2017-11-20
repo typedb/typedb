@@ -176,6 +176,11 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     }
 
     @Override
+    public boolean isInferred() {
+        return structure().isInferred();
+    }
+
+    @Override
     public void removeRolePlayer(Role role, Thing thing) {
         reified().ifPresent(relationshipReified -> relationshipReified.removeRolePlayer(role, thing));
     }
