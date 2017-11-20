@@ -566,7 +566,7 @@ public class RelationshipAtom extends IsaAtom {
     private RelationshipAtom inferRelationshipType(Answer sub){
         if (getTypePredicate() != null) return this;
 
-        if (sub.containsKey(getPredicateVariable())){
+        if (sub.containsVar(getPredicateVariable())){
             Concept typeConcept = sub.get(getPredicateVariable());
             if (typeConcept.isRelationshipType()) return addType(sub.get(getPredicateVariable()).asType());
         }

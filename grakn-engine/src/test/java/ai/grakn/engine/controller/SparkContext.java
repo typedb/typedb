@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.SimpleURI;
 import ai.grakn.util.GraknTestUtil;
 import com.jayway.restassured.RestAssured;
@@ -39,12 +39,12 @@ import static ai.grakn.engine.HttpHandler.configureSpark;
  */
 public class SparkContext extends ExternalResource {
 
-    private final BiConsumer<Service, GraknEngineConfig> createControllers;
-    private final GraknEngineConfig config = GraknEngineConfig.create();
+    private final BiConsumer<Service, GraknConfig> createControllers;
+    private final GraknConfig config = GraknConfig.create();
 
     private Service spark;
     
-    private SparkContext(BiConsumer<Service, GraknEngineConfig> createControllers) {
+    private SparkContext(BiConsumer<Service, GraknConfig> createControllers) {
         this.createControllers = createControllers;
 
         int port = GraknTestUtil.getEphemeralPort();
@@ -70,7 +70,7 @@ public class SparkContext extends ExternalResource {
         return spark;
     }
     
-    public static SparkContext withControllers(BiConsumer<Service, GraknEngineConfig> createControllers) {
+    public static SparkContext withControllers(BiConsumer<Service, GraknConfig> createControllers) {
         return new SparkContext(createControllers);
     }
 
@@ -96,7 +96,7 @@ public class SparkContext extends ExternalResource {
         return config.uri();
     }
 
-    public GraknEngineConfig config() {
+    public GraknConfig config() {
         return config;
     }
 

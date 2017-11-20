@@ -19,7 +19,7 @@
 package ai.grakn.engine.config;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.util.SimpleURI;
@@ -32,13 +32,13 @@ import org.junit.rules.ExpectedException;
 import static junit.framework.TestCase.assertNotNull;
 
 /**
- * Testing the {@link GraknEngineConfig} class
+ * Testing the {@link GraknConfig} class
  *
  * @author alexandraorth
  */
-public class GraknEngineConfigTest {
+public class GraknConfigTest {
 
-    private static GraknEngineConfig configuration = GraknEngineConfig.create();
+    private static GraknConfig configuration = GraknConfig.create();
 
     @ClassRule
     public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(configuration.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
@@ -52,7 +52,7 @@ public class GraknEngineConfigTest {
 
         exception.expect(RuntimeException.class);
         exception.expectMessage(
-                ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.name(), GraknEngineConfig.CONFIG_FILE_PATH)
+                ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.name(), GraknConfig.CONFIG_FILE_PATH)
         );
 
         configuration.getProperty(key);

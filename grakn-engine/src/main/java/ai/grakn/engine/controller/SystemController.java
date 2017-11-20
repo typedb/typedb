@@ -21,7 +21,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.response.KeyspaceResponse;
@@ -94,9 +94,9 @@ public class SystemController {
     private final ObjectMapper mapper;
     private final CollectorRegistry prometheusRegistry;
     private final SystemKeyspace systemKeyspace;
-    private final GraknEngineConfig config;
+    private final GraknConfig config;
 
-    public SystemController(Service spark, GraknEngineConfig config, SystemKeyspace systemKeyspace,
+    public SystemController(Service spark, GraknConfig config, SystemKeyspace systemKeyspace,
                             GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
         this.systemKeyspace = systemKeyspace;
         this.config = config;

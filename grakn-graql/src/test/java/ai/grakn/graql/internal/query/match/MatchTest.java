@@ -1075,7 +1075,7 @@ public class MatchTest {
         Entity entity = type.addEntity();
 
         Collection<Concept> results = movieKB.tx().graql().match(x.isa(type.getLabel().getValue()))
-                .stream().findAny().get().values();
+                .stream().findAny().get().concepts();
 
         assertThat(results, containsInAnyOrder(entity));
     }

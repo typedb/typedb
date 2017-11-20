@@ -25,25 +25,20 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.GraknSessionLocal;
 import ai.grakn.factory.TxFactory;
 import ai.grakn.graql.Query;
 import ai.grakn.kb.internal.GraknTxTinker;
-import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.Files;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -62,8 +57,6 @@ import java.util.stream.Collectors;
  * @author fppt
  */
 public class SampleKBLoader {
-    private static final AtomicBoolean propertiesLoaded = new AtomicBoolean(false);
-    private static Properties graphConfig;
 
     private final TxFactory<?> factory;
     private @Nullable Consumer<GraknTx> preLoad;
@@ -72,7 +65,7 @@ public class SampleKBLoader {
 
     private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
 
-        GraknSession session = GraknSessionLocal.create(randomKeyspace(), Grakn.IN_MEMORY, properties());
+        GraknSession session = GraknSessionLocal.create(randomKeyspace(), Grakn.IN_MEMORY, GraknConfig.create());
         factory = FactoryBuilder.getFactory(session, false);
         this.preLoad = preLoad;
     }
@@ -123,46 +116,6 @@ public class SampleKBLoader {
      */
     private void load(GraknTx graph){
         if(preLoad != null) preLoad.accept(graph);
-    }
-
-    /**
-     * Using system properties the graph config is directly read from file.
-     *
-     * @return The properties needed to build a graph.
-     */
-    //TODO Use this method in GraknEngineConfig (It's a duplicate)
-    private static Properties properties(){
-        if(propertiesLoaded.compareAndSet(false, true)){
-            String configFilePath = GraknSystemProperty.CONFIGURATION_FILE.value();
-            assert configFilePath != null;
-
-            if (!Paths.get(configFilePath).isAbsolute()) {
-                configFilePath = getProjectPath() + configFilePath;
-            }
-
-            graphConfig = new Properties();
-            try (FileInputStream inputStream = new FileInputStream(configFilePath)){
-                graphConfig.load(inputStream);
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw GraknTxOperationException.invalidConfig(configFilePath);
-            }
-        }
-
-        return graphConfig;
-    }
-
-    /**
-     * @return The project path. If it is not specified as a JVM parameter it will be set equal to
-     * user.dir folder.
-     */
-    //TODO Use this method in GraknEngineConfig (It's a duplicate)
-    private static String getProjectPath() {
-        if (GraknSystemProperty.CURRENT_DIRECTORY.value() == null) {
-            GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
-        }
-
-        return GraknSystemProperty.CURRENT_DIRECTORY.value() + "/";
     }
 
     public static Keyspace randomKeyspace(){

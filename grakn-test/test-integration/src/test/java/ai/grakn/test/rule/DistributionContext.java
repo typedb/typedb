@@ -22,7 +22,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.client.Client;
 import ai.grakn.engine.Grakn;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
@@ -131,7 +131,7 @@ public class DistributionContext extends CompositeTestRule {
 
     private Process newEngineProcess(Integer port, Integer redisPort) throws IOException {
         // Set correct port & task manager
-        GraknEngineConfig config = GraknEngineConfig.create();
+        GraknConfig config = GraknConfig.create();
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         config.setConfigProperty(GraknConfigKey.REDIS_HOST, ImmutableList.of(new SimpleURI("localhost", redisPort).toString()));
         // To speed up tests of failure cases
