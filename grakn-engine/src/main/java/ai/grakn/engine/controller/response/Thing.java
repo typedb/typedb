@@ -38,5 +38,5 @@ public abstract class Thing extends Concept {
     public abstract Set<Link> keys();
 
     @JsonProperty
-    public abstract Set<Link> relationships();
+    public abstract Set<RolePlayer> relationships();
 }

@@ -41,7 +41,7 @@ public abstract class Entity extends Thing {
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("attributes") Set<Link> attributes,
             @JsonProperty("keys") Set<Link> keys,
-            @JsonProperty("relationships") Set<Link> relationships){
+            @JsonProperty("relationships") Set<RolePlayer> relationships){
         return new AutoValue_Entity(id, selfLink, attributes, keys, relationships);
     }
 }

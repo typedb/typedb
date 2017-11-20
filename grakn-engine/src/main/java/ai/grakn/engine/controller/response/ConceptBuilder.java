@@ -57,7 +57,15 @@ public class ConceptBuilder {
         Link selfLink = Link.create(thing);
         Set<Link> attributes = thing.attributes().map(Link::create).collect(Collectors.toSet());
         Set<Link> keys = thing.keys().map(Link::create).collect(Collectors.toSet());
-        Set<Link> relationships = thing.relationships().map(Link::create).collect(Collectors.toSet());
+
+        Set<RolePlayer> relationships = new HashSet<>();
+        thing.plays().forEach(role -> {
+            Link roleWrapper = Link.create(role);
+            thing.relationships(role).forEach(relationship -> {
+                Link relationshipWrapper = Link.create(relationship);
+                relationships.add(RolePlayer.create(roleWrapper, relationshipWrapper));
+            });
+        });
 
         if(thing.isAttribute()){
             return buildAttribute(thing.asAttribute(), selfLink, attributes, keys, relationships);
@@ -84,15 +92,15 @@ public class ConceptBuilder {
         }
     }
 
-    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<Link> relationships){
+    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
         return Entity.create(entity.getId(), selfLink, attributes, keys, relationships);
     }
 
-    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<Link> relationships){
+    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
         return Attribute.create(attribute.getId(), selfLink, attributes, keys, relationships, attribute.getValue().toString());
     }
 
-    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<Link> relationships){
+    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
         //Get all the role players and roles part of this relationship
         Set<RolePlayer> roleplayers = new HashSet<>();
         relationship.allRolePlayers().forEach((role, things) -> {

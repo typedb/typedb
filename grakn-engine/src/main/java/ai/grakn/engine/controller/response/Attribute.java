@@ -44,7 +44,7 @@ public abstract class Attribute extends Thing {
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("attributes") Set<Link> attributes,
             @JsonProperty("keys") Set<Link> keys,
-            @JsonProperty("relationships") Set<Link> relationships,
+            @JsonProperty("relationships") Set<RolePlayer> relationships,
             @JsonProperty("value") String value){
         return new AutoValue_Attribute(id, selfLink, attributes, keys, relationships, value);
     }
