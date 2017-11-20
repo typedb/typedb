@@ -109,6 +109,8 @@ pid_files_must_not_exist() {
 must_properly_stop() {
   "${GRAKN_DIST_TMP}"/grakn server stop
   local grakn_server_stop=$?
+
+  sleep 5
   local count_running_cassandra_process=`ps -ef | grep 'CassandraDaemon' | grep -v grep | awk '{ print $2}' | wc -l`
   local count_running_redis_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
   local count_running_grakn_process=`ps -ef | grep 'Grakn' | grep -v grep | awk '{ print $2}' | wc -l`
