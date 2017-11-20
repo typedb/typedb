@@ -17,16 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
 
-# ================================================
-# grakn
-# this script is divided into several major parts
-# global variables
-# common helper functions
-# storage component helper functions - storage_*
-# queue component helper functions - queue_*
-# grakn helper functions - grakn_*
-# command line helpers - cli_*
-# ================================================
+# Grakn global variables
+if [ -z "${GRAKN_HOME}" ]; then
+    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
+fi
 
 # ================================================
 # common helper functions
@@ -56,12 +51,6 @@ print_grakn_logo() {
 # main routine
 # =============================================
 
-
-# Grakn global variables
-if [ -z "${GRAKN_HOME}" ]; then
-    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
-    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-fi
 
 
 pushd "$GRAKN_HOME" > /dev/null
