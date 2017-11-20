@@ -26,13 +26,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
 
 public class ConceptBuilderTest {
     public static GraknTx tx;
@@ -51,31 +48,24 @@ public class ConceptBuilderTest {
     }
 
     @Test
-    public void whenWrappingInvalidConcept_EmptyOptionalReturned(){
-        assertFalse(ConceptBuilder.build(null).isPresent());
-    }
-
-    @Test
     public void whenWrappingEntity_EnsureEntityDetailsAreWrapped(){
         ai.grakn.concept.Entity entity = tx.getEntityType("person").instances().findAny().get();
-        Optional<Entity> entityWrapper = ConceptBuilder.build(entity);
-
-        assertTrue(entityWrapper.isPresent());
+        Entity entityWrapper = ConceptBuilder.build(entity);
 
         //Check internal data
-        assertEquals(entity.getId(), entityWrapper.get().id());
+        assertEquals(entity.getId(), entityWrapper.id());
 
         //Check Links to other concepts
         Set<Link> attributeIds = entity.attributes().map(Link::create).collect(Collectors.toSet());
-        Set<Link> attributeWrapperIds = entityWrapper.get().attributes();
+        Set<Link> attributeWrapperIds = entityWrapper.attributes();
         assertEquals(attributeIds, attributeWrapperIds);
 
         Set<Link> keyIds = entity.keys().map(Link::create).collect(Collectors.toSet());
-        Set<Link> keyWrapperIds = entityWrapper.get().keys();
+        Set<Link> keyWrapperIds = entityWrapper.keys();
         assertEquals(keyIds, keyWrapperIds);
 
         Set<Link> relationshipIds = entity.relationships().map(Link::create).collect(Collectors.toSet());
-        Set<Link> relationshipWrapperIds = entityWrapper.get().relationships();
+        Set<Link> relationshipWrapperIds = entityWrapper.relationships();
         assertEquals(relationshipIds, relationshipWrapperIds);
     }
 
@@ -83,23 +73,21 @@ public class ConceptBuilderTest {
     public void whenWrappingEntityType_EnsureEntityTypeDetailsAreWrapped(){
         ai.grakn.concept.EntityType entityType = tx.getEntityType("person");
 
-        Optional<EntityType> entityTypeWrapper = ConceptBuilder.build(entityType);
-
-        assertTrue(entityTypeWrapper.isPresent());
+        EntityType entityTypeWrapper = ConceptBuilder.build(entityType);
 
         //Check internal data
-        assertEquals(entityType.getId(), entityTypeWrapper.get().id());
-        assertEquals(entityType.getLabel(), entityTypeWrapper.get().label());
-        assertEquals(entityType.isAbstract(), entityTypeWrapper.get().isAbstract());
-        assertEquals(entityType.isImplicit(), entityTypeWrapper.get().implicit());
+        assertEquals(entityType.getId(), entityTypeWrapper.id());
+        assertEquals(entityType.getLabel(), entityTypeWrapper.label());
+        assertEquals(entityType.isAbstract(), entityTypeWrapper.isAbstract());
+        assertEquals(entityType.isImplicit(), entityTypeWrapper.implicit());
 
         //Check Links to other concepts
         Set<Link> supIds = entityType.subs().map(Link::create).collect(Collectors.toSet());
-        Set<Link> supWrapperIds = entityTypeWrapper.get().subs();
+        Set<Link> supWrapperIds = entityTypeWrapper.subs();
         assertEquals(supIds, supWrapperIds);
 
         Set<Link> playIds = entityType.plays().map(Link::create).collect(Collectors.toSet());
-        Set<Link> playWrapperIds = entityTypeWrapper.get().plays();
+        Set<Link> playWrapperIds = entityTypeWrapper.plays();
         assertEquals(playIds, playWrapperIds);
     }
 }

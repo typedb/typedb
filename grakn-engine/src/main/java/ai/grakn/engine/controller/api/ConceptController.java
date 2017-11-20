@@ -91,7 +91,7 @@ public class ConceptController {
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()) {
             ai.grakn.concept.Concept concept = getter.apply(tx);
 
-            Optional<Concept> conceptWrapper = ConceptBuilder.build(concept);
+            Optional<Concept> conceptWrapper = Optional.ofNullable(concept).map(ConceptBuilder::build);
             if(conceptWrapper.isPresent()){
                 response.status(SC_OK);
                 return objectMapper.writeValueAsString(conceptWrapper.get());

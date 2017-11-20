@@ -21,7 +21,6 @@ package ai.grakn.engine.controller.response;
 import ai.grakn.exception.GraknBackendException;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,9 +39,7 @@ public class ConceptBuilder {
      * @param concept The {@link ai.grakn.concept.Concept} to be converted into a response object
      * @return the response object wrapper {@link Concept}
      */
-    public static <X extends Concept> Optional<X> build(ai.grakn.concept.Concept concept){
-        if(concept == null) return Optional.empty();
-
+    public static <X extends Concept> X build(ai.grakn.concept.Concept concept){
         Concept response;
         if(concept.isSchemaConcept()){
             response = buildSchemaConcept(concept.asSchemaConcept());
@@ -52,7 +49,7 @@ public class ConceptBuilder {
             throw GraknBackendException.convertingUnknownConcept(concept);
         }
 
-        return Optional.of((X) response);
+        return (X) response;
     }
 
     //TODO: This will scale poorly with super nodes. Need to introduce some sort of paging maybe?

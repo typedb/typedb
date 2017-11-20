@@ -111,20 +111,20 @@ public class ConceptControllerTest {
             ai.grakn.concept.Rule rule = tx.putRule("My Special Snowflake of a Rule", when, then);
 
             //Manually Serialise The Concepts
-            roleWrapper1 = ConceptBuilder.<Role>build(role1).get();
-            roleWrapper2 = ConceptBuilder.<Role>build(role2).get();
+            roleWrapper1 = ConceptBuilder.build(role1);
+            roleWrapper2 = ConceptBuilder.build(role2);
 
-            relationshipTypeWrapper = ConceptBuilder.<RelationshipType>build(relationshipType).get();
-            relationshipWrapper = ConceptBuilder.<Relationship>build(relationship).get();
+            relationshipTypeWrapper = ConceptBuilder.build(relationshipType);
+            relationshipWrapper = ConceptBuilder.build(relationship);
 
-            entityTypeWrapper = ConceptBuilder.<EntityType>build(entityType).get();
-            entityWrapper = ConceptBuilder.<Entity>build(entity).get();
+            entityTypeWrapper = ConceptBuilder.build(entityType);
+            entityWrapper = ConceptBuilder.build(entity);
 
-            attributeTypeWrapper = ConceptBuilder.<AttributeType>build(attributeType).get();
-            attributeWrapper1 = ConceptBuilder.<Attribute>build(attribute1).get();
-            attributeWrapper2 = ConceptBuilder.<Attribute>build(attribute2).get();
+            attributeTypeWrapper = ConceptBuilder.build(attributeType);
+            attributeWrapper1 = ConceptBuilder.build(attribute1);
+            attributeWrapper2 = ConceptBuilder.build(attribute2);
 
-            ruleWrapper = ConceptBuilder.<Rule>build(rule).get();
+            ruleWrapper = ConceptBuilder.build(rule);
 
             tx.commit();
         }
