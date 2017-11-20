@@ -38,9 +38,11 @@ import org.junit.Test;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class EntityTest extends TxTestBase {
 
@@ -207,6 +209,15 @@ public class EntityTest extends TxTestBase {
         EntityType et = tx.putEntityType("et");
         EntityImpl e = (EntityImpl) et.addEntity();
         assertEquals(et.getLabel(), e.getInternalType());
+    }
+
+    @Test
+    public void whenCreatingAnInferredEntity_EnsureMarkedAsInferred(){
+        EntityTypeImpl et = EntityTypeImpl.from(tx.putEntityType("et"));
+        Entity entity = et.addEntity();
+        Entity entityInferred = et.addEntityInferred();
+        assertFalse(entity.isInferred());
+        assertTrue(entityInferred.isInferred());
     }
 
     @Test

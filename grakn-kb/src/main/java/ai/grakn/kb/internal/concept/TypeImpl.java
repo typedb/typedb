@@ -108,7 +108,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         preCheckForInstanceCreation();
 
         V instance = finder.get();
-        if(instance == null) instance = addInstance(instanceBaseType, producer, isInferred, false);
+        if(instance == null) {
+            instance = addInstance(instanceBaseType, producer, isInferred, false);
+        } else {
+            if(isInferred && !instance.isInferred()){
+                throw GraknTxOperationException.nonInferredThingExists(instance);
+            }
+        }
         return instance;
     }
 
@@ -128,7 +134,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             vertex().tx().txCache().addedInstance(getId());
-            if(isInferred) vertex().property(Schema.VertexProperty.IS_INFERRED, true);
+            if(isInferred) instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
         }
         return producer.apply(instanceVertex, getThis());
     }

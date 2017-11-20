@@ -177,4 +177,8 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
                             flatMap(CommonUtil::optionalToStream);
                 });
     }
+
+    public static RelationshipTypeImpl from(RelationshipType relationshipType){
+        return (RelationshipTypeImpl) relationshipType;
+    }
 }

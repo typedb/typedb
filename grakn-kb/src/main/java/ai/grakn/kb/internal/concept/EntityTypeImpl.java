@@ -62,4 +62,8 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
     public Entity addEntityInferred() {
         return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> vertex().tx().factory().buildEntity(vertex, type), true, true);
     }
+
+    public static EntityTypeImpl from(EntityType entityType){
+        return (EntityTypeImpl) entityType;
+    }
 }

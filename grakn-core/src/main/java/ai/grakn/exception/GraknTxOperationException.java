@@ -318,10 +318,10 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when attempting to create an {@link Attribute} via the execution of a {@link ai.grakn.concept.Rule} when
-     * the {@link Attribute} already exists
+     * Thrown when attempting to create a {@link Thing} via the execution of a {@link ai.grakn.concept.Rule} when
+     * the {@link Thing} already exists.
      */
-    public static GraknTxOperationException nonInferredAttributeExists(Attribute attribute){
-        return new GraknTxOperationException(String.format("Attribute {%s} was already created and cannot be set to inferred", attribute));
+    public static GraknTxOperationException nonInferredThingExists(Thing thing){
+        return new GraknTxOperationException(String.format("Thing {%s} was already created and cannot be set to inferred", thing));
     }
 }

@@ -130,10 +130,6 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
             Object persistenceValue = castValue(value);
             AttributeImpl<D> attribute = vertex().tx().factory().buildAttribute(vertex, type, persistenceValue);
 
-            if(isInferred && !attribute.isInferred()){
-                throw GraknTxOperationException.nonInferredAttributeExists(attribute);
-            }
-
             try{
                 attribute.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
             } catch (PropertyNotUniqueException e){
@@ -211,6 +207,10 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public String getRegex() {
         return vertex().property(Schema.VertexProperty.REGEX);
+    }
+
+    public static AttributeTypeImpl from(AttributeType attributeType){
+        return (AttributeTypeImpl) attributeType;
     }
 
 }
