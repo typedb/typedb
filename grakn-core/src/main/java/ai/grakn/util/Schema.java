@@ -135,7 +135,7 @@ public final class Schema {
 
         //Internal
         SHARD(Vertex.class),
-        CONCEPT(Concept.class);
+        CONCEPT(Concept.class);//No concept actually has this base type. This is used to prevent string hardcoding
 
         private final Class classType;
 
