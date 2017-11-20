@@ -58,7 +58,6 @@ print_grakn_logo() {
 
 
 # Grakn global variables
-# TODO: clean up
 if [ -z "${GRAKN_HOME}" ]; then
     [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
     GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
