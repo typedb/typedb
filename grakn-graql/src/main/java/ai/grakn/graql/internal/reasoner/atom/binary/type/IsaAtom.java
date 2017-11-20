@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary.type;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -31,8 +32,10 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import ai.grakn.graql.internal.reasoner.utils.Pair;
+import ai.grakn.util.ErrorMessage;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -58,8 +61,15 @@ public class IsaAtom extends TypeAtom {
     protected IsaAtom(TypeAtom a) { super(a);}
 
     @Override
-    public boolean isAllowedToFormRuleHead(){
-        return getSchemaConcept() != null;
+    public Set<String> validateAsRuleHead(Rule rule){
+        Set<String> errors = new HashSet<>();
+        SchemaConcept schemaConcept = getSchemaConcept();
+        if (schemaConcept == null){
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+        } else if (schemaConcept.isImplicit()){
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+        }
+        return errors;
     }
 
     @Override

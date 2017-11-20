@@ -394,14 +394,14 @@ class ValidateGlobalRules {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getLabel()));
         } else {
             ReasonerQuery headQuery = patterns.iterator().next().toReasonerQuery(graph);
-            Set<Atomic> allowed = headQuery.getAtoms().stream()
-                    .filter(Atomic::isAllowedToFormRuleHead).collect(Collectors.toSet());
+            headQuery.getAtoms().stream().map(at -> at.validateAsRuleHead(rule)).forEach(errors::addAll);
+            Set<Atomic> selectableHeadAtoms = headQuery.getAtoms().stream()
+                    .filter(Atomic::isAtom)
+                    .filter(Atomic::isSelectable)
+                    .collect(Collectors.toSet());
 
-            if (allowed.size() > 1) {
+            if (selectableHeadAtoms.size() > 1) {
                 errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getLabel()));
-            }
-            else if (allowed.isEmpty()){
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getLabel()));
             }
         }
         return errors;

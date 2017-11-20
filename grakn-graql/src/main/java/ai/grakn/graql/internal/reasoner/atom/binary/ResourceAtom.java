@@ -19,6 +19,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -241,12 +242,21 @@ public class ResourceAtom extends Binary{
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
-    public boolean isAllowedToFormRuleHead(){
-        if (getSchemaConcept() == null || getMultiPredicate().size() > 1) return false;
-        if (getMultiPredicate().isEmpty()) return true;
+    public Set<String> validateAsRuleHead(Rule rule){
+        Set<String> errors = new HashSet<>();
+        if (getSchemaConcept() == null || getMultiPredicate().size() > 1){
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.getThen(), rule.getLabel()));
+        }
+        if (getMultiPredicate().isEmpty()){
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_VARIABLE_PREDICATE.getMessage(rule.getThen(), rule.getLabel()));
+        }
 
-        ValuePredicate predicate = getMultiPredicate().iterator().next();
-        return predicate.getPredicate().isSpecific();
+        getMultiPredicate().stream()
+                .filter(p -> !p.getPredicate().isSpecific())
+                .forEach( p ->
+                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE.getMessage(rule.getThen(), rule.getLabel()))
+                );
+        return errors;
     }
 
     @Override
