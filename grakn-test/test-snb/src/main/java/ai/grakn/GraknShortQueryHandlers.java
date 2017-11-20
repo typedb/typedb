@@ -17,9 +17,7 @@
  */
 package ai.grakn;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Order;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
@@ -83,7 +81,6 @@ import static ai.grakn.SNB.CREATOR;
 import static ai.grakn.SNB.FIRST_NAME;
 import static ai.grakn.SNB.FORUM_ID;
 import static ai.grakn.SNB.FORUM_MEMBER;
-import static ai.grakn.SNB.FRIEND;
 import static ai.grakn.SNB.GENDER;
 import static ai.grakn.SNB.GROUP_FORUM;
 import static ai.grakn.SNB.HAS_CREATOR;
@@ -116,7 +113,6 @@ import static ai.grakn.SNB.has;
 import static ai.grakn.SNB.key;
 import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.toEpoch;
-import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.var;
 import static java.util.Comparator.comparing;
 
@@ -403,7 +399,7 @@ public class GraknShortQueryHandlers {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
 
-                List<Answer> results = graph.graql().match(
+                graph.graql().match(
                         $message.isa(MESSAGE).has(MESSAGE_ID, operation.messageId()),
                         var().rel(PRODUCT, $message).rel(CREATOR, $author1).isa(HAS_CREATOR),
                         var().rel(ORIGINAL, $message).rel(REPLY, $comment).isa(REPLY_OF),
@@ -435,14 +431,14 @@ public class GraknShortQueryHandlers {
 
         }
 
-        private boolean checkIfFriends(ConceptId author1, ConceptId author2, GraknTx graph) {
-            return graph.graql().match(
-                    var().rel(FRIEND, var().id(author1)).rel(FRIEND, var().id(author2)).isa(KNOWS)
-            ).aggregate(ask()).execute();
-        }
-
-        private ConceptId conceptId(Answer result, Var var) {
-            return result.get(var).getId();
-        }
+//        private boolean checkIfFriends(ConceptId author1, ConceptId author2, GraknTx graph) {
+//            return graph.graql().match(
+//                    var().rel(FRIEND, var().id(author1)).rel(FRIEND, var().id(author2)).isa(KNOWS)
+//            ).aggregate(ask()).execute();
+//        }
+//
+//        private ConceptId conceptId(Answer result, Var var) {
+//            return result.get(var).getId();
+//        }
     }
 }
