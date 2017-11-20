@@ -149,6 +149,15 @@ public class RuleTest {
     }
 
     @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithVariableRoles_Throw() throws InvalidKBException {
+        validateIllegalRule(
+                graknTx.graql().parsePattern("($r1: $x, $r2: $y) isa relation1"),
+                graknTx.graql().parsePattern("($r2: $x, $r1: $y) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+    }
+
+    @Test
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithoutType_Throw() throws InvalidKBException {
         validateIllegalRule(
                 graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
@@ -193,6 +202,11 @@ public class RuleTest {
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalRule(
+                graknTx.graql().parsePattern("$x isa relation1"),
+                graknTx.graql().parsePattern("$x relates role1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
                 graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parsePattern("$x has res1"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
@@ -204,6 +218,16 @@ public class RuleTest {
         validateIllegalRule(
                 graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parsePattern("$x id '100'"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknTx.graql().parsePattern("$x != $y'"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknTx.graql().parsePattern("($x, $y); $x isa res1;"),
+                graknTx.graql().parsePattern("$x val '100'"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalRule(
