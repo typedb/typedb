@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.engine.Jacksonisable;
+import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.util.REST;
 import ai.grakn.util.REST.WebPath;
 import ai.grakn.util.Schema;
@@ -52,15 +53,16 @@ public abstract class Link implements Jacksonisable{
                 thing.keyspace().getValue(),
                 Schema.BaseType.CONCEPT.name().toLowerCase(Locale.getDefault()),
                 thing.getId().getValue());
-        return new AutoValue_Link(id);
+        return create(id);
     }
 
     public static Link create(ai.grakn.concept.SchemaConcept schemaConcept){
-        String type = Schema.BaseType.TYPE.name().toLowerCase(Locale.getDefault());
-        if(schemaConcept.isRule()){
-            type = Schema.BaseType.RULE.name().toLowerCase(Locale.getDefault());
-        } else if(schemaConcept.isRole()){
-            type = Schema.BaseType.ROLE.name().toLowerCase(Locale.getDefault());
+        String type;
+
+        if(schemaConcept.isType()){
+            type = Schema.BaseType.TYPE.name().toLowerCase(Locale.getDefault());
+        } else {
+            type = SchemaConceptImpl.from(schemaConcept).baseType().name().toLowerCase(Locale.getDefault());
         }
 
         String id = REST.resolveTemplate(
@@ -68,7 +70,7 @@ public abstract class Link implements Jacksonisable{
                 schemaConcept.keyspace().getValue(),
                 type,
                 schemaConcept.getLabel().getValue());
-        return new AutoValue_Link(id);
+        return create(id);
     }
 
 }
