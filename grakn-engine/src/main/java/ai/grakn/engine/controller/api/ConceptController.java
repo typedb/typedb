@@ -76,14 +76,14 @@ public class ConceptController {
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
         Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
-        Label label = Label.of(Requests.mandatoryPathParameter(request, LABEL_PARAMETER));
+        Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getSchemaConcept(label));
     }
 
     private String getConceptById(Request request, Response response) throws JsonProcessingException {
         Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
-        ConceptId conceptId = ConceptId.of(Requests.mandatoryPathParameter(request, ID_PARAMETER));
+        ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getConcept(conceptId));
     }
 
