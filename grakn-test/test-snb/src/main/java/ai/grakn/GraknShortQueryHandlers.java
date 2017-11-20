@@ -37,7 +37,6 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCrea
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForum;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForumResult;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageReplies;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageRepliesResult;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -78,7 +77,6 @@ import static ai.grakn.SNB.$title;
 import static ai.grakn.SNB.BIRTHDAY;
 import static ai.grakn.SNB.BROWSER_USED;
 import static ai.grakn.SNB.CHILD_MESSAGE;
-import static ai.grakn.SNB.by;
 import static ai.grakn.SNB.CONTENT;
 import static ai.grakn.SNB.CREATION_DATE;
 import static ai.grakn.SNB.CREATOR;
@@ -88,12 +86,10 @@ import static ai.grakn.SNB.FORUM_MEMBER;
 import static ai.grakn.SNB.FRIEND;
 import static ai.grakn.SNB.GENDER;
 import static ai.grakn.SNB.GROUP_FORUM;
-import static ai.grakn.SNB.has;
 import static ai.grakn.SNB.HAS_CREATOR;
 import static ai.grakn.SNB.HAS_MODERATOR;
 import static ai.grakn.SNB.IMAGE_FILE;
 import static ai.grakn.SNB.IS_LOCATED_IN;
-import static ai.grakn.SNB.key;
 import static ai.grakn.SNB.KNOWS;
 import static ai.grakn.SNB.LAST_NAME;
 import static ai.grakn.SNB.LOCATED;
@@ -114,8 +110,11 @@ import static ai.grakn.SNB.PRODUCT;
 import static ai.grakn.SNB.REGION;
 import static ai.grakn.SNB.REPLY;
 import static ai.grakn.SNB.REPLY_OF;
-import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.TITLE;
+import static ai.grakn.SNB.by;
+import static ai.grakn.SNB.has;
+import static ai.grakn.SNB.key;
+import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.toEpoch;
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.var;
@@ -411,25 +410,26 @@ public class GraknShortQueryHandlers {
                         var().rel($comment).rel($commentId).isa(key(MESSAGE_ID)),
                         var().rel($comment).rel($content).isa(has(CONTENT)),
                         var().rel($comment).rel($date).isa(has(CREATION_DATE)),
-                        var().rel(PRODUCT, $comment).rel(CREATOR, $author2).isa(HAS_CREATOR),
-                        var().rel($author2).rel($personId).isa(key(PERSON_ID)),
-                        var().rel($author2).rel($firstName).isa(has(FIRST_NAME)),
-                        var().rel($author2).rel($lastName).isa(has(LAST_NAME))
+                        var().rel(PRODUCT, $comment).rel(CREATOR, $author2).isa(HAS_CREATOR)//,
+//                        var().rel($author2).rel($personId).isa(key(PERSON_ID)),
+//                        var().rel($author2).rel($firstName).isa(has(FIRST_NAME)),
+//                        var().rel($author2).rel($lastName).isa(has(LAST_NAME))
                 ).get().execute();
 
-                List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
-                        .sorted(comparing(by($date)).reversed().thenComparing(by($personId)))
-                        .map(map -> new LdbcShortQuery7MessageRepliesResult(
-                                resource(map, $commentId),
-                                resource(map, $content),
-                                toEpoch(resource(map, $date)),
-                                resource(map, $personId),
-                                resource(map, $firstName),
-                                resource(map, $lastName),
-                                checkIfFriends(conceptId(map, $author1), conceptId(map, $author2), graph)))
-                        .collect(Collectors.toList());
+//                List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
+//                        .sorted(comparing(by($date)).reversed().thenComparing(by($personId)))
+//                        .map(map -> new LdbcShortQuery7MessageRepliesResult(
+//                                resource(map, $commentId),
+//                                resource(map, $content),
+//                                toEpoch(resource(map, $date)),
+//                                resource(map, $personId),
+//                                resource(map, $firstName),
+//                                resource(map, $lastName),
+//                                checkIfFriends(conceptId(map, $author1), conceptId(map, $author2), graph)))
+//                        .collect(Collectors.toList());
 
-                resultReporter.report(0, result, operation);
+                resultReporter.report(0, null, operation);
+//                resultReporter.report(0, result, operation);
 
             }
 
