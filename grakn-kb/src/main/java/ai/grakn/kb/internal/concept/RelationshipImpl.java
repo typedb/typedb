@@ -31,15 +31,12 @@ import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.structure.VertexElement;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -124,17 +121,11 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
 
     @Override
     public Stream<Attribute<?>> keys(AttributeType[] attributeTypes) {
-        Set<AttributeType> attributeTypesSet = Arrays.stream(attributeTypes).collect(Collectors.toSet());
-        Set<AttributeType> keyTypes = type().keys().collect(Collectors.toSet());
-
-        if(!attributeTypesSet.isEmpty()){
-            keyTypes = Sets.intersection(attributeTypesSet, keyTypes);
+        if(reified().isPresent()){
+            return reified().get().attributes(attributeTypes);
+        } else {
+            return Stream.empty();
         }
-
-        if(keyTypes.isEmpty()) return Stream.empty();
-
-        AttributeType[] keyTypesArray = keyTypes.toArray(new AttributeType[keyTypes.size()]);
-        return readFromReified((relationReified) -> relationReified.attributes(keyTypesArray));
     }
 
     @Override
