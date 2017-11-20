@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -36,6 +37,13 @@ import java.util.Set;
 @AutoValue
 public abstract class AttributeType extends Type{
 
+    @JsonProperty("data-type")
+    public abstract String dataType();
+
+    @Nullable
+    @JsonProperty
+    public abstract String regex();
+
     @JsonCreator
     public static AttributeType create(
             @JsonProperty("id") ConceptId id,
@@ -47,7 +55,9 @@ public abstract class AttributeType extends Type{
             @JsonProperty("abstract") Boolean isAbstract,
             @JsonProperty("plays") Set<Link> plays,
             @JsonProperty("attributes") Set<Link> attributes,
-            @JsonProperty("keys") Set<Link> keys){
-        return new AutoValue_AttributeType(id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys);
+            @JsonProperty("keys") Set<Link> keys,
+            @JsonProperty("data-type") String dataType,
+            @Nullable @JsonProperty("regex") String regex){
+        return new AutoValue_AttributeType(id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys, dataType, regex);
     }
 }

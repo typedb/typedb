@@ -97,7 +97,7 @@ public class ConceptBuilder {
     }
 
     private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
-        return Attribute.create(attribute.getId(), selfLink, attributes, keys, relationships, attribute.getValue().toString());
+        return Attribute.create(attribute.getId(), selfLink, attributes, keys, relationships, attribute.type().getDataType().getName(), attribute.getValue().toString());
     }
 
     private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
@@ -150,7 +150,7 @@ public class ConceptBuilder {
                                                     Set<Link> subs, Set<Link> plays, Set<Link> attributes,
                                                     Set<Link> keys){
         return AttributeType.create(attributeType.getId(), selfLink, attributeType.getLabel(), attributeType.isImplicit(),
-                sup, subs, attributeType.isAbstract(), plays, attributes, keys);
+                sup, subs, attributeType.isAbstract(), plays, attributes, keys, attributeType.getDataType().getName(), attributeType.getRegex());
     }
 
     private static EntityType buildEntityType(ai.grakn.concept.EntityType entityType, Link selfLink, Link sup,

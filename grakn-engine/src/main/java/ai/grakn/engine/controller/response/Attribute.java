@@ -35,6 +35,9 @@ import java.util.Set;
 @AutoValue
 public abstract class Attribute extends Thing {
 
+    @JsonProperty("data-type")
+    public abstract String dataType();
+
     @JsonProperty
     public abstract String value();
 
@@ -45,7 +48,8 @@ public abstract class Attribute extends Thing {
             @JsonProperty("attributes") Set<Link> attributes,
             @JsonProperty("keys") Set<Link> keys,
             @JsonProperty("relationships") Set<RolePlayer> relationships,
+            @JsonProperty("data-type") String dataType,
             @JsonProperty("value") String value){
-        return new AutoValue_Attribute(id, selfLink, attributes, keys, relationships, value);
+        return new AutoValue_Attribute(id, selfLink, attributes, keys, relationships, dataType, value);
     }
 }
