@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
@@ -45,8 +46,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FactoryBuilder {
     static final String IN_MEMORY = "in-memory";
-    static final String KB_MODE = "knowledge-base.mode";
-    static final String KB_ANALYTICS = "knowledge-base.analytics";
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
 
     //This is used to map grakn value properties into the underlaying properties
@@ -61,9 +60,9 @@ public class FactoryBuilder {
 
     public static TxFactory<?> getFactory(GraknSession session, boolean isComputerFactory){
         try{
-            String factoryKey = session.config().get(KB_MODE).toString();
+            String factoryKey = session.config().getProperty(GraknConfigKey.KB_MODE);
             if(isComputerFactory){
-                factoryKey = session.config().get(FactoryBuilder.KB_ANALYTICS).toString();
+                factoryKey = session.config().getProperty(GraknConfigKey.KB_ANALYTICS);
             }
 
             String factoryType = factoryMapper.get(factoryKey);

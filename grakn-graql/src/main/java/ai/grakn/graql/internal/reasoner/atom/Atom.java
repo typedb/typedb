@@ -99,11 +99,13 @@ public abstract class Atom extends AtomicBase {
                 .findFirst().isPresent();
     }
 
+    public abstract Class<? extends VarProperty> getVarPropertyClass();
+
     /**
      * @return var properties this atom (its pattern) contains
      */
-    public Set<VarProperty> getVarProperties() {
-        return getPattern().admin().getProperties().collect(Collectors.toSet());
+    public Stream<VarProperty> getVarProperties(){
+        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(getVarPropertyClass()));
     }
 
     /**

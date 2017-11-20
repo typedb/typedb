@@ -25,6 +25,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
@@ -70,7 +71,7 @@ public class GraknSessionImpl implements GraknSession {
     private static final int LOG_SUBMISSION_PERIOD = 1;
     private final String engineUri;
     private final Keyspace keyspace;
-    private final Properties properties;
+    private final GraknConfig config;
     private final boolean remoteSubmissionNeeded;
     private ScheduledExecutorService commitLogSubmitter;
 
@@ -79,7 +80,7 @@ public class GraknSessionImpl implements GraknSession {
     private GraknTxAbstract<?> tx = null;
     private GraknTxAbstract<?> txBatch = null;
 
-    GraknSessionImpl(Keyspace keyspace, String engineUri, Properties properties, boolean remoteSubmissionNeeded){
+    GraknSessionImpl(Keyspace keyspace, String engineUri, GraknConfig config, boolean remoteSubmissionNeeded){
         Objects.requireNonNull(keyspace);
         Objects.requireNonNull(engineUri);
 
@@ -99,14 +100,14 @@ public class GraknSessionImpl implements GraknSession {
         }
 
         //Set properties directly or via a remote call
-        if(properties == null) {
+        if(config == null) {
             if (Grakn.IN_MEMORY.equals(engineUri)) {
-                properties = getTxInMemoryProperties();
+                config = getTxInMemoryConfig();
             } else {
-                properties = getTxProperties();
+                config = getTxConfig();
             }
         }
-        this.properties = properties;
+        this.config = config;
     }
 
     //This must remain public because it is accessed via reflection
@@ -114,13 +115,13 @@ public class GraknSessionImpl implements GraknSession {
         return new GraknSessionImpl(keyspace, engineUri, null, true);
     }
 
-    public static GraknSessionImpl createEngineSession(Keyspace keyspace, String engineUri, Properties properties){
-        return new GraknSessionImpl(keyspace, engineUri, properties, false);
+    public static GraknSessionImpl createEngineSession(Keyspace keyspace, String engineUri, GraknConfig config){
+        return new GraknSessionImpl(keyspace, engineUri, config, false);
     }
 
-    Properties getTxProperties(){
+    GraknConfig getTxConfig(){
         SimpleURI uri = new SimpleURI(engineUri);
-        return getTxRemoteProperties(uri, keyspace);
+        return getTxRemoteConfig(uri, keyspace);
     }
 
     /**
@@ -128,18 +129,20 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build a {@link GraknTx}
      */
-    private static Properties getTxRemoteProperties(SimpleURI uri, Keyspace keyspace){
+    private static GraknConfig getTxRemoteConfig(SimpleURI uri, Keyspace keyspace){
         URI keyspaceUri = UriBuilder.fromUri(uri.toURI()).path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace.getValue())).build();
 
         Properties properties = new Properties();
         //Get Specific Configs
         properties.putAll(read(contactEngine(Optional.of(keyspaceUri), REST.HttpConn.PUT_METHOD)).asMap());
 
-        //Overwrite Engine IP with something which is remotely accessible
-        properties.put(GraknConfigKey.SERVER_HOST_NAME.name(), uri.getHost());
-        properties.put(GraknConfigKey.SERVER_PORT.name(), uri.getPort());
+        GraknConfig config = GraknConfig.of(properties);
 
-        return properties;
+        //Overwrite Engine IP with something which is remotely accessible
+        config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, uri.getHost());
+        config.setConfigProperty(GraknConfigKey.SERVER_PORT, uri.getPort());
+
+        return config;
     }
 
     /**
@@ -148,13 +151,13 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @return the properties needed to build an in-memory {@link GraknTx}
      */
-    static Properties getTxInMemoryProperties(){
-        Properties inMemoryProperties = new Properties();
-        inMemoryProperties.put(GraknConfigKey.SHARDING_THRESHOLD.name(), 100_000);
-        inMemoryProperties.put(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(), 30_000);
-        inMemoryProperties.put(FactoryBuilder.KB_MODE, FactoryBuilder.IN_MEMORY);
-        inMemoryProperties.put(FactoryBuilder.KB_ANALYTICS, FactoryBuilder.IN_MEMORY);
-        return inMemoryProperties;
+    static GraknConfig getTxInMemoryConfig(){
+        GraknConfig config = GraknConfig.empty();
+        config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
+        config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
+        config.setConfigProperty(GraknConfigKey.KB_MODE, FactoryBuilder.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, FactoryBuilder.IN_MEMORY);
+        return config;
     }
 
     @Override
@@ -209,8 +212,8 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     @Override
-    public Properties config() {
-        return properties;
+    public GraknConfig config() {
+        return config;
     }
 
     private void close(GraknTxAbstract tx){

@@ -63,7 +63,7 @@ public class GraknEngineServerTest {
     @Rule
     public final SessionContext sessionContext = SessionContext.create();
 
-    private final GraknEngineConfig conf = GraknEngineConfig.create();
+    private final GraknConfig conf = GraknConfig.create();
     private final RedisWrapper redisWrapper = mock(RedisWrapper.class);
     private final Jedis jedis = mock(Jedis.class);
 

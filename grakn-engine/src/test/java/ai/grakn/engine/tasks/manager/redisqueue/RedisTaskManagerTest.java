@@ -19,7 +19,7 @@
 
 package ai.grakn.engine.tasks.manager.redisqueue;
 
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -79,7 +79,7 @@ public class RedisTaskManagerTest {
             .withWaitStrategy(WaitStrategies.exponentialWait(10, 60, TimeUnit.SECONDS))
             .build();
     private static final int MAX_TOTAL = 256;
-    public static final GraknEngineConfig CONFIG = GraknEngineConfig.create();
+    public static final GraknConfig CONFIG = GraknConfig.create();
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final EngineID engineID = EngineID.of("engineID");
     public static final ProcessWideLockProvider LOCK_PROVIDER = new ProcessWideLockProvider();

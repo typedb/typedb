@@ -23,6 +23,8 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -48,6 +50,9 @@ public class RelatesAtom extends TypeAtom {
         this(var.relates(predicateVar), predicateVar, p, par);
     }
     private RelatesAtom(RelatesAtom a) { super(a);}
+
+    @Override
+    public Class<? extends VarProperty> getVarPropertyClass() { return RelatesProperty.class;}
 
     @Override
     public Atomic copy(){

@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 
 public class SystemKeyspaceTest {
 
-    private static final GraknEngineConfig config = GraknEngineConfig.create();
+    private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final LockProvider lockProvider = mock(LockProvider.class);

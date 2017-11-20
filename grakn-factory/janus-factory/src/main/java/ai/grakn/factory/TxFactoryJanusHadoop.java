@@ -51,8 +51,8 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
     TxFactoryJanusHadoop(GraknSession session) {
         super(session);
 
-        session().config().setProperty(CLUSTER_KEYSPACE, session().keyspace().getValue());
-        session().config().setProperty(INPUT_KEYSPACE, session().keyspace().getValue());
+        session().config().properties().setProperty(CLUSTER_KEYSPACE, session().keyspace().getValue());
+        session().config().properties().setProperty(INPUT_KEYSPACE, session().keyspace().getValue());
     }
 
     @Override
@@ -66,12 +66,12 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
 
         //Load Defaults
         TxFactoryJanus.DEFAULT_PROPERTIES.forEach((key, value) -> {
-            if(!session().config().containsKey(key)){
-                session().config().put(key, value);
+            if(!session().config().properties().containsKey(key)){
+                session().config().properties().put(key, value);
             }
         });
 
-        return (HadoopGraph) GraphFactory.open(session().config());
+        return (HadoopGraph) GraphFactory.open(session().config().properties());
     }
 
     //TODO: Get rid of the need for batch loading parameter

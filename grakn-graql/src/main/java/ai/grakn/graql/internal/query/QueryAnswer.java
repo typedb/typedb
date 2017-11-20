@@ -117,10 +117,7 @@ public class QueryAnswer implements Answer {
     public Set<Var> vars(){ return map.keySet();}
 
     @Override
-    public Collection<Concept> values(){ return map.values();}
-
-    @Override
-    public Set<Concept> concepts(){ return map.values().stream().collect(Collectors.toSet());}
+    public Collection<Concept> concepts(){ return map.values(); }
 
     @Override
     public Set<Map.Entry<Var, Concept>> entrySet(){ return map.entrySet();}
@@ -138,7 +135,7 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public boolean containsKey(Var var){ return map.containsKey(var);}
+    public boolean containsVar(Var var){ return map.containsKey(var);}
 
     @Override
     public boolean containsAll(Answer ans){ return map.entrySet().containsAll(ans.entrySet());}

@@ -19,10 +19,10 @@
 package ai.grakn;
 
 
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Properties;
 
 /**
  * <p>
@@ -87,5 +87,5 @@ public interface GraknSession extends AutoCloseable {
      *
      * @return The config options of this {@link GraknSession}
      */
-    Properties config();
+    GraknConfig config();
 }

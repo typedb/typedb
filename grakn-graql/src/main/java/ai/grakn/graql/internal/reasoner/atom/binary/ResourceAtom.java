@@ -30,6 +30,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
@@ -93,6 +94,9 @@ public class ResourceAtom extends Binary{
                         .iterator()
         ).build();
     }
+
+    @Override
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
     public RelationshipAtom toRelationshipAtom(){
@@ -207,7 +211,7 @@ public class ResourceAtom extends Binary{
     public Var getRelationVariable(){ return relationVariable;}
 
     @Override
-    public Pattern getCombinedPattern() {
+    protected Pattern createCombinedPattern(){
         Set<VarPatternAdmin> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
                 .map(VarPattern::admin)

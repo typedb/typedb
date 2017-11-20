@@ -38,6 +38,7 @@ import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -139,6 +140,9 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
+    public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
+
+    @Override
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
     @Override
@@ -180,8 +184,8 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public Pattern getCombinedPattern(){
-        if (getPredicateVariable().isUserDefinedName()) return super.getCombinedPattern();
+    protected Pattern createCombinedPattern(){
+        if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
         return getSchemaConcept() != null? relationPattern().isa(getSchemaConcept().getLabel().getValue()) : relationPattern();
     }
 
@@ -210,8 +214,7 @@ public class RelationshipAtom extends IsaAtom {
         if (obj == this) return true;
         RelationshipAtom a2 = (RelationshipAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
-                && getVarName().equals(a2.getVarName())
-                && getPredicateVariable().equals(a2.getPredicateVariable())
+                && getVarNames().equals(a2.getVarNames())
                 && getRelationPlayers().equals(a2.getRelationPlayers());
     }
 
@@ -221,6 +224,7 @@ public class RelationshipAtom extends IsaAtom {
             hashCode = 1;
             hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
             hashCode = hashCode * 37 + getVarNames().hashCode();
+            hashCode = hashCode * 37 + getRelationPlayers().hashCode();
         }
         return hashCode;
     }
@@ -365,9 +369,9 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public Stream<IdPredicate> getPartialSubstitutions() {
-        Set<Var> rolePlayers = getRolePlayers();
+        Set<Var> varNames = getVarNames();
         return getPredicates(IdPredicate.class)
-                .filter(pred -> rolePlayers.contains(pred.getVarName()));
+                .filter(pred -> varNames.contains(pred.getVarName()));
     }
 
     public Stream<IdPredicate> getRolePredicates(){
@@ -445,6 +449,7 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public RelationshipAtom addType(SchemaConcept type) {
+        if (getTypeId() != null) return this;
         Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
         return new RelationshipAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
     }
@@ -561,7 +566,7 @@ public class RelationshipAtom extends IsaAtom {
     private RelationshipAtom inferRelationshipType(Answer sub){
         if (getTypePredicate() != null) return this;
 
-        if (sub.containsKey(getPredicateVariable())){
+        if (sub.containsVar(getPredicateVariable())){
             Concept typeConcept = sub.get(getPredicateVariable());
             if (typeConcept.isRelationshipType()) return addType(sub.get(getPredicateVariable()).asType());
         }
@@ -870,13 +875,19 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public MultiUnifier getMultiUnifier(Atom pAtom, UnifierComparison unifierType) {
-        if (this.equals(pAtom))  return new MultiUnifierImpl();
-
         Unifier baseUnifier = super.getUnifier(pAtom);
         Set<Unifier> unifiers = new HashSet<>();
         if (pAtom.isRelation()) {
             assert(pAtom instanceof RelationshipAtom); // This is safe due to the check above
             RelationshipAtom parentAtom = (RelationshipAtom) pAtom;
+
+            //NB: if two atoms are equal and their sub and type mappings are equal we return the identity unifier
+            //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
+            if (this.equals(parentAtom)
+                    && this.getPartialSubstitutions().collect(toSet()).equals(parentAtom.getPartialSubstitutions().collect(toSet()))
+                    && this.getTypeConstraints().collect(toSet()).equals(parentAtom.getTypeConstraints().collect(toSet()))){
+                return new MultiUnifierImpl();
+            }
 
             boolean unifyRoleVariables = parentAtom.getRelationPlayers().stream()
                     .map(RelationPlayer::getRole)

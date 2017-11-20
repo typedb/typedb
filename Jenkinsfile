@@ -29,16 +29,28 @@ class Constants {
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
 }
 
-def slackGithub(String message, String color = null) {
+String statusHeader(String message) {
+    return "${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+}
+
+String statusNotification(String message, String format='slack') {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
 
     String author = "authored by - ${user}"
-    String link = "(<${env.BUILD_URL}|Open>)"
-    String branch = env.BRANCH_NAME
 
-    String formattedMessage = "${message} on ${branch}: ${env.JOB_NAME} #${env.BUILD_NUMBER} ${link}\n${author}"
+    if (format == 'slack') {
+        String link = "(<${env.BUILD_URL}|Open>)"
+        return "${statusHeader(message)} ${link}\n${author}"
+    } else if (format == 'html') {
+        String link = "<a href=\"${env.BUILD_URL}\">Open</a>"
+        return "<p>${statusHeader(message)} ${link}</p><p>${author}</p>"
+    } else {
+        throw new RuntimeException("Unrecognised format ${format}")
+    }
+}
 
-    slackSend channel: "#github", color: color, message: formattedMessage
+def slackGithub(String message, String color = null) {
+    slackSend channel: "#github", color: color, message: statusNotification(message)
 }
 
 def runIntegrationTest(String workspace, String moduleName) {
@@ -124,7 +136,7 @@ Closure createTestJob(split, i, testTimeout) {
         graknNode { workspace ->
             checkout scm
 
-            def mavenVerify = 'clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true'
+            def mavenVerify = 'clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
 
             /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
             /* Tell Maven to read the appropriate file. */
@@ -258,7 +270,19 @@ try {
     runBuild()
 } catch (Exception e) {
     node {
-        slackGithub "Build Failure", "danger"
+        String message = "Build Failure"
+
+        if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
+            emailext (
+                    subject: statusHeader(message),
+                    body: statusNotification(message, 'html'),
+                    mimeType: 'text/html',
+                    recipientProviders: [[$class: 'CulpritsRecipientProvider']]
+            )
+        }
+
+        slackGithub message, "danger"
     }
+
     throw e
 }

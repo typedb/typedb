@@ -394,4 +394,13 @@ public class ConceptBuilder {
             throw GraqlQueryException.insertMetaType(subConcept.getLabel(), superConcept);
         }
     }
+
+    @Override
+    public String toString() {
+        return "ConceptBuilder{" +
+                "var=" + var +
+                ", preProvidedParams=" + preProvidedParams +
+                ", usedParams=" + usedParams +
+                '}';
+    }
 }

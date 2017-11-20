@@ -19,7 +19,7 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
@@ -81,9 +81,9 @@ public class RemoteSessionTest {
     public static final SessionContext sessionContext = SessionContext.create();
 
     public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, graknEngineConfig);
-        new SystemController(spark, graknEngineConfig, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
+        GraknConfig graknConfig = GraknConfig.create();
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, graknConfig);
+        new SystemController(spark, graknConfig, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
     }).port(4567);
 
     @ClassRule

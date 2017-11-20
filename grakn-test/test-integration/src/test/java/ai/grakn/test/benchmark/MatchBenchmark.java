@@ -1,17 +1,15 @@
 package ai.grakn.test.benchmark;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.rule.EngineContext;
-import ai.grakn.util.SampleKBLoader;
+import ai.grakn.test.rule.SessionContext;
+import org.junit.Rule;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
@@ -23,19 +21,17 @@ import static ai.grakn.graql.Graql.var;
 
 public class MatchBenchmark extends BenchmarkTest {
 
-    private static final Keyspace KEYSPACE = SampleKBLoader.randomKeyspace();
     private static final String BENCHMARK_ENTITY_TYPE = "benchmarkEntityType";
     private static final String BENCHMARK_ATTRIBUTE_TYPE = "benchmarkAttributeType";
 
-    private EngineContext engine;
-    private GraknSession session;
+    @Rule
+    public final SessionContext sessionContext = SessionContext.create();
+
     private GraknTx graph;
 
     @Setup
     public void setup() throws Throwable {
-        engine = EngineContext.createWithInMemoryRedis();
-        engine.before();
-        session = Grakn.session(engine.uri(), KEYSPACE);
+        GraknSession session = sessionContext.newSession();
         GraknTx graphEntity = session.open(GraknTxType.WRITE);
         EntityType entityType = graphEntity.putEntityType(BENCHMARK_ENTITY_TYPE);
         AttributeType<String> attributeType =
@@ -54,8 +50,6 @@ public class MatchBenchmark extends BenchmarkTest {
     @TearDown
     public void tearDown() {
         graph.close();
-        session.close();
-        engine.after();
     }
 
     @Benchmark

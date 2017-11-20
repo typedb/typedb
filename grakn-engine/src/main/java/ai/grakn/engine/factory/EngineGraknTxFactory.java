@@ -24,7 +24,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.engine.lock.LockProvider;
@@ -51,24 +51,24 @@ import java.util.Map;
  * @author fppt
  */
 public class EngineGraknTxFactory {
-    private final GraknEngineConfig engineConfig;
+    private final GraknConfig engineConfig;
     private final String engineURI;
     private final SystemKeyspace systemKeyspace;
     private final Map<Keyspace, GraknSession> openedSessions;
 
     @VisibleForTesting //Only used for testing
-    public static EngineGraknTxFactory createAndLoadSystemSchema(LockProvider lockProvider, GraknEngineConfig engineConfig) {
+    public static EngineGraknTxFactory createAndLoadSystemSchema(LockProvider lockProvider, GraknConfig engineConfig) {
         return new EngineGraknTxFactory(engineConfig, lockProvider, true);
     }
 
-    public static EngineGraknTxFactory create(LockProvider lockProvider, GraknEngineConfig engineConfig) {
+    public static EngineGraknTxFactory create(LockProvider lockProvider, GraknConfig engineConfig) {
         return new EngineGraknTxFactory(engineConfig, lockProvider, false);
     }
 
-    private EngineGraknTxFactory(GraknEngineConfig engineConfig, LockProvider lockProvider, boolean loadSchema) {
+    private EngineGraknTxFactory(GraknConfig engineConfig, LockProvider lockProvider, boolean loadSchema) {
         this.openedSessions = new HashMap<>();
         this.engineConfig = engineConfig;
-        this.engineURI = engineConfig.properties().getProperty(GraknConfigKey.SERVER_HOST_NAME.name()) + ":" + engineConfig.properties().getProperty(GraknConfigKey.SERVER_PORT.name());
+        this.engineURI = engineConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + engineConfig.getProperty(GraknConfigKey.SERVER_PORT);
         this.systemKeyspace = SystemKeyspaceImpl.create(this, lockProvider, loadSchema);
     }
 
@@ -96,7 +96,7 @@ public class EngineGraknTxFactory {
      */
     private GraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace,GraknSessionImpl.createEngineSession(keyspace, engineURI, engineConfig.properties()));
+            openedSessions.put(keyspace,GraknSessionImpl.createEngineSession(keyspace, engineURI, engineConfig));
         }
         return openedSessions.get(keyspace);
     }
@@ -109,7 +109,7 @@ public class EngineGraknTxFactory {
         session(keyspace).open(GraknTxType.WRITE).close();
     }
 
-    public GraknEngineConfig config() {
+    public GraknConfig config() {
         return engineConfig;
     }
 

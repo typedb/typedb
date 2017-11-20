@@ -51,7 +51,7 @@ import spark.Service;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 
-import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static ai.grakn.engine.GraknConfig.WEBSOCKET_TIMEOUT;
 
 /**
  *
@@ -61,7 +61,7 @@ public class HttpHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpHandler.class);
 
-    private final GraknEngineConfig prop;
+    private final GraknConfig prop;
     private final Service spark;
     private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
@@ -70,7 +70,7 @@ public class HttpHandler {
     private final ExecutorService taskExecutor;
     private final PostProcessor postProcessor;
 
-    public HttpHandler(GraknEngineConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, ExecutorService taskExecutor, PostProcessor postProcessor) {
+    public HttpHandler(GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, ExecutorService taskExecutor, PostProcessor postProcessor) {
         this.prop = prop;
         this.spark = spark;
         this.factory = factory;
@@ -110,7 +110,7 @@ public class HttpHandler {
         spark.awaitInitialization();
     }
 
-    public static void configureSpark(Service spark, GraknEngineConfig prop) {
+    public static void configureSpark(Service spark, GraknConfig prop) {
         configureSpark(spark,
                 prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
                 prop.getProperty(GraknConfigKey.SERVER_PORT),

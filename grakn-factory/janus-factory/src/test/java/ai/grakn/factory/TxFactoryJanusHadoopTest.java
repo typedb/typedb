@@ -21,15 +21,13 @@ package ai.grakn.factory;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.engine.GraknConfig;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
+import java.io.File;
+import java.nio.file.Paths;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -39,22 +37,16 @@ import static org.mockito.Mockito.when;
 
 public class TxFactoryJanusHadoopTest {
     private final static GraknSession session = mock(GraknSession.class);
-    private final static Properties TEST_PROPERTIES = new Properties();
+    private static final File TEST_CONFIG_FILE = Paths.get("../../conf/main/grakn.properties").toFile();
+    private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 
     private TxFactoryJanusHadoop factory;
 
     @Before
     public void setUp() throws Exception {
-        String TEST_CONFIG = "../../conf/main/grakn.properties";
-        try (InputStream in = new FileInputStream(TEST_CONFIG)){
-            TEST_PROPERTIES.load(in);
-        } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
-        }
-
         when(session.keyspace()).thenReturn(Keyspace.of("rubbish"));
         when(session.uri()).thenReturn("rubbish");
-        when(session.config()).thenReturn(TEST_PROPERTIES);
+        when(session.config()).thenReturn(TxFactoryJanusHadoopTest.TEST_CONFIG);
         factory = new TxFactoryJanusHadoop(session);
     }
 

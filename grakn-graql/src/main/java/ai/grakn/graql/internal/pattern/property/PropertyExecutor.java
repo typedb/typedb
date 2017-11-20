@@ -69,7 +69,7 @@ public abstract class PropertyExecutor {
      *                 from {@link #producedVars()}.
      *                 </p>
      */
-    public void execute(QueryOperationExecutor executor) {
+    public final void execute(QueryOperationExecutor executor) {
         executeMethod().execute(executor);
     }
 
