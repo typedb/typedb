@@ -309,7 +309,7 @@ class ValidateGlobalRules {
      * @param graph graph used to ensure the rule head is valid
      * @param rule the rule to be validated
      * @param head head of the rule of interest
-     * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain  illegal atomics and is ontologically valid
+     * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
     private static Set<String> checkRuleHeadInvalid(GraknTx graph, Rule rule, Pattern head) {
         Set<String> errors = new HashSet<>();
