@@ -38,37 +38,40 @@ public class REST {
      */
     public static class WebPath{
 
+        /**
+         * Keyspace Specific Operations
+         */
+        public static final String KB = "/kb";
+        public static final String KB_KEYSPACE = "/kb/:keyspace";
+        public static final String KEYSPACE_TYPE = "/kb/:keyspace/type";
+        public static final String KEYSPACE_ROLE = "/kb/:keyspace/role";
+        public static final String KEYSPACE_RULE = "/kb/:keyspace/rule";
+        public static final String KEYSPACE_GRAQL = "/kb/:keyspace/graql";
         public static final String COMMIT_LOG_URI = "/kb/:keyspace/commit_log";
+
+        /**
+         * Concept Specific operations
+         */
+        public static final String CONCEPT_LINK = "/kb/:keyspace/:base-type/:id";
+        public static final String CONCEPT_ID = "/kb/:keyspace/concept/:id";
+        public static final String TYPE_LABEL = "/kb/:keyspace/type/:label";
+        public static final String RULE_LABEL = "/kb/:keyspace/rule/:label";
+        public static final String ROLE_LABEL = "/kb/:keyspace/role/:label";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
         /**
-         * URIs to visualiser controller
-         */
-        public static class KB {
-            @Deprecated
-            public static final String GRAQL = "/kb/graql";
-            public static final String ANY_GRAQL = "/kb/:keyspace/graql";
-        }
-
-        /**
          * URIs to Tasks Controller endpoints
          */
-        public static class Tasks {
-            public static final String TASK = "/task";
-            public static final String GET = "/task/:id";
-            public static final String STOP = "/task/:id/stop";
-        }
+        public static final String TASK = "/task";
+        public static final String TASK_ID = "/task/:id";
+        public static final String TASK_ID_STOP = "/task/:id/stop";
 
         /**
          * URIs to System Controller endpoints
          */
-        public static class System {
-            public static final String KB = "/kb";
-            public static final String KB_KEYSPACE = "/kb/:keyspace";
-            public static final String STATUS = "/status";
-            public static final String METRICS = "/metrics";
-        }
+        public static final String STATUS = "/status";
+        public static final String METRICS = "/metrics";
 
         /**
          * URIs to concept controller endpoints
@@ -77,15 +80,13 @@ public class REST {
         public static class Concept {
             @Deprecated
             public static final String CONCEPT = "/kb/concept/";
-            @Deprecated
-            public static final String SCHEMA = "/kb/schema";
         }
 
         /**
          * URIs to api endpoints
          */
         public static class Api {
-            public static final String API_PREFIX = System.KB_KEYSPACE;
+            public static final String API_PREFIX = KB_KEYSPACE;
 
             public static final String ATTRIBUTE_TYPE = API_PREFIX + "/attributeType";
             public static final String ENTITY_TYPE = API_PREFIX + "/entityType";
@@ -109,7 +110,6 @@ public class REST {
          * URIs to dashboard controller endpoints
          */
         public static class Dashboard {
-            public static final String TYPES = "/dashboard/types/";
             public static final String EXPLORE = "/dashboard/explore/";
             public static final String EXPLAIN = "/dashboard/explain";
         }
@@ -119,10 +119,8 @@ public class REST {
      * Class containing request fields and content types.
      */
     public static class Request {
-        // Attributes set and used on the server-side
-        public static final String USER_ATTR = "user";
-        
         // Request parameters
+        public static final String LABEL_PARAMETER = ":label";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
         public static final String TASK_STATUS_PARAMETER = "status";
@@ -133,12 +131,10 @@ public class REST {
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_RUN_WAIT_PARAMETER = "wait";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
-        public static final String BATCH_NUMBER = "batchNumber";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
         public static final String TASKS_PARAM = "tasks";
         public static final String CONFIGURATION_PARAM = "configuration";
-        public static final String KEYSPACE = "keyspace";
         public static final String FORMAT = "format";
         public static final String UUID_PARAMETER = "uuid";
 
@@ -210,7 +206,7 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
-        public static final String GET_METHOD = "GET";
+        public static final String GET_METHOD = "TASK_ID";
     }
 
     /**

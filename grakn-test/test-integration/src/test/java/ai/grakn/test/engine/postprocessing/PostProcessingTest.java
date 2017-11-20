@@ -46,7 +46,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.Schema.VertexProperty.INDEX;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -118,7 +118,7 @@ public class PostProcessingTest {
         PostProcessingTask task = new PostProcessingTask();
         TaskConfiguration configuration = TaskConfiguration.of(
                 Json.object(
-                        KEYSPACE, graph.keyspace().getValue(),
+                        KEYSPACE_PARAM, graph.keyspace().getValue(),
                         REST.Request.COMMIT_LOG_FIXING, Json.object(
                                 Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))

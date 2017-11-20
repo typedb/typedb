@@ -799,7 +799,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
 
         URI uri = UriBuilder.fromUri(new SimpleURI(session().uri()).toURI())
-                .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace().getValue()))
+                .path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace().getValue()))
                 .build();
         return Optional.of(uri);
     }

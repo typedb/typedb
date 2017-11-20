@@ -78,7 +78,7 @@ public class GraqlControllerTest {
                 .queryParam(MULTI, multi)
                 .queryParam(DEFINE_ALL_VARS, true)
                 .accept(acceptType)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace));
     }
 
 
