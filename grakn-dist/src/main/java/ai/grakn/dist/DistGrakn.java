@@ -469,7 +469,7 @@ public class DistGrakn {
             String host = graknConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME);
             int port = graknConfig.getProperty(GraknConfigKey.SERVER_PORT);
 
-            if(graknIsRunning() && graknCheckIfReady(host,port,REST.WebPath.System.STATUS)) {
+            if(graknIsRunning() && graknCheckIfReady(host,port,REST.WebPath.STATUS)) {
                 System.out.println("SUCCESS");
                 graknIsStarted =true;
                 return;
