@@ -78,6 +78,8 @@ public class ConceptBuilder {
         int previousIndex = offset - limit;
         if(previousIndex < 0) previousIndex = 0;
         Link previous = Link.createInstanceLink(type, previousIndex, limit);
+
+        //TODO: This does not actually scale. The DB is still read in this instance
         Set<Thing> things = type.instances().skip(offset).limit(limit).
                 map(ConceptBuilder::buildThing).collect(Collectors.toSet());
 
