@@ -5,8 +5,8 @@ source snb-env.sh
 LDBC_VALIDATION_CONFIG=${WORKSPACE}/grakn-test/test-snb/src/main/bash/readwrite_grakn--ldbc_driver_config--db_validation.properties
 
 # execute validation
-mvn install -DskipTests --also-make --projects grakn-test/test-snb
-mvn exec:java --projects grakn-test/test-snb \
+mvn install --batch-mode -DskipTests --also-make --projects grakn-test/test-snb
+mvn exec:java --batch-mode --projects grakn-test/test-snb \
     -Dexec.mainClass=com.ldbc.driver.Client \
     -Dlogback.configurationFile=${WORKSPACE}/conf/test/logback-test.xml \
     -Dexec.args="
