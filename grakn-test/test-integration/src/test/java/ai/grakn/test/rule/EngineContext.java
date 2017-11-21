@@ -23,8 +23,8 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknApplicationFactory;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknCreator;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
@@ -158,7 +158,7 @@ public class EngineContext extends CompositeTestRule {
 
         // start engine
         setRestAssuredUri(config);
-        server = GraknCreator.cleanGraknEngineServer(config);
+        server = new GraknApplicationFactory().cleanGraknEngineServer(config);
         server.start();
 
         LOG.info("engine started on " + uri());
