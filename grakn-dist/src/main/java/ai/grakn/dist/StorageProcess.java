@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 
 /**
  *
@@ -109,7 +110,11 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
         System.out.print("Cleaning "+NAME+"...");
         System.out.flush();
         try {
-            Files.delete(homePath.resolve(Paths.get("db","cassandra")));
+            Path dirPath = Paths.get("db","cassandra");
+            Files.walk( dirPath )
+                    .map( Path::toFile )
+                    .sorted( Comparator.comparing( File::isDirectory ) )
+                    .forEach( File::delete );
             Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","data")));
             Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","commitlog")));
             Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","saved_caches")));
