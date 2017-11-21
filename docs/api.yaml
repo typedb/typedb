@@ -41,14 +41,10 @@ paths:
         404:
           description: ''
     put:
-      description: Put Knowledge Base
+      description: >- Put Knowledge Base
+        If the keyspace exists, nothing happens. The configuration is returned. This response is the same as the
+        response from `/kb/configuration`.
       tags: [Keyspaces]
-      description: >-
-        Create a keyspace. If the keyspace exists, nothing happens.
-
-        The configuration is returned. This response is the same as the response
-
-        from `/kb/configuration`.
       produces: [application/json]
       responses:
         200:
@@ -56,9 +52,9 @@ paths:
           schema:
             $ref: '#/definitions/Configuration'
     delete:
-      description: Delete Knowledge Base
+      description: >- Delete Knowledge Base
+        If the keyspace doesn't exist, nothing happens.
       tags: [Keyspaces]
-      description: Delete a keyspace. If the keyspace doesn't exist, nothing happens.
       responses:
         204:
           description: ''
@@ -66,7 +62,6 @@ paths:
     post:
       description: Execute Graql Query
       tags: [Keyspaces]
-      description: Execute a Graql query and return results.
       parameters:
       - $ref: '#/parameters/keyspace'
       - name: infer
