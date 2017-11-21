@@ -44,6 +44,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -249,6 +250,26 @@ public class AttributeTest extends TxTestBase {
         Relationship rel2 = Iterables.getOnlyElement(e2.relationships().collect(toSet()));
 
         assertThat(attribute.relationships().collect(toSet()), containsInAnyOrder(rel1, rel2));
+    }
+
+    @Test
+    public void whenCreatingAnInferredAttribute_EnsureMarkedAsInferred(){
+        AttributeTypeImpl at = AttributeTypeImpl.from(tx.putAttributeType("at", AttributeType.DataType.STRING));
+        Attribute attribute = at.putAttribute("blergh");
+        Attribute attributeInferred = at.putAttributeInferred("bloorg");
+        assertFalse(attribute.isInferred());
+        assertTrue(attributeInferred.isInferred());
+    }
+
+    @Test
+    public void whenCreatingAnInferredAttributeWhichIsAlreadyNonInferred_Throw(){
+        AttributeTypeImpl at = AttributeTypeImpl.from(tx.putAttributeType("at", AttributeType.DataType.STRING));
+        Attribute attribute = at.putAttribute("blergh");
+
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.nonInferredThingExists(attribute).getMessage());
+
+        at.putAttributeInferred("blergh");
     }
 
 }

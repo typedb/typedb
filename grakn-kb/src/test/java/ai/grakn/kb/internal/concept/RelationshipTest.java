@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -89,6 +90,15 @@ public class RelationshipTest extends TxTestBase {
         relationship.addRolePlayer(role, entity1);
         assertThat(relationship.allRolePlayers().keySet(), containsInAnyOrder(role1, role2, role3, role));
         assertThat(relationship.allRolePlayers().get(role), containsInAnyOrder(entity1));
+    }
+
+    @Test
+    public void whenCreatingAnInferredRelationship_EnsureMarkedAsInferred(){
+        RelationshipTypeImpl rt = RelationshipTypeImpl.from(tx.putRelationshipType("rt"));
+        Relationship relationship = rt.addRelationship();
+        Relationship relationshipInferred = rt.addRelationshipInferred();
+        assertFalse(relationship.isInferred());
+        assertTrue(relationshipInferred.isInferred());
     }
 
     @Test

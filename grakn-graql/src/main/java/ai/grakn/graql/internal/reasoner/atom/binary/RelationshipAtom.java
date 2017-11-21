@@ -308,25 +308,17 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public boolean isAllowedToFormRuleHead(){
-        //can form a rule head if specified type, type is not implicit and all relation players have a specified/non-implicit/unambiguously inferrable role type
+        //can form a rule head if specified type, type is not implicit and all relation players are insertable
         return getSchemaConcept() != null
                 && !getSchemaConcept().asType().isImplicit()
-                && !hasMetaRoles()
-                && !hasImplicitRoles();
+                && hasAllRelationPlayersInsertable();
     }
 
-    /**
-     * @return true if any of the relation's roles are meta roles
-     */
-    private boolean hasMetaRoles(){
-        return roleLabels.stream().filter(Schema.MetaSchema::isMetaLabel).findFirst().isPresent();
-    }
-
-    /**
-     * @return true if any of the relation's roles are implicit roles
-     */
-    private boolean hasImplicitRoles(){
-        return getRoleVarMap().keySet().stream().filter(SchemaConcept::isImplicit).findFirst().isPresent();
+    private boolean hasAllRelationPlayersInsertable(){
+        return getExplicitRoles()
+                .filter(role -> !role.isImplicit())
+                .filter(role -> !Schema.MetaSchema.isMetaLabel(role.getLabel()))
+                .count() == getRelationPlayers().size();
     }
 
     @Override
