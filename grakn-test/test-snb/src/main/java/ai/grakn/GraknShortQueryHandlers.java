@@ -43,9 +43,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static ai.grakn.SNB.$author;
+import static ai.grakn.SNB.$author1;
 import static ai.grakn.SNB.$authorId;
 import static ai.grakn.SNB.$birthday;
 import static ai.grakn.SNB.$browserUsed;
+import static ai.grakn.SNB.$comment;
 import static ai.grakn.SNB.$content;
 import static ai.grakn.SNB.$creationDate;
 import static ai.grakn.SNB.$date;
@@ -88,9 +90,11 @@ import static ai.grakn.SNB.LAST_NAME;
 import static ai.grakn.SNB.LOCATED;
 import static ai.grakn.SNB.LOCATION_IP;
 import static ai.grakn.SNB.MEMBER_MESSAGE;
+import static ai.grakn.SNB.MESSAGE;
 import static ai.grakn.SNB.MESSAGE_ID;
 import static ai.grakn.SNB.MODERATED;
 import static ai.grakn.SNB.MODERATOR;
+import static ai.grakn.SNB.ORIGINAL;
 import static ai.grakn.SNB.ORIGINAL_POST;
 import static ai.grakn.SNB.PARENT_MESSAGE;
 import static ai.grakn.SNB.PERSON;
@@ -99,6 +103,8 @@ import static ai.grakn.SNB.PLACE_ID;
 import static ai.grakn.SNB.POST;
 import static ai.grakn.SNB.PRODUCT;
 import static ai.grakn.SNB.REGION;
+import static ai.grakn.SNB.REPLY;
+import static ai.grakn.SNB.REPLY_OF;
 import static ai.grakn.SNB.TITLE;
 import static ai.grakn.SNB.by;
 import static ai.grakn.SNB.has;
@@ -391,18 +397,18 @@ public class GraknShortQueryHandlers {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
 
-                graph.graql().match(var("x").isa(CONTENT)).get().execute();
-//                        $message.isa(MESSAGE).has(MESSAGE_ID, operation.messageId()),
-//                        var().rel(PRODUCT, $message).rel(CREATOR, $author1).isa(HAS_CREATOR),
-//                        var().rel(ORIGINAL, $message).rel(REPLY, $comment).isa(REPLY_OF),
+                graph.graql().match(
+                        $message.isa(MESSAGE).has(MESSAGE_ID, operation.messageId()),
+                        var().rel(PRODUCT, $message).rel(CREATOR, $author1).isa(HAS_CREATOR),
+                        var().rel(ORIGINAL, $message).rel(REPLY, $comment).isa(REPLY_OF),
 //                        var().rel($comment).rel($commentId).isa(key(MESSAGE_ID)),
-//                        var().rel($comment)./*rel($content).*/isa(has(CONTENT))/*,
-//                        var().rel($comment).rel($date).isa(has(CREATION_DATE)),
-//                        var().rel(PRODUCT, $comment).rel(CREATOR, $author2).isa(HAS_CREATOR),
-//                        var().rel($author2).rel($personId).isa(key(PERSON_ID)),
-//                        var().rel($author2).rel($firstName).isa(has(FIRST_NAME)),
-//                        var().rel($author2).rel($lastName).isa(has(LAST_NAME))
-//                */).get().execute();
+                        var().rel($comment)./*rel($content).*/isa(has(CONTENT))/*,
+                        var().rel($comment).rel($date).isa(has(CREATION_DATE)),
+                        var().rel(PRODUCT, $comment).rel(CREATOR, $author2).isa(HAS_CREATOR),
+                        var().rel($author2).rel($personId).isa(key(PERSON_ID)),
+                        var().rel($author2).rel($firstName).isa(has(FIRST_NAME)),
+                        var().rel($author2).rel($lastName).isa(has(LAST_NAME))
+                */).get().execute();
 
 //                List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
 //                        .sorted(comparing(by($date)).reversed().thenComparing(by($personId)))
