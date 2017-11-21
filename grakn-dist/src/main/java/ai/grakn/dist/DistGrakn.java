@@ -27,12 +27,8 @@ import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -40,14 +36,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Scanner;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.joining;
 
 /**
+ * 
  * @author Michele Orsi
  */
-public class DistApplication {
+public class DistGrakn {
 
     private static final String GRAKN = "grakn";
     private static final String QUEUE = "queue";
@@ -71,9 +65,9 @@ public class DistApplication {
     private boolean graknIsStarted;
     private String classpath;
 
-    private final Scanner scanner;
-    private final PrintStream output;
     private final String homePath;
+
+    private final ProcessHandler processHandler;
 
     /**
      * In order to run this method you should have 'grakn.dir' and 'grakn.conf' set
@@ -85,7 +79,7 @@ public class DistApplication {
         String configStatic = GraknSystemProperty.CONFIGURATION_FILE.value();
 
         if(homeStatic==null || configStatic==null) {
-            System.out.println("Problem with bash script: cannot run Grakn");
+            System.out.println("Problem with bash script: cannot run Graql");
             return;
         }
 
@@ -93,7 +87,7 @@ public class DistApplication {
         String arg1 = args.length > 1 ? args[1] : "";
         String arg2 = args.length > 2 ? args[2] : "";
 
-        DistApplication application = new DistApplication(new Scanner(System.in, StandardCharsets.UTF_8.name()),System.out,homeStatic,configStatic);
+        DistGrakn application = new DistGrakn(homeStatic,configStatic, new ProcessHandler());
         try {
             application.run(new String[]{arg0,arg1,arg2});
         } catch (RuntimeException ex) {
@@ -103,7 +97,7 @@ public class DistApplication {
     }
 
     public void run(String[] args) {
-        classpath = getClassPathFrom(homePath);
+        classpath = processHandler.getClassPathFrom(homePath);
 
         String arg0 = args.length > 0 ? args[0] : "";
         String arg1 = args.length > 1 ? args[1] : "";
@@ -117,42 +111,23 @@ public class DistApplication {
                 version();
                 break;
             default:
-                defaultChoice();
+                help();
         }
     }
 
-    public String getClassPathFrom(String home){
-        FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
-        File folder = new File(home + File.separator+"services"+File.separator+"lib");
-        File[] values = folder.listFiles(jarFiles);
-        if(values==null) {
-            throw new RuntimeException("No libraries found: cannot run Grakn");
-        }
-        Stream<File> jars = Stream.of(values);
-        File conf = new File(home + File.separator+"conf"+File.separator);
-        File graknLogback = new File(home + File.separator+"services"+File.separator+"grakn"+File.separator);
-        return ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
-                .filter(f -> !f.getName().contains("slf4j-log4j12"))
-                .map(File::getAbsolutePath)
-                .sorted() // we need to sort otherwise it doesn't load logback configuration properly
-                .collect(joining(":"));
-    }
-
-
-    public DistApplication(Scanner scanner, PrintStream output, String homePath, String configPath) {
-        this.scanner = scanner;
-        this.output = output;
+    public DistGrakn(String homePath, String configPath, ProcessHandler processHandler) {
         this.homePath = homePath;
         this.configPath = configPath;
         this.graknConfig = GraknConfig.read(new File(configPath));
+        this.processHandler = processHandler;
     }
 
     private void version() {
         GraqlShell.main(new String[]{"--v"});
     }
 
-    private void defaultChoice() {
-        output.println("Usage: grakn COMMAND\n" +
+    private void help() {
+        System.out.println("Usage: grakn COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
                 "server     Manage Grakn components\n" +
@@ -188,58 +163,58 @@ public class DistApplication {
         boolean queue = queueIsRunning();
         boolean grakn = graknIsRunning();
         if(storage || queue || grakn) {
-            output.println("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup.");
+            System.out.println("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup.");
         } else {
-            output.print("Are you sure you want to delete all stored data and logs? [y/N] ");
-            output.flush();
-            String response = scanner.next();
+            System.out.print("Are you sure you want to delete all stored data and logs? [y/N] ");
+            System.out.flush();
+            String response = new Scanner(System.in, StandardCharsets.UTF_8.name()).next();
             if(!response.equals("y") && !response.equals("Y")) {
-                output.println("Response '"+response+"' did not equal 'y' or 'Y'.  Canceling clean operation.");
+                System.out.println("Response '"+response+"' did not equal 'y' or 'Y'.  Canceling clean operation.");
                 return;
             }
-            output.print("Cleaning Storage...");
-            output.flush();
+            System.out.print("Cleaning Storage...");
+            System.out.flush();
             try {
                 Files.delete(Paths.get(homePath,"db","cassandra"));
                 Files.createDirectories(Paths.get(homePath,"db","cassandra","data"));
                 Files.createDirectories(Paths.get(homePath,"db","cassandra","commitlog"));
                 Files.createDirectories(Paths.get(homePath,"db","cassandra","saved_caches"));
-                output.println("SUCCESS");
+                System.out.println("SUCCESS");
             } catch (IOException e) {
-                output.println("FAILED!");
-                output.println("Unable to clean Storage");
+                System.out.println("FAILED!");
+                System.out.println("Unable to clean Storage");
             }
 
-            output.print("Cleaning Queue...");
-            output.flush();
+            System.out.print("Cleaning Queue...");
+            System.out.flush();
             queueStart();
             queueWipeAllData();
             stopQueue();
-            output.println("SUCCESS");
+            System.out.println("SUCCESS");
 
-            output.print("Cleaning Grakn...");
-            output.flush();
+            System.out.print("Cleaning Grakn...");
+            System.out.flush();
             try {
                 Files.delete(Paths.get(homePath +"logs"));
                 Files.createDirectories(Paths.get(homePath +"logs"));
-                output.println("SUCCESS");
+                System.out.println("SUCCESS");
             } catch (IOException e) {
-                output.println("FAILED!");
-                output.println("Unable to clean Grakn");
+                System.out.println("FAILED!");
+                System.out.println("Unable to clean Grakn");
             }
 
         }
     }
 
     private void queueWipeAllData() {
-        OutputCommand operatingSystem = executeAndWait(new String[]{
+        OutputCommand operatingSystem = processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 "uname"
         },null,null);
         String queueBin = operatingSystem.output.trim().equals("Darwin") ? "redis-cli-osx" : "redis-cli-linux";
 
-        executeAndWait(new String[]{
+        processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 homePath +"/services/redis/"+queueBin+" flushall"
@@ -267,33 +242,33 @@ public class DistApplication {
     }
 
     public void stopStorage() {
-        output.print("Stopping Storage...");
-        output.flush();
+        System.out.print("Stopping Storage...");
+        System.out.flush();
         boolean storageIsRunning = storageIsRunning();
         if(!storageIsRunning) {
-            output.println("NOT RUNNING");
+            System.out.println("NOT RUNNING");
         } else {
             storageStopProcess();
         }
     }
 
     public void stopQueue() {
-        output.print("Stopping Queue...");
-        output.flush();
+        System.out.print("Stopping Queue...");
+        System.out.flush();
         boolean queueIsRunning = queueIsRunning();
         if(!queueIsRunning) {
-            output.println("NOT RUNNING");
+            System.out.println("NOT RUNNING");
         } else {
             queueStopProcess();
         }
     }
 
     public void stopGrakn() {
-        output.print("Stopping Grakn...");
-        output.flush();
+        System.out.print("Stopping Grakn...");
+        System.out.flush();
         boolean graknIsRunning = graknIsRunning();
         if(!graknIsRunning) {
-            output.println("NOT RUNNING");
+            System.out.println("NOT RUNNING");
         } else {
             graknStopProcess();
         }
@@ -321,7 +296,7 @@ public class DistApplication {
                 if(processPid.trim().isEmpty()) {
                     return false;
                 }
-                OutputCommand command = executeAndWait(new String[]{
+                OutputCommand command = processHandler.executeAndWait(new String[]{
                         "/bin/sh",
                         "-c",
                         "ps -p "+processPid.trim()+" | wc -l"
@@ -349,7 +324,7 @@ public class DistApplication {
     private void startStorage() {
         boolean storageIsRunning = storageIsRunning();
         if(storageIsRunning) {
-            output.println("Storage is already running");
+            System.out.println("Storage is already running");
             storageIsStarted =true;
         } else {
             storageStartProcess();
@@ -357,8 +332,8 @@ public class DistApplication {
     }
 
     private void storageStartProcess() {
-        output.print("Starting Storage...");
-        output.flush();
+        System.out.print("Starting Storage...");
+        System.out.flush();
         if(Files.exists(Paths.get(STORAGE_PID))) {
             try {
                 Files.delete(Paths.get(STORAGE_PID));
@@ -366,7 +341,7 @@ public class DistApplication {
                 e.printStackTrace();
             }
         }
-        OutputCommand outputCommand = executeAndWait(new String[]{
+        OutputCommand outputCommand = processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 homePath + "/services/cassandra/cassandra -p " + STORAGE_PID
@@ -375,16 +350,16 @@ public class DistApplication {
         LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_S);
 
         while(LocalDateTime.now().isBefore(timeout) && outputCommand.exitStatus<1) {
-            output.print(".");
-            output.flush();
+            System.out.print(".");
+            System.out.flush();
 
-            OutputCommand storageStatus = executeAndWait(new String[]{
+            OutputCommand storageStatus = processHandler.executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
                     homePath + "/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'"
             },null,null);
             if(storageStatus.output.trim().equals("running")) {
-                output.println("SUCCESS");
+                System.out.println("SUCCESS");
                 storageIsStarted =true;
                 return;
             }
@@ -394,8 +369,8 @@ public class DistApplication {
                 e.printStackTrace();
             }
         }
-        output.println("FAILED!");
-        output.println("Unable to start Storage");
+        System.out.println("FAILED!");
+        System.out.println("Unable to start Storage");
     }
 
     private void startQueue() {
@@ -405,7 +380,7 @@ public class DistApplication {
     private void queueStart() {
         boolean queueRunning = queueIsRunning();
         if(queueRunning) {
-            output.println("Queue is already running");
+            System.out.println("Queue is already running");
             queueIsStarted =true;
         } else {
             queueStartProcess();
@@ -413,9 +388,9 @@ public class DistApplication {
     }
 
     private void queueStartProcess() {
-        output.print("Starting Queue...");
-        output.flush();
-        OutputCommand operatingSystem = executeAndWait(new String[]{
+        System.out.print("Starting Queue...");
+        System.out.flush();
+        OutputCommand operatingSystem = processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 "uname"
@@ -425,7 +400,7 @@ public class DistApplication {
         // run queue
         // queue needs to be ran with $GRAKN_HOME as the working directory
         // otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
-        executeAndWait(new String[]{
+        processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 homePath +"/services/redis/"+queueBin+" "+ homePath +"/services/redis/redis.conf"
@@ -435,11 +410,11 @@ public class DistApplication {
         LocalDateTime timeout = init.plusSeconds(QUEUE_STARTUP_TIMEOUT_S);
 
         while(LocalDateTime.now().isBefore(timeout)) {
-            output.print(".");
-            output.flush();
+            System.out.print(".");
+            System.out.flush();
 
             if(queueIsRunning()) {
-                output.println("SUCCESS");
+                System.out.println("SUCCESS");
                 queueIsStarted =true;
                 return;
             }
@@ -450,15 +425,15 @@ public class DistApplication {
             }
         }
 
-        output.println("FAILED!");
-        output.println("Unable to start Queue");
+        System.out.println("FAILED!");
+        System.out.println("Unable to start Queue");
     }
 
 
     private void startGrakn() {
         boolean graknIsRunning = graknIsRunning();
         if(graknIsRunning) {
-            output.println("Grakn is already running");
+            System.out.println("Grakn is already running");
             graknIsStarted =true;
         } else {
             graknStartProcess();
@@ -466,36 +441,36 @@ public class DistApplication {
     }
 
     private void graknStartProcess() {
-        output.print("Starting Grakn...");
-        output.flush();
+        System.out.print("Starting Grakn...");
+        System.out.flush();
 
         String command = "java -cp " + classpath + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath +" ai.grakn.engine.Grakn > /dev/null 2>&1 &";
 
-        executeAndWait(new String[]{
+        processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 command}, null, null);
 
-        String pid = getPidOf(Grakn.class.getName());
+        String pid = processHandler.getPidFromPsOf(Grakn.class.getName());
 
         try {
             Files.write(Paths.get(GRAKN_PID),pid.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            output.println("Cannot write Grakn PID on a file");
+            System.out.println("Cannot write Grakn PID on a file");
         }
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(GRAKN_STARTUP_TIMEOUT_S);
 
         while(LocalDateTime.now().isBefore(timeout)) {
-            output.print(".");
-            output.flush();
+            System.out.print(".");
+            System.out.flush();
 
             String host = graknConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME);
             int port = graknConfig.getProperty(GraknConfigKey.SERVER_PORT);
 
             if(graknIsRunning() && graknCheckIfReady(host,port,REST.WebPath.System.STATUS)) {
-                output.println("SUCCESS");
+                System.out.println("SUCCESS");
                 graknIsStarted =true;
                 return;
             }
@@ -514,16 +489,8 @@ public class DistApplication {
             }
         }
 
-        output.println("FAILED!");
-        output.println("Unable to start Grakn");
-    }
-
-    private String getPidOf(String processName) {
-        return executeAndWait(new String[]{
-                    "/bin/sh",
-                    "-c",
-                    "ps -ef | grep " + processName + " | grep -v grep | awk '{ print $2}' "
-            }, null, null).output;
+        System.out.println("FAILED!");
+        System.out.println("Unable to start Grakn");
     }
 
     private boolean graknCheckIfReady(String host, int port, String path) {
@@ -551,7 +518,7 @@ public class DistApplication {
         startGrakn();
 
         if(!graknIsStarted || !queueIsStarted || !storageIsStarted) {
-            output.println("Please run 'grakn server status' or check the logs located under 'logs' directory.");
+            System.out.println("Please run 'grakn server status' or check the logs located under 'logs' directory.");
         }
 
     }
@@ -568,21 +535,21 @@ public class DistApplication {
             if (graknPid.trim().isEmpty()) {
                 return;
             }
-            kill(graknPid);
+            processHandler.kill(graknPid);
         }
 
         while(true) {
-            output.print(".");
-            output.flush();
+            System.out.print(".");
+            System.out.flush();
 
-            OutputCommand outputCommand = executeAndWait(new String[]{
+            OutputCommand outputCommand = processHandler.executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
                     "kill -0 " + graknPid.trim()
             }, null, null);
 
             if(outputCommand.exitStatus==0) {
-                output.println("SUCCESS");
+                System.out.println("SUCCESS");
                 try {
                     Files.delete(Paths.get(GRAKN_PID));
                 } catch (IOException e) {
@@ -596,14 +563,6 @@ public class DistApplication {
                 e.printStackTrace();
             }
         }
-    }
-
-    private void kill(String pid) {
-        executeAndWait(new String[]{
-                "/bin/sh",
-                "-c",
-                "kill " + pid
-        }, null, null);
     }
 
     private void queueStopProcess() {
@@ -622,7 +581,7 @@ public class DistApplication {
             return;
         }
 
-        OutputCommand operatingSystem = executeAndWait(new String[]{
+        OutputCommand operatingSystem = processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 "uname"
@@ -630,7 +589,7 @@ public class DistApplication {
         String queueBin = operatingSystem.output.trim().equals("Darwin") ? "redis-cli-osx" : "redis-cli-linux";
 
 
-        executeAndWait(new String[]{
+        processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 homePath + "/services/redis/" + queueBin + " shutdown"
@@ -638,17 +597,17 @@ public class DistApplication {
 
 
         while(true) {
-            output.print(".");
-            output.flush();
+            System.out.print(".");
+            System.out.flush();
 
-            OutputCommand outputCommand = executeAndWait(new String[]{
+            OutputCommand outputCommand = processHandler.executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
                     "kill -0 " + queuePid.trim()+" 2>/dev/null"
             }, null, null);
 
             if(outputCommand.exitStatus>0) {
-                output.println("SUCCESS");
+                System.out.println("SUCCESS");
                 return;
             }
             try {
@@ -671,21 +630,21 @@ public class DistApplication {
             if (storagePid.trim().isEmpty()) {
                 return;
             }
-            kill(storagePid);
+            processHandler.kill(storagePid);
         }
 
         while(true) {
-            output.print(".");
-            output.flush();
+            System.out.print(".");
+            System.out.flush();
 
-            OutputCommand outputCommand = executeAndWait(new String[]{
+            OutputCommand outputCommand = processHandler.executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
                     "kill -0 " + storagePid.trim()
             }, null, null);
 
             if(outputCommand.exitStatus==0) {
-                output.println("SUCCESS");
+                System.out.println("SUCCESS");
                 try {
                     if(Files.exists(Paths.get(STORAGE_PID))) {
                         Files.delete(Paths.get(STORAGE_PID));
@@ -705,7 +664,7 @@ public class DistApplication {
     }
 
     private void serverHelp() {
-        output.println("Usage: grakn server COMMAND\n" +
+        System.out.println("Usage: grakn server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
                 "start [grakn|queue|storage]  Start Grakn (or optionally, only one of the component)\n" +
@@ -720,104 +679,41 @@ public class DistApplication {
 
     private void graknServerStatus(String arg2) {
         if (storageIsRunning()) {
-            output.println("Storage: RUNNING");
+            System.out.println("Storage: RUNNING");
         } else {
-            output.println("Storage: NOT RUNNING");
+            System.out.println("Storage: NOT RUNNING");
         }
 
         if (queueIsRunning()) {
-            output.println("Queue: RUNNING");
+            System.out.println("Queue: RUNNING");
         } else {
-            output.println("Queue: NOT RUNNING");
+            System.out.println("Queue: NOT RUNNING");
         }
 
         if (graknIsRunning()) {
-            output.println("Grakn: RUNNING");
+            System.out.println("Grakn: RUNNING");
         } else {
-            output.println("Grakn: NOT RUNNING");
+            System.out.println("Grakn: NOT RUNNING");
         }
         if(arg2.equals("--verbose")) {
-            output.println("======== Failure Diagnostics ========");
-            output.println("Grakn pid = '"+ getPidFromFile(GRAKN_PID)+"' (from "+GRAKN_PID+"), '"+getPidOfGrakn()+"' (from ps -ef)");
-            output.println("Queue pid = '"+ getPidFromFile(QUEUE_PID)+"' (from "+QUEUE_PID+"), '"+ getPidOfQueue() +"' (from ps -ef)");
-            output.println("Storage pid = '"+ getPidFromFile(STORAGE_PID)+"' (from "+STORAGE_PID+"), '"+getPidOfStorage()+"' (from ps -ef)");
+            System.out.println("======== Failure Diagnostics ========");
+            System.out.println("Grakn pid = '"+ processHandler.getPidFromFile(GRAKN_PID)+"' (from "+GRAKN_PID+"), '"+getPidOfGrakn()+"' (from ps -ef)");
+            System.out.println("Queue pid = '"+ processHandler.getPidFromFile(QUEUE_PID)+"' (from "+QUEUE_PID+"), '"+ getPidOfQueue() +"' (from ps -ef)");
+            System.out.println("Storage pid = '"+ processHandler.getPidFromFile(STORAGE_PID)+"' (from "+STORAGE_PID+"), '"+getPidOfStorage()+"' (from ps -ef)");
         }
     }
 
     public String getPidOfStorage() {
-        return getPidOf("CassandraDaemon");
+        return processHandler.getPidFromPsOf("CassandraDaemon");
     }
 
     public String getPidOfGrakn() {
-        return getPidOf(Grakn.class.getName());
+        return processHandler.getPidFromPsOf(Grakn.class.getName());
     }
 
     public String getPidOfQueue() {
-        return getPidOf("redis-server");
+        return processHandler.getPidFromPsOf("redis-server");
     }
 
-    private String getPidFromFile(String fileName) {
-        String pid="";
-        if (Files.exists(Paths.get(fileName))) {
-            try {
-                pid = new String(Files.readAllBytes(Paths.get(fileName)),StandardCharsets.UTF_8).trim();
-            } catch (IOException e) {
-                // DO NOTHING
-            }
-        }
-        return pid;
-    }
-
-    public OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
-
-        StringBuffer outputS = new StringBuffer();
-        int exitValue = 1;
-
-        Process p;
-        BufferedReader reader = null;
-        try {
-            p = Runtime.getRuntime().exec(cmdarray, envp, dir);
-            p.waitFor();
-            exitValue = p.exitValue();
-            reader =
-                    new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
-
-            String line = "";
-            while ((line = reader.readLine()) != null) {
-                outputS.append(line + "\n");
-            }
-
-        } catch (InterruptedException | IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        OutputCommand outputCommand = new OutputCommand(outputS.toString().trim(), exitValue);
-        return outputCommand;
-    }
-
-    static class OutputCommand {
-        final String output;
-        final int exitStatus;
-
-        OutputCommand(String output, int exitStatus) {
-            this.output = output;
-            this.exitStatus = exitStatus;
-        }
-
-        @Override
-        public String toString() {
-            return "OutputCommand{" +
-                    "output='" + output + '\'' +
-                    ", exitStatus=" + exitStatus +
-                    '}';
-        }
-    }
 }
 

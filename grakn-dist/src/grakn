@@ -28,15 +28,15 @@ fi
 # ================================================
 update_classpath_global_var() {
   # Define CLASSPATH, exclude slf4j as we use logback
-  for jar in ./services/lib/*.jar; do
+  for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
       if [[ $jar != *slf4j-log4j12* ]] ; then
           CLASSPATH="$CLASSPATH":"$jar"
       fi
   done
 
   # Add path containing grakn.properties and logback.xml
-  CLASSPATH="$CLASSPATH":./conf
-  CLASSPATH="$CLASSPATH":./services/grakn
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
 }
 
 # =============================================
@@ -52,7 +52,6 @@ print_grakn_logo() {
 # =============================================
 
 
-
 pushd "$GRAKN_HOME" > /dev/null
 
 update_classpath_global_var
@@ -61,6 +60,6 @@ print_grakn_logo
 
 GRAKN_CONFIG="conf/grakn.properties"
 
-java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.dist.DistApplication $1 $2 $3
+java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.dist.DistGrakn $@
 
 popd > /dev/null
