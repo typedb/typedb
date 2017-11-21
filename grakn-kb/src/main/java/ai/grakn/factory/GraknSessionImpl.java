@@ -130,7 +130,7 @@ public class GraknSessionImpl implements GraknSession {
      * @return the properties needed to build a {@link GraknTx}
      */
     private static GraknConfig getTxRemoteConfig(SimpleURI uri, Keyspace keyspace){
-        URI keyspaceUri = UriBuilder.fromUri(uri.toURI()).path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue())).build();
+        URI keyspaceUri = UriBuilder.fromUri(uri.toURI()).path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace.getValue())).build();
 
         Properties properties = new Properties();
         //Get Specific Configs

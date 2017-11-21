@@ -129,7 +129,7 @@ public class GraqlControllerInsertTest {
     @Test
     public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, "some-kb"));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "some-kb"));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -205,6 +205,6 @@ public class GraqlControllerInsertTest {
                 .accept(acceptType)
                 .queryParam(INFER, false)
                 .body(query)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.keyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
     }
 }

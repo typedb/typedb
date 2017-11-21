@@ -19,6 +19,7 @@
 package ai.grakn.exception;
 
 import ai.grakn.Keyspace;
+import ai.grakn.concept.Concept;
 import ai.grakn.engine.TaskId;
 import ai.grakn.util.SimpleURI;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -75,6 +76,13 @@ public class GraknBackendException extends GraknException {
 
     public static GraknBackendException serverStartupException(String message, Exception e){
         return new GraknBackendException(ENGINE_STARTUP_ERROR.getMessage(message), e);
+    }
+
+    /**
+     * Thrown when trying to convert a {@link Concept} into a response object and failing to do so.
+     */
+    public static GraknBackendException convertingUnknownConcept(Concept concept){
+        return new GraknBackendException(String.format("Cannot convert concept {%s} into response object due to it being of an unknown base type", concept));
     }
 
     /**

@@ -21,18 +21,10 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
-import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.controller.api.AttributeController;
-import ai.grakn.engine.controller.api.AttributeTypeController;
-import ai.grakn.engine.controller.api.EntityController;
-import ai.grakn.engine.controller.api.EntityTypeController;
-import ai.grakn.engine.controller.api.RelationshipController;
-import ai.grakn.engine.controller.api.RelationshipTypeController;
-import ai.grakn.engine.controller.api.RoleController;
-import ai.grakn.engine.controller.api.RuleController;
+import ai.grakn.engine.controller.api.ConceptController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.session.RemoteSession;
@@ -97,14 +89,6 @@ public class HttpHandler {
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
         new CommitLogController(spark, postProcessingDelay, taskManager, postProcessor);
         new TasksController(spark, taskManager, metricRegistry, taskExecutor);
-        new EntityController(factory, spark);
-        new EntityTypeController(factory, spark);
-        new RelationshipController(factory, spark);
-        new RelationshipTypeController(factory, spark);
-        new AttributeController(factory, spark);
-        new AttributeTypeController(factory, spark);
-        new RoleController(factory, spark);
-        new RuleController(factory, spark);
 
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();

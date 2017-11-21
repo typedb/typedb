@@ -116,7 +116,7 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, "some-kb"));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "some-kb"));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -179,6 +179,6 @@ public class GraqlControllerDeleteTest {
                 .queryParam(INFER, false)
                 .accept(APPLICATION_TEXT)
                 .body(query)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, tx.keyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, tx.keyspace().getValue()));
     }
 }

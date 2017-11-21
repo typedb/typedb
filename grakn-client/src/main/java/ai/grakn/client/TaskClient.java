@@ -22,6 +22,7 @@ package ai.grakn.client;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -52,9 +53,6 @@ import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_WAIT_PARAMETER;
 import static ai.grakn.util.REST.Response.Task.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
-import static ai.grakn.util.REST.WebPath.Tasks.GET;
-import static ai.grakn.util.REST.WebPath.Tasks.STOP;
-import static ai.grakn.util.REST.WebPath.Tasks.TASK;
 import static java.lang.String.format;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
@@ -100,7 +98,7 @@ public class TaskClient extends Client {
     TaskResult sendTask(String taskClass, String creator, Instant runAt, Duration interval,
             Json configuration, long limit, boolean wait) {
         try {
-            URI uri = UriBuilder.fromUri(this.uri.toURI()).path(TASK).build();
+            URI uri = UriBuilder.fromUri(this.uri.toURI()).path(REST.WebPath.TASK).build();
 
             Builder<String, String> taskBuilder = ImmutableMap.builder();
             taskBuilder.put(TASK_CLASS_NAME_PARAMETER, taskClass);
@@ -156,7 +154,7 @@ public class TaskClient extends Client {
      */
     public TaskStatus getStatus(TaskId id) {
         try {
-            URI uri = UriBuilder.fromUri(this.uri.toURI()).path(convert(GET, id)).build();
+            URI uri = UriBuilder.fromUri(this.uri.toURI()).path(convert(REST.WebPath.TASK_ID, id)).build();
 
             HttpGet httpGet = new HttpGet(uri);
             HttpResponse response = httpClient.execute(httpGet);
@@ -184,7 +182,7 @@ public class TaskClient extends Client {
      */
     public boolean stopTask(TaskId id) {
         try {
-            URI uri = UriBuilder.fromUri(this.uri.toURI()).path(convert(STOP, id)).build();
+            URI uri = UriBuilder.fromUri(this.uri.toURI()).path(convert(REST.WebPath.TASK_ID_STOP, id)).build();
 
             HttpPut httpPut = new HttpPut(uri);
 

@@ -63,7 +63,7 @@ abstract class HALExploreConcept {
         // If limit -1, we don't append the limit parameter to the URI string
         String limitParam = (this.limit >= 0) ? "&"+ REST.Request.Concept.LIMIT_EMBEDDED+"=" + this.limit : "";
 
-        return "?"+REST.Request.KEYSPACE+"=" + this.keyspace + "&"+REST.Request.Concept.OFFSET_EMBEDDED+"=" + this.offset + limitParam;
+        return "?"+REST.Request.KEYSPACE_PARAM +"=" + this.keyspace + "&"+REST.Request.Concept.OFFSET_EMBEDDED+"=" + this.offset + limitParam;
     }
 
     void generateStateAndLinks(Representation resource, Concept concept) {

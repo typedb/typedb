@@ -35,8 +35,11 @@ import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.util.Schema;
 import org.junit.Test;
 
+import java.util.stream.Collectors;
+
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -202,6 +205,24 @@ public class EntityTest extends TxTestBase {
                 }
             });
         });
+    }
+
+    @Test
+    public void whenGettingEntityKeys_EnsureKeysAreReturned(){
+        AttributeType<String> attributeType = tx.putAttributeType("An Attribute", AttributeType.DataType.STRING);
+        AttributeType<String> keyType = tx.putAttributeType("A Key", AttributeType.DataType.STRING);
+        EntityType entityType = tx.putEntityType("A Thing").attribute(attributeType).key(keyType);
+
+        Attribute<String> a1 = attributeType.putAttribute("a1");
+        Attribute<String> a2 = attributeType.putAttribute("a2");
+
+        Attribute<String> k1 = keyType.putAttribute("k1");
+
+        Entity entity = entityType.addEntity().attribute(a1).attribute(a2).attribute(k1);
+
+        assertThat(entity.keys().collect(Collectors.toSet()), containsInAnyOrder(k1));
+        assertThat(entity.keys(attributeType, keyType).collect(Collectors.toSet()), containsInAnyOrder(k1));
+        assertThat(entity.keys(attributeType).collect(Collectors.toSet()), empty());
     }
 
     @Test

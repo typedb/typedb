@@ -19,6 +19,8 @@
 package ai.grakn.concept;
 
 import ai.grakn.GraknTx;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
@@ -41,6 +43,7 @@ import java.util.function.Function;
 public abstract class Label implements Comparable<Label>, Serializable {
     private static final long serialVersionUID = 2051578406740868932L;
 
+    @JsonValue
     public abstract String getValue();
 
     /**
@@ -64,6 +67,7 @@ public abstract class Label implements Comparable<Label>, Serializable {
      * @return The matching Type Label
      */
     @CheckReturnValue
+    @JsonCreator
     public static Label of(String value){
         return new AutoValue_Label(value);
     }
