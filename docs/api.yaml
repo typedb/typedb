@@ -8,6 +8,7 @@ host: localhost:4567
 paths:
   /:
     get:
+      description: Root
       tags: [Root]
       produces: [application/json]
       responses:
@@ -17,6 +18,7 @@ paths:
             $ref: '#/definitions/Root'
   /kb:
     get:
+      description: Knowledge Bases
       tags: [Keyspaces]
       produces: [application/json]
       responses:
@@ -28,7 +30,7 @@ paths:
     parameters:
       - $ref: '#/parameters/keyspace'
     get:
-      operationId: GetKeyspace
+      description: Get Knowledge Base
       tags: [Keyspaces]
       produces: [application/json]
       responses:
@@ -39,6 +41,7 @@ paths:
         404:
           description: ''
     put:
+      description: Put Knowledge Base
       tags: [Keyspaces]
       description: >-
         Create a keyspace. If the keyspace exists, nothing happens.
@@ -53,6 +56,7 @@ paths:
           schema:
             $ref: '#/definitions/Configuration'
     delete:
+      description: Delete Knowledge Base
       tags: [Keyspaces]
       description: Delete a keyspace. If the keyspace doesn't exist, nothing happens.
       responses:
@@ -60,6 +64,7 @@ paths:
           description: ''
   /kb/{keyspace}/graql:
     post:
+      description: Execute Graql Query
       tags: [Keyspaces]
       description: Execute a Graql query and return results.
       parameters:
@@ -99,6 +104,7 @@ paths:
           description: ''
   /kb/{keyspace}/concept/{id}:
     get:
+      description: Get Concept
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -120,6 +126,7 @@ paths:
           description: ''
   /kb/{keyspace}/type:
     get:
+      description: Get Types
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -131,6 +138,7 @@ paths:
             $ref: '#/definitions/Types'
   /kb/{keyspace}/type/{label}:
     get:
+      description: Get Type
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -145,6 +153,7 @@ paths:
           description: ''
   /kb/{keyspace}/type/{label}/instance:
     get:
+      description: Get Instances
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -165,6 +174,7 @@ paths:
           description: ''
   /kb/{keyspace}/role:
     get:
+      description: Get Roles
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -176,6 +186,7 @@ paths:
             $ref: '#/definitions/Roles'
   /kb/{keyspace}/role/{label}:
     get:
+      description: Get Role
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -190,6 +201,7 @@ paths:
           description: ''
   /kb/{keyspace}/rule:
     get:
+      description: Get Rules
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -201,6 +213,7 @@ paths:
             $ref: '#/definitions/Rules'
   /kb/{keyspace}/rule/{label}:
     get:
+      description: Get Rule
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -215,6 +228,7 @@ paths:
           description: ''
   /configuration:
     get:
+      description: Get Configuration
       tags: [Internal]
       produces: [application/json]
       responses:
@@ -224,6 +238,7 @@ paths:
             $ref: '#/definitions/Configuration'
   /status:
     get:
+      description: Get Status
       tags: [Internal]
       produces: [application/json]
       responses:
@@ -233,6 +248,7 @@ paths:
             $ref: '#/definitions/StatusResponse'
   /metrics:
     get:
+      description: Get Metrics
       tags: [Internal]
       produces: [text/plain]
       responses:
@@ -242,6 +258,7 @@ paths:
             type: object
   /kb/{keyspace}/commit_log:
     post:
+      description: Post Commit Log
       tags: [Internal]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -258,6 +275,7 @@ paths:
             $ref: '#/definitions/CommitLogResponse'
   /task:
     get:
+      description: Get Tasks
       tags: [Internal]
       produces: [text/plain]
       responses:
@@ -266,12 +284,14 @@ paths:
           schema:
             type: object
     post:
+      description: Post Tasks
       tags: [Internal]
       responses:
         201:
           description: ''
   /task/{id}:
     get:
+      description: Get Task
       tags: [Internal]
       parameters:
       - name: id
@@ -290,6 +310,7 @@ paths:
             $ref: '#/definitions/Task'
   /task/{id}/stop:
     put:
+      description: Stop Task
       tags: [Internal]
       parameters:
       - name: id
