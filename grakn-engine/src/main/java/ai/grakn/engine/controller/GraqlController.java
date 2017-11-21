@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
@@ -31,7 +32,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.util.REST.WebPath.KB;
+import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import io.swagger.annotations.ApiImplicitParam;
@@ -60,7 +61,7 @@ import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
@@ -90,7 +91,7 @@ public class GraqlController {
         this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
         this.singleExecutionTimer = metricRegistry.timer(name(GraqlController.class, "single", "execution"));
 
-        spark.post(KB.ANY_GRAQL, this::executeGraql);
+        spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
 
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
@@ -118,11 +119,11 @@ public class GraqlController {
     })
     private Object executeGraql(Request request, Response response) {
         String queryString = mandatoryBody(request);
-        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE));
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Optional<Boolean> infer = queryParameter(request, INFER).map(Boolean::parseBoolean);
         boolean multi = parseBoolean(queryParameter(request, MULTI).orElse("false"));
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        String acceptType = getAcceptType(request);
+        String acceptType = Requests.getAcceptType(request);
 
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
@@ -216,12 +217,6 @@ public class GraqlController {
 
     private Object executeAndMonitor(Query<?> query) {
         return query.execute();
-    }
-
-    static String getAcceptType(Request request) {
-        // TODO - we are not handling multiple values here and we should!
-        String header = request.headers("Accept");
-        return header == null ? "" : request.headers("Accept").split(",")[0];
     }
 
 }

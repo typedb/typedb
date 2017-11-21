@@ -122,7 +122,7 @@ public class Client {
      */
     public static boolean serverIsRunning(SimpleURI uri) {
         try {
-            URL url = UriBuilder.fromUri(uri.toURI()).path(REST.WebPath.System.KB).build().toURL();
+            URL url = UriBuilder.fromUri(uri.toURI()).path(REST.WebPath.KB).build().toURL();
 
             HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
 
@@ -152,7 +152,7 @@ public class Client {
         URL mappedUrl;
         if ((originalUrl.getProtocol() + originalUrl.getHost()).equals(QUAD_ZERO_ROUTE)) {
             mappedUrl = new URL(
-                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.System.KB);
+                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.KB);
         } else {
             mappedUrl = originalUrl;
         }

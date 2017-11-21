@@ -24,8 +24,6 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -52,7 +50,6 @@ import java.util.regex.Pattern;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    final Logger LOG = LoggerFactory.getLogger(AttributeTypeImpl.class);
 
     private AttributeTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -118,27 +115,35 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @SuppressWarnings("unchecked")
     @Override
     public Attribute<D> putAttribute(D value) {
+        return putAttribute(value, false);
+    }
+
+    public Attribute<D> putAttributeInferred(D value) {
+        return putAttribute(value, true);
+    }
+
+    private Attribute<D> putAttribute(D value, boolean isInferred) {
         Objects.requireNonNull(value);
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             Object persistenceValue = castValue(value);
-            AttributeImpl<D> resource = vertex().tx().factory().buildResource(vertex, type, persistenceValue);
+            AttributeImpl<D> attribute = vertex().tx().factory().buildAttribute(vertex, type, persistenceValue);
 
             try{
-                resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
+                attribute.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
             } catch (PropertyNotUniqueException e){
                 //This happens when another attribute ends up being created between checking if the attribute exists and
                 // creating the actual attribute. In this case we dynamically merge
-                resource.delete();
+                attribute.delete();
                 return getAttribute(value);
             }
 
-            return resource;
+            return attribute;
         };
 
         return putInstance(Schema.BaseType.ATTRIBUTE,
-                () -> getAttribute(value), instanceBuilder);
+                () -> getAttribute(value), instanceBuilder, isInferred);
     }
 
     /**
@@ -202,6 +207,10 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public String getRegex() {
         return vertex().property(Schema.VertexProperty.REGEX);
+    }
+
+    public static AttributeTypeImpl from(AttributeType attributeType){
+        return (AttributeTypeImpl) attributeType;
     }
 
 }

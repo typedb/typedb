@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
@@ -113,6 +114,11 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     }
 
     @Override
+    public Keyspace keyspace() {
+        return edge().tx().keyspace();
+    }
+
+    @Override
     public RelationshipReified reify() {
         LOG.debug("Reifying concept [" + getId() + "]");
         //Build the Relationship Vertex
@@ -182,6 +188,11 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     @Override
     public boolean isDeleted() {
         return edgeElement.isDeleted();
+    }
+
+    @Override
+    public boolean isInferred() {
+        return edge().propertyBoolean(Schema.EdgeProperty.IS_INFERRED);
     }
 
     @Override

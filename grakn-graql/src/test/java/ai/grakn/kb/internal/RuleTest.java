@@ -262,6 +262,16 @@ public class RuleTest {
         );
         validateIllegalHead(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknTx.graql().parser().parsePattern("$x != $y'"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknTx.graql().parser().parsePattern("($x, $y); $x isa res1;"),
+                graknTx.graql().parser().parsePattern("$x val '100'"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
+        );
+        validateIllegalRule(
+                graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parser().parsePattern("$x label 'entity1'"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );

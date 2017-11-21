@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,7 +32,7 @@ public class MutatorTaskTest {
         taskConfiguration = mock(TaskConfiguration.class);
 
         Json badTaskJson = Json.object();
-        badTaskJson.set(KEYSPACE, "keyspace");
+        badTaskJson.set(KEYSPACE_PARAM, "keyspace");
         Json readOnlyJson = Json.array();
         readOnlyJson.add(readOnlyQuery);
         badTaskJson.set(TASK_LOADER_MUTATIONS, readOnlyJson);

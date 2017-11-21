@@ -20,6 +20,7 @@ package ai.grakn.util;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
@@ -133,7 +134,8 @@ public final class Schema {
         ATTRIBUTE(Attribute.class),
 
         //Internal
-        SHARD(Vertex.class);
+        SHARD(Vertex.class),
+        CONCEPT(Concept.class);//No concept actually has this base type. This is used to prevent string hardcoding
 
         private final Class classType;
 
@@ -155,7 +157,8 @@ public final class Schema {
         SCHEMA_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
 
         //Other Properties
-        THING_TYPE_LABEL_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
+        THING_TYPE_LABEL_ID(Integer.class),
+        IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_INFERRED(Boolean.class),
         REGEX(String.class), DATA_TYPE(String.class), CURRENT_LABEL_ID(Integer.class),
         RULE_WHEN(String.class), RULE_THEN(String.class), CURRENT_SHARD(String.class),
 
@@ -185,7 +188,8 @@ public final class Schema {
         RELATIONSHIP_ROLE_VALUE_LABEL_ID(Integer.class),
         ROLE_LABEL_ID(Integer.class),
         RELATIONSHIP_TYPE_LABEL_ID(Integer.class),
-        REQUIRED(Boolean.class);
+        REQUIRED(Boolean.class),
+        IS_INFERRED(Boolean.class);
 
         private final Class dataType;
 
