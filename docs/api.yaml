@@ -279,7 +279,7 @@ paths:
         200:
           description: ''
           schema:
-            type: object
+            $ref: '#/definitions/Tasks'
     post:
       summary: Post Tasks
       tags: [Internal]
@@ -736,6 +736,18 @@ definitions:
     example: V123
   CommitLogResponse:
       $ref: '#/definitions/Task'
+  Tasks:
+    type: object
+    required: ['@id', tasks]
+    properties:
+      '@id':
+        type: string
+        format: uri
+        example: '/task'
+      tasks:
+        type: array
+        items:
+          $ref: '#/definitions/Task'
   Task:
     type: object
     properties:
