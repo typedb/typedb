@@ -40,6 +40,8 @@ import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import org.junit.BeforeClass;
@@ -58,6 +60,7 @@ import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -131,6 +134,19 @@ public class ConceptControllerTest {
 
             tx.commit();
         }
+    }
+
+
+    @Test
+    public void whenGettingTypesInstances_EnsureInstancesAreReturned() throws JsonProcessingException {
+        //TODO: Same as below get jackson to deserialise via a child constructor
+        String request = REST.resolveTemplate(REST.WebPath.TYPE_INSTANCES, keyspace.getValue(), entityTypeWrapper.label().getValue());
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.getStatusCode());
+
+        //Hacky way to check if instance is embedded
+        String instance = new ObjectMapper().writeValueAsString(entityWrapper);
+        assertTrue(response.body().asString().contains(instance));
     }
 
     @Test

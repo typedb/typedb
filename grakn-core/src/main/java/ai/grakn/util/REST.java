@@ -108,8 +108,8 @@ public class REST {
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_RUN_WAIT_PARAMETER = "wait";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
-        public static final String LIMIT_PARAM = "limit";
-        public static final String OFFSET_PARAM = "offset";
+        public static final String LIMIT_PARAMETER = "limit";
+        public static final String OFFSET_PARAMETER = "offset";
         public static final String TASKS_PARAM = "tasks";
         public static final String CONFIGURATION_PARAM = "configuration";
         public static final String FORMAT = "format";

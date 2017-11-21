@@ -63,6 +63,14 @@ public class ConceptBuilder {
         return buildThings(type, 0, 100);
     }
 
+    public static Things buildThingsWithOffset(ai.grakn.concept.Type type, int offset){
+        return buildThings(type, offset, 100);
+    }
+
+    public static Things buildThingsWithLimit(ai.grakn.concept.Type type, int limit){
+        return buildThings(type, 0, limit);
+    }
+
     public static Things buildThings(ai.grakn.concept.Type type, int offset, int limit){
         Link selfLink = Link.createInstanceLink(type);
         Link next = Link.createInstanceLink(type, offset + limit, limit);

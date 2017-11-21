@@ -23,8 +23,11 @@ import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.engine.controller.response.Things;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.util.REST.WebPath;
@@ -44,9 +47,12 @@ import java.util.stream.Stream;
 
 import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
+import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.LIMIT_PARAMETER;
+import static ai.grakn.util.REST.Request.OFFSET_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
@@ -66,12 +72,14 @@ public class ConceptController {
     private EngineGraknTxFactory factory;
     private Timer conceptIdGetTimer;
     private Timer labelGetTimer;
+    private Timer instancesGetTimer;
 
     public ConceptController(EngineGraknTxFactory factory, Service spark,
                              MetricRegistry metricRegistry){
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
         this.labelGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-label"));
+        this.instancesGetTimer = metricRegistry.timer(name(ConceptController.class, "instances-of-type"));
 
         spark.get(WebPath.CONCEPT_ID,  this::getConceptById);
         spark.get(WebPath.TYPE_LABEL,  this::getSchemaByLabel);
@@ -81,6 +89,55 @@ public class ConceptController {
         spark.get(WebPath.KEYSPACE_TYPE, this::getTypes);
         spark.get(WebPath.KEYSPACE_RULE, this::getRules);
         spark.get(WebPath.KEYSPACE_ROLE, this::getRoles);
+
+        spark.get(WebPath.TYPE_INSTANCES, this::getTypeInstances);
+    }
+
+    private String getTypeInstances(Request request, Response response) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
+
+        Optional<String> offset = queryParameter(request, OFFSET_PARAMETER);
+        Optional<String> limit = queryParameter(request, LIMIT_PARAMETER);
+
+        try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = instancesGetTimer.time()) {
+            Type type = tx.getType(label);
+
+            if(type == null){
+                response.status(SC_NOT_FOUND);
+                return "";
+            }
+
+            Stream<? extends Thing> instances = type.instances();
+            int offsetValue = -1;
+            int limitValue = -1;
+            if(offset.isPresent()) {
+                offsetValue = Integer.parseInt(offset.get());
+                instances.skip(offsetValue);
+            }
+
+            if(limit.isPresent()){
+                limitValue = Integer.parseInt(limit.get());
+                instances.limit(limitValue);
+            }
+
+            //Get the wrapper
+            Things things;
+            if(offset.isPresent() && limit.isPresent()){
+                things = ConceptBuilder.buildThings(type, offsetValue, limitValue);
+            } else if(offset.isPresent()){
+                things = ConceptBuilder.buildThingsWithOffset(type, offsetValue);
+            } else if(limit.isPresent()){
+                things = ConceptBuilder.buildThingsWithLimit(type, limitValue);
+            } else {
+                things = ConceptBuilder.buildThings(type);
+            }
+
+            response.status(SC_OK);
+            return objectMapper.writeValueAsString(things);
+        }
     }
 
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
@@ -133,6 +190,7 @@ public class ConceptController {
 
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
             Set<Concept> concepts = getter.apply(tx).map(ConceptBuilder::<Concept>build).collect(Collectors.toSet());
+            response.status(SC_OK);
             return objectMapper.writeValueAsString(concepts);
         }
     }

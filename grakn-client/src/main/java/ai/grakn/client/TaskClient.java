@@ -44,7 +44,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 import static ai.grakn.util.REST.Request.CONFIGURATION_PARAM;
-import static ai.grakn.util.REST.Request.LIMIT_PARAM;
+import static ai.grakn.util.REST.Request.LIMIT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASKS_PARAM;
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
@@ -107,7 +107,7 @@ public class TaskClient extends Client {
             taskBuilder.put(TASK_RUN_AT_PARAMETER, Long.toString(runAt.toEpochMilli()));
 
             if (limit > -1) {
-                taskBuilder.put(LIMIT_PARAM, Long.toString(limit));
+                taskBuilder.put(LIMIT_PARAMETER, Long.toString(limit));
             }
 
             if (interval != null) {

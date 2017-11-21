@@ -86,8 +86,8 @@ public abstract class Link implements Jacksonisable{
 
     public static Link createInstanceLink(ai.grakn.concept.Type type, int offset, int limit){
         String id = createInstanceLink(type) +
-                "?" + REST.Request.OFFSET_PARAM + "=" + offset +
-                "?" + REST.Request.LIMIT_PARAM + "=" + limit;
+                "?" + REST.Request.OFFSET_PARAMETER + "=" + offset +
+                "?" + REST.Request.LIMIT_PARAMETER + "=" + limit;
 
         return create(id);
     }
