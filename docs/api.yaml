@@ -18,7 +18,7 @@ paths:
             $ref: '#/definitions/Root'
   /kb:
     get:
-      summary: Knowledge Bases
+      summary: Get Knowledge Bases
       tags: [Keyspaces]
       produces: [application/json]
       responses:
