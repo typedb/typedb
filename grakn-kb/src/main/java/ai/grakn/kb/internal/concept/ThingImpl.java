@@ -110,6 +110,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }
     }
 
+    public boolean isInferred(){
+        return vertex().propertyBoolean(Schema.VertexProperty.IS_INFERRED);
+    }
+
     /**
      * Deletes the concept as an Thing
      */
@@ -262,8 +266,17 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return getThis();
     }
 
+    public T attributeInferred(Attribute attribute) {
+        attributeRelationship(attribute, true);
+        return getThis();
+    }
+
     @Override
     public Relationship attributeRelationship(Attribute attribute) {
+        return attributeRelationship(attribute, false);
+    }
+
+    private Relationship attributeRelationship(Attribute attribute, boolean isInferred) {
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;
@@ -275,7 +288,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             hasOwner  = Schema.ImplicitType.KEY_OWNER;
         }
 
-
         Label label = attribute.type().getLabel();
         RelationshipType hasAttribute = vertex().tx().getSchemaConcept(has.getLabel(label));
         Role hasAttributeOwner = vertex().tx().getSchemaConcept(hasOwner.getLabel(label));
@@ -286,6 +298,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }
 
         EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
+        if(isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
         return vertex().tx().factory().buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
     }
 

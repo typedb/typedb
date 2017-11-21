@@ -24,8 +24,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 import static ai.grakn.util.ErrorMessage.CLOSE_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
 import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
-import static ai.grakn.util.ErrorMessage.INVALID_PATH_TO_CONFIG;
 import static ai.grakn.util.ErrorMessage.INVALID_PROPERTY_USE;
 import static ai.grakn.util.ErrorMessage.LABEL_TAKEN;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
@@ -224,13 +223,6 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when attempting to read a config file which cannot be accessed
-     */
-    public static GraknTxOperationException invalidConfig(String pathToFile){
-        return new GraknTxOperationException(INVALID_PATH_TO_CONFIG.getMessage(pathToFile));
-    }
-
-    /**
      * Thrown when trying to create something using a label reserved by the system
      */
     public static GraknTxOperationException reservedLabel(Label label){
@@ -323,5 +315,13 @@ public class GraknTxOperationException extends GraknException{
      */
     public static GraknTxOperationException invalidLabelStart(Label label){
         return new GraknTxOperationException(String.format("Cannot create a label {%s} starting with character {%s} as it is a reserved starting character", label, Schema.ImplicitType.RESERVED.getValue()));
+    }
+
+    /**
+     * Thrown when attempting to create a {@link Thing} via the execution of a {@link ai.grakn.concept.Rule} when
+     * the {@link Thing} already exists.
+     */
+    public static GraknTxOperationException nonInferredThingExists(Thing thing){
+        return new GraknTxOperationException(String.format("Thing {%s} was already created and cannot be set to inferred", thing));
     }
 }

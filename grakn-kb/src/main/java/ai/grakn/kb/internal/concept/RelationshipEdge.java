@@ -191,6 +191,11 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     }
 
     @Override
+    public boolean isInferred() {
+        return edge().propertyBoolean(Schema.EdgeProperty.IS_INFERRED);
+    }
+
+    @Override
     public String toString(){
         return "ID [" + getId() + "] Type [" + type().getLabel() + "] Roles and Role Players: \n" +
                 "Role [" + ownerRole().getLabel() + "] played by [" + owner().getId() + "] \n" +

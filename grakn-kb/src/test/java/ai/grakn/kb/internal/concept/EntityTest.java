@@ -41,9 +41,11 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class EntityTest extends TxTestBase {
 
@@ -231,6 +233,15 @@ public class EntityTest extends TxTestBase {
     }
 
     @Test
+    public void whenCreatingAnInferredEntity_EnsureMarkedAsInferred(){
+        EntityTypeImpl et = EntityTypeImpl.from(tx.putEntityType("et"));
+        Entity entity = et.addEntity();
+        Entity entityInferred = et.addEntityInferred();
+        assertFalse(entity.isInferred());
+        assertTrue(entityInferred.isInferred());
+    }
+
+    @Test
     public void whenRemovingAnAttributedFromAnEntity_EnsureTheAttributeIsNoLongerReturned(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         Attribute<String> fim = name.putAttribute("Fim");
@@ -243,5 +254,29 @@ public class EntityTest extends TxTestBase {
 
         aPerson.deleteAttribute(tim);
         assertThat(aPerson.attributes().collect(toSet()), containsInAnyOrder(fim, pim));
+    }
+
+
+    @Test
+    public void whenCreatingInferredAttributeLink_EnsureMarkedAsInferred(){
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        Attribute<String> attribute1 = name.putAttribute("An attribute 1");
+        Attribute<String> attribute2 = name.putAttribute("An attribute 2");
+        EntityType et = tx.putEntityType("et").attribute(name);
+        Entity e = et.addEntity();
+
+        //Link Attributes
+        e.attribute(attribute1);
+        EntityImpl.from(e).attributeInferred(attribute2);
+
+        e.relationships().forEach(relationship -> {
+            relationship.rolePlayers().forEach(roleplayer ->{
+                if(roleplayer.equals(attribute1)){
+                    assertFalse(relationship.isInferred());
+                } else if(roleplayer.equals(attribute2)){
+                    assertTrue(relationship.isInferred());
+                }
+            });
+        });
     }
 }
