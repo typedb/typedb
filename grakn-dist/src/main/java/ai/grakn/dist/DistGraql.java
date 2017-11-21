@@ -20,6 +20,10 @@ package ai.grakn.dist;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.graql.GraqlShell;
+import ai.grakn.migration.csv.CSVMigrator;
+import ai.grakn.migration.json.JsonMigrator;
+import ai.grakn.migration.sql.SQLMigrator;
+import ai.grakn.migration.xml.XmlMigrator;
 
 import java.util.Arrays;
 
@@ -68,7 +72,7 @@ public class DistGraql {
 
         switch (arg0) {
             case "console":
-                console(Arrays.copyOfRange(args, 1, args.length));
+                GraqlShell.main(Arrays.copyOfRange(args, 1, args.length));
                 break;
             case "migrate":
                 migrate(Arrays.copyOfRange(args, 1, args.length));
@@ -82,21 +86,30 @@ public class DistGraql {
     }
 
     private void migrate(String[] args) {
+        String arg0 = args.length > 0 ? args[0] : "";
 
-    }
-
-    private void console(String[] args) {
-        String listedArgs = Arrays.toString(args)
-                .replace(",", "")  //remove the commas
-                .replace("[", "")  //remove the right bracket
-                .replace("]", "")  //remove the left bracket
-                .trim();
-        String command = "java -cp " + classpath + " -Dgrakn.dir=" + homePath + " "+GraqlShell.class.getName()+" "+listedArgs;
-
-        processHandler.executeAndWait(new String[]{
-                "/bin/sh",
-                "-c",
-                command}, null, null);
+        switch (arg0) {
+            case "csv":
+                CSVMigrator.main(Arrays.copyOfRange(args, 1, args.length));
+                break;
+            case "json":
+                JsonMigrator.main(Arrays.copyOfRange(args, 1, args.length));
+                break;
+            case "owl":
+                System.out.println("Owm migration not supported anymore");
+                break;
+            case "export":
+                ai.grakn.migration.export.Main.main(Arrays.copyOfRange(args, 1, args.length));
+                break;
+            case "sql":
+                SQLMigrator.main(Arrays.copyOfRange(args, 1, args.length));
+                break;
+            case "xml":
+                XmlMigrator.main(Arrays.copyOfRange(args, 1, args.length));
+                break;
+            default:
+                XmlMigrator.main(new String[]{"-h"});
+        }
     }
 
     private void help() {
