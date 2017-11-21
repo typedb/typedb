@@ -221,7 +221,7 @@ def runBuild() {
     // This is a map that we fill with jobs to perform in parallel, name -> job closure
     jobs = [:]
 
-    addTests(jobs)
+//    addTests(jobs)
 
     if (shouldRunAllTests()) {
 
@@ -239,19 +239,19 @@ def runBuild() {
             }
         }
 
-        jobs['benchmarks'] = {
-            graknNode { workspace ->
-                checkout scm
-                unstash 'dist'
-
-                timeout(60) {
-                    stage('Run the benchmarks') {
-                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                        archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-                    }
-                }
-            }
-        }
+//        jobs['benchmarks'] = {
+//            graknNode { workspace ->
+//                checkout scm
+//                unstash 'dist'
+//
+//                timeout(60) {
+//                    stage('Run the benchmarks') {
+//                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+//                        archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+//                    }
+//                }
+//            }
+//        }
 
         INTEGRATION_TESTS.each { String moduleName ->
             // Add each integration test as a parallel job
