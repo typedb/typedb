@@ -525,7 +525,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
         AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
-                v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
+                v -> factory().buildResourceType(v, getMetaAttributeType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
@@ -660,7 +660,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public AttributeType getMetaResourceType() {
+    public AttributeType getMetaAttributeType() {
         return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getId());
     }
 

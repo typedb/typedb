@@ -57,7 +57,6 @@ public class REST {
         public static final String TYPE_LABEL = "/kb/:keyspace/type/:label";
         public static final String RULE_LABEL = "/kb/:keyspace/rule/:label";
         public static final String ROLE_LABEL = "/kb/:keyspace/role/:label";
-
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
         /**

@@ -191,7 +191,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingGetResourcesByValue_TheResultIsAllResourcesWithTheGivenValue(
             @Open GraknTx graph, @From(ResourceValues.class) Object resourceValue) {
-        Stream<Attribute<?>> allResources = graph.admin().getMetaResourceType().instances();
+        Stream<Attribute<?>> allResources = graph.admin().getMetaAttributeType().instances();
 
         Set<Attribute<?>> allResourcesOfValue =
                 allResources.filter(resource -> resourceValue.equals(resource.getValue())).collect(toSet());
@@ -294,7 +294,7 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenSetRegexOnMetaResourceType_Throw(@Open GraknTx graph, String regex) {
-        AttributeType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaAttributeType();
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.cannotSetRegex(resource).getMessage());
@@ -305,7 +305,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCreateInstanceOfMetaResourceType_Throw(
             @Open GraknTx graph, @From(ResourceValues.class) Object value) {
-        AttributeType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaAttributeType();
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
@@ -316,7 +316,7 @@ public class GraknTxPropertyTest {
     @Ignore // TODO: Fix this
     @Property
     public void whenCallingSuperTypeOnMetaResourceType_Throw(@Open GraknTx graph) {
-        AttributeType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaAttributeType();
 
         // TODO: Test for a better error message
         exception.expect(GraknTxOperationException.class);
@@ -328,7 +328,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingHasWithMetaResourceType_ThrowMetaTypeImmutableException(
             @Open GraknTx graph, @FromTx Type type) {
-        AttributeType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaAttributeType();
 
         exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())) {

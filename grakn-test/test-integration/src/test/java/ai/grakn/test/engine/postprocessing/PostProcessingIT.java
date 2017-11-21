@@ -169,7 +169,7 @@ public class PostProcessingIT {
 
         try(GraknTx graph = session.open(GraknTxType.WRITE)) {
             //Check the resource indices are working
-            graph.admin().getMetaResourceType().instances().forEach(object -> {
+            graph.admin().getMetaAttributeType().instances().forEach(object -> {
                 Attribute attribute = (Attribute) object;
                 String index = Schema.generateAttributeIndex(attribute.type().getLabel(), attribute.getValue().toString());
                 assertEquals(attribute, ((GraknTxAbstract<?>) graph).getConcept(Schema.VertexProperty.INDEX, index).get());
@@ -180,7 +180,7 @@ public class PostProcessingIT {
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     private boolean graphIsBroken(GraknSession session){
         try(GraknTx graph = session.open(GraknTxType.WRITE)) {
-            Stream<AttributeType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
+            Stream<AttributeType<?>> resourceTypes = graph.admin().getMetaAttributeType().subs();
             return resourceTypes.anyMatch(resourceType -> {
                 if (!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(resourceType.getLabel())) {
                     Set<Integer> foundValues = new HashSet<>();

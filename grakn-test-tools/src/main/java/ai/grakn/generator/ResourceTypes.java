@@ -42,6 +42,6 @@ public class ResourceTypes extends AbstractTypeGenerator<AttributeType> {
 
     @Override
     protected AttributeType metaSchemaConcept() {
-        return tx().admin().getMetaResourceType();
+        return tx().admin().getMetaAttributeType();
     }
 }

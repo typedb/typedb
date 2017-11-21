@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -36,6 +37,7 @@ import java.util.Set;
 @AutoValue
 public abstract class RelationshipType extends Type{
 
+    @Nullable
     @JsonProperty
     public abstract Set<Link> relates();
 
@@ -51,7 +53,7 @@ public abstract class RelationshipType extends Type{
             @JsonProperty("plays") Set<Link> plays,
             @JsonProperty("attributes") Set<Link> attributes,
             @JsonProperty("keys") Set<Link> keys,
-            @JsonProperty("relates") Set<Link> relates){
+            @Nullable @JsonProperty("relates") Set<Link> relates){
         return new AutoValue_RelationshipType(id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys, relates);
     }
 }

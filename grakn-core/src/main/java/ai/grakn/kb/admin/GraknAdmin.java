@@ -112,7 +112,7 @@ public interface GraknAdmin {
      * @return The meta resource type -> resource-type.
      */
     @CheckReturnValue
-    AttributeType getMetaResourceType();
+    AttributeType getMetaAttributeType();
 
     /**
      * Get the root of all the Entity Types.
