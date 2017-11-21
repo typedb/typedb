@@ -19,12 +19,14 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
@@ -58,6 +60,11 @@ public abstract class AtomicBase implements Atomic {
 
     @Override
     public abstract Atomic copy();
+
+    @Override
+    public Set<String> validateAsRuleHead(Rule rule) {
+        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
+    }
 
     @Override
     public String toString(){ return atomPattern.toString(); }

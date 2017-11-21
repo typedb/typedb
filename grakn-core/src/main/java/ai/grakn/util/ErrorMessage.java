@@ -100,6 +100,8 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("Atomic [%s] is not allowed to form a rule head of rule [%s]\n"),
 
+    VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE("atom [%s] is not allowed to form a rule head of rule [%s] as it contains an unbound variable\n"),
+
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT("Atom [%s] is not allowed to form a rule head of rule [%s] as it has an ambiguous schema concept\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT("Atom [%s] is not allowed to form a rule head of rule [%s] as it has an implicit schema concept\n"),
@@ -109,8 +111,6 @@ public enum ErrorMessage {
     VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE("Relationship [%s] is not allowed to form a rule head of rule [%s] as it has an ambiguous (unspecified, variable or meta) role\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES("Attribute [%s] is not allowed to form a rule head of rule [%s] as it has ambiguous value predicates\n"),
-
-    VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_UNBOUND_PREDICATE("Attribute [%s] is not allowed to form a rule head of rule [%s] as it contains an unbound variable value predicate\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE("Attribute [%s] is not allowed to form a rule head of rule [%s] as it has a non-specific value predicate\n"),
 

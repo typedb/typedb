@@ -21,8 +21,6 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 
-import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 import java.util.HashSet;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -103,9 +101,7 @@ public interface Atomic {
      * @return true if the atomic can constitute the head of a rule
      */
     @CheckReturnValue
-    default Set<String> validateAsRuleHead(Rule rule){
-        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
-    }
+    Set<String> validateAsRuleHead(Rule rule);
 
     /**
      * @return error messages indicating ontological inconsistencies of this atomic

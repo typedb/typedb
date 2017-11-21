@@ -246,7 +246,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule){
-        Set<String> errors = new HashSet<>();
+        Set<String> errors = super.validateAsRuleHead(rule);
         if (getSchemaConcept() == null || getMultiPredicate().size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.getThen(), rule.getLabel()));
         }
@@ -256,7 +256,7 @@ public class ResourceAtom extends Binary{
                     .filter(at -> at.getVarNames().contains(getPredicateVariable()))
                     .findFirst().isPresent();
             if (!predicateBound) {
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_UNBOUND_PREDICATE.getMessage(rule.getThen(), rule.getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
             }
         }
 
@@ -393,5 +393,4 @@ public class ResourceAtom extends Binary{
                 .filter(t -> Objects.nonNull(t.getSchemaConcept()))
                 .collect(Collectors.toSet());
     }
-
 }

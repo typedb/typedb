@@ -139,7 +139,7 @@ public abstract class Binary extends Atom {
 
     @Override
     public Stream<Predicate> getInnerPredicates(){
-        return Stream.of(typePredicate);
+        return typePredicate != null? Stream.of(typePredicate) : Stream.empty();
     }
 
     @Override

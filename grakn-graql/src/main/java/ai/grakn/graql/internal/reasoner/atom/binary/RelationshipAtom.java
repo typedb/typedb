@@ -205,6 +205,7 @@ public class RelationshipAtom extends IsaAtom {
         if (obj == this) return true;
         RelationshipAtom a2 = (RelationshipAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && (isUserDefined() == a2.isUserDefined())
                 && getVarNames().equals(a2.getVarNames())
                 && getRelationPlayers().equals(a2.getRelationPlayers());
     }

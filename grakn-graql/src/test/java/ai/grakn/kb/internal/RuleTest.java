@@ -122,6 +122,36 @@ public class RuleTest {
     }
 
     @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithUnboundRolePlayer_Throw() throws InvalidKBException {
+        validateIllegalHead(
+                graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknTx.graql().parsePattern("(role1: $y, role2: $z) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_RelationWithUnboundRelationVariable_Throw() throws InvalidKBException {
+        validateIllegalHead(
+                graknTx.graql().parsePattern("{" +
+                        "$r1 (role1: $x, role2: $y) isa relation1;" +
+                        "$r2 (role1: $z, role2: $u) isa relation1;" +
+                        "}"),
+                graknTx.graql().parsePattern("$r (role1: $r1, role2: $r2) isa relation1"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithUnboundVariablePredicate_Throw() throws InvalidKBException {
+        validateIllegalHead(
+                graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
+                graknTx.graql().parsePattern("$x has res1 $r"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE
+        );
+    }
+
+    @Test
     public void whenAddingRuleWithIllegalAtomicInHead_IsaAtomWithoutType_Throw() throws InvalidKBException {
         validateIllegalHead(
                 graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
@@ -136,15 +166,6 @@ public class RuleTest {
                 graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parsePattern("$x has res1 >10"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE
-        );
-    }
-
-    @Test
-    public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithUnboundVariablePredicate_Throw() throws InvalidKBException {
-        validateIllegalHead(
-                graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                graknTx.graql().parsePattern("$x has res1 $r"),
-                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_UNBOUND_PREDICATE
         );
     }
 
