@@ -8,7 +8,7 @@ host: localhost:4567
 paths:
   /:
     get:
-      description: Root
+      summary: Root
       tags: [Root]
       produces: [application/json]
       responses:
@@ -18,7 +18,7 @@ paths:
             $ref: '#/definitions/Root'
   /kb:
     get:
-      description: Knowledge Bases
+      summary: Knowledge Bases
       tags: [Keyspaces]
       produces: [application/json]
       responses:
@@ -30,7 +30,7 @@ paths:
     parameters:
       - $ref: '#/parameters/keyspace'
     get:
-      description: Get Knowledge Base
+      summary: Get Knowledge Base
       tags: [Keyspaces]
       produces: [application/json]
       responses:
@@ -41,9 +41,8 @@ paths:
         404:
           description: ''
     put:
+      summary: Put Knowledge Base
       description: >-
-        Put Knowledge Base
-
         If the keyspace exists, nothing happens. The configuration is returned. This response is the same as the
         response from `/kb/configuration`.
       tags: [Keyspaces]
@@ -54,9 +53,8 @@ paths:
           schema:
             $ref: '#/definitions/Configuration'
     delete:
+      summary: Delete Knowledge Base
       description: >-
-        Delete Knowledge Base
-
         If the keyspace doesn't exist, nothing happens.
       tags: [Keyspaces]
       responses:
@@ -64,7 +62,7 @@ paths:
           description: ''
   /kb/{keyspace}/graql:
     post:
-      description: Execute Graql Query
+      summary: Execute Graql Query
       tags: [Keyspaces]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -103,7 +101,7 @@ paths:
           description: ''
   /kb/{keyspace}/concept/{id}:
     get:
-      description: Get Concept
+      summary: Get Concept
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -125,7 +123,7 @@ paths:
           description: ''
   /kb/{keyspace}/type:
     get:
-      description: Get Types
+      summary: Get Types
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -137,7 +135,7 @@ paths:
             $ref: '#/definitions/Types'
   /kb/{keyspace}/type/{label}:
     get:
-      description: Get Type
+      summary: Get Type
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -152,7 +150,7 @@ paths:
           description: ''
   /kb/{keyspace}/type/{label}/instance:
     get:
-      description: Get Instances
+      summary: Get Instances
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -173,7 +171,7 @@ paths:
           description: ''
   /kb/{keyspace}/role:
     get:
-      description: Get Roles
+      summary: Get Roles
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -185,7 +183,7 @@ paths:
             $ref: '#/definitions/Roles'
   /kb/{keyspace}/role/{label}:
     get:
-      description: Get Role
+      summary: Get Role
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -200,7 +198,7 @@ paths:
           description: ''
   /kb/{keyspace}/rule:
     get:
-      description: Get Rules
+      summary: Get Rules
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -212,7 +210,7 @@ paths:
             $ref: '#/definitions/Rules'
   /kb/{keyspace}/rule/{label}:
     get:
-      description: Get Rule
+      summary: Get Rule
       tags: [Concepts]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -227,7 +225,7 @@ paths:
           description: ''
   /configuration:
     get:
-      description: Get Configuration
+      summary: Get Configuration
       tags: [Internal]
       produces: [application/json]
       responses:
@@ -237,7 +235,7 @@ paths:
             $ref: '#/definitions/Configuration'
   /status:
     get:
-      description: Get Status
+      summary: Get Status
       tags: [Internal]
       produces: [application/json]
       responses:
@@ -247,7 +245,7 @@ paths:
             $ref: '#/definitions/StatusResponse'
   /metrics:
     get:
-      description: Get Metrics
+      summary: Get Metrics
       tags: [Internal]
       produces: [text/plain]
       responses:
@@ -257,7 +255,7 @@ paths:
             type: object
   /kb/{keyspace}/commit_log:
     post:
-      description: Post Commit Log
+      summary: Post Commit Log
       tags: [Internal]
       parameters:
       - $ref: '#/parameters/keyspace'
@@ -274,7 +272,7 @@ paths:
             $ref: '#/definitions/CommitLogResponse'
   /task:
     get:
-      description: Get Tasks
+      summary: Get Tasks
       tags: [Internal]
       produces: [text/plain]
       responses:
@@ -283,14 +281,14 @@ paths:
           schema:
             type: object
     post:
-      description: Post Tasks
+      summary: Post Tasks
       tags: [Internal]
       responses:
         201:
           description: ''
   /task/{id}:
     get:
-      description: Get Task
+      summary: Get Task
       tags: [Internal]
       parameters:
       - name: id
@@ -309,7 +307,7 @@ paths:
             $ref: '#/definitions/Task'
   /task/{id}/stop:
     put:
-      description: Stop Task
+      summary: Stop Task
       tags: [Internal]
       parameters:
       - name: id
