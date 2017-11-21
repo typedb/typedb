@@ -55,11 +55,11 @@ class MatchInfer extends MatchModifier {
         Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Conjunction<VarPatternAdmin> conj = conjIt.next();
         ReasonerQuery conjQuery = ReasonerQueries.create(conj, graph);
-        Stream<Answer> answerStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().match(conj).stream();
+        Stream<Answer> answerStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().infer(false).match(conj).stream();
         while(conjIt.hasNext()) {
             conj = conjIt.next();
             conjQuery = ReasonerQueries.create(conj, graph);
-            Stream<Answer> localStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().match(conj).stream();
+            Stream<Answer> localStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().infer(false).match(conj).stream();
             answerStream = Stream.concat(answerStream, localStream);
         }
         return answerStream.map(result -> result.project(getSelectedNames()));
