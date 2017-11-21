@@ -428,6 +428,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/RolePlayers'
+      value:
         $ref: '#/definitions/Value'
   Relationships:
     required: [role, relationship]
@@ -519,7 +520,7 @@ definitions:
         items:
           $ref: '#/definitions/RoleLink'
       super:
-        $ref: '#/definitions/TypeLink'
+        allOf: [$ref: '#/definitions/TypeLink']
         example: /kb/genealogy/type/entity
       instances:
         $ref: '#/definitions/InstancesLink'
@@ -532,17 +533,17 @@ definitions:
     type: object
     properties:
       '@id':
-        $ref: '#/definitions/InstancesLink'
+        allOf: [$ref: '#/definitions/InstancesLink']
         example: /kb/genealogy/type/person/instance?limit=100&offset=100
       concepts:
         type: array
         items:
           $ref: '#/definitions/Concept'
       next:
-        $ref: '#/definitions/InstancesLink'
+        allOf: [$ref: '#/definitions/InstancesLink']
         example: /kb/genealogy/type/person/instance?limit=100&offset=200
       previous:
-        $ref: '#/definitions/InstancesLink'
+        allOf: [$ref: '#/definitions/InstancesLink']
         example: /kb/genealogy/type/person/instance?limit=100&offset=0
   RoleLink:
     type: string
@@ -555,7 +556,7 @@ definitions:
       '@id':
         $ref: '#/definitions/RoleLink'
       label:
-        $ref: '#/definitions/Label'
+        allOf: [$ref: '#/definitions/Label']
         example: husband
       relationships:
         type: array
@@ -586,15 +587,15 @@ definitions:
       rolePlayers:
         type: array
         items:
-          $ref: '#/definitions/TypeLink'
+          allOf: [$ref: '#/definitions/TypeLink']
           example: /kb/genealogy/type/marriage
       subs:
         type: array
         items:
-          $ref: '#/definitions/RoleLink'
+          allOf: [$ref: '#/definitions/RoleLink']
           example: /kb/genealogy/role/husband
       super:
-        $ref: '#/definitions/RoleLink'
+        allOf: [$ref: '#/definitions/RoleLink']
         example: /kb/genealogy/role/spouse
   RuleLink:
     type: string
@@ -626,10 +627,10 @@ definitions:
         items:
           $ref: '#/definitions/RuleLink'
       super:
-        $ref: '#/definitions/RuleLink'
+        allOf: [$ref: '#/definitions/RuleLink']
         example: /kb/genealogy/rule/rule
       label:
-        $ref: '#/definitions/Label'
+        allOf: [$ref: '#/definitions/Label']
         example: grandparent-rule
       when:
         type: string
