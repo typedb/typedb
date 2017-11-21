@@ -41,7 +41,9 @@ paths:
         404:
           description: ''
     put:
-      description: >- Put Knowledge Base
+      description: >-
+        Put Knowledge Base
+
         If the keyspace exists, nothing happens. The configuration is returned. This response is the same as the
         response from `/kb/configuration`.
       tags: [Keyspaces]
@@ -52,7 +54,9 @@ paths:
           schema:
             $ref: '#/definitions/Configuration'
     delete:
-      description: >- Delete Knowledge Base
+      description: >-
+        Delete Knowledge Base
+
         If the keyspace doesn't exist, nothing happens.
       tags: [Keyspaces]
       responses:
