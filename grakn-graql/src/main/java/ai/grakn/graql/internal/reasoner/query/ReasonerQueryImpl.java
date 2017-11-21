@@ -394,6 +394,32 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .findFirst().orElse(null);
     }
 
+    @Override
+    public Answer getSubstitution(){
+        if (substitution == null) {
+            Set<Var> varNames = getVarNames();
+            Set<IdPredicate> predicates = getAtoms(IsaAtom.class)
+                    .map(IsaAtom::getTypePredicate)
+                    .filter(Objects::nonNull)
+                    .filter(p -> varNames.contains(p.getVarName()))
+                    .collect(Collectors.toSet());
+            getAtoms(IdPredicate.class).forEach(predicates::add);
+
+            // the mapping function is declared separately to please the Eclipse compiler
+            Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
+            substitution = new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
+        }
+        return substitution;
+    }
+
+    public Answer getRoleSubstitution(){
+        Map<Var, Concept> roleSub = new HashMap<>();
+        getAtoms(RelationshipAtom.class)
+                .map(RelationshipAtom::getRoleSubstitution)
+                .forEach(sub -> roleSub.putAll(sub.map()));
+        return new QueryAnswer(roleSub);
+    }
+
     /**
      * returns id transform that would convert this query to a query alpha-equivalent to the query,
      * provided they are structurally equivalent
@@ -442,34 +468,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             throw GraqlQueryException.noAtomsSelected(this);
         }
         return orderedSelection;
-    }
-
-    /**
-     * @return substitution obtained from all id predicates (including internal) in the query
-     */
-    public Answer getSubstitution(){
-        if (substitution == null) {
-            Set<Var> varNames = getVarNames();
-            Set<IdPredicate> predicates = getAtoms(IsaAtom.class)
-                    .map(IsaAtom::getTypePredicate)
-                    .filter(Objects::nonNull)
-                    .filter(p -> varNames.contains(p.getVarName()))
-                    .collect(Collectors.toSet());
-            getAtoms(IdPredicate.class).forEach(predicates::add);
-
-            // the mapping function is declared separately to please the Eclipse compiler
-            Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
-            substitution = new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
-        }
-        return substitution;
-    }
-
-    public Answer getRoleSubstitution(){
-        Map<Var, Concept> roleSub = new HashMap<>();
-        getAtoms(RelationshipAtom.class)
-                .flatMap(RelationshipAtom::getRolePredicates)
-                .forEach(p -> roleSub.put(p.getVarName(), tx().getConcept(p.getPredicate())));
-        return new QueryAnswer(roleSub);
     }
 
     /**

@@ -28,10 +28,10 @@
 
                 <configuration>
                     <systemPropertyVariables>
-                        <grakn.conf>${user.dir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
+                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
-                        <logback.configurationFile>${user.dir}/conf/test/logback-test.xml</logback.configurationFile>
-                        <main.basedir>${user.dir}</main.basedir>
+                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
+                        <main.basedir>..</main.basedir>
                     </systemPropertyVariables>
                     <!-- uncomment the following to be able to run only specific packages with
                         for example -DtestGroup=ai/grakn/test/migration/sql
@@ -54,10 +54,10 @@
 
                 <configuration>
                     <systemPropertyVariables>
-                        <grakn.conf>${user.dir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
+                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
-                        <logback.configurationFile>${user.dir}/conf/test/logback-test.xml</logback.configurationFile>
-                        <main.basedir>${user.dir}</main.basedir>
+                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
+                        <main.basedir>..</main.basedir>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

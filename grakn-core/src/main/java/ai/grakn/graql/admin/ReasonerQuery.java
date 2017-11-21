@@ -81,6 +81,12 @@ public interface ReasonerQuery{
     GetQuery getQuery();
 
     /**
+     * @return (partial) substitution obtained from all id predicates (including internal) in the query
+     */
+    @CheckReturnValue
+    Answer getSubstitution();
+
+    /**
      * @return error messages indicating ontological inconsistencies of the query
      */
     @CheckReturnValue

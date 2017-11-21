@@ -21,6 +21,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
@@ -55,15 +56,18 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
+import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -176,6 +180,12 @@ public class RelationshipAtom extends IsaAtom {
                 .map(VarPatternAdmin::var)
                 .filter(Var::isUserDefinedName)
                 .collect(Collectors.toSet());
+    }
+
+    public Answer getRoleSubstitution(){
+        Map<Var, Concept> roleSub = new HashMap<>();
+        getRolePredicates().forEach(p -> roleSub.put(p.getVarName(), tx().getConcept(p.getPredicate())));
+        return new QueryAnswer(roleSub);
     }
 
     @Override
@@ -330,7 +340,7 @@ public class RelationshipAtom extends IsaAtom {
             return errors;
         }
 
-        //check role-tyoe compatibility
+        //check role-type compatibility
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         for (Map.Entry<Role, Collection<Var>> e : getRoleVarMap().asMap().entrySet() ){
             Role role = e.getKey();
@@ -366,7 +376,7 @@ public class RelationshipAtom extends IsaAtom {
                 .filter(pred -> varNames.contains(pred.getVarName()));
     }
 
-    public Stream<IdPredicate> getRolePredicates(){
+    private Stream<IdPredicate> getRolePredicates(){
         return getRelationPlayers().stream()
                 .map(RelationPlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
@@ -907,6 +917,24 @@ public class RelationshipAtom extends IsaAtom {
             unifiers.add(baseUnifier);
         }
         return new MultiUnifierImpl(unifiers);
+    }
+
+    @Override
+    public Stream<Answer> materialise(){
+        RelationshipType relationType = getSchemaConcept().asRelationshipType();
+        Multimap<Role, Var> roleVarMap = getRoleVarMap();
+        Answer substitution = getParentQuery().getSubstitution();
+
+        Relationship relationship = RelationshipTypeImpl.from(relationType).addRelationshipInferred();
+        roleVarMap.asMap().entrySet()
+                .forEach(e -> e.getValue().forEach(var -> relationship.addRolePlayer(e.getKey(), substitution.get(var).asThing())));
+
+        Answer relationSub = getRoleSubstitution().merge(
+                getVarName().isUserDefinedName()?
+                        new QueryAnswer(ImmutableMap.of(getVarName(), relationship)) :
+                        new QueryAnswer()
+        );
+        return Stream.of(substitution.merge(relationSub));
     }
 
     /**
