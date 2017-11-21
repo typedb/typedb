@@ -73,4 +73,23 @@ public abstract class Link implements Jacksonisable{
         return create(id);
     }
 
+    /**
+     * Creates a link to fetch the instances of a {@link Type}
+     */
+    public static Link createInstanceLink(ai.grakn.concept.Type type){
+        String id = REST.resolveTemplate(
+                WebPath.TYPE_INSTANCES,
+                type.keyspace().getValue(),
+                type.getLabel().getValue());
+        return create(id);
+    }
+
+    public static Link createInstanceLink(ai.grakn.concept.Type type, int offset, int limit){
+        String id = createInstanceLink(type) +
+                "?" + REST.Request.OFFSET_PARAM + "=" + offset +
+                "?" + REST.Request.LIMIT_PARAM + "=" + limit;
+
+        return create(id);
+    }
+
 }

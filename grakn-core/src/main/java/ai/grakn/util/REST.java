@@ -53,6 +53,7 @@ public class REST {
         public static final String CONCEPT_LINK = "/kb/:keyspace/:base-type/:id";
         public static final String CONCEPT_ID = "/kb/:keyspace/concept/:id";
         public static final String TYPE_LABEL = "/kb/:keyspace/type/:label";
+        public static final String TYPE_INSTANCES = "/kb/:keyspace/type/:label/instances";
         public static final String RULE_LABEL = "/kb/:keyspace/rule/:label";
         public static final String ROLE_LABEL = "/kb/:keyspace/role/:label";
         public static final String REMOTE_SHELL_URI = "/shell/remote";
