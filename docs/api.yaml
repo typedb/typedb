@@ -1,0 +1,786 @@
+openapi: 3.0.0
+info:
+  title: Grakn
+  description: 'TODO: Add a description'
+  version: "0.1"
+servers:
+- url: http://localhost:4567
+  variables: {}
+paths:
+  /:
+    get:
+      tags: [Root]
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Root'
+  /kb:
+    get:
+      tags: [Keyspaces]
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeBases'
+  /kb/{keyspace}:
+    parameters:
+      - $ref: '#/components/parameters/keyspace'
+    get:
+      operationId: GetKeyspace
+      tags: [Keyspaces]
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeBase'
+        404:
+          description: ''
+    put:
+      tags: [Keyspaces]
+      description: >-
+        Create a keyspace. If the keyspace exists, nothing happens.
+
+        The configuration is returned. This response is the same as the response
+
+        from `/kb/configuration`.
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Configuration'
+    delete:
+      tags: [Keyspaces]
+      description: Delete a keyspace. If the keyspace doesn't exist, nothing happens.
+      responses:
+        204:
+          description: ''
+  /kb/{keyspace}/graql:
+    post:
+      tags: [Keyspaces]
+      description: Execute a Graql query and return results.
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      - name: infer
+        in: query
+        description: Enable inference
+        schema:
+          type: boolean
+      - name: limitEmbedded
+        in: query
+        description: Number of embedded concepts to return
+        schema:
+          type: number
+      - name: defineAllVars
+        in: query
+        description: Define all anonymous variables in the query
+        schema:
+          type: boolean
+      - name: multi
+        in: query
+        description: Support multiple queries
+        schema:
+          type: boolean
+      - name: explain
+        in: query
+        description: Provide an explanation of how results were inferred
+        schema:
+          type: boolean
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              $ref: '#/components/schemas/GraqlQuery'
+        required: true
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/GraqlTextResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraqlResponse'
+        400:
+          description: ''
+  /kb/{keyspace}/concept/{id}:
+    get:
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      - name: id
+        in: path
+        required: true
+        x-example: V123  # TODO dredd is dumb
+        schema:
+          $ref: '#/components/schemas/ConceptID'
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Concept'
+        404:
+          description: ''
+  /kb/{keyspace}/type:
+    get:
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Types'
+  /kb/{keyspace}/type/{label}:
+    get:
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      - $ref: '#/components/parameters/label'
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Type'
+        404:
+          description: ''
+  /kb/{keyspace}/type/{label}/instance:
+    get:
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      - $ref: '#/components/parameters/label'
+      - name: limit
+        in: query
+        schema:
+          type: number
+      - name: offset
+        in: query
+        schema:
+          type: number
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Instances'
+        404:
+          description: ''
+  /kb/{keyspace}/role:
+    get:
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roles'
+  /kb/{keyspace}/role/{label}:
+    get:
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      - $ref: '#/components/parameters/label'
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        404:
+          description: ''
+  /kb/{keyspace}/rule:
+    get:
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rules'
+  /kb/{keyspace}/rule/{label}:
+    get:
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      - $ref: '#/components/parameters/label'
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+        404:
+          description: ''
+  /configuration:
+    get:
+      tags: [Internal]
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Configuration'
+  /status:
+    get:
+      tags: [Internal]
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /metrics:
+    get:
+      tags: [Internal]
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: object
+  /kb/{keyspace}/commit_log:
+    post:
+      tags: [Internal]
+      parameters:
+      - $ref: '#/components/parameters/keyspace'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitLogRequest'
+        required: true
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitLogResponse'
+  /task:
+    get:
+      tags: [Internal]
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: object
+    post:
+      tags: [Internal]
+      responses:
+        201:
+          description: ''
+  /task/{id}:
+    get:
+      tags: [Internal]
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/Task'
+  /task/{id}/stop:
+    put:
+      tags: [Internal]
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        204:
+          description: ''
+components:
+  parameters:
+    keyspace:
+      name: keyspace
+      in: path
+      required: true
+      x-example: genealogy  # TODO dredd is dumb
+      schema:
+        $ref: '#/components/schemas/Keyspace'
+    label:
+      name: label
+      in: path
+      required: true
+      x-example: person  # TODO dredd is dumb
+      schema:
+        $ref: '#/components/schemas/Label'
+  schemas:
+    Root:
+      type: object
+      required: [keyspaces]
+      properties:
+        keyspaces:
+          $ref: '#/components/schemas/KnowledgeBasesLink'
+    KnowledgeBasesLink:
+      type: string
+      format: uri
+      example: /kb
+    KnowledgeBases:
+      type: object
+      required: ['@id', keyspaces, keyspace]
+      properties:
+        '@id':
+          $ref: '#/components/schemas/KnowledgeBasesLink'
+        keyspaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/KnowledgeBase'
+        keyspace:
+          type: string
+          format: uri
+          example: /kb/{keyspace}
+    Keyspace:
+      type: string
+      example: genealogy
+    KnowledgeBase:
+      required: ['@id', name, types, roles, rules, graql]
+      type: object
+      properties:
+        '@id':
+          type: string
+          example: /kb/genealogy
+        name:
+          $ref: '#/components/schemas/Keyspace'
+        types:
+          $ref: '#/components/schemas/TypesLink'
+        roles:
+          $ref: '#/components/schemas/RolesLink'
+        rules:
+          $ref: '#/components/schemas/RulesLink'
+        graql:
+          type: string
+          format: uri
+          example: /kb/genealogy/graql
+    Label:
+      type: string
+      example: person
+    ConceptLink:
+      type: string
+      format: uri
+      example: /kb/genealogy/concept/V123
+    Concept:
+      oneOf:
+        - $ref: '#/components/schemas/Thing'
+        - $ref: '#/components/schemas/Type'
+        - $ref: '#/components/schemas/Role'
+        - $ref: '#/components/schemas/Rule'
+      example:
+        '@id': /kb/genealogy/concept/V123
+        type:
+          '@id': /kb/genealogy/type/person
+          label: person
+        relationships:
+        - role: /kb/genealogy/role/husband
+          relationship: /kb/genealogy/concept/V456
+        attributes:
+        - '@id': /kb/genealogy/concept/V321
+          type:
+            '@id': /kb/genealogy/type/name
+            label: name
+          value: 'Bob'
+        keys:
+        - '@id': /kb/genealogy/concept/V654
+          type:
+            '@id': /kb/genealogy/type/person-id
+            label: person-id
+          value: 808
+    Thing:
+      required: ['@id', type, relationships, attributes, keys]
+      type: object
+      properties:
+        '@id':
+          $ref: '#/components/schemas/ConceptLink'
+        type:
+          $ref: '#/components/schemas/TypeSummary'
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/Relationships'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeSummary'
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeSummary'
+        rolePlayers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RolePlayers'
+          $ref: '#/components/schemas/Value'
+    Relationships:
+      required: [role, relationship]
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleLink'
+        relationship:
+          $ref: '#/components/schemas/ConceptLink'
+    RolePlayers:
+      required: [role, player]
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleLink'
+        player:
+          $ref: '#/components/schemas/ConceptLink'
+    AttributeSummary:
+      type: object
+      required: ['@id', type, value]
+      properties:
+        '@id':
+          $ref: '#/components/schemas/ConceptLink'
+        type:
+          $ref: '#/components/schemas/TypeSummary'
+        value:
+          $ref: '#/components/schemas/Value'
+    Value:
+      anyOf:
+        - type: string
+        - type: number
+        - type: boolean
+    TypesLink:
+      type: string
+      format: uri
+      example: /kb/genealogy/type
+    Types:
+      type: object
+      required: ['@id', types]
+      properties:
+        '@id':
+          $ref: '#/components/schemas/Types'
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/Type'
+    TypeLink:
+      type: string
+      format: uri
+      example: /kb/genealogy/type/person
+    TypeSummary:
+      required: ['@id', label]
+      type: object
+      properties:
+        '@id':
+          $ref: '#/components/schemas/TypeLink'
+        label:
+          $ref: '#/components/schemas/Label'
+    Type:
+      allOf:
+        - $ref: '#/components/schemas/TypeSummary'
+      required: [abstract, implicit, plays, attributes, keys, subs]
+      type: object
+      properties:
+        abstract:
+          type: boolean
+        implicit:
+          type: boolean
+        plays:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleLink'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeLink'
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeLink'
+        subs:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeLink'
+        relates:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleLink'
+        super:
+          $ref: '#/components/schemas/TypeLink'
+          example: /kb/genealogy/type/entity
+        instances:
+          $ref: '#/components/schemas/InstancesLink'
+    InstancesLink:
+      type: string
+      format: uri
+      example: /kb/genealogy/type/person/instance
+    Instances:
+      required: ['@id', concepts]
+      type: object
+      properties:
+        '@id':
+          $ref: '#/components/schemas/InstancesLink'
+          example: /kb/genealogy/type/person/instance?limit=100&offset=100
+        concepts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Concept'
+        next:
+          $ref: '#/components/schemas/InstancesLink'
+          example: /kb/genealogy/type/person/instance?limit=100&offset=200
+        previous:
+          $ref: '#/components/schemas/InstancesLink'
+          example: /kb/genealogy/type/person/instance?limit=100&offset=0
+    RoleLink:
+      type: string
+      format: uri
+      example: /kb/genealogy/role/husband
+    RoleSummary:
+      required: ['@id', label, relationships]
+      type: object
+      properties:
+        '@id':
+          $ref: '#/components/schemas/RoleLink'
+        label:
+          $ref: '#/components/schemas/Label'
+          example: husband
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeLink'
+    RolesLink:
+      type: string
+      format: uri
+      example: /kb/genealogy/role
+    Roles:
+      type: object
+      required: ['@id', roles]
+      properties:
+        '@id':
+          $ref: '#/components/schemas/RolesLink'
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    Role:
+      allOf:
+        - $ref: '#/components/schemas/RoleSummary'
+      required: [implicit, rolePlayers, subs]
+      type: object
+      properties:
+        implicit:
+          type: boolean
+        rolePlayers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeLink'
+            example: /kb/genealogy/type/marriage
+        subs:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleLink'
+            example: /kb/genealogy/role/husband
+        super:
+          $ref: '#/components/schemas/RoleLink'
+          example: /kb/genealogy/role/spouse
+    RuleLink:
+      type: string
+      format: uri
+      example: /kb/genealogy/rule/grandparent-rule
+    RulesLink:
+      type: string
+      format: uri
+      example: /kb/genealogy/rule
+    Rules:
+      type: object
+      required: ['@id', rules]
+      properties:
+        '@id':
+          $ref: '#/components/schemas/RulesLink'
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+    Rule:
+      type: object
+      properties:
+        '@id':
+          $ref: '#/components/schemas/RuleLink'
+        implicit:
+          type: boolean
+        subs:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleLink'
+        super:
+          $ref: '#/components/schemas/RuleLink'
+          example: /kb/genealogy/rule/rule
+        label:
+          $ref: '#/components/schemas/Label'
+          example: grandparent-rule
+        when:
+          type: string
+          example: '(parent: $x, child: $y); (parent: $y, child: $z);'
+        then:
+          type: string
+          example: '(grandparent: $x, grandchild: $y) isa grandparentship;'
+    Answer:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/Concept'
+    Configuration:
+      type: object
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: number
+          - type: boolean
+      example:
+        knowledge-base.mode: production
+        knowledge-base.analytics: distributed
+        knowledge-base.default-keyspace: grakn
+        knowledge-base.sharding-threshold: 10000
+        knowledge-base.schema-cache-timeout-ms: 600000
+        server.host: 0.0.0.0
+        server.port: 4567
+        server.static-file-dir: ../services/assets/
+        loader.repeat-commits: 5
+        tasks.postprocessing.delay: 60000
+        loader.threads: 4
+        webserver.threads: 64
+        log.dirs: ../logs/
+        log.level: INFO
+        storage.backend: grakn-production
+        storage.hostname: 127.0.0.1
+        cache.db-cache: true
+        cache.db-cache-clean-wait: 20
+        cache.db-cache-time: 180000
+        cache.db-cache-size: 0.25
+        queue.host: localhost:6379
+        queue.consumers: 32
+        redis.pool-size: 32
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - READY
+            - INITIALIZING
+    CommitLogRequest:
+      required:
+      - types-with-new-counts
+      - concepts-to-fix
+      type: object
+      properties:
+        types-with-new-counts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypesWithNewCounts'
+        concepts-to-fix:
+          $ref: '#/components/schemas/ConceptsToFix'
+    TypesWithNewCounts:
+      type: object
+      required: [concept, sharding]
+      properties:
+        concept-id:
+          $ref: '#/components/schemas/ConceptID'
+        sharding-count:
+          type: number
+    ConceptsToFix:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConceptID'
+      example:
+        ATTRIBUTE:
+          ATTRIBUTE-name-Bob: [V123, V456, V789]
+    ConceptID:
+      type: string
+      example: V123
+    CommitLogResponse:
+        $ref: '#/components/schemas/Task'
+    Task:
+      type: object
+      properties:
+        '@id':
+          type: string
+          format: uri
+          example: '/task/8e7c91a9-ff3c-4df9-86ee-da2e76ce1482'
+        id:
+          $ref: '#/components/schemas/TaskId'
+        creator:
+          type: string
+          example: 'ai.grakn.engine.postprocessing.PostProcessingTask'
+        schedule:
+          type: object
+          properties:
+            runAt:
+              type: number
+              example: 1511205030
+            interval:
+              type: number
+              example: 120
+        serialVersionUID:
+          type: number
+          example: -7301340972479426653
+        priority:
+          type: string
+          enum: [LOW, HIGH]
+        status:
+          type: string
+          enum: [CREATED, SCHEDULED, RUNNING, COMPLETED, STOPPED, FAILED]
+        taskClassName:
+          type: string
+          example: 'ai.grakn.engine.postprocessing.PostProcessingTask'
+        engineId:
+          type: string
+          example: '8e7c91a9-ff3c-4df9-86ee-da2e76ce1482'
+        taskCheckpoint:
+          type: object
+    TaskId:
+      type: string
+      example: '8e7c91a9-ff3c-4df9-86ee-da2e76ce1482'
+    GraqlQuery:
+      type: string
+      example: 'match $x isa person; get;'
+    GraqlResponse:
+      type: array
+      items:
+        $ref: '#components/schemas/Answer'
+    GraqlTextResponse:
+      type: string
+      example: '$x isa person, id V123;'
