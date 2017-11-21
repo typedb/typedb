@@ -18,8 +18,6 @@
 
 package ai.grakn.util;
 
-import static ai.grakn.util.REST.Request.ENTITY_CONCEPT_ID_PARAMETER;
-
 /**
  * Class containing strings describing the REST API, including URIs and fields.
  *
@@ -82,34 +80,13 @@ public class REST {
         }
 
         /**
-         * URIs to api endpoints
-         */
-        public static class Api {
-            public static final String API_PREFIX = KB_KEYSPACE;
-
-            public static final String ATTRIBUTE_TYPE = API_PREFIX + "/attributeType";
-            public static final String ENTITY_TYPE = API_PREFIX + "/entityType";
-            public static final String RELATIONSHIP_TYPE = API_PREFIX + "/relationshipType";
-            public static final String ROLE = API_PREFIX + "/role";
-            public static final String RULE = API_PREFIX + "/rule";
-
-            public static final String ENTITY_TYPE_ATTRIBUTE_TYPE_ASSIGNMENT = API_PREFIX + "/entityType/" + Request.ENTITY_TYPE_LABEL_PARAMETER +
-                "/attributeType/" + Request.ATTRIBUTE_TYPE_LABEL_PARAMETER;
-
-            public static final String ENTITY_ATTRIBUTE_ASSIGNMENT = API_PREFIX + "/entity/" + ENTITY_CONCEPT_ID_PARAMETER +
-                "/attribute/" + Request.ATTRIBUTE_CONCEPT_ID_PARAMETER;
-
-            public static final String RELATIONSHIP_ENTITY_ROLE_ASSIGNMENT = API_PREFIX + "/relationship/" + Request.RELATIONSHIP_CONCEPT_ID_PARAMETER +
-                "/entity/" + ENTITY_CONCEPT_ID_PARAMETER +
-                "/role/" + Request.ROLE_LABEL_PARAMETER;
-
-        }
-
-        /**
          * URIs to dashboard controller endpoints
          */
+        @Deprecated
         public static class Dashboard {
+            @Deprecated
             public static final String EXPLORE = "/dashboard/explore/";
+            @Deprecated
             public static final String EXPLAIN = "/dashboard/explain";
         }
     }
@@ -136,33 +113,6 @@ public class REST {
         public static final String CONFIGURATION_PARAM = "configuration";
         public static final String FORMAT = "format";
         public static final String UUID_PARAMETER = "uuid";
-
-        // URL parameters for API endpoints
-        public static final String ATTRIBUTE_TYPE_LABEL_PARAMETER = ":attributeTypeLabel";
-        public static final String ENTITY_TYPE_LABEL_PARAMETER = ":entityTypeLabel";
-        public static final String RELATIONSHIP_TYPE_LABEL_PARAMETER = ":relationshipTypeLabel";
-        public static final String ROLE_LABEL_PARAMETER = ":roleLabel";
-        public static final String RULE_LABEL_PARAMETER = ":ruleLabel";
-        public static final String CONCEPT_ID_JSON_FIELD = "conceptId";
-        public static final String ENTITY_CONCEPT_ID_PARAMETER = ":entityConceptId";
-        public static final String ATTRIBUTE_CONCEPT_ID_PARAMETER = ":attributeConceptId";
-        public static final String RELATIONSHIP_CONCEPT_ID_PARAMETER = ":relationshipConceptId";
-
-        // json fields for API endpoints
-        public static final String VALUE_JSON_FIELD = "value";
-        public static final String ENTITY_OBJECT_JSON_FIELD = "entity";
-        public static final String ATTRIBUTE_OBJECT_JSON_FIELD = "attribute";
-        public static final String RELATIONSHIP_OBJECT_JSON_FIELD = "relationship";
-        public static final String RELATIONSHIP_TYPE_OBJECT_JSON_FIELD = "relationshipType";
-        public static final String ATTRIBUTE_TYPE_OBJECT_JSON_FIELD = "attributeType";
-        public static final String ROLE_OBJECT_JSON_FIELD = "role";
-        public static final String RULE_OBJECT_JSON_FIELD = "rule";
-        public static final String ENTITY_TYPE_OBJECT_JSON_FIELD = "entityType";
-        public static final String LABEL_JSON_FIELD = "label";
-        public static final String TYPE_JSON_FIELD = "type";
-        public static final String ROLE_ARRAY_JSON_FIELD = "roles";
-        public static final String WHEN_JSON_FIELD = "when";
-        public static final String THEN_JSON_FIELD = "then";
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
@@ -231,19 +181,7 @@ public class REST {
          */
         public static class Graql {
             public static final String RESPONSE = "response";
-            public static final String IDENTIFIER = "identifier";
             public static final String ORIGINAL_QUERY = "originalQuery";
-        }
-
-        /**
-         *  Metatypes Json object fields
-         */
-
-        public static class Json {
-            public static final String ENTITIES_JSON_FIELD = "entities";
-            public static final String ROLES_JSON_FIELD = "roles";
-            public static final String RELATIONSHIPS_JSON_FIELD = "relationships";
-            public static final String ATTRIBUTES_JSON_FIELD = "attributes";
         }
 
         /**
@@ -253,7 +191,6 @@ public class REST {
             public static final String STACK_TRACE = "stackTrace";
             public static final String EXCEPTION = "exception";
             public static final String ID = "id";
-            public static final String STATUS = "status";
         }
     }
 
