@@ -140,11 +140,19 @@ public class RuleTest {
     }
 
     @Test
-    public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithVariablePredicate_Throw() throws InvalidKBException {
+    public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithUnboundVariablePredicate_Throw() throws InvalidKBException {
         validateIllegalHead(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parser().parsePattern("$x has res1 $r"),
-                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_VARIABLE_PREDICATE
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_UNBOUND_PREDICATE
+        );
+    }
+
+    @Test
+    public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithBoundVariablePredicate_DoNotThrow(){
+        validateLegalHead(
+                graknTx.graql().parser().parsePattern("$x has res1 $r"),
+                graknTx.graql().parser().parsePattern("$x has res2 $r")
         );
     }
 
@@ -394,15 +402,23 @@ public class RuleTest {
         expectedException.expectMessage(message.getMessage(then.toString(), rule.getLabel()));
         graknTx.commit();
     }
+
+    private void validateLegalHead(Pattern when, Pattern then){
+        initTx(graknTx);
+        graknTx.putRule(UUID.randomUUID().toString(), when, then);
+        graknTx.commit();
+    }
     
     private void initTx(GraknTx graph){
         AttributeType<Integer> res1 = graph.putAttributeType("res1", AttributeType.DataType.INTEGER);
+        AttributeType<Integer> res2 = graph.putAttributeType("res2", AttributeType.DataType.INTEGER);
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
         Role role3 = graph.putRole("role3");
 
         graph.putEntityType("entity1")
                 .attribute(res1)
+                .attribute(res2)
                 .plays(role1)
                 .plays(role2);
 
