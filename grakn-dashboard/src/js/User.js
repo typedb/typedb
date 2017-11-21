@@ -2,7 +2,7 @@ import EngineClient from './EngineClient';
 
 
 // Default constant values
-const DEFAULT_USE_REASONER = false;
+const DEFAULT_USE_REASONER = true;
 const DEFAULT_MATERIALISE = false;
 export const DEFAULT_KEYSPACE = 'grakn';
 const DEFAULT_QUERY_LIMIT = '30';
