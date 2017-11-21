@@ -110,7 +110,7 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES("Attribute [%s] is not allowed to form a rule head of rule [%s] as it has ambiguous value predicates\n"),
 
-    VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_VARIABLE_PREDICATE("Attribute [%s] is not allowed to form a rule head of rule [%s] as it has a variable value predicate\n"),
+    VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_UNBOUND_PREDICATE("Attribute [%s] is not allowed to form a rule head of rule [%s] as it contains an unbound variable value predicate\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE("Attribute [%s] is not allowed to form a rule head of rule [%s] as it has a non-specific value predicate\n"),
 

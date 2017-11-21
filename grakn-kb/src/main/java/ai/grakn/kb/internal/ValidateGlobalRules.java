@@ -46,6 +46,7 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
+import com.google.common.collect.Iterables;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -356,8 +357,16 @@ class ValidateGlobalRules {
         if (rule.getWhen().admin().isDisjunction()){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getLabel()));
         }
-        errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
+        errors.addAll(validateRuleHead(graph, rule, rule.getThen()));
         return errors;
+    }
+
+    private static ReasonerQuery combinedRuleQuery(GraknTx graph, Rule rule){
+        return rule
+                .getWhen()
+                .and(rule.getThen())
+                .admin().getDisjunctiveNormalForm().getPatterns().iterator().next()
+                .toReasonerQuery(graph);
     }
 
     /**
@@ -372,12 +381,8 @@ class ValidateGlobalRules {
         //both body and head refer to the same graph and have to be valid with respect to the schema that governs it
         //as a result the rule can be ontologically validated by combining them into a conjunction
         //this additionally allows to cross check body-head references
-        ReasonerQuery combined = rule
-                .getWhen()
-                .and(rule.getThen())
-                .admin().getDisjunctiveNormalForm().getPatterns().iterator().next()
-                .toReasonerQuery(graph);
-        errors.addAll(combined.validateOntologically());
+        ReasonerQuery combinedQuery = combinedRuleQuery(graph, rule);
+        errors.addAll(combinedQuery.validateOntologically());
         return errors;
     }
 
@@ -387,15 +392,21 @@ class ValidateGlobalRules {
      * @param head head of the rule of interest
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
-    private static Set<String> checkRuleHeadInvalid(GraknTx graph, Rule rule, Pattern head) {
+    private static Set<String> validateRuleHead(GraknTx graph, Rule rule, Pattern head) {
         Set<String> errors = new HashSet<>();
-        Set<Conjunction<VarPatternAdmin>> patterns = head.admin().getDisjunctiveNormalForm().getPatterns();
-        if (patterns.size() != 1){
+        Set<Conjunction<VarPatternAdmin>> headPatterns = head.admin().getDisjunctiveNormalForm().getPatterns();
+
+        if (headPatterns.size() != 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getLabel()));
         } else {
-            ReasonerQuery headQuery = patterns.iterator().next().toReasonerQuery(graph);
-            headQuery.getAtoms().stream().map(at -> at.validateAsRuleHead(rule)).forEach(errors::addAll);
-            Set<Atomic> selectableHeadAtoms = headQuery.getAtoms().stream()
+            //
+            ReasonerQuery combinedQuery = combinedRuleQuery(graph, rule);
+
+            Set<Atomic> headAtoms = Iterables.getOnlyElement(headPatterns).toReasonerQuery(graph).getAtoms();
+            combinedQuery.getAtoms().stream()
+                    .filter(headAtoms::contains)
+                    .map(at -> at.validateAsRuleHead(rule)).forEach(errors::addAll);
+            Set<Atomic> selectableHeadAtoms = headAtoms.stream()
                     .filter(Atomic::isAtom)
                     .filter(Atomic::isSelectable)
                     .collect(Collectors.toSet());

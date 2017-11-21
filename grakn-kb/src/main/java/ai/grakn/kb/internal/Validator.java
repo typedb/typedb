@@ -102,10 +102,11 @@ class Validator {
     private void validateRule(GraknTxAbstract<?> graph, Rule rule){
         Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(graph, rule);
         errorsFound.addAll(labelErrors);
-        errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));
-        if (labelErrors.isEmpty()){
+        if (labelErrors.isEmpty()) {
             errorsFound.addAll(ValidateGlobalRules.validateRuleOntologically(graph, rule));
+            errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));
         }
+
     }
 
     /**

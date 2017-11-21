@@ -125,37 +125,27 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.getMultiPredicate().hashCode();
-        return hashCode;
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         ResourceAtom a2 = (ResourceAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
-                && this.getMultiPredicate().equals(a2.getMultiPredicate());
+                && this.hasMultiPredicateEquivalentWith(a2);
+    }
+
+    @Override
+    public int hashCode() {
+        int hashCode = equivalenceHashCode();
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
+        return hashCode;
     }
 
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
-        return hashCode;
-    }
-
-    private int multiPredicateEquivalenceHashCode(){
-        int hashCode = 0;
-        SortedSet<Integer> hashes = new TreeSet<>();
-        getMultiPredicate().forEach(atom -> hashes.add(atom.equivalenceHashCode()));
-        for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
+        hashCode = hashCode * 37 + this.multiPredicateEquivalenceHashCode();
         return hashCode;
     }
 
@@ -164,6 +154,14 @@ public class ResourceAtom extends Binary{
         if (!(at instanceof ResourceAtom && super.hasEquivalentPredicatesWith(at))) return false;
 
         ResourceAtom atom = (ResourceAtom) at;
+        if (!hasMultiPredicateEquivalentWith(atom)) return false;
+
+        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
+        IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
+        return thisPredicate == null && predicate == null || thisPredicate != null && thisPredicate.isEquivalent(predicate);
+    }
+
+    private boolean hasMultiPredicateEquivalentWith(ResourceAtom atom) {
         if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
         for (ValuePredicate vp : getMultiPredicate()) {
             Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
@@ -173,10 +171,15 @@ public class ResourceAtom extends Binary{
             }
             if (!predicateHasEquivalent) return false;
         }
+        return true;
+    }
 
-        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
-        IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
-        return thisPredicate == null && predicate == null || thisPredicate != null && thisPredicate.isEquivalent(predicate);
+    private int multiPredicateEquivalenceHashCode(){
+        int hashCode = 0;
+        SortedSet<Integer> hashes = new TreeSet<>();
+        getMultiPredicate().forEach(atom -> hashes.add(atom.equivalenceHashCode()));
+        for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
+        return hashCode;
     }
 
     @Override
@@ -248,7 +251,13 @@ public class ResourceAtom extends Binary{
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.getThen(), rule.getLabel()));
         }
         if (getMultiPredicate().isEmpty()){
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_VARIABLE_PREDICATE.getMessage(rule.getThen(), rule.getLabel()));
+            boolean predicateBound = getParentQuery().getAtoms(Atom.class)
+                    .filter(at -> !at.equals(this))
+                    .filter(at -> at.getVarNames().contains(getPredicateVariable()))
+                    .findFirst().isPresent();
+            if (!predicateBound) {
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_UNBOUND_PREDICATE.getMessage(rule.getThen(), rule.getLabel()));
+            }
         }
 
         getMultiPredicate().stream()
@@ -270,11 +279,9 @@ public class ResourceAtom extends Binary{
     @Override
     public Set<String> validateOntologically() {
         SchemaConcept type = getSchemaConcept();
-        if (type == null) {
-            return new HashSet<>();
-        }
-
         Set<String> errors = new HashSet<>();
+        if (type == null) return errors;
+
         if (!type.isAttributeType()){
             errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel()));
             return errors;
