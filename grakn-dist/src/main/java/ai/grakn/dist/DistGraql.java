@@ -33,16 +33,6 @@ import java.util.Arrays;
  */
 public class DistGraql {
 
-    private final String homePath;
-    private final ProcessHandler processHandler;
-    private String classpath;
-
-    public DistGraql(String homeStatic, ProcessHandler processHandler) {
-
-        this.homePath = homeStatic;
-        this.processHandler = processHandler;
-    }
-
     /**
      * In order to run this method you should have 'grakn.dir' set
      *
@@ -56,7 +46,7 @@ public class DistGraql {
             return;
         }
 
-        DistGraql application = new DistGraql(home, new ProcessHandler());
+        DistGraql application = new DistGraql();
         try {
             application.run(args);
         } catch (RuntimeException ex) {
@@ -66,8 +56,6 @@ public class DistGraql {
     }
 
     private void run(String[] args) {
-        classpath = processHandler.getClassPathFrom(homePath);
-
         String arg0 = args.length > 0 ? args[0] : "";
 
         switch (arg0) {

@@ -31,11 +31,4 @@ class OutputCommand {
         this.exitStatus = exitStatus;
     }
 
-    @Override
-    public String toString() {
-        return "OutputCommand{" +
-                "output='" + output + '\'' +
-                ", exitStatus=" + exitStatus +
-                '}';
-    }
 }
