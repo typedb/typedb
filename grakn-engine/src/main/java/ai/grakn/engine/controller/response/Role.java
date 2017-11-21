@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -48,7 +49,7 @@ public abstract class Role extends SchemaConcept{
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("label") Label label,
             @JsonProperty("implicit") Boolean implicit,
-            @JsonProperty("super") Link sup,
+            @JsonProperty("super") @Nullable Link sup,
             @JsonProperty("subs") Set<Link> subs,
             @JsonProperty("relationships") Set<Link> relationships,
             @JsonProperty("roleplayers") Set<Link> roleplayers){

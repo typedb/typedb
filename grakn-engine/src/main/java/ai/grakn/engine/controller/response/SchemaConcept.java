@@ -21,6 +21,7 @@ package ai.grakn.engine.controller.response;
 import ai.grakn.concept.Label;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -38,6 +39,7 @@ public abstract class SchemaConcept extends Concept{
     @JsonProperty
     public abstract Boolean implicit();
 
+    @Nullable
     @JsonProperty("super")
     public abstract Link sup();
 

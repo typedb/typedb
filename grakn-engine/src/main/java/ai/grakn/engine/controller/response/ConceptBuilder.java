@@ -80,7 +80,10 @@ public class ConceptBuilder {
 
     private static SchemaConcept buildSchemaConcept(ai.grakn.concept.SchemaConcept schemaConcept){
         Link selfLink = Link.create(schemaConcept);
-        Link sup = Link.create(schemaConcept.sup());
+
+        Link sup = null;
+        if(schemaConcept.sup() != null) sup = Link.create(schemaConcept.sup());
+
         Set<Link> subs = schemaConcept.subs().map(Link::create).collect(Collectors.toSet());
 
         if(schemaConcept.isRole()){
@@ -142,15 +145,23 @@ public class ConceptBuilder {
     }
 
     private static Rule buildRule(ai.grakn.concept.Rule rule, Link selfLink, Link sup, Set<Link> subs){
-        return Rule.create(rule.getId(), selfLink, rule.getLabel(), rule.isImplicit(), sup, subs,
-                rule.getWhen().toString(), rule.getThen().toString());
+        String when = null;
+        if(rule.getWhen() != null) when = rule.getWhen().toString();
+
+        String then = null;
+        if(rule.getThen() != null) then = rule.getThen().toString();
+
+        return Rule.create(rule.getId(), selfLink, rule.getLabel(), rule.isImplicit(), sup, subs, when, then);
     }
 
     private static AttributeType buildAttributeType(ai.grakn.concept.AttributeType attributeType, Link selfLink, Link sup,
                                                     Set<Link> subs, Set<Link> plays, Set<Link> attributes,
                                                     Set<Link> keys){
+        String dataType = null;
+        if(attributeType.getDataType() != null) dataType = attributeType.getDataType().getName();
+
         return AttributeType.create(attributeType.getId(), selfLink, attributeType.getLabel(), attributeType.isImplicit(),
-                sup, subs, attributeType.isAbstract(), plays, attributes, keys, attributeType.getDataType().getName(), attributeType.getRegex());
+                sup, subs, attributeType.isAbstract(), plays, attributes, keys, dataType, attributeType.getRegex());
     }
 
     private static EntityType buildEntityType(ai.grakn.concept.EntityType entityType, Link selfLink, Link sup,

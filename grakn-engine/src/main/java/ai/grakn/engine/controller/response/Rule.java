@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -36,9 +37,11 @@ import java.util.Set;
 @AutoValue
 public abstract class Rule extends SchemaConcept{
 
+    @Nullable
     @JsonProperty
     public abstract String when();
 
+    @Nullable
     @JsonProperty
     public abstract String then();
 
@@ -50,8 +53,8 @@ public abstract class Rule extends SchemaConcept{
             @JsonProperty("implicit") Boolean implicit,
             @JsonProperty("super") Link sup,
             @JsonProperty("subs") Set<Link> subs,
-            @JsonProperty("when") String when,
-            @JsonProperty("then") String then){
+            @Nullable @JsonProperty("when") String when,
+            @Nullable @JsonProperty("then") String then){
         return new AutoValue_Rule(id, selfLink, label, implicit, sup, subs, when, then);
     }
 }
