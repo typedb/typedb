@@ -115,14 +115,7 @@ public class ConceptController {
     }
 
     private String getTypes(Request request, Response response) throws JsonProcessingException {
-        Function<GraknTx, Stream<? extends ai.grakn.concept.Concept>> getter = (tx) -> {
-            Stream<? extends ai.grakn.concept.Concept> stream = tx.admin().getMetaEntityType().subs();
-            stream = Stream.concat(stream, tx.admin().getMetaRelationType().subs());
-            stream = Stream.concat(stream, tx.admin().getMetaAttributeType().subs());
-            return stream;
-        };
-
-        return getConcepts(request, response, getter);
+        return getConcepts(request, response, (tx) -> tx.admin().getMetaConcept().subs());
     }
 
     private String getRules(Request request, Response response) throws JsonProcessingException {

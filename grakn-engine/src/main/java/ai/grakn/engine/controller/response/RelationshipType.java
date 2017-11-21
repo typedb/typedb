@@ -53,7 +53,7 @@ public abstract class RelationshipType extends Type{
             @JsonProperty("plays") Set<Link> plays,
             @JsonProperty("attributes") Set<Link> attributes,
             @JsonProperty("keys") Set<Link> keys,
-            @Nullable @JsonProperty("relates") Set<Link> relates){
+            @JsonProperty("relates") Set<Link> relates){
         return new AutoValue_RelationshipType(id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys, relates);
     }
 }
