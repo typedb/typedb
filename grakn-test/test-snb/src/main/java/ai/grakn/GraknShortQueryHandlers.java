@@ -17,9 +17,7 @@
  */
 package ai.grakn;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Order;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
@@ -37,7 +35,6 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCrea
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForum;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForumResult;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageReplies;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageRepliesResult;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -47,12 +44,10 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.SNB.$author;
 import static ai.grakn.SNB.$author1;
-import static ai.grakn.SNB.$author2;
 import static ai.grakn.SNB.$authorId;
 import static ai.grakn.SNB.$birthday;
 import static ai.grakn.SNB.$browserUsed;
 import static ai.grakn.SNB.$comment;
-import static ai.grakn.SNB.$commentId;
 import static ai.grakn.SNB.$content;
 import static ai.grakn.SNB.$creationDate;
 import static ai.grakn.SNB.$date;
@@ -78,22 +73,18 @@ import static ai.grakn.SNB.$title;
 import static ai.grakn.SNB.BIRTHDAY;
 import static ai.grakn.SNB.BROWSER_USED;
 import static ai.grakn.SNB.CHILD_MESSAGE;
-import static ai.grakn.SNB.by;
 import static ai.grakn.SNB.CONTENT;
 import static ai.grakn.SNB.CREATION_DATE;
 import static ai.grakn.SNB.CREATOR;
 import static ai.grakn.SNB.FIRST_NAME;
 import static ai.grakn.SNB.FORUM_ID;
 import static ai.grakn.SNB.FORUM_MEMBER;
-import static ai.grakn.SNB.FRIEND;
 import static ai.grakn.SNB.GENDER;
 import static ai.grakn.SNB.GROUP_FORUM;
-import static ai.grakn.SNB.has;
 import static ai.grakn.SNB.HAS_CREATOR;
 import static ai.grakn.SNB.HAS_MODERATOR;
 import static ai.grakn.SNB.IMAGE_FILE;
 import static ai.grakn.SNB.IS_LOCATED_IN;
-import static ai.grakn.SNB.key;
 import static ai.grakn.SNB.KNOWS;
 import static ai.grakn.SNB.LAST_NAME;
 import static ai.grakn.SNB.LOCATED;
@@ -114,10 +105,12 @@ import static ai.grakn.SNB.PRODUCT;
 import static ai.grakn.SNB.REGION;
 import static ai.grakn.SNB.REPLY;
 import static ai.grakn.SNB.REPLY_OF;
-import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.TITLE;
+import static ai.grakn.SNB.by;
+import static ai.grakn.SNB.has;
+import static ai.grakn.SNB.key;
+import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.toEpoch;
-import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.var;
 import static java.util.Comparator.comparing;
 
@@ -404,45 +397,46 @@ public class GraknShortQueryHandlers {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
 
 
-                List<Answer> results = graph.graql().match(
+                graph.graql().match(
                         $message.isa(MESSAGE).has(MESSAGE_ID, operation.messageId()),
                         var().rel(PRODUCT, $message).rel(CREATOR, $author1).isa(HAS_CREATOR),
                         var().rel(ORIGINAL, $message).rel(REPLY, $comment).isa(REPLY_OF),
-                        var().rel($comment).rel($commentId).isa(key(MESSAGE_ID)),
-                        var().rel($comment).rel($content).isa(has(CONTENT)),
+//                        var().rel($comment).rel($commentId).isa(key(MESSAGE_ID)),
+                        var().rel($comment)./*rel($content).*/isa(has(CONTENT))/*,
                         var().rel($comment).rel($date).isa(has(CREATION_DATE)),
                         var().rel(PRODUCT, $comment).rel(CREATOR, $author2).isa(HAS_CREATOR),
                         var().rel($author2).rel($personId).isa(key(PERSON_ID)),
                         var().rel($author2).rel($firstName).isa(has(FIRST_NAME)),
                         var().rel($author2).rel($lastName).isa(has(LAST_NAME))
-                ).get().execute();
+                */).get().execute();
 
-                List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
-                        .sorted(comparing(by($date)).reversed().thenComparing(by($personId)))
-                        .map(map -> new LdbcShortQuery7MessageRepliesResult(
-                                resource(map, $commentId),
-                                resource(map, $content),
-                                toEpoch(resource(map, $date)),
-                                resource(map, $personId),
-                                resource(map, $firstName),
-                                resource(map, $lastName),
-                                checkIfFriends(conceptId(map, $author1), conceptId(map, $author2), graph)))
-                        .collect(Collectors.toList());
+//                List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
+//                        .sorted(comparing(by($date)).reversed().thenComparing(by($personId)))
+//                        .map(map -> new LdbcShortQuery7MessageRepliesResult(
+//                                resource(map, $commentId),
+//                                resource(map, $content),
+//                                toEpoch(resource(map, $date)),
+//                                resource(map, $personId),
+//                                resource(map, $firstName),
+//                                resource(map, $lastName),
+//                                checkIfFriends(conceptId(map, $author1), conceptId(map, $author2), graph)))
+//                        .collect(Collectors.toList());
 
-                resultReporter.report(0, result, operation);
+                resultReporter.report(0, null, operation);
+//                resultReporter.report(0, result, operation);
 
             }
 
         }
 
-        private boolean checkIfFriends(ConceptId author1, ConceptId author2, GraknTx graph) {
-            return graph.graql().match(
-                    var().rel(FRIEND, var().id(author1)).rel(FRIEND, var().id(author2)).isa(KNOWS)
-            ).aggregate(ask()).execute();
-        }
-
-        private ConceptId conceptId(Answer result, Var var) {
-            return result.get(var).getId();
-        }
+//        private boolean checkIfFriends(ConceptId author1, ConceptId author2, GraknTx graph) {
+//            return graph.graql().match(
+//                    var().rel(FRIEND, var().id(author1)).rel(FRIEND, var().id(author2)).isa(KNOWS)
+//            ).aggregate(ask()).execute();
+//        }
+//
+//        private ConceptId conceptId(Answer result, Var var) {
+//            return result.get(var).getId();
+//        }
     }
 }

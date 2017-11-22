@@ -4,6 +4,8 @@ source snb-env.sh
 
 LDBC_VALIDATION_CONFIG=${WORKSPACE}/grakn-test/test-snb/src/main/bash/readwrite_grakn--ldbc_driver_config--db_validation.properties
 
+graql console -k ${KEYSPACE} -e 'compute count;'
+
 # execute validation
 mvn install --batch-mode -DskipTests --also-make --projects grakn-test/test-snb
 mvn exec:java --batch-mode --projects grakn-test/test-snb \
@@ -16,6 +18,8 @@ mvn exec:java --batch-mode --projects grakn-test/test-snb \
     -p ldbc.snb.interactive.parameters_dir ${CSV_DATA} \
     -p ai.grakn.uri ${ENGINE} \
     -p ai.grakn.keyspace ${KEYSPACE}"
+
+graql console -k ${KEYSPACE} -e 'compute count;'
 
 # check for errors from LDBC
 FAILURES=$(cat ${CSV_DATA}/validation_params-failed-actual.json)
