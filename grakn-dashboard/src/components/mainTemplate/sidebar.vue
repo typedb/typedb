@@ -9,9 +9,6 @@
                 <router-link tag="li" to="/console" class="link">
                     <a class="noselect">Console</a>
                 </router-link>
-                <router-link tag="li" to="/tasks" class="link">
-                    <a class="noselect">Tasks</a>
-                </router-link>
                 <router-link tag="li" to="/config" class="link">
                     <a class="noselect">Config</a>
                 </router-link>
