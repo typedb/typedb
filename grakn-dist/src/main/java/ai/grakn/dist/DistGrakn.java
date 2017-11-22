@@ -204,20 +204,22 @@ public class DistGrakn {
     }
 
     private void queueWipeAllData() {
-        OutputCommand operatingSystem = processHandler.executeAndWait(new String[]{
-                "/bin/sh",
-                "-c",
-                "uname"
-        },null,null);
-        String queueBin = operatingSystem.output.trim().equals("Darwin") ? "redis-cli-osx" : "redis-cli-linux";
+        String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");
 
         processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 homePath.resolve(Paths.get("services", "redis", queueBin))+" flushall"
         },null,null);
+    }
 
-
+    private String selectCommand(String osx, String linux) {
+        OutputCommand operatingSystem = processHandler.executeAndWait(new String[]{
+                "/bin/sh",
+                "-c",
+                "uname"
+        },null,null);
+        return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
     }
 
     private void graknServerStop(String arg) {
@@ -245,7 +247,7 @@ public class DistGrakn {
         if(!storageIsRunning) {
             System.out.println("NOT RUNNING");
         } else {
-            storageStopProcess();
+            stopProcess(STORAGE_PID);
         }
     }
 
@@ -267,7 +269,7 @@ public class DistGrakn {
         if(!graknIsRunning) {
             System.out.println("NOT RUNNING");
         } else {
-            graknStopProcess();
+            stopProcess(GRAKN_PID);
         }
     }
 
@@ -384,12 +386,7 @@ public class DistGrakn {
     private void queueStartProcess() {
         System.out.print("Starting Queue...");
         System.out.flush();
-        OutputCommand operatingSystem = processHandler.executeAndWait(new String[]{
-                "/bin/sh",
-                "-c",
-                "uname"
-        },null,null);
-        String queueBin = operatingSystem.output.trim().equals("Darwin") ? "redis-server-osx" : "redis-server-linux";
+        String queueBin = selectCommand("redis-server-osx","redis-server-linux");
 
         // run queue
         // queue needs to be ran with $GRAKN_HOME as the working directory
@@ -517,46 +514,48 @@ public class DistGrakn {
 
     }
 
-    public void graknStopProcess() {
-        String graknPid="";
-        if(Files.exists(GRAKN_PID)) {
-            try {
-                graknPid = new String(Files.readAllBytes(GRAKN_PID),StandardCharsets.UTF_8);
-                graknPid = graknPid.trim();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (graknPid.trim().isEmpty()) {
-                return;
-            }
-            processHandler.kill(graknPid);
+    private void stopProcess(Path pidFile) {
+        String pid="";
+        if(!Files.exists(pidFile)) {
+            return;
         }
+        try {
+            pid = new String(Files.readAllBytes(pidFile), StandardCharsets.UTF_8);
+            pid = pid.trim();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (pid.trim().isEmpty()) {
+            return;
+        }
+        processHandler.kill(pid);
 
-        while(true) {
+        OutputCommand outputCommand;
+        do {
             System.out.print(".");
             System.out.flush();
 
-            OutputCommand outputCommand = processHandler.executeAndWait(new String[]{
+            outputCommand = processHandler.executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
-                    "kill -0 " + graknPid.trim()
+                    "kill -0 " + pid.trim()
             }, null, null);
 
-            if(outputCommand.exitStatus==0) {
-                System.out.println("SUCCESS");
-                try {
-                    Files.delete(GRAKN_PID);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return;
-            }
             try {
                 Thread.sleep(WAIT_INTERVAL_S * 1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        } while (outputCommand.succes());
+        System.out.println("SUCCESS");
+        try {
+            if(Files.exists(pidFile)) {
+                Files.delete(pidFile);
+            }
+        } catch (IOException e) {
+            // DO NOTHING
         }
+
     }
 
     private void queueStopProcess() {
@@ -574,13 +573,7 @@ public class DistGrakn {
             return;
         }
 
-        OutputCommand operatingSystem = processHandler.executeAndWait(new String[]{
-                "/bin/sh",
-                "-c",
-                "uname"
-        },null,null);
-        String queueBin = operatingSystem.output.trim().equals("Darwin") ? "redis-cli-osx" : "redis-cli-linux";
-
+        String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");
 
         processHandler.executeAndWait(new String[]{
                 "/bin/sh",
@@ -588,72 +581,24 @@ public class DistGrakn {
                 homePath + "/services/redis/" + queueBin + " shutdown"
         }, null, null);
 
-
-        while(true) {
+        OutputCommand outputCommand;
+        do {
             System.out.print(".");
             System.out.flush();
 
-            OutputCommand outputCommand = processHandler.executeAndWait(new String[]{
+            outputCommand = processHandler.executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
-                    "kill -0 " + queuePid.trim()+" 2>/dev/null"
+                    "kill -0 " + queuePid.trim()
             }, null, null);
 
-            if(outputCommand.exitStatus>0) {
-                System.out.println("SUCCESS");
-                return;
-            }
             try {
                 Thread.sleep(WAIT_INTERVAL_S * 1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    private void storageStopProcess() {
-        String storagePid="";
-        if(Files.exists(STORAGE_PID)) {
-            try {
-                storagePid = new String(Files.readAllBytes(STORAGE_PID),StandardCharsets.UTF_8);
-                storagePid = storagePid.trim();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (storagePid.trim().isEmpty()) {
-                return;
-            }
-            processHandler.kill(storagePid);
-        }
-
-        while(true) {
-            System.out.print(".");
-            System.out.flush();
-
-            OutputCommand outputCommand = processHandler.executeAndWait(new String[]{
-                    "/bin/sh",
-                    "-c",
-                    "kill -0 " + storagePid.trim()
-            }, null, null);
-
-            if(outputCommand.exitStatus==0) {
-                System.out.println("SUCCESS");
-                try {
-                    if(Files.exists(STORAGE_PID)) {
-                        Files.delete(STORAGE_PID);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return;
-            }
-            try {
-                Thread.sleep(WAIT_INTERVAL_S * 1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
+        } while (outputCommand.succes());
+        System.out.println("SUCCESS");
     }
 
     private void serverHelp() {

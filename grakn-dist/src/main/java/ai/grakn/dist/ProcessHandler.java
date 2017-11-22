@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -38,6 +39,7 @@ import static java.util.stream.Collectors.joining;
 public class ProcessHandler {
 
     OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
+        System.out.println(Arrays.toString(cmdarray));
 
         StringBuffer outputS = new StringBuffer();
         int exitValue = 1;
@@ -87,7 +89,7 @@ public class ProcessHandler {
         return executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
-                    "ps -ef | grep " + processName + " | grep -v grep | awk '{ print $2}' "
+                    "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "
             }, null, null).output;
     }
 
