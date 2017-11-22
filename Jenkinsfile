@@ -84,9 +84,9 @@ def withGrakn(Closure closure) {
         }
         closure()
     } finally {
-        archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-        archiveArtifacts artifacts: 'grakn-package/logs/grakn-postprocessing.log'
-        archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
+        archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn.log"
+        archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn-postprocessing.log"
+        archiveArtifacts artifacts: "${env.PACKAGE}/logs/cassandra.log"
     }
 }
 
@@ -217,6 +217,7 @@ void addTests(Map<String, Closure> jobs) {
 void addJob(Map<String, Closure> jobs, String name, Closure closure) {
     jobs[name] = {
         graknNode { workspace ->
+            env.PACKAGE = name
             closure(workspace)
         }
     }
