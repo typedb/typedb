@@ -260,14 +260,13 @@ def runBuild() {
         }
 
         addJob(jobs, 'benchmarks') { workspace ->
-                checkout scm
-                unstash 'dist'
+            checkout scm
+            unstash 'dist'
 
-                timeout(60) {
-                    stage('Run the benchmarks') {
-                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                        archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-                    }
+            timeout(60) {
+                stage('Run the benchmarks') {
+                    mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
             }
         }
