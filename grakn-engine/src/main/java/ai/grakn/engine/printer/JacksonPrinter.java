@@ -19,6 +19,7 @@
 package ai.grakn.engine.printer;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.graql.Printer;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,12 +28,15 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * <p>
  *     This class is used to convert the responses from graql queries into objects which can be Jacksonised into their
  *     correct Json representation.
  * </p>
+ *
+ * @author Filipe Peliz Pinto Teixeira
  */
 public class JacksonPrinter implements Printer<Object>{
     private static ObjectMapper mapper = new ObjectMapper();
@@ -52,13 +56,18 @@ public class JacksonPrinter implements Printer<Object>{
     }
 
     @Override
+    public Object graqlString(boolean inner, ai.grakn.graql.admin.Answer answer) {
+        return Answer.create(answer);
+    }
+
+    @Override
     public Object graqlString(boolean inner, boolean bool) {
         return null;
     }
 
     @Override
     public Object graqlStringDefault(boolean inner, Object object) {
-        return null;
+        throw new UnsupportedOperationException(String.format("Cannot wrap {%s} due to it being an unknown format", object));
     }
 
     @Override
@@ -68,7 +77,7 @@ public class JacksonPrinter implements Printer<Object>{
 
     @Override
     public Object graqlString(boolean inner, Collection collection) {
-        return null;
+        return collection.stream().map(object -> graqlString(inner, object)).collect(Collectors.toSet());
     }
 
     @Override

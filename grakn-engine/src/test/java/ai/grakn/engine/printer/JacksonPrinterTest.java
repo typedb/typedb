@@ -18,15 +18,18 @@
 
 package ai.grakn.engine.printer;
 
+import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.SampleKBContext;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
@@ -39,10 +42,37 @@ public class JacksonPrinterTest {
     public static final SampleKBContext rule = MovieKB.context();
 
     @Test
-    public void whenGraqlQueryResultsInConcept_EnsureConceptWrpperIsReturned() throws IOException {
+    public void whenGraqlQueryResultsInConcept_EnsureConceptWrapperIsReturned() throws JsonProcessingException {
         ai.grakn.concept.Concept concept = rule.tx().graql().match(var("x").isa("person")).get("x").iterator().next();
         Concept conceptWrapper = ConceptBuilder.build(concept);
-        String response = mapper.writeValueAsString(conceptWrapper);
-        assertEquals(response, printer.graqlString(concept));
+        assertWrappersMatch(conceptWrapper, concept);
+    }
+
+    @Test
+    public void whenGraqlQueryResultsInConcepts_EnsureConceptsAreWrappedAndReturned() throws JsonProcessingException {
+        Set<ai.grakn.concept.Concept> concepts = rule.tx().graql().
+                match(var("x").isa("person")).get("x").collect(Collectors.toSet());
+        Set<Concept> conceptsWrapper = concepts.stream().map(ConceptBuilder::<Concept>build).collect(Collectors.toSet());
+        assertWrappersMatch(conceptsWrapper, concepts);
+    }
+
+    @Test
+    public void whenGraqlQueryResultsInAnswer_EnsureConceptsInAnswerAreWrappedAndReturned() throws JsonProcessingException {
+        ai.grakn.graql.admin.Answer answer = rule.tx().graql().match(var("x").isa("title").val("Godfather")).iterator().next();
+        Answer answerWrapper = Answer.create(answer);
+        assertWrappersMatch(answerWrapper, answer);
+    }
+
+    @Test
+    public void whenGraqlQueryResultsInAnswers_EnsureAnswersArwWrappedAndReturned() throws JsonProcessingException {
+        Set<ai.grakn.graql.admin.Answer> answers = rule.tx().graql().
+                match(var("x").isa("title").val("Godfather")).stream().collect(Collectors.toSet());
+        Set<Answer> answersWrapper = answers.stream().map(Answer::create).collect(Collectors.toSet());
+        assertWrappersMatch(answersWrapper, answers);
+    }
+
+    private static void assertWrappersMatch(Object expected, Object toPrint) throws JsonProcessingException {
+        String response = mapper.writeValueAsString(expected);
+        assertEquals(response, printer.graqlString(toPrint));
     }
 }

@@ -126,9 +126,9 @@ public class GraqlController {
             if(multiQuery){
                 Stream<Query<?>> query = parser.parseList(queryString);
                 List<?> collectedResults = query.map(Query::execute).collect(Collectors.toList());
-            } else {
-
             }
+
+
         }
 
         return "";
