@@ -21,6 +21,7 @@
 const mainTemplate = require('./components/mainTemplate/mainTemplate.vue');
 const graphPage = require('./components/graphPage/graphPage.vue');
 const consolePage = require('./components/consolePage.vue');
+// TODO: remove tasks page
 const tasksPage = require('./components/tasksPage/tasksPage.vue');
 const configPage = require('./components/configPage.vue');
 const notFoundPage = require('./components/notFoundPage.vue');

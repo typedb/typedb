@@ -270,57 +270,6 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/CommitLogResponse'
-  /task:
-    get:
-      summary: Get Tasks
-      tags: [Internal]
-      produces: [text/plain]
-      responses:
-        200:
-          description: ''
-          schema:
-            $ref: '#/definitions/Tasks'
-    post:
-      summary: Post Tasks
-      tags: [Internal]
-      responses:
-        201:
-          description: ''
-  /task/{id}:
-    get:
-      summary: Get Task
-      tags: [Internal]
-      parameters:
-      - name: id
-        in: path
-        required: true
-        type: string
-        x-example: '8e7c91a9-ff3c-4df9-86ee-da2e76ce1482'
-#       For OpenAPI 3.0
-#       schema:
-#         $ref: '#/definitions/TaskId'
-      produces: [text/plain]
-      responses:
-        200:
-          description: ''
-          schema:
-            $ref: '#/definitions/Task'
-  /task/{id}/stop:
-    put:
-      summary: Stop Task
-      tags: [Internal]
-      parameters:
-      - name: id
-        in: path
-        required: true
-        type: string
-        x-example: '8e7c91a9-ff3c-4df9-86ee-da2e76ce1482'
-#       For OpenAPI 3.0
-#       schema:
-#         $ref: '#/definitions/TaskId'
-      responses:
-        204:
-          description: ''
 parameters:
   keyspace:
     name: keyspace
