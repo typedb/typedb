@@ -18,5 +18,31 @@
 
 package ai.grakn.engine.printer;
 
+import ai.grakn.engine.controller.response.Concept;
+import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import java.io.IOException;
+
+import static ai.grakn.graql.Graql.var;
+import static org.junit.Assert.assertEquals;
+
 public class JacksonPrinterTest {
+    private static ObjectMapper mapper = new ObjectMapper();
+    private static JacksonPrinter printer = new JacksonPrinter();
+
+    @ClassRule
+    public static final SampleKBContext rule = MovieKB.context();
+
+    @Test
+    public void whenGraqlQueryResultsInConcept_EnsureConceptWrpperIsReturned() throws IOException {
+        ai.grakn.concept.Concept concept = rule.tx().graql().match(var("x").isa("person")).get("x").iterator().next();
+        Concept conceptWrapper = ConceptBuilder.build(concept);
+        String response = mapper.writeValueAsString(conceptWrapper);
+        assertEquals(response, printer.graqlString(concept));
+    }
 }

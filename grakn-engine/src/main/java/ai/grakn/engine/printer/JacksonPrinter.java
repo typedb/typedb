@@ -19,9 +19,9 @@
 package ai.grakn.engine.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.engine.Jacksonisable;
+import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.graql.Printer;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -34,11 +34,11 @@ import java.util.Optional;
  *     correct Json representation.
  * </p>
  */
-public class JacksonPrinter implements Printer<Jacksonisable>{
+public class JacksonPrinter implements Printer<Object>{
     private static ObjectMapper mapper = new ObjectMapper();
 
     @Override
-    public String build(Jacksonisable object) {
+    public String build(Object object) {
         try {
             return mapper.writeValueAsString(object);
         } catch (IOException e) {
@@ -47,32 +47,32 @@ public class JacksonPrinter implements Printer<Jacksonisable>{
     }
 
     @Override
-    public Jacksonisable graqlString(boolean inner, Concept concept) {
+    public Object graqlString(boolean inner, Concept concept) {
+        return ConceptBuilder.build(concept);
+    }
+
+    @Override
+    public Object graqlString(boolean inner, boolean bool) {
         return null;
     }
 
     @Override
-    public Jacksonisable graqlString(boolean inner, boolean bool) {
+    public Object graqlStringDefault(boolean inner, Object object) {
         return null;
     }
 
     @Override
-    public Jacksonisable graqlStringDefault(boolean inner, Object object) {
+    public Object graqlString(boolean inner, Map map) {
         return null;
     }
 
     @Override
-    public Jacksonisable graqlString(boolean inner, Map map) {
+    public Object graqlString(boolean inner, Collection collection) {
         return null;
     }
 
     @Override
-    public Jacksonisable graqlString(boolean inner, Collection collection) {
-        return null;
-    }
-
-    @Override
-    public Jacksonisable graqlString(boolean inner, Optional optional) {
+    public Object graqlString(boolean inner, Optional optional) {
         return null;
     }
 }
