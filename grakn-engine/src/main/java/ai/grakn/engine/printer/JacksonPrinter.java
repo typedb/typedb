@@ -85,8 +85,7 @@ public class JacksonPrinter implements Printer<Object>{
 
     @Override
     public Object graqlStringDefault(boolean inner, Object object) {
-        if(object == null) return null;
-        throw new UnsupportedOperationException(String.format("Cannot wrap {%s} due to it being an unknown format", object));
+        return object;
     }
 
     @Override
