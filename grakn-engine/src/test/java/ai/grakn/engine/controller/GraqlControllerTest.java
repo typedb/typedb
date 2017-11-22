@@ -160,15 +160,6 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void whenRunningQueryWithLimitEmbedded_HalResponseIsTheSameAsJava() {
-        String queryString = "match $x isa movie; get;";
-        int limitEmbedded = 42;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, false, limitEmbedded, false);
-        Printer printer = Printers.hal(sampleKB.tx().keyspace(), limitEmbedded);
-        assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
-    }
-
-    @Test
     public void whenMatchingRules_ResponseStatusIs200() {
         String queryString = "match $x sub " + Schema.MetaSchema.RULE.getLabel().getValue() + "; get;";
         int limitEmbedded = 10;
