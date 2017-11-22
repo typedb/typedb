@@ -167,39 +167,37 @@ def mvn(String args) {
 }
 
 Closure createTestJob(split, i, testTimeout) {
-    return {
-        graknNode { workspace ->
-            checkout scm
+    return { workspace ->
+        checkout scm
 
-            def mavenVerify = 'clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
+        def mavenVerify = 'clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
 
-            /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
-            /* Tell Maven to read the appropriate file. */
-            if (split.includes) {
-                writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
-                mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
-            } else {
-                writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
-                mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
-            }
+        /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
+        /* Tell Maven to read the appropriate file. */
+        if (split.includes) {
+            writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+            mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
+        } else {
+            writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+            mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
+        }
 
-            try {
-                /* Call the Maven build with tests. */
-                timeout(testTimeout) {
-                    stage('Run Janus test profile') {
-                        mvn mavenVerify
-                    }
+        try {
+            /* Call the Maven build with tests. */
+            timeout(testTimeout) {
+                stage('Run Janus test profile') {
+                    mvn mavenVerify
                 }
-            } finally {
-                /* Archive the test results */
-                junit "**/TEST*.xml"
             }
+        } finally {
+            /* Archive the test results */
+            junit "**/TEST*.xml"
         }
     }
 }
 
 //Add all tests to job map
-void addTests(jobs) {
+void addTests(Map<String, Closure> jobs) {
     /* Request the test groupings.  Based on previous test results. */
     /* see https://wiki.jenkins-ci.org/display/JENKINS/Parallel+Test+Executor+Plugin and demo on github
     /* Using arbitrary parallelism of 4 and "generateInclusions" feature added in v1.8. */
@@ -211,7 +209,16 @@ void addTests(jobs) {
     def testTimeout = 30 + 90 / numSplits;
 
     splits.eachWithIndex { split, i ->
-        jobs["split-${i}"] = createTestJob(split, i, testTimeout)
+        def job = createTestJob(split, i, testTimeout)
+        addJob(jobs, "split-${i}", job)
+    }
+}
+
+void addJob(Map<String, Closure> jobs, String name, Closure closure) {
+    jobs[name] = {
+        graknNode { workspace ->
+            closure(workspace)
+        }
     }
 }
 
@@ -251,8 +258,7 @@ def runBuild() {
             }
         }
 
-        jobs['benchmarks'] = {
-            graknNode { workspace ->
+        addJob(jobs, 'benchmarks') { workspace ->
                 checkout scm
                 unstash 'dist'
 
@@ -267,13 +273,11 @@ def runBuild() {
 
         INTEGRATION_TESTS.each { String moduleName ->
             // Add each integration test as a parallel job
-            jobs[moduleName] = {
-                graknNode { String workspace ->
-                    checkout scm
-                    unstash 'dist'
+            addJob(jobs, moduleName) { workspace ->
+                checkout scm
+                unstash 'dist'
 
-                    runIntegrationTest(workspace, moduleName)
-                }
+                runIntegrationTest(workspace, moduleName)
             }
         }
     }
