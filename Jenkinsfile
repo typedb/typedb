@@ -223,7 +223,7 @@ def runBuild() {
 
                 timeout(60) {
                     stage('Run the benchmarks') {
-                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
                         archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                     }
                 }
