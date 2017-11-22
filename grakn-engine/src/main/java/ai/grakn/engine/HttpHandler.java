@@ -22,7 +22,7 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
-import ai.grakn.engine.controller.DeprecatedGraqlController;
+import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -84,7 +84,7 @@ public class HttpHandler {
         int postProcessingDelay = prop.getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
 
         // Start all the controllers
-        new DeprecatedGraqlController(factory, spark, metricRegistry);
+        new GraqlController(factory, spark, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
         new CommitLogController(spark, postProcessingDelay, taskManager, postProcessor);

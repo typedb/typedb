@@ -80,7 +80,7 @@ import static org.mockito.Mockito.when;
 
 //TODO Run in name order until TP Bug #13730 Fixed
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class DeprecatedGraqlControllerReadOnlyTest {
+public class GraqlControllerReadOnlyTest {
 
     private static GraknTx mockTx;
     private static QueryBuilder mockQueryBuilder;
@@ -96,7 +96,7 @@ public class DeprecatedGraqlControllerReadOnlyTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
         new SystemController(spark, mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
-        new DeprecatedGraqlController(mockFactory, spark, metricRegistry);
+        new GraqlController(mockFactory, spark, metricRegistry);
     });
 
     @Before

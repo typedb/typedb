@@ -33,9 +33,12 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.engine.controller.DeprecatedGraqlControllerReadOnlyTest.exception;
+import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
+import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonResponse;
+import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,9 +54,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DeprecatedGraqlControllerDeleteTest {
+public class GraqlControllerInsertTest {
 
-    private static GraknTx tx;
+    private static GraknTx mockTx;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
@@ -62,7 +65,7 @@ public class DeprecatedGraqlControllerDeleteTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new DeprecatedGraqlController(mockFactory, spark, new MetricRegistry());
+        new GraqlController(mockFactory, spark, new MetricRegistry());
     });
 
     @Before
@@ -78,43 +81,53 @@ public class DeprecatedGraqlControllerDeleteTest {
         when(mockParser.parseQuery(any()))
                 .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
-        tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(tx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
-        when(tx.graql()).thenReturn(mockQueryBuilder);
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.tx(eq(tx.keyspace()), any())).thenReturn(tx);
+        when(mockFactory.tx(eq(mockTx.keyspace()), any())).thenReturn(mockTx);
     }
 
     @Test
-    public void DELETEGraqlDelete_GraphCommitCalled(){
-        String query = "match $x isa person; limit 1; delete $x;";
+    public void POSTGraqlInsert_InsertWasExecutedOnGraph(){
+        doAnswer(answer -> {
+            sampleKB.tx().commit();
+            return null;
+        }).when(mockTx).commit();
 
-        verify(tx, times(0)).commit();
+        String query = "insert $x isa movie;";
+
+        long genreCountBefore = sampleKB.tx().getEntityType("movie").instances().count();
 
         sendRequest(query);
 
-        verify(tx, times(1)).commit();
+        // refresh graph
+        sampleKB.tx().close();
+
+        long genreCountAfter = sampleKB.tx().getEntityType("movie").instances().count();
+
+        assertEquals(genreCountBefore + 1, genreCountAfter);
     }
 
     @Test
-    public void DELETEMalformedGraqlQuery_ResponseStatusIs400(){
-        String query = "match $x isa ; delete;";
+    public void POSTMalformedGraqlQuery_ResponseStatusIs400(){
+        String query = "insert $x isa ;";
         Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(400));
     }
 
     @Test
-    public void DELETEMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
-        String query = "match $x isa ; delete;";
+    public void POSTMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
+        String query = "insert $x isa ;";
         Response response = sendRequest(query);
 
         assertThat(exception(response), containsString("syntax error"));
     }
 
     @Test
-    public void DELETEWithNoQueryInBody_ResponseIs400(){
+    public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "some-kb"));
 
@@ -123,62 +136,75 @@ public class DeprecatedGraqlControllerDeleteTest {
     }
 
     @Test
-    public void DELETEGraqlDelete_ResponseStatusIs200(){
-        String query = "match $x has name \"Robert De Niro\"; limit 1; delete $x;";
+    public void POSTGraqlInsert_ResponseStatusIs200(){
+        String query = "insert $x isa person;";
         Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(200));
     }
 
     @Test
-    public void DELETEGraqlDelete_DeleteWasExecutedOnTx(){
-        doAnswer(answer -> {
-            sampleKB.tx().commit();
-            return null;
-        }).when(tx).commit();
-
-        String query = "match $x has title \"Godfather\"; delete $x;";
-
-        long movieCountBefore = sampleKB.tx().getEntityType("movie").instances().count();
-
-        sendRequest(query);
-
-        // refresh graph
-        sampleKB.tx().close();
-
-        long movieCountAfter = sampleKB.tx().getEntityType("movie").instances().count();
-
-        assertEquals(movieCountBefore - 1, movieCountAfter);
-    }
-
-    @Test
-    public void DELETEGraqlDeleteNotValid_ResponseStatusCodeIs422(){
-        // Not allowed to delete roles with incoming edges
-        Response response = sendRequest("undefine production-being-directed sub work;");
+    public void POSTGraqlDefineNotValid_ResponseStatusCodeIs422(){
+        Response response = sendRequest("define person plays movie;");
 
         assertThat(response.statusCode(), equalTo(422));
     }
 
     @Test
-    public void DELETEGraqlDeleteNotValid_ResponseExceptionContainsValidationErrorMessage(){
-        // Not allowed to delete roles with incoming edges
-        Response response = sendRequest("undefine production-being-directed sub work;");
+    public void POSTGraqlDefineNotValid_ResponseExceptionContainsValidationErrorMessage(){
+        Response response = sendRequest("define person plays movie;");
 
-        assertThat(exception(response), containsString("cannot be deleted"));
+        assertThat(exception(response), containsString("is not of type"));
     }
 
     @Test
-    public void DELETEGraqlDelete_ResponseContentTypeIsText(){
-        Response response = sendRequest("match $x has name \"Harry\"; limit 1; delete $x;");
+    public void POSTGraqlInsertWithJsonType_ResponseContentTypeIsJson(){
+        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON_GRAQL);
+
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON_GRAQL));
+    }
+
+    @Test
+    public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson(){
+        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON_GRAQL);
+
+        assertThat(jsonResponse(response).asJsonList().size(), equalTo(1));
+    }
+
+    @Test
+    public void POSTGraqlInsertWithTextType_ResponseIsTextType(){
+        Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
 
+    @Test
+    public void POSTGraqlInsertWithTextType_ResponseIsCorrectText(){
+        Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
+
+        assertThat(stringResponse(response), containsString("isa person"));
+    }
+
+    @Test
+    public void POSTGraqlDefine_GraphCommitIsCalled(){
+        String query = "define thingy sub entity;";
+
+        verify(mockTx, times(0)).commit();
+
+        sendRequest(query);
+
+        verify(mockTx, times(1)).commit();
+    }
+
     private Response sendRequest(String query){
+        return sendRequest(query, APPLICATION_TEXT);
+    }
+
+    private Response sendRequest(String query, String acceptType){
         return RestAssured.with()
+                .accept(acceptType)
                 .queryParam(EXECUTE_WITH_INFERENCE, false)
-                .accept(APPLICATION_TEXT)
                 .body(query)
-                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, tx.keyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
     }
 }

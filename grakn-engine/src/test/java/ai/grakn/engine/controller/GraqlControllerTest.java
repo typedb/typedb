@@ -41,7 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DeprecatedDeprecatedGraqlControllerTest {
+public class GraqlControllerTest {
     private static final LockProvider mockLockProvider = mock(LockProvider.class);
     private static final Lock mockLock = mock(Lock.class);
 
@@ -89,7 +89,7 @@ public class DeprecatedDeprecatedGraqlControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
                 .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
-        new DeprecatedGraqlController(factory, spark, new MetricRegistry());
+        new GraqlController(factory, spark, new MetricRegistry());
     });
 
     @ClassRule
