@@ -130,6 +130,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .build();
     }
 
+    @Override
+    public ReasonerQuery conjunction(ReasonerQuery q) {
+        return new ReasonerQueryImpl(
+                Sets.union(getAtoms(), q.getAtoms()),
+                this.tx()
+        );
+    }
+
     /**
      * @return corresponding reasoner query with inferred types
      */

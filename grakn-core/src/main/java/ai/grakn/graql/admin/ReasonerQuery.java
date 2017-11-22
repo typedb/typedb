@@ -43,6 +43,13 @@ public interface ReasonerQuery{
     ReasonerQuery copy();
 
     /**
+     * @param q query to combine
+     * @return a query formed as conjunction of this and provided query
+     */
+    @CheckReturnValue
+    ReasonerQuery conjunction(ReasonerQuery q);
+
+    /**
      * @return {@link GraknTx} associated with this reasoner query
      */
     @CheckReturnValue

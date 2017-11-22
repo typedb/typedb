@@ -226,7 +226,7 @@ public class RuleTest {
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithImplicitType_Throw() throws InvalidKBException {
         validateIllegalHead(
                 graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                graknTx.graql().parsePattern("(role3: $y, role3: $x) isa " + Schema.ImplicitType.HAS.getLabel("res1").getValue()),
+                graknTx.graql().parsePattern("($x, $y) isa " + Schema.ImplicitType.HAS.getLabel("res1").getValue()),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT
         );
     }
@@ -235,7 +235,7 @@ public class RuleTest {
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithImplicitRole_Throw() throws InvalidKBException {
         validateIllegalHead(
                 graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                graknTx.graql().parsePattern("(" + Schema.ImplicitType.HAS_OWNER.getLabel("res1").getValue() + ": $y, role3: $x) isa relation1"),
+                graknTx.graql().parsePattern("(" + Schema.ImplicitType.HAS_OWNER.getLabel("res1").getValue() + ": $x, $y)"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE
         );
     }
@@ -446,7 +446,9 @@ public class RuleTest {
         graph.putRelationshipType("relation1")
                 .relates(role1)
                 .relates(role2)
-                .relates(role3);
+                .relates(role3)
+                .plays(role1)
+                .plays(role2);
         graph.putRelationshipType("relation2")
                 .relates(role3);
     }
