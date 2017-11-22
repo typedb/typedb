@@ -95,7 +95,7 @@ public class GraqlControllerTest {
 
     @Before
     public void setUp() {
-        printer = new JacksonPrinter();
+        printer = JacksonPrinter.create();
         when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 

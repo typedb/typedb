@@ -28,8 +28,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -40,7 +40,24 @@ import java.util.stream.Collectors;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class JacksonPrinter implements Printer<Object>{
+    private Optional<Integer> limitEmbedded = Optional.empty();
     private static ObjectMapper mapper = new ObjectMapper();
+
+    private JacksonPrinter(){
+
+    }
+
+    private JacksonPrinter(int limitEmbedded){
+        this.limitEmbedded = Optional.of(limitEmbedded);
+    }
+
+    public static JacksonPrinter create(){
+        return new JacksonPrinter();
+    }
+
+    public static JacksonPrinter create(int limitEmbedded){
+        return new JacksonPrinter(limitEmbedded);
+    }
 
     @Override
     public String build(Object object) {
@@ -74,8 +91,10 @@ public class JacksonPrinter implements Printer<Object>{
 
     @Override
     public Object graqlString(boolean inner, Map map) {
-        Set<Map.Entry> entries = map.<Map.Entry>entrySet();
-        return entries.stream().collect(Collectors.toMap(
+        Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
+        limitEmbedded.ifPresent(entries::limit);
+
+        return entries.collect(Collectors.toMap(
                 entry -> graqlString(inner, entry.getKey()),
                 entry -> graqlString(inner, entry.getKey())
         ));
@@ -83,7 +102,9 @@ public class JacksonPrinter implements Printer<Object>{
 
     @Override
     public Object graqlString(boolean inner, Collection collection) {
-        return collection.stream().map(object -> graqlString(inner, object)).collect(Collectors.toSet());
+        Stream stream = collection.stream();
+        limitEmbedded.ifPresent(stream::limit);
+        return stream.map(object -> graqlString(inner, object)).collect(Collectors.toSet());
     }
 
     @Override

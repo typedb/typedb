@@ -26,6 +26,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
@@ -73,7 +74,6 @@ import static org.apache.http.HttpStatus.SC_OK;
  * @author Marco Scoppetta, alexandraorth
  */
 public class GraqlController {
-    private static final JacksonPrinter printer = new JacksonPrinter();
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private final EngineGraknTxFactory factory;
     private final Timer executeGraql;
@@ -136,8 +136,15 @@ public class GraqlController {
             QueryParser parser = builder.parser();
             defineAllVars.ifPresent(parser::defineAllVars);
 
+            JacksonPrinter printer;
+            if(limitEmbedded == -1){
+                printer = JacksonPrinter.create();
+            } else {
+                printer = JacksonPrinter.create(limitEmbedded);
+            }
+
             response.status(SC_OK);
-            return executeQuery(tx, queryString, multiQuery, parser);
+            return executeQuery(printer, tx, queryString, multiQuery, parser);
         }
     }
 
@@ -179,7 +186,7 @@ public class GraqlController {
      * @param multi       execute multiple statements
      * @param parser
      */
-    private String executeQuery(GraknTx tx, String queryString, boolean multi, QueryParser parser) {
+    private String executeQuery(Printer printer, GraknTx tx, String queryString, boolean multi, QueryParser parser) {
         String formatted;
         boolean commitQuery = true;
         if (multi) {

@@ -274,7 +274,7 @@ public class GraqlControllerReadOnlyTest {
         Response response = sendRequest(APPLICATION_JSON_GRAQL);
 
         Json expectedResponse = Json.read(
-                new JacksonPrinter().graqlString(sampleKB.tx().graql().parse(query).execute()));
+                JacksonPrinter.create().graqlString(sampleKB.tx().graql().parse(query).execute()));
         assertThat(jsonResponse(response), equalTo(expectedResponse));
     }
 

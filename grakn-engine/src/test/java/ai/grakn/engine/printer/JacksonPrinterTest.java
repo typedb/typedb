@@ -37,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 
 public class JacksonPrinterTest {
     private static ObjectMapper mapper = new ObjectMapper();
-    private static JacksonPrinter printer = new JacksonPrinter();
+    private static JacksonPrinter printer = JacksonPrinter.create();
 
     @ClassRule
     public static final SampleKBContext rule = MovieKB.context();
