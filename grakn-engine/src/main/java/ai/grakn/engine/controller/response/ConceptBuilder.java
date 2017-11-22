@@ -121,7 +121,9 @@ public class ConceptBuilder {
 
         Set<Link> subs = schemaConcept.subs().map(Link::create).collect(Collectors.toSet());
 
-        if(schemaConcept.isRole()){
+        if(Schema.MetaSchema.THING.getLabel().equals(schemaConcept.getLabel())) {
+            return MetaConcept.create(schemaConcept.getId(), selfLink, schemaConcept.getLabel(), schemaConcept.isImplicit(), sup, subs);
+        } else if(schemaConcept.isRole()){
             return buildRole(schemaConcept.asRole(), selfLink, sup, subs);
         } else if(schemaConcept.isRule()){
             return buildRule(schemaConcept.asRule(), selfLink, sup, subs);
@@ -167,16 +169,9 @@ public class ConceptBuilder {
             return buildEntityType(type.asEntityType(), selfLink, sup, subs, roles, attributes, keys);
         } else if (type.isRelationshipType()){
             return buildRelationshipType(type.asRelationshipType(), selfLink, sup, subs, roles, attributes, keys);
-        } else if(Schema.MetaSchema.THING.getLabel().equals(type.getLabel())) {
-            //Workaround for handling meta type
-            return buildType(type, selfLink, sup, subs, roles, attributes, keys);
         } else {
             throw GraknBackendException.convertingUnknownConcept(type);
         }
-    }
-
-    private static Type buildType(ai.grakn.concept.Type type, Link selfLink, Link sup, Set<Link> subs, Set<Link> roles, Set<Link> attributes, Set<Link> keys) {
-        return EntityType.create(type.getId(), selfLink, type.getLabel(), type.isImplicit(), sup, subs, type.isAbstract(), roles, attributes, keys);
     }
 
     private static Role buildRole(ai.grakn.concept.Role role, Link selfLink, Link sup, Set<Link> subs){

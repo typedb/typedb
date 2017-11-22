@@ -224,6 +224,8 @@ public class GraqlControllerTest {
     public void whenMatchingSchema_NoInstancesInResponse() {
         String queryString = "match $x sub thing; get;";
         Response resp = sendQuery(queryString, APPLICATION_JSON, false, -1, false);
+
+
         Json jsonResp = Json.read(resp.body().asString());
         jsonResp.asJsonList().stream().map(map -> map.at("x")).forEach(thing -> {
             assertNotEquals("ENTITY", thing.at("_baseType").asString());

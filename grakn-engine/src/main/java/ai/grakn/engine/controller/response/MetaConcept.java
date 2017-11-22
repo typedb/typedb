@@ -19,25 +19,34 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.Jacksonisable;
+import ai.grakn.concept.Label;
+import ai.grakn.util.Schema;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.auto.value.AutoValue;
+
+import javax.annotation.Nullable;
+import java.util.Set;
 
 /**
  * <p>
- *     Wrapper class for {@link ai.grakn.concept.Concept}
+ *     Special wrapper class for the top meta concept {@link ai.grakn.util.Schema.MetaSchema#THING};
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public abstract class Concept implements Jacksonisable{
+@AutoValue
+public abstract class MetaConcept extends SchemaConcept{
 
-    @JsonProperty("base-type")
-    public abstract String baseType();
-
-    @JsonProperty("id")
-    public abstract ConceptId id();
-
-    @JsonProperty("@id")
-    public abstract Link selfLink();
-
+    @JsonCreator
+    public static MetaConcept create(
+            @JsonProperty("id") ConceptId id,
+            @JsonProperty("@id") Link selfLink,
+            @JsonProperty("label") Label label,
+            @JsonProperty("implicit") Boolean implicit,
+            @JsonProperty("super") @Nullable Link sup,
+            @JsonProperty("subs") Set<Link> subs
+    ){
+        return new AutoValue_MetaConcept(Schema.MetaSchema.THING.name(), id, selfLink, label, implicit, sup, subs);
+    }
 }

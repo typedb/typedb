@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
@@ -46,6 +47,6 @@ public abstract class Relationship extends Thing {
             @JsonProperty("keys") Set<Link> keys,
             @JsonProperty("relationships") Set<RolePlayer> relationships,
             @JsonProperty("roleplayers") Set<RolePlayer> roleplayers){
-        return new AutoValue_Relationship(id, selfLink, attributes, keys, relationships, roleplayers);
+        return new AutoValue_Relationship(Schema.BaseType.RELATIONSHIP.name(), id, selfLink, attributes, keys, relationships, roleplayers);
     }
 }

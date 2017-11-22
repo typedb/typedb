@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
@@ -53,6 +54,6 @@ public abstract class Role extends SchemaConcept{
             @JsonProperty("subs") Set<Link> subs,
             @JsonProperty("relationships") Set<Link> relationships,
             @JsonProperty("roleplayers") Set<Link> roleplayers){
-        return new AutoValue_Role(id, selfLink, label, implicit, sup, subs, relationships, roleplayers);
+        return new AutoValue_Role(Schema.BaseType.ROLE.name(), id, selfLink, label, implicit, sup, subs, relationships, roleplayers);
     }
 }
