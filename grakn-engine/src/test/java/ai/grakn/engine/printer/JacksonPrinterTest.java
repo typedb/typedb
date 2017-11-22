@@ -31,6 +31,7 @@ import org.junit.Test;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
@@ -69,6 +70,12 @@ public class JacksonPrinterTest {
                 match(var("x").isa("title").val("Godfather")).stream().collect(Collectors.toSet());
         Set<Answer> answersWrapper = answers.stream().map(Answer::create).collect(Collectors.toSet());
         assertWrappersMatch(answersWrapper, answers);
+    }
+
+    @Test
+    public void whenGraqlQueryReturnsBoolean_EnsureNativeBooleanRepresentationIsReturned() throws JsonProcessingException {
+        Boolean bool = rule.tx().graql().match(var("x").isa("person")).aggregate(ask()).execute();
+        assertWrappersMatch(bool, bool);
     }
 
     private static void assertWrappersMatch(Object expected, Object toPrint) throws JsonProcessingException {

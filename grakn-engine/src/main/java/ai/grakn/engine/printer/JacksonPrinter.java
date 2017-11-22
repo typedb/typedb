@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -62,7 +63,7 @@ public class JacksonPrinter implements Printer<Object>{
 
     @Override
     public Object graqlString(boolean inner, boolean bool) {
-        return null;
+        return bool;
     }
 
     @Override
@@ -72,7 +73,11 @@ public class JacksonPrinter implements Printer<Object>{
 
     @Override
     public Object graqlString(boolean inner, Map map) {
-        return null;
+        Set<Map.Entry> entries = map.<Map.Entry>entrySet();
+        return entries.stream().collect(Collectors.toMap(
+                entry -> graqlString(inner, entry.getKey()),
+                entry -> graqlString(inner, entry.getKey())
+        ));
     }
 
     @Override
@@ -82,6 +87,6 @@ public class JacksonPrinter implements Printer<Object>{
 
     @Override
     public Object graqlString(boolean inner, Optional optional) {
-        return null;
+        return optional.map(o -> graqlString(inner, o)).orElseGet(null);
     }
 }
