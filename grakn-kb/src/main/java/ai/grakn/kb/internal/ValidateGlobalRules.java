@@ -358,7 +358,7 @@ class ValidateGlobalRules {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getLabel()));
         }
         if (errors.isEmpty()){
-            errors.addAll(validateRuleHead(graph, rule, rule.getThen()));
+            errors.addAll(validateRuleHead(graph, rule));
         }
         return errors;
     }
@@ -389,12 +389,11 @@ class ValidateGlobalRules {
     /**
      * @param graph graph used to ensure the rule head is valid
      * @param rule the rule to be validated
-     * @param head head of the rule of interest
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
-    private static Set<String> validateRuleHead(GraknTx graph, Rule rule, Pattern head) {
+    private static Set<String> validateRuleHead(GraknTx graph, Rule rule) {
         Set<String> errors = new HashSet<>();
-        Set<Conjunction<VarPatternAdmin>> headPatterns = head.admin().getDisjunctiveNormalForm().getPatterns();
+        Set<Conjunction<VarPatternAdmin>> headPatterns = rule.getThen().admin().getDisjunctiveNormalForm().getPatterns();
 
         if (headPatterns.size() != 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getLabel()));

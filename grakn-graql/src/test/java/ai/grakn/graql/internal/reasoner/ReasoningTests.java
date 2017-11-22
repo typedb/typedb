@@ -212,18 +212,6 @@ public class ReasoningTests {
         answers.forEach(ans -> assertEquals(ans.size(), 2));
     }
 
-    @Test //Expected result: The queries should return different matches, unique per query.
-    public void generatingFreshEntity() {
-        QueryBuilder qb = testSet3.tx().graql().infer(true);
-        String queryString = "match $x isa entity1; get;";
-        String queryString2 = "match $x isa entity2; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
-        assertEquals(answers.size(), answers2.size());
-        assertFalse(answers.containsAll(answers2));
-        assertFalse(answers2.containsAll(answers));
-    }
-
     @Test //Expected result: The queries should return the same two matches.
     public void generatingIsaEdge() {
         QueryBuilder qb = testSet4.tx().graql().infer(true);
@@ -236,6 +224,22 @@ public class ReasoningTests {
         assertTrue(answers2.containsAll(answers));
     }
 
+    //TODO: currently disallowed by rule validation
+    @Ignore
+    @Test //Expected result: The queries should return different matches, unique per query.
+    public void generatingFreshEntity() {
+        QueryBuilder qb = testSet3.tx().graql().infer(true);
+        String queryString = "match $x isa entity1; get;";
+        String queryString2 = "match $x isa entity2; get;";
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        assertEquals(answers.size(), answers2.size());
+        assertFalse(answers.containsAll(answers2));
+        assertFalse(answers2.containsAll(answers));
+    }
+
+    //TODO: currently disallowed by rule validation
+    @Ignore
     @Test //Expected result: The query should return a unique match (or possibly nothing if we enforce range-restriction).
     public void generatingFreshEntity2() {
         QueryBuilder qb = testSet5.tx().graql().infer(false);
@@ -249,6 +253,8 @@ public class ReasoningTests {
         assertTrue(!answers2.containsAll(answers));
     }
 
+    //TODO: currently disallowed by rule validation
+    @Ignore
     @Test //Expected result: The query should return three different instances of relation1 with unique ids.
     public void generatingFreshRelation() {
         QueryBuilder qb = testSet6.tx().graql().infer(true);
