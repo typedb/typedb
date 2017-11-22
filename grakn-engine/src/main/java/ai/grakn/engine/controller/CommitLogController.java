@@ -26,7 +26,6 @@ import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -49,7 +48,6 @@ import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class CommitLogController {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private final TaskManager manager;
     private final PostProcessor postProcessor;
     private final int postProcessingDelay;
