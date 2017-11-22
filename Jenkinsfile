@@ -217,8 +217,9 @@ void addTests(Map<String, Closure> jobs) {
 void addJob(Map<String, Closure> jobs, String name, Closure closure) {
     jobs[name] = {
         graknNode { workspace ->
-            env.PACKAGE = name
-            closure(workspace)
+            withEnv(["PACKAGE=${name}"]) {
+                closure(workspace)
+            }
         }
     }
 }
