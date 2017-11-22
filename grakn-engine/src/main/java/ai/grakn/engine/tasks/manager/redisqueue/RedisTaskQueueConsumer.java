@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.tasks.manager.redisqueue;
 
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -51,7 +51,7 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
 
     private final RedisTaskManager redisTaskManager;
     private final EngineID engineId;
-    private final GraknEngineConfig config;
+    private final GraknConfig config;
     private final MetricRegistry metricRegistry;
     private final EngineGraknTxFactory factory;
     private final PostProcessor postProcessor;
@@ -59,7 +59,7 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
 
     public RedisTaskQueueConsumer(
             RedisTaskManager redisTaskManager, EngineID engineId,
-            GraknEngineConfig config,
+            GraknConfig config,
             MetricRegistry metricRegistry,
             EngineGraknTxFactory factory, PostProcessor postProcessor) {
         this.redisTaskManager = redisTaskManager;

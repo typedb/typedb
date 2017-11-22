@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
@@ -86,6 +87,11 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
     @Override
     public void delete() throws GraknTxOperationException {
         deleteNode();
+    }
+
+    @Override
+    public Keyspace keyspace(){
+        return vertex().tx().keyspace();
     }
 
     @Override

@@ -32,7 +32,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  *
@@ -52,9 +51,7 @@ public class HasAtom extends TypeAtom {
     private HasAtom(TypeAtom a) { super(a);}
 
     @Override
-    public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(HasAttributeTypeProperty.class));
-    }
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeTypeProperty.class;}
 
     @Override
     public Atomic copy(){

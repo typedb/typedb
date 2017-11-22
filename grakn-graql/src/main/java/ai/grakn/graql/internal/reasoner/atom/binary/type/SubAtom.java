@@ -33,7 +33,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  *
@@ -53,9 +52,7 @@ public class SubAtom extends TypeAtom {
     }
 
     @Override
-    public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(SubProperty.class));
-    }
+    public Class<? extends VarProperty> getVarPropertyClass() {return SubProperty.class;}
 
     @Override
     public String toString(){

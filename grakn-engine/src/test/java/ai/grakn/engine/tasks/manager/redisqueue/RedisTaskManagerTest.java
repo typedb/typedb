@@ -19,7 +19,7 @@
 
 package ai.grakn.engine.tasks.manager.redisqueue;
 
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -64,7 +64,7 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.fail;
@@ -79,7 +79,7 @@ public class RedisTaskManagerTest {
             .withWaitStrategy(WaitStrategies.exponentialWait(10, 60, TimeUnit.SECONDS))
             .build();
     private static final int MAX_TOTAL = 256;
-    public static final GraknEngineConfig CONFIG = GraknEngineConfig.create();
+    public static final GraknConfig CONFIG = GraknConfig.create();
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final EngineID engineID = EngineID.of("engineID");
     public static final ProcessWideLockProvider LOCK_PROVIDER = new ProcessWideLockProvider();
@@ -173,7 +173,7 @@ public class RedisTaskManagerTest {
 
     private TaskConfiguration testConfig(TaskId generate) {
         return TaskConfiguration.of(Json.object(
-                KEYSPACE, "keyspace",
+                KEYSPACE_PARAM, "keyspace",
                 COMMIT_LOG_COUNTING, 3,
                 "id", generate.value()
         ));

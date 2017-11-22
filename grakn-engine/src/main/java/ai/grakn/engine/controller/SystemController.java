@@ -20,13 +20,14 @@ package ai.grakn.engine.controller;
 
 
 import ai.grakn.GraknTx;
-import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.controller.response.KeyspaceResponse;
+import ai.grakn.engine.controller.response.Keyspace;
+import ai.grakn.engine.controller.response.Keyspaces;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.exception.GraknServerException;
+import ai.grakn.util.REST;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
@@ -60,13 +61,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.REST.Request.FORMAT;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.WebPath.System.KB;
-import static ai.grakn.util.REST.WebPath.System.KB_KEYSPACE;
-import static ai.grakn.util.REST.WebPath.System.METRICS;
-import static ai.grakn.util.REST.WebPath.System.STATUS;
 import static org.apache.http.HttpHeaders.CACHE_CONTROL;
 
 
@@ -77,7 +73,7 @@ import static org.apache.http.HttpHeaders.CACHE_CONTROL;
  * this controller is accessed. The controller provides the necessary config needed in order to
  * build a {@link GraknTx}.
  *
- * This controller also allows the retrieval of all {@link Keyspace}s opened so far. </p>
+ * This controller also allows the retrieval of all {@link ai.grakn.Keyspace}s opened so far. </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
@@ -94,9 +90,9 @@ public class SystemController {
     private final ObjectMapper mapper;
     private final CollectorRegistry prometheusRegistry;
     private final SystemKeyspace systemKeyspace;
-    private final GraknEngineConfig config;
+    private final GraknConfig config;
 
-    public SystemController(Service spark, GraknEngineConfig config, SystemKeyspace systemKeyspace,
+    public SystemController(Service spark, GraknConfig config, SystemKeyspace systemKeyspace,
                             GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
         this.systemKeyspace = systemKeyspace;
         this.config = config;
@@ -107,12 +103,12 @@ public class SystemController {
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
 
-        spark.get(KB, this::getKeyspaces);
-        spark.get(KB_KEYSPACE, this::getKeyspace);
-        spark.put(KB_KEYSPACE, this::putKeyspace);
-        spark.delete(KB_KEYSPACE, this::deleteKeyspace);
-        spark.get(METRICS, this::getMetrics);
-        spark.get(STATUS, this::getStatus);
+        spark.get(REST.WebPath.KB, this::getKeyspaces);
+        spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
+        spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
+        spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
+        spark.get(REST.WebPath.METRICS, this::getMetrics);
+        spark.get(REST.WebPath.STATUS, this::getStatus);
 
         final TimeUnit rateUnit = TimeUnit.SECONDS;
         final TimeUnit durationUnit = TimeUnit.SECONDS;
@@ -127,21 +123,21 @@ public class SystemController {
     }
 
     @GET
-    @Path(KB)
+    @Path(REST.WebPath.KB)
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
-        Set<KeyspaceResponse> keyspaces = systemKeyspace.keyspaces().stream().
-                map(k -> KeyspaceResponse.of(k.getValue())).
+        Set<Keyspace> keyspaces = systemKeyspace.keyspaces().stream().
+                map(Keyspace::of).
                 collect(Collectors.toSet());
-        return objectMapper.writeValueAsString(keyspaces);
+        return objectMapper.writeValueAsString(Keyspaces.of(keyspaces));
     }
 
     @GET
     @Path("/kb/{keyspace}")
-    @ApiImplicitParam(name = KEYSPACE, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
     private String getKeyspace(Request request, Response response) {
-        Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
+        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
 
         if (systemKeyspace.containsKeyspace(keyspace)) {
             response.status(HttpServletResponse.SC_OK);
@@ -155,9 +151,9 @@ public class SystemController {
     @PUT
     @Path("/kb/{keyspace}")
     @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
-    @ApiImplicitParam(name = KEYSPACE, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
     private String putKeyspace(Request request, Response response) throws JsonProcessingException {
-        Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
+        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         systemKeyspace.openKeyspace(keyspace);
         response.status(HttpServletResponse.SC_OK);
         return objectMapper.writeValueAsString(config);
@@ -166,9 +162,9 @@ public class SystemController {
     @DELETE
     @Path("/kb/{keyspace}")
     @ApiOperation(value = "Delete a keyspace from the system graph.")
-    @ApiImplicitParam(name = KEYSPACE, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
     private boolean deleteKeyspace(Request request, Response response) {
-        Keyspace keyspace = Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
+        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         boolean deletionComplete = systemKeyspace.deleteKeyspace(keyspace);
         if (deletionComplete) {
             LOG.info("Keyspace {} deleted", keyspace);

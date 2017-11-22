@@ -18,27 +18,33 @@
 
 package ai.grakn.engine.controller.response;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.auto.value.AutoValue;
+import ai.grakn.concept.Label;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
+import java.util.Set;
 
 /**
  * <p>
- *     Response object representing {@link ai.grakn.Keyspace}
+ *     Wrapper class for {@link ai.grakn.concept.SchemaConcept}
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-@AutoValue
-public abstract class KeyspaceResponse {
+public abstract class SchemaConcept extends Concept{
 
-    @CheckReturnValue
-    @JsonValue
-    public abstract String getValue();
+    @JsonProperty
+    public abstract Label label();
 
-    @CheckReturnValue
-    public static KeyspaceResponse of(String value){
-        return new AutoValue_KeyspaceResponse(value);
-    }
+    @JsonProperty
+    public abstract Boolean implicit();
+
+    @Nullable
+    @JsonProperty("super")
+    public abstract Link sup();
+
+    @JsonProperty
+    public abstract Set<Link> subs();
+
 }
+

@@ -73,9 +73,6 @@ import static ai.grakn.util.REST.Request.TASK_RUN_WAIT_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
-import static ai.grakn.util.REST.WebPath.Tasks.GET;
-import static ai.grakn.util.REST.WebPath.Tasks.STOP;
-import static ai.grakn.util.REST.WebPath.Tasks.TASK;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.lang.Long.parseLong;
 import static java.time.Instant.ofEpochMilli;
@@ -121,10 +118,10 @@ public class TasksController {
         this.stopTaskTimer = metricRegistry.timer(name(TasksController.class, "stop-task"));
         this.createTasksTimer = metricRegistry.timer(name(TasksController.class, "create-tasks"));
 
-        spark.get(TASK, this::getTasks);
-        spark.get(GET, this::getTask);
-        spark.put(STOP, this::stopTask);
-        spark.post(TASK, this::createTasks);
+        spark.get(REST.WebPath.TASK, this::getTasks);
+        spark.get(REST.WebPath.TASK_ID, this::getTask);
+        spark.put(REST.WebPath.TASK_ID_STOP, this::stopTask);
+        spark.post(REST.WebPath.TASK, this::createTasks);
 
         spark.exception(GraknServerException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
         spark.exception(GraknBackendException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
@@ -138,8 +135,8 @@ public class TasksController {
             @ApiImplicitParam(name = REST.Request.TASK_STATUS_PARAMETER, value = "TaskStatus as string.", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = REST.Request.TASK_CLASS_NAME_PARAMETER, value = "Class name of BackgroundTask Object.", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = REST.Request.TASK_CREATOR_PARAMETER, value = "Who instantiated these tasks.", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = REST.Request.LIMIT_PARAM, value = "Limit the number of entries in the returned result.", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = REST.Request.OFFSET_PARAM, value = "Use in conjunction with limit for pagination.", dataType = "integer", paramType = "query")
+            @ApiImplicitParam(name = REST.Request.LIMIT_PARAMETER, value = "Limit the number of entries in the returned result.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = REST.Request.OFFSET_PARAMETER, value = "Use in conjunction with limit for pagination.", dataType = "integer", paramType = "query")
     })
     private String getTasks(Request request, Response response) throws JsonProcessingException {
         TaskStatus status = null;
@@ -148,12 +145,12 @@ public class TasksController {
         int limit = 0;
         int offset = 0;
 
-        if (request.queryParams(REST.Request.LIMIT_PARAM) != null) {
-            limit = Integer.parseInt(request.queryParams(REST.Request.LIMIT_PARAM));
+        if (request.queryParams(REST.Request.LIMIT_PARAMETER) != null) {
+            limit = Integer.parseInt(request.queryParams(REST.Request.LIMIT_PARAMETER));
         }
 
-        if (request.queryParams(REST.Request.OFFSET_PARAM) != null) {
-            offset = Integer.parseInt(request.queryParams(REST.Request.OFFSET_PARAM));
+        if (request.queryParams(REST.Request.OFFSET_PARAMETER) != null) {
+            offset = Integer.parseInt(request.queryParams(REST.Request.OFFSET_PARAMETER));
         }
 
         if (request.queryParams(REST.Request.TASK_STATUS_PARAMETER) != null) {

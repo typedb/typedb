@@ -23,6 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -140,9 +141,7 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public Stream<VarProperty> getVarProperties() {
-        return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(RelationshipProperty.class));
-    }
+    public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
 
     @Override
     public RelationshipAtom toRelationshipAtom(){ return this;}
@@ -309,26 +308,33 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public boolean isAllowedToFormRuleHead(){
-        //can form a rule head if specified type, type is not implicit and all relation players have a specified/non-implicit/unambiguously inferrable role type
-        return getSchemaConcept() != null
-                && !getSchemaConcept().asType().isImplicit()
-                && !hasMetaRoles()
-                && !hasImplicitRoles();
+    public Set<String> validateAsRuleHead(Rule rule){
+        //can form a rule head if type is specified, type is not implicit and all relation players are insertable
+        return Sets.union(super.validateAsRuleHead(rule), validateRelationPlayers(rule));
     }
 
-    /**
-     * @return true if any of the relation's roles are meta roles
-     */
-    private boolean hasMetaRoles(){
-        return roleLabels.stream().filter(Schema.MetaSchema::isMetaLabel).findFirst().isPresent();
-    }
-
-    /**
-     * @return true if any of the relation's roles are implicit roles
-     */
-    private boolean hasImplicitRoles(){
-        return getRoleVarMap().keySet().stream().filter(SchemaConcept::isImplicit).findFirst().isPresent();
+    private Set<String> validateRelationPlayers(Rule rule){
+        Set<String> errors = new HashSet<>();
+        getRelationPlayers().forEach(rp -> {
+            VarPatternAdmin role = rp.getRole().orElse(null);
+            if (role == null){
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.getThen(), rule.getLabel()));
+            } else {
+                Label roleLabel = role.getTypeLabel().orElse(null);
+                if (roleLabel == null){
+                    errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.getThen(), rule.getLabel()));
+                } else {
+                    if (Schema.MetaSchema.isMetaLabel(roleLabel)) {
+                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE.getMessage(rule.getThen(), rule.getLabel()));
+                    }
+                    Role roleType = tx().getRole(roleLabel.getValue());
+                    if (roleType != null && roleType.isImplicit()) {
+                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE.getMessage(rule.getThen(), rule.getLabel()));
+                    }
+                }
+            }
+        });
+        return errors;
     }
 
     @Override
@@ -568,7 +574,7 @@ public class RelationshipAtom extends IsaAtom {
     private RelationshipAtom inferRelationshipType(Answer sub){
         if (getTypePredicate() != null) return this;
 
-        if (sub.containsKey(getPredicateVariable())){
+        if (sub.containsVar(getPredicateVariable())){
             Concept typeConcept = sub.get(getPredicateVariable());
             if (typeConcept.isRelationshipType()) return addType(sub.get(getPredicateVariable()).asType());
         }

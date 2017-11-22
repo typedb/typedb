@@ -18,15 +18,13 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.Keyspace;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknTestUtil;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
+import java.io.File;
+import java.nio.file.Paths;
 
 /**
  * <p>
@@ -44,26 +42,26 @@ import java.util.Properties;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class GraknSessionLocal extends GraknSessionImpl{
-    private final static String JANUS_CONFIG_LOCATION = CommonUtil.getProjectPath() + "/../conf/test/janus/grakn.properties";
+    private final static File JANUS_CONFIG_FILE = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/conf/test/janus/grakn.properties").toFile();
 
-    private GraknSessionLocal(Keyspace keyspace, String engineUri, Properties properties) {
-        super(keyspace, engineUri, properties, false);
+    private GraknSessionLocal(Keyspace keyspace, String engineUri, GraknConfig config) {
+        super(keyspace, engineUri, config, false);
     }
 
     public static GraknSessionLocal create(Keyspace keyspace) {
         return new GraknSessionLocal(keyspace, "fake-engine-uri", null);
     }
 
-    public static GraknSessionLocal create(Keyspace keyspace, String engineUri, Properties properties) {
-        return new GraknSessionLocal(keyspace, engineUri, properties);
+    public static GraknSessionLocal create(Keyspace keyspace, String engineUri, GraknConfig config) {
+        return new GraknSessionLocal(keyspace, engineUri, config);
     }
 
     @Override
-    Properties getTxProperties() {
+    GraknConfig getTxConfig() {
         if (GraknTestUtil.usingJanus()) {
-            return getTxJanusProperties();
+            return getTxJanusConfig();
         } else {
-            return getTxInMemoryProperties();
+            return getTxInMemoryConfig();
         }
     }
 
@@ -73,13 +71,7 @@ public class GraknSessionLocal extends GraknSessionImpl{
      *
      * @return the properties needed to build a JanusGraph
      */
-    private Properties getTxJanusProperties() {
-        Properties properties = new Properties();
-        try (InputStream in = new FileInputStream(JANUS_CONFIG_LOCATION)){
-            properties.load(in);
-        } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(JANUS_CONFIG_LOCATION), e);
-        }
-        return properties;
+    private GraknConfig getTxJanusConfig() {
+        return GraknConfig.read(JANUS_CONFIG_FILE);
     }
 }

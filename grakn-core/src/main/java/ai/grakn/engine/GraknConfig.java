@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.engine;
@@ -21,10 +22,10 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.apache.commons.io.FileUtils;
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 
 /**
@@ -43,7 +45,9 @@ import java.util.Properties;
  *
  * @author Marco Scoppetta
  */
-public class GraknEngineConfig {
+public class GraknConfig {
+
+    private final Properties prop;
 
     /**
      * The path to the config file currently in use. Default: ../conf/main/grakn.properties
@@ -55,22 +59,20 @@ public class GraknEngineConfig {
     public static final Path PROJECT_PATH = CommonUtil.getProjectPath();
     public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
-
-    private final Properties prop = new Properties();
+    private static final Logger LOG = LoggerFactory.getLogger(GraknConfig.class);
 
     protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get("grakn", "grakn-ascii.txt"));
 
-    public static GraknEngineConfig create() {
-        return GraknEngineConfig.read(CONFIG_FILE_PATH.toFile());
+    public static GraknConfig empty() {
+        return GraknConfig.of(new Properties());
     }
 
-    public static GraknEngineConfig read(File path) {
-        return new GraknEngineConfig(path);
+    public static GraknConfig create() {
+        return GraknConfig.read(CONFIG_FILE_PATH.toFile());
     }
 
-    private GraknEngineConfig(File path) {
-        setConfigProperty(GraknConfigKey.VERSION, GraknVersion.VERSION);
+    public static GraknConfig read(File path) {
+        Properties prop = new Properties();
         try (FileInputStream inputStream = new FileInputStream(path)) {
             prop.load(inputStream);
         } catch (IOException e) {
@@ -78,6 +80,15 @@ public class GraknEngineConfig {
         }
         LOG.info("Project directory in use: {}", PROJECT_PATH);
         LOG.info("Configuration file in use: {}", CONFIG_FILE_PATH);
+        return GraknConfig.of(prop);
+    }
+
+    public static GraknConfig of(Properties properties) {
+        return new GraknConfig(properties);
+    }
+
+    private GraknConfig(Properties prop) {
+        this.prop = prop;
     }
 
     public void write(File path) throws IOException {
@@ -131,7 +142,7 @@ public class GraknEngineConfig {
         Path asciiPath = projectPath.resolve(graknAsciiPath);
         try {
             File asciiFile = asciiPath.toFile();
-            return FileUtils.readFileToString(asciiFile);
+            return Files.readLines(asciiFile, Charsets.UTF_8).stream().collect(Collectors.joining("\n"));
         } catch (IOException e) {
             // couldn't find Grakn ASCII art. Let's just fail gracefully
             LOG.warn("Oops, unable to find Grakn ASCII art. Will just display nothing then.");

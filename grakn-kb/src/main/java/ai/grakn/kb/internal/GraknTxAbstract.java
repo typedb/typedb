@@ -204,7 +204,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public long shardingThreshold(){
-        return Long.parseLong(session().config().get(GraknConfigKey.SHARDING_THRESHOLD.name()).toString());
+        return session().config().getProperty(GraknConfigKey.SHARDING_THRESHOLD);
     }
 
     public TxCache txCache() {
@@ -491,12 +491,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public RelationshipType putRelationshipType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
-                v -> factory().buildRelationType(v, getMetaRelationType()));
+                v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
     public RelationshipType putRelationTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, true,
-                v -> factory().buildRelationType(v, getMetaRelationType()));
+                v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
     @Override
@@ -525,7 +525,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
         AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
-                v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
+                v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
@@ -660,7 +660,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public AttributeType getMetaResourceType() {
+    public AttributeType getMetaAttributeType() {
         return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getId());
     }
 
@@ -799,7 +799,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
 
         URI uri = UriBuilder.fromUri(new SimpleURI(session().uri()).toURI())
-                .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace().getValue()))
+                .path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace().getValue()))
                 .build();
         return Optional.of(uri);
     }

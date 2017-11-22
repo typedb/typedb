@@ -5,7 +5,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspaceFake;
 import ai.grakn.engine.controller.SparkContext;
@@ -34,7 +34,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.mock;
 
 public class EngineGraknSessionTest {
-    private static final GraknEngineConfig config = GraknEngineConfig.create();
+    private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();

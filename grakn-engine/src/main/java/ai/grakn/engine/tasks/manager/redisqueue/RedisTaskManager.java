@@ -19,7 +19,7 @@
 
 package ai.grakn.engine.tasks.manager.redisqueue;
 
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
@@ -66,9 +66,9 @@ public class RedisTaskManager implements TaskManager {
     private final Redisq<Task> redisq;
     private final RedisTaskStorage taskStorage;
 
-    public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-            int threads, EngineGraknTxFactory factory,
-            MetricRegistry metricRegistry, PostProcessor postProcessor) {
+    public RedisTaskManager(EngineID engineId, GraknConfig config, Pool<Jedis> jedisPool,
+                            int threads, EngineGraknTxFactory factory,
+                            MetricRegistry metricRegistry, PostProcessor postProcessor) {
 
         Consumer<Task> consumer = new RedisTaskQueueConsumer(this, engineId, config,
                 metricRegistry, factory,

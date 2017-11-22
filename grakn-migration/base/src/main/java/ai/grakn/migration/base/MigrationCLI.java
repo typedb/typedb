@@ -147,7 +147,7 @@ public class MigrationCLI {
             builder.append("\t ").append(graph.admin().getMetaEntityType().instances().count()).append(" entity types\n");
             builder.append("\t ").append(graph.admin().getMetaRelationType().instances().count()).append(" relation types\n");
             builder.append("\t ").append(graph.admin().getMetaRole().subs().count()).append(" roles\n\n");
-            builder.append("\t ").append(graph.admin().getMetaResourceType().instances().count()).append(" resource types\n");
+            builder.append("\t ").append(graph.admin().getMetaAttributeType().instances().count()).append(" resource types\n");
             builder.append("\t ").append(graph.admin().getMetaRule().subs().count()).append(" rules\n\n");
 
             builder.append("Graph data contains:\n");

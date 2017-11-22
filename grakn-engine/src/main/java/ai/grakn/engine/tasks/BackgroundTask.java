@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.tasks;
 
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -40,7 +40,8 @@ public abstract class BackgroundTask {
     TaskSubmitter taskSubmitter = null;
     private @Nullable
     TaskConfiguration configuration = null;
-    private @Nullable GraknEngineConfig engineConfig = null;
+    private @Nullable
+    GraknConfig engineConfig = null;
     private @Nullable
     EngineGraknTxFactory factory = null;
     private @Nullable MetricRegistry metricRegistry = null;
@@ -55,7 +56,7 @@ public abstract class BackgroundTask {
      */
     public final void initialize(
             TaskConfiguration configuration,
-            TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig,
+            TaskSubmitter taskSubmitter, GraknConfig engineConfig,
             EngineGraknTxFactory factory, MetricRegistry metricRegistry, PostProcessor postProcessor)  {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
@@ -103,7 +104,7 @@ public abstract class BackgroundTask {
         return defaultNullCheck(configuration);
     }
 
-    public final GraknEngineConfig engineConfiguration() {
+    public final GraknConfig engineConfiguration() {
         return defaultNullCheck(engineConfig);
     }
 

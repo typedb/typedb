@@ -60,7 +60,7 @@ public class MutatorTask extends BackgroundTask {
     public boolean start() {
         Collection<Query> inserts = getInserts(configuration());
         metricRegistry().histogram(name(MutatorTask.class, "jobs")).update(inserts.size());
-        Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
+        Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE_PARAM).asString());
         int maxRetry = engineConfiguration().getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
 
         GraknTxMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
