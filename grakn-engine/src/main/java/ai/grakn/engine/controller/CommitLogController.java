@@ -71,8 +71,6 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) throws JsonProcessingException {
-        res.type(REST.Response.ContentType.APPLICATION_JSON);
-
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, REST.Request.KEYSPACE_PARAM));
 
         // Things to post process
@@ -85,6 +83,6 @@ public class CommitLogController {
                 CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, Json.read(req.body()))))
                 .join();
 
-        return objectMapper.writeValueAsString(postProcessingTaskState);
+        return "";
     }
 }

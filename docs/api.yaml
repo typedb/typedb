@@ -264,12 +264,9 @@ paths:
         schema:
           $ref: '#/definitions/CommitLogRequest'
         required: true
-      produces: [application/json]
       responses:
         200:
           description: ''
-          schema:
-            $ref: '#/definitions/CommitLogResponse'
 parameters:
   keyspace:
     name: keyspace
@@ -683,61 +680,6 @@ definitions:
   ConceptID:
     type: string
     example: V123
-  CommitLogResponse:
-      $ref: '#/definitions/Task'
-  Tasks:
-    type: object
-    required: ['@id', tasks]
-    properties:
-      '@id':
-        type: string
-        format: uri
-        example: '/task'
-      tasks:
-        type: array
-        items:
-          $ref: '#/definitions/Task'
-  Task:
-    type: object
-    properties:
-      '@id':
-        type: string
-        format: uri
-        example: '/task/8e7c91a9-ff3c-4df9-86ee-da2e76ce1482'
-      id:
-        $ref: '#/definitions/TaskId'
-      creator:
-        type: string
-        example: 'ai.grakn.engine.postprocessing.PostProcessingTask'
-      schedule:
-        type: object
-        properties:
-          runAt:
-            type: number
-            example: 1511205030
-          interval:
-            type: number
-            example: 120
-      serialVersionUID:
-        type: number
-        example: -7301340972479426653
-      priority:
-        type: string
-        enum: [LOW, HIGH]
-      status:
-        type: string
-        enum: [CREATED, SCHEDULED, RUNNING, COMPLETED, STOPPED, FAILED]
-      taskClassName:
-        type: string
-        example: 'ai.grakn.engine.postprocessing.PostProcessingTask'
-      engineId:
-        type: string
-        example: '8e7c91a9-ff3c-4df9-86ee-da2e76ce1482'
-      taskCheckpoint:
-        type: object
-  TaskId:
-    type: string
-    example: '8e7c91a9-ff3c-4df9-86ee-da2e76ce1482'
   GraqlQuery:
     type: string
     example: 'match $x isa person; get;'
