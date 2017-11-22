@@ -92,14 +92,14 @@ public class MutatorTask extends BackgroundTask {
                 });
 
                 Optional<String> result = graph.admin().commitSubmitNoLogs();
-                if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
+                /*if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
                     String logs = result.get();
                     addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
                                     .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
                             PostProcessingTask.createConfig(graph.keyspace(), logs));
 
                     postProcessor().updateCounts(graph.keyspace(), Json.read(logs));
-                }
+                }*/
                 return true;
             }
         }
