@@ -19,20 +19,25 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import mjson.Json;
 import spark.Request;
 import spark.Response;
 import spark.Service;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import java.util.concurrent.CompletableFuture;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
@@ -71,7 +76,7 @@ public class CommitLogController {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, REST.Request.KEYSPACE_PARAM));
 
         // Things to post process
-        /*TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
+        TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
         TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
         // TODO Use an engine wide executor here
@@ -80,7 +85,6 @@ public class CommitLogController {
                 CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, Json.read(req.body()))))
                 .join();
 
-        return objectMapper.writeValueAsString(postProcessingTaskState);*/
-        return "";
+        return objectMapper.writeValueAsString(postProcessingTaskState);
     }
 }
