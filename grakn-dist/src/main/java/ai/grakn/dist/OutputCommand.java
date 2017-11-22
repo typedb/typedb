@@ -31,4 +31,8 @@ class OutputCommand {
         this.exitStatus = exitStatus;
     }
 
+    boolean succes() {
+        return exitStatus==0;
+    }
+
 }

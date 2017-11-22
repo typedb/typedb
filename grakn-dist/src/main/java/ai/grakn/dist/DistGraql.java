@@ -18,7 +18,6 @@
 
 package ai.grakn.dist;
 
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.migration.json.JsonMigrator;
@@ -33,19 +32,7 @@ import java.util.Arrays;
  */
 public class DistGraql {
 
-    /**
-     * In order to run this method you should have 'grakn.dir' set
-     *
-     * @param args
-     */
     public static void main(String[] args) {
-        String home = GraknSystemProperty.CURRENT_DIRECTORY.value();
-
-        if(home==null) {
-            System.out.println("Problem with bash script: cannot run Grakn");
-            return;
-        }
-
         DistGraql application = new DistGraql();
         try {
             application.run(args);
@@ -56,14 +43,14 @@ public class DistGraql {
     }
 
     private void run(String[] args) {
-        String arg0 = args.length > 0 ? args[0] : "";
+        String context = args.length > 0 ? args[0] : "";
 
-        switch (arg0) {
+        switch (context) {
             case "console":
-                GraqlShell.main(Arrays.copyOfRange(args, 1, args.length));
+                GraqlShell.main(valuesFrom(args, 1));
                 break;
             case "migrate":
-                migrate(Arrays.copyOfRange(args, 1, args.length));
+                migrate(valuesFrom(args, 1));
                 break;
             case "version":
                 version();
@@ -74,30 +61,34 @@ public class DistGraql {
     }
 
     private void migrate(String[] args) {
-        String arg0 = args.length > 0 ? args[0] : "";
+        String option = args.length > 0 ? args[0] : "";
 
-        switch (arg0) {
+        switch (option) {
             case "csv":
-                CSVMigrator.main(Arrays.copyOfRange(args, 1, args.length));
+                CSVMigrator.main(valuesFrom(args, 1));
                 break;
             case "json":
-                JsonMigrator.main(Arrays.copyOfRange(args, 1, args.length));
+                JsonMigrator.main(valuesFrom(args, 1));
                 break;
             case "owl":
                 System.out.println("Owm migration not supported anymore");
                 break;
             case "export":
-                ai.grakn.migration.export.Main.main(Arrays.copyOfRange(args, 1, args.length));
+                ai.grakn.migration.export.Main.main(valuesFrom(args, 1));
                 break;
             case "sql":
-                SQLMigrator.main(Arrays.copyOfRange(args, 1, args.length));
+                SQLMigrator.main(valuesFrom(args, 1));
                 break;
             case "xml":
-                XmlMigrator.main(Arrays.copyOfRange(args, 1, args.length));
+                XmlMigrator.main(valuesFrom(args, 1));
                 break;
             default:
-                XmlMigrator.main(new String[]{"-h"});
+                help();
         }
+    }
+
+    private String[] valuesFrom(String[] args, int index) {
+        return Arrays.copyOfRange(args, index, args.length);
     }
 
     private void help() {

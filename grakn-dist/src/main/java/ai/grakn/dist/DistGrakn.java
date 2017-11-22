@@ -33,6 +33,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Scanner;
@@ -47,9 +49,9 @@ public class DistGrakn {
     private static final String QUEUE = "queue";
     private static final String STORAGE = "storage";
 
-    private static final String GRAKN_PID="/tmp/grakn.pid";
-    private static final String QUEUE_PID="/tmp/grakn-queue.pid";
-    private static final String STORAGE_PID="/tmp/grakn-storage.pid";
+    private static final Path GRAKN_PID = Paths.get(File.separator,"tmp","grakn.pid");
+    private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
+    private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
 
     private static final long STORAGE_STARTUP_TIMEOUT_S=60;
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
@@ -58,14 +60,13 @@ public class DistGrakn {
     private static final long WAIT_INTERVAL_S=2;
 
     private final GraknConfig graknConfig;
-    private final String configPath;
+    private final Path configPath;
+    private final Path homePath;
 
     private boolean storageIsStarted;
     private boolean queueIsStarted;
     private boolean graknIsStarted;
     private String classpath;
-
-    private final String homePath;
 
     private final ProcessHandler processHandler;
 
@@ -75,37 +76,33 @@ public class DistGrakn {
      * @param args
      */
     public static void main(String[] args) {
-        String homeStatic = GraknSystemProperty.CURRENT_DIRECTORY.value();
-        String configStatic = GraknSystemProperty.CONFIGURATION_FILE.value();
+        Path homeStatic;
+        Path configStatic;
+        DistGrakn application;
+        try {
+            homeStatic = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
+            configStatic = Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
+            application = new DistGrakn(homeStatic,configStatic, new ProcessHandler());
 
-        if(homeStatic==null || configStatic==null) {
+            String context = args.length > 0 ? args[0] : "";
+            String action = args.length > 1 ? args[1] : "";
+            String option = args.length > 2 ? args[2] : "";
+            application.run(context,action,option);
+        } catch (InvalidPathException ex) {
             System.out.println("Problem with bash script: cannot run Graql");
             return;
-        }
-
-        String arg0 = args.length > 0 ? args[0] : "";
-        String arg1 = args.length > 1 ? args[1] : "";
-        String arg2 = args.length > 2 ? args[2] : "";
-
-        DistGrakn application = new DistGrakn(homeStatic,configStatic, new ProcessHandler());
-        try {
-            application.run(new String[]{arg0,arg1,arg2});
         } catch (RuntimeException ex) {
             System.out.println(ex.getMessage());
+            return;
         }
-
     }
 
-    public void run(String[] args) {
+    public void run(String context, String action, String option) {
         classpath = processHandler.getClassPathFrom(homePath);
 
-        String arg0 = args.length > 0 ? args[0] : "";
-        String arg1 = args.length > 1 ? args[1] : "";
-        String arg2 = args.length > 2 ? args[2] : "";
-
-        switch (arg0) {
+        switch (context) {
             case "server":
-                server(arg1, arg2);
+                server(action, option);
                 break;
             case "version":
                 version();
@@ -115,10 +112,10 @@ public class DistGrakn {
         }
     }
 
-    public DistGrakn(String homePath, String configPath, ProcessHandler processHandler) {
+    public DistGrakn(Path homePath, Path configPath, ProcessHandler processHandler) {
         this.homePath = homePath;
         this.configPath = configPath;
-        this.graknConfig = GraknConfig.read(new File(configPath));
+        this.graknConfig = GraknConfig.read(configPath.toFile());
         this.processHandler = processHandler;
     }
 
@@ -139,16 +136,16 @@ public class DistGrakn {
                 "- You can then perform queries by opening a console with 'graql console'");
     }
 
-    private void server(String arg1, String arg2) {
-        switch (arg1) {
+    private void server(String action, String option) {
+        switch (action) {
             case "start":
-                graknServerStart(arg2);
+                graknServerStart(option);
                 break;
             case "stop":
-                graknServerStop(arg2);
+                graknServerStop(option);
                 break;
             case "status":
-                graknServerStatus(arg2);
+                graknServerStatus(option);
                 break;
             case "clean":
                 graknServerClean();
@@ -175,10 +172,10 @@ public class DistGrakn {
             System.out.print("Cleaning Storage...");
             System.out.flush();
             try {
-                Files.delete(Paths.get(homePath,"db","cassandra"));
-                Files.createDirectories(Paths.get(homePath,"db","cassandra","data"));
-                Files.createDirectories(Paths.get(homePath,"db","cassandra","commitlog"));
-                Files.createDirectories(Paths.get(homePath,"db","cassandra","saved_caches"));
+                Files.delete(homePath.resolve(Paths.get("db","cassandra")));
+                Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","data")));
+                Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","commitlog")));
+                Files.createDirectories(homePath.resolve(Paths.get("db","cassandra","saved_caches")));
                 System.out.println("SUCCESS");
             } catch (IOException e) {
                 System.out.println("FAILED!");
@@ -217,7 +214,7 @@ public class DistGrakn {
         processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
-                homePath +"/services/redis/"+queueBin+" flushall"
+                homePath.resolve(Paths.get("services", "redis", queueBin))+" flushall"
         },null,null);
 
 
@@ -278,7 +275,8 @@ public class DistGrakn {
         switch (arg) {
             case GRAKN: startGrakn();
                 break;
-            case QUEUE: startQueue();
+            case QUEUE:
+                queueStart();
                 break;
             case STORAGE: startStorage();
                 break;
@@ -287,21 +285,21 @@ public class DistGrakn {
 
     }
 
-    private boolean checkIfRunningBy(String pid) {
+    private boolean checkIfRunningBy(Path pidFile) {
         boolean isRunning = false;
         String processPid;
-        if (Files.exists(Paths.get(pid))) {
+        if (Files.exists(pidFile)) {
             try {
-                processPid = new String(Files.readAllBytes(Paths.get(pid)),StandardCharsets.UTF_8);
+                processPid = new String(Files.readAllBytes(pidFile),StandardCharsets.UTF_8);
                 if(processPid.trim().isEmpty()) {
                     return false;
                 }
                 OutputCommand command = processHandler.executeAndWait(new String[]{
                         "/bin/sh",
                         "-c",
-                        "ps -p "+processPid.trim()+" | wc -l"
+                        "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"
                 },null,null);
-                return Integer.parseInt(command.output.trim())>1;
+                return Integer.parseInt(command.output.trim())>0;
             } catch (NumberFormatException | IOException e) {
                 return false;
             }
@@ -334,9 +332,9 @@ public class DistGrakn {
     private void storageStartProcess() {
         System.out.print("Starting Storage...");
         System.out.flush();
-        if(Files.exists(Paths.get(STORAGE_PID))) {
+        if(Files.exists(STORAGE_PID)) {
             try {
-                Files.delete(Paths.get(STORAGE_PID));
+                Files.delete(STORAGE_PID);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -344,7 +342,7 @@ public class DistGrakn {
         OutputCommand outputCommand = processHandler.executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
-                homePath + "/services/cassandra/cassandra -p " + STORAGE_PID
+                homePath.resolve(Paths.get("services","cassandra","cassandra")) + " -p " + STORAGE_PID
         }, null, null);
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(STORAGE_STARTUP_TIMEOUT_S);
@@ -371,10 +369,6 @@ public class DistGrakn {
         }
         System.out.println("FAILED!");
         System.out.println("Unable to start Storage");
-    }
-
-    private void startQueue() {
-        queueStart();
     }
 
     private void queueStart() {
@@ -404,7 +398,7 @@ public class DistGrakn {
                 "/bin/sh",
                 "-c",
                 homePath +"/services/redis/"+queueBin+" "+ homePath +"/services/redis/redis.conf"
-        },null,new File(homePath));
+        },null,homePath.toFile());
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(QUEUE_STARTUP_TIMEOUT_S);
@@ -454,7 +448,7 @@ public class DistGrakn {
         String pid = processHandler.getPidFromPsOf(Grakn.class.getName());
 
         try {
-            Files.write(Paths.get(GRAKN_PID),pid.getBytes(StandardCharsets.UTF_8));
+            Files.write(GRAKN_PID,pid.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             System.out.println("Cannot write Grakn PID on a file");
         }
@@ -481,9 +475,9 @@ public class DistGrakn {
             }
         }
 
-        if(Files.exists(Paths.get(GRAKN_PID))) {
+        if(Files.exists(GRAKN_PID)) {
             try {
-                Files.delete(Paths.get(GRAKN_PID));
+                Files.delete(GRAKN_PID);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -514,7 +508,7 @@ public class DistGrakn {
 
     private void startAll() {
         startStorage();
-        startQueue();
+        queueStart();
         startGrakn();
 
         if(!graknIsStarted || !queueIsStarted || !storageIsStarted) {
@@ -525,9 +519,9 @@ public class DistGrakn {
 
     public void graknStopProcess() {
         String graknPid="";
-        if(Files.exists(Paths.get(GRAKN_PID))) {
+        if(Files.exists(GRAKN_PID)) {
             try {
-                graknPid = new String(Files.readAllBytes(Paths.get(GRAKN_PID)),StandardCharsets.UTF_8);
+                graknPid = new String(Files.readAllBytes(GRAKN_PID),StandardCharsets.UTF_8);
                 graknPid = graknPid.trim();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -551,7 +545,7 @@ public class DistGrakn {
             if(outputCommand.exitStatus==0) {
                 System.out.println("SUCCESS");
                 try {
-                    Files.delete(Paths.get(GRAKN_PID));
+                    Files.delete(GRAKN_PID);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -567,17 +561,16 @@ public class DistGrakn {
 
     private void queueStopProcess() {
         String queuePid="";
-        if(Files.exists(Paths.get(QUEUE_PID))) {
-            try {
-                byte[] bytes = Files.readAllBytes(Paths.get(QUEUE_PID));
-                queuePid = new String(bytes, StandardCharsets.UTF_8);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (queuePid.isEmpty()) {
-                return;
-            }
-        } else {
+        if(!Files.exists(QUEUE_PID)) {
+            return;
+        }
+        try {
+            byte[] bytes = Files.readAllBytes(QUEUE_PID);
+            queuePid = new String(bytes, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (queuePid.isEmpty()) {
             return;
         }
 
@@ -620,9 +613,9 @@ public class DistGrakn {
 
     private void storageStopProcess() {
         String storagePid="";
-        if(Files.exists(Paths.get(STORAGE_PID))) {
+        if(Files.exists(STORAGE_PID)) {
             try {
-                storagePid = new String(Files.readAllBytes(Paths.get(STORAGE_PID)),StandardCharsets.UTF_8);
+                storagePid = new String(Files.readAllBytes(STORAGE_PID),StandardCharsets.UTF_8);
                 storagePid = storagePid.trim();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -646,8 +639,8 @@ public class DistGrakn {
             if(outputCommand.exitStatus==0) {
                 System.out.println("SUCCESS");
                 try {
-                    if(Files.exists(Paths.get(STORAGE_PID))) {
-                        Files.delete(Paths.get(STORAGE_PID));
+                    if(Files.exists(STORAGE_PID)) {
+                        Files.delete(STORAGE_PID);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -677,7 +670,7 @@ public class DistGrakn {
                 "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n");
     }
 
-    private void graknServerStatus(String arg2) {
+    private void graknServerStatus(String verboseFlag) {
         if (storageIsRunning()) {
             System.out.println("Storage: RUNNING");
         } else {
@@ -695,11 +688,11 @@ public class DistGrakn {
         } else {
             System.out.println("Grakn: NOT RUNNING");
         }
-        if(arg2.equals("--verbose")) {
+        if(verboseFlag.equals("--verbose")) {
             System.out.println("======== Failure Diagnostics ========");
-            System.out.println("Grakn pid = '"+ processHandler.getPidFromFile(GRAKN_PID)+"' (from "+GRAKN_PID+"), '"+getPidOfGrakn()+"' (from ps -ef)");
-            System.out.println("Queue pid = '"+ processHandler.getPidFromFile(QUEUE_PID)+"' (from "+QUEUE_PID+"), '"+ getPidOfQueue() +"' (from ps -ef)");
-            System.out.println("Storage pid = '"+ processHandler.getPidFromFile(STORAGE_PID)+"' (from "+STORAGE_PID+"), '"+getPidOfStorage()+"' (from ps -ef)");
+            System.out.println("Grakn pid = '"+ processHandler.getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+getPidOfGrakn()+"' (from ps -ef)");
+            System.out.println("Queue pid = '"+ processHandler.getPidFromFile(QUEUE_PID).orElse("")+"' (from "+QUEUE_PID+"), '"+ getPidOfQueue() +"' (from ps -ef)");
+            System.out.println("Storage pid = '"+ processHandler.getPidFromFile(STORAGE_PID).orElse("")+"' (from "+STORAGE_PID+"), '"+getPidOfStorage()+"' (from ps -ef)");
         }
     }
 

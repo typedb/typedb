@@ -25,7 +25,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -70,16 +71,16 @@ public class ProcessHandler {
         return outputCommand;
     }
 
-    String getPidFromFile(String fileName) {
-        String pid="";
-        if (Files.exists(Paths.get(fileName))) {
+    Optional<String> getPidFromFile(Path fileName) {
+        String pid=null;
+        if (Files.exists(fileName)) {
             try {
-                pid = new String(Files.readAllBytes(Paths.get(fileName)),StandardCharsets.UTF_8).trim();
+                pid = new String(Files.readAllBytes(fileName),StandardCharsets.UTF_8).trim();
             } catch (IOException e) {
                 // DO NOTHING
             }
         }
-        return pid;
+        return Optional.ofNullable(pid);
     }
 
     String getPidFromPsOf(String processName) {
@@ -98,7 +99,7 @@ public class ProcessHandler {
         }, null, null);
     }
 
-    String getClassPathFrom(String home){
+    String getClassPathFrom(Path home){
         FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
         File folder = new File(home + File.separator+"services"+File.separator+"lib"); // services/lib folder
         File[] values = folder.listFiles(jarFiles);
