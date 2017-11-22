@@ -292,7 +292,7 @@ public class GraqlShellIT {
 
     @Test
     public void testReasonerOff() throws Exception {
-        assertShellMatches(
+        assertShellMatches(ImmutableList.of("--no_infer"),
                 "define man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
                 anything(),
                 "define person sub entity;",
@@ -309,7 +309,7 @@ public class GraqlShellIT {
 
     @Test
     public void testReasoner() throws Exception {
-        assertShellMatches(ImmutableList.of("--infer"),
+        assertShellMatches(
                 "define man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
                 anything(),
                 "define person sub entity;",

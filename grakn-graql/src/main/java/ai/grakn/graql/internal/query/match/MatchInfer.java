@@ -52,6 +52,8 @@ class MatchInfer extends MatchModifier {
 
         if (!RuleUtils.hasRules(graph)) return inner.stream(optionalGraph);
 
+        validatePattern(graph);
+
         Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Conjunction<VarPatternAdmin> conj = conjIt.next();
         ReasonerQuery conjQuery = ReasonerQueries.create(conj, graph);
