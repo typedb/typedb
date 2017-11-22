@@ -76,20 +76,20 @@ import static java.lang.Boolean.parseBoolean;
  *
  * @author Marco Scoppetta, alexandraorth
  */
-public class GraqlController {
+public class DeprecatedGraqlController {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DeprecatedGraqlController.class);
     private final EngineGraknTxFactory factory;
     private final Timer executeGraqlGetTimer;
     private final Timer executeGraqlPostTimer;
     private final Timer singleExecutionTimer;
 
-    public GraqlController(EngineGraknTxFactory factory, Service spark,
-                           MetricRegistry metricRegistry) {
+    public DeprecatedGraqlController(EngineGraknTxFactory factory, Service spark,
+                                     MetricRegistry metricRegistry) {
         this.factory = factory;
-        this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
-        this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
-        this.singleExecutionTimer = metricRegistry.timer(name(GraqlController.class, "single", "execution"));
+        this.executeGraqlGetTimer = metricRegistry.timer(name(DeprecatedGraqlController.class, "execute-graql-get"));
+        this.executeGraqlPostTimer = metricRegistry.timer(name(DeprecatedGraqlController.class, "execute-graql-post"));
+        this.singleExecutionTimer = metricRegistry.timer(name(DeprecatedGraqlController.class, "single", "execution"));
 
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
 
