@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+set -e
+
+cd ..
+
 # validate the number of arguments
 if [ "$#" -ne "1" ]; then
 	echo "Needs one argument that is the module name" >&2
