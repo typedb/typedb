@@ -54,7 +54,7 @@ public class GraqlTestUtil {
     }
 
     public static void assertNotExists(QueryBuilder qb, Pattern... patterns) {
-        assertNotExists(qb.infer(false).match(patterns));
+        assertNotExists(qb.match(patterns));
     }
 
     public static void assertNotExists(Iterable<?> iterable) {
