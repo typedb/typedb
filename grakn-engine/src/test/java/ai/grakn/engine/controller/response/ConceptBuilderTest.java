@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
 public class ConceptBuilderTest {
     public static GraknTx tx;
@@ -98,6 +100,29 @@ public class ConceptBuilderTest {
         Set<Link> playIds = entityType.plays().map(Link::create).collect(Collectors.toSet());
         Set<Link> playWrapperIds = entityTypeWrapper.plays();
         assertEquals(playIds, playWrapperIds);
+    }
+
+    @Test
+    public void whenWrappingTheInstancesOfAType_EnsureInstancesAreEmbedded(){
+        ai.grakn.concept.EntityType entityType = tx.getEntityType("person");
+        Things things = ConceptBuilder.buildThings(entityType);
+
+        entityType.instances().forEach(realInstance -> {
+            Concept wrapperInstance = ConceptBuilder.build(realInstance);
+            assertTrue("Instance missing from type instances representation", things.instances().contains(wrapperInstance));
+        });
+    }
+
+    @Test
+    public void whenWrappingInstancesOfATypeWithLimitAndOffSet_EnsureReturnedInstancesMatch(){
+        ai.grakn.concept.EntityType entityType = tx.getEntityType("person");
+        Things things = ConceptBuilder.buildThings(entityType, 0, 10);
+        assertEquals(10, things.instances().size());
+
+        Things things2 = ConceptBuilder.buildThings(entityType, 10, 10);
+        assertEquals(10, things2.instances().size());
+
+        things.instances().forEach(instanceWrapper -> assertFalse(things2.instances().contains(instanceWrapper)));
     }
 }
 

@@ -52,6 +52,40 @@ public class ConceptBuilder {
         return (X) response;
     }
 
+    /**
+     * Gets all the instances of a specific {@link ai.grakn.concept.Type} and wraps them in a {@link Things}
+     * response object
+     *
+     * @param type The {@link ai.grakn.concept.Type} to extract the {@link ai.grakn.concept.Thing}s from
+     * @return The wrapper of the {@link ai.grakn.concept.Thing}s
+     */
+    public static Things buildThings(ai.grakn.concept.Type type){
+        return buildThings(type, 0, 100);
+    }
+
+    public static Things buildThingsWithOffset(ai.grakn.concept.Type type, int offset){
+        return buildThings(type, offset, 100);
+    }
+
+    public static Things buildThingsWithLimit(ai.grakn.concept.Type type, int limit){
+        return buildThings(type, 0, limit);
+    }
+
+    public static Things buildThings(ai.grakn.concept.Type type, int offset, int limit){
+        Link selfLink = Link.createInstanceLink(type);
+        Link next = Link.createInstanceLink(type, offset + limit, limit);
+
+        int previousIndex = offset - limit;
+        if(previousIndex < 0) previousIndex = 0;
+        Link previous = Link.createInstanceLink(type, previousIndex, limit);
+
+        //TODO: This does not actually scale. The DB is still read in this instance
+        Set<Thing> things = type.instances().skip(offset).limit(limit).
+                map(ConceptBuilder::buildThing).collect(Collectors.toSet());
+
+        return Things.create(selfLink, things, next, previous);
+    }
+
     //TODO: This will scale poorly with super nodes. Need to introduce some sort of paging maybe?
     private static Thing buildThing(ai.grakn.concept.Thing thing) {
         Link selfLink = Link.create(thing);
