@@ -21,10 +21,10 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
+import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.DeprecatedGraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.session.RemoteSession;

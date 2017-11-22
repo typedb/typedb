@@ -58,9 +58,9 @@ import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
-import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MULTI;
+import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -76,6 +76,7 @@ import static java.lang.Boolean.parseBoolean;
  *
  * @author Marco Scoppetta, alexandraorth
  */
+@Deprecated
 public class DeprecatedGraqlController {
 
     private static final Logger LOG = LoggerFactory.getLogger(DeprecatedGraqlController.class);
@@ -106,7 +107,7 @@ public class DeprecatedGraqlController {
     @ApiOperation(value = "Execute an arbitrary Graql query")
     @ApiImplicitParams({
             @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "body"),
-            @ApiImplicitParam(name = INFER, value = "Enable inference", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = EXECUTE_WITH_INFERENCE, value = "Enable inference", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(
                     name = LIMIT_EMBEDDED,
                     value = "Limit of embedded objects in HAL response", dataType = "int", paramType = "query"
@@ -115,13 +116,13 @@ public class DeprecatedGraqlController {
                     name = DEFINE_ALL_VARS,
                     value = "Define all variables in response", dataType = "boolean", paramType = "query"
             ),
-            @ApiImplicitParam(name = MULTI, dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = ALLOW_MULTIPLE_QUERIES, dataType = "boolean", paramType = "query")
     })
     private Object executeGraql(Request request, Response response) {
         String queryString = mandatoryBody(request);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
-        Optional<Boolean> infer = queryParameter(request, INFER).map(Boolean::parseBoolean);
-        boolean multi = parseBoolean(queryParameter(request, MULTI).orElse("false"));
+        Optional<Boolean> infer = queryParameter(request, EXECUTE_WITH_INFERENCE).map(Boolean::parseBoolean);
+        boolean multi = parseBoolean(queryParameter(request, ALLOW_MULTIPLE_QUERIES).orElse("false"));
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = Requests.getAcceptType(request);
 

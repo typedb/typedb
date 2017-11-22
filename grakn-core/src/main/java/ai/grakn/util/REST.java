@@ -134,8 +134,8 @@ public class REST {
          */
         public static final class Graql {
             public static final String QUERY = "query";
-            public static final String INFER = "infer";
-            public static final String MULTI = "multi";
+            public static final String EXECUTE_WITH_INFERENCE = "infer";
+            public static final String ALLOW_MULTIPLE_QUERIES = "multi";
             public static final String LIMIT_EMBEDDED = "limitEmbedded";
             public static final String DEFINE_ALL_VARS = "defineAllVars";
         }

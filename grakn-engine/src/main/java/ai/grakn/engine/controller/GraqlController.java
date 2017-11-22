@@ -19,12 +19,16 @@
 package ai.grakn.engine.controller;
 
 
+import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -36,14 +40,19 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
-import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
+import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MULTI;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.lang.Boolean.parseBoolean;
@@ -53,7 +62,7 @@ import static java.lang.Boolean.parseBoolean;
  *     Endpoints used to query for {@link ai.grakn.concept.Concept}s via the graql language
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Marco Scoppetta, alexandraorth, Filipe Peliz Pinto Teixeira
  */
 public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(DeprecatedGraqlController.class);
@@ -96,9 +105,31 @@ public class GraqlController {
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
         //Run the query with reasoning on or off
-        Optional<Boolean> infer = queryParameter(request, INFER).map(Boolean::parseBoolean);
+        Optional<Boolean> infer = queryParameter(request, EXECUTE_WITH_INFERENCE).map(Boolean::parseBoolean);
 
-        boolean multi = parseBoolean(queryParameter(request, MULTI).orElse("false"));
+        //Allow multiple queries to be executed
+        boolean multiQuery = parseBoolean(queryParameter(request, ALLOW_MULTIPLE_QUERIES).orElse("false"));
+
+        //Define all anonymous variables in the query
+        Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
+
+        //Execute the query and get the results
+        try (GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraql.time()) {
+
+            //Configure how the query should be executed
+            QueryBuilder builder = graph.graql();
+            infer.ifPresent(builder::infer);
+
+            QueryParser parser = builder.parser();
+            defineAllVars.ifPresent(parser::defineAllVars);
+
+            if(multiQuery){
+                Stream<Query<?>> query = parser.parseList(queryString);
+                List<?> collectedResults = query.map(Query::execute).collect(Collectors.toList());
+            } else {
+
+            }
+        }
 
         return "";
     }

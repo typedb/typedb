@@ -37,7 +37,7 @@ import static ai.grakn.engine.controller.DeprecatedGraqlControllerReadOnlyTest.e
 import static ai.grakn.engine.controller.DeprecatedGraqlControllerReadOnlyTest.jsonResponse;
 import static ai.grakn.engine.controller.DeprecatedGraqlControllerReadOnlyTest.stringResponse;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
-import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -203,7 +203,7 @@ public class DeprecatedGraqlControllerInsertTest {
     private Response sendRequest(String query, String acceptType){
         return RestAssured.with()
                 .accept(acceptType)
-                .queryParam(INFER, false)
+                .queryParam(EXECUTE_WITH_INFERENCE, false)
                 .body(query)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
     }

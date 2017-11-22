@@ -35,7 +35,7 @@ import org.junit.Test;
 
 import static ai.grakn.engine.controller.DeprecatedGraqlControllerReadOnlyTest.exception;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
-import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -176,7 +176,7 @@ public class DeprecatedGraqlControllerDeleteTest {
 
     private Response sendRequest(String query){
         return RestAssured.with()
-                .queryParam(INFER, false)
+                .queryParam(EXECUTE_WITH_INFERENCE, false)
                 .accept(APPLICATION_TEXT)
                 .body(query)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, tx.keyspace().getValue()));

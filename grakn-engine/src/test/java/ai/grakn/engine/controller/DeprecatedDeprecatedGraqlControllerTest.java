@@ -29,9 +29,9 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
-import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MULTI;
+import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
@@ -73,9 +73,9 @@ public class DeprecatedDeprecatedGraqlControllerTest {
                                String keyspace, boolean multi) {
         return RestAssured.with()
                 .body(query)
-                .queryParam(INFER, reasoner)
+                .queryParam(EXECUTE_WITH_INFERENCE, reasoner)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
-                .queryParam(MULTI, multi)
+                .queryParam(ALLOW_MULTIPLE_QUERIES, multi)
                 .queryParam(DEFINE_ALL_VARS, true)
                 .accept(acceptType)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace));
