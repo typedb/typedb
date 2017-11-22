@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.api;
+package ai.grakn.engine.controller;
 
 
 import ai.grakn.GraknTx;
