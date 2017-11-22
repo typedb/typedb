@@ -92,7 +92,7 @@ public class JacksonPrinter implements Printer<Object>{
     @Override
     public Object graqlString(boolean inner, Map map) {
         Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
-        limitEmbedded.ifPresent(entries::limit);
+        if(limitEmbedded.isPresent()) entries = entries.limit(limitEmbedded.get());
 
         return entries.collect(Collectors.toMap(
                 entry -> graqlString(inner, entry.getKey()),
@@ -103,7 +103,7 @@ public class JacksonPrinter implements Printer<Object>{
     @Override
     public Object graqlString(boolean inner, Collection collection) {
         Stream stream = collection.stream();
-        limitEmbedded.ifPresent(stream::limit);
+        if(limitEmbedded.isPresent()) stream = stream.limit(limitEmbedded.get());
         return stream.map(object -> graqlString(inner, object)).collect(Collectors.toSet());
     }
 
