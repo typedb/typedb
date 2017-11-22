@@ -24,6 +24,7 @@ import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -273,7 +274,7 @@ public class GraqlControllerReadOnlyTest {
         Response response = sendRequest(APPLICATION_JSON_GRAQL);
 
         Json expectedResponse = Json.read(
-                Printers.json().graqlString(sampleKB.tx().graql().parse(query).execute()));
+                new JacksonPrinter().graqlString(sampleKB.tx().graql().parse(query).execute()));
         assertThat(jsonResponse(response), equalTo(expectedResponse));
     }
 

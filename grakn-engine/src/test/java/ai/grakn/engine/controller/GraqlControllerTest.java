@@ -4,6 +4,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
@@ -23,15 +24,14 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.util.concurrent.locks.Lock;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
@@ -45,9 +45,7 @@ public class GraqlControllerTest {
     private static final LockProvider mockLockProvider = mock(LockProvider.class);
     private static final Lock mockLock = mock(Lock.class);
 
-    private Printer<Json> jsonPrinter;
-    private Printer<Function<StringBuilder, StringBuilder>> graqlPrinter;
-    private Printer halPrinter;
+    private JacksonPrinter printer;
 
     private Response sendQuery(String query) {
         return sendQuery(query, APPLICATION_JSON_GRAQL);
@@ -97,26 +95,13 @@ public class GraqlControllerTest {
 
     @Before
     public void setUp() {
-        jsonPrinter = Printers.json();
-        graqlPrinter = Printers.graql(false);
-        halPrinter = Printers.hal(sampleKB.tx().keyspace(), -1);
+        printer = new JacksonPrinter();
         when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
     @Test
     public void whenRunningGetQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; get;", jsonPrinter,
-                APPLICATION_JSON_GRAQL);
-    }
-
-    @Test
-    public void whenRunningGetQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; get;", graqlPrinter, APPLICATION_TEXT);
-    }
-
-    @Test
-    public void whenRunningGetQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; get;", halPrinter, APPLICATION_HAL);
+        assertResponseSameAsJavaGraql("match $x isa movie; get;", printer, APPLICATION_JSON_GRAQL);
     }
 
     @Test
@@ -134,18 +119,7 @@ public class GraqlControllerTest {
 
     @Test
     public void whenRunningIdempotentInsertQuery_JsonResponseIsTheSameAsJavaGraql() {
-        assertResponseSameAsJavaGraql("insert $x label movie;", jsonPrinter,
-                APPLICATION_JSON_GRAQL);
-    }
-
-    @Test
-    public void whenRunningIdempotentInsertQuery_GraqlResponseIsTheSameAsJavaGraql() {
-        assertResponseSameAsJavaGraql("insert $x label movie;", graqlPrinter, APPLICATION_TEXT);
-    }
-
-    @Test
-    public void whenRunningIdempotentInsertQuery_HalResponseIsTheSameAsJavaGraql() {
-        assertResponseSameAsJavaGraql("insert $x label movie;", halPrinter, APPLICATION_HAL);
+        assertResponseSameAsJavaGraql("insert $x label movie;", printer, APPLICATION_JSON_GRAQL);
     }
 
     @Test
@@ -156,7 +130,7 @@ public class GraqlControllerTest {
         resp.then().statusCode(200);
         sampleKB.rollback();
         Stream<Query<?>> query = sampleKB.tx().graql().parser().parseList(queryString);
-        String graqlResult = jsonPrinter.graqlString(query.map(Query::execute).collect(
+        String graqlResult = printer.graqlString(query.map(Query::execute).collect(
                 Collectors.toList()));
         Json expected = Json.read(graqlResult);
         assertEquals(expected, Json.read(resp.body().asString()));
@@ -175,38 +149,14 @@ public class GraqlControllerTest {
 
     @Test
     public void wehnRunningAggregateQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", jsonPrinter,
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", printer,
                 APPLICATION_JSON_GRAQL);
-    }
-
-    @Test
-    public void whenRunningAggregateQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", graqlPrinter,
-                APPLICATION_TEXT);
-    }
-
-    @Test
-    public void whenRunningAggregateQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", halPrinter,
-                APPLICATION_HAL);
     }
 
     @Test
     public void whenRunningAskQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", jsonPrinter,
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", printer,
                 APPLICATION_JSON_GRAQL);
-    }
-
-    @Test
-    public void whenRunningAskQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", graqlPrinter,
-                APPLICATION_TEXT);
-    }
-
-    @Test
-    public void whenRunningAskQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", halPrinter,
-                APPLICATION_HAL);
     }
 
     @Test

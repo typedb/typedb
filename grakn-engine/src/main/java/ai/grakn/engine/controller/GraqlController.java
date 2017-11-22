@@ -136,7 +136,6 @@ public class GraqlController {
             QueryParser parser = builder.parser();
             defineAllVars.ifPresent(parser::defineAllVars);
 
-
             response.status(SC_OK);
             return executeQuery(tx, queryString, multiQuery, parser);
         }
