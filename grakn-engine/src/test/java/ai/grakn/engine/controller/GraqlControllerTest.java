@@ -12,7 +12,6 @@ import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -38,7 +37,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GraqlControllerTest {
-    private static final ObjectMapper mapper = new ObjectMapper();
     private static final LockProvider mockLockProvider = mock(LockProvider.class);
     private static final Lock mockLock = mock(Lock.class);
 
@@ -160,27 +158,6 @@ public class GraqlControllerTest {
         int limitEmbedded = 10;
         Response resp = sendQuery(queryString, APPLICATION_JSON, false, limitEmbedded, false);
         resp.then().statusCode(200);
-    }
-
-    @Test
-    public void whenMatchingRuleExplanation_HALResponseContainsInferredRelation() {
-        String queryString = "match ($x,$y) isa marriage; offset 0; limit 1; get;";
-        int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_JSON, true, limitEmbedded, genealogyKB.tx().keyspace().getValue(), false);
-        resp.then().statusCode(200);
-        Json jsonResp = Json.read(resp.body().asString());
-        jsonResp.asJsonList().stream()
-                .flatMap(x -> x.asJsonMap().entrySet().stream())
-                .filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y")))
-                .map(entry -> entry.getValue())
-                .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("marriage"))
-                .forEach(thing -> {
-                    assertEquals("INFERRED_RELATIONSHIP", thing.at("_baseType").asString());
-                    thing.at("_embedded").at("spouse").asJsonList().forEach(spouse -> {
-                        assertEquals("ENTITY", spouse.at("_baseType").asString());
-                    });
-                });
-
     }
 
     @Test
