@@ -156,7 +156,6 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
-        public static final String GET_METHOD = "TASK_ID";
     }
 
     /**
@@ -172,7 +171,6 @@ public class REST {
         public static class ContentType {
             public static final String APPLICATION_JSON_GRAQL = "application/graql+json";
             public static final String APPLICATION_JSON = "application/json";
-            public static final String APPLICATION_HAL ="application/hal+json";
             public static final String APPLICATION_ALL ="*/*";
         }
 

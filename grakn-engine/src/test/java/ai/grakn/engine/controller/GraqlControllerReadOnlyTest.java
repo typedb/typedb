@@ -56,9 +56,8 @@ import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -210,7 +209,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlMatchWithHALTypeAndNumberEmbedded1_ResponsesContainAtMost1Concept() {
         Response response =
-                sendRequest("match $x isa movie; get;", APPLICATION_HAL, false, 1);
+                sendRequest("match $x isa movie; get;", APPLICATION_JSON, false, 1);
 
         jsonResponse(response).asJsonList().forEach(e -> {
             Json embedded = e.asJsonMap().get("x").asJsonMap().get("_embedded");
@@ -223,7 +222,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlMatchWithHALType_ResponseIsCorrectHal() {
         String queryString = "match $x isa movie; get;";
-        Response response = sendRequest(queryString, APPLICATION_HAL);
+        Response response = sendRequest(queryString, APPLICATION_JSON);
 
         Printer<?> printer = Printers.hal(mockTx.keyspace(), -1);
         Query<?> query = sampleKB.tx().graql().parse(queryString);
@@ -234,14 +233,14 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithHALType_ResponseContentTypeIsHal() {
-        Response response = sendRequest(APPLICATION_HAL);
+        Response response = sendRequest(APPLICATION_JSON);
 
-        assertThat(response.contentType(), equalTo(APPLICATION_HAL));
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON));
     }
 
     @Test
     public void GETGraqlMatchWithHALTypeAndEmptyResponse_ResponseIsEmptyJsonArray() {
-        Response response = sendRequest("match $x isa runtime; get;", APPLICATION_HAL);
+        Response response = sendRequest("match $x isa runtime; get;", APPLICATION_JSON);
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }
@@ -348,9 +347,9 @@ public class GraqlControllerReadOnlyTest {
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendRequest(query, APPLICATION_HAL);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
-        assertThat(response.contentType(), equalTo(APPLICATION_HAL));
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON));
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
@@ -362,7 +361,7 @@ public class GraqlControllerReadOnlyTest {
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendRequest(query, APPLICATION_HAL);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -377,7 +376,7 @@ public class GraqlControllerReadOnlyTest {
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendRequest(query, APPLICATION_HAL);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         assertThat(jsonResponse(response).asJsonList().size(), greaterThan(0));
     }
@@ -392,7 +391,7 @@ public class GraqlControllerReadOnlyTest {
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendRequest(query, APPLICATION_HAL);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         jsonResponse(response).asJsonList().forEach(object -> {
             assertTrue(object.has(ID_PROPERTY));
@@ -408,7 +407,7 @@ public class GraqlControllerReadOnlyTest {
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendRequest(query, APPLICATION_HAL);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(jsonResponse(response), equalTo(Json.nil()));
