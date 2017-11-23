@@ -306,14 +306,6 @@ public class GraqlControllerReadOnlyTest {
     }
 
     @Test
-    public void GETGraqlAggregateWithTextType_ResponseContentTypeIsText() {
-        String query = "match $x isa movie; aggregate count;";
-        Response response = sendRequest(query, APPLICATION_TEXT);
-
-        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
-    @Test
     public void GETGraqlComputeWithTextType_ResponseContentTypeIsText() {
         String query = "compute count in movie;";
         Response response = sendRequest(query, APPLICATION_TEXT);
