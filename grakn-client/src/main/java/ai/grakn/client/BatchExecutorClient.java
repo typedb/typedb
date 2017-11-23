@@ -20,6 +20,7 @@ package ai.grakn.client;
 
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
+import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -144,6 +145,11 @@ public class BatchExecutorClient implements Closeable {
 
     public static Builder newBuilder() {
         return new Builder();
+    }
+
+    //TODO: Remove this method used only by docs tests
+    public static Builder newBuilderforURI(SimpleURI simpleURI) {
+        return new Builder().taskClient(new GraknClient(simpleURI));
     }
 
     /**
