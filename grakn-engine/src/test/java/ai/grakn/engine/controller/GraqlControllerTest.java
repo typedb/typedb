@@ -33,7 +33,6 @@ import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -218,25 +217,6 @@ public class GraqlControllerTest {
                     assertEquals("RELATIONSHIP", thing.at("_baseType").asString());
                 });
 
-    }
-
-    @Test
-    public void whenMatchingSchema_NoInstancesInResponse() {
-        String queryString = "match $x sub thing; get;";
-        Response resp = sendQuery(queryString, APPLICATION_JSON, false, -1, false);
-
-
-        Json jsonResp = Json.read(resp.body().asString());
-        jsonResp.asJsonList().stream().map(map -> map.at("x")).forEach(thing -> {
-            assertNotEquals("ENTITY", thing.at("_baseType").asString());
-            if (thing.has("_embedded")) {
-                thing.at("_embedded").asJsonMap().entrySet().forEach(stringJsonEntry -> {
-                    stringJsonEntry.getValue().asJsonList().forEach(embeddedObj -> {
-                        assertNotEquals("ENTITY", embeddedObj.at("_baseType").asString());
-                    });
-                });
-            }
-        });
     }
 
     @Test

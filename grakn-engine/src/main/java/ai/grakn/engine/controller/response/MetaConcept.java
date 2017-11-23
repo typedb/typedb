@@ -47,6 +47,6 @@ public abstract class MetaConcept extends SchemaConcept{
             @JsonProperty("super") @Nullable Link sup,
             @JsonProperty("subs") Set<Link> subs
     ){
-        return new AutoValue_MetaConcept(Schema.MetaSchema.THING.name(), id, selfLink, label, implicit, sup, subs);
+        return new AutoValue_MetaConcept(Schema.BaseType.TYPE.name(), id, selfLink, label, implicit, sup, subs);
     }
 }
