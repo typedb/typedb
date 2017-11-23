@@ -24,6 +24,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -98,8 +100,19 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void whenRunningGetQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseMatchesExpectedObject("match $x isa movie; get;");
+    public void whenRunningGetQuery_EnsureAllInstancesAreReturned() {
+        Set<Concept> expectedInstances = sampleKB.tx().getEntityType("movie").instances().
+                map(ConceptBuilder::<Concept>build).collect(Collectors.toSet());
+
+        List<Json> json = Json.read(sendQuery("match $x isa movie; get;", APPLICATION_JSON).body().asString()).
+                asJsonList();
+
+        Set<Concept> instances = json.stream().
+                map(j -> j.at("x")).
+                map(JsonConceptBuilder::<Concept>build).
+                collect(Collectors.toSet());
+
+        assertEquals(expectedInstances, instances);
     }
 
     @Test
@@ -150,7 +163,7 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void wehnRunningAggregateQuery_JsonResponseIsTheSameAsJava() {
+    public void whenRunningAggregateQuery_JsonResponseIsTheSameAsJava() {
         assertResponseMatchesExpectedObject("match $x isa movie; aggregate count;");
     }
 
@@ -231,4 +244,5 @@ public class GraqlControllerTest {
 
         assertEquals(expected.toString(), resp.body().asString());
     }
+
 }
