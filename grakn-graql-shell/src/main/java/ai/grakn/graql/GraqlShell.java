@@ -178,7 +178,7 @@ public class GraqlShell {
         options.addOption("o", "output", true, "output format for results");
         options.addOption("u", "user", true, "username to sign in");
         options.addOption("p", "pass", true, "password to sign in");
-        options.addOption("n", "infer", false, "perform inference on results");
+        options.addOption("n", "no_infer", false, "do not perform inference on results");
         options.addOption("m", "materialise", false, "materialise inferred results");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
@@ -229,7 +229,7 @@ public class GraqlShell {
             return false;
         }
 
-        boolean infer = cmd.hasOption("n");
+        boolean infer = !cmd.hasOption("n");
         boolean materialise = cmd.hasOption("m");
 
         if (cmd.hasOption("b")) {
