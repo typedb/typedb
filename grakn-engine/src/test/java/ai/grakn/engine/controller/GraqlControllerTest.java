@@ -2,6 +2,9 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.controller.response.Concept;
+import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.printer.JacksonPrinter;
@@ -113,8 +116,12 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void whenRunningIdempotentInsertQuery_JsonResponseCanBeMappedToJavaObject() {
-        assertResponseMatchesExpectedObject("insert $x label movie;");
+    public void whenRunningInsertQuery_JsonResponseCanBeMappedToJavaObject() {
+        Concept expectedConcept = ConceptBuilder.build(sampleKB.tx().getEntityType("movie"));
+        Json json = Json.read(sendQuery("insert $x label movie;", APPLICATION_JSON).body().asString()).
+                asJsonList().iterator().next().at("x");
+        Concept concept = JsonConceptBuilder.build(json);
+        assertEquals(expectedConcept, concept);
     }
 
     @Test
