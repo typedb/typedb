@@ -45,6 +45,10 @@ import java.io.IOException;
 public class JsonConceptBuilder {
     private static ObjectMapper mapper = new ObjectMapper();
 
+    public static <X extends Concept> X build(Json jsonRepresentation){
+        return build(jsonRepresentation.toString());
+    }
+
     public static <X extends Concept> X build(String jsonRepresentation){
         Schema.BaseType baseType = Schema.BaseType.valueOf(Json.read(jsonRepresentation).at("base-type").asString());
 

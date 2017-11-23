@@ -160,8 +160,7 @@ public class ConceptControllerTest {
         //Manual Check is necessary due to collection containing mixture of concepts
         String request = REST.resolveTemplate(REST.WebPath.KEYSPACE_TYPE, keyspace.getValue());
         List<Json> response = Json.read(RestAssured.when().get(request).body().asString()).asJsonList();
-        Set<Concept> types = response.stream().
-                map(json -> JsonConceptBuilder.<Concept>build(json.toString())).collect(Collectors.toSet());
+        Set<Concept> types = response.stream().map(JsonConceptBuilder::<Concept>build).collect(Collectors.toSet());
 
         assertTrue(String.format("Type {$s} missing from response", relationshipTypeWrapper), types.contains(relationshipTypeWrapper));
         assertTrue(String.format("Type {$s} missing from response", attributeTypeWrapper), types.contains(attributeTypeWrapper));
