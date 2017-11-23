@@ -145,6 +145,7 @@ public enum ErrorMessage {
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
     MUST_BE_ATTRIBUTE_TYPE("type '%s' must be a attribute-type"),
+    ID_NOT_FOUND("id '%s' not found"),
     LABEL_NOT_FOUND("label '%s' not found"),
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
     NOT_A_RELATION_TYPE("'%s' is not a relation type. perhaps you forgot to separate your statements with a ';'?"),

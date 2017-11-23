@@ -172,8 +172,7 @@ public class GraqlDocsTest {
         Matcher matcher = GRAQL_COMMIT.matcher(line);
         matcher.find();
         line = matcher.group(1);
-        //TODO switching reasoning off cause there's a bug in applying resource rules to generic ($x, $y) relation patterns
-        graph.graql().infer(false).parseList(line).forEach(Query::execute);
+        graph.graql().parseList(line).forEach(Query::execute);
     }
 
 }

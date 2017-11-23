@@ -71,7 +71,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -432,9 +431,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     .collect(Collectors.toSet());
             getAtoms(IdPredicate.class).forEach(predicates::add);
 
-            // the mapping function is declared separately to please the Eclipse compiler
-            Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
-            substitution = new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
+            HashMap<Var, Concept> answerMap = new HashMap<>();
+            predicates.forEach(p -> {
+                Concept concept = tx().getConcept(p.getPredicate());
+                if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                answerMap.put(p.getVarName(), concept);
+            });
+            substitution = new QueryAnswer(answerMap);
         }
         return substitution;
     }
@@ -443,7 +446,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Answer answer = new QueryAnswer();
         getAtoms(RelationshipAtom.class)
                 .flatMap(RelationshipAtom::getRolePredicates)
-                .forEach(p -> answer.put(p.getVarName(), tx().getConcept(p.getPredicate())));
+                .forEach(p -> {
+                    Concept concept = tx().getConcept(p.getPredicate());
+                    if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                    answer.put(p.getVarName(), concept);
+                });
         return answer;
     }
 
