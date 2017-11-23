@@ -58,11 +58,6 @@ public class IsaAtom extends TypeAtom {
     protected IsaAtom(TypeAtom a) { super(a);}
 
     @Override
-    public boolean isAllowedToFormRuleHead(){
-        return getSchemaConcept() != null;
-    }
-
-    @Override
     public String toString(){
         String typeString = (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") + "(" + getVarName() + ")";
         return typeString + getPredicates().map(Predicate::toString).collect(Collectors.joining(""));

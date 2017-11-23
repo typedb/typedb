@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -95,6 +96,30 @@ public abstract class Atom extends AtomicBase {
                         .filter(at -> typesCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
+    }
+
+    @Override
+    public Set<String> validateAsRuleHead(Rule rule){
+        Set<String> errors = new HashSet<>();
+        Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(Collectors.toSet());
+        Set<Var> varNames = Sets.difference(
+                getVarNames(),
+                this.getInnerPredicates().map(AtomicBase::getVarName).collect(Collectors.toSet())
+        );
+        boolean unboundVariables = varNames.stream()
+                .filter(var -> !parentAtoms.stream().filter(at -> at.getVarNames().contains(var)).findFirst().isPresent())
+                .findFirst().isPresent();
+        if (unboundVariables) {
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
+        }
+
+        SchemaConcept schemaConcept = getSchemaConcept();
+        if (schemaConcept == null){
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+        } else if (schemaConcept.isImplicit()){
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+        }
+        return errors;
     }
 
     /**
