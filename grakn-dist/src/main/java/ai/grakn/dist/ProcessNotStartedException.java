@@ -22,5 +22,5 @@ package ai.grakn.dist;
  *
  * @author Michele Orsi
  */
-public class ProcessNotStartedException extends RuntimeException {
+class ProcessNotStartedException extends RuntimeException {
 }

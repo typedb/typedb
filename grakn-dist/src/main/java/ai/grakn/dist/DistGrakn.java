@@ -21,7 +21,9 @@ package ai.grakn.dist;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.GraknVersion;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -74,6 +76,14 @@ public class DistGrakn {
     }
 
     private void run(String context, String action, String option) {
+        Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
+        if(Files.exists(ascii)) {
+            try {
+                System.out.println(new String(Files.readAllBytes(ascii),StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                // DO NOTHING
+            }
+        }
 
         switch (context) {
             case "server":

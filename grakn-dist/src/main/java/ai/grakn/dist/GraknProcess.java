@@ -38,7 +38,7 @@ import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class GraknProcess extends ProcessHandler {
+class GraknProcess extends AbstractProcessHandler implements ProcessHandler {
 
     private Path homePath;
     private Path configPath;
