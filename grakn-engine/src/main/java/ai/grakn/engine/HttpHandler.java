@@ -24,7 +24,6 @@ import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
-import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.session.RemoteSession;
@@ -41,7 +40,6 @@ import spark.Response;
 import spark.Service;
 
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
 
 import static ai.grakn.engine.GraknConfig.WEBSOCKET_TIMEOUT;
 
@@ -59,17 +57,15 @@ public class HttpHandler {
     private final MetricRegistry metricRegistry;
     private final GraknEngineStatus graknEngineStatus;
     private final TaskManager taskManager;
-    private final ExecutorService taskExecutor;
     private final PostProcessor postProcessor;
 
-    public HttpHandler(GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, ExecutorService taskExecutor, PostProcessor postProcessor) {
+    public HttpHandler(GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, PostProcessor postProcessor) {
         this.prop = prop;
         this.spark = spark;
         this.factory = factory;
         this.metricRegistry = metricRegistry;
         this.graknEngineStatus = graknEngineStatus;
         this.taskManager = taskManager;
-        this.taskExecutor = taskExecutor;
         this.postProcessor = postProcessor;
     }
 
@@ -88,7 +84,6 @@ public class HttpHandler {
         new ConceptController(factory, spark, metricRegistry);
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
         new CommitLogController(spark, postProcessingDelay, taskManager, postProcessor);
-        new TasksController(spark, taskManager, metricRegistry, taskExecutor);
 
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();

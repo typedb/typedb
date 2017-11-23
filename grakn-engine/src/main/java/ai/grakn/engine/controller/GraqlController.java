@@ -128,6 +128,7 @@ public class GraqlController {
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
         //Execute the query and get the results
+        LOG.trace(String.format("Executing graql statements: {%s}", queryString));
         try (GraknTx tx = factory.tx(keyspace, WRITE); Timer.Context context = executeGraql.time()) {
             QueryBuilder builder = tx.graql();
 

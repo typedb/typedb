@@ -20,7 +20,6 @@
 package ai.grakn.graql;
 
 import ai.grakn.Grakn;
-import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -66,7 +65,7 @@ public class GraqlShellTest {
 
         batchExecutorClient = mock(BatchExecutorClient.class);
 
-        when(client.loaderClient(any(Keyspace.class), any())).thenReturn(batchExecutorClient);
+        when(client.loaderClient(any())).thenReturn(batchExecutorClient);
     }
 
    @Test

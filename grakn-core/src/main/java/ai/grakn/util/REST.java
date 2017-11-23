@@ -59,13 +59,6 @@ public class REST {
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
         /**
-         * URIs to Tasks Controller endpoints
-         */
-        public static final String TASK = "/task";
-        public static final String TASK_ID = "/task/:id";
-        public static final String TASK_ID_STOP = "/task/:id/stop";
-
-        /**
          * URIs to System Controller endpoints
          */
         public static final String STATUS = "/status";
@@ -100,20 +93,10 @@ public class REST {
         public static final String LABEL_PARAMETER = ":label";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
-        public static final String TASK_STATUS_PARAMETER = "status";
-        public static final String TASK_CLASS_NAME_PARAMETER = "className";
-        public static final String TASK_CREATOR_PARAMETER = "creator";
-        public static final String TASK_RUN_AT_PARAMETER = "runAt";
-        public static final String TASK_PRIORITY_PARAMETER = "priority";
-        public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
-        public static final String TASK_RUN_WAIT_PARAMETER = "wait";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String LIMIT_PARAMETER = "limit";
         public static final String OFFSET_PARAMETER = "offset";
-        public static final String TASKS_PARAM = "tasks";
-        public static final String CONFIGURATION_PARAM = "configuration";
         public static final String FORMAT = "format";
-        public static final String UUID_PARAMETER = "uuid";
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
@@ -186,7 +169,6 @@ public class REST {
          */
         public static class Task {
             public static final String STACK_TRACE = "stackTrace";
-            public static final String EXCEPTION = "exception";
             public static final String ID = "id";
         }
     }

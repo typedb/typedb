@@ -106,7 +106,7 @@ public class GreedyTraversalPlan {
             fragmentSet.forEach(fragment -> {
                 if (fragment.end() != null) {
                     edgeFragmentSet.add(fragment);
-                    updateFragmentCost(allNodes, nodesWithFixedCost, startingNodeSet, fragment);
+                    updateFragmentCost(allNodes, nodesWithFixedCost, fragment);
 
                 } else if (fragment.hasFixedFragmentCost()) {
                     startingNodeSet.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
@@ -175,7 +175,7 @@ public class GreedyTraversalPlan {
         });
 
         // process sub fragments here as we probably need to break the query tree
-        processSubFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, allFragments);
+        processSubFragment(allNodes, nodesWithFixedCost, allFragments);
 
         final Map<Integer, Set<Var>> varSetMap = new HashMap<>();
         final Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
@@ -255,9 +255,7 @@ public class GreedyTraversalPlan {
     }
 
     // if in-sub starts from an indexed supertype, update the fragment cost of in-isa starting from the subtypes
-    private static void processSubFragment(List<Fragment> plan,
-                                           Map<NodeId, Node> allNodes,
-                                           Set<Node> connectedNodes,
+    private static void processSubFragment(Map<NodeId, Node> allNodes,
                                            Map<Node, Double> nodesWithFixedCost,
                                            Set<Fragment> allFragments) {
 
@@ -265,42 +263,33 @@ public class GreedyTraversalPlan {
             if (fragment instanceof InSubFragment) {
                 Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
                 if (nodesWithFixedCost.containsKey(superType) && nodesWithFixedCost.get(superType) > 0D) {
-                    return true;
+                    Node subType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes);
+                    if (!nodesWithFixedCost.containsKey(subType)) {
+                        return true;
+                    }
                 }
             }
             return false;
         }).collect(Collectors.toSet());
 
         if (!validSubFragments.isEmpty()) {
-            final Set<Fragment> subFragmentSet = new HashSet<>();
             validSubFragments.forEach(fragment -> {
-                Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
-                plan.add(fragment);
-                connectedNodes.add(superType);
-                nodesWithFixedCost.put(
-                        Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
-                        nodesWithFixedCost.get(superType));
-                subFragmentSet.add(fragment);
+                // TODO: should decrease the weight of sub type after each level
+                nodesWithFixedCost.put(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
+                        nodesWithFixedCost.get(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes)));
             });
-            subFragmentSet.forEach(inSubFragment -> {
-                allFragments.remove(inSubFragment);
-                allFragments.remove(inSubFragment.getInverse());
-
-            });
-            processSubFragment(plan, allNodes, connectedNodes, nodesWithFixedCost, allFragments);
+            processSubFragment(allNodes, nodesWithFixedCost, allFragments);
         }
     }
 
     private static void updateFragmentCost(Map<NodeId, Node> allNodes,
                                            Map<Node, Double> nodesWithFixedCost,
-                                           Set<Node> startingNodeSet,
                                            Fragment fragment) {
 
         if (fragment instanceof InIsaFragment) {
             Node type = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
             if (nodesWithFixedCost.containsKey(type) && nodesWithFixedCost.get(type) > 0) {
                 fragment.setAccurateFragmentCost(nodesWithFixedCost.get(type));
-                startingNodeSet.add(type);
             }
         }
     }

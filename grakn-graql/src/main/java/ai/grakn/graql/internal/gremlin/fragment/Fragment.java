@@ -68,16 +68,15 @@ import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighte
  */
 public abstract class Fragment {
 
-    // TODO: Find a better way to represent these values (either abstractly, or better estimates)
-
-    private static final long NUM_INSTANCES_PER_TYPE = 100;
-    private static final long NUM_SUBTYPES_PER_TYPE = 3;
-    private static final long NUM_RELATIONS_PER_INSTANCE = 30;
-    private static final long NUM_TYPES_PER_ROLE = 3;
-    private static final long NUM_ROLES_PER_TYPE = 3;
-    private static final long NUM_ROLE_PLAYERS_PER_RELATION = 2;
-    private static final long NUM_ROLE_PLAYERS_PER_ROLE = 1;
-    private static final long NUM_RESOURCES_PER_VALUE = 2;
+    // Default values used for estimate internal fragment cost
+    private static final double NUM_INSTANCES_PER_TYPE = 100D;
+    private static final double NUM_SUBTYPES_PER_TYPE = 1.5D;
+    private static final double NUM_RELATIONS_PER_INSTANCE = 30D;
+    private static final double NUM_TYPES_PER_ROLE = 3D;
+    private static final double NUM_ROLES_PER_TYPE = 3D;
+    private static final double NUM_ROLE_PLAYERS_PER_RELATION = 2D;
+    private static final double NUM_ROLE_PLAYERS_PER_ROLE = 1D;
+    private static final double NUM_RESOURCES_PER_VALUE = 2D;
 
     static final double COST_INSTANCES_PER_TYPE = Math.log1p(NUM_INSTANCES_PER_TYPE);
     static final double COST_SUBTYPES_PER_TYPE = Math.log1p(NUM_SUBTYPES_PER_TYPE);
