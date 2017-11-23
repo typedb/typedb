@@ -33,8 +33,7 @@ class StorageProcess extends ProcessHandler {
 
     private Path homePath;
 
-    public StorageProcess(long wait_interval_s, Path homePath) {
-        super(wait_interval_s);
+    public StorageProcess(Path homePath) {
         this.homePath = homePath;
     }
 
@@ -79,7 +78,7 @@ class StorageProcess extends ProcessHandler {
                 return;
             }
             try {
-                Thread.sleep(waitIntervalS*1000);
+                Thread.sleep(WAIT_INTERVAL_S *1000);
             } catch (InterruptedException e) {
                 // DO NOTHING
             }

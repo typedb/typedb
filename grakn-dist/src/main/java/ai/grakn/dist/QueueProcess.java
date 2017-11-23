@@ -30,8 +30,7 @@ class QueueProcess extends ProcessHandler {
 
     private Path homePath;
 
-    public QueueProcess(long wait_interval_s, Path homePath) {
-        super(wait_interval_s);
+    public QueueProcess(Path homePath) {
         this.homePath = homePath;
     }
 
@@ -69,7 +68,7 @@ class QueueProcess extends ProcessHandler {
                 return;
             }
             try {
-                Thread.sleep(waitIntervalS * 1000);
+                Thread.sleep(WAIT_INTERVAL_S * 1000);
             } catch (InterruptedException e) {
                 // DO NOTHING
             }

@@ -37,8 +37,6 @@ public class DistGrakn {
     private static final String QUEUE = "queue";
     private static final String STORAGE = "storage";
 
-    private static final long WAIT_INTERVAL_S=2;
-
     private final StorageProcess storageProcess;
     private final QueueProcess queueProcess;
     private final GraknProcess graknProcess;
@@ -56,9 +54,9 @@ public class DistGrakn {
             homeStatic = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
             configStatic = Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
 
-            StorageProcess storageProcess = new StorageProcess(WAIT_INTERVAL_S, homeStatic);
-            QueueProcess queueProcess = new QueueProcess(WAIT_INTERVAL_S, homeStatic);
-            GraknProcess graknProcess = new GraknProcess(WAIT_INTERVAL_S, homeStatic, configStatic);
+            StorageProcess storageProcess = new StorageProcess(homeStatic);
+            QueueProcess queueProcess = new QueueProcess(homeStatic);
+            GraknProcess graknProcess = new GraknProcess(homeStatic, configStatic);
 
             String context = args.length > 0 ? args[0] : "";
             String action = args.length > 1 ? args[1] : "";

@@ -33,13 +33,9 @@ import java.util.Optional;
  */
 public abstract class ProcessHandler {
 
-    protected final long waitIntervalS;
+    protected final static long WAIT_INTERVAL_S=2;
 
-    public ProcessHandler(long wait_interval_s) {
-        waitIntervalS = wait_interval_s;
-    }
-
-    OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
+    protected OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
 
         StringBuffer outputS = new StringBuffer();
         int exitValue = 1;
@@ -73,7 +69,7 @@ public abstract class ProcessHandler {
         return outputCommand;
     }
 
-    Optional<String> getPidFromFile(Path fileName) {
+    protected Optional<String> getPidFromFile(Path fileName) {
         String pid=null;
         if (Files.exists(fileName)) {
             try {
@@ -85,7 +81,7 @@ public abstract class ProcessHandler {
         return Optional.ofNullable(pid);
     }
 
-    String getPidFromPsOf(String processName) {
+    protected String getPidFromPsOf(String processName) {
         return executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
@@ -93,7 +89,7 @@ public abstract class ProcessHandler {
             }, null, null).output;
     }
 
-    void kill(int pid) {
+    protected void kill(int pid) {
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -101,7 +97,7 @@ public abstract class ProcessHandler {
         }, null, null);
     }
 
-    OutputCommand kill(int pid, String signal) {
+    protected OutputCommand kill(int pid, String signal) {
         return executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -109,7 +105,7 @@ public abstract class ProcessHandler {
         }, null, null);
     }
 
-    int retrievePid(Path pidFile) {
+    protected int retrievePid(Path pidFile) {
         if(!Files.exists(pidFile)) {
             return -1;
         }
@@ -122,7 +118,7 @@ public abstract class ProcessHandler {
         }
     }
 
-    void waitUntilStopped(Path pidFile, int pid) {
+    protected void waitUntilStopped(Path pidFile, int pid) {
         OutputCommand outputCommand;
         do {
             System.out.print(".");
@@ -131,7 +127,7 @@ public abstract class ProcessHandler {
             outputCommand = kill(pid,"0");
 
             try {
-                Thread.sleep(waitIntervalS * 1000);
+                Thread.sleep(WAIT_INTERVAL_S * 1000);
             } catch (InterruptedException e) {
                 // DO NOTHING
             }
@@ -146,7 +142,7 @@ public abstract class ProcessHandler {
         }
     }
 
-    String selectCommand(String osx, String linux) {
+    protected String selectCommand(String osx, String linux) {
         OutputCommand operatingSystem = executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -155,7 +151,7 @@ public abstract class ProcessHandler {
         return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
     }
 
-    boolean processIsRunning(Path pidFile) {
+    protected boolean processIsRunning(Path pidFile) {
         boolean isRunning = false;
         String processPid;
         if (Files.exists(pidFile)) {
@@ -177,7 +173,7 @@ public abstract class ProcessHandler {
         return isRunning;
     }
 
-    void stopProgram(Path pidFile, String programName) {
+    protected void stopProgram(Path pidFile, String programName) {
         System.out.print("Stopping "+programName+"...");
         System.out.flush();
         boolean programIsRunning = processIsRunning(pidFile);
@@ -189,14 +185,14 @@ public abstract class ProcessHandler {
 
     }
 
-    private void stopProcess(Path pidFile) {
+    protected void stopProcess(Path pidFile) {
         int pid = retrievePid(pidFile);
         if (pid <0 ) return;
         kill(pid);
         waitUntilStopped(pidFile, pid);
     }
 
-    void processStatus(Path storagePid, String name) {
+    protected void processStatus(Path storagePid, String name) {
         if (processIsRunning(storagePid)) {
             System.out.println(name+": RUNNING");
         } else {

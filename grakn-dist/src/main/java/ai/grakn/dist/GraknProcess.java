@@ -47,8 +47,7 @@ class GraknProcess extends ProcessHandler {
     private static final long GRAKN_STARTUP_TIMEOUT_S = 120;
     private static final Path GRAKN_PID = Paths.get(File.separator,"tmp","grakn.pid");
 
-    public GraknProcess(long wait_interval_s, Path homePath, Path configPath) {
-        super(wait_interval_s);
+    public GraknProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
         this.configPath = configPath;
         this.graknConfig = GraknConfig.read(configPath.toFile());
@@ -83,9 +82,15 @@ class GraknProcess extends ProcessHandler {
     private void graknStartProcess() {
         System.out.print("Starting Grakn...");
         System.out.flush();
+        if(Files.exists(GRAKN_PID)) {
+            try {
+                Files.delete(GRAKN_PID);
+            } catch (IOException e) {
+                // DO NOTHING
+            }
+        }
 
         String command = "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath +" ai.grakn.engine.Grakn > /dev/null 2>&1 &";
-
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -114,7 +119,7 @@ class GraknProcess extends ProcessHandler {
                 return;
             }
             try {
-                Thread.sleep(waitIntervalS * 1000);
+                Thread.sleep(WAIT_INTERVAL_S * 1000);
             } catch (InterruptedException e) {
                 // DO NOTHING
             }
