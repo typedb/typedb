@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import javax.annotation.CheckReturnValue;
+import java.io.Reader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -167,6 +168,15 @@ public class Graql {
     @CheckReturnValue
     public static Stream<Query<?>> parseList(String queryString) {
         return withoutGraph().parseList(queryString);
+    }
+
+    /**
+     * @param reader a {@link Reader} representing several queries
+     * @return a list of queries
+     */
+    @CheckReturnValue
+    public static Stream<Query<?>> parseList(Reader reader) {
+        return withoutGraph().parseList(reader);
     }
 
     // TEMPLATING

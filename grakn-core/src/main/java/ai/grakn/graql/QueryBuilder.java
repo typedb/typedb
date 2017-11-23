@@ -22,6 +22,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.macro.Macro;
 
 import javax.annotation.CheckReturnValue;
+import java.io.Reader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -124,6 +125,13 @@ public interface QueryBuilder {
      */
     @CheckReturnValue
     <T extends Query<?>> Stream<T> parseList(String queryString);
+
+    /**
+     * @param reader a {@link Reader} representing several queries
+     * @return a list of queries
+     */
+    @CheckReturnValue
+    <T extends Query<?>> Stream<T> parseList(Reader reader);
 
     /**
      * @param template a string representing a templated graql query

@@ -42,6 +42,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import javax.annotation.Nullable;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -323,7 +324,7 @@ public class GraqlShell {
             System.out.println(format("Approximate queries executed: %s", numberBatchesCompleted.get() * batchMutatorClient.getBatchSize()));
         });
 
-        String queries = loadQuery(graqlPath);
+        BufferedReader queries = Files.newBufferedReader(Paths.get(graqlPath));
 
         Graql.parseList(queries).forEach(batchMutatorClient::add);
 
