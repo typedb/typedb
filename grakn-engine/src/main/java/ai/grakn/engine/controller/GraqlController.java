@@ -164,21 +164,6 @@ public class GraqlController {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
-
-    /**
-     * Format the response with the correct content type based on the request.
-     *
-     * @param contentType content type being provided in the response
-     * @param response    response to the client
-     * @return formatted result of the executed query
-     */
-    private Object respond(Response response, String contentType, Object responseBody) {
-        response.type(contentType);
-        response.body(responseBody.toString());
-        response.status(200);
-        return responseBody;
-    }
-
     /**
      * Execute a query and return a response in the format specified by the request.
      *
