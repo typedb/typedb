@@ -108,6 +108,10 @@ public class JacksonPrinter implements Printer<Object>{
 
     @Override
     public Object graqlString(boolean inner, Optional optional) {
-        return optional.map(o -> graqlString(inner, o)).orElseGet(null);
+        if(optional.isPresent()){
+            return graqlString(inner, optional.get());
+        } else {
+            return null;
+        }
     }
 }
