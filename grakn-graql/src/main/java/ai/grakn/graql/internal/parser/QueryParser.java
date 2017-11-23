@@ -143,7 +143,9 @@ public class QueryParser {
         */
         lexer.setTokenFactory(new CommonTokenFactory(true));
 
-        return parseList(lexer, ""); // TODO
+        GraqlErrorListener errorListener = GraqlErrorListener.withoutQueryString();
+
+        return parseList(lexer, errorListener);
     }
 
     /**
@@ -152,11 +154,11 @@ public class QueryParser {
      */
     public <T extends Query<?>> Stream<T> parseList(String queryString) {
         GraqlLexer lexer = getLexer(queryString);
-        return parseList(lexer, queryString);
+        GraqlErrorListener errorListener = GraqlErrorListener.of(queryString);
+        return parseList(lexer, errorListener);
     }
 
-    private <T extends Query<?>> Stream<T> parseList(GraqlLexer lexer, String queryString) {
-        GraqlErrorListener errorListener = new GraqlErrorListener(queryString);
+    private <T extends Query<?>> Stream<T> parseList(GraqlLexer lexer, GraqlErrorListener errorListener) {
         lexer.removeErrorListeners();
         lexer.addErrorListener(errorListener);
 
@@ -216,7 +218,7 @@ public class QueryParser {
     private <T, S extends ParseTree> T parseQueryFragment(
             Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, String queryString, GraqlLexer lexer
     ) {
-        GraqlErrorListener errorListener = new GraqlErrorListener(queryString);
+        GraqlErrorListener errorListener = GraqlErrorListener.of(queryString);
         lexer.removeErrorListeners();
         lexer.addErrorListener(errorListener);
 
