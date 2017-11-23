@@ -19,7 +19,6 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -39,7 +38,6 @@ import redis.clients.util.Pool;
 import spark.Service;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.GraknConfigKey.REDIS_HOST;
@@ -59,7 +57,6 @@ public class GraknCreator {
     private final static Service SPARK_SERVICE = sparkService();
     private final static GraknEngineStatus GRAKN_ENGINE_STATUS = graknEngineStatus();
     private final static MetricRegistry METRIC_REGISTRY = metricRegistry();
-    private final static ExecutorService EXECUTOR_SERVICE = executorService();
     private final static GraknConfig GRAKN_ENGINE_CONFIG = graknEngineConfig();
 
     private static GraknEngineServer graknEngineServer;
@@ -84,10 +81,6 @@ public class GraknCreator {
         return new MetricRegistry();
     }
 
-    protected static ExecutorService executorService() {
-        return TasksController.taskExecutor();
-    }
-
     protected static GraknConfig graknEngineConfig() {
         return GraknConfig.create();
     }
@@ -100,8 +93,8 @@ public class GraknCreator {
             EngineGraknTxFactory factory = instantiateGraknTxFactory(GRAKN_ENGINE_CONFIG, lockProvider);
             PostProcessor postProcessor = postProcessor(METRIC_REGISTRY, GRAKN_ENGINE_CONFIG, factory, jedisPool, lockProvider);
             TaskManager taskManager = instantiateTaskManager(METRIC_REGISTRY, GRAKN_ENGINE_CONFIG, ENGINE_ID, factory, jedisPool, postProcessor);
-            HttpHandler httpHandler = new HttpHandler(GRAKN_ENGINE_CONFIG, SPARK_SERVICE, factory, METRIC_REGISTRY, GRAKN_ENGINE_STATUS, taskManager, EXECUTOR_SERVICE, postProcessor);
-            graknEngineServer = new GraknEngineServer(GRAKN_ENGINE_CONFIG, taskManager, factory, lockProvider, GRAKN_ENGINE_STATUS, redisWrapper, EXECUTOR_SERVICE, httpHandler, ENGINE_ID);
+            HttpHandler httpHandler = new HttpHandler(GRAKN_ENGINE_CONFIG, SPARK_SERVICE, factory, METRIC_REGISTRY, GRAKN_ENGINE_STATUS, taskManager, postProcessor);
+            graknEngineServer = new GraknEngineServer(GRAKN_ENGINE_CONFIG, taskManager, factory, lockProvider, GRAKN_ENGINE_STATUS, redisWrapper, httpHandler, ENGINE_ID);
             Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
             runtime.addShutdownHook(thread);
         }
@@ -201,8 +194,7 @@ public class GraknCreator {
         PostProcessor postProcessor = postProcessor(metricRegistry, config, factory, jedisPool, lockProvider);
         TaskManager taskManager = taskManager(config, factory, jedisPool, engineID, metricRegistry, postProcessor);
         GraknEngineStatus graknEngineStatus = graknEngineStatus();
-        ExecutorService executorService = executorService();
-        HttpHandler httpHandler = new HttpHandler(config, sparkService(), factory, metricRegistry, graknEngineStatus, taskManager, executorService, postProcessor);
-        return new GraknEngineServer(config, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, executorService, httpHandler, engineID);
+        HttpHandler httpHandler = new HttpHandler(config, sparkService(), factory, metricRegistry, graknEngineStatus, taskManager, postProcessor);
+        return new GraknEngineServer(config, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID);
     }
 }

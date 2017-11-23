@@ -160,20 +160,4 @@ export default {
       accepts: 'application/json',
     });
   },
-
-  /**
-    * Get list of queued tasks from Engine
-    */
-  getAllTasks() {
-    return this.request({
-      url: '/task',
-    });
-  },
-
-  stopTask(uuid:string) {
-    return this.request({
-      url: `/task/${uuid}/stop`,
-      requestType: 'PUT',
-    });
-  },
 };
