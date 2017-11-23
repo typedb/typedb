@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 
 /**
  * Grakn http client. Extend this for more http endpoint.
@@ -68,7 +67,7 @@ public class GraknClient {
                 .queryParam(ALLOW_MULTIPLE_QUERIES, true)
                 .build();
         ClientResponse response = client.resource(fullURI)
-                .accept(APPLICATION_JSON_GRAQL)
+                .accept(APPLICATION_JSON)
                 .post(ClientResponse.class, body);
         try {
             Response.StatusType status = response.getStatusInfo();

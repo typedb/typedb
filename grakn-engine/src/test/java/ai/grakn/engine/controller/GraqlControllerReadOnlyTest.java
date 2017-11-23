@@ -57,7 +57,6 @@ import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -262,15 +261,15 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithGraqlJsonType_ResponseContentTypeIsGraqlJson() {
-        Response response = sendRequest(APPLICATION_JSON_GRAQL);
+        Response response = sendRequest(APPLICATION_JSON);
 
-        assertThat(response.contentType(), equalTo(APPLICATION_JSON_GRAQL));
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON));
     }
 
     @Test
     public void GETGraqlMatchWithGraqlJsonType_ResponseIsCorrectGraql() {
         String query = "match $x isa movie; get;";
-        Response response = sendRequest(APPLICATION_JSON_GRAQL);
+        Response response = sendRequest(APPLICATION_JSON);
 
         Json expectedResponse = Json.read(
                 JacksonPrinter.create().graqlString(sampleKB.tx().graql().parse(query).execute()));
@@ -279,7 +278,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithGraqlJsonTypeAndEmptyResponse_ResponseIsEmptyJsonObject() {
-        Response response = sendRequest("match $x isa \"runtime\"; get;", APPLICATION_JSON_GRAQL);
+        Response response = sendRequest("match $x isa \"runtime\"; get;", APPLICATION_JSON);
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }

@@ -38,7 +38,6 @@ import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonRespons
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -158,14 +157,14 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseContentTypeIsJson(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON_GRAQL);
+        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON);
 
-        assertThat(response.contentType(), equalTo(APPLICATION_JSON_GRAQL));
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON));
     }
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON_GRAQL);
+        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON);
 
         assertThat(jsonResponse(response).asJsonList().size(), equalTo(1));
     }
