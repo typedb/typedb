@@ -23,6 +23,7 @@ import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.migration.xml.XmlMigrator;
+import ai.grakn.util.GraknVersion;
 
 import java.util.Arrays;
 
@@ -103,7 +104,7 @@ public class DistGraql {
     }
 
     private void version() {
-        GraqlShell.main(new String[]{"--v"});
+        System.out.println(GraknVersion.VERSION);
     }
 
 }
