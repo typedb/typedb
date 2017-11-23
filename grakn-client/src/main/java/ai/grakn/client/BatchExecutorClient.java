@@ -20,10 +20,8 @@ package ai.grakn.client;
 
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
-import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.github.rholder.retry.Attempt;
@@ -40,6 +38,12 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
+
 import java.io.Closeable;
 import java.net.ConnectException;
 import java.util.Collection;
@@ -51,11 +55,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Scheduler;
-import rx.schedulers.Schedulers;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Client to batch load qraql queries into Grakn that mutate the graph.
@@ -143,10 +144,6 @@ public class BatchExecutorClient implements Closeable {
 
     public static Builder newBuilder() {
         return new Builder();
-    }
-
-    public static Builder newBuilderforURI(SimpleURI simpleURI) {
-        return new Builder().taskClient(new GraknClient(simpleURI));
     }
 
     /**
