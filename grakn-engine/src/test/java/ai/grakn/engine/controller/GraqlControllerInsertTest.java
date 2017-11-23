@@ -127,7 +127,7 @@ public class GraqlControllerInsertTest {
     @Test
     public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "some-kb"));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "somekb"));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -157,14 +157,14 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseContentTypeIsJson(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON);
+        Response response = sendRequest("insert $x isa person;");
 
         assertThat(response.contentType(), equalTo(APPLICATION_JSON));
     }
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON);
+        Response response = sendRequest("insert $x isa person;");
 
         assertThat(jsonResponse(response).asJsonList().size(), equalTo(1));
     }
@@ -181,12 +181,7 @@ public class GraqlControllerInsertTest {
     }
 
     private Response sendRequest(String query){
-        return sendRequest(query, APPLICATION_JSON);
-    }
-
-    private Response sendRequest(String query, String acceptType){
         return RestAssured.with()
-                .accept(acceptType)
                 .queryParam(EXECUTE_WITH_INFERENCE, false)
                 .body(query)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
