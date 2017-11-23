@@ -22,8 +22,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
@@ -36,7 +36,6 @@ import org.junit.Test;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -116,7 +115,7 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "some-kb"));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "somekb"));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -170,7 +169,6 @@ public class GraqlControllerDeleteTest {
     private Response sendRequest(String query){
         return RestAssured.with()
                 .queryParam(EXECUTE_WITH_INFERENCE, false)
-                .accept(APPLICATION_JSON)
                 .body(query)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, tx.keyspace().getValue()));
     }
