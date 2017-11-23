@@ -217,14 +217,8 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void testBadQuery() {
+    public void whenSendingGibberish_Ensure400IsReturned() {
         sendQuery(" gibberish ads a;49 agfdgdsf").then().statusCode(400);
-    }
-
-    @Test
-    public void whenAcceptHeaderIsInvalid_Return406Code() {
-        sendQuery("match $x isa movie; aggregate ask;", "application/msword", true, -1,
-                false).then().statusCode(406);
     }
 
     private void assertResponseMatchesExpectedObject(String queryString) {
