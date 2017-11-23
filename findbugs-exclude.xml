@@ -26,12 +26,4 @@
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>
     </Match>
 
-    <!-- Exlcude  -->
-    <Match>
-        <Or>
-            <Class name="ai.grakn.dist.DistGrakn" />
-        </Or>
-        <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME" />
-    </Match>
-
 </FindBugsFilter>
