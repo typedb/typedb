@@ -19,7 +19,7 @@
 package ai.grakn.dist;
 
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.graql.GraqlShell;
+import ai.grakn.util.GraknVersion;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
@@ -94,7 +94,7 @@ public class DistGrakn {
     }
 
     private void version() {
-        GraqlShell.main(new String[]{"--v"});
+        System.out.println(GraknVersion.VERSION);
     }
 
     private void help() {
