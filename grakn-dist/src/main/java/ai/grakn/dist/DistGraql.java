@@ -71,7 +71,7 @@ public class DistGraql {
                 JsonMigrator.main(valuesFrom(args, 1));
                 break;
             case "owl":
-                System.out.println("Owm migration not supported anymore");
+                System.out.println("Owl migration not supported anymore");
                 break;
             case "export":
                 ai.grakn.migration.export.Main.main(valuesFrom(args, 1));

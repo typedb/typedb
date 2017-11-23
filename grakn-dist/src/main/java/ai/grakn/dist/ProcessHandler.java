@@ -20,26 +20,26 @@ package ai.grakn.dist;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  *
  * @author Michele Orsi
  */
-public class ProcessHandler {
+public abstract class ProcessHandler {
+
+    protected final long waitIntervalS;
+
+    public ProcessHandler(long wait_interval_s) {
+        waitIntervalS = wait_interval_s;
+    }
 
     OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
-        System.out.println(Arrays.toString(cmdarray));
 
         StringBuffer outputS = new StringBuffer();
         int exitValue = 1;
@@ -59,13 +59,13 @@ public class ProcessHandler {
             }
 
         } catch (InterruptedException | IOException e) {
-            e.printStackTrace();
+            // DO NOTHING
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    // DO NOTHING
                 }
             }
         }
@@ -93,7 +93,7 @@ public class ProcessHandler {
             }, null, null).output;
     }
 
-    void kill(String pid) {
+    void kill(int pid) {
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -101,20 +101,106 @@ public class ProcessHandler {
         }, null, null);
     }
 
-    String getClassPathFrom(Path home){
-        FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
-        File folder = new File(home + File.separator+"services"+File.separator+"lib"); // services/lib folder
-        File[] values = folder.listFiles(jarFiles);
-        if(values==null) {
-            throw new RuntimeException("No libraries found: cannot run Grakn");
+    OutputCommand kill(int pid, String signal) {
+        return executeAndWait(new String[]{
+                "/bin/sh",
+                "-c",
+                "kill -"+signal+" " + pid
+        }, null, null);
+    }
+
+    int retrievePid(Path pidFile) {
+        if(!Files.exists(pidFile)) {
+            return -1;
         }
-        Stream<File> jars = Stream.of(values);
-        File conf = new File(home + File.separator+"conf"+File.separator); // /conf
-        File graknLogback = new File(home + File.separator+"services"+File.separator+"grakn"+File.separator); // services/grakn lib
-        return ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
-                .filter(f -> !f.getName().contains("slf4j-log4j12"))
-                .map(File::getAbsolutePath)
-                .sorted() // we need to sort otherwise it doesn't load logback configuration properly
-                .collect(joining(":"));
+        try {
+            String pid = new String(Files.readAllBytes(pidFile), StandardCharsets.UTF_8);
+            pid = pid.trim();
+            return Integer.parseInt(pid);
+        } catch (NumberFormatException | IOException e) {
+            return -1;
+        }
+    }
+
+    void waitUntilStopped(Path pidFile, int pid) {
+        OutputCommand outputCommand;
+        do {
+            System.out.print(".");
+            System.out.flush();
+
+            outputCommand = kill(pid,"0");
+
+            try {
+                Thread.sleep(waitIntervalS * 1000);
+            } catch (InterruptedException e) {
+                // DO NOTHING
+            }
+        } while (outputCommand.succes());
+        System.out.println("SUCCESS");
+        try {
+            if(Files.exists(pidFile)) {
+                Files.delete(pidFile);
+            }
+        } catch (IOException e) {
+            // DO NOTHING
+        }
+    }
+
+    String selectCommand(String osx, String linux) {
+        OutputCommand operatingSystem = executeAndWait(new String[]{
+                "/bin/sh",
+                "-c",
+                "uname"
+        },null,null);
+        return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
+    }
+
+    boolean processIsRunning(Path pidFile) {
+        boolean isRunning = false;
+        String processPid;
+        if (Files.exists(pidFile)) {
+            try {
+                processPid = new String(Files.readAllBytes(pidFile),StandardCharsets.UTF_8);
+                if(processPid.trim().isEmpty()) {
+                    return false;
+                }
+                OutputCommand command = executeAndWait(new String[]{
+                        "/bin/sh",
+                        "-c",
+                        "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"
+                },null,null);
+                return Integer.parseInt(command.output.trim())>0;
+            } catch (NumberFormatException | IOException e) {
+                return false;
+            }
+        }
+        return isRunning;
+    }
+
+    void stopProgram(Path pidFile, String programName) {
+        System.out.print("Stopping "+programName+"...");
+        System.out.flush();
+        boolean programIsRunning = processIsRunning(pidFile);
+        if(!programIsRunning) {
+            System.out.println("NOT RUNNING");
+        } else {
+            stopProcess(pidFile);
+        }
+
+    }
+
+    private void stopProcess(Path pidFile) {
+        int pid = retrievePid(pidFile);
+        if (pid <0 ) return;
+        kill(pid);
+        waitUntilStopped(pidFile, pid);
+    }
+
+    void processStatus(Path storagePid, String name) {
+        if (processIsRunning(storagePid)) {
+            System.out.println(name+": RUNNING");
+        } else {
+            System.out.println(name+": NOT RUNNING");
+        }
     }
 }
