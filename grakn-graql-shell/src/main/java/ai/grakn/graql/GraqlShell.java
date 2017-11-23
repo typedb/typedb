@@ -231,7 +231,7 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
-                sendBatchRequest(client.loaderClient(keyspace, location), cmd.getOptionValue("b"), keyspace);
+                sendBatchRequest(client.loaderClient(location), cmd.getOptionValue("b"), keyspace);
             } catch (NumberFormatException e) {
                 printUsage(options, "Cannot cast argument to an integer " + e.getMessage());
                 return false;

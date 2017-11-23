@@ -46,7 +46,7 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
  */
 public class GraknClient {
 
-    public static final int CONNECT_TIMEOUT_MS = 5 * 60 * 1000;
+    public static final int CONNECT_TIMEOUT_MS = 30 * 1000;
     public static final int DEFAULT_MAX_RETRY = 3;
     private final Logger LOG = LoggerFactory.getLogger(GraknClient.class);
 
