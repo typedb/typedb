@@ -52,6 +52,40 @@ public class ConceptBuilder {
         return (X) response;
     }
 
+    /**
+     * Gets all the instances of a specific {@link ai.grakn.concept.Type} and wraps them in a {@link Things}
+     * response object
+     *
+     * @param type The {@link ai.grakn.concept.Type} to extract the {@link ai.grakn.concept.Thing}s from
+     * @return The wrapper of the {@link ai.grakn.concept.Thing}s
+     */
+    public static Things buildThings(ai.grakn.concept.Type type){
+        return buildThings(type, 0, 100);
+    }
+
+    public static Things buildThingsWithOffset(ai.grakn.concept.Type type, int offset){
+        return buildThings(type, offset, 100);
+    }
+
+    public static Things buildThingsWithLimit(ai.grakn.concept.Type type, int limit){
+        return buildThings(type, 0, limit);
+    }
+
+    public static Things buildThings(ai.grakn.concept.Type type, int offset, int limit){
+        Link selfLink = Link.createInstanceLink(type);
+        Link next = Link.createInstanceLink(type, offset + limit, limit);
+
+        int previousIndex = offset - limit;
+        if(previousIndex < 0) previousIndex = 0;
+        Link previous = Link.createInstanceLink(type, previousIndex, limit);
+
+        //TODO: This does not actually scale. The DB is still read in this instance
+        Set<Thing> things = type.instances().skip(offset).limit(limit).
+                map(ConceptBuilder::buildThing).collect(Collectors.toSet());
+
+        return Things.create(selfLink, things, next, previous);
+    }
+
     //TODO: This will scale poorly with super nodes. Need to introduce some sort of paging maybe?
     private static Thing buildThing(ai.grakn.concept.Thing thing) {
         Link selfLink = Link.create(thing);
@@ -80,7 +114,10 @@ public class ConceptBuilder {
 
     private static SchemaConcept buildSchemaConcept(ai.grakn.concept.SchemaConcept schemaConcept){
         Link selfLink = Link.create(schemaConcept);
-        Link sup = Link.create(schemaConcept.sup());
+
+        Link sup = null;
+        if(schemaConcept.sup() != null) sup = Link.create(schemaConcept.sup());
+
         Set<Link> subs = schemaConcept.subs().map(Link::create).collect(Collectors.toSet());
 
         if(schemaConcept.isRole()){
@@ -142,15 +179,23 @@ public class ConceptBuilder {
     }
 
     private static Rule buildRule(ai.grakn.concept.Rule rule, Link selfLink, Link sup, Set<Link> subs){
-        return Rule.create(rule.getId(), selfLink, rule.getLabel(), rule.isImplicit(), sup, subs,
-                rule.getWhen().toString(), rule.getThen().toString());
+        String when = null;
+        if(rule.getWhen() != null) when = rule.getWhen().toString();
+
+        String then = null;
+        if(rule.getThen() != null) then = rule.getThen().toString();
+
+        return Rule.create(rule.getId(), selfLink, rule.getLabel(), rule.isImplicit(), sup, subs, when, then);
     }
 
     private static AttributeType buildAttributeType(ai.grakn.concept.AttributeType attributeType, Link selfLink, Link sup,
                                                     Set<Link> subs, Set<Link> plays, Set<Link> attributes,
                                                     Set<Link> keys){
+        String dataType = null;
+        if(attributeType.getDataType() != null) dataType = attributeType.getDataType().getName();
+
         return AttributeType.create(attributeType.getId(), selfLink, attributeType.getLabel(), attributeType.isImplicit(),
-                sup, subs, attributeType.isAbstract(), plays, attributes, keys, attributeType.getDataType().getName(), attributeType.getRegex());
+                sup, subs, attributeType.isAbstract(), plays, attributes, keys, dataType, attributeType.getRegex());
     }
 
     private static EntityType buildEntityType(ai.grakn.concept.EntityType entityType, Link selfLink, Link sup,

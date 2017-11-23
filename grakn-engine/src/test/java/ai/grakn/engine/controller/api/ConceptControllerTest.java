@@ -40,6 +40,8 @@ import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import org.junit.BeforeClass;
@@ -48,11 +50,17 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Function;
 
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -125,6 +133,42 @@ public class ConceptControllerTest {
             ruleWrapper = ConceptBuilder.build(rule);
 
             tx.commit();
+        }
+    }
+
+
+    @Test
+    public void whenGettingTypesInstances_EnsureInstancesAreReturned() throws JsonProcessingException {
+        //TODO: Same as below get jackson to deserialise via a child constructor
+        String request = REST.resolveTemplate(REST.WebPath.TYPE_INSTANCES, keyspace.getValue(), entityTypeWrapper.label().getValue());
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.getStatusCode());
+
+        //Hacky way to check if instance is embedded
+        String instance = new ObjectMapper().writeValueAsString(entityWrapper);
+        assertTrue(response.body().asString().contains(instance));
+    }
+
+    @Test
+    public void whenGettingConceptsByLabel_EnsureConceptsAreReturned(){
+        assertConceptsReturned(REST.WebPath.KEYSPACE_ROLE, (response) -> response.as(Role[].class), roleWrapper1, roleWrapper2);
+        assertConceptsReturned(REST.WebPath.KEYSPACE_RULE, (response) -> response.as(Rule[].class), ruleWrapper);
+
+        //TODO: Figure out how to get jackson to build child classes
+        //assertConceptsReturned(REST.WebPath.KEYSPACE_TYPE, (response) -> response.as(RelationshipType[].class), relationshipTypeWrapper);
+        //assertConceptsReturned(REST.WebPath.KEYSPACE_TYPE, (response) -> response.as(EntityType[].class), entityTypeWrapper);
+        //assertConceptsReturned(REST.WebPath.KEYSPACE_TYPE, (response) -> response.as(AttributeType[].class), attributeTypeWrapper);
+    }
+
+    private static void assertConceptsReturned(String path, Function<Response, Concept []> wrapper, Concept ... concepts){
+        String request = REST.resolveTemplate(path, keyspace.getValue());
+
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.statusCode());
+
+        List<Concept> conceptsFound = Arrays.asList(wrapper.apply(response));
+        for (Concept concept : concepts) {
+            assertThat(conceptsFound, hasItem(concept));
         }
     }
 

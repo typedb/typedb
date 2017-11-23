@@ -37,7 +37,6 @@ import org.junit.Test;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class QueryPlannerTest {
 
@@ -150,7 +149,7 @@ public class QueryPlannerTest {
                 z.isa(subType),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertTrue(x.equals(plan.get(5).end()) || z.equals(plan.get(5).end()));
+        assertEquals(z, plan.get(4).end());
 
         tx.admin().shard(tx.getEntityType(thingy1).getId());
         tx.admin().shard(tx.getEntityType(thingy1).getId());
@@ -163,7 +162,7 @@ public class QueryPlannerTest {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y, plan.get(4).end());
+        assertEquals(y, plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy1),
@@ -183,7 +182,7 @@ public class QueryPlannerTest {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y, plan.get(4).end());
+        assertEquals(y, plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy1),

@@ -128,7 +128,7 @@ public class GraknTxPutPropertyTest {
     public void whenCallingPutResourceType_CreateATypeWithSuperTypeResource(
             @Open GraknTx graph, @Unused Label label, AttributeType.DataType<?> dataType) {
         AttributeType<?> attributeType = graph.putAttributeType(label, dataType);
-        assertEquals(graph.admin().getMetaResourceType(), attributeType.sup());
+        assertEquals(graph.admin().getMetaAttributeType(), attributeType.sup());
     }
 
     @Property
@@ -143,7 +143,7 @@ public class GraknTxPutPropertyTest {
     @Property
     public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingResourceType_ItReturnsThatType(
             @Open GraknTx graph, @FromTx AttributeType<?> attributeType) {
-        assumeFalse(attributeType.equals(graph.admin().getMetaResourceType()));
+        assumeFalse(attributeType.equals(graph.admin().getMetaAttributeType()));
 
         Label label = attributeType.getLabel();
         AttributeType.DataType<?> dataType = attributeType.getDataType();

@@ -26,7 +26,6 @@ import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -49,7 +48,6 @@ import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class CommitLogController {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private final TaskManager manager;
     private final PostProcessor postProcessor;
     private final int postProcessingDelay;
@@ -71,11 +69,9 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) throws JsonProcessingException {
-        res.type(REST.Response.ContentType.APPLICATION_JSON);
-
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, REST.Request.KEYSPACE_PARAM));
 
-        // Instances to post process
+        // Things to post process
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
         TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
@@ -85,6 +81,6 @@ public class CommitLogController {
                 CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, Json.read(req.body()))))
                 .join();
 
-        return objectMapper.writeValueAsString(postProcessingTaskState);
+        return "";
     }
 }

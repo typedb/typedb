@@ -18,33 +18,40 @@
 
 package ai.grakn.engine.controller.response;
 
-import ai.grakn.concept.Label;
+import ai.grakn.engine.Jacksonisable;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
  * <p>
- *     Wrapper class for {@link ai.grakn.concept.SchemaConcept}
+ *     Wraps the {@link Thing}s of a {@link Type} with some metadata
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public abstract class SchemaConcept extends Concept{
+@AutoValue
+public abstract class Things implements Jacksonisable{
+
+    @JsonProperty("@id")
+    public abstract Link selfLink();
 
     @JsonProperty
-    public abstract Label label();
+    public abstract Set<Thing> instances();
 
     @JsonProperty
-    public abstract Boolean implicit();
-
-    @Nullable
-    @JsonProperty("super")
-    public abstract Link sup();
+    public abstract Link next();
 
     @JsonProperty
-    public abstract Set<Link> subs();
+    public abstract Link previous();
 
+    public static Things create(
+            @JsonProperty("@id") Link selfLink,
+            @JsonProperty("instances") Set<Thing> instances,
+            @JsonProperty("next") Link next,
+            @JsonProperty("previous") Link previous
+    ){
+        return new AutoValue_Things(selfLink, instances, next, previous);
+    }
 }
-

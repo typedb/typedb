@@ -37,6 +37,7 @@ import java.util.Set;
 @AutoValue
 public abstract class AttributeType extends Type{
 
+    @Nullable
     @JsonProperty("data-type")
     public abstract String dataType();
 
@@ -56,7 +57,7 @@ public abstract class AttributeType extends Type{
             @JsonProperty("plays") Set<Link> plays,
             @JsonProperty("attributes") Set<Link> attributes,
             @JsonProperty("keys") Set<Link> keys,
-            @JsonProperty("data-type") String dataType,
+            @Nullable @JsonProperty("data-type") String dataType,
             @Nullable @JsonProperty("regex") String regex){
         return new AutoValue_AttributeType(id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys, dataType, regex);
     }
