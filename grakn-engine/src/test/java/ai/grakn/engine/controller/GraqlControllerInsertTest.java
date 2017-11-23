@@ -22,8 +22,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
@@ -35,11 +35,10 @@ import org.junit.Test;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonResponse;
-import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -172,20 +171,6 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsertWithTextType_ResponseIsTextType(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
-
-        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
-    @Test
-    public void POSTGraqlInsertWithTextType_ResponseIsCorrectText(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
-
-        assertThat(stringResponse(response), containsString("isa person"));
-    }
-
-    @Test
     public void POSTGraqlDefine_GraphCommitIsCalled(){
         String query = "define thingy sub entity;";
 
@@ -197,7 +182,7 @@ public class GraqlControllerInsertTest {
     }
 
     private Response sendRequest(String query){
-        return sendRequest(query, APPLICATION_TEXT);
+        return sendRequest(query, APPLICATION_JSON);
     }
 
     private Response sendRequest(String query, String acceptType){

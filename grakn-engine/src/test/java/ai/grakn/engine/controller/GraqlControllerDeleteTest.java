@@ -36,7 +36,7 @@ import org.junit.Test;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -167,17 +167,10 @@ public class GraqlControllerDeleteTest {
         assertThat(exception(response), containsString("cannot be deleted"));
     }
 
-    @Test
-    public void DELETEGraqlDelete_ResponseContentTypeIsText(){
-        Response response = sendRequest("match $x has name \"Harry\"; limit 1; delete $x;");
-
-        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
     private Response sendRequest(String query){
         return RestAssured.with()
                 .queryParam(EXECUTE_WITH_INFERENCE, false)
-                .accept(APPLICATION_TEXT)
+                .accept(APPLICATION_JSON)
                 .body(query)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, tx.keyspace().getValue()));
     }

@@ -58,7 +58,7 @@ import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -126,7 +126,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlMatch_QueryIsExecuted() {
         String query = "match $x isa movie;";
-        sendRequest(query, APPLICATION_TEXT);
+        sendRequest(query, APPLICATION_JSON);
 
         verify(mockTx.graql().materialise(anyBoolean()).infer(anyBoolean()).parser())
                 .parseQuery(argThat(argument -> argument.equals(query)));
@@ -134,7 +134,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatch_ResponseStatusIs200() {
-        Response response = sendRequest(APPLICATION_TEXT);
+        Response response = sendRequest(APPLICATION_JSON);
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -142,7 +142,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETMalformedGraqlMatch_ResponseStatusCodeIs400() {
         String query = "match $x isa ;";
-        Response response = sendRequest(query, APPLICATION_TEXT);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         assertThat(response.statusCode(), equalTo(400));
     }
@@ -150,7 +150,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETMalformedGraqlMatch_ResponseExceptionContainsSyntaxError() {
         String query = "match $x isa ;";
-        Response response = sendRequest(query, APPLICATION_TEXT);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         assertThat(exception(response), containsString("syntax error"));
     }
@@ -159,7 +159,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETMalformedGraqlMatch_ResponseExceptionDoesNotContainWordException() {
         String query = "match $x isa ;";
-        Response response = sendRequest(query, APPLICATION_TEXT);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         assertThat(exception(response), not(containsString("Exception")));
     }
@@ -184,14 +184,14 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithReasonerTrue_ReasonerIsOnWhenExecuting() {
-        sendRequest("match $x isa movie;", APPLICATION_TEXT, true,  0);
+        sendRequest("match $x isa movie;", APPLICATION_JSON, true,  0);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> arg));
     }
 
     @Test
     public void GETGraqlMatchWithReasonerFalse_ReasonerIsOffWhenExecuting() {
-        sendRequest("match $x isa movie;", APPLICATION_TEXT, false, 0);
+        sendRequest("match $x isa movie;", APPLICATION_JSON, false, 0);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> !arg));
     }
@@ -200,7 +200,7 @@ public class GraqlControllerReadOnlyTest {
     public void GETGraqlMatchWithNoInfer_ResponseStatusIs200() {
         Response response = RestAssured.with()
                 .body("match $x isa movie; get;")
-                .accept(APPLICATION_TEXT)
+                .accept(APPLICATION_JSON)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(200));
@@ -248,14 +248,14 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithTextType_ResponseContentTypeIsGraql() {
-        Response response = sendRequest(APPLICATION_TEXT);
+        Response response = sendRequest(APPLICATION_JSON);
 
-        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON));
     }
 
     @Test
     public void GETGraqlMatchWithTextType_ResponseIsCorrectGraql() {
-        Response response = sendRequest(APPLICATION_TEXT);
+        Response response = sendRequest(APPLICATION_JSON);
 
         assertThat(stringResponse(response).length(), greaterThan(0));
         assertThat(stringResponse(response), stringContainsInOrder(Collections.nCopies(10, "isa movie")));
@@ -288,7 +288,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlAggregateWithTextType_ResponseStatusIs200() {
         String query = "match $x isa movie; aggregate count;";
-        Response response = sendRequest(query, APPLICATION_TEXT);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -296,7 +296,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlAggregateWithTextType_ResponseIsCorrect() {
         String query = "match $x isa movie; aggregate count;";
-        Response response = sendRequest(query, APPLICATION_TEXT);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         // refresh graph
         sampleKB.tx().close();
@@ -306,17 +306,9 @@ public class GraqlControllerReadOnlyTest {
     }
 
     @Test
-    public void GETGraqlComputeWithTextType_ResponseContentTypeIsText() {
-        String query = "compute count in movie;";
-        Response response = sendRequest(query, APPLICATION_TEXT);
-
-        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
-    @Test
     public void GETGraqlComputeWithTextType_ResponseStatusIs200() {
         String query = "compute count in movie;";
-        Response response = sendRequest(query, APPLICATION_TEXT);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -325,7 +317,7 @@ public class GraqlControllerReadOnlyTest {
     @Ignore // TODO: Fix this. Probably related to mocks and analytics
     public void GETGraqlComputeWithTextType_ResponseIsCorrect() {
         String query = "compute count in movie;";
-        Response response = sendRequest(query, APPLICATION_TEXT);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         Long numberPeople = sampleKB.tx().getEntityType("movie").instances().count();
         assertThat(stringResponse(response), equalTo(Long.toString(numberPeople)));
@@ -341,7 +333,7 @@ public class GraqlControllerReadOnlyTest {
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendRequest(query, APPLICATION_TEXT);
+        Response response = sendRequest(query, APPLICATION_JSON);
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(stringResponse(response), containsString("isa has-genre"));
