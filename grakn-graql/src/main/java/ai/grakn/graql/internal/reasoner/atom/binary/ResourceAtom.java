@@ -415,6 +415,16 @@ public class ResourceAtom extends Binary{
                 .collect(Collectors.toSet());
     }
 
+    private void attachAttribute(Concept owner, Attribute attribute){
+        if (owner.isEntity()){
+            EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
+        } else if (owner.isRelationship()){
+            RelationshipImpl.from(owner.asRelationship()).attributeInferred(attribute);
+        } else if (owner.isAttribute()){
+            AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
+        }
+    }
+
     @Override
     public Stream<Answer> materialise(){
         Answer substitution = getParentQuery().getSubstitution();
@@ -424,17 +434,11 @@ public class ResourceAtom extends Binary{
 
         if (substitution.containsVar(resourceVariable)){
             Attribute attribute = substitution.get(resourceVariable).asAttribute();
-            if (owner.isEntity()){
-                EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
-            } else if (owner.isRelationship()){
-                RelationshipImpl.from(owner.asRelationship()).attribute(attribute);
-            } else if (owner.isAttribute()){
-                AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
-            }
+            attachAttribute(owner, attribute);
             return Stream.of(substitution);
         } else {
             Attribute attribute = AttributeTypeImpl.from(type).putAttributeInferred(Iterables.getOnlyElement(getMultiPredicate()).getPredicate().equalsValue().get());
-            EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
+            attachAttribute(owner, attribute);
             return Stream.of(substitution.merge(new QueryAnswer(ImmutableMap.of(resourceVariable, attribute))));
         }
     }
