@@ -43,7 +43,6 @@ import org.junit.runners.MethodSorters;
 
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
-import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
@@ -162,14 +161,14 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithReasonerTrue_ReasonerIsOnWhenExecuting() {
-        sendRequest("match $x isa movie;", true,  0);
+        sendRequest("match $x isa movie;", true);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> arg));
     }
 
     @Test
     public void GETGraqlMatchWithReasonerFalse_ReasonerIsOffWhenExecuting() {
-        sendRequest("match $x isa movie;", false, 0);
+        sendRequest("match $x isa movie;", false);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> !arg));
     }
@@ -288,16 +287,14 @@ public class GraqlControllerReadOnlyTest {
     }
 
     private Response sendRequest(String match) {
-        return sendRequest(match, false, -1);
+        return sendRequest(match, false);
     }
 
-    private Response sendRequest(String match, boolean reasonser,
-                                  int limitEmbedded) {
+    private Response sendRequest(String match, boolean reasonser) {
         return RestAssured.with()
                 .queryParam(KEYSPACE_PARAM, mockTx.keyspace().getValue())
                 .body(match)
                 .queryParam(EXECUTE_WITH_INFERENCE, reasonser)
-                .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
     }
 

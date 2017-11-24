@@ -34,7 +34,6 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
-import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,7 +51,7 @@ public class GraqlControllerTest {
     }
 
     private Response sendQuery(String query, String acceptType) {
-        return sendQuery(query, acceptType, true, -1, sampleKB.tx().keyspace().getValue(), false);
+        return sendQuery(query, acceptType, true, sampleKB.tx().keyspace().getValue(), false);
     }
 
     private Response sendQuery(String query,
@@ -60,19 +59,17 @@ public class GraqlControllerTest {
                                boolean reasoner,
                                int limitEmbedded,
                                boolean multi) {
-        return sendQuery(query, acceptType, reasoner, limitEmbedded, sampleKB.tx().keyspace().getValue(), multi);
+        return sendQuery(query, acceptType, reasoner, sampleKB.tx().keyspace().getValue(), multi);
     }
 
 
     private Response sendQuery(String query,
                                String acceptType,
                                boolean reasoner,
-                               int limitEmbedded,
                                String keyspace, boolean multi) {
         return RestAssured.with()
                 .body(query)
                 .queryParam(EXECUTE_WITH_INFERENCE, reasoner)
-                .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .queryParam(ALLOW_MULTIPLE_QUERIES, multi)
                 .queryParam(DEFINE_ALL_VARS, true)
                 .accept(acceptType)
