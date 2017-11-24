@@ -43,6 +43,7 @@ import ai.grakn.graql.macro.Macro;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
+import java.io.Reader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -193,6 +194,11 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public <T extends Query<?>> Stream<T> parseList(String queryString) {
         return queryParser.parseList(queryString);
+    }
+
+    @Override
+    public <T extends Query<?>> Stream<T> parseList(Reader reader) {
+        return queryParser.parseList(reader);
     }
 
     /**
