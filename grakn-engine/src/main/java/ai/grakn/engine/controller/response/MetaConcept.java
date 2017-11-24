@@ -22,6 +22,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
@@ -36,6 +37,7 @@ import java.util.Set;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
+@JsonIgnoreProperties(value={ "abstract", "plays", "attributes", "keys", "implicit" }, allowGetters=true)
 @AutoValue
 public abstract class MetaConcept extends Type{
 
