@@ -90,6 +90,16 @@ count_marriage_equal_to_1()
   fi
 }
 
+can_pass_query_as_argument()
+{
+  local count=$("${GRAKN_DIST_TMP}"/graql console -e 'match $x isa person; aggregate count;')
+  if [[ $count -eq 4 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 pid_files_must_not_exist() {
   if [[ -e "${STORAGE_PID}" ]]; then
     echo "Cassandra PID file is not deleted"
@@ -244,6 +254,15 @@ main() {
   local count_marriage_status=$?
   if [[ $count_marriage_status -ne 0 ]]; then
     echo "Marriage count != 1. Halting test."
+    force_kill
+    exit 1
+  fi
+
+  echo "Testing passing query as an argument..."
+  can_pass_query_as_argument
+  local can_pass_query_status=$?
+  if [[ $can_pass_query_status -ne 0 ]]; then
+    echo "Can't pass query as an argument. Halting test."
     force_kill
     exit 1
   fi
