@@ -50,9 +50,9 @@ public class GraknConfig {
     private final Properties prop;
 
     /**
-     * The path to the config file currently in use. Default: ../conf/main/grakn.properties
+     * The path to the config file currently in use. Default: ./conf/main/grakn.properties
      */
-    private static final Path DEFAULT_CONFIG_FILE = Paths.get("..", "conf", "main", "grakn.properties");
+    private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "conf", "main", "grakn.properties");
 
     public static final int WEBSOCKET_TIMEOUT = 3600000;
 
@@ -61,7 +61,7 @@ public class GraknConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknConfig.class);
 
-    protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get("grakn", "grakn-ascii.txt"));
+    protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".","services","grakn", "grakn-ascii.txt"));
 
     public static GraknConfig empty() {
         return GraknConfig.of(new Properties());

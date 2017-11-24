@@ -145,7 +145,7 @@ public class DistributionContext extends CompositeTestRule {
         // Java commands to start Engine process
         String[] commands = {"java",
                 "-cp", getClassPath(),
-                "-Dgrakn.dir=" + DIST_DIRECTORY + "/services",
+                "-Dgrakn.dir=" + DIST_DIRECTORY,
                 "-Dgrakn.conf=" + propertiesFile.getAbsolutePath(),
                 Grakn.class.getName(), "&"};
 
