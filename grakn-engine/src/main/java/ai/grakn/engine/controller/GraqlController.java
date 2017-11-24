@@ -26,7 +26,6 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
@@ -131,7 +130,7 @@ public class GraqlController {
             defineAllVars.ifPresent(parser::defineAllVars);
 
             response.status(SC_OK);
-            return executeQuery(printer, tx, queryString, multiQuery, parser);
+            return executeQuery(tx, queryString, multiQuery, parser);
         }
     }
 
@@ -158,7 +157,7 @@ public class GraqlController {
      * @param multi       execute multiple statements
      * @param parser
      */
-    private String executeQuery(Printer printer, GraknTx tx, String queryString, boolean multi, QueryParser parser) {
+    private String executeQuery(GraknTx tx, String queryString, boolean multi, QueryParser parser) {
         String formatted;
         boolean commitQuery = true;
         if (multi) {
