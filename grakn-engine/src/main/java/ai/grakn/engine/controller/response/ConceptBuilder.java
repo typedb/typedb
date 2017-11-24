@@ -122,7 +122,7 @@ public class ConceptBuilder {
         Set<Link> subs = schemaConcept.subs().map(Link::create).collect(Collectors.toSet());
 
         if(Schema.MetaSchema.THING.getLabel().equals(schemaConcept.getLabel())) {
-            return MetaConcept.create(schemaConcept.getId(), selfLink, schemaConcept.getLabel(), schemaConcept.isImplicit(), sup, subs);
+            return MetaConcept.create(schemaConcept.getId(), selfLink, schemaConcept.getLabel(),  sup, subs);
         } else if(schemaConcept.isRole()){
             return buildRole(schemaConcept.asRole(), selfLink, sup, subs);
         } else if(schemaConcept.isRule()){

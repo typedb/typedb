@@ -103,7 +103,7 @@ public class JacksonPrinter implements Printer<Object>{
     public Object graqlString(boolean inner, Collection collection) {
         Stream stream = collection.stream();
         if(limitEmbedded.isPresent()) stream = stream.limit(limitEmbedded.get());
-        return stream.map(object -> graqlString(inner, object)).collect(Collectors.toSet());
+        return stream.map(object -> graqlString(inner, object)).collect(Collectors.toList());
     }
 
     @Override
