@@ -259,4 +259,9 @@ public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner
     public Collection<Cache> caches() {
         return structure().caches();
     }
+
+    public Relationship attributeInferred(Attribute attribute) {
+        reify().attributeInferred(attribute);
+        return this;
+    }
 }
