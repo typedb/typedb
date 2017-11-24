@@ -45,4 +45,4 @@ update_classpath_global_var() {
 
 update_classpath_global_var
 
-java -cp ${CLASSPATH} ai.grakn.dist.DistGraql $@
+java -cp ${CLASSPATH} ai.grakn.dist.DistGraql "$@"
