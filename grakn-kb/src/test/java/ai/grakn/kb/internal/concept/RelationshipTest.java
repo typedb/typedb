@@ -299,4 +299,16 @@ public class RelationshipTest extends TxTestBase {
         relationship.removeRolePlayer(role2, e6);
         assertThat(relationship.rolePlayers().collect(Collectors.toSet()), containsInAnyOrder(e1, e3, e4, e5));
     }
+
+    @Test
+    public void whenAttributeLinkedToRelationshipIsInferred_EnsureItIsMarkedAsInferred(){
+        AttributeType attributeType = tx.putAttributeType("Another thing of sorts", AttributeType.DataType.STRING);
+        RelationshipType relationshipType = tx.putRelationshipType("A thing of sorts").attribute(attributeType);
+
+        Attribute attribute = attributeType.putAttribute("Things");
+        Relationship relationship = relationshipType.addRelationship();
+
+        RelationshipImpl.from(relationship).attributeInferred(attribute);
+        assertTrue(relationship.relationships().findAny().get().isInferred());
+    }
 }

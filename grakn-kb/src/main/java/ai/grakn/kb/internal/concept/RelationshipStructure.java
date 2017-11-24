@@ -111,4 +111,5 @@ interface RelationshipStructure extends CacheOwner{
      * @return true if this {@link Relationship} exists due to a rule
      */
     boolean isInferred();
+
 }

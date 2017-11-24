@@ -18,7 +18,6 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.Client;
 import ai.grakn.client.GraknClient;
@@ -67,9 +66,9 @@ class GraqlClient {
         }
     }
 
-    public BatchExecutorClient loaderClient(Keyspace keyspace, SimpleURI uri) {
+    public BatchExecutorClient loaderClient(SimpleURI uri) {
         return BatchExecutorClient.newBuilder()
-                .threadPoolCoreSize(Runtime.getRuntime().availableProcessors() * 8)
+                .threadPoolCoreSize(Runtime.getRuntime().availableProcessors() * 4)
                 .taskClient(new GraknClient(uri))
                 .maxRetries(DEFAULT_MAX_RETRY)
                 .build();
