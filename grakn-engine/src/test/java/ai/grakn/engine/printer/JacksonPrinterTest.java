@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,7 +54,7 @@ public class JacksonPrinterTest {
     public void whenGraqlQueryResultsInConcepts_EnsureConceptsAreWrappedAndReturned() throws JsonProcessingException {
         Set<ai.grakn.concept.Concept> concepts = rule.tx().graql().
                 match(var("x").isa("person")).get("x").collect(Collectors.toSet());
-        Set<Concept> conceptsWrapper = concepts.stream().map(ConceptBuilder::<Concept>build).collect(Collectors.toSet());
+        List<Concept> conceptsWrapper = concepts.stream().map(ConceptBuilder::<Concept>build).collect(Collectors.toList());
         assertWrappersMatch(conceptsWrapper, concepts);
     }
 
