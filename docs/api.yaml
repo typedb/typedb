@@ -70,10 +70,6 @@ paths:
         in: query
         description: Enable inference
         type: boolean
-      - name: limitEmbedded
-        in: query
-        description: Number of embedded concepts to return
-        type: number
       - name: defineAllVars
         in: query
         description: Define all anonymous variables in the query
