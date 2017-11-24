@@ -205,4 +205,5 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     public boolean isReified() {
         return true;
     }
+
 }
