@@ -25,7 +25,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 
-class StorageProcess extends AbstractProcessHandler implements ProcessHandler {
+/**
+ *
+ * @author Michele Orsi
+ */
+public class StorageProcess extends AbstractProcessHandler implements ProcessHandler {
 
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");

@@ -27,7 +27,7 @@
 
     <fileSets>
         <fileSet>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>${file.separator}</outputDirectory>
             <directory>${basedir}/src</directory>
             <includes>
                 <include>grakn</include>
@@ -36,7 +36,7 @@
         </fileSet>
         <!-- changelog license readme -->
         <fileSet>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>${file.separator}</outputDirectory>
             <directory>${main.basedir}</directory>
             <includes>
                 <include>LICENSE.txt</include>

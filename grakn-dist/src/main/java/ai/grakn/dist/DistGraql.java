@@ -40,10 +40,9 @@ public class DistGraql {
         } catch (RuntimeException ex) {
             System.out.println(ex.getMessage());
         }
-
     }
 
-    private void run(String[] args) {
+    public void run(String[] args) {
         String context = args.length > 0 ? args[0] : "";
 
         switch (context) {

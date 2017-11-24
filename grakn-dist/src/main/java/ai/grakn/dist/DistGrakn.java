@@ -75,7 +75,7 @@ public class DistGrakn {
         }
     }
 
-    private void run(String context, String action, String option) {
+    public void run(String context, String action, String option) {
         Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
         if(Files.exists(ascii)) {
             try {
@@ -97,7 +97,7 @@ public class DistGrakn {
         }
     }
 
-    private DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
+    public DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
         this.storageProcess = storageProcess;
         this.queueProcess = queueProcess;
         this.graknProcess = graknProcess;
