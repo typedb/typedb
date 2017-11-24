@@ -67,7 +67,7 @@ public class DistGrakn {
             application = new DistGrakn(storageProcess,queueProcess,graknProcess);
             application.run(context,action,option);
         } catch (InvalidPathException ex) {
-            System.out.println("Problem with bash script: cannot run Graql");
+            System.out.println("Problem with bash script: cannot run Grakn");
             return;
         } catch (RuntimeException ex) {
             System.out.println(ex.getMessage());
