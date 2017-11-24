@@ -58,7 +58,6 @@ import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
-import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static com.codahale.metrics.MetricRegistry.name;
@@ -75,6 +74,7 @@ import static org.apache.http.HttpStatus.SC_OK;
  */
 public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
+    private static final JacksonPrinter printer = JacksonPrinter.create();
     private final EngineGraknTxFactory factory;
     private final Timer executeGraql;
 
@@ -100,10 +100,6 @@ public class GraqlController {
             @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "body"),
             @ApiImplicitParam(name = EXECUTE_WITH_INFERENCE, value = "Enable inference", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(
-                    name = LIMIT_EMBEDDED,
-                    value = "Limit of embedded objects in HAL response", dataType = "int", paramType = "query"
-            ),
-            @ApiImplicitParam(
                     name = DEFINE_ALL_VARS,
                     value = "Define all variables in response", dataType = "boolean", paramType = "query"
             ),
@@ -114,9 +110,6 @@ public class GraqlController {
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         String queryString = mandatoryBody(request);
-
-        //Limits the number of results returned
-        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
         //Run the query with reasoning on or off
         Optional<Boolean> infer = queryParameter(request, EXECUTE_WITH_INFERENCE).map(Boolean::parseBoolean);
@@ -136,13 +129,6 @@ public class GraqlController {
 
             QueryParser parser = builder.parser();
             defineAllVars.ifPresent(parser::defineAllVars);
-
-            JacksonPrinter printer;
-            if(limitEmbedded == -1){
-                printer = JacksonPrinter.create();
-            } else {
-                printer = JacksonPrinter.create(limitEmbedded);
-            }
 
             response.status(SC_OK);
             return executeQuery(printer, tx, queryString, multiQuery, parser);

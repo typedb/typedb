@@ -105,21 +105,12 @@ public class REST {
         public static final String COMMIT_LOG_SHARDING_COUNT = "sharding-count";
 
         /**
-         * Concept controller request parameters
-         */
-        public static final class Concept {
-            public static final String LIMIT_EMBEDDED = "limitEmbedded";
-            public static final String OFFSET_EMBEDDED = "offsetEmbedded";
-        }
-
-        /**
          * Graql controller request parameters
          */
         public static final class Graql {
             public static final String QUERY = "query";
             public static final String EXECUTE_WITH_INFERENCE = "infer";
             public static final String ALLOW_MULTIPLE_QUERIES = "multi";
-            public static final String LIMIT_EMBEDDED = "limitEmbedded";
             public static final String DEFINE_ALL_VARS = "defineAllVars";
         }
     }
