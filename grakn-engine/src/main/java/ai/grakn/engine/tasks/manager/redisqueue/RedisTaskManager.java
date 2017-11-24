@@ -107,14 +107,7 @@ public class RedisTaskManager implements TaskManager {
                     throw new RuntimeException("Failed to initialise subscription");
                 });
     }
-
-
-    @Override
-    public void stopTask(TaskId id) {
-        // NOOP
-        // TODO Implement this
-    }
-
+    
     @Override
     public RedisTaskStorage storage() {
         return taskStorage;
