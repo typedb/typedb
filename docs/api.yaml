@@ -90,7 +90,7 @@ paths:
       produces: [text/plain, application/json]
       responses:
         200:
-          description: ''
+          description: 'Returns a Graql query response. This can be different depending on the type of query.'
           schema:
             $ref: '#/definitions/GraqlResponse'
         400:
