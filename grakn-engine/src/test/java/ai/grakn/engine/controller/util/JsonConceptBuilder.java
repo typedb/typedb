@@ -37,10 +37,13 @@ import java.io.IOException;
 /**
  * <p>
  *     Takes a string representing a {@link ai.grakn.engine.controller.response.Concept} and serialises it into
- *     it's correct object
+ *     it's correct object.
+ *
+ *     We cannot rely on normal jackson deserilisation due to using Jackson and autovalue.
+ *     Details described in this issue: https://github.com/FasterXML/jackson-databind/issues/1234
  * </p>
  *
- * @author Filipe PEliz Pintio Teixeira
+ * @author Filipe Peliz Pintio Teixeira
  */
 public class JsonConceptBuilder {
     private static ObjectMapper mapper = new ObjectMapper();

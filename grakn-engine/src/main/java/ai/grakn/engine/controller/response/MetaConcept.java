@@ -36,7 +36,7 @@ import java.util.Set;
  * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
-public abstract class MetaConcept extends SchemaConcept{
+public abstract class MetaConcept extends Type{
 
     @JsonCreator
     public static MetaConcept create(
