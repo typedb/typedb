@@ -30,6 +30,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import mjson.Json;
+import org.apache.commons.io.output.TeeOutputStream;
+import org.hamcrest.Matcher;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -37,33 +47,25 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
+
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import java.util.stream.Stream;
-import mjson.Json;
-import org.apache.commons.io.output.TeeOutputStream;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import org.hamcrest.Matcher;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.isEmptyString;
-import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
 
 public class GraqlShellIT {
 
@@ -381,18 +383,6 @@ public class GraqlShellIT {
         Json x = json.at("x");
         assertTrue(x.has("id"));
         assertFalse(x.has("isa"));
-    }
-
-    @Test
-    public void testHALOutput() throws Exception {
-        String[] result = runShellWithoutErrors(
-                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "hal"
-        ).split("\n");
-        assertThat(result, arrayWithSize(NUM_METATYPES));
-        Json json = Json.read(result[0]);
-        Json x = json.at("x");
-        assertTrue(x.has("_id"));
-        assertTrue(x.has("_baseType"));
     }
 
     @Test

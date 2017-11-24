@@ -180,41 +180,6 @@ public class GraqlControllerTest {
         resp.then().statusCode(200);
     }
 
-    @Test
-    public void whenMatchingJoinExplanation_HALResponseContainsInferredRelation() {
-        String queryString = "match ($x,$y) isa siblings; $z isa person; offset 0; limit 2; get;";
-        int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_JSON, true, limitEmbedded, genealogyKB.tx().keyspace().getValue(), false);
-        resp.then().statusCode(200);
-        Json jsonResp = Json.read(resp.body().asString());
-        jsonResp.asJsonList().stream()
-                .flatMap(x -> x.asJsonMap().entrySet().stream())
-                .filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y") && !entry.getKey().equals("z")))
-                .map(entry -> entry.getValue())
-                .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("marriage"))
-                .forEach(thing -> {
-                    assertEquals("INFERRED_RELATIONSHIP", thing.at("_baseType").asString());
-                });
-
-    }
-
-    @Test
-    public void whenMatchingNotInferredRelation_HALResponseContainsRelation() {
-        String queryString = "match ($x,$y) isa directed-by; offset 0; limit 25; get;";
-        int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_JSON, true, limitEmbedded, false);
-        resp.then().statusCode(200);
-        Json jsonResp = Json.read(resp.body().asString());
-        jsonResp.asJsonList().stream()
-                .flatMap(x -> x.asJsonMap().entrySet().stream())
-                .filter(entry -> (!entry.getKey().equals("x") && !entry.getKey().equals("y")))
-                .map(entry -> entry.getValue())
-                .filter(thing -> thing.has("_type") && thing.at("_type").asString().equals("directed-by"))
-                .forEach(thing -> {
-                    assertEquals("RELATIONSHIP", thing.at("_baseType").asString());
-                });
-
-    }
 
     @Test
     public void whenSendingGibberish_Ensure400IsReturned() {
