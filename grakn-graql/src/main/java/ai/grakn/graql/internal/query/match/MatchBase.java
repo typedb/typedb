@@ -27,10 +27,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.util.CommonUtil;
@@ -78,8 +76,7 @@ public class MatchBase extends AbstractMatch {
     public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
         GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noTx);
 
-        for (VarPatternAdmin var : pattern.varPatterns()) {
-            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
+        validatePattern(graph);
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
         LOG.trace("Created query plan");

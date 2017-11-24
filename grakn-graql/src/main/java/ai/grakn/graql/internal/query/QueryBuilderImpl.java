@@ -60,7 +60,7 @@ public class QueryBuilderImpl implements QueryBuilder {
 
     private final Optional<GraknTx> tx;
     private final QueryParser queryParser = QueryParserImpl.create(this);
-    private boolean infer = false;
+    private boolean infer = true;
     private boolean materialise = false;
 
     public QueryBuilderImpl() {

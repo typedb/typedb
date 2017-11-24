@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary.type;
 
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
@@ -28,6 +29,8 @@ import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -56,6 +59,11 @@ public class PlaysAtom extends TypeAtom {
     @Override
     public Atomic copy(){
         return new PlaysAtom(this);
+    }
+
+    @Override
+    public Set<String> validateAsRuleHead(Rule rule) {
+        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
     }
 
     @Override

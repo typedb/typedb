@@ -141,8 +141,15 @@ public class ResourceAtom extends Binary{
     @Override
     public int hashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = this.alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
+        return hashCode;
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + this.multiPredicateEquivalenceHashCode();
         return hashCode;
     }
@@ -190,14 +197,6 @@ public class ResourceAtom extends Binary{
         IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
         IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
         return (thisPredicate == null) == (predicate == null);
-    }
-
-    @Override
-    public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
-        return hashCode;
     }
 
     @Override
@@ -265,7 +264,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule){
-        Set<String> errors = new HashSet<>();
+        Set<String> errors = super.validateAsRuleHead(rule);
         if (getSchemaConcept() == null || getMultiPredicate().size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.getThen(), rule.getLabel()));
         }
@@ -275,7 +274,7 @@ public class ResourceAtom extends Binary{
                     .filter(at -> at.getVarNames().contains(getPredicateVariable()))
                     .findFirst().isPresent();
             if (!predicateBound) {
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_UNBOUND_PREDICATE.getMessage(rule.getThen(), rule.getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
             }
         }
 
@@ -434,5 +433,4 @@ public class ResourceAtom extends Binary{
                 .rewriteWithRelationVariable(parentAtom)
                 .rewriteWithTypeVariable(parentAtom);
     }
-
 }

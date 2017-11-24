@@ -281,16 +281,16 @@ class ValidateGlobalRules {
         if (rule.getWhen().admin().isDisjunction()){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getLabel()));
         }
-        errors.addAll(validateRuleHead(graph, rule, rule.getThen()));
+        if (errors.isEmpty()){
+            errors.addAll(validateRuleHead(graph, rule));
+        }
         return errors;
     }
 
     private static ReasonerQuery combinedRuleQuery(GraknTx graph, Rule rule){
-        return rule
-                .getWhen()
-                .and(rule.getThen())
-                .admin().getDisjunctiveNormalForm().getPatterns().iterator().next()
-                .toReasonerQuery(graph);
+        ReasonerQuery bodyQuery = rule.getWhen().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        ReasonerQuery headQuery =  rule.getThen().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
+        return headQuery.conjunction(bodyQuery);
     }
 
     /**
@@ -313,20 +313,20 @@ class ValidateGlobalRules {
     /**
      * @param graph graph used to ensure the rule head is valid
      * @param rule the rule to be validated
-     * @param head head of the rule of interest
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
-    private static Set<String> validateRuleHead(GraknTx graph, Rule rule, Pattern head) {
+    private static Set<String> validateRuleHead(GraknTx graph, Rule rule) {
         Set<String> errors = new HashSet<>();
-        Set<Conjunction<VarPatternAdmin>> headPatterns = head.admin().getDisjunctiveNormalForm().getPatterns();
+        Set<Conjunction<VarPatternAdmin>> headPatterns = rule.getThen().admin().getDisjunctiveNormalForm().getPatterns();
 
         if (headPatterns.size() != 1){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getLabel()));
         } else {
-            //
-            ReasonerQuery combinedQuery = combinedRuleQuery(graph, rule);
+            ReasonerQuery bodyQuery = Iterables.getOnlyElement(rule.getWhen().admin().getDisjunctiveNormalForm().getPatterns()).toReasonerQuery(graph);
+            ReasonerQuery headQuery = Iterables.getOnlyElement(headPatterns).toReasonerQuery(graph);
+            ReasonerQuery combinedQuery = headQuery.conjunction(bodyQuery);
 
-            Set<Atomic> headAtoms = Iterables.getOnlyElement(headPatterns).toReasonerQuery(graph).getAtoms();
+            Set<Atomic> headAtoms = headQuery.getAtoms();
             combinedQuery.getAtoms().stream()
                     .filter(headAtoms::contains)
                     .map(at -> at.validateAsRuleHead(rule)).forEach(errors::addAll);
