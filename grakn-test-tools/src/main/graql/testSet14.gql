@@ -27,18 +27,7 @@ rule-1 sub rule
 		$y has resource $r1;
 	};
 
-#needed for reusingResources_copyingResourceValueToResourceOfDifferentType test
-#subResource sub resource;
-
-#rule-2 sub rule
-#	when {
-#		$x isa entity1 has resource $r1;
-#	}
-#	then {
-#		$x has subResource $r1;
-#	};
-
-rule-3 sub rule
+rule-2 sub rule
     when {
         $x isa entity1, has resource $y;
         $z isa relation;
@@ -46,6 +35,17 @@ rule-3 sub rule
     then {
         $z has resource $y;
     };
+
+#needed for reusingResources_copyingResourceValueToResourceOfDifferentType test
+#subResource sub resource;
+
+#rule-3 sub rule
+#	when {
+#		$x isa entity1 has resource $r1;
+#	}
+#	then {
+#		$x has subResource $r1;
+#	};
 
 insert
 

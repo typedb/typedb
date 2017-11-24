@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -80,7 +81,9 @@ public abstract class Binary extends Atom {
     @Override
     public SchemaConcept getSchemaConcept(){
         if (type == null && getTypePredicate() != null) {
-            type = getParentQuery().tx().getConcept(getTypeId()).asType();
+            Concept concept = getParentQuery().tx().getConcept(getTypeId());
+            if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
+            type = concept.asType();
         }
         return type;
     }

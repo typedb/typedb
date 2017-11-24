@@ -204,7 +204,7 @@ public abstract class Atom extends AtomicBase {
             return getPotentialRules()
                     .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
-                    .map(r -> r.rewriteToUserDefined(this))
+                    .map(r -> r.rewrite(this))
                     .peek(applicableRules::add);
         }
         return applicableRules.stream();

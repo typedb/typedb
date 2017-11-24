@@ -1310,7 +1310,7 @@ public class AtomicTest {
                         graph.graql().parsePattern(childPatternString),
                         graph.graql().parsePattern(childPatternString)),
                 graph)
-                .rewriteToUserDefined(parentAtom);
+                .rewrite(parentAtom);
 
         RelationshipAtom headAtom = (RelationshipAtom) testRule.getHead().getAtom();
         Var headVarName = headAtom.getVarName();

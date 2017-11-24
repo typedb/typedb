@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -107,8 +108,10 @@ public abstract class TypeAtom extends Binary{
     @Nullable
     @Override
     public SchemaConcept getSchemaConcept() {
-        return getTypePredicate() != null ?
-                getParentQuery().tx().getConcept(getTypePredicate().getPredicate()) : null;
+        if (getTypePredicate() == null) return null;
+        SchemaConcept schemaConcept = tx().getConcept(getTypePredicate().getPredicate());
+        if (schemaConcept == null) throw GraqlQueryException.idNotFound(getTypePredicate().getPredicate());
+        return schemaConcept;
     }
 
     /**

@@ -165,6 +165,14 @@ public class ReasoningTests {
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
 
+    @Test //Expected result: Empty as ids are non-existent.
+    public void reasoningWithNonExistentIds() {
+        QueryBuilder qb = testSet1.tx().graql().infer(true);
+        String queryString = "match $x id 'V123'; $y id 'V456'; ($x, $y); get;";
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertThat(answers, empty());
+    }
+
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationWithVarDuplicates() {
         QueryBuilder qb = testSet1.tx().graql().infer(true);
@@ -343,6 +351,17 @@ public class ReasoningTests {
 
         assertEquals(answers.size(), 2);
         assertEquals(answers2.size(), 1);
+    }
+
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void reusingResources_queryingForGenericRelation() {
+        QueryBuilder qb = testSet14.tx().graql().infer(true);
+
+        String queryString = "match $x isa entity1;($x, $y); get;";
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+
+        assertEquals(answers.size(), 3);
+        assertEquals(answers.stream().filter(answer -> answer.get("y").isAttribute()).count(), 2);
     }
 
     //TODO potentially a graql bug when executing match insert on shared resources
