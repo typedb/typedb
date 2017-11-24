@@ -509,19 +509,6 @@ definitions:
     type: string
     format: uri
     example: /kb/genealogy/role/husband
-  RoleSummary:
-    required: ['@id', label, relationships]
-    type: object
-    properties:
-      '@id':
-        $ref: '#/definitions/RoleLink'
-      label:
-        allOf: [$ref: '#/definitions/Label']
-        example: husband
-      relationships:
-        type: array
-        items:
-          $ref: '#/definitions/TypeLink'
   RolesLink:
     type: string
     format: uri
@@ -537,26 +524,33 @@ definitions:
         items:
           $ref: '#/definitions/Role'
   Role:
-    allOf:
-      - $ref: '#/definitions/RoleSummary'
-      - required: [implicit, rolePlayers, subs]
-        type: object
-        properties:
-          implicit:
-            type: boolean
-          rolePlayers:
-            type: array
-            items:
-              allOf: [$ref: '#/definitions/TypeLink']
-              example: /kb/genealogy/type/marriage
-          subs:
-            type: array
-            items:
-              allOf: [$ref: '#/definitions/RoleLink']
-              example: /kb/genealogy/role/husband
-          super:
-            allOf: [$ref: '#/definitions/RoleLink']
-            example: /kb/genealogy/role/spouse
+    required: ['@id', label, relationships, implicit, rolePlayers, subs]
+    type: object
+    properties:
+      '@id':
+        $ref: '#/definitions/RoleLink'
+      label:
+        allOf: [$ref: '#/definitions/Label']
+        example: husband
+      relationships:
+        type: array
+        items:
+          $ref: '#/definitions/TypeLink'
+      implicit:
+        type: boolean
+      rolePlayers:
+        type: array
+        items:
+          allOf: [$ref: '#/definitions/TypeLink']
+          example: /kb/genealogy/type/marriage
+      subs:
+        type: array
+        items:
+          allOf: [$ref: '#/definitions/RoleLink']
+          example: /kb/genealogy/role/husband
+      super:
+        allOf: [$ref: '#/definitions/RoleLink']
+        example: /kb/genealogy/role/spouse
   RuleLink:
     type: string
     format: uri
