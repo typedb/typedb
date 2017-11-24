@@ -44,7 +44,7 @@ const router = new VueRouter({
 // Check if the currentKeyspace is in the list of keyspaces sent from grakn
 // If not, set the currentKeyspace to the default one.
 const checkCurrentKeySpace = () => EngineClient.fetchKeyspaces().then((resp) => {
-  const keyspaces = JSON.parse(resp);
+  const keyspaces = JSON.parse(resp).keyspaces.map(ks => ks.name);
   if (!keyspaces.includes(User.getCurrentKeySpace())) {
     User.setCurrentKeySpace(DEFAULT_KEYSPACE);
   }

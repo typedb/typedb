@@ -21,7 +21,6 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
-import com.jayway.restassured.http.ContentType;
 import mjson.Json;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +28,6 @@ import org.mockito.Mockito;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_OK;
-import static org.hamcrest.Matchers.isA;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -56,17 +54,6 @@ public class CommitLogControllerTest {
     @Test
     public void whenPostingToCommitLogEndpoint_Return200() {
         given().body(BODY).when().post("/kb/myks/commit_log").then().statusCode(SC_OK);
-    }
-
-    @Test
-    public void whenPostingToCommitLogEndpoint_ReturnJSON() {
-        given().body(BODY).when().post("/kb/myks/commit_log").then().contentType(ContentType.JSON);
-    }
-
-    @Test
-    public void whenPostingToCommitLogEndpoint_ReceiveBodyWithTasks() {
-        given().body(BODY).when().post("/kb/myks/commit_log").then()
-                .body("id", isA(String.class));
     }
 
     @Test
