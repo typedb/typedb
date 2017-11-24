@@ -21,6 +21,7 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.macro.Macro;
 
+import java.io.Reader;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -40,6 +41,12 @@ public interface QueryParser {
      */
     @SuppressWarnings("unchecked")
     <T extends Query<?>> T parseQuery(String queryString);
+
+    /**
+     * @param reader a reader representing several queries
+     * @return a list of queries
+     */
+    <T extends Query<?>> Stream<T> parseList(Reader reader);
 
     /**
      * @param queryString a string representing several queries

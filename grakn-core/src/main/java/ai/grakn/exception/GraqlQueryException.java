@@ -20,6 +20,7 @@ package ai.grakn.exception;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -86,6 +87,10 @@ public class GraqlQueryException extends GraknException {
                 varPattern.getPrintableName(), property.graqlString(), other.graqlString()
         );
         return new GraqlQueryException(message);
+    }
+
+    public static GraqlQueryException idNotFound(ConceptId id) {
+        return new GraqlQueryException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
     }
 
     public static GraqlQueryException labelNotFound(Label label) {
