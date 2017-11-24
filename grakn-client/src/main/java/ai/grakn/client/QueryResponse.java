@@ -18,9 +18,10 @@
 package ai.grakn.client;
 
 import ai.grakn.graql.Query;
+import mjson.Json;
+
 import java.util.ArrayList;
 import java.util.List;
-import mjson.Json;
 
 /**
  * Encapsulates a response. (TODO) We should migrate this away from a json
@@ -28,6 +29,7 @@ import mjson.Json;
  * @author Domenico Corapi
  */
 public class QueryResponse {
+    private static final String EMPTY_RESPONSE = Json.array(Json.array(Json.object())).toString();
     private final Query<?> query;
     private final Json jsonResponse;
 
@@ -48,7 +50,13 @@ public class QueryResponse {
         List<Json> json = Json.read(response).asJsonList();
         ArrayList<QueryResponse> result = new ArrayList<>();
         for (int i = 0; i < queries.size(); i++) {
-            result.add(new QueryResponse(queries.get(i), json.get(i)));
+            QueryResponse resp;
+            if(EMPTY_RESPONSE.equals(response)){
+                resp = new QueryResponse(queries.get(i), Json.nil());
+            } else {
+                resp = new QueryResponse(queries.get(i), json.get(i));
+            }
+            result.add(resp);
         }
         return result;
     }
