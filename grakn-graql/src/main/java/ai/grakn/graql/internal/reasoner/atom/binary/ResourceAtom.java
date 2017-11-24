@@ -47,8 +47,10 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.AttributeTypeImpl;
 import ai.grakn.kb.internal.concept.EntityImpl;
+import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
@@ -418,15 +420,22 @@ public class ResourceAtom extends Binary{
         Answer substitution = getParentQuery().getSubstitution();
         AttributeType type = getSchemaConcept().asAttributeType();
         Concept owner = substitution.get(getVarName());
+        Var resourceVariable = getPredicateVariable();
 
-        if (substitution.containsVar(getPredicateVariable())){
-            Attribute attribute = substitution.get(getPredicateVariable()).asAttribute();
-            EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
+        if (substitution.containsVar(resourceVariable)){
+            Attribute attribute = substitution.get(resourceVariable).asAttribute();
+            if (owner.isEntity()){
+                EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
+            } else if (owner.isRelationship()){
+                RelationshipImpl.from(owner.asRelationship()).attribute(attribute);
+            } else if (owner.isAttribute()){
+                AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
+            }
             return Stream.of(substitution);
         } else {
             Attribute attribute = AttributeTypeImpl.from(type).putAttributeInferred(Iterables.getOnlyElement(getMultiPredicate()).getPredicate().equalsValue().get());
             EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
-            return Stream.of(substitution.merge(new QueryAnswer(ImmutableMap.of(getVarName(), attribute))));
+            return Stream.of(substitution.merge(new QueryAnswer(ImmutableMap.of(resourceVariable, attribute))));
         }
     }
 
