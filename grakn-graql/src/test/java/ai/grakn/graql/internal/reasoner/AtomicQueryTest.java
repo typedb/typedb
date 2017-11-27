@@ -134,7 +134,7 @@ public class AtomicQueryTest {
     @Test
     public void testWhenMaterialisingEntity_MaterialisedInformationIsCorrectlyFlaggedAsInferred(){
         GraknTx graph = materialisationTestSet.tx();
-        ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa entity1", graph), graph);
+        ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa newEntity", graph), graph);
         assertEquals(entityQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
     }
 
