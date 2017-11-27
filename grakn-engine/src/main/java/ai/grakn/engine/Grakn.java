@@ -35,7 +35,7 @@ public class Grakn {
     public static void main(String[] args) {
         try {
             // Start Engine
-            GraknEngineServer graknEngineServer = new GraknApplicationFactory().graknEngineServer(Runtime.getRuntime());
+            GraknEngineServer graknEngineServer = new GraknCreator().instantiateGraknEngineServer(Runtime.getRuntime());
             graknEngineServer.start();
         } catch (Exception e) {
             LOG.error("An exception has occurred", e);

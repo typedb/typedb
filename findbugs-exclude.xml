@@ -28,7 +28,7 @@
 
     <Match>
         <Or>
-            <Class name="ai.grakn.engine.GraknApplicationFactory" />
+            <Class name="ai.grakn.engine.GraknCreator" />
         </Or>
         <Bug pattern="MS_PKGPROTECT" />
     </Match>

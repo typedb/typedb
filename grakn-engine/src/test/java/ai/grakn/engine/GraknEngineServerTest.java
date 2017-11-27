@@ -67,8 +67,11 @@ public class GraknEngineServerTest {
     private final RedisWrapper redisWrapper = mock(RedisWrapper.class);
     private final Jedis jedis = mock(Jedis.class);
 
+    private GraknCreator graknCreator;
+
     @Before
     public void setUp() {
+        graknCreator = new GraknCreator();
         Pool<Jedis> jedisPool = mock(JedisPool.class);
         when(redisWrapper.getJedisPool()).thenReturn(jedisPool);
         when(jedisPool.getResource()).thenReturn(jedis);
@@ -80,7 +83,8 @@ public class GraknEngineServerTest {
         RedisServer redisServer = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(conf.getProperty(GraknConfigKey.REDIS_HOST))).getPort()).server();
         redisServer.start();
 
-        try (GraknEngineServer server = new GraknApplicationFactory().cleanGraknEngineServer(conf)) {
+
+        try (GraknEngineServer server = graknCreator.cleanGraknEngineServer(conf)) {
             server.start();
             assertNotNull(server.factory().systemKeyspace());
 
@@ -98,7 +102,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() {
         when(jedis.get(VERSION_KEY)).thenReturn(null);
 
-        try (GraknEngineServer server = new GraknApplicationFactory().cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = graknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
             server.start();
         }
 
@@ -109,7 +113,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() {
         when(jedis.get(VERSION_KEY)).thenReturn(GraknVersion.VERSION);
 
-        try (GraknEngineServer server = new GraknApplicationFactory().cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = graknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
             server.start();
         }
 
@@ -122,7 +126,7 @@ public class GraknEngineServerTest {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
         stdout.enableLog();
 
-        try (GraknEngineServer server = new GraknApplicationFactory().cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = graknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
             server.start();
         }
 
@@ -134,7 +138,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
 
-        try (GraknEngineServer server = new GraknApplicationFactory().cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = graknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
             server.start();
         }
 
