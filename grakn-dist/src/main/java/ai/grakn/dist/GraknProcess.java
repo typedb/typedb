@@ -104,7 +104,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
                 "-c",
                 command}, null, null);
 
-        String pid = getPidFromPsOf(Grakn.class.getName());
+        String pid = getPidFromPsOf(graknClass().getName());
 
         try {
             Files.write(GRAKN_PID,pid.getBytes(StandardCharsets.UTF_8));
@@ -174,7 +174,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     }
 
     public void statusVerbose() {
-        System.out.println(graknClass().getSimpleName()+" pid = '"+ getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+ getPidFromPsOf(Grakn.class.getSimpleName()) +"' (from ps -ef)");
+        System.out.println(graknClass().getSimpleName()+" pid = '"+ getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+ getPidFromPsOf(graknClass().getSimpleName()) +"' (from ps -ef)");
     }
 
     public void clean() {
