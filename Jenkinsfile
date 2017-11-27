@@ -251,7 +251,8 @@ def runBuild() {
                 stage('Run the benchmarks') {
                     mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
                     archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-		    archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                    // TODO: re-enable and fix archiving in S3
+                    // archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
                 }
             }
         }

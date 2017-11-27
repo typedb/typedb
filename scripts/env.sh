@@ -2,8 +2,6 @@
 
 set -e
 
-cd ..
-
 # validate the number of arguments
 if [ "$#" -ne "1" ]; then
 	echo "Needs one argument that is the module name" >&2
@@ -13,5 +11,6 @@ fi
 MODULE_NAME=$1
 
 export WORKSPACE=`pwd`
+export PACKAGE=grakn-package
 
 PATH="${WORKSPACE}/grakn-test/test-integration/src/test/bash:${WORKSPACE}/grakn-test/${MODULE_NAME}:${WORKSPACE}/grakn-test/${MODULE_NAME}/src/main/bash:${PATH}"
