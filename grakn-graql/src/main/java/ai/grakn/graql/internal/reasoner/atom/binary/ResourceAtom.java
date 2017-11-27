@@ -432,6 +432,7 @@ public class ResourceAtom extends Binary{
         Concept owner = substitution.get(getVarName());
         Var resourceVariable = getPredicateVariable();
 
+        //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
         if (substitution.containsVar(resourceVariable)){
             Attribute attribute = substitution.get(resourceVariable).asAttribute();
             attachAttribute(owner, attribute);

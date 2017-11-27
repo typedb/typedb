@@ -46,6 +46,7 @@ import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -72,6 +73,9 @@ public class AtomicQueryTest {
 
     @ClassRule
     public static final SampleKBContext geoKB = GeoKB.context();
+
+    @ClassRule
+    public static final SampleKBContext materialisationTestSet = SampleKBContext.load("materialisationTest.gql");
 
     @ClassRule
     public static final SampleKBContext unificationTestSet = SampleKBContext.load("unificationTest.gql");
@@ -125,6 +129,68 @@ public class AtomicQueryTest {
         assertNotExists(qb.parse(explicitQuery));
         answers.forEach(atomicQuery::materialise);
         assertExists(qb.parse(explicitQuery));
+    }
+
+    @Test
+    public void testWhenMaterialisingEntity_MaterialisedInformationIsCorrectlyFlaggedAsInferred(){
+        GraknTx graph = materialisationTestSet.tx();
+        ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa entity1", graph), graph);
+        assertEquals(entityQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
+    }
+
+    @Test
+    public void testWhenMaterialisingResources_MaterialisedInformationIsCorrectlyFlaggedAsInferred(){
+        GraknTx graph = materialisationTestSet.tx();
+        QueryBuilder qb = graph.graql().infer(false);
+        Concept firstEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity1; get;").execute()).get("x");
+        Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").execute()).get("x");
+        Concept resource = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa resource; get;").execute()).get("x");
+
+        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r val 'inferred';$x id " + firstEntity.getId().getValue() + ";}", graph), graph);
+        String reuseResourcePatternString =
+                "{" +
+                        "$x has resource $r;" +
+                        "$x id " + secondEntity.getId().getValue() + ";" +
+                        "$r id " + resource.getId().getValue() + ";" +
+                        "}";
+
+        ReasonerAtomicQuery reuseResourceQuery = ReasonerQueries.atomic(conjunction(reuseResourcePatternString, graph), graph);
+
+        assertEquals(resourceQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("r").asAttribute().isInferred(), true);
+
+        reuseResourceQuery.materialise(new QueryAnswer()).collect(Collectors.toList());
+        assertEquals(Iterables.getOnlyElement(
+                qb.<GetQuery>parse("match" +
+                        "$x has resource $r via $rel;" +
+                        "$x id " + secondEntity.getId().getValue() + ";" +
+                        "$r id " + resource.getId().getValue() + ";" +
+                        "get;").execute()).get("rel").asRelationship().isInferred(), true);
+        assertEquals(Iterables.getOnlyElement(
+                qb.<GetQuery>parse("match" +
+                        "$x has resource $r via $rel;" +
+                        "$x id " + firstEntity.getId().getValue() + ";" +
+                        "$r id " + resource.getId().getValue() + ";" +
+                        "get;").execute()).get("rel").asRelationship().isInferred(), false);
+    }
+
+    @Test
+    public void testWhenMaterialisingRelations_MaterialisedInformationIsCorrectlyFlaggedAsInferred(){
+        GraknTx graph = materialisationTestSet.tx();
+        QueryBuilder qb = graph.graql().infer(false);
+        Concept firstEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity1; get;").execute()).get("x");
+        Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").execute()).get("x");
+
+        ReasonerAtomicQuery relationQuery = ReasonerQueries.atomic(conjunction(
+                "{" +
+                        "$r (role1: $x, role2: $y);" +
+                        "$x id " + firstEntity.getId().getValue() + ";" +
+                        "$y id " + secondEntity.getId().getValue() + ";" +
+                        "}"
+                , graph),
+                graph
+        );
+
+        assertEquals(relationQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("r").asRelationship().isInferred(), true);
     }
 
     @Test
