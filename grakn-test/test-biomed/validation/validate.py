@@ -17,7 +17,7 @@ def timeit(method):
 
 @timeit
 def runQuery(query, numResults):
-    result = check_output(["graql", "console", "-n", "-k", "biomed", "-e", query]);
+    result = check_output(["graql", "console", "-k", "biomed", "-e", query]);
     assert int(result) == numResults, '\nExpected:\n%s\nActual:\n%s' % (numResults, result)
 
 print ("Checking if data has loaded . . . ")
