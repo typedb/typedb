@@ -31,6 +31,7 @@ public class QueueProcess extends AbstractProcessHandler implements ProcessHandl
     private static final String QUEUE_PROCESS_NAME = "redis-server";
     private static final Path QUEUE_PID = Paths.get(File.separator,"tmp","grakn-queue.pid");
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
+    private static final String NAME = "Queue";
 
     private Path homePath;
 
@@ -41,13 +42,13 @@ public class QueueProcess extends AbstractProcessHandler implements ProcessHandl
     public void start() {
         boolean queueRunning = processIsRunning(QUEUE_PID);
         if(queueRunning) {
-            System.out.println("Queue is already running");
+            System.out.println(NAME+" is already running");
         } else {
             queueStartProcess();
         }
     }
     private void queueStartProcess() {
-        System.out.print("Starting Queue...");
+        System.out.print("Starting "+NAME+"...");
         System.out.flush();
         String queueBin = selectCommand("redis-server-osx","redis-server-linux");
 
@@ -79,12 +80,12 @@ public class QueueProcess extends AbstractProcessHandler implements ProcessHandl
         }
 
         System.out.println("FAILED!");
-        System.out.println("Unable to start Queue");
+        System.out.println("Unable to start "+NAME);
         throw new ProcessNotStartedException();
     }
 
     public void stop() {
-        System.out.print("Stopping Queue...");
+        System.out.print("Stopping "+NAME+"...");
         System.out.flush();
         boolean queueIsRunning = processIsRunning(QUEUE_PID);
         if(!queueIsRunning) {
@@ -109,15 +110,15 @@ public class QueueProcess extends AbstractProcessHandler implements ProcessHandl
     }
 
     public void status() {
-        processStatus(QUEUE_PID, "Queue");
+        processStatus(QUEUE_PID, NAME);
     }
 
     public void statusVerbose() {
-        System.out.println("Queue pid = '"+ getPidFromFile(QUEUE_PID).orElse("")+"' (from "+QUEUE_PID+"), '"+ getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(NAME+" pid = '"+ getPidFromFile(QUEUE_PID).orElse("")+"' (from "+QUEUE_PID+"), '"+ getPidFromPsOf(QUEUE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning Queue...");
+        System.out.print("Cleaning "+NAME+"...");
         System.out.flush();
         start();
         String queueBin = selectCommand("redis-cli-osx", "redis-cli-linux");

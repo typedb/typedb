@@ -57,10 +57,14 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
         this.graknConfig = GraknConfig.read(configPath.toFile());
     }
 
+    protected Class graknClass() {
+        return Grakn.class;
+    }
+
     public void start() {
         boolean graknIsRunning = processIsRunning(GRAKN_PID);
         if(graknIsRunning) {
-            System.out.println("Grakn is already running");
+            System.out.println(graknClass().getSimpleName()+" is already running");
         } else {
             graknStartProcess();
         }
@@ -71,7 +75,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
         File folder = new File(home + File.separator+"services"+File.separator+"lib"); // services/lib folder
         File[] values = folder.listFiles(jarFiles);
         if(values==null) {
-            throw new RuntimeException("No libraries found: cannot run Grakn");
+            throw new RuntimeException("No libraries found: cannot run "+graknClass().getSimpleName());
         }
         Stream<File> jars = Stream.of(values);
         File conf = new File(home + File.separator+"conf"+File.separator); // /conf
@@ -84,7 +88,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     }
 
     private void graknStartProcess() {
-        System.out.print("Starting Grakn...");
+        System.out.print("Starting "+graknClass().getSimpleName()+"...");
         System.out.flush();
         if(Files.exists(GRAKN_PID)) {
             try {
@@ -94,7 +98,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
             }
         }
 
-        String command = "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath +" ai.grakn.engine.Grakn > /dev/null 2>&1 &";
+        String command = "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath +" "+graknClass().getName()+" > /dev/null 2>&1 &";
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -105,7 +109,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
         try {
             Files.write(GRAKN_PID,pid.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            System.out.println("Cannot write Grakn PID on a file");
+            System.out.println("Cannot write "+graknClass().getSimpleName()+" PID on a file");
         }
 
         LocalDateTime init = LocalDateTime.now();
@@ -138,7 +142,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
         }
 
         System.out.println("FAILED!");
-        System.out.println("Unable to start Grakn");
+        System.out.println("Unable to start "+graknClass().getSimpleName());
         throw new ProcessNotStartedException();
     }
 
@@ -162,19 +166,19 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     }
 
     public void stop() {
-        stopProgram(GRAKN_PID,"Grakn");
+        stopProgram(GRAKN_PID,graknClass().getSimpleName());
     }
 
     public void status() {
-        processStatus(GRAKN_PID, "Grakn");
+        processStatus(GRAKN_PID, graknClass().getSimpleName());
     }
 
     public void statusVerbose() {
-        System.out.println("Grakn pid = '"+ getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+ getPidFromPsOf(Grakn.class.getName()) +"' (from ps -ef)");
+        System.out.println(graknClass().getSimpleName()+" pid = '"+ getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+ getPidFromPsOf(Grakn.class.getSimpleName()) +"' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning Grakn...");
+        System.out.print("Cleaning "+graknClass().getSimpleName()+"...");
         System.out.flush();
         try {
             Files.delete(Paths.get(homePath +"logs"));
@@ -182,7 +186,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
-            System.out.println("Unable to clean Grakn");
+            System.out.println("Unable to clean "+graknClass().getSimpleName());
         }
     }
 

@@ -34,6 +34,7 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final Path STORAGE_PID = Paths.get(File.separator,"tmp","grakn-storage.pid");
     private static final long STORAGE_STARTUP_TIMEOUT_S=60;
+    private static final String NAME = "Storage";
 
     private Path homePath;
 
@@ -44,14 +45,14 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
     public void start() {
         boolean storageIsRunning = processIsRunning(STORAGE_PID);
         if(storageIsRunning) {
-            System.out.println("Storage is already running");
+            System.out.println(NAME+" is already running");
         } else {
             storageStartProcess();
         }
     }
 
     private void storageStartProcess() {
-        System.out.print("Starting Storage...");
+        System.out.print("Starting "+NAME+"...");
         System.out.flush();
         if(Files.exists(STORAGE_PID)) {
             try {
@@ -88,24 +89,24 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
             }
         }
         System.out.println("FAILED!");
-        System.out.println("Unable to start Storage");
+        System.out.println("Unable to start "+NAME);
         throw new ProcessNotStartedException();
     }
 
     public void stop() {
-        stopProgram(STORAGE_PID,"Storage");
+        stopProgram(STORAGE_PID,NAME);
     }
 
     public void status() {
-        processStatus(STORAGE_PID, "Storage");
+        processStatus(STORAGE_PID, NAME);
     }
 
     public void statusVerbose() {
-        System.out.println("Storage pid = '"+ getPidFromFile(STORAGE_PID).orElse("")+"' (from "+STORAGE_PID+"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(NAME+" pid = '"+ getPidFromFile(STORAGE_PID).orElse("")+"' (from "+STORAGE_PID+"), '"+ getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning Storage...");
+        System.out.print("Cleaning "+NAME+"...");
         System.out.flush();
         try {
             Files.delete(homePath.resolve(Paths.get("db","cassandra")));
@@ -115,7 +116,7 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
-            System.out.println("Unable to clean Storage");
+            System.out.println("Unable to clean "+NAME);
         }
     }
 
