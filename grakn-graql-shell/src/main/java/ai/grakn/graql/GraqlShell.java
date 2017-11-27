@@ -179,7 +179,7 @@ public class GraqlShell {
         options.addOption("s", "size", true, "the size of the batches (must be used with -b)");
         options.addOption("a", "active", true, "the number of active tasks (must be used with -b)");
         options.addOption("o", "output", true, "output format for results");
-        options.addOption("n", "infer", false, "perform inference on results");
+        options.addOption("n", "no_infer", false, "do not perform inference on results");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -227,7 +227,7 @@ public class GraqlShell {
             return false;
         }
 
-        boolean infer = cmd.hasOption("n");
+        boolean infer = !cmd.hasOption("n");
 
         if (cmd.hasOption("b")) {
             try {

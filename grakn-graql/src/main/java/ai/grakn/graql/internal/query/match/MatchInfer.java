@@ -52,17 +52,24 @@ class MatchInfer extends MatchModifier {
 
         if (!RuleUtils.hasRules(graph)) return inner.stream(optionalGraph);
 
-        Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-        Conjunction<VarPatternAdmin> conj = conjIt.next();
-        ReasonerQuery conjQuery = ReasonerQueries.create(conj, graph);
-        Stream<Answer> answerStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().match(conj).stream();
-        while(conjIt.hasNext()) {
-            conj = conjIt.next();
-            conjQuery = ReasonerQueries.create(conj, graph);
-            Stream<Answer> localStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().match(conj).stream();
-            answerStream = Stream.concat(answerStream, localStream);
+        validatePattern(graph);
+
+        try {
+            Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
+            Conjunction<VarPatternAdmin> conj = conjIt.next();
+            ReasonerQuery conjQuery = ReasonerQueries.create(conj, graph);
+            Stream<Answer> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve(materialise) : graph.graql().infer(false).match(conj).stream();
+            while (conjIt.hasNext()) {
+                conj = conjIt.next();
+                conjQuery = ReasonerQueries.create(conj, graph);
+                Stream<Answer> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve(materialise) : graph.graql().infer(false).match(conj).stream();
+                answerStream = Stream.concat(answerStream, localStream);
+            }
+            return answerStream.map(result -> result.project(getSelectedNames()));
+        } catch (GraqlQueryException e) {
+            System.err.println(e.getMessage());
+            return Stream.empty();
         }
-        return answerStream.map(result -> result.project(getSelectedNames()));
     }
 
     @Override

@@ -81,6 +81,8 @@ class Validator {
 
     /**
      * Validation rules exclusive to rules
+     * the precedence of validation is: labelValidation -> ontologicalValidation -> clauseValidation
+     * each of the validation happens only if the preceding validation yields no errors
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
@@ -88,8 +90,11 @@ class Validator {
         Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(graph, rule);
         errorsFound.addAll(labelErrors);
         if (labelErrors.isEmpty()) {
-            errorsFound.addAll(ValidateGlobalRules.validateRuleOntologically(graph, rule));
-            errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));
+            Set<String> ontologicalErrors = ValidateGlobalRules.validateRuleOntologically(graph, rule);
+            errorsFound.addAll(ontologicalErrors);
+            if (ontologicalErrors.isEmpty()) {
+                errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));
+            }
         }
 
     }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source env.sh
+source scripts/env.sh
 
-./load.sh
-validate.sh
+${WORKSPACE}/scripts/load.sh $@
+${WORKSPACE}/scripts/validate.sh $@
