@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -97,6 +98,8 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label());
+        if (schemaConcept == null)  throw GraqlQueryException.labelNotFound(label());
         return new IdPredicate(var.var().asUserDefined(), label(), parent);
     }
 }

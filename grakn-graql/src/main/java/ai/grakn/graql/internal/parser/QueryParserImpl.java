@@ -30,23 +30,37 @@ import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
+import ai.grakn.graql.internal.antlr.GraqlParser.PatternContext;
+import ai.grakn.graql.internal.antlr.GraqlParser.PatternsContext;
+import ai.grakn.graql.internal.antlr.GraqlParser.QueryContext;
+import ai.grakn.graql.internal.antlr.GraqlParser.QueryEOFContext;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.template.TemplateParser;
 import ai.grakn.graql.macro.Macro;
+import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.BailErrorStrategy;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CommonTokenFactory;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.UnbufferedCharStream;
 import org.antlr.v4.runtime.UnbufferedTokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import javax.annotation.Nullable;
+import java.io.Reader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Default implementation of {@link QueryParser}
@@ -117,6 +131,11 @@ public class QueryParserImpl implements QueryParser {
     }
 
     @Override
+    /**
+     * @param queryString a string representing a query
+     * @return
+     * a query, the type will depend on the type of QUERY.
+     */
     @SuppressWarnings("unchecked")
     public <T extends Query<?>> T parseQuery(String queryString) {
         // We can't be sure the returned query type is correct - even at runtime(!) because Java erases generics.
@@ -126,83 +145,111 @@ public class QueryParserImpl implements QueryParser {
         // The above will work at compile time AND runtime - it will only fail when the query is executed:
         // >> Boolean bool = q.execute();
         // java.lang.ClassCastException: java.lang.Long cannot be cast to java.lang.Boolean
-        return (T) parseQueryFragment(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF, queryString, getLexer(queryString));
+        return (T) QUERY_EOF.parse(queryString);
+    }
+
+    @Override
+    /**
+     * @param reader a reader representing several queries
+     * @return a list of queries
+     */
+    public <T extends Query<?>> Stream<T> parseList(Reader reader) {
+        UnbufferedCharStream charStream = new UnbufferedCharStream(reader);
+        GraqlErrorListener errorListener = GraqlErrorListener.withoutQueryString();
+        GraqlLexer lexer = createLexer(charStream, errorListener);
+
+        /*
+            We tell the lexer to copy the text into each generated token.
+            Normally when calling `Token#getText`, it will look into the underlying `TokenStream` and call
+            `TokenStream#size` to check it is in-bounds. However, `UnbufferedTokenStream#size` is not supported
+            (because then it would have to read the entire input). To avoid this issue, we set this flag which will
+            copy over the text into each `Token`, s.t. that `Token#getText` will just look up the copied text field.
+        */
+        lexer.setTokenFactory(new CommonTokenFactory(true));
+
+        return parseList(lexer, errorListener);
     }
 
     @Override
     public <T extends Query<?>> Stream<T> parseList(String queryString) {
-        GraqlLexer lexer = getLexer(queryString);
+        ANTLRInputStream inputStream = new ANTLRInputStream(queryString);
+        GraqlErrorListener errorListener = GraqlErrorListener.of(queryString);
+        GraqlLexer lexer = createLexer(inputStream, errorListener);
+        return parseList(lexer, errorListener);
+    }
 
-        GraqlErrorListener errorListener = new GraqlErrorListener(queryString);
-        lexer.removeErrorListeners();
-        lexer.addErrorListener(errorListener);
-
+    private <T extends Query<?>> Stream<T> parseList(GraqlLexer lexer, GraqlErrorListener errorListener) {
         // Use an unbuffered token stream so we can handle extremely large input strings
         UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(ChannelTokenSource.of(lexer));
 
-        Stream<? extends Query<?>> queries =
-                parseQueryFragment(GraqlParser::queryList, QueryVisitor::visitQueryList, tokenStream, errorListener);
+        GraqlParser parser = createParser(tokenStream, errorListener);
 
-        return queries.map(query -> (T) query);
+        /*
+            The "bail" error strategy prevents us reading all the way to the end of the input, e.g.
+
+            ```
+            match $x isa person; insert $x has name "Bob"; match $x isa movie; get;
+                                                           ^
+            ```
+
+            In this example, when ANTLR reaches the indicated `match`, it considers two possibilities:
+
+            1. this is the end of the query
+            2. the user has made a mistake. Maybe they accidentally pasted the `match` here.
+
+            Because of case 2, ANTLR will parse beyond the `match` in order to produce a more helpful error message.
+            This causes memory issues for very large queries, so we use the simpler "bail" strategy that will
+            immediately stop when it hits `match`.
+        */
+        parser.setErrorHandler(new BailErrorStrategy());
+
+        // This is a lazy iterator that will only consume a single query at a time, without parsing any further.
+        // This means it can pass arbitrarily long streams of queries in constant memory!
+        Iterable<T> queryIterator = () -> new AbstractIterator<T>() {
+            @Nullable
+            @Override
+            protected T computeNext() {
+                int latestToken = tokenStream.LA(1);
+                if (latestToken == Token.EOF) {
+                    endOfData();
+                    return null;
+                } else {
+                    // This will parse and consume a single query, even if it doesn't reach an EOF
+                    // When we next run it, it will start where it left off in the stream
+                    return (T) QUERY.parse(parser, errorListener);
+                }
+            }
+        };
+
+        return StreamSupport.stream(queryIterator.spliterator(), false);
     }
 
     @Override
     public List<Pattern> parsePatterns(String patternsString) {
-        return parseQueryFragment(GraqlParser::patterns, QueryVisitor::visitPatterns, patternsString, getLexer(patternsString));
+        return PATTERNS.parse(patternsString);
     }
 
     @Override
     public Pattern parsePattern(String patternString){
-        return parseQueryFragment(GraqlParser::pattern, QueryVisitor::visitPattern, patternString, getLexer(patternString));
+        return PATTERN.parse(patternString);
     }
 
     @Override
     public <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data) {
         return parseList(templateParser.parseTemplate(template, data));
     }
-
-    /**
-     * Parse any part of a Graql query
-     * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
-     * @param visit a method on QueryVisitor that visits the parse rule you specified (e.g. QueryVisitor::visitVariable)
-     * @param queryString the string to parse
-     * @param lexer
-     * @param <T> The type the query is expected to parse to
-     * @param <S> The type of the parse rule being used
-     * @return the parsed result
-     */
-    private <T, S extends ParseTree> T parseQueryFragment(
-            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, String queryString, GraqlLexer lexer
-    ) {
-        GraqlErrorListener errorListener = new GraqlErrorListener(queryString);
+    private static GraqlLexer createLexer(CharStream input, GraqlErrorListener errorListener) {
+        GraqlLexer lexer = new GraqlLexer(input);
         lexer.removeErrorListeners();
         lexer.addErrorListener(errorListener);
-
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        return parseQueryFragment(parseRule, visit, tokens, errorListener);
+        return lexer;
     }
 
-    private <T, S extends ParseTree> T parseQueryFragment(
-            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit,
-            TokenStream tokens, GraqlErrorListener errorListener
-    ) {
+    private static GraqlParser createParser(TokenStream tokens, GraqlErrorListener errorListener) {
         GraqlParser parser = new GraqlParser(tokens);
-
         parser.removeErrorListeners();
         parser.addErrorListener(errorListener);
-
-        S tree = parseRule.apply(parser);
-
-        if (errorListener.hasErrors()) {
-            throw GraqlSyntaxException.parsingError(errorListener.toString());
-        }
-
-        return visit.apply(getQueryVisitor(), tree);
-    }
-
-    private GraqlLexer getLexer(String queryString) {
-        ANTLRInputStream input = new ANTLRInputStream(queryString);
-        return new GraqlLexer(input);
+        return parser;
     }
 
     private QueryVisitor getQueryVisitor() {
@@ -232,5 +279,88 @@ public class QueryParserImpl implements QueryParser {
                 return Aggregates.group((Var) args.get(0), (Aggregate) args.get(1));
             }
         });
+    }
+
+    private final QueryPart<QueryEOFContext, Query<?>> QUERY_EOF =
+            createQueryPart(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF);
+
+    private final QueryPart<QueryContext, Query<?>> QUERY =
+            createQueryPart(GraqlParser::query, QueryVisitor::visitQuery);
+
+    private final QueryPart<PatternsContext, List<Pattern>> PATTERNS =
+            createQueryPart(GraqlParser::patterns, QueryVisitor::visitPatterns);
+
+    private final QueryPart<PatternContext, Pattern> PATTERN =
+            createQueryPart(GraqlParser::pattern, QueryVisitor::visitPattern);
+
+
+    private <S extends ParseTree, T> QueryPart<S, T> createQueryPart(
+            Function<GraqlParser, S> parseTree, BiFunction<QueryVisitor, S, T> visit) {
+
+        return new QueryPart<S, T>() {
+            @Override
+            S parseTree(GraqlParser parser) {
+                return parseTree.apply(parser);
+            }
+
+            @Override
+            T visit(QueryVisitor visitor, S context) {
+                return visit.apply(visitor, context);
+            }
+        };
+    }
+
+    /**
+     * Represents a part of a Graql query to parse, such as "pattern".
+     */
+    private abstract class QueryPart<S extends ParseTree, T> {
+
+        /**
+         * Get a {@link ParseTree} from a {@link GraqlParser}.
+         */
+        abstract S parseTree(GraqlParser parser);
+
+        /**
+         * Parse the {@link ParseTree} into a Java object using a {@link QueryVisitor}.
+         */
+        abstract T visit(QueryVisitor visitor, S context);
+
+        /**
+         * Parse the string into a Java object
+         */
+        final T parse(String queryString) {
+            ANTLRInputStream charStream = new ANTLRInputStream(queryString);
+            GraqlErrorListener errorListener = GraqlErrorListener.of(queryString);
+
+            GraqlLexer lexer = createLexer(charStream, errorListener);
+
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            GraqlParser parser = createParser(tokens, errorListener);
+
+            return parse(parser, errorListener);
+        }
+
+        /**
+         * Parse the {@link GraqlParser} into a Java object, where errors are reported to the given
+         * {@link GraqlErrorListener}.
+         */
+        final T parse(GraqlParser parser, GraqlErrorListener errorListener) {
+            S tree = null;
+
+            try {
+                tree = parseTree(parser);
+            } catch (ParseCancellationException e) {
+                // ignore because we report errors right after this
+            }
+
+            if (errorListener.hasErrors()) {
+                throw GraqlSyntaxException.parsingError(errorListener.toString());
+            }
+
+            // This should always be the case because if there is an error we throw
+            assert tree != null;
+
+            return visit(getQueryVisitor(), tree);
+        }
     }
 }

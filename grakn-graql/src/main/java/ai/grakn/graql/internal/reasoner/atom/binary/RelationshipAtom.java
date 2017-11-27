@@ -225,6 +225,7 @@ public class RelationshipAtom extends IsaAtom {
         if (obj == this) return true;
         RelationshipAtom a2 = (RelationshipAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
+                && (isUserDefined() == a2.isUserDefined())
                 && getVarNames().equals(a2.getVarNames())
                 && getRelationPlayers().equals(a2.getRelationPlayers());
     }
@@ -392,7 +393,7 @@ public class RelationshipAtom extends IsaAtom {
                 .filter(pred -> varNames.contains(pred.getVarName()));
     }
 
-    private Stream<IdPredicate> getRolePredicates(){
+    public Stream<IdPredicate> getRolePredicates(){
         return getRelationPlayers().stream()
                 .map(RelationPlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
@@ -753,17 +754,21 @@ public class RelationshipAtom extends IsaAtom {
             GraknTx graph = getParentQuery().tx();
             getRelationPlayers().forEach(c -> {
                 Var varName = c.getRolePlayer().var();
-                VarPatternAdmin role = c.getRole().orElse(null);
-                if (role != null) {
+                VarPatternAdmin rolePattern = c.getRole().orElse(null);
+                if (rolePattern != null) {
                     //try directly
-                    Label typeLabel = role.getTypeLabel().orElse(null);
-                    Role roleType = typeLabel != null ? graph.getRole(typeLabel.getValue()) : null;
+                    Label typeLabel = rolePattern.getTypeLabel().orElse(null);
+                    Role role = typeLabel != null ? graph.getRole(typeLabel.getValue()) : null;
                     //try indirectly
-                    if (roleType == null && role.var().isUserDefinedName()) {
-                        IdPredicate rolePredicate = getIdPredicate(role.var());
-                        if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicate());
+                    if (role == null && rolePattern.var().isUserDefinedName()) {
+                        IdPredicate rolePredicate = getIdPredicate(rolePattern.var());
+                        if (rolePredicate != null){
+                            Role r = graph.getConcept(rolePredicate.getPredicate());
+                            if (r == null) throw GraqlQueryException.idNotFound(rolePredicate.getPredicate());
+                            role = r;
+                        }
                     }
-                    if (roleType != null) builder.put(roleType, varName);
+                    if (role != null) builder.put(role, varName);
                 }
             });
             this.roleVarMap = builder.build();

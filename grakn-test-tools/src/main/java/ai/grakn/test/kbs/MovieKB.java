@@ -292,8 +292,9 @@ public class MovieKB extends TestKB {
     @Override
     protected void buildRules(GraknTx tx) {
         // These rules are totally made up for testing purposes and don't work!
-        Pattern when = tx.graql().parser().parsePattern("$x plays actor");
-        Pattern then = tx.graql().parser().parsePattern("$x isa person");
+        Pattern when = tx.graql().parser().parsePattern("$x has name 'expectation-when'");
+        Pattern then = tx.graql().parser().parsePattern("$x has name 'expectation-then'");
+
         tx.putRule("expectation-rule", when, then);
 
         when = tx.graql().parser().parsePattern("$x has name 'materialize-when'");

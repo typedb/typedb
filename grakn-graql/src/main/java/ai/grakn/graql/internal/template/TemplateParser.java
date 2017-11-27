@@ -81,7 +81,7 @@ public class TemplateParser {
      * @return resolved graql query string
      */
     public String parseTemplate(String templateString, Map<String, Object> data){
-        GraqlErrorListener errorListener = new GraqlErrorListener(templateString);
+        GraqlErrorListener errorListener = GraqlErrorListener.of(templateString);
 
         CommonTokenStream tokens = lexGraqlTemplate(templateString, errorListener);
         ParseTree tree = parseGraqlTemplate(tokens, errorListener);

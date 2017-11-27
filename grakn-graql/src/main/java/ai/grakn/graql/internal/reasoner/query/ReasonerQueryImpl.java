@@ -79,8 +79,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -141,6 +141,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(q.getAtoms().stream().map(at -> AtomicFactory.create(at, this)).iterator())
                 .build();
+    }
+
+    @Override
+    public ReasonerQuery conjunction(ReasonerQuery q) {
+        return new ReasonerQueryImpl(
+                Sets.union(getAtoms(), q.getAtoms()),
+                this.tx()
+        );
     }
 
     /**
@@ -394,32 +402,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .findFirst().orElse(null);
     }
 
-    @Override
-    public Answer getSubstitution(){
-        if (substitution == null) {
-            Set<Var> varNames = getVarNames();
-            Set<IdPredicate> predicates = getAtoms(IsaAtom.class)
-                    .map(IsaAtom::getTypePredicate)
-                    .filter(Objects::nonNull)
-                    .filter(p -> varNames.contains(p.getVarName()))
-                    .collect(Collectors.toSet());
-            getAtoms(IdPredicate.class).forEach(predicates::add);
-
-            // the mapping function is declared separately to please the Eclipse compiler
-            Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
-            substitution = new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
-        }
-        return substitution;
-    }
-
-    public Answer getRoleSubstitution(){
-        Map<Var, Concept> roleSub = new HashMap<>();
-        getAtoms(RelationshipAtom.class)
-                .map(RelationshipAtom::getRoleSubstitution)
-                .forEach(sub -> roleSub.putAll(sub.map()));
-        return new QueryAnswer(roleSub);
-    }
-
     /**
      * returns id transform that would convert this query to a query alpha-equivalent to the query,
      * provided they are structurally equivalent
@@ -468,6 +450,42 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             throw GraqlQueryException.noAtomsSelected(this);
         }
         return orderedSelection;
+    }
+
+    /**
+     * @return substitution obtained from all id predicates (including internal) in the query
+     */
+    public Answer getSubstitution(){
+        if (substitution == null) {
+            Set<Var> varNames = getVarNames();
+            Set<IdPredicate> predicates = getAtoms(IsaAtom.class)
+                    .map(IsaAtom::getTypePredicate)
+                    .filter(Objects::nonNull)
+                    .filter(p -> varNames.contains(p.getVarName()))
+                    .collect(Collectors.toSet());
+            getAtoms(IdPredicate.class).forEach(predicates::add);
+
+            HashMap<Var, Concept> answerMap = new HashMap<>();
+            predicates.forEach(p -> {
+                Concept concept = tx().getConcept(p.getPredicate());
+                if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                answerMap.put(p.getVarName(), concept);
+            });
+            substitution = new QueryAnswer(answerMap);
+        }
+        return substitution;
+    }
+
+    public Answer getRoleSubstitution(){
+        Map<Var, Concept> roleSub = new HashMap<>();
+        getAtoms(RelationshipAtom.class)
+                .flatMap(RelationshipAtom::getRolePredicates)
+                .forEach(p -> {
+                    Concept concept = tx().getConcept(p.getPredicate());
+                    if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                    roleSub.put(p.getVarName(), concept);
+                });
+        return new QueryAnswer(roleSub);
     }
 
     /**
