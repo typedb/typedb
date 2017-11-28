@@ -46,9 +46,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 
 /**
@@ -78,16 +78,6 @@ public class EngineContext extends CompositeTestRule {
         } else {
             redis = EmbeddedRedisContext.create(redisPort);
         }
-    }
-
-    /**
-     * Creates a {@link EngineContext} for testing which uses a real embedded redis.
-     * This should only be used for benchmark testing where performance and memory usage matters.
-     *
-     * @return a new {@link EngineContext} for testing
-     */
-    public static EngineContext createWithEmbeddedRedis(){
-        return new EngineContext(false);
     }
 
     /**
@@ -214,6 +204,24 @@ public class EngineContext extends CompositeTestRule {
             graph.admin().delete();
         });
         server.factory().refreshConnections();
+    }
+
+    private static void noThrow(RunnableWithExceptions fn, String errorMessage) {
+        try {
+            fn.run();
+        }
+        catch (Throwable t) {
+            LOG.error(errorMessage + "\nThe exception was: " + getFullStackTrace(t));
+        }
+    }
+
+    /**
+     * Function interface that throws exception for use in the noThrow function
+     * @param <E>
+     */
+    @FunctionalInterface
+    private interface RunnableWithExceptions<E extends Exception> {
+        void run() throws E;
     }
 
     /**
