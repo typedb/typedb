@@ -1,16 +1,15 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import com.jayway.restassured.response.Response;
+import mjson.Json;
+
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
-import com.jayway.restassured.response.Response;
-import mjson.Json;
 
 
 public class Utilities {
@@ -35,11 +34,6 @@ public class Utilities {
     }
 
     public static TaskState createTask(Class<? extends BackgroundTask> clazz) {
-        return createTask(clazz, now());
+        return TaskState.of(clazz, Utilities.class.getName(), Priority.LOW);
     }
-
-    public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule) {
-        return TaskState.of(clazz, Utilities.class.getName(), schedule, Priority.LOW);
-    }
-    
 }

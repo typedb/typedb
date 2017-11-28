@@ -23,7 +23,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -32,7 +31,6 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -108,7 +106,6 @@ public class PostProcessingTask extends BackgroundTask {
     public static TaskState createTask(Class creator, int delay) {
         return TaskState.of(PostProcessingTask.class,
                 creator.getName(),
-                TaskSchedule.at(Instant.now().plusMillis(delay)),
                 TaskState.Priority.LOW);
     }
 
