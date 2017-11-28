@@ -42,10 +42,19 @@ function extractArchData {
 
 # generate new data
 function generateData {
-	LDBC_SNB_DATAGEN_HOME=${LDBC_SNB_DATAGEN_HOME:-$DEFAULT_LDBC_SNB_DATAGEN_HOME}
 
-	paramFile=tmpParams.ini
-	cat params.ini > ${paramFile}
+	if [ -z ${HADOOP_HOME+x} ]; then
+	    echo '$HADOOP_HOME not set'
+	    exit 1
+	fi
+
+	if [ -z ${LDBC_SNB_DATAGEN_HOME+x} ]; then
+	    echo '$LDBC_SNB_DATAGEN_HOME not set'
+	    exit 1
+	fi
+
+	paramFile=${SCRIPTPATH}/tmpParams.ini
+    cp ${LDBC_SNB_DATAGEN_HOME}/params.ini ${paramFile}
 
 	case "$1" in
 		SF*)
@@ -62,7 +71,16 @@ function generateData {
 	esac
 
 	export HADOOP_CLIENT_OPTS="-Xmx1024m"
-	${HADOOP_HOME}/bin/hadoop jar ${LDBC_JAR} ${SCRIPTPATH}/${paramFile}
+
+	LDBC_JAR=${LDBC_SNB_DATAGEN_HOME}/target/ldbc_snb_datagen-0.2.7-jar-with-dependencies.jar
+
+    # The jar contains both a folder called `META-INF/license` and a file `META-INF/LICENSE`.
+    # This causes issues when Hadoop unzips it on a case-insensitive file system such as OSX.
+    # https://stackoverflow.com/questions/10522835/hadoop-java-io-ioexception-mkdirs-failed-to-create-some-path
+	zip -d ${LDBC_JAR} META-INF/LICENSE || true
+
+	# hadoop needs sudo because it writes to /var
+	${HADOOP_HOME}/bin/hadoop jar ${LDBC_JAR} ${paramFile}
 
 	rm ${paramFile}
 	rm -f m*personFactors*
