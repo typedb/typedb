@@ -77,10 +77,6 @@ public class TaskState implements Serializable {
      */
     private String stackTrace;
     private String exception;
-    /**
-     * Used to store a task checkpoint allowing it to resume from the same point of execution as at the time of the checkpoint.
-     */
-    private TaskCheckpoint taskCheckpoint;
 
     public static TaskState of(Class<?> taskClass, String creator) {
         return new TaskState(taskClass, creator, TaskId.generate());
@@ -121,7 +117,6 @@ public class TaskState implements Serializable {
         this.engineID = taskState.engineID;
         this.stackTrace = taskState.stackTrace;
         this.exception = taskState.exception;
-        this.taskCheckpoint = taskState.taskCheckpoint;
     }
 
     @JsonProperty("id")
@@ -184,11 +179,6 @@ public class TaskState implements Serializable {
     @JsonProperty("engineId")
     public EngineID getEngineID() {
         return engineID;
-    }
-
-    @JsonProperty("taskCheckpoint")
-    public TaskCheckpoint getTaskCheckpoint() {
-        return taskCheckpoint;
     }
 
     @Override
