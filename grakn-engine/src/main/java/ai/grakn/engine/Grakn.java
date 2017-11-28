@@ -32,6 +32,12 @@ public class Grakn {
 
     private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
 
+    /**
+     *
+     * Invocation from class 'GraknProcess' in grakn-dist project
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         try {
             // Start Engine

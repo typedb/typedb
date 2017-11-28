@@ -34,6 +34,12 @@ import java.util.Arrays;
  */
 public class DistGraql {
 
+    /**
+     *
+     * Invocation from bash script 'graql'
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         DistGraql application = new DistGraql();
         application.run(args);

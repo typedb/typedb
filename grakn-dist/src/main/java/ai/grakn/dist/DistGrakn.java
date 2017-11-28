@@ -35,15 +35,16 @@ import java.util.Scanner;
  */
 public class DistGrakn {
 
-    private static final String GRAKN = "grakn";
-    private static final String QUEUE = "queue";
-    private static final String STORAGE = "storage";
+    protected static final String GRAKN = "grakn";
+    protected static final String QUEUE = "queue";
+    protected static final String STORAGE = "storage";
 
-    private final StorageProcess storageProcess;
-    private final QueueProcess queueProcess;
-    private final GraknProcess graknProcess;
+    protected final StorageProcess storageProcess;
+    protected final QueueProcess queueProcess;
+    protected final GraknProcess graknProcess;
 
     /**
+     * Invocation from bash script 'grakn'
      * In order to run this method you should have 'grakn.dir' and 'grakn.conf' set
      *
      * @param args
