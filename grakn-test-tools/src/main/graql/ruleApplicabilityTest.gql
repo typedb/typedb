@@ -181,3 +181,10 @@ insert
 #Data
 
 $x isa anotherNoRoleEntity, has name 'noRoleEntity';
+
+$y isa anotherTwoRoleEntity;
+$z isa anotherTwoRoleEntity;
+$u isa anotherTwoRoleEntity;
+
+(role1: $y, role2: $z) isa binary;
+(role1: $z, role2: $u) isa binary;
