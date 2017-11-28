@@ -18,6 +18,8 @@ This page introduces the concept of data migration into a Grakn knowledge base. 
 
 If you have not yet set up the Grakn environment, please see the [setup guide](../get-started/setup-guide.html).
 
+> **Note:** During migration reasoning is switched off. This is to ensure that data will always load consistently regardless of load order   
+
 ## Migration Shell Script
 The migration shell script can be found in *grakn-dist/bin* after it has been unzipped. Usage is specific to the type of migration being performed:
 
