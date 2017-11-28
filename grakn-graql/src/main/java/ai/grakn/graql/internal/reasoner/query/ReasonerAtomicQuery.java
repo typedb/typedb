@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
@@ -173,22 +172,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     /**
-     * execute insert on the query and return inserted answers
-     */
-    private Stream<Answer> insert() {
-        return Graql.insert(getPattern().varPatterns()).withTx(tx()).stream();
-    }
-
-    /**
      * materialise  this query with the accompanying answer - persist to kb
      * @param answer to be materialised
      * @return stream of materialised answers
      */
     public Stream<Answer> materialise(Answer answer) {
-        //declaring a local variable cause otherwise PMD doesn't recognise the use of insert() and complains
-        ReasonerAtomicQuery queryToMaterialise = this.withSubstitution(answer);
-        return queryToMaterialise
-                .insert()
+        return this.withSubstitution(answer)
+                .getAtom()
+                .materialise()
                 .map(ans -> ans.explain(answer.getExplanation()));
     }
 
