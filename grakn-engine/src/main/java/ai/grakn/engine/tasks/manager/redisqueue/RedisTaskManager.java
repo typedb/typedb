@@ -33,7 +33,6 @@ import ai.grakn.redisq.exceptions.StateFutureInitializationException;
 import ai.grakn.redisq.exceptions.WaitException;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -41,9 +40,7 @@ import redis.clients.util.Pool;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -59,7 +56,7 @@ import static ai.grakn.redisq.State.FAILED;
  * @author pluraliseseverythings
  */
 public class RedisTaskManager implements TaskManager {
-
+    private static final long TASK_DELAY = 30 * 60; //I.e. loading will be delayed by 30 minutes
     private static final Logger LOG = LoggerFactory.getLogger(RedisTaskManager.class);
     private static final String QUEUE_NAME = "grakn";
 
@@ -75,14 +72,13 @@ public class RedisTaskManager implements TaskManager {
                 postProcessor);
 
         LOG.info("Running queue consumer with {} execution threads", threads);
-        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("redisq-task-manager-%d").build();
         this.redisq = new RedisqBuilder<Task>()
                 .setJedisPool(jedisPool)
                 .setName(QUEUE_NAME)
                 .setConsumer(consumer)
                 .setMetricRegistry(metricRegistry)
-                .setThreadPool(Executors.newFixedThreadPool(threads, namedThreadFactory))
+                .setThreadPoolSize(threads)
+                .setDelay(TASK_DELAY)
                 .setDocumentClass(Task.class)
                 .createRedisq();
         this.taskStorage = RedisTaskStorage.create(redisq, metricRegistry);
