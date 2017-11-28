@@ -22,6 +22,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.loader.MutatorTask;
+import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
@@ -80,13 +83,23 @@ public class GraqlController {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private final EngineGraknTxFactory factory;
+    private final Service spark;
+    private final int postProcessingDelay;
+    private final TaskSubmitter taskSubmitter;
+    private final PostProcessor postProcessor;
     private final Timer executeGraqlGetTimer;
     private final Timer executeGraqlPostTimer;
     private final Timer singleExecutionTimer;
 
-    public GraqlController(EngineGraknTxFactory factory, Service spark,
-                           MetricRegistry metricRegistry) {
+    public GraqlController(
+            EngineGraknTxFactory factory, Service spark, int postProcessingDelay, TaskSubmitter taskSubmitter,
+            PostProcessor postProcessor, MetricRegistry metricRegistry
+    ) {
         this.factory = factory;
+        this.spark = spark;
+        this.postProcessingDelay = postProcessingDelay;
+        this.taskSubmitter = taskSubmitter;
+        this.postProcessor = postProcessor;
         this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
         this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
         this.singleExecutionTimer = metricRegistry.timer(name(GraqlController.class, "single", "execution"));
@@ -212,7 +225,7 @@ public class GraqlController {
             formatted = printer.graqlString(executeAndMonitor(query));
             commitQuery = !query.isReadOnly();
         }
-        if (commitQuery) graph.commit();
+        if (commitQuery) MutatorTask.commitAndSubmitPPTask(graph, postProcessor, taskSubmitter, postProcessingDelay);
         return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
     }
 

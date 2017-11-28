@@ -22,7 +22,6 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
@@ -88,15 +87,7 @@ public abstract class BackgroundTask {
         throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be stopped while in progress");
     }
 
-    /**
-     * Submit a new task for execution
-     * @param taskState state describing the task
-     */
-    public final void addTask(TaskState taskState, TaskConfiguration configuration) {
-        taskSubmitter().addTask(taskState, configuration);
-    }
-
-    private TaskSubmitter taskSubmitter(){
+    public final TaskSubmitter taskSubmitter(){
         return defaultNullCheck(taskSubmitter);
     }
 

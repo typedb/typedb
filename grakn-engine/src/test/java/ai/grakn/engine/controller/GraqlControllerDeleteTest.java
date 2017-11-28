@@ -20,10 +20,13 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
@@ -54,6 +57,9 @@ import static org.mockito.Mockito.when;
 public class GraqlControllerDeleteTest {
 
     private static GraknTx tx;
+    private static GraknAdmin txAdmin;
+    private static TaskSubmitter taskSubmitter = mock(TaskSubmitter.class);
+    private static PostProcessor postProcessor = mock(PostProcessor.class);
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
@@ -62,7 +68,7 @@ public class GraqlControllerDeleteTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, new MetricRegistry());
+        new GraqlController(mockFactory, spark, 0, taskSubmitter, postProcessor, new MetricRegistry());
     });
 
     @Before
@@ -79,7 +85,9 @@ public class GraqlControllerDeleteTest {
                 .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
         tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        txAdmin = mock(GraknAdmin.class);
 
+        when(tx.admin()).thenReturn(txAdmin);
         when(tx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
         when(tx.graql()).thenReturn(mockQueryBuilder);
 
@@ -87,14 +95,23 @@ public class GraqlControllerDeleteTest {
     }
 
     @Test
-    public void DELETEGraqlDelete_GraphCommitCalled(){
+    public void DELETEGraqlDelete_GraphCommitNeverCalled(){
         String query = "match $x isa person; limit 1; delete $x;";
-
-        verify(tx, times(0)).commit();
 
         sendRequest(query);
 
-        verify(tx, times(1)).commit();
+        verify(tx, times(0)).commit();
+    }
+
+    @Test
+    public void DELETEGraqlDelete_GraphCommitSubmitNoLogsCalled(){
+        String query = "match $x isa person; limit 1; delete $x;";
+
+        verify(txAdmin, times(0)).commitSubmitNoLogs();
+
+        sendRequest(query);
+
+        verify(txAdmin, times(1)).commitSubmitNoLogs();
     }
 
     @Test

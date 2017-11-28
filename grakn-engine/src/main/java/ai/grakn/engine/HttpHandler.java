@@ -80,7 +80,7 @@ public class HttpHandler {
         int postProcessingDelay = prop.getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
 
         // Start all the controllers
-        new GraqlController(factory, spark, metricRegistry);
+        new GraqlController(factory, spark, postProcessingDelay, taskManager, postProcessor, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
         new CommitLogController(spark, postProcessingDelay, taskManager, postProcessor);

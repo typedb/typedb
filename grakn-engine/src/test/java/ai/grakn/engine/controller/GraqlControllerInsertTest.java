@@ -20,18 +20,24 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Optional;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonResponse;
@@ -57,6 +63,9 @@ import static org.mockito.Mockito.when;
 public class GraqlControllerInsertTest {
 
     private static GraknTx mockTx;
+    private static GraknAdmin txAdmin;
+    private static TaskSubmitter taskSubmitter = mock(TaskSubmitter.class);
+    private static PostProcessor postProcessor = mock(PostProcessor.class);
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
@@ -65,7 +74,7 @@ public class GraqlControllerInsertTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, new MetricRegistry());
+        new GraqlController(mockFactory, spark, 0, taskSubmitter, postProcessor, new MetricRegistry());
     });
 
     @Before
@@ -82,7 +91,9 @@ public class GraqlControllerInsertTest {
                 .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        txAdmin = mock(GraknAdmin.class);
 
+        when(mockTx.admin()).thenReturn(txAdmin);
         when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
@@ -186,14 +197,67 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlDefine_GraphCommitIsCalled(){
+    public void POSTGraqlDefine_GraphCommitNeverCalled(){
         String query = "define thingy sub entity;";
-
-        verify(mockTx, times(0)).commit();
 
         sendRequest(query);
 
-        verify(mockTx, times(1)).commit();
+        verify(mockTx, times(0)).commit();
+    }
+
+    @Test
+    public void POSTGraqlDefine_GraphCommitSubmitNoLogsIsCalled(){
+        String query = "define thingy sub entity;";
+
+        verify(txAdmin, times(0)).commitSubmitNoLogs();
+
+        sendRequest(query);
+
+        verify(txAdmin, times(1)).commitSubmitNoLogs();
+    }
+
+    @Test
+    public void POSTGraqlInsertAndNoLogs_PPTaskIsNotSubmitted(){
+        String query = "insert $x isa person has name 'Alice';";
+
+        when(txAdmin.commitSubmitNoLogs()).thenReturn(Optional.empty());
+
+        sendRequest(query);
+
+        verify(taskSubmitter, times(1)).addTask(any(), any());
+    }
+
+    @Test
+    public void POSTGraqlInsertAndNoLogs_CountsAreNotUpdated(){
+        String query = "insert $x isa person has name 'Alice';";
+
+        when(txAdmin.commitSubmitNoLogs()).thenReturn(Optional.empty());
+
+        sendRequest(query);
+
+        verify(postProcessor, times(1)).updateCounts(any(), any());
+    }
+
+    @Test
+    public void POSTGraqlInsert_PPTaskIsSubmitted(){
+        String query = "insert $x isa person has name 'Alice';";
+
+        when(txAdmin.commitSubmitNoLogs()).thenReturn(Optional.of("some logs"));
+
+        sendRequest(query);
+
+        verify(taskSubmitter, times(1)).addTask(any(), any());
+    }
+
+    @Test
+    public void POSTGraqlInsert_CountsAreUpdated(){
+        String query = "insert $x isa person has name 'Alice';";
+
+        when(txAdmin.commitSubmitNoLogs()).thenReturn(Optional.of("{}"));
+
+        sendRequest(query);
+
+        verify(postProcessor, times(1)).updateCounts(mockTx.keyspace(), Json.object());
     }
 
     private Response sendRequest(String query){

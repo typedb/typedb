@@ -23,8 +23,10 @@ import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.postprocessing.GraknTxMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -91,17 +93,25 @@ public class MutatorTask extends BackgroundTask {
                     }
                 });
 
-                Optional<String> result = graph.admin().commitSubmitNoLogs();
-                if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
-                    String logs = result.get();
-                    addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
-                                    .getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY)),
-                            PostProcessingTask.createConfig(graph.keyspace(), logs));
-
-                    postProcessor().updateCounts(graph.keyspace(), Json.read(logs));
-                }
+                int ppTaskDelay = this.engineConfiguration().getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
+                commitAndSubmitPPTask(graph, postProcessor(), taskSubmitter(), ppTaskDelay);
                 return true;
             }
+        }
+    }
+
+    public static void commitAndSubmitPPTask(
+            GraknTx graph, PostProcessor postProcessor, TaskSubmitter taskSubmitter, int ppTaskDelay
+    ) {
+        Optional<String> result = graph.admin().commitSubmitNoLogs();
+        if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
+            String logs = result.get();
+            taskSubmitter.addTask(
+                    PostProcessingTask.createTask(MutatorTask.class, ppTaskDelay),
+                    PostProcessingTask.createConfig(graph.keyspace(), logs)
+            );
+
+            postProcessor.updateCounts(graph.keyspace(), Json.read(logs));
         }
     }
 
