@@ -49,21 +49,23 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
@@ -92,6 +94,7 @@ import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static ai.grakn.util.Schema.BaseType.TYPE;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -300,9 +303,12 @@ public class GraqlShell {
     }
 
     private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
-        String queries = loadQuery(graqlPath);
-        List<Observable<QueryResponse>> all = new ArrayList<>();
-        Graql.parser().parseList(queries).forEach(query -> all.add(batchExecutorClient.add(query, keyspace, false)));
+        Reader queries = new FileReader(Paths.get(graqlPath).toFile());
+
+        Function<Query<?>, Observable<QueryResponse>> submitQuery = query -> batchExecutorClient.add(query, keyspace, false);
+
+        List<Observable<QueryResponse>> all = Graql.parser().parseList(queries).map(submitQuery).collect(toList());
+
         int completed = allObservable(all).toBlocking().first().size();
         System.out.println("Statements executed: " + completed);
         batchExecutorClient.close();
