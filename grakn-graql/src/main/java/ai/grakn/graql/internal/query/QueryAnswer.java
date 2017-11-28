@@ -29,8 +29,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
@@ -268,8 +266,9 @@ public class QueryAnswer implements Answer {
     public Set<Atomic> toPredicates(ReasonerQuery parent) {
         Set<Var> varNames = parent.getVarNames();
 
+        //TODO: double check if discard needed subs
         //skip predicates from types
-        parent.getAtoms(TypeAtom.class).map(Binary::getPredicateVariable).forEach(varNames::remove);
+        //parent.getAtoms(TypeAtom.class).map(Binary::getPredicateVariable).forEach(varNames::remove);
 
         return entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))

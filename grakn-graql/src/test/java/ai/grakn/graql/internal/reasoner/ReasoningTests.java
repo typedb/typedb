@@ -216,7 +216,7 @@ public class ReasoningTests {
         QueryBuilder qb = testSet2.tx().graql().infer(true);
         String queryString = "match $x isa $type; get;";
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), 3);
+        assertEquals(answers.size(), 4);
         answers.forEach(ans -> assertEquals(ans.size(), 2));
     }
 

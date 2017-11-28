@@ -76,8 +76,7 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa $type; $type sub noRoleEntity; get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        //1 x noRoleEntity + 3 x 3 (hierarchy) anotherTwoRoleEntities
-        assertEquals(answers.size(), tx.getEntityType("noRoleEntity").subs().map(EntityType::instances).count());
+        assertEquals(answers.size(), tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count());
     }
 
     @Test
@@ -86,7 +85,6 @@ public class OntologicalQueryTest {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type sub relationship; get;";
         String alternativeQueryString = "match $r ($x, $y) isa relationship; get;";
-
         assertQueriesEqual(qb.<GetQuery>parse(queryString), qb.<GetQuery>parse(alternativeQueryString));
     }
 
@@ -99,9 +97,8 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa $type; $type plays role1; get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), tx.getEntityType("anotherSingleRoleEntity").subs().map(EntityType::instances).count());
+        assertEquals(answers.size(), tx.getEntityType("anotherSingleRoleEntity").subs().flatMap(EntityType::instances).count());
     }
-
 
     /** RelatesAtom **/
 
