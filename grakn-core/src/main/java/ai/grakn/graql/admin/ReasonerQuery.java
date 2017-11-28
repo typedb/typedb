@@ -43,6 +43,13 @@ public interface ReasonerQuery{
     ReasonerQuery copy();
 
     /**
+     * @param q query to combine
+     * @return a query formed as conjunction of this and provided query
+     */
+    @CheckReturnValue
+    ReasonerQuery conjunction(ReasonerQuery q);
+
+    /**
      * @return {@link GraknTx} associated with this reasoner query
      */
     @CheckReturnValue
@@ -79,6 +86,12 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     GetQuery getQuery();
+
+    /**
+     * @return (partial) substitution obtained from all id predicates (including internal) in the query
+     */
+    @CheckReturnValue
+    Answer getSubstitution();
 
     /**
      * @return error messages indicating ontological inconsistencies of the query

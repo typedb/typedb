@@ -40,6 +40,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -100,6 +101,30 @@ public abstract class Atom extends AtomicBase {
     }
 
     public abstract Class<? extends VarProperty> getVarPropertyClass();
+
+    @Override
+    public Set<String> validateAsRuleHead(Rule rule){
+        Set<String> errors = new HashSet<>();
+        Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(Collectors.toSet());
+        Set<Var> varNames = Sets.difference(
+                getVarNames(),
+                this.getInnerPredicates().map(Atomic::getVarName).collect(Collectors.toSet())
+        );
+        boolean unboundVariables = varNames.stream()
+                .filter(var -> !parentAtoms.stream().filter(at -> at.getVarNames().contains(var)).findFirst().isPresent())
+                .findFirst().isPresent();
+        if (unboundVariables) {
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
+        }
+
+        SchemaConcept schemaConcept = getSchemaConcept();
+        if (schemaConcept == null){
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+        } else if (schemaConcept.isImplicit()){
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT.getMessage(rule.getThen(), rule.getLabel()));
+        }
+        return errors;
+    }
 
     /**
      * @return var properties this atom (its pattern) contains
@@ -183,7 +208,7 @@ public abstract class Atom extends AtomicBase {
             return getPotentialRules()
                     .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
-                    .map(r -> r.rewriteToUserDefined(this))
+                    .map(r -> r.rewrite(this))
                     .peek(applicableRules::add);
         }
         return applicableRules.stream();
@@ -313,6 +338,8 @@ public abstract class Atom extends AtomicBase {
      * @return new {@link Atom} with specified type
      */
     public Atom addType(SchemaConcept type){ return this;}
+
+    public Stream<Answer> materialise(){ return Stream.empty();}
 
     public abstract Atom rewriteWithTypeVariable();
 

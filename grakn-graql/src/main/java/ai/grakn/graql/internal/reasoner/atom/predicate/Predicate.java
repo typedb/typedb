@@ -18,8 +18,12 @@
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.VarPattern;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Sets;
+import java.util.Set;
 
 /**
  *
@@ -62,6 +66,12 @@ public abstract class Predicate<T> extends AtomicBase {
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
+
+    @Override
+    public Set<String> validateAsRuleHead(Rule rule) {
+        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
+    }
+
 
     @Override
     public boolean isAlphaEquivalent(Object obj){

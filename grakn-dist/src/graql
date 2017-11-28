@@ -17,24 +17,16 @@
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
 
-# ================================================
-# global variables
-# ================================================
-
-# Grakn globals
-# TODO: clean up
+# Grakn global variables
 if [ -z "${GRAKN_HOME}" ]; then
     [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
     GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-    GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
-    GRAKN_PS=/tmp/grakn-engine.pid
-    GRAKN_STARTUP_TIMEOUT_S=120
 fi
 
 # ================================================
 # common helper functions
 # ================================================
-update_classpath() {
+update_classpath_global_var() {
   # Define CLASSPATH, exclude slf4j as we use logback
   for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
       if [[ $jar != *slf4j-log4j12* ]] ; then
@@ -47,54 +39,10 @@ update_classpath() {
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
 }
 
-graql_console() {
-  java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell "${@:1}"
-}
-
-grakn_version() {
-  java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell --version
-}
-graql_help() {
-  echo "Usage: graql COMMAND
-
-COMMAND:
-console  Start a REPL console for running Graql queries. Defaults to connecting to http://localhost
-migrate  Run migration from a file
-version  Print Grakn version
-help     Print this message"
-}
-
 # =============================================
 # main routine
 # =============================================
 
-update_classpath
+update_classpath_global_var
 
-case "$1" in
-  console)
-    graql_console "${@:2}"
-  ;;
-  migrate)
-    if [ "$2" == "csv" ] ; then
-      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.csv.CSVMigrator "${@:2}"
-    elif [ "$2" == "json" ] ; then
-      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.json.JsonMigrator "${@:2}"
-    elif [ "$2" == "owl" ] ; then
-      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.owl.Main "${@:2}"
-    elif [ "$2" == "export" ] ; then
-      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.export.Main "${@:2}"
-    elif [ "$2" == "sql" ] ; then
-      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.sql.SQLMigrator "${@:2}"
-    elif [ "$2" == "xml" ] ; then
-      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.xml.XmlMigrator "${@:2}"
-    else
-      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.xml.XmlMigrator -h
-    fi
-  ;;
-  version)
-    grakn_version
-  ;;
-  *|help)
-    graql_help
-  ;;
-esac
+java -cp ${CLASSPATH} ai.grakn.dist.DistGraql "$@"

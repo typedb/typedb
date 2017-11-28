@@ -115,7 +115,7 @@ public class ConceptControllerTest {
             ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
             ai.grakn.concept.Relationship relationship = relationshipType.addRelationship().addRolePlayer(role1, entity).addRolePlayer(role2, entity);
 
-            Pattern when = tx.graql().parser().parsePattern("$x isa \"My Special Entity Type\"");
+            Pattern when = tx.graql().parser().parsePattern("$x isa \"My Relationship Type\"");
             Pattern then = tx.graql().parser().parsePattern("$x isa \"My Special Entity Type\"");
             ai.grakn.concept.Rule rule = tx.putRule("My Special Snowflake of a Rule", when, then);
 

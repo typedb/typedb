@@ -278,7 +278,7 @@ then
 {(mother: $p, daughter: $c) isa parentship;};
 ```
 
-If you're unfamiliar with the syntax of rules, don't worry too much about it too much just now. It is sufficient to know that, for each `parentship` relationship, Graql checks whether the pattern in the first block (when) can be verified and, if it can, infers the statement in the second block (then) to be true, so inserts a relationship between gendered parents and children.
+If you're unfamiliar with the syntax of rules, don't worry too much about it for now. It is sufficient to know that, for each `parentship` relationship, Graql checks whether the pattern in the first block (when) can be verified and, if it can, infers the statement in the second block (then) to be true, so inserts a relationship between gendered parents and children.
 
 Let's test it out!
 

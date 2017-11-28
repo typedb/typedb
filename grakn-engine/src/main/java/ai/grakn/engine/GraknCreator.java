@@ -85,7 +85,7 @@ public class GraknCreator {
         return GraknConfig.create();
     }
 
-    static synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime) {
+    public static synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime) {
         if (graknEngineServer == null) {
             RedisWrapper redisWrapper = instantiateRedis(GRAKN_ENGINE_CONFIG);
             Pool<Jedis> jedisPool = redisWrapper.getJedisPool();

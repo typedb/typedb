@@ -70,10 +70,6 @@ paths:
         in: query
         description: Enable inference
         type: boolean
-      - name: limitEmbedded
-        in: query
-        description: Number of embedded concepts to return
-        type: number
       - name: defineAllVars
         in: query
         description: Define all anonymous variables in the query
@@ -94,7 +90,7 @@ paths:
       produces: [text/plain, application/json]
       responses:
         200:
-          description: ''
+          description: 'Returns a Graql query response. This can be different depending on the type of query.'
           schema:
             $ref: '#/definitions/GraqlResponse'
         400:
@@ -436,7 +432,7 @@ definitions:
     required: ['@id', types]
     properties:
       '@id':
-        $ref: '#/definitions/Types'
+        $ref: '#/definitions/TypesLink'
       types:
         type: array
         items:
@@ -456,38 +452,38 @@ definitions:
   Type:
     allOf:
       - $ref: '#/definitions/TypeSummary'
-    required: [abstract, implicit, plays, attributes, keys, subs]
-    type: object
-    properties:
-      abstract:
-        type: boolean
-      implicit:
-        type: boolean
-      plays:
-        type: array
-        items:
-          $ref: '#/definitions/RoleLink'
-      attributes:
-        type: array
-        items:
-          $ref: '#/definitions/TypeLink'
-      keys:
-        type: array
-        items:
-          $ref: '#/definitions/TypeLink'
-      subs:
-        type: array
-        items:
-          $ref: '#/definitions/TypeLink'
-      relates:
-        type: array
-        items:
-          $ref: '#/definitions/RoleLink'
-      super:
-        allOf: [$ref: '#/definitions/TypeLink']
-        example: /kb/genealogy/type/entity
-      instances:
-        $ref: '#/definitions/InstancesLink'
+      - required: [abstract, implicit, plays, attributes, keys, subs]
+        type: object
+        properties:
+          abstract:
+            type: boolean
+          implicit:
+            type: boolean
+          plays:
+            type: array
+            items:
+              $ref: '#/definitions/RoleLink'
+          attributes:
+            type: array
+            items:
+              $ref: '#/definitions/TypeLink'
+          keys:
+            type: array
+            items:
+              $ref: '#/definitions/TypeLink'
+          subs:
+            type: array
+            items:
+              $ref: '#/definitions/TypeLink'
+          relates:
+            type: array
+            items:
+              $ref: '#/definitions/RoleLink'
+          super:
+            allOf: [$ref: '#/definitions/TypeLink']
+            example: /kb/genealogy/type/entity
+          instances:
+            $ref: '#/definitions/InstancesLink'
   InstancesLink:
     type: string
     format: uri
@@ -513,19 +509,6 @@ definitions:
     type: string
     format: uri
     example: /kb/genealogy/role/husband
-  RoleSummary:
-    required: ['@id', label, relationships]
-    type: object
-    properties:
-      '@id':
-        $ref: '#/definitions/RoleLink'
-      label:
-        allOf: [$ref: '#/definitions/Label']
-        example: husband
-      relationships:
-        type: array
-        items:
-          $ref: '#/definitions/TypeLink'
   RolesLink:
     type: string
     format: uri
@@ -541,11 +524,18 @@ definitions:
         items:
           $ref: '#/definitions/Role'
   Role:
-    allOf:
-      - $ref: '#/definitions/RoleSummary'
-    required: [implicit, rolePlayers, subs]
+    required: ['@id', label, relationships, implicit, rolePlayers, subs]
     type: object
     properties:
+      '@id':
+        $ref: '#/definitions/RoleLink'
+      label:
+        allOf: [$ref: '#/definitions/Label']
+        example: husband
+      relationships:
+        type: array
+        items:
+          $ref: '#/definitions/TypeLink'
       implicit:
         type: boolean
       rolePlayers:

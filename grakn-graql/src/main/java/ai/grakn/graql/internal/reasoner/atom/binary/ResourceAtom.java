@@ -18,6 +18,9 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
@@ -27,6 +30,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -34,6 +38,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -42,11 +47,16 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.concept.AttributeImpl;
+import ai.grakn.kb.internal.concept.AttributeTypeImpl;
+import ai.grakn.kb.internal.concept.EntityImpl;
+import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import com.google.common.collect.Iterables;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -141,8 +151,15 @@ public class ResourceAtom extends Binary{
     @Override
     public int hashCode() {
         int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        hashCode = this.alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
+        return hashCode;
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + this.multiPredicateEquivalenceHashCode();
         return hashCode;
     }
@@ -190,14 +207,6 @@ public class ResourceAtom extends Binary{
         IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
         IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
         return (thisPredicate == null) == (predicate == null);
-    }
-
-    @Override
-    public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + multiPredicateEquivalenceHashCode();
-        return hashCode;
     }
 
     @Override
@@ -265,7 +274,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule){
-        Set<String> errors = new HashSet<>();
+        Set<String> errors = super.validateAsRuleHead(rule);
         if (getSchemaConcept() == null || getMultiPredicate().size() > 1){
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.getThen(), rule.getLabel()));
         }
@@ -275,7 +284,7 @@ public class ResourceAtom extends Binary{
                     .filter(at -> at.getVarNames().contains(getPredicateVariable()))
                     .findFirst().isPresent();
             if (!predicateBound) {
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_UNBOUND_PREDICATE.getMessage(rule.getThen(), rule.getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
             }
         }
 
@@ -405,6 +414,35 @@ public class ResourceAtom extends Binary{
                 .collect(Collectors.toSet());
     }
 
+    private void attachAttribute(Concept owner, Attribute attribute){
+        if (owner.isEntity()){
+            EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
+        } else if (owner.isRelationship()){
+            RelationshipImpl.from(owner.asRelationship()).attributeInferred(attribute);
+        } else if (owner.isAttribute()){
+            AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
+        }
+    }
+
+    @Override
+    public Stream<Answer> materialise(){
+        Answer substitution = getParentQuery().getSubstitution();
+        AttributeType type = getSchemaConcept().asAttributeType();
+        Concept owner = substitution.get(getVarName());
+        Var resourceVariable = getPredicateVariable();
+
+        //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
+        if (substitution.containsVar(resourceVariable)){
+            Attribute attribute = substitution.get(resourceVariable).asAttribute();
+            attachAttribute(owner, attribute);
+            return Stream.of(substitution);
+        } else {
+            Attribute attribute = AttributeTypeImpl.from(type).putAttributeInferred(Iterables.getOnlyElement(getMultiPredicate()).getPredicate().equalsValue().get());
+            attachAttribute(owner, attribute);
+            return Stream.of(substitution.merge(new QueryAnswer(ImmutableMap.of(resourceVariable, attribute))));
+        }
+    }
+
     /**
      * rewrites the atom to one with relation variable
      * @param parentAtom parent atom that triggers rewrite
@@ -434,5 +472,4 @@ public class ResourceAtom extends Binary{
                 .rewriteWithRelationVariable(parentAtom)
                 .rewriteWithTypeVariable(parentAtom);
     }
-
 }
