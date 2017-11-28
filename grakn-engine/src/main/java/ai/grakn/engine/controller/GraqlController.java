@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.loader.MutatorTask;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.exception.GraknServerException;
@@ -225,8 +225,23 @@ public class GraqlController {
             formatted = printer.graqlString(executeAndMonitor(query));
             commitQuery = !query.isReadOnly();
         }
-        if (commitQuery) MutatorTask.commitAndSubmitPPTask(graph, postProcessor, taskSubmitter, postProcessingDelay);
+        if (commitQuery) commitAndSubmitPPTask(graph, postProcessor, taskSubmitter, postProcessingDelay);
         return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
+    }
+
+    private static void commitAndSubmitPPTask(
+            GraknTx graph, PostProcessor postProcessor, TaskSubmitter taskSubmitter, int ppTaskDelay
+    ) {
+        Optional<String> result = graph.admin().commitSubmitNoLogs();
+        if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
+            String logs = result.get();
+            taskSubmitter.addTask(
+                    PostProcessingTask.createTask(GraqlController.class, ppTaskDelay),
+                    PostProcessingTask.createConfig(graph.keyspace(), logs)
+            );
+
+            postProcessor.updateCounts(graph.keyspace(), Json.read(logs));
+        }
     }
 
     private Object executeAndMonitor(Query<?> query) {
