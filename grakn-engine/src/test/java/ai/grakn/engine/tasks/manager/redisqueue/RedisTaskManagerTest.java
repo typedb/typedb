@@ -27,7 +27,6 @@ import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
@@ -123,7 +122,7 @@ public class RedisTaskManagerTest {
     @Test
     public void whenAddingTask_TaskStateIsRetrievable() throws ExecutionException, RetryException {
         TaskId generate = TaskId.generate();
-        TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), Priority.LOW);
+        TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName());
         taskManager.addTask(state, testConfig(generate));
         RETRY_STRATEGY.call(() -> taskManager.storage().getState(state.getId()) != null);
         assertEquals(COMPLETED, taskManager.storage().getState(state.getId()).status());
@@ -132,14 +131,14 @@ public class RedisTaskManagerTest {
     @Test(expected = TimeoutException.class)
     public void whenNotAddingTask_TastStateIsNotRetrievable()
             throws ExecutionException, RetryException, StateFutureInitializationException, InterruptedException, TimeoutException {
-        TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), Priority.LOW);
+        TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName());
         taskManager.waitForTask(state.getId(), 3, TimeUnit.SECONDS);
     }
 
     @Test
     public void whenConfigurationEmpty_TaskEventuallyFailed()
             throws ExecutionException, RetryException, InterruptedException, StateFutureInitializationException, TimeoutException {
-        TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), Priority.LOW);
+        TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName());
         Future<Void> s = taskManager.subscribeToTask(state.getId());
         taskManager.addTask(state, TaskConfiguration.of(Json.object()));
         s.get();
@@ -153,7 +152,7 @@ public class RedisTaskManagerTest {
 
         for(int i = 0; i < 10; i++) {
             TaskId generate = TaskId.generate();
-            TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), Priority.LOW);
+            TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName());
             TaskId id = state.getId();
             states.put(id, taskManager.subscribeToTask(id));
             taskManager.addTask(state, testConfig(generate));

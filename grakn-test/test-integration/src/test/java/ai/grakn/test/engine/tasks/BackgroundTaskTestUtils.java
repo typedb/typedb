@@ -69,7 +69,7 @@ public class BackgroundTaskTestUtils {
     }
 
     public static TaskState createTask(Class<? extends BackgroundTask> clazz) {
-        return TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), TaskState.Priority.LOW);
+        return TaskState.of(clazz, BackgroundTaskTestUtils.class.getName());
     }
 
     public static void waitForDoneStatus(TaskStateStorage storage, Collection<TaskState> tasks) {

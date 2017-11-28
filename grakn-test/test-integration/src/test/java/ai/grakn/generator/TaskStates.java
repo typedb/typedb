@@ -65,7 +65,7 @@ public class TaskStates extends Generator<TaskState> {
 
         // TODO: generate all the other params of a task state
 
-        return TaskState.of(taskClass, creator, TaskState.Priority.LOW);
+        return TaskState.of(taskClass, creator);
     }
 
     public void configure(WithClass withClass) {
