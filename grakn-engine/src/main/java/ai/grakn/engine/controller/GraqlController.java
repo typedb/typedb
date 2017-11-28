@@ -24,7 +24,7 @@ import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskSubmitter;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
@@ -85,20 +85,20 @@ public class GraqlController {
     private final EngineGraknTxFactory factory;
     private final Service spark;
     private final int postProcessingDelay;
-    private final TaskSubmitter taskSubmitter;
+    private final TaskManager taskManager;
     private final PostProcessor postProcessor;
     private final Timer executeGraqlGetTimer;
     private final Timer executeGraqlPostTimer;
     private final Timer singleExecutionTimer;
 
     public GraqlController(
-            EngineGraknTxFactory factory, Service spark, int postProcessingDelay, TaskSubmitter taskSubmitter,
+            EngineGraknTxFactory factory, Service spark, int postProcessingDelay, TaskManager taskManager,
             PostProcessor postProcessor, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.spark = spark;
         this.postProcessingDelay = postProcessingDelay;
-        this.taskSubmitter = taskSubmitter;
+        this.taskManager = taskManager;
         this.postProcessor = postProcessor;
         this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
         this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
@@ -225,12 +225,12 @@ public class GraqlController {
             formatted = printer.graqlString(executeAndMonitor(query));
             commitQuery = !query.isReadOnly();
         }
-        if (commitQuery) commitAndSubmitPPTask(graph, postProcessor, taskSubmitter, postProcessingDelay);
+        if (commitQuery) commitAndSubmitPPTask(graph, postProcessor, taskManager, postProcessingDelay);
         return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
     }
 
     private static void commitAndSubmitPPTask(
-            GraknTx graph, PostProcessor postProcessor, TaskSubmitter taskSubmitter, int ppTaskDelay
+            GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter, int ppTaskDelay
     ) {
         Optional<String> result = graph.admin().commitSubmitNoLogs();
         if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs

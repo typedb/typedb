@@ -5,7 +5,7 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskSubmitter;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
@@ -91,7 +91,7 @@ public class GraqlControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
                 .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
-        new GraqlController(factory, spark, 0, mock(TaskSubmitter.class), mock(PostProcessor.class), new MetricRegistry());
+        new GraqlController(factory, spark, 0, mock(TaskManager.class), mock(PostProcessor.class), new MetricRegistry());
     });
 
     @ClassRule

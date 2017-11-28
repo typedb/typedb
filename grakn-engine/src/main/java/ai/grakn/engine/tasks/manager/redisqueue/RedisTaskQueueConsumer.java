@@ -105,7 +105,7 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
         BackgroundTask runningTask;
         try {
             runningTask = taskState.taskClass().newInstance();
-            runningTask.initialize(taskConfiguration, redisTaskManager, config, factory,
+            runningTask.initialize(taskConfiguration, config, factory,
                     metricRegistry, postProcessor);
             metricRegistry.meter(name(RedisTaskQueueConsumer.class, "initialized")).mark();
             if (taskShouldResume(task)) {

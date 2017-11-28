@@ -22,7 +22,6 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
 
@@ -36,8 +35,6 @@ import javax.annotation.Nullable;
 public abstract class BackgroundTask {
 
     private @Nullable
-    TaskSubmitter taskSubmitter = null;
-    private @Nullable
     TaskConfiguration configuration = null;
     private @Nullable
     GraknConfig engineConfig = null;
@@ -50,15 +47,13 @@ public abstract class BackgroundTask {
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
      *
      * @param configuration  The configuration needed to execute the task
-     * @param taskSubmitter  Allows followup tasks to be submitted for processing
      * @param metricRegistry Metric registry
      */
     public final void initialize(
             TaskConfiguration configuration,
-            TaskSubmitter taskSubmitter, GraknConfig engineConfig,
+            GraknConfig engineConfig,
             EngineGraknTxFactory factory, MetricRegistry metricRegistry, PostProcessor postProcessor)  {
         this.configuration = configuration;
-        this.taskSubmitter = taskSubmitter;
         this.engineConfig = engineConfig;
         this.metricRegistry = metricRegistry;
         this.factory = factory;
@@ -85,10 +80,6 @@ public abstract class BackgroundTask {
      */
     public boolean stop() {
         throw new UnsupportedOperationException(this.getClass().getName() + " task cannot be stopped while in progress");
-    }
-
-    public final TaskSubmitter taskSubmitter(){
-        return defaultNullCheck(taskSubmitter);
     }
 
     public final TaskConfiguration configuration() {

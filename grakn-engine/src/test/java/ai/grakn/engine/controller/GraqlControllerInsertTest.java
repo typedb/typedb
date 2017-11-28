@@ -21,7 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskSubmitter;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.kb.admin.GraknAdmin;
@@ -64,7 +64,7 @@ public class GraqlControllerInsertTest {
 
     private static GraknTx mockTx;
     private static GraknAdmin txAdmin;
-    private static TaskSubmitter taskSubmitter = mock(TaskSubmitter.class);
+    private static TaskManager taskManager = mock(TaskManager.class);
     private static PostProcessor postProcessor = mock(PostProcessor.class);
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
@@ -74,7 +74,7 @@ public class GraqlControllerInsertTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, 0, taskSubmitter, postProcessor, new MetricRegistry());
+        new GraqlController(mockFactory, spark, 0, taskManager, postProcessor, new MetricRegistry());
     });
 
     @Before
@@ -224,7 +224,7 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(taskSubmitter, times(1)).addTask(any(), any());
+        verify(taskManager, times(1)).addTask(any(), any());
     }
 
     @Test
@@ -246,7 +246,7 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(taskSubmitter, times(1)).addTask(any(), any());
+        verify(taskManager, times(1)).addTask(any(), any());
     }
 
     @Test
