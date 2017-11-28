@@ -42,13 +42,12 @@ public class CommitLogControllerTest {
     private static final String BODY =
             Json.object("concepts-to-fix", CONCEPTS_TO_FIX, "types-with-new-counts", TYPES_WITH_NEW_COUNTS).toString();
 
-    private static final int DELAY = 100;
     private final TaskManager taskManager = mock(TaskManager.class);
     private final PostProcessor postProcessor = mock(PostProcessor.class);
 
     @Rule
     public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new CommitLogController(spark, DELAY, taskManager, postProcessor);
+        new CommitLogController(spark, taskManager, postProcessor);
     });
 
     @Test

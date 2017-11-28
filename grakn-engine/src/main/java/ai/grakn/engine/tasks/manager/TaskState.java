@@ -48,25 +48,9 @@ public class TaskState implements Serializable {
     private static final long serialVersionUID = -7301340972479426653L;
 
     /**
-     * The priority of the task which decides which queue the task should go into
-     */
-    public enum Priority{
-        LOW,
-        HIGH;
-
-        public String queue(){
-            return name() + "-priority-queue";
-        }
-    }
-
-    /**
      * Id of this task.
      */
     private final String taskId;
-    /**
-     * The priority of the task which decides which queue the task should go into
-     */
-    private final Priority priority;
     /**
      * Task status, @see TaskStatus.
      */
@@ -98,37 +82,34 @@ public class TaskState implements Serializable {
      */
     private TaskCheckpoint taskCheckpoint;
 
-    public static TaskState of(Class<?> taskClass, String creator, Priority priority) {
-        return new TaskState(taskClass, creator, TaskId.generate(), priority);
+    public static TaskState of(Class<?> taskClass, String creator) {
+        return new TaskState(taskClass, creator, TaskId.generate());
     }
 
     public static TaskState of(TaskId id) {
-        return new TaskState(null, null, id, null);
+        return new TaskState(null, null, id);
     }
 
     public static TaskState of(TaskId id, TaskStatus taskStatus) {
-        return new TaskState(null, null, id, null, taskStatus);
+        return new TaskState(null, null, id, taskStatus);
     }
 
     @JsonCreator
     public TaskState(@JsonProperty("taskClass") Class<?> taskClass,
             @JsonProperty("creator") String creator,
             @JsonProperty("id") TaskId id,
-            @JsonProperty("priority") Priority priority,
             @JsonProperty("status") TaskStatus status) {
         this.status = status;
         this.statusChangeTime = now();
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
         this.creator = creator;
         this.taskId = id.value();
-        this.priority = priority;
     }
 
     public TaskState(Class<?> taskClass,
             String creator,
-            TaskId id,
-            Priority priority) {
-        this(taskClass, creator, id, priority, CREATED);
+            TaskId id) {
+        this(taskClass, creator, id, CREATED);
     }
 
     private TaskState(TaskState taskState) {
@@ -141,7 +122,6 @@ public class TaskState implements Serializable {
         this.stackTrace = taskState.stackTrace;
         this.exception = taskState.exception;
         this.taskCheckpoint = taskState.taskCheckpoint;
-        this.priority = taskState.priority;
     }
 
     @JsonProperty("id")
@@ -189,11 +169,6 @@ public class TaskState implements Serializable {
     @JsonProperty("serialVersionUID")
     public static long getSerialVersionUID() {
         return serialVersionUID;
-    }
-
-    @JsonProperty("priority")
-    public Priority getPriority() {
-        return priority;
     }
 
     @JsonProperty("status")

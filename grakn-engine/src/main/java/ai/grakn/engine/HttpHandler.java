@@ -77,13 +77,11 @@ public class HttpHandler {
         RemoteSession graqlWebSocket = RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
-        int postProcessingDelay = prop.getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
-
         // Start all the controllers
         new GraqlController(factory, spark, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
-        new CommitLogController(spark, postProcessingDelay, taskManager, postProcessor);
+        new CommitLogController(spark, taskManager, postProcessor);
 
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();

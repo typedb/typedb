@@ -103,10 +103,8 @@ public class PostProcessingTask extends BackgroundTask {
      * @param creator The class which is creating the task
      * @return The executable postprocessing task state
      */
-    public static TaskState createTask(Class creator, int delay) {
-        return TaskState.of(PostProcessingTask.class,
-                creator.getName(),
-                TaskState.Priority.LOW);
+    public static TaskState createTask(Class creator) {
+        return TaskState.of(PostProcessingTask.class, creator.getName());
     }
 
     /**
