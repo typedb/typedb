@@ -205,11 +205,11 @@ public abstract class Atom extends AtomicBase {
     public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
-            return getPotentialRules()
+            getPotentialRules()
                     .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
-                    .peek(applicableRules::add);
+                    .forEach(applicableRules::add);
         }
         return applicableRules.stream();
     }

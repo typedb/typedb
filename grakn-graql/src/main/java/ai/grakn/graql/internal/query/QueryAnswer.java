@@ -295,11 +295,6 @@ public class QueryAnswer implements Answer {
     @Override
     public Set<Atomic> toPredicates(ReasonerQuery parent) {
         Set<Var> varNames = parent.getVarNames();
-
-        //TODO: double check if discard needed subs
-        //skip predicates from types
-        //parent.getAtoms(TypeAtom.class).map(Binary::getPredicateVariable).forEach(varNames::remove);
-
         return entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), parent))

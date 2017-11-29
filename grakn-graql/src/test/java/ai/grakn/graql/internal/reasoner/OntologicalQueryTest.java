@@ -20,23 +20,17 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.SampleKBContext;
 import java.util.List;
-import java.util.stream.Stream;
-import org.apache.cassandra.cql.Relation;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
-import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static org.junit.Assert.assertEquals;
 
 public class OntologicalQueryTest {
@@ -44,8 +38,8 @@ public class OntologicalQueryTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @ClassRule
-    public static final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
+    @Rule
+    public final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
 
     /** HasAtom **/
 
@@ -125,5 +119,38 @@ public class OntologicalQueryTest {
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
         assertEquals(answers.size(),  relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3);
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+    }
+
+    /** meta concepts **/
+
+    @Test
+    public void allInstancesOfMetaEntity(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        long noOfEntities = tx.admin().getMetaEntityType().instances().count();
+        String queryString = "match $x isa entity;get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), noOfEntities);
+    }
+
+    @Test
+    public void allInstancesOfMetaRelation(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match $x isa relationship;get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 13);
+    }
+
+    @Test
+    public void allInstancesOfMetaResource(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match $x isa attribute;get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 2);
     }
 }
