@@ -136,16 +136,17 @@ public class SystemController {
     @GET
     @Path("/kb/{keyspace}")
     @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
-    private String getKeyspace(Request request, Response response) {
+    private String getKeyspace(Request request, Response response) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
 
         if (systemKeyspace.containsKeyspace(keyspace)) {
             response.status(HttpServletResponse.SC_OK);
+            return objectMapper.writeValueAsString(Keyspace.of(keyspace));
         } else {
             response.status(HttpServletResponse.SC_NOT_FOUND);
+            return "";
         }
-
-        return "";
     }
 
     @PUT
