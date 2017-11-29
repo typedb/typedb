@@ -198,10 +198,10 @@ public class GraqlTest {
             PathQuery query =
                     graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
 
-            Optional<List<Concept>> path = query.execute();
-            assert path.isPresent();
+            List<List<Concept>> path = query.execute();
+            assertEquals(1, path.size());
             List<String> result =
-                    path.get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                    path.get(0).stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
 
             List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 
