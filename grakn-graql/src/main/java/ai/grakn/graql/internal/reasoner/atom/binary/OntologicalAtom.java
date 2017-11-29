@@ -24,9 +24,11 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /**
@@ -48,6 +50,9 @@ public abstract class OntologicalAtom extends TypeAtom {
     public boolean isSelectable() {
         return true;
     }
+
+    @Override
+    public Stream<InferenceRule> getApplicableRules() { return Stream.empty();}
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
