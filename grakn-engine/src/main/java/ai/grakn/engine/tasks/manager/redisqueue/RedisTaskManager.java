@@ -19,6 +19,7 @@
 
 package ai.grakn.engine.tasks.manager.redisqueue;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -56,7 +57,6 @@ import static ai.grakn.redisq.State.FAILED;
  * @author pluraliseseverythings
  */
 public class RedisTaskManager implements TaskManager {
-    private static final long TASK_DELAY = 30 * 60; //I.e. loading will be delayed by 30 minutes
     private static final Logger LOG = LoggerFactory.getLogger(RedisTaskManager.class);
     private static final String QUEUE_NAME = "grakn";
 
@@ -78,7 +78,7 @@ public class RedisTaskManager implements TaskManager {
                 .setConsumer(consumer)
                 .setMetricRegistry(metricRegistry)
                 .setThreadPoolSize(threads)
-                .setDelay(TASK_DELAY)
+                .setDelay(config.getProperty(GraknConfigKey.TASK_DELAY))
                 .setDocumentClass(Task.class)
                 .createRedisq();
         this.taskStorage = RedisTaskStorage.create(redisq, metricRegistry);
