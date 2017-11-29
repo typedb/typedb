@@ -74,6 +74,7 @@
                 <include>logback.xml</include>
             </includes>
         </fileSet>
+        <!-- static assets for dashboard -->
         <fileSet>
             <outputDirectory>services/assets</outputDirectory>
             <directory>${main.basedir}/grakn-dashboard/static</directory>

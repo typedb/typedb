@@ -24,7 +24,6 @@ import ai.grakn.util.GraknVersion;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
@@ -67,12 +66,8 @@ public class DistGrakn {
 
             application = new DistGrakn(storageProcess,queueProcess,graknProcess);
             application.run(context,action,option);
-        } catch (InvalidPathException ex) {
-            System.out.println("Problem with bash script: cannot run Grakn");
-            return;
         } catch (RuntimeException ex) {
-            System.out.println(ex.getMessage());
-            return;
+            System.out.println("Problem with bash script: cannot run Grakn");
         }
     }
 
@@ -108,7 +103,7 @@ public class DistGrakn {
         System.out.println(GraknVersion.VERSION);
     }
 
-    private void help() {
+    protected void help() {
         System.out.println("Usage: grakn COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
@@ -212,7 +207,7 @@ public class DistGrakn {
         }
     }
 
-    private void serverHelp() {
+    protected void serverHelp() {
         System.out.println("Usage: grakn server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
