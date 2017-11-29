@@ -148,7 +148,7 @@ public class ConceptBuilder {
             Link roleLink = Link.create(role);
             things.forEach(thing -> roleplayers.add(RolePlayer.create(roleLink, Link.create(thing))));
         });
-        return Relationship.create(relationship.getId(), type, selfLink, attributes, keys, relationships, roleplayers);
+        return Relationship.create(relationship.getId(), selfLink, type, attributes, keys, relationships, roleplayers);
     }
 
     private static Type buildType(ai.grakn.concept.Type type, Link selfLink, Link sup, Set<Link> subs){
