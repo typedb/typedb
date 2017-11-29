@@ -19,26 +19,32 @@
 package ai.grakn.graql.internal.reasoner.atom.binary.type;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import ai.grakn.graql.internal.reasoner.utils.Pair;
+import ai.grakn.kb.internal.concept.EntityTypeImpl;
+import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -93,6 +99,15 @@ public class IsaAtom extends TypeAtom {
         if (getTypeId() != null) return this;
         Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
         return new IsaAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
+    }
+
+    @Override
+    public Stream<Answer> materialise(){
+        EntityType entityType = getSchemaConcept().asEntityType();
+        return Stream.of(
+                getParentQuery().getSubstitution()
+                        .merge(new QueryAnswer(ImmutableMap.of(getVarName(), EntityTypeImpl.from(entityType).addEntityInferred())))
+        );
     }
 
     @Override

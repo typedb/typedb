@@ -20,7 +20,6 @@
 package ai.grakn.generator;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
@@ -32,7 +31,6 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.time.Instant;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
@@ -67,10 +65,7 @@ public class TaskStates extends Generator<TaskState> {
 
         // TODO: generate all the other params of a task state
 
-        // A bit in the past, because Instant is not monotonic
-        TaskSchedule schedule = TaskSchedule.at(Instant.now().minusSeconds(60));
-
-        return TaskState.of(taskClass, creator, schedule, TaskState.Priority.LOW);
+        return TaskState.of(taskClass, creator);
     }
 
     public void configure(WithClass withClass) {

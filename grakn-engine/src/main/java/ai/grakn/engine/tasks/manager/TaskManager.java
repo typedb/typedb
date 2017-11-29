@@ -47,5 +47,4 @@ public interface TaskManager extends TaskSubmitter, Closeable {
      */
     TaskStateStorage storage();
 
-    // TODO: Add 'pause' and 'restart' methods
 }

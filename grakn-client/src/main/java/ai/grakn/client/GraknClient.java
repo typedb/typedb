@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -66,6 +67,7 @@ public class GraknClient {
         URI fullURI = UriBuilder.fromUri(uri.toURI())
                 .path(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()))
                 .queryParam(MULTI, true)
+                .queryParam(INFER, false) //Making inference true could lead to non-deterministic loading of data
                 .build();
         ClientResponse response = client.resource(fullURI)
                 .accept(APPLICATION_JSON_GRAQL)
