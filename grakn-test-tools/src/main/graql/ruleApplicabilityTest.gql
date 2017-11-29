@@ -95,6 +95,7 @@ typed-relation sub relationship
 
 #Rules
 
+#3 instances in total
 rule-0 sub rule
 	when {
 		(role1: $x, role2: $y) isa binary;
@@ -104,6 +105,7 @@ rule-0 sub rule
 		(role1: $x, role2: $z) isa binary;
 	};
 
+#1 instance
 rule-1 sub rule
 	when {
 		(role1: $x, role2: $y) isa binary;
@@ -113,6 +115,7 @@ rule-1 sub rule
 		(role1:$x, role2:$y, role3: $z) isa ternary;
 	};
 
+#1 instance
 rule-2 sub rule
 	when {
 		(role1: $x, role2: $y) isa binary;
@@ -122,6 +125,7 @@ rule-2 sub rule
 		(role1:$x, role2:$y, role2: $z) isa ternary;
 	};
 
+#1 instance
 rule-3 sub rule
     when {
     	$r1 (role1: $x, role2: $y) isa reifiable-relation;

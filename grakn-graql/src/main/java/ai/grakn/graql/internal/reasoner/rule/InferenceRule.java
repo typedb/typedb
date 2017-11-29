@@ -323,7 +323,7 @@ public class InferenceRule {
         Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta
-        Answer partialSubPrime = ((ReasonerQueryImpl) parentAtom.getParentQuery())
+        Answer partialSubPrime = parentAtom.getParentQuery()
                 .getSubstitution()
                 .unify(ruleUnifierInverse);
 

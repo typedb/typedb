@@ -35,6 +35,7 @@ import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
@@ -154,11 +155,40 @@ public class QueryAnswer implements Answer {
         if(a2.isEmpty()) return this;
         if(this.isEmpty()) return a2;
 
+        Sets.SetView<Var> varUnion = Sets.union(this.vars(), a2.vars());
+        Set<Var> varIntersection = Sets.intersection(this.vars(), a2.vars());
+        Map<Var, Concept> entryMap = Sets.union(
+                this.entrySet(),
+                a2.entrySet()
+        )
+                .stream()
+                .filter(e -> !varIntersection.contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        varIntersection
+                .forEach(var -> {
+                    Concept concept = this.get(var);
+                    Concept otherConcept = a2.get(var);
+                    if (concept.equals(otherConcept)) entryMap.put(var, concept);
+                    else {
+                        if (concept.isSchemaConcept()
+                                && otherConcept.isSchemaConcept()
+                                && !ReasonerUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept())) {
+                            entryMap.put(
+                                    var,
+                                    Iterables.getOnlyElement(ReasonerUtils.topOrMeta(
+                                            Sets.newHashSet(
+                                                    concept.asSchemaConcept(),
+                                                    otherConcept.asSchemaConcept())
+                                            )
+                                    )
+                            );
+                        }
+                    }
+                });
+        if (!entryMap.keySet().equals(varUnion)) return new QueryAnswer();
+
         return new QueryAnswer(
-                Sets.union(
-                        this.entrySet(),
-                        a2.entrySet()
-                ),
+                entryMap,
                 mergeExplanation? this.mergeExplanation(a2) : this.getExplanation()
         );
     }

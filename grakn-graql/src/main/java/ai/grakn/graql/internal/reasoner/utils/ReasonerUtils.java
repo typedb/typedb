@@ -43,6 +43,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
+import java.util.Collections;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -233,13 +234,25 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param schemaConcepts entry set
-     * @return top non-meta {@link SchemaConcept}s from within the provided set of {@link Role}
+     * @param schemaConcepts entry {@link SchemaConcept} set
+     * @return top non-meta {@link SchemaConcept}s from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
                 .filter(rt -> Sets.intersection(supers(rt), schemaConcepts).isEmpty())
                 .collect(toSet());
+    }
+
+    /**
+     * @param schemaConcepts entry {@link SchemaConcept} set
+     * @return top {@link SchemaConcept}s from within the provided set or meta concept if it exists
+     */
+    public static <T extends SchemaConcept> Set<T> topOrMeta(Set<T> schemaConcepts) {
+        Set<T> concepts = top(schemaConcepts);
+        T meta = concepts.stream()
+                .filter(c -> Schema.MetaSchema.isMetaLabel(c.getLabel()))
+                .findFirst().orElse(null);
+        return meta != null ? Collections.singleton(meta) : concepts;
     }
 
     /**
