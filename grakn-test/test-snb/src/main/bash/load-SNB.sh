@@ -8,7 +8,6 @@ SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
 GRAQL=${SCRIPTPATH}/../graql
 
 ACTIVE_TASKS=16
-VALIDATION_DATA=${WORKSPACE}/readwrite_neo4j--validation_set.tar.gz
 
 # validate the number of arguments
 if [ "$#" -lt "2" ]; then
@@ -28,6 +27,8 @@ function extractArchData {
 	mkdir -p ${CSV_DATA}
 	case "$1" in
 		validate)
+            VALIDATION_DATA=${WORKSPACE}/${PACKAGE}/validation_set.tar.gz
+            wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz -o ${VALIDATION_DATA}
 			tar -xf ${VALIDATION_DATA} --strip=1 -C ${CSV_DATA} validation_set
 			;;
 		SF1)

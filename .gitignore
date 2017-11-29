@@ -53,5 +53,4 @@ grakn-package
 hadoop
 parameters_bi.log
 parameters_interactive.log
-readwrite_neo4j--validation_set.tar.gz
 social_network
