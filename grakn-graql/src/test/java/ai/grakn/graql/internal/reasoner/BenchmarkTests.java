@@ -31,12 +31,14 @@ import ai.grakn.test.kbs.PathKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+@Ignore
 public class BenchmarkTests {
 
     //Needed to start cass depending on profile

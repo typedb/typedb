@@ -121,9 +121,40 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa $type; $type relates role1; get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(),  15);
+        System.out.println(answers.size());
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
         List<Answer> relations = qb.<GetQuery>parse("match $x isa relationship;get;").execute();
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
-        assertEquals(answers.size(),  relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3);
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertEquals(answers.size(), relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3);
+
+    }
+
+    @Test
+    public void sanityCheck0(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match $x isa relationship;get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 13);
+    }
+
+    @Test
+    public void sanityCheck(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match ($u, $v) isa $type; get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+    }
+
+    @Test
+    public void sanityCheck2(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match $r ($u, $v) isa binary;get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
     }
 }

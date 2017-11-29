@@ -45,6 +45,7 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.AtomicState;
+import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
 import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
@@ -301,15 +302,35 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
+    /*
+    public Stream<ResolutionState> subGoals(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return getQueryStream(sub)
+                .map(q -> q.subGoal(sub, u, parent, subGoals, cache));
+    }
+    */
+
     @Override
-    public AtomicState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        if(getAtom().getSchemaConcept() == null){
+            System.out.println("DUPA!");
+            return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
+        }
+
         return getAtoms(NeqPredicate.class).findFirst().isPresent()?
                 new NeqComplementState(this, sub, u, parent, subGoals, cache) :
                 new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     @Override
-    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+        Atom atom = getAtom();
+        return atom.getSchemaConcept() == null?
+                atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new) :
+                Stream.of(this);
+    }
+
+    @Override
+    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
         Pair<Stream<Answer>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
         MultiUnifier cacheUnifier = cacheEntry.getValue().inverse();
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
@@ -317,29 +338,21 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
 
-        Iterator<QueryStateBase> subGoalIterator;
+        Iterator<ResolutionState> subGoalIterator;
         //if this is ground and exists in the db then do not resolve further
-        if(subGoals.contains(this)
+        if(visitedSubGoals.contains(this)
                 || (this.isGround() && dbIterator.hasNext())){
             subGoalIterator = Collections.emptyIterator();
         } else {
-            subGoals.add(this);
+            visitedSubGoals.add(this);
             subGoalIterator = this.getRuleStream()
-                    .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, subGoals, cache))
+                    .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
                     .iterator();
         }
         return new Pair<>(
                 Iterators.concat(dbIterator, subGoalIterator),
                 cacheUnifier
         );
-    }
-
-    @Override
-    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
-        Atom atom = getAtom();
-        return atom.getSchemaConcept() == null?
-            atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new) :
-            Stream.of(this);
     }
 
     /**

@@ -49,6 +49,7 @@ import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -412,6 +413,9 @@ public class RelationshipAtom extends IsaAtom {
         if (roleConceptIdMap == null) {
             ImmutableMultimap.Builder<Role, String> builder = ImmutableMultimap.builder();
 
+            if (getPartialSubstitutions().map(AtomicBase::getVarName).distinct().count() < getPartialSubstitutions().count()){
+                System.out.println();
+            }
             Map<Var, IdPredicate> varSubMap = getPartialSubstitutions()
                     .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
             Multimap<Role, Var> roleMap = getRoleVarMap();

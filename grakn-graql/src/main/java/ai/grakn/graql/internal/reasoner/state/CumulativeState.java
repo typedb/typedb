@@ -23,10 +23,13 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import com.google.common.collect.Iterators;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -40,7 +43,7 @@ import java.util.Set;
 public class CumulativeState extends QueryStateBase{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
-    private final Iterator<QueryState> feederStateIterator;
+    private final Iterator<ResolutionState> feederStateIterator;
 
     public CumulativeState(LinkedList<ReasonerQueryImpl> qs,
                            Answer sub,
@@ -50,9 +53,21 @@ public class CumulativeState extends QueryStateBase{
                            QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
-        this.feederStateIterator = !subQueries.isEmpty()?
-                subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() :
-                Collections.emptyIterator();
+
+        if (subQueries.isEmpty()){
+            this.feederStateIterator = Collections.emptyIterator();
+        } else {
+
+            ReasonerQueryImpl query = subQueries.removeFirst();
+            //ResolutionState resolutionState = query.subGoal(sub, u, this, subGoals, cache);
+            //List<ResolutionState> sgs = query.subGoals(sub, u, this, subGoals, cache).collect(Collectors.toList());
+            //this.feederStateIterator = !subQueries.isEmpty() ?
+                    //Iterators.singletonIterator(subQueries.removeFirst().subGoal(sub, u, this, subGoals, cache)) :
+                    //Iterators.singletonIterator(subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator().next()) :
+            this.feederStateIterator = query.subGoals(sub, u, this, subGoals, cache).iterator();
+            //this.feederStateIterator =  Iterators.singletonIterator(resolutionState);
+                    //Collections.emptyIterator();
+        }
     }
 
     @Override
