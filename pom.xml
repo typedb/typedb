@@ -1278,6 +1278,25 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>graknRepo</id>
+            <activation>
+                <property>
+                    <name>graknRepo</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>development-snapshots</id>
+                    <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
+                </snapshotRepository>
+                <repository>
+                    <id>releases</id>
+                    <url>https://maven.grakn.ai/content/repositories/releases/</url>
+                </repository>
+            </distributionManagement>
+        </profile>
     </profiles>
 
 </project>
