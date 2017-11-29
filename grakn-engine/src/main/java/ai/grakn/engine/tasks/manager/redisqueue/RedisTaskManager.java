@@ -110,12 +110,6 @@ public class RedisTaskManager implements TaskManager {
 
 
     @Override
-    public void stopTask(TaskId id) {
-        // NOOP
-        // TODO Implement this
-    }
-
-    @Override
     public RedisTaskStorage storage() {
         return taskStorage;
     }

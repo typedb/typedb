@@ -35,9 +35,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import static com.codahale.metrics.MetricRegistry.name;
 
 /**
@@ -84,11 +82,6 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
         }
     }
 
-    private boolean taskShouldRecur(TaskState taskState) {
-        return taskState.schedule().isRecurring() && !taskState.status().equals(FAILED)
-                && !taskState.status().equals(STOPPED);
-    }
-
     private boolean taskShouldResume(Task task) {
         return task.getTaskState().status() == RUNNING;
     }
@@ -114,10 +107,6 @@ public class RedisTaskQueueConsumer implements Consumer<Task> {
             } else {
                 runningTask.start();
                 metricRegistry.meter(name(RedisTaskQueueConsumer.class, "run")).mark();
-            }
-            if (taskShouldRecur(taskState)) {
-                // Not implemented
-                throw new NotImplementedException();
             }
         } catch (IllegalAccessException | InstantiationException e) {
             metricRegistry.meter(name(RedisTaskQueueConsumer.class, "failed")).mark();
