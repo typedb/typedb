@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
@@ -59,29 +58,16 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     private static final int DIRECTION = 0;
     private static final int ID = 1;
-//    private static final String DIVIDER = "\t";
 
-    //    public static final String FOUND_IN_ITERATION = "shortestPathVertexProgram.foundInIteration";
-    public static final String PATH_HAS_MIDDLE_POINT = "shortestPathVertexProgram.pathHasMiddlePoint";
+    private static final String PATH_HAS_MIDDLE_POINT = "shortestPathVertexProgram.pathHasMiddlePoint";
 
     private static final String PREDECESSOR = "shortestPathVertexProgram.fromVertex";
     private static final String VISITED_IN_ITERATION = "shortestPathVertexProgram.visitedInIteration";
     private static final String VOTE_TO_HALT_SOURCE = "shortestPathVertexProgram.voteToHalt.source";
     private static final String VOTE_TO_HALT_DESTINATION = "shortestPathVertexProgram.voteToHalt.destination";
     private static final String FOUND_PATH = "shortestPathVertexProgram.foundDestination";
-
-//    private static final String PREDECESSOR_FROM_SOURCE = "shortestPathVertexProgram.fromSource";
-//    private static final String PREDECESSOR_FROM_DESTINATION = "shortestPathVertexProgram.fromDestination";
-//    private static final String PATH_FROM_SOURCE = "shortestPathVertexProgram.pathFromSource";
-//    private static final String PATH_FROM_DESTINATION = "shortestPathVertexProgram.pathFromDestination";
-
-//    private static final String MIDDLE_POINTS = "shortestPathVertexProgram.middlePoints";
-//    public static final String MIDDLE_LINKS = "shortestPathVertexProgram.middleLinks";
-
-    //    public static final String PREDECESSORS = "shortestPathVertexProgram.predecessors";
     public static final String PREDECESSORS_FROM_SOURCE = "shortestPathVertexProgram.predecessors.fromSource";
     public static final String PREDECESSORS_FROM_DESTINATION = "shortestPathVertexProgram.predecessors.fromDestination";
-
     private static final String ITERATIONS_LEFT = "shortestPathVertexProgram.iterationsLeft";
 
     private static final String SOURCE = "shortestPathVertexProgram.source";
@@ -90,19 +76,9 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS = Sets.newHashSet(
             MemoryComputeKey.of(VOTE_TO_HALT_SOURCE, Operator.and, false, true),
             MemoryComputeKey.of(VOTE_TO_HALT_DESTINATION, Operator.and, false, true),
-
             MemoryComputeKey.of(FOUND_PATH, Operator.or, true, true),
-
             MemoryComputeKey.of(PREDECESSORS_FROM_SOURCE, Operator.addAll, false, false),
             MemoryComputeKey.of(PREDECESSORS_FROM_DESTINATION, Operator.addAll, false, false),
-
-//            MemoryComputeKey.of(PREDECESSORS, Operator.addAll, true, false),
-
-//            MemoryComputeKey.of(MIDDLE_POINTS, Operator.addAll, true, false),
-//            MemoryComputeKey.of(MIDDLE_LINKS, Operator.addAll, true, false),
-//            MemoryComputeKey.of(PATH_FROM_SOURCE, MergeMap.INSTANCE, true, false),
-//            MemoryComputeKey.of(PATH_FROM_DESTINATION, MergeMap.INSTANCE, true, false),
-
             MemoryComputeKey.of(ITERATIONS_LEFT, Operator.assign, true, true),
             MemoryComputeKey.of(PATH_HAS_MIDDLE_POINT, Operator.and, false, true)
     );
@@ -121,7 +97,6 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         return Sets.newHashSet(
                 VertexComputeKey.of(PREDECESSOR, true),
                 VertexComputeKey.of(VISITED_IN_ITERATION, true));
-//                VertexComputeKey.of(FOUND_IN_ITERATION, false));
     }
 
     @Override
@@ -131,31 +106,20 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-//        return memory.<Boolean>get(FOUND_PATH) ? Collections.emptySet() : messageScopeSetInAndOut;
         return messageScopeSetInAndOut;
     }
 
     @Override
     public void setup(final Memory memory) {
         LOGGER.debug("ShortestPathVertexProgram Started !!!!!!!!");
+
         memory.set(VOTE_TO_HALT_SOURCE, true);
         memory.set(VOTE_TO_HALT_DESTINATION, true);
         memory.set(FOUND_PATH, false);
         memory.set(PATH_HAS_MIDDLE_POINT, true);
-
-//        memory.set(MIDDLE, "");
-
         memory.set(ITERATIONS_LEFT, -1);
-
-//        memory.set(MIDDLE_POINTS, new HashMap<String, Integer>());
-//        memory.set(MIDDLE_LINKS, new HashMap<String, Set<String>>());
-
-//        memory.set(PREDECESSORS, new HashMap<String, Set<String>>());
         memory.set(PREDECESSORS_FROM_SOURCE, new HashMap<String, Set<String>>());
         memory.set(PREDECESSORS_FROM_DESTINATION, new HashMap<String, Set<String>>());
-
-//        memory.set(PATH_FROM_SOURCE, new HashMap<String, Set<String>>());
-//        memory.set(PATH_FROM_DESTINATION, new HashMap<String, Set<String>>());
     }
 
     @Override
@@ -195,51 +159,6 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 updateInstance(vertex, messenger, memory);
             }
         }
-
-//        String id; //This will likely have to change as we support more and more vendors.
-//        switch (memory.getIteration()) {
-//            case 0:
-//                // send message from both source(1) and destination(-1) vertex
-//                id = vertex.value(Schema.VertexProperty.ID.name());
-//                if (persistentProperties.get(SOURCE).equals(id)) {
-//                    LOGGER.debug("Found source vertex");
-//                    vertex.property(VISITED_IN_ITERATION, 1);
-//                    sendMessage(messenger, Pair.with(FROM_SOURCE, id));
-//                } else if (persistentProperties.get(DESTINATION).equals(id)) {
-//                    LOGGER.debug("Found destination vertex");
-//                    vertex.property(VISITED_IN_ITERATION, -1);
-//                    sendMessage(messenger, Pair.with(FROM_DESTINATION, id));
-//                }
-//                break;
-//            default:
-//                if (memory.<Boolean>get(FOUND_PATH)) {
-//                    if (messenger.receiveMessages().hasNext() && vertex.property(VISITED_IN_ITERATION).isPresent()) {
-//                        int visitedInIteration = vertex.value(VISITED_IN_ITERATION);
-//                        int iterationLeft = vertex.value(ITERATIONS_LEFT);
-//                        if (visitedInIteration == iterationLeft) {
-//                            memory.add(PREDECESSORS_FROM_SOURCE, getPredecessors(vertex, messenger));
-//                            sendMessage(messenger, Pair.with(FROM_SOURCE, getVertexId(vertex)));
-//                        } else if (-visitedInIteration == iterationLeft) {
-//                            memory.add(PREDECESSORS_FROM_DESTINATION, getPredecessors(vertex, messenger));
-//                            sendMessage(messenger, Pair.with(FROM_DESTINATION, getVertexId(vertex)));
-//                        }
-//                    }
-//
-////                    id = vertex.value(Schema.VertexProperty.ID.name());
-////                    if (memory.get(PREDECESSOR_FROM_SOURCE).equals(id)) {
-////                        LOGGER.debug("Traversing back to vertex " + id);
-////                        memory.add(PREDECESSOR_FROM_SOURCE, vertex.value(PREDECESSOR));
-////                        vertex.property(FOUND_IN_ITERATION, -memory.getIteration());
-////                    } else if (memory.get(PREDECESSOR_FROM_DESTINATION).equals(id)) {
-////                        LOGGER.debug("Traversing back to vertex " + id);
-////                        memory.add(PREDECESSOR_FROM_DESTINATION, vertex.value(PREDECESSOR));
-////                        vertex.property(FOUND_IN_ITERATION, memory.getIteration());
-////                    }
-//                } else if (messenger.receiveMessages().hasNext()) {
-//                    updateInstance(vertex, messenger, memory);
-//                }
-//                break;
-//        }
     }
 
     private static void sendMessage(Messenger<Tuple> messenger, Tuple message) {
@@ -268,19 +187,10 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             String id = getVertexId(vertex);
             LOGGER.debug("Checking instance " + id);
 
-//            Map<String, Set<String>> predecessorMap = new HashMap<>();
-//            predecessorMap.put(id, new HashSet<>());
-
-            Iterator<Tuple> iterator = messenger.receiveMessages();
             boolean hasMessageSource = false;
             boolean hasMessageDestination = false;
-//            String predecessorFromSource = null;
-//            String predecessorFromDestination = null;
-
-//            Map<String, Integer> middlePoint = new HashMap<>();
+            Iterator<Tuple> iterator = messenger.receiveMessages();
             while (iterator.hasNext()) {
-//                middlePoint.put(id, 0);
-
                 int messageDirection = (int) iterator.next().getValue(DIRECTION);
                 if (messageDirection > 0) {
                     if (!hasMessageSource) { // make sure this is the first msg from source
@@ -291,10 +201,6 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         if (hasMessageDestination) {
                             LOGGER.debug("Found path(s)");
                             memory.add(FOUND_PATH, true);
-
-//                            middlePoint.put(id, 0);
-//                            memory.add(MIDDLE_POINTS, middlePoint);
-//                            return;
                         }
                     }
                 } else {
@@ -306,20 +212,14 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         if (hasMessageSource) {
                             LOGGER.debug("Found path(s)");
                             memory.add(FOUND_PATH, true);
-
-//                            middlePoint.put(id, 0);
-//                            memory.add(MIDDLE_POINTS, middlePoint);
-//                            return;
                         }
                     }
                 }
             }
 
             Tuple message;
-            if (hasMessageSource && hasMessageDestination) { // path found, no need to send more messages
-//                memory.add(MIDDLE_POINTS, middlePoint);
+            if (hasMessageSource && hasMessageDestination) {
                 message = Pair.with(FROM_MIDDLE, id);
-
             } else {
                 message = Pair.with(hasMessageSource ? FROM_SOURCE : FROM_DESTINATION, id);
             }
@@ -339,30 +239,21 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     LOGGER.debug("Found path");
                     memory.add(FOUND_PATH, true);
                     memory.add(PATH_HAS_MIDDLE_POINT, false);
-//                    memory.add(MIDDLE_POINTS, 1);
 
-                    String id = vertex.value(Schema.VertexProperty.ID.name());
+                    String id = getVertexId(vertex);
                     Map<String, Set<String>> middleLinkMap = new HashMap<>();
                     middleLinkMap.put(id, middleLinkSet);
                     memory.add(PREDECESSORS_FROM_SOURCE, middleLinkMap);
-
                     sendMessage(messenger, Pair.with(FROM_MIDDLE, id));
                 }
             } else { // if received msg from destination before
                 Iterator<Tuple> iterator = messenger.receiveMessages();
-                boolean hasBothMessages = false;
                 while (iterator.hasNext()) {
                     Tuple message = iterator.next();
                     if ((int) message.getValue(DIRECTION) == FROM_SOURCE) {
-                        hasBothMessages = true;
-//                        LOGGER.debug("Found path");
-//                        memory.add(FOUND_PATH, true);
-//                        memory.add(MIDDLE_POINTS, -1);
+                        sendMessage(messenger, Pair.with(FROM_MIDDLE, getVertexId(vertex)));
                         break;
                     }
-                }
-                if (hasBothMessages) {
-                    sendMessage(messenger, Pair.with(FROM_MIDDLE, getVertexId(vertex)));
                 }
             }
         }
@@ -379,55 +270,19 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
         if (memory.<Boolean>get(FOUND_PATH)) {
             if (memory.<Integer>get(ITERATIONS_LEFT) == -1) {
-//                Map<String, Integer> middlePoints = memory.get(MIDDLE_POINTS);
-//                System.out.println("middlePoints = " + middlePoints);
-
                 if (!memory.<Boolean>get(PATH_HAS_MIDDLE_POINT)) {
                     if (memory.getIteration() == 1) return true;
                     else memory.set(ITERATIONS_LEFT, memory.getIteration() - 1);
                 } else {
                     memory.set(ITERATIONS_LEFT, memory.getIteration());
                 }
-
-//                if (memory.getIteration() == 1 && !memory.<Boolean>get(PATH_HAS_MIDDLE_POINT)) {
-//                    return true;
-//                }
-//
-//                memory.set(ITERATIONS_LEFT, memory.getIteration());
-//                if (middlePoints.isEmpty()) {
-//                    memory.set(ITERATIONS_LEFT, memory.getIteration() - 1);
-//                    Map<String, Set<String>> middleLinks = memory.get(MIDDLE_LINKS);
-////                    memory.set(PREDECESSORS_FROM_SOURCE, new HashSet<>(middleLinks.keySet()));
-////                    memory.set(PREDECESSORS_FROM_DESTINATION, new HashSet<>(middleLinks.values()));
-//                    middleLinks.forEach((idSource, idSet) -> {
-//                        middlePoints.put(idSource, FROM_SOURCE);
-//                        idSet.forEach(idDestination -> middlePoints.put(idDestination, FROM_DESTINATION));
-//                    });
-//                    memory.set(PREDECESSOR, middlePoints);
-//                }
-//                else {
-//                    memory.set(PREDECESSOR, middlePoints);
-//                }
                 return false;
-            }
-            if (memory.<Integer>get(ITERATIONS_LEFT) == 1) return true;
-            else {
+            } else if (memory.<Integer>get(ITERATIONS_LEFT) == 1) {
+                return true;
+            } else {
                 memory.set(ITERATIONS_LEFT, memory.<Integer>get(ITERATIONS_LEFT) - 1);
                 return false;
             }
-
-//            if (!memory.get(PREDECESSORS).equals("")) {
-//                String[] predecessors = ((String) memory.get(PREDECESSORS)).split(DIVIDER);
-//                memory.set(PREDECESSORS, "");
-//                memory.set(PREDECESSOR_FROM_SOURCE, predecessors[0]);
-//                memory.set(PREDECESSOR_FROM_DESTINATION, predecessors[1]);
-//                if (predecessors.length > 2) {
-//                    memory.set(MIDDLE, predecessors[2]);
-//                }
-//                //Be careful in Tinkergraph as things set here cannot be got!!!
-//                return predecessors[0].equals(persistentProperties.get(SOURCE));
-//            }
-//            return memory.get(PREDECESSOR_FROM_SOURCE).equals(persistentProperties.get(SOURCE));
         }
 
         if (memory.<Boolean>get(VOTE_TO_HALT_SOURCE) || memory.<Boolean>get(VOTE_TO_HALT_DESTINATION)) {
@@ -444,25 +299,4 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         memory.set(VOTE_TO_HALT_DESTINATION, true);
         return false;
     }
-//
-//    public static final class MergeMap implements BinaryOperator<Map<String, Set>> {
-//
-//        private static final MergeMap INSTANCE = new MergeMap();
-//
-//        @Override
-//        public Map<String, Set> apply(final Map<String, Set> a, final Map<String, Set> b) {
-//            return a.size() < b.size() ? merge(a, b) : merge(b, a);
-//        }
-//
-//        private Map<String, Set> merge(final Map<String, Set> a, final Map<String, Set> b) {
-//            a.forEach((k, v) -> {
-//                if (b.containsKey(k)) {
-//                    b.get(k).addAll(v);
-//                } else {
-//                    b.put(k, v);
-//                }
-//            });
-//            return b;
-//        }
-//    }
 }
