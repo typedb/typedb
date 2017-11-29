@@ -46,11 +46,12 @@ public abstract class Attribute extends Thing {
     public static Attribute create(
             @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
+            @JsonProperty("type") Link type,
             @JsonProperty("attributes") Set<Link> attributes,
             @JsonProperty("keys") Set<Link> keys,
             @JsonProperty("relationships") Set<RolePlayer> relationships,
             @JsonProperty("data-type") String dataType,
             @JsonProperty("value") String value){
-        return new AutoValue_Attribute(Schema.BaseType.ATTRIBUTE.name(), id, selfLink, attributes, keys, relationships, dataType, value);
+        return new AutoValue_Attribute(Schema.BaseType.ATTRIBUTE.name(), id, selfLink, type, attributes, keys, relationships, dataType, value);
     }
 }

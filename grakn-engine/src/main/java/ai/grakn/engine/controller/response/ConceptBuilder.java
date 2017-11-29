@@ -90,6 +90,7 @@ public class ConceptBuilder {
     //TODO: This will scale poorly with super nodes. Need to introduce some sort of paging maybe?
     private static Thing buildThing(ai.grakn.concept.Thing thing) {
         Link selfLink = Link.create(thing);
+        Link type = Link.create(thing.type());
         Set<Link> attributes = thing.attributes().map(Link::create).collect(Collectors.toSet());
         Set<Link> keys = thing.keys().map(Link::create).collect(Collectors.toSet());
 
@@ -103,11 +104,11 @@ public class ConceptBuilder {
         });
 
         if(thing.isAttribute()){
-            return buildAttribute(thing.asAttribute(), selfLink, attributes, keys, relationships);
+            return buildAttribute(thing.asAttribute(), selfLink, type, attributes, keys, relationships);
         } else if (thing.isRelationship()){
-            return buildRelationship(thing.asRelationship(), selfLink, attributes, keys, relationships);
+            return buildRelationship(thing.asRelationship(), selfLink, type, attributes, keys, relationships);
         } else if (thing.isEntity()){
-            return buildEntity(thing.asEntity(), selfLink, attributes, keys, relationships);
+            return buildEntity(thing.asEntity(), selfLink, type, attributes, keys, relationships);
         } else {
             throw GraknBackendException.convertingUnknownConcept(thing);
         }
@@ -132,22 +133,22 @@ public class ConceptBuilder {
         }
     }
 
-    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
-        return Entity.create(entity.getId(), selfLink, attributes, keys, relationships);
+    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, Link type, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
+        return Entity.create(entity.getId(), selfLink, type, attributes, keys, relationships);
     }
 
-    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
-        return Attribute.create(attribute.getId(), selfLink, attributes, keys, relationships, attribute.type().getDataType().getName(), attribute.getValue().toString());
+    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, Link type, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
+        return Attribute.create(attribute.getId(), selfLink, type, attributes, keys, relationships, attribute.type().getDataType().getName(), attribute.getValue().toString());
     }
 
-    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
+    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, Link type, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
         //Get all the role players and roles part of this relationship
         Set<RolePlayer> roleplayers = new HashSet<>();
         relationship.allRolePlayers().forEach((role, things) -> {
             Link roleLink = Link.create(role);
             things.forEach(thing -> roleplayers.add(RolePlayer.create(roleLink, Link.create(thing))));
         });
-        return Relationship.create(relationship.getId(), selfLink, attributes, keys, relationships, roleplayers);
+        return Relationship.create(relationship.getId(), type, selfLink, attributes, keys, relationships, roleplayers);
     }
 
     private static Type buildType(ai.grakn.concept.Type type, Link selfLink, Link sup, Set<Link> subs){

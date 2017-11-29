@@ -32,6 +32,9 @@ import java.util.Set;
 public abstract class Thing extends Concept {
 
     @JsonProperty
+    public abstract Link type();
+
+    @JsonProperty
     public abstract Set<Link> attributes();
 
     @JsonProperty
