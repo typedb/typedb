@@ -5,7 +5,7 @@
     "url": "https://github.com/graknlabs/grakn.git"
   },
   "name": "grakn-dashboard",
-  "version": "0.18.0-SNAPSHOT",
+  "version": "1.0.0-SNAPSHOT",
   "description": "Grakn Web Dashboard",
   "author": "Grakn Labs",
   "bugs": {
