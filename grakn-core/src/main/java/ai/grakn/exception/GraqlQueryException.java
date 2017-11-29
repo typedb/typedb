@@ -25,6 +25,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
@@ -32,7 +33,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.ErrorMessage;
 
-import static ai.grakn.util.ErrorMessage.UNEXPECTED_RESULT;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
@@ -43,6 +43,7 @@ import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
 import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
+import static ai.grakn.util.ErrorMessage.UNEXPECTED_RESULT;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 
 /**
@@ -320,8 +321,8 @@ public class GraqlQueryException extends GraknException {
         throw new GraqlQueryException("Cannot parse date value " + originalDate + " with format " + originalFormat, cause);
     }
 
-    public static GraqlQueryException noLabelSpecifiedForHas() {
-        return new GraqlQueryException(ErrorMessage.NO_LABEL_SPECIFIED_FOR_HAS.getMessage());
+    public static GraqlQueryException noLabelSpecifiedForHas(VarPattern varPattern) {
+        return create("'has' argument '%s' requires a label", varPattern);
     }
 
     public static GraqlQueryException insertRolePlayerWithoutRoleType() {

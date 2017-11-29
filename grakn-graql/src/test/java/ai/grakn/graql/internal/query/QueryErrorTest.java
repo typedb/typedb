@@ -89,6 +89,13 @@ public class QueryErrorTest {
     }
 
     @Test
+    public void whenMatchingWildcardHas_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.noLabelSpecifiedForHas(var("x")).getMessage());
+        qb.match(label("thing").has(var("x"))).get().execute();
+    }
+
+    @Test
     public void testErrorNotARelation() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(
