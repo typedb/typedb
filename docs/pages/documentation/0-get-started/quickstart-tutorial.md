@@ -285,18 +285,6 @@ First, try making a get query to find `parentship` relationships between fathers
 match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identifier $n2; get;
 ```
 
-Did you get any results? Probably not, because reasoning is not enabled by default at present, although as Grakn develops, we expect that to change. If you didn't see any results, you need to `exit` the Graql shell and restart it, passing `-n` and `-m` flags to switch on reasoning (see our documentation for more information about [flags supported by the Graql shell](https://grakn.ai/pages/documentation/graql/graql-shell.html)).
-
-```bash
-./graql console -n -m
-```
-
-Try the query again:
-
-```graql
-match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identifier $n2; get;
-```
-
 There may be a pause, and then you should see a stream of results as Grakn infers the `parentships` between male `parent` and `child` entities. It is, in effect, building new information about the family which was not explicit in the dataset.
 
 You may want to take a look at the results of this query in the Grakn visualiser and, as for the shell, you will need to activate inference before you see any results. 
