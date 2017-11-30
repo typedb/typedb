@@ -82,7 +82,7 @@ paths:
         in: query
         description: Provide an explanation of how results were inferred
         type: boolean
-      - name: type
+      - name: txType
         in: query
         description: Mode to operate Graql in (one of read, write or batch). Defaults to write.
         type: string
