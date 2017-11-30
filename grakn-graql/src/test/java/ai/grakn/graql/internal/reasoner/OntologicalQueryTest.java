@@ -154,6 +154,30 @@ public class OntologicalQueryTest {
         );
     }
 
+    /** IsaAtom **/
+
+    @Test
+    public void allTypesOfRolePlayerInASpecificRelationWithSpecifiedRoles(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match (role1: $x, role2: $y) isa reifiable-relation;$x isa $type; get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing}
+        assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5);
+    }
+
+    @Test
+    public void allTypesOfRolePlayerInASpecificRelationWithUnspecifiedRoles(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match ($x, $y) isa reifiable-relation;$x isa $type; get;";
+
+        //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing} * arity
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5 * 2);
+    }
+
     /** meta concepts **/
 
     @Test
