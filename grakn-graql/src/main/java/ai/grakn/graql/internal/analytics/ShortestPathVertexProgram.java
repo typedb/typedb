@@ -185,7 +185,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     private void updateInstance(Vertex vertex, Messenger<Tuple> messenger, Memory memory) {
         if (!vertex.property(VISITED_IN_ITERATION).isPresent()) {
             String id = getVertexId(vertex);
-            LOGGER.debug("Checking instance " + id);
+            LOGGER.trace("Checking instance " + id);
 
             boolean hasMessageSource = false;
             boolean hasMessageDestination = false;
@@ -194,23 +194,23 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                 int messageDirection = (int) iterator.next().getValue(DIRECTION);
                 if (messageDirection > 0) {
                     if (!hasMessageSource) { // make sure this is the first msg from source
-                        LOGGER.debug("Received a message from source vertex");
+                        LOGGER.trace("Received a message from source vertex");
                         hasMessageSource = true;
                         vertex.property(VISITED_IN_ITERATION, memory.getIteration() + 1);
                         memory.add(VOTE_TO_HALT_SOURCE, false);
                         if (hasMessageDestination) {
-                            LOGGER.debug("Found path(s)");
+                            LOGGER.trace("Found path(s)");
                             memory.add(FOUND_PATH, true);
                         }
                     }
                 } else {
                     if (!hasMessageDestination) { // make sure this is the first msg from destination
-                        LOGGER.debug("Received a message from destination vertex");
+                        LOGGER.trace("Received a message from destination vertex");
                         hasMessageDestination = true;
                         vertex.property(VISITED_IN_ITERATION, -memory.getIteration() - 1);
                         memory.add(VOTE_TO_HALT_DESTINATION, false);
                         if (hasMessageSource) {
-                            LOGGER.debug("Found path(s)");
+                            LOGGER.trace("Found path(s)");
                             memory.add(FOUND_PATH, true);
                         }
                     }
@@ -236,7 +236,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     }
                 }
                 if (!middleLinkSet.isEmpty()) {
-                    LOGGER.debug("Found path");
+                    LOGGER.trace("Found path");
                     memory.add(FOUND_PATH, true);
                     memory.add(PATH_HAS_MIDDLE_POINT, false);
 
