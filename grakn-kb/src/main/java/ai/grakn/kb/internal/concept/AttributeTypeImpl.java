@@ -23,8 +23,6 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
