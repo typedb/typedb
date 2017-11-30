@@ -3,22 +3,22 @@ define
 # Entities
 
 person sub entity
-	plays parent
-	plays child
-	plays spouse1
-	plays spouse2
-	plays sibling
-	plays cousin
+    plays parent
+    plays child
+    plays spouse1
+    plays spouse2
+    plays sibling
+    plays cousin
 
-	has identifier
-	has firstname
-	has surname
-	has middlename
-	has picture
-	has age
-	has birth-date
-	has death-date
-	has gender;
+    has identifier
+    has firstname
+    has surname
+    has middlename
+    has picture
+    has age
+    has birth-date
+    has death-date
+    has gender;
 
 # Resources
 
@@ -35,16 +35,16 @@ gender sub attribute datatype string;
 # Roles and Relations
 
 marriage sub relationship
-	relates spouse1
-	relates spouse2
-	has picture;
+    relates spouse1
+    relates spouse2
+    has picture;
 
 spouse1 sub role;
 spouse2 sub role;
 
 parentship sub relationship
-	relates parent
-	relates child;
+    relates parent
+    relates child;
 
 parent sub role;
 child sub role;
@@ -52,37 +52,37 @@ child sub role;
 ## INFERRED
 
 person 
-	plays wife
-	plays husband
-	plays granddaughter
-	plays grandson
-	plays father-in-law
-	plays mother-in-law
-	plays daughter-in-law
-	plays son-in-law
-	plays son
-	plays daughter
-	plays grandparent
-	plays grandchild
-	plays child-in-law
-	plays parent-in-law
-	plays mother
-	plays father
-	plays grandmother
-	plays grandfather;
+    plays wife
+    plays husband
+    plays granddaughter
+    plays grandson
+    plays father-in-law
+    plays mother-in-law
+    plays daughter-in-law
+    plays son-in-law
+    plays son
+    plays daughter
+    plays grandparent
+    plays grandchild
+    plays child-in-law
+    plays parent-in-law
+    plays mother
+    plays father
+    plays grandmother
+    plays grandfather;
 
 marriage sub relationship
-	relates husband
-	relates wife;
+    relates husband
+    relates wife;
 
 husband sub role;
 wife sub role;
 
 parentship sub relationship
-	relates mother
-	relates father
-	relates son
-	relates daughter;
+    relates mother
+    relates father
+    relates son
+    relates daughter;
 
 mother sub parent;
 father sub parent;
@@ -95,12 +95,12 @@ siblings sub relationship
 sibling sub role;
 
 grandparentship sub relationship
-	relates grandparent
-	relates grandfather
-	relates grandmother
-	relates grandchild
-	relates granddaughter
-	relates grandson;
+    relates grandparent
+    relates grandfather
+    relates grandmother
+    relates grandchild
+    relates granddaughter
+    relates grandson;
 
 grandparent sub role;
 grandfather sub grandparent;
@@ -115,12 +115,12 @@ cousins sub relationship
 cousin sub role;
 
 in-laws sub relationship
-	relates child-in-law
-	relates son-in-law
-	relates daughter-in-law
-	relates parent-in-law
-	relates mother-in-law
-	relates father-in-law;
+    relates child-in-law
+    relates son-in-law
+    relates daughter-in-law
+    relates parent-in-law
+    relates mother-in-law
+    relates father-in-law;
 
 child-in-law sub role;
 son-in-law sub child-in-law;

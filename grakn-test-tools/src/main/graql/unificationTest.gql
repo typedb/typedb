@@ -50,9 +50,9 @@ subSubRoleEntity sub subRoleEntity
 
 binary sub relationship
     has res1
-	relates role1
-	relates role2
-	relates subRole1
+    relates role1
+    relates role2
+    relates subRole1
     relates subRole2
     relates anotherSubRole1
     relates anotherSubRole2

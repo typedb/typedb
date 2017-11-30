@@ -109,20 +109,20 @@ def graknNode(Closure closure) {
 
 def archiveArtifactsS3 (String artifacts) {
     step([$class: 'S3BucketPublisher',
-          consoleLogLevel: 'INFO',
-          pluginFailureResultConstraint: 'FAILURE',
-          entries: [[
-              sourceFile: '${artifacts}',
-              bucket: 'performance-logs.grakn.ai',
-              selectedRegion: 'eu-west-1',
-              noUploadOnFailure: true,
-              managedArtifacts: true,
-              flatten: true,
-              showDirectlyInBrowser: true,
-              keepForever: true
-          ]],
-          profileName: 'use-iam',
-          dontWaitForConcurrentBuildCompletion: false,
+	  consoleLogLevel: 'INFO',
+	  pluginFailureResultConstraint: 'FAILURE',
+	  entries: [[
+	      sourceFile: '${artifacts}',
+	      bucket: 'performance-logs.grakn.ai',
+	      selectedRegion: 'eu-west-1',
+	      noUploadOnFailure: true,
+	      managedArtifacts: true,
+	      flatten: true,
+	      showDirectlyInBrowser: true,
+	      keepForever: true
+	  ]],
+	  profileName: 'use-iam',
+	  dontWaitForConcurrentBuildCompletion: false,
     ])
 }
 

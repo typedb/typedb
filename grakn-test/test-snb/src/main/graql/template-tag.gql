@@ -1,4 +1,4 @@
 insert $x isa tag
-	has tag-id @long(<id>)
-	has name <name>
-	has url <url>;
+    has tag-id @long(<id>)
+    has name <name>
+    has url <url>;

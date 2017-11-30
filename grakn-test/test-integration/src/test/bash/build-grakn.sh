@@ -4,8 +4,8 @@ source env.sh
 
 # validate the number of arguments
 if [ "$#" -lt "1" ]; then
-	echo "Wrong number of arguments." >&2
-	exit 1
+    echo "Wrong number of arguments." >&2
+    exit 1
 fi
 
 BRANCH_NAME=$1

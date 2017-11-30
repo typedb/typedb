@@ -8,12 +8,12 @@ entity2 sub entity;
 #Rules
 
 rule-1 sub rule
-	when {
-		$x isa entity1;
-	}
-	then {
-		$x isa entity2;
-	};
+    when {
+    	$x isa entity1;
+    }
+    then {
+    	$x isa entity2;
+    };
 
 insert
 

@@ -280,35 +280,35 @@ For example, the following loop:
 
 ```graql-template
 insert
-	$p isa person has identifier <pid>
-		has firstname <name1>,
-		
-		if (<surname> != "") do 
-		{
-		has surname <surname>,
-		}
+    $p isa person has identifier <pid>
+    	has firstname <name1>,
 
-		if (<name2> != "") do 
-		{
-		has middlename <name2>,
-		}
-		
-		if (<age> != "") do 
-		{
-		has age @long(<age>),
-		}
+    	if (<surname> != "") do
+    	{
+    	has surname <surname>,
+    	}
 
-		if (<born> != "") do 
-		{
-		has birth-date <born>,
-		}
+    	if (<name2> != "") do
+    	{
+    	has middlename <name2>,
+    	}
 
-		if (<dead> != "") do 
-		{
-		has death-date <dead>,
-		}
+    	if (<age> != "") do
+    	{
+    	has age @long(<age>),
+    	}
 
-		has gender <gender>;
+    	if (<born> != "") do
+    	{
+    	has birth-date <born>,
+    	}
+
+    	if (<dead> != "") do
+    	{
+    	has death-date <dead>,
+    	}
+
+    	has gender <gender>;
 ```
 
 would result in the expanded Graql queries:

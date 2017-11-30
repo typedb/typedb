@@ -35,16 +35,16 @@ import java.util.Set;
 import static ai.grakn.graql.Graql.var;
 
 public class TestSubProperties extends TestOwlGraknBase {
-	private final IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
-	private OWLOntology shakespeare = null;
+    private final IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
+    private OWLOntology shakespeare = null;
 
-	@Ignore //TODO: Fix this test. Not sure why it is not working remotely
-	@Before
-	public void loadShakespeare() throws InvalidKBException {
+    @Ignore //TODO: Fix this test. Not sure why it is not working remotely
+    @Before
+    public void loadShakespeare() throws InvalidKBException {
         shakespeare = loadOntologyFromResource("owl", "shakespeare.owl");
         migrator.ontology(shakespeare).tx(tx).migrate();
         migrator.tx().commit();
-	}
+    }
 
     @Ignore //TODO: Fix this test. Not sure why it is not working remotely
     @Test
