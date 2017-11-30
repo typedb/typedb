@@ -1,11 +1,11 @@
 define
 
 entity1 sub entity
-	has res-string
-	has res-double
-	has res-long
-	has res-boolean
-	has resource;
+    has res-string
+    has res-double
+    has res-long
+    has res-boolean
+    has resource;
 entity2 sub entity
     has resource;
 

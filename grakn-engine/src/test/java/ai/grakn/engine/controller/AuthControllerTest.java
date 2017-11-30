@@ -70,8 +70,8 @@ public class AuthControllerTest  {
     public void newSessionWithExistingUser() {
         //Add a user
         usersHandler.addUser(Json.object(UsersHandler.USER_NAME, "giulio",
-				   UsersHandler.USER_PASSWORD, "ciao",
-				   UsersHandler.USER_IS_ADMIN, true));
+    			   UsersHandler.USER_PASSWORD, "ciao",
+    			   UsersHandler.USER_IS_ADMIN, true));
 
         Json body = Json.object("username", "giulio", "password", "ciao");
 

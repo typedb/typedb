@@ -183,9 +183,9 @@ person plays knower;
 person plays known-about;
 
 knows sub relationship
-	relates knower
-	relates known-about
-	has weight;
+    relates knower
+    relates known-about
+    has weight;
 
 match $marko has name "marko"; $josh has name "josh"; insert (knower: $marko, known-about: $josh) isa knows has weight 1.0;
 match $marko has name "marko"; $vadas has name "vadas"; insert (knower: $marko, known-about: $vadas) isa knows has weight 0.5;
@@ -206,9 +206,9 @@ person plays programmer;
 software plays programmed;
 
 programming sub relationship
-	relates programmer
-	relates programmed
-	has weight;
+    relates programmer
+    relates programmed
+    has weight;
 
 
 match $marko has name "marko"; $lop has name "lop"; insert (programmer: $marko, programmed: $lop) isa programming has weight 0.4;

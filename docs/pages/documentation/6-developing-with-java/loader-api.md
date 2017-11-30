@@ -20,9 +20,9 @@ To use the loader client API, add the following to your pom.xml:
 
 ```xml
 <dependency>
-	<groupId>ai.grakn</groupId>
-	<artifactId>grakn-client</artifactId>
-	<version>${grakn.version}</version>
+    <groupId>ai.grakn</groupId>
+    <artifactId>grakn-client</artifactId>
+    <version>${grakn.version}</version>
 </dependency>
 ```
  and add the following to your imports:
@@ -52,7 +52,7 @@ The loader client can be thought of as an empty bucket in which to dump insert q
 InsertQuery insert = insert(var().isa("person"));
 
 for(int i = 0; i < 100; i++){
-	loader.add(insert);
+    loader.add(insert);
 }
 
 loader.waitToFinish();
@@ -138,14 +138,14 @@ The server response is describes more in deatils in the REST api documentation. 
 
 ```json
 {
-	"creator":"ai.grakn.client.BatchMutatorClient",
-	"runAt":"2017-02-28T10:38:07.585Z",
-	"recurring":false,
-	"className":"ai.grakn.engine.loader.LoaderTask",
-	"interval":0,
-	"id":"9118075f-afd7-48dd-b594-b49d9e2cc8d7",
-	"status":"COMPLETED",
-	"engineID":"67128a90-1112-400a-a38e-0f4a35f2c8f6"
+    "creator":"ai.grakn.client.BatchMutatorClient",
+    "runAt":"2017-02-28T10:38:07.585Z",
+    "recurring":false,
+    "className":"ai.grakn.engine.loader.LoaderTask",
+    "interval":0,
+    "id":"9118075f-afd7-48dd-b594-b49d9e2cc8d7",
+    "status":"COMPLETED",
+    "engineID":"67128a90-1112-400a-a38e-0f4a35f2c8f6"
 }
 ```
 
@@ -156,10 +156,10 @@ Migration uses this callback function to track status information about the numb
 AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
 
 loader.setTaskCompletionConsumer((Json json) -> {
-	Integer completed = numberBatchesCompleted.incrementAndGet();
-	String status = json.at("status").asString();
+    Integer completed = numberBatchesCompleted.incrementAndGet();
+    String status = json.at("status").asString();
 
-	LOG.info("Batches completed: {}\nStatus of last batch: {}", completed, status);
+    LOG.info("Batches completed: {}\nStatus of last batch: {}", completed, status);
 });
 ```
 

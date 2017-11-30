@@ -14,9 +14,9 @@ The Task client is a Java api for interacting with the Grakn engine tasks api. T
 
 ```
 <dependency>
-	<groupId>ai.grakn</groupId>
-	<artifactId>grakn-client</artifactId>
-	<version>${grakn.version}</version>
+    <groupId>ai.grakn</groupId>
+    <artifactId>grakn-client</artifactId>
+    <version>${grakn.version}</version>
 </dependency>
 ```
 

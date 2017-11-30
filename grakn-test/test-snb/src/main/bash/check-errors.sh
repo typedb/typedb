@@ -12,7 +12,7 @@ else
                 RESULT=$(curl http://${ENGINE}/tasks/${line})
                 echo ${RESULT}
         done
-		if [ "$1" == "fail" ]; then
+    	if [ "$1" == "fail" ]; then
         	exit 1
-		fi
+    	fi
 fi
