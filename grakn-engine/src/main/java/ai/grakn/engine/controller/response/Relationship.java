@@ -44,7 +44,7 @@ public abstract class Relationship extends Thing {
             @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("type") EmbeddedType type,
-            @JsonProperty("attributes") Set<Link> attributes,
+            @JsonProperty("attributes") Set<EmbeddedAttribute> attributes,
             @JsonProperty("keys") Set<Link> keys,
             @JsonProperty("relationships") Set<RolePlayer> relationships,
             @JsonProperty("roleplayers") Set<RolePlayer> roleplayers){

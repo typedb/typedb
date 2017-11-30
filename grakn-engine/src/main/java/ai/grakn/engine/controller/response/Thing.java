@@ -35,7 +35,7 @@ public abstract class Thing extends Concept {
     public abstract EmbeddedType type();
 
     @JsonProperty
-    public abstract Set<Link> attributes();
+    public abstract Set<EmbeddedAttribute> attributes();
 
     @JsonProperty
     public abstract Set<Link> keys();
