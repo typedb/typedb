@@ -324,4 +324,11 @@ public class GraknTxOperationException extends GraknException{
     public static GraknTxOperationException nonInferredThingExists(Thing thing){
         return new GraknTxOperationException(String.format("Thing {%s} was already created and cannot be set to inferred", thing));
     }
+
+    /**
+     * Thrown when failing to create an {@link Attribute} after several attempts
+     */
+    public static GraknTxOperationException couldNotCreateAttribute(Attribute attribute, Exception e){
+        return new GraknTxOperationException(String.format("Could not add attribute {%s} due to {%s}", attribute, e.getMessage()), e);
+    }
 }

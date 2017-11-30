@@ -21,6 +21,7 @@ package ai.grakn.kb.internal.concept;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -59,14 +60,38 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, Object value) {
-        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, value);
+        Object persistenceValue = castValue(type.getDataType(), value);
+        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, persistenceValue);
 
         //Generate the index again. Faster than reading
         String index = Schema.generateAttributeIndex(type.getLabel(), value.toString());
+        vertexElement.propertyUnique(Schema.VertexProperty.INDEX, index);
 
         //Track the attribute by index
         vertexElement.tx().txCache().addNewAttribute(index, attribute.getId());
         return attribute;
+    }
+
+    /**
+     * This is to handle casting longs and doubles when the type allows for the data type to be a number
+     * @param value The value of the resource
+     * @return The value casted to the correct type
+     */
+    private static Object castValue(AttributeType.DataType dataType, Object value){
+        try {
+            if (dataType.equals(AttributeType.DataType.DOUBLE)) {
+                return ((Number) value).doubleValue();
+            } else if (dataType.equals(AttributeType.DataType.LONG)) {
+                if (value instanceof Double) {
+                    throw new ClassCastException();
+                }
+                return ((Number) value).longValue();
+            } else {
+                return dataType.getPersistenceValue(value);
+            }
+        } catch (ClassCastException e) {
+            throw GraknTxOperationException.invalidResourceValue(value, dataType);
+        }
     }
 
     /**
