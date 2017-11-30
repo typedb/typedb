@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.Label;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
@@ -39,6 +40,7 @@ public abstract class EmbeddedType {
     @JsonProperty
     public abstract Label label();
 
+    @JsonCreator
     public static EmbeddedType create(@JsonProperty("@id") Link selfLink, @JsonProperty("label") Label label){
         return new AutoValue_EmbeddedType(selfLink, label);
     }
