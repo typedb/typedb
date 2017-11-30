@@ -217,15 +217,16 @@ def runBuild() {
         pipelineTriggers([
             issueCommentTrigger('.*!rtg.*')
         ]),
-        //Keep fewer artifacts for PRs
-        if (!isMainBranch()) {
-            buildDiscarder(logRotator(numToKeepStr: '7', artifactNumToKeepStr: '1'))
-        }
         buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
     ])
 
     if (!isMainBranch()) {
         stopAllRunningBuildsForThisJob()
+
+        //Keep fewer artifacts for PRs
+        properties([
+            buildDiscarder(logRotator(numToKeepStr: '7', artifactNumToKeepStr: '1'))
+        ])
     }
 
     // This is a map that we fill with jobs to perform in parallel, name -> job closure
