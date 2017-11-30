@@ -51,8 +51,6 @@ import java.util.regex.Pattern;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    private static final Logger LOG = LoggerFactory.getLogger(AttributeTypeImpl.class);
-
     private AttributeTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
