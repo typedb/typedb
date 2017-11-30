@@ -126,7 +126,7 @@ public class GraqlController {
             ),
             @ApiImplicitParam(name = MULTI, dataType = "boolean", paramType = "query")
     })
-    private Object executeGraql(Request request, Response response) throws ExecutionException, RetryException {
+    private Object executeGraql(Request request, Response response) throws RetryException, ExecutionException {
         String queryString = mandatoryBody(request);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Optional<Boolean> infer = queryParameter(request, INFER).map(Boolean::parseBoolean);
@@ -156,14 +156,22 @@ public class GraqlController {
         });
     }
 
-    private Object executeFunctionWithRetrying(Callable<Object> callable) throws ExecutionException, RetryException {
-        Retryer<Object> retryer = RetryerBuilder.newBuilder()
+    private Object executeFunctionWithRetrying(Callable<Object> callable) throws RetryException, ExecutionException {
+        try {
+            Retryer<Object> retryer = RetryerBuilder.newBuilder()
                 .retryIfExceptionOfType(TemporaryWriteException.class)
                 .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
                 .build();
 
-        return retryer.call(callable);
+            return retryer.call(callable);
+        } catch (ExecutionException e) {
+            if(e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else {
+                throw e;
+            }
+        }
     }
 
 
