@@ -74,7 +74,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      */
     @Override
     public AttributeType<D> sup(AttributeType<D> superType){
-        ((AttributeTypeImpl<D>) superType).superSet().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
+        ((AttributeTypeImpl<D>) superType).sups().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
         return super.sup(superType);
     }
 
@@ -177,7 +177,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      */
     private void checkConformsToRegexes(D value){
         //Not checking the datatype because the regex will always be null for non strings.
-        superSet().forEach(sup -> {
+        this.sups().forEach(sup -> {
             String regex = sup.getRegex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
                 throw GraknTxOperationException.regexFailure(this, (String) value, regex);

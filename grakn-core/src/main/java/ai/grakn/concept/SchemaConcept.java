@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.util.Schema;
+
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -72,8 +74,8 @@ public interface SchemaConcept extends Concept {
     SchemaConcept sup();
 
     /**
-     *
-     * @return All the the super-types of this {@link SchemaConcept}
+     * @return All super-concepts of this {@link SchemaConcept } including itself and excluding the meta
+     * {@link Schema.MetaSchema#THING}.
      */
     Stream<? extends SchemaConcept> sups();
 
