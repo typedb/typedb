@@ -32,6 +32,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-kb</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.google.auto.value</groupId>
             <artifactId>auto-value</artifactId>
         </dependency>

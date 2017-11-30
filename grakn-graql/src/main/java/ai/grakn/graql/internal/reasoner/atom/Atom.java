@@ -339,6 +339,8 @@ public abstract class Atom extends AtomicBase {
      */
     public Atom addType(SchemaConcept type){ return this;}
 
+    public Stream<Answer> materialise(){ return Stream.empty();}
+
     public abstract Atom rewriteWithTypeVariable();
 
     /**

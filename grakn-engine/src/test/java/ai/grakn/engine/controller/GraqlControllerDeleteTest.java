@@ -68,7 +68,7 @@ public class GraqlControllerDeleteTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, 0, taskManager, postProcessor, new MetricRegistry());
+        new GraqlController(mockFactory, spark, taskManager, postProcessor, new MetricRegistry());
     });
 
     @Before

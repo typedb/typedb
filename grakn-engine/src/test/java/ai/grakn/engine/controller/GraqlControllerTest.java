@@ -91,7 +91,7 @@ public class GraqlControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
                 .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
-        new GraqlController(factory, spark, 0, mock(TaskManager.class), mock(PostProcessor.class), new MetricRegistry());
+        new GraqlController(factory, spark, mock(TaskManager.class), mock(PostProcessor.class), new MetricRegistry());
     });
 
     @ClassRule

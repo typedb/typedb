@@ -84,7 +84,6 @@ public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private final EngineGraknTxFactory factory;
     private final Service spark;
-    private final int postProcessingDelay;
     private final TaskManager taskManager;
     private final PostProcessor postProcessor;
     private final Timer executeGraqlGetTimer;
@@ -92,12 +91,11 @@ public class GraqlController {
     private final Timer singleExecutionTimer;
 
     public GraqlController(
-            EngineGraknTxFactory factory, Service spark, int postProcessingDelay, TaskManager taskManager,
+            EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
             PostProcessor postProcessor, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.spark = spark;
-        this.postProcessingDelay = postProcessingDelay;
         this.taskManager = taskManager;
         this.postProcessor = postProcessor;
         this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
@@ -225,18 +223,18 @@ public class GraqlController {
             formatted = printer.graqlString(executeAndMonitor(query));
             commitQuery = !query.isReadOnly();
         }
-        if (commitQuery) commitAndSubmitPPTask(graph, postProcessor, taskManager, postProcessingDelay);
+        if (commitQuery) commitAndSubmitPPTask(graph, postProcessor, taskManager);
         return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
     }
 
     private static void commitAndSubmitPPTask(
-            GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter, int ppTaskDelay
+            GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter
     ) {
         Optional<String> result = graph.admin().commitSubmitNoLogs();
         if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
             String logs = result.get();
             taskSubmitter.addTask(
-                    PostProcessingTask.createTask(GraqlController.class, ppTaskDelay),
+                    PostProcessingTask.createTask(GraqlController.class),
                     PostProcessingTask.createConfig(graph.keyspace(), logs)
             );
 

@@ -98,7 +98,7 @@ public class GraqlControllerReadOnlyTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
         new SystemController(spark, mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
-        new GraqlController(mockFactory, spark, 0, mock(TaskManager.class), mock(PostProcessor.class), metricRegistry);
+        new GraqlController(mockFactory, spark, mock(TaskManager.class), mock(PostProcessor.class), metricRegistry);
     });
 
     @Before

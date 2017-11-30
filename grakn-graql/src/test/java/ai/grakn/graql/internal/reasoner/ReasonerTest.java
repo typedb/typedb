@@ -114,44 +114,25 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testParsingQueryWithComma2(){
-        String queryString = "match $x isa person, val <21, val >18; get;";
-        String queryString2 = "match $x isa person;$x val <21;$x val >18; get;";
-        QueryBuilder iqb = snbKB.tx().graql().infer(true);
-        GetQuery query = iqb.parse(queryString);
-        GetQuery query2 = iqb.parse(queryString2);
-        assertQueriesEqual(query, query2);
-    }
-
-    @Test
     public void testParsingQueryWithResourceVariable(){
         String patternString = "{$x isa person, has firstname $y;}";
         String patternString2 = "{$x isa person;$x has firstname $y;}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, snbKB.tx()), snbKB.tx());
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, snbKB.tx()), snbKB.tx());
-        assertTrue(query.equals(query2));
+        assertEquals(query, query2);
     }
 
     @Test
-    public void testParsingQueryWithResourceVariable3(){
+    public void testParsingQueryWithResourceVariable_BoundWithNonSpecificVP(){
         String patternString = "{$x isa person;$x has age <10;}";
         String patternString2 = "{$x isa person;$x has age $y;$y val <10;}";
         ReasonerQueryImpl query = ReasonerQueries.atomic(conjunction(patternString, snbKB.tx()), snbKB.tx());
         ReasonerQueryImpl query2 = ReasonerQueries.atomic(conjunction(patternString2, snbKB.tx()), snbKB.tx());
-        assertTrue(query.equals(query2));
+        assertEquals(query, query2);
     }
 
     @Test
-    public void testParsingQueryWithResourceVariable4(){
-        String patternString = "{$x has firstname 'Bob';}";
-        String patternString2 = "{$x has firstname $y;$y val 'Bob';}";
-        ReasonerQueryImpl query = ReasonerQueries.atomic(conjunction(patternString, snbKB.tx()), snbKB.tx());
-        ReasonerQueryImpl query2 = ReasonerQueries.atomic(conjunction(patternString2, snbKB.tx()), snbKB.tx());
-        assertTrue(query.equals(query2));
-    }
-
-    @Test
-    public void testParsingQueryWithResourceVariable5(){
+    public void testParsingQueryWithResourceVariable_BoundWithSpecificVP(){
         GraknTx graph = snbKB.tx();
         String patternString = "{$x has firstname 'Bob', has lastname 'Geldof';}";
         String patternString2 = "{$x has firstname 'Bob';$x has lastname 'Geldof';}";
@@ -162,10 +143,10 @@ public class ReasonerTest {
         ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(patternString3, graph), graph);
         ReasonerQueryImpl query4 = ReasonerQueries.create(conjunction(patternString4, graph), graph);
 
-        assertTrue(query.equals(query3));
-        assertTrue(query.equals(query4));
-        assertTrue(query2.equals(query3));
-        assertTrue(query2.equals(query4));
+        assertEquals(query, query3);
+        assertEquals(query, query4);
+        assertEquals(query2, query3);
+        assertEquals(query2, query4);
     }
 
     @Test
