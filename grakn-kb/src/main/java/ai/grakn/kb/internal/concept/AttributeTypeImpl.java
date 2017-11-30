@@ -146,7 +146,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
                     vertex().tx().txCache().getNewAttributes().remove(index);
 
                     //Try Again
-                    LOG.warn(String.format("Failed to create attribute {%s} after {%s} attempts. Trying again . . . ", attribute, numAttempt);
+                    LOG.warn(String.format("Failed to create attribute {%s} after {%s} attempts. Trying again . . . ", attribute, numAttempt));
                     return putAttribute(value, isInferred, numAttempt + 1);
                 }
             }
