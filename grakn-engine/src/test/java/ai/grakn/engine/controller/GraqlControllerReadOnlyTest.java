@@ -183,7 +183,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithReasonerTrue_ReasonerIsOnWhenExecuting() {
-        sendRequest("match $x isa movie;", APPLICATION_TEXT, true,  0);
+        sendRequest("match $x isa movie;", APPLICATION_TEXT, true, 0);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> arg));
     }
@@ -426,7 +426,7 @@ public class GraqlControllerReadOnlyTest {
         Response response = sendRequest(query, APPLICATION_HAL);
 
         assertThat(response.statusCode(), equalTo(200));
-        assertThat(jsonResponse(response), equalTo(Json.nil()));
+        assertThat(jsonResponse(response), equalTo(Json.array()));
     }
 
     private Response sendRequest(String acceptType) {
@@ -438,7 +438,7 @@ public class GraqlControllerReadOnlyTest {
     }
 
     private Response sendRequest(String match, String acceptType, boolean reasonser,
-                                  int limitEmbedded) {
+                                 int limitEmbedded) {
         return RestAssured.with()
                 .queryParam(KEYSPACE_PARAM, mockTx.keyspace().getValue())
                 .body(match)
