@@ -236,7 +236,6 @@ public class ShortestPathTest {
             Set<List<ConceptId>> computedPaths = allPaths.stream().map(path ->
                     path.stream().map(Concept::getId).collect(Collectors.toList())).collect(Collectors.toSet());
             assertEquals(validPaths, computedPaths);
-//            assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
         }
     }
 

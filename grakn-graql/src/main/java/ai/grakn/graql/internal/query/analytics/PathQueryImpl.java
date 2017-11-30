@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.analytics.Utility.getResourceEdgeId;
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
 class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements PathQuery {
@@ -70,52 +71,96 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
         if (sourceId.equals(destinationId)) {
             return Collections.singletonList(Collections.singletonList(tx.get().getConcept(sourceId)));
         }
+
         ComputerResult result;
-
         Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-
         try {
             result = getGraphComputer().compute(
                     new ShortestPathVertexProgram(sourceId, destinationId), null, subLabelIds);
-//                    new ShortestPathVertexProgram(sourceId, destinationId),
-//                    new ClusterMemberMapReduce(ShortestPathVertexProgram.FOUND_IN_ITERATION),
-//                    subLabelIds);
         } catch (NoResultException e) {
             LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyList();
         }
 
+        Map<String, Set<String>> predecessorMapFromSource = getPredecessorMap(result);
+        List<List<Concept>> allPaths = getAllPaths(predecessorMapFromSource);
+        if (includeAttribute) { // this can be slow
+            return getExtendedPaths(allPaths);
+        }
+
+        LOGGER.info("Number of paths: " + allPaths.size());
+        LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
+        return allPaths;
+    }
+
+    private List<List<Concept>> getExtendedPaths(List<List<Concept>> allPaths) {
+        List<List<Concept>> extendedPaths = new ArrayList<>();
+        for (List<Concept> currentPath : allPaths) {
+            boolean hasAttribute = false;
+            for (Concept concept : currentPath) {
+                if (concept.isAttribute()) {
+                    hasAttribute = true;
+                    break;
+                }
+            }
+            if (!hasAttribute) {
+                extendedPaths.add(currentPath);
+            }
+        }
+
+        int numExtensionAllowed = extendedPaths.isEmpty() ? Integer.MAX_VALUE : 0;
+        for (List<Concept> currentPath : allPaths) {
+            List<Concept> extendedPath = new ArrayList<>();
+            int numExtension = 0;
+            for (int j = 0; j < currentPath.size() - 1; j++) {
+                extendedPath.add(currentPath.get(j));
+                ConceptId resourceRelationId = getResourceEdgeId(tx.get(),
+                        currentPath.get(j).getId(), currentPath.get(j + 1).getId());
+                if (resourceRelationId != null) {
+                    numExtension++;
+                    if (numExtension > numExtensionAllowed) break;
+                    extendedPath.add(getConcept(tx, resourceRelationId));
+                }
+            }
+            if (numExtension == numExtensionAllowed) {
+                extendedPath.add(currentPath.get(currentPath.size() - 1));
+                extendedPaths.add(extendedPath);
+            } else if (numExtension < numExtensionAllowed) {
+                extendedPath.add(currentPath.get(currentPath.size() - 1));
+                extendedPaths.clear();
+                extendedPaths.add(extendedPath);
+                numExtensionAllowed = numExtension;
+            }
+        }
+        return extendedPaths;
+    }
+
+    private static Map<String, Set<String>> getPredecessorMap(ComputerResult result) {
         Map<String, Set<String>> predecessorMapFromSource =
                 result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_SOURCE);
         Map<String, Set<String>> predecessorMapFromDestination =
                 result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_DESTINATION);
-
-        Map<String, Set<String>> reversedMapFromDestination = new HashMap<>();
         predecessorMapFromDestination.forEach((key, value) -> value.forEach(id -> {
             predecessorMapFromSource.putIfAbsent(id, new HashSet<>());
             predecessorMapFromSource.get(id).add(key);
         }));
+        return predecessorMapFromSource;
+    }
 
-
-        Map<Concept, Set<String>> predecessorMapSource = new HashMap<>(predecessorMapFromSource.size());
-        predecessorMapFromSource.forEach((key, value) -> predecessorMapSource.put(getConcept(tx, key), value));
-//        Map<Concept, Set<String>> predecessorMapDestination = new HashMap<>(predecessorMapFromDestination.size());
-//        predecessorMapFromDestination.forEach((key, value) -> predecessorMapDestination.put(getConcept(tx, key), value));
-
-        System.out.println("predecessorMapFromSource = " + predecessorMapFromSource);
-        System.out.println("predecessorMapFromDestination = " + predecessorMapFromDestination);
-
+    private List<List<Concept>> getAllPaths(Map<String, Set<String>> predecessorMapFromSource) {
+        Map<Concept, Set<String>> predecessorMap = new HashMap<>(predecessorMapFromSource.size());
+        predecessorMapFromSource.forEach((key, value) -> predecessorMap.put(getConcept(tx, key), value));
 
         List<List<Concept>> allPaths = new ArrayList<>();
-
         List<Concept> firstPath = new ArrayList<>();
         firstPath.add(getConcept(tx, sourceId.getValue()));
+
         Deque<List<Concept>> queue = new ArrayDeque<>();
         queue.addLast(firstPath);
         while (!queue.isEmpty()) {
             List<Concept> currentPath = queue.pollFirst();
-            if (predecessorMapSource.containsKey(currentPath.get(currentPath.size() - 1))) {
-                Set<String> successors = predecessorMapSource.get(currentPath.get(currentPath.size() - 1));
+            if (predecessorMap.containsKey(currentPath.get(currentPath.size() - 1))) {
+                Set<String> successors = predecessorMap.get(currentPath.get(currentPath.size() - 1));
                 Iterator<String> iterator = successors.iterator();
                 for (int i = 0; i < successors.size() - 1; i++) {
                     List<Concept> extendedPath = new ArrayList<>(currentPath);
@@ -128,63 +173,15 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
                 allPaths.add(currentPath);
             }
         }
-
-//        Map<Concept, List<Concept>> secondHalf = new HashMap<>();
-//        firstPath.clear();
-//        firstPath.add(getConcept(tx, destinationId.getValue()));
-//        queue.addLast(firstPath);
-//        while (!queue.isEmpty()) {
-//            List<Concept> currentPath = queue.pollFirst();
-//            if (predecessorMapDestination.containsKey(currentPath.get(currentPath.size() - 1))) {
-//                Set<String> successors = predecessorMapDestination.get(currentPath.get(currentPath.size() - 1));
-//                Iterator<String> iterator = successors.iterator();
-//                for (int i = 0; i < successors.size() - 1; i++) {
-//                    List<Concept> extendedPath = new ArrayList<>(currentPath);
-//                    extendedPath.add(getConcept(tx, iterator.next()));
-//                    queue.addLast(extendedPath);
-//                }
-//                currentPath.add(getConcept(tx, iterator.next()));
-//                queue.addLast(currentPath);
-//            } else {
-//                Collections.reverse(currentPath);
-//                secondHalf.put(currentPath.get(0), currentPath);
-//            }
-//        }
-
-
-//        System.out.println("secondHalf.values() = " + secondHalf.values());
-
-//        Map<Integer, Set<String>> map = result.memory().get(ClusterMemberMapReduce.class.getName());
-//        String middlePoint = result.memory().get(ShortestPathVertexProgram.MIDDLE);
-//        if (!middlePoint.equals("")) map.put(0, Collections.singleton(middlePoint));
-//
-//        List<ConceptId> path = new ArrayList<>();
-//        path.add(sourceId);
-//        path.addAll(map.entrySet().stream()
-//                .sorted(Comparator.comparingInt(Map.Entry::getKey))
-//                .map(pair -> ConceptId.of(pair.getValue().iterator().next()))
-//                .collect(Collectors.toList()));
-//        path.add(destinationId);
-//
-//        List<ConceptId> fullPath = new ArrayList<>();
-//        for (int index = 0; index < path.size() - 1; index++) {
-//            fullPath.add(path.get(index));
-//            if (includeAttribute) {
-//                ConceptId resourceRelationId = getResourceEdgeId(tx.get(), path.get(index), path.get(index + 1));
-//                if (resourceRelationId != null) {
-//                    fullPath.add(resourceRelationId);
-//                }
-//            }
-//        }
-//        fullPath.add(destinationId);
-
-        LOGGER.info("Number of paths: " + allPaths.size());
-        LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return allPaths;//Optional.of(fullPath.stream().map(tx.get()::<Thing>getConcept).collect(Collectors.toList()));
+        return allPaths;
     }
 
     private static Thing getConcept(Optional<GraknTx> tx, String conceptId) {
         return tx.get().getConcept(ConceptId.of(conceptId));
+    }
+
+    private static Thing getConcept(Optional<GraknTx> tx, ConceptId conceptId) {
+        return tx.get().getConcept(conceptId);
     }
 
     @Override
