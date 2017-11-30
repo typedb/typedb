@@ -43,15 +43,17 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.Charsets;
 import rx.Observable;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
@@ -301,18 +303,20 @@ public class GraqlShell {
     }
 
     private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
-        Reader queryReader = new FileReader(Paths.get(graqlPath).toFile());
-
         AtomicInteger queriesExecuted = new AtomicInteger(0);
 
-        Graql.parser().parseList(queryReader).forEach(query -> {
-            Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
+        FileInputStream inputStream = new FileInputStream(Paths.get(graqlPath).toFile());
 
-            observable.subscribe(
+        try (Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
+            Graql.parser().parseList(queryReader).forEach(query -> {
+                Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
+
+                observable.subscribe(
                     /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
                     /* On error:   */ System.err::println
-            );
-        });
+                );
+            });
+        }
 
         batchExecutorClient.close();
 
