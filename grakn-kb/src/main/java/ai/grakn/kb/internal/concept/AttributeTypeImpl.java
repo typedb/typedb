@@ -23,6 +23,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -49,6 +51,7 @@ import java.util.regex.Pattern;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeTypeImpl.class);
 
     private AttributeTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -126,35 +129,11 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
-            Object persistenceValue = castValue(value);
-            return vertex().tx().factory().buildAttribute(vertex, type, persistenceValue);
+            return vertex().tx().factory().buildAttribute(vertex, type, value);
         };
 
         return putInstance(Schema.BaseType.ATTRIBUTE,
                 () -> getAttribute(value), instanceBuilder, isInferred);
-    }
-
-    /**
-     * This is to handle casting longs and doubles when the type allows for the data type to be a number
-     * @param value The value of the resource
-     * @return The value casted to the correct type
-     */
-    private Object castValue(D value){
-        AttributeType.DataType<D> dataType = getDataType();
-        try {
-            if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-                return ((Number) value).doubleValue();
-            } else if (dataType.equals(AttributeType.DataType.LONG)) {
-                if (value instanceof Double) {
-                    throw new ClassCastException();
-                }
-                return ((Number) value).longValue();
-            } else {
-                return dataType.getPersistenceValue(value);
-            }
-        } catch (ClassCastException e) {
-            throw GraknTxOperationException.invalidResourceValue(value, dataType);
-        }
     }
 
     /**
