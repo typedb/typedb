@@ -24,6 +24,8 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -50,6 +52,8 @@ import java.util.regex.Pattern;
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeTypeImpl.class);
+    private static final int MAX_RETRY_ADDING_ATTRIBUTE = 10;
 
     private AttributeTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -115,28 +119,36 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @SuppressWarnings("unchecked")
     @Override
     public Attribute<D> putAttribute(D value) {
-        return putAttribute(value, false);
+        return putAttribute(value, false, 1);
     }
 
     public Attribute<D> putAttributeInferred(D value) {
-        return putAttribute(value, true);
+        return putAttribute(value, true, 1);
     }
 
-    private Attribute<D> putAttribute(D value, boolean isInferred) {
+    private Attribute<D> putAttribute(D value, boolean isInferred, int numAttempt) {
         Objects.requireNonNull(value);
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             Object persistenceValue = castValue(value);
             AttributeImpl<D> attribute = vertex().tx().factory().buildAttribute(vertex, type, persistenceValue);
+            String index = Schema.generateAttributeIndex(getLabel(), value.toString());
 
             try{
-                attribute.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
+                attribute.vertex().propertyUnique(Schema.VertexProperty.INDEX, index);
             } catch (PropertyNotUniqueException e){
-                //This happens when another attribute ends up being created between checking if the attribute exists and
-                // creating the actual attribute. In this case we dynamically merge
-                attribute.delete();
-                return getAttribute(value);
+                if(numAttempt > MAX_RETRY_ADDING_ATTRIBUTE){
+                    throw GraknTxOperationException.couldNotCreateAttribute(attribute, e);
+                } else {
+                    //Remove the attribute we created
+                    attribute.deleteNode();
+                    vertex().tx().txCache().getNewAttributes().remove(index);
+
+                    //Try Again
+                    LOG.warn(String.format("Failed to create attribute {%s} after {%s} attempts. Trying again . . . ", attribute, numAttempt);
+                    return putAttribute(value, isInferred, numAttempt + 1);
+                }
             }
 
             return attribute;
