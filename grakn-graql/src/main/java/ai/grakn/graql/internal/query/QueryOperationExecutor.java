@@ -261,7 +261,7 @@ public class QueryOperationExecutor {
 
         sortProperties().forEach(property -> property.executor(executionType).execute(this));
 
-        conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build()));
+        conceptBuilders.forEach(this::buildConcept);
 
         ImmutableMap.Builder<Var, Concept> allConcepts = ImmutableMap.<Var, Concept>builder().putAll(concepts);
 
@@ -272,6 +272,12 @@ public class QueryOperationExecutor {
 
         Map<Var, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Var::isUserDefinedName);
         return new QueryAnswer(namedConcepts);
+    }
+
+    private void buildConcept(Var var, ConceptBuilder builder) {
+        Concept concept = builder.build();
+        assert concept != null : String.format("build() should never return null. var: %s", var);
+        concepts.put(var, concept);
     }
 
     /**
@@ -399,9 +405,7 @@ public class QueryOperationExecutor {
             @Nullable ConceptBuilder builder = conceptBuilders.remove(var);
 
             if (builder != null) {
-                concept = builder.build();
-                assert concept != null : String.format("build() should never return null. var: %s", var);
-                concepts.put(var, concept);
+                buildConcept(var, builder);
             }
         }
 
