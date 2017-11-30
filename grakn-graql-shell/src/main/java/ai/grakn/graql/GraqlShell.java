@@ -65,12 +65,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
-import static ai.grakn.util.ConcurrencyUtil.allObservable;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
 import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
@@ -94,7 +93,6 @@ import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static ai.grakn.util.Schema.BaseType.TYPE;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -303,15 +301,22 @@ public class GraqlShell {
     }
 
     private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
-        Reader queries = new FileReader(Paths.get(graqlPath).toFile());
+        Reader queryReader = new FileReader(Paths.get(graqlPath).toFile());
 
-        Function<Query<?>, Observable<QueryResponse>> submitQuery = query -> batchExecutorClient.add(query, keyspace, false);
+        AtomicInteger queriesExecuted = new AtomicInteger(0);
 
-        List<Observable<QueryResponse>> all = Graql.parser().parseList(queries).map(submitQuery).collect(toList());
+        Graql.parser().parseList(queryReader).forEach(query -> {
+            Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
 
-        int completed = allObservable(all).toBlocking().first().size();
-        System.out.println("Statements executed: " + completed);
+            observable.subscribe(
+                    /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
+                    /* On error:   */ System.err::println
+            );
+        });
+
         batchExecutorClient.close();
+
+        System.out.println("Statements executed: " + queriesExecuted.get());
     }
 
     /**
