@@ -17,6 +17,7 @@
  */
 package ai.grakn.client;
 
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
 import ai.grakn.util.REST;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
+import static ai.grakn.util.REST.Request.Graql.TYPE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 
@@ -68,6 +70,7 @@ public class GraknClient {
                 .path(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()))
                 .queryParam(MULTI, true)
                 .queryParam(INFER, false) //Making inference true could lead to non-deterministic loading of data
+                .queryParam(TYPE, GraknTxType.BATCH)
                 .build();
         ClientResponse response = client.resource(fullURI)
                 .accept(APPLICATION_JSON_GRAQL)
