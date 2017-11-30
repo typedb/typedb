@@ -166,8 +166,9 @@ public class GraqlController {
 
             return retryer.call(callable);
         } catch (ExecutionException e) {
-            if(e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
             } else {
                 throw e;
             }
