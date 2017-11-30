@@ -274,10 +274,11 @@ public class QueryOperationExecutor {
         return new QueryAnswer(namedConcepts);
     }
 
-    private void buildConcept(Var var, ConceptBuilder builder) {
+    private Concept buildConcept(Var var, ConceptBuilder builder) {
         Concept concept = builder.build();
         assert concept != null : String.format("build() should never return null. var: %s", var);
         concepts.put(var, concept);
+        return concept;
     }
 
     /**
@@ -405,7 +406,7 @@ public class QueryOperationExecutor {
             @Nullable ConceptBuilder builder = conceptBuilders.remove(var);
 
             if (builder != null) {
-                buildConcept(var, builder);
+                concept = buildConcept(var, builder);
             }
         }
 
