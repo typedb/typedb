@@ -12,4 +12,5 @@ if [ "$#" -gt "0" ]; then
 fi
 
 echo "Installing grakn"
-mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo
+cat ${MVN_SETTINGS}
+mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo -s ${MVN_SETTINGS}
