@@ -33,9 +33,9 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         </div>
         <div class="dd-header" v-show="Object.keys(nodeAttributes).length">Attributes:</div>
         <div class="dd-item" v-for="(value,key) in nodeAttributes">
-            <div class="dd-handle noselect" @dblclick="addAttributeNodeWithOwners(value.link)"><span class="list-key">{{key}}:</span>
-                <a v-if="value.href" :href="value.label" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.label}}</a>
-                <span v-else> {{value.label}}</span>
+            <div class="dd-handle noselect" @dblclick="addAttributeNodeWithOwners(value.link)"><span class="list-key">{{value.type}}:</span>
+                <a v-if="value.externalRef" :href="value.label" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.type}}</a>
+                <span v-else> {{value.value}}</span>
             </div>
         </div>
         <div class="dd-header" v-show="Object.keys(nodeLinks).length">Links:</div>
@@ -163,9 +163,6 @@ export default {
     },
   },
   methods: {
-    addAttributeNodeWithOwners(attributeId) {
-      this.$emit('load-attribute-owners', attributeId);
-    },
     closePanel() {
       this.$emit('close-node-panel');
     },
@@ -173,16 +170,14 @@ export default {
    * Prepare the list of attributes to be shown in the right div panel
    * It sorts them alphabetically and then check if a attribute value is a URL
    */
-    prepareAttributes(originalObject) {
-      if (originalObject == null) return {};
-      return Object.keys(originalObject).sort().reduce(
-          // sortedObject is the accumulator variable, i.e. new object with sorted keys
-          // k is the current key
-          (sortedObject, k) => {
-              // Add 'href' field to the current object, it will be set to TRUE if it contains a valid URL, FALSE otherwise
-            const currentAttributeWithHref = Object.assign(originalObject[k], { href: this.validURL(originalObject[k].label) });
-            return Object.assign(sortedObject, { [k]: currentAttributeWithHref });
-          }, {});
+    prepareAttributes(attributes) {
+      return attributes.sort((a,b)=>((a.type>b.type)?1:-1));
+          //TODO: MOVE THIS TO PARSER
+          // (sortedObject, k) => {
+          //     // Add 'href' field to the current object, it will be set to TRUE if it contains a valid URL, FALSE otherwise
+          //   const currentAttributeWithHref = Object.assign(attributes[k], { href: this.validURL(attributes[k].label) });
+          //   return Object.assign(sortedObject, { [k]: currentAttributeWithHref });
+          // }, {});
     },
     validURL(str) {
       const pattern = new RegExp(URL_REGEX, 'i');

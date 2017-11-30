@@ -47,7 +47,7 @@ function doubleClick(param) {
   } else {
     EngineClient.request({
       url: nodeObj.href,
-    }).then(resp => CanvasHandler.onGraphResponse(resp, false, false, false, node))
+    }).then(resp => CanvasHandler.onGraphResponse(resp))
     .catch((err) => { EventHub.$emit('error-message', err); });
   }
 }
@@ -75,7 +75,7 @@ function requestExplore(nodeObj) {
     EngineClient.request({
       url: nodeObj.explore,
     })
-    .then(resp => CanvasHandler.onGraphResponse(resp, false, true, true, nodeObj.id))
+    .then(resp => CanvasHandler.onGraphResponse(resp))
     .catch((err) => {
       EventHub.$emit('error-message', err);
     });

@@ -43,7 +43,7 @@ function onClickSubmit(query:string) {
     .catch((err) => { EventHub.$emit('error-message', err); });
   } else {
     EngineClient.graqlQuery(query)
-    .then((resp, nodeId) => onGraphResponse(resp, false, false, false, nodeId))
+    .then((resp, nodeId) => onGraphResponse(resp))
     .catch((err) => { EventHub.$emit('error-message', err); });
   }
 }
@@ -51,7 +51,7 @@ function onClickSubmit(query:string) {
 function onLoadSchema(type: string) {
   const querySub = `match $x sub ${type}; get;`;
   EngineClient.graqlQuery(querySub)
-  .then(resp => onGraphResponse(resp, false, false, false))
+  .then(resp => onGraphResponse(resp))
   .catch((err) => { EventHub.$emit('error-message', err); });
 }
 
@@ -64,9 +64,19 @@ function flatten<T>(array: T[][]): T[] {
   return array.reduce((x, y) => x.concat(y), []);
 }
 
-/*
-* Public functions
-*/
+function filterNodes(nodes) { return nodes.filter(x => !x.implicit).filter(x => !x.abstract); }
+function filterEdges(edges) {
+  // (Helper map {ImplicitRelationshipID: AttributeTypeID})
+  const toAttrTypeMap = edges
+  .filter(edge => visualiser.getNode(edge.to).baseType === 'ATTRIBUTE_TYPE')
+  .reduce((map, current) => Object.assign(map, { [current.from]: current.to }), {});
+  // Set with all attribute types IDs
+  const attrTypeSet = new Set(Object.values(toAttrTypeMap));
+  // If an edge points to an ImplicitRelationshipID, change label to 'has' and cut edge
+  return edges
+    .filter(edge => !attrTypeSet.has(edge.to))
+    .map(edge => ((edge.from in toAttrTypeMap) ? { from: edge.to, to: toAttrTypeMap[edge.from], label: 'has' } : edge));
+}
 
 function initialise(graphElement: Object) {
   EventHub.$on('clear-page', () => clearGraph());
@@ -77,7 +87,7 @@ function initialise(graphElement: Object) {
   visualiser.render(graphElement);
 }
 
-function onGraphResponse(resp: string, showIsa: boolean, showAttributes: boolean, isExplore: boolean, nodeId:?string) {
+function onGraphResponse(resp: string) {
   const responseObject = JSON.parse(resp);
   const parsedResponse = Parser.parseResponse(responseObject);
 
@@ -86,26 +96,22 @@ function onGraphResponse(resp: string, showIsa: boolean, showAttributes: boolean
     return;
   }
 
-  parsedResponse.nodes
-  // .filter(x => !x.implicit)
-  // .filter(x => x.baseType !== 'ATTRIBUTE_TYPE')
-  .forEach(node => visualiser.addNode(node, node.attributes, node.links, nodeId));
-  parsedResponse.edges.forEach(edge => visualiser.addEdge(edge.from, edge.to, edge.label));
-
+  filterNodes(parsedResponse.nodes).forEach(node => visualiser.addNode(node));
+  filterEdges(parsedResponse.edges).forEach(edge => visualiser.addEdge(edge));
   visualiser.fitGraphToWindow();
 }
 
 function fetchFilteredRelationships(href: string) {
   EngineClient.request({
     url: href,
-  }).then(resp => onGraphResponse(resp, false, false, false))
+  }).then(resp => onGraphResponse(resp))
   .catch((err) => { EventHub.$emit('error-message', err); });
 }
 
 function loadAttributeOwners(attributeId: string) {
   EngineClient.request({
     url: attributeId,
-  }).then(resp => onGraphResponse(resp, false, true, false));
+  }).then(resp => onGraphResponse(resp));
 }
 
 

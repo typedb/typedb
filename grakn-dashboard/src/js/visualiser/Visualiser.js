@@ -272,44 +272,35 @@ export default class Visualiser {
     /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
-  addNode(nodeBaseProperties, nodeAttributes, nodeLinks, clickedNodeId) {
-    if (!this.nodeExists(nodeBaseProperties.id)) {
-      const colorObj = this.style.getNodeColour(nodeBaseProperties.type, nodeBaseProperties.baseType);
-      const highlightObj = {
-        highlight: Object.assign(colorObj.highlight, {
-          border: colorObj.highlight.background,
-        }),
-      };
-      const hoverObj = {
-        hover: highlightObj.highlight,
-      };
-      this.nodes.add({
-        id: nodeBaseProperties.id,
-        href: nodeBaseProperties.href,
-        label: this.generateLabel(nodeBaseProperties.type, nodeAttributes, nodeBaseProperties.label, nodeBaseProperties.baseType),
-        baseLabel: nodeBaseProperties.label,
-        type: nodeBaseProperties.type,
-        baseType: nodeBaseProperties.baseType,
-        color: Object.assign(colorObj, {
-          border: colorObj.background,
-        }, highlightObj, hoverObj),
-        font: this.style.getNodeFont(nodeBaseProperties.type, nodeBaseProperties.baseType),
-        shape: this.style.getNodeShape(nodeBaseProperties.baseType),
-        size: this.style.getNodeSize(nodeBaseProperties.baseType),
-        explore: nodeBaseProperties.explore,
-        properties: nodeAttributes,
-        links: nodeLinks,
-      });
-      this.nodes.flush();
-    } else if (nodeBaseProperties.id !== clickedNodeId && User.getFreezeNodes()) { // If node already in graph and it's not the node clicked by user, unlock it
-      this.updateNode({
-        id: nodeBaseProperties.id,
-        fixed: {
-          x: false,
-          y: false,
-        },
-      });
-    }
+  addNode(node) {
+    if (this.nodeExists(node.id)) return this;
+    const colorObj = this.style.getNodeColour(node.type, node.baseType);
+    const highlightObj = {
+      highlight: Object.assign(colorObj.highlight, {
+        border: colorObj.highlight.background,
+      }),
+    };
+    const hoverObj = {
+      hover: highlightObj.highlight,
+    };
+    this.nodes.add({
+      id: node.id,
+      href: node.href,
+      label: this.generateLabel(node.type, node.attributes, node.label, node.baseType),
+      baseLabel: node.label,
+      type: node.type,
+      baseType: node.baseType,
+      color: Object.assign(colorObj, {
+        border: colorObj.background,
+      }, highlightObj, hoverObj),
+      font: this.style.getNodeFont(node.type, node.baseType),
+      shape: this.style.getNodeShape(node.baseType),
+      size: this.style.getNodeSize(node.baseType),
+      explore: node.explore,
+      properties: node.attributes,
+    });
+    this.nodes.flush();
+
     return this;
   }
 
@@ -334,19 +325,19 @@ export default class Visualiser {
      * Add edge between two nodes with @label, only if both nodes exist in the graph and they are not alreay connected.
      * This can be called at any time *after* render().
      */
-  addEdge(fromNode:string, toNode:string, label:string) {
-    if (this.nodeExists(fromNode) && this.nodeExists(toNode) && !this.alreadyConnected(fromNode, toNode, label)) {
+  addEdge(edge) {
+    if (this.nodeExists(edge.from) && this.nodeExists(edge.to) && !this.alreadyConnected(edge)) {
       this.edges.add({
-        from: fromNode,
-        to: toNode,
-        label,
-        color: this.style.getEdgeColour(label),
-        font: this.style.getEdgeFont(label),
+        from: edge.from,
+        to: edge.to,
+        label: edge.label,
+        color: this.style.getEdgeColour(edge.label),
+        font: this.style.getEdgeFont(edge.label),
         arrows: {
-          to: (label !== 'relates'),
+          to: (edge.label !== 'relates'),
         },
       });
-      const connectingEdge = this.edgesBetweenTwoNodes(fromNode, toNode);
+      const connectingEdge = this.edgesBetweenTwoNodes(edge.from, edge.to);
       // If there are multiple edges connecting the same 2 nodes make the edges smooth so that the labels are visible
       if (connectingEdge.length > 1) {
         connectingEdge.forEach((edgeId) => {
@@ -537,17 +528,17 @@ export default class Visualiser {
     /**
      * Check if two nodes (a,b) exist and if they are already connected by an edge.
      */
-  alreadyConnected(a, b, label) {
-    if (!(this.nodes.get(a) && this.nodes.get(b))) {
+  alreadyConnected(edge) {
+    if (!(this.nodes.get(edge.from) && this.nodes.get(edge.to))) {
       return false;
     }
 
-    const intersection = this.edgesBetweenTwoNodes(a, b);
+    const intersection = this.edgesBetweenTwoNodes(edge.from, edge.to);
 
     return _.contains(_.values(intersection)
             .map((x) => {
-              const edge = this.edges.get(x);
-              return Visualiser.matching(a, b, edge.to, edge.from) && label === edge.label;
+              const localEdge = this.edges.get(x);
+              return Visualiser.matching(edge.from, edge.to, localEdge.to, localEdge.from) && edge.label === localEdge.label;
             }),
             true);
   }

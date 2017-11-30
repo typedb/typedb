@@ -17,10 +17,6 @@
  */
 /* @flow */
 
-const FETCH_ALL_ATTRIBUTES_QUERY = 'match $x sub attribute; get;';
-const FETCH_ALL_ROLES_QUERY = 'match $x sub role; get;';
-
-
 import User from './User';
 /*
  * REST API client for Grakn Engine.
@@ -128,15 +124,7 @@ export default {
       data: query,
     });
   },
-
-  fetchAttributes() {
-    this.graqlQuery(FETCH_ALL_ATTRIBUTES_QUERY);
-  },
-
-  fetchRoles() {
-    this.graqlQuery(FETCH_ALL_ROLES_QUERY);
-  },
-            /**
+      /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
   graqlAnalytics(query:string) {

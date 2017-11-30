@@ -48,6 +48,8 @@ export const KEY_BASE_TYPE = 'base-type';
 const KEY_VALUE = 'value';
 const KEY_LABEL = 'label';
 const KEY_IMPLICIT = 'implicit';
+const KEY_ABSTRACT = 'abstract';
+const KEY_DATATYPE = 'data-type';
 export const AT_ID = '@id';
 
 
@@ -92,6 +94,18 @@ export function conceptProperties(object:Object) {
     baseType: object[KEY_BASE_TYPE],
     label: buildLabel(object),
     implicit: object[KEY_IMPLICIT] || false,
+    abstract: object[KEY_ABSTRACT],
   };
+}
+
+export function instanceAttributes(object:Object) {
+  if (!object.attributes) return [];
+  return object.attributes.map(attr => ({
+    href: attr[AT_ID],
+    value: attr[KEY_VALUE],
+    dataType: attr[KEY_DATATYPE],
+    type: attr[KEY_TYPE].label,
+  }))
+  .reduce((array, current) => array.concat(current), []);
 }
 

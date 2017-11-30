@@ -18,8 +18,7 @@
 
 /* @flow */
 
-import _ from 'underscore';
-import { KEY_BASE_TYPE, RELATIONSHIP_TYPE, RELATIONSHIP, AT_ID, KEY_ID, conceptProperties } from './APIUtils';
+import { KEY_BASE_TYPE, RELATIONSHIP_TYPE, RELATIONSHIP, AT_ID, KEY_ID, conceptProperties, instanceAttributes } from './APIUtils';
 
 
 /**
@@ -37,13 +36,6 @@ export const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +
     '(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?' +
     '(?:[/?#]\\S*)?$';
 
-const metaTypesSet = {
-  ENTITY_TYPE: true,
-  ATTRIBUTE_TYPE: true,
-  ROLE_TYPE: true,
-  RELATIONSHIP_TYPE: true,
-  RULE_TYPE: true,
-};
 const collect = (array, current) => array.concat(current);
 function flat(array) {
   return array.flatMap(x => Object.values(x).reduce((array, current) => array.concat(current), []));
@@ -51,7 +43,8 @@ function flat(array) {
 
 function newNode(nodeObj:Object) {
   const properties = conceptProperties(nodeObj);
-  const attributes = nodeObj.attributes || [];
+  //TODO: decide whether list attributes also on meta type node for now we just set empty array
+  const attributes = ('label' in nodeObj) ? [] : instanceAttributes(nodeObj);
   const relationships = nodeObj.relationships || [];
   return Object.assign({}, properties, { attributes, relationships });
 }
