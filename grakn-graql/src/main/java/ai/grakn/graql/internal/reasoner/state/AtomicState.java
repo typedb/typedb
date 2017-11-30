@@ -27,12 +27,9 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -46,8 +43,6 @@ import org.slf4j.LoggerFactory;
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 public class AtomicState extends QueryState<ReasonerAtomicQuery>{
 
-    private static final Logger LOG = LoggerFactory.getLogger(AtomicState.class);
-
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
                        Unifier u,
@@ -55,8 +50,6 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery>{
                        Set<ReasonerAtomicQuery> subGoals,
                        QueryCache<ReasonerAtomicQuery> cache) {
         super(ReasonerQueries.atomic(q, sub), sub, u, parent, subGoals, cache);
-
-        //LOG.debug("AQ: " + getQuery());
     }
 
     @Override

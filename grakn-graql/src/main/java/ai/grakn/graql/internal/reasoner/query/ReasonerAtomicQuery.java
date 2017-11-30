@@ -302,19 +302,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
-    /*
-    public Stream<ResolutionState> subGoals(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return getQueryStream(sub)
-                .map(q -> q.subGoal(sub, u, parent, subGoals, cache));
-    }
-    */
-
     @Override
     public ResolutionState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        if(getAtom().getSchemaConcept() == null){
-            System.out.println("DUPA!");
-            return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
-        }
+        //TODO put this behaviour inside AtomicStateProducer
+        if(getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
 
         return getAtoms(NeqPredicate.class).findFirst().isPresent()?
                 new NeqComplementState(this, sub, u, parent, subGoals, cache) :

@@ -342,6 +342,21 @@ public class AtomicTest {
      */
 
     @Test
+    public void testRuleApplicability_OntologicalAtomsDoNotMatchAnyRules(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        Atom subAtom = ReasonerQueries.atomic(conjunction("{$x sub relationship;}", graph), graph).getAtom();
+        Atom hasAtom = ReasonerQueries.atomic(conjunction("{$x has description;}", graph), graph).getAtom();
+        Atom relatesAtom = ReasonerQueries.atomic(conjunction("{reifiable-relation relates $x;}", graph), graph).getAtom();
+        Atom relatesAtom2 = ReasonerQueries.atomic(conjunction("{$x relates role1;}", graph), graph).getAtom();
+        Atom playsAtom = ReasonerQueries.atomic(conjunction("{$x plays role1;}", graph), graph).getAtom();
+        assertThat(subAtom.getApplicableRules().collect(toSet()), empty());
+        assertThat(hasAtom.getApplicableRules().collect(toSet()), empty());
+        assertThat(relatesAtom.getApplicableRules().collect(toSet()), empty());
+        assertThat(relatesAtom2.getApplicableRules().collect(toSet()), empty());
+        assertThat(playsAtom.getApplicableRules().collect(toSet()), empty());
+    }
+
+    @Test
     public void testRuleApplicability_AmbiguousRoleMapping(){
         GraknTx graph = ruleApplicabilitySet.tx();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous

@@ -23,13 +23,10 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import com.google.common.collect.Iterators;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -54,20 +51,10 @@ public class CumulativeState extends QueryStateBase{
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
 
-        if (subQueries.isEmpty()){
-            this.feederStateIterator = Collections.emptyIterator();
-        } else {
-
-            ReasonerQueryImpl query = subQueries.removeFirst();
-            //ResolutionState resolutionState = query.subGoal(sub, u, this, subGoals, cache);
-            //List<ResolutionState> sgs = query.subGoals(sub, u, this, subGoals, cache).collect(Collectors.toList());
-            //this.feederStateIterator = !subQueries.isEmpty() ?
-                    //Iterators.singletonIterator(subQueries.removeFirst().subGoal(sub, u, this, subGoals, cache)) :
-                    //Iterators.singletonIterator(subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator().next()) :
-            this.feederStateIterator = query.subGoals(sub, u, this, subGoals, cache).iterator();
-            //this.feederStateIterator =  Iterators.singletonIterator(resolutionState);
-                    //Collections.emptyIterator();
-        }
+        //NB: we need lazy subGoal initialisation here, otherwise they are marked as visited before visit happens
+        this.feederStateIterator = !subQueries.isEmpty()?
+                subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() :
+                Collections.emptyIterator();
     }
 
     @Override

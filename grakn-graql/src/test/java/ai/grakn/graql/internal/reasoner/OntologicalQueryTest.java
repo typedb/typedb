@@ -22,21 +22,18 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.SampleKBContext;
+import com.google.common.collect.Sets;
 import java.util.List;
-import java.util.stream.Stream;
-import org.apache.cassandra.cql.Relation;
-import org.junit.ClassRule;
+import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
-import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static org.junit.Assert.assertEquals;
 
 public class OntologicalQueryTest {
@@ -44,8 +41,8 @@ public class OntologicalQueryTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @ClassRule
-    public static final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
+    @Rule
+    public final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
 
     /** HasAtom **/
 
@@ -98,6 +95,23 @@ public class OntologicalQueryTest {
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
+    @Test
+    public void allTypesAGivenTypeSubs(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match binary sub $x; get;";
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+
+        assertEquals(
+                answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet()),
+                Sets.newHashSet(
+                        tx.getSchemaConcept(Label.of("thing")),
+                        tx.getSchemaConcept(Label.of("relationship")),
+                        tx.getSchemaConcept(Label.of("reifiable-relation")),
+                        tx.getSchemaConcept(Label.of("binary"))
+                        ));
+    }
+
     /** PlaysAtom **/
 
     @Test
@@ -127,11 +141,20 @@ public class OntologicalQueryTest {
         List<Answer> relations = qb.<GetQuery>parse("match $x isa relationship;get;").execute();
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
         assertEquals(answers.size(), relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3);
-
     }
 
     @Test
-    public void sanityCheck0(){
+    public void sanityCheck01(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match $x isa ternary;get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 2);
+    }
+
+    @Test
+    public void sanityCheck02(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa relationship;get;";
@@ -141,20 +164,58 @@ public class OntologicalQueryTest {
     }
 
     @Test
-    public void sanityCheck(){
+    public void sanityCheck03(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match ($u, $v) isa $type; get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 25);
     }
 
     @Test
-    public void sanityCheck2(){
+    public void allRolesGivenRelationRelates(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
-        String queryString = "match $r ($u, $v) isa binary;get;";
+        String queryString = "match reifying-relation relates $x; get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(
+                answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet()),
+                tx.getRelationshipType("reifying-relation").relates().collect(Collectors.toSet())
+        );
+    }
+
+    /** meta concepts **/
+
+    @Test
+    public void allInstancesOfMetaEntity(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        long noOfEntities = tx.admin().getMetaEntityType().instances().count();
+        String queryString = "match $x isa entity;get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), noOfEntities);
+    }
+
+    @Test
+    public void allInstancesOfMetaRelation(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match $x isa relationship;get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 13);
+    }
+
+    @Test
+    public void allInstancesOfMetaResource(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match $x isa attribute;get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 2);
     }
 }
