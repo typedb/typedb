@@ -165,14 +165,6 @@ public class ReasoningTests {
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
 
-    @Test //Expected result: Empty as ids are non-existent.
-    public void reasoningWithNonExistentIds() {
-        QueryBuilder qb = testSet1.tx().graql().infer(true);
-        String queryString = "match $x id 'V123'; $y id 'V456'; ($x, $y); get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertThat(answers, empty());
-    }
-
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationWithVarDuplicates() {
         QueryBuilder qb = testSet1.tx().graql().infer(true);

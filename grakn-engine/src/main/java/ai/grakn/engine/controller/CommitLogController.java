@@ -50,10 +50,8 @@ import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
 public class CommitLogController {
     private final TaskManager manager;
     private final PostProcessor postProcessor;
-    private final int postProcessingDelay;
 
-    public CommitLogController(Service spark, int postProcessingDelay, TaskManager manager, PostProcessor postProcessor){
-        this.postProcessingDelay = postProcessingDelay;
+    public CommitLogController(Service spark, TaskManager manager, PostProcessor postProcessor){
         this.manager = manager;
         this.postProcessor = postProcessor;
 
@@ -72,7 +70,7 @@ public class CommitLogController {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, REST.Request.KEYSPACE_PARAM));
 
         // Things to post process
-        TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);
+        TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
         TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
         // TODO Use an engine wide executor here
