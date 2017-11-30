@@ -119,11 +119,11 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @SuppressWarnings("unchecked")
     @Override
     public Attribute<D> putAttribute(D value) {
-        return putAttribute(value, false, 1);
+        return putAttribute(value, false, 0);
     }
 
     public Attribute<D> putAttributeInferred(D value) {
-        return putAttribute(value, true, 1);
+        return putAttribute(value, true, 0);
     }
 
     private Attribute<D> putAttribute(D value, boolean isInferred, int numAttempt) {
@@ -146,7 +146,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
                     vertex().tx().txCache().getNewAttributes().remove(index);
 
                     //Try Again
-                    LOG.warn(String.format("Failed to create attribute {%s} after {%s} attempts. Trying again . . . ", attribute, numAttempt));
+                    LOG.warn(String.format("Failed to create attribute {%s} after {%s} attempts. Trying again . . . ", attribute, numAttempt + 1));
                     return putAttribute(value, isInferred, numAttempt + 1);
                 }
             }

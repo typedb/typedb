@@ -150,7 +150,7 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
 
             if(traversal.hasNext()){
                 Vertex vertex = traversal.next();
-                if(traversal.hasNext() || !vertex.equals(element())){
+                if(!vertex.equals(element()) || traversal.hasNext()){
                     throw PropertyNotUniqueException.cannotChangeProperty(element(), traversal.next(), key, value);
                 }
             }
