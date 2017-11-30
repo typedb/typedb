@@ -233,15 +233,19 @@ export default {
         this.state.eventHub.$emit('show-new-navbar-element',this.typesElementId);
       }
     },
-    onErrorMessage(message) {
+    onErrorMessage(error) {
       this.showMessagePanel = true;
       this.showTypeInstances = false;
-      this.message = JSON.parse(message).exception;
-            // set the panel class to be an error class
+      if(typeof error === "object"){
+        this.message = error.message;
+        console.log(error.stack);
+      }
+      else{
+        this.message = JSON.parse(error).message;
+      }
     },
     onWarningMessage(message) {
       toastr.info(message);
-            // set the panel class to be an error class
     },
     runQuery(ev) {
       let query = this.codeMirror.getValue().trim();

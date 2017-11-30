@@ -17,8 +17,11 @@
  */
 /* @flow */
 
-import User from './User';
+const FETCH_ALL_ATTRIBUTES_QUERY = 'match $x sub attribute; get;';
+const FETCH_ALL_ROLES_QUERY = 'match $x sub role; get;';
 
+
+import User from './User';
 /*
  * REST API client for Grakn Engine.
  */
@@ -107,7 +110,7 @@ export default {
              */
   graqlShell(query:string) {
     return this.request({
-      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&limitEmbedded=${User.getQueryLimit()}`,
+      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}`,
       contentType: 'application/text',
       accepts: 'application/text',
       requestType: 'POST',
@@ -117,20 +120,28 @@ export default {
             /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
-  graqlHAL(query:string) {
+  graqlQuery(query:string) {
       // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
-      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&limitEmbedded=${User.getQueryLimit()}&defineAllVars=true`,
+      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&defineAllVars=true`,
       requestType: 'POST',
       data: query,
     });
+  },
+
+  fetchAttributes() {
+    this.graqlQuery(FETCH_ALL_ATTRIBUTES_QUERY);
+  },
+
+  fetchRoles() {
+    this.graqlQuery(FETCH_ALL_ROLES_QUERY);
   },
             /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
   graqlAnalytics(query:string) {
     return this.request({
-      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&limitEmbedded=${User.getQueryLimit()}`,
+      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}`,
       requestType: 'POST',
       accepts: 'application/text',
       data: query,
@@ -149,14 +160,14 @@ export default {
              */
   getMetaTypes() {
     return this.request({
-      url: `/kb/schema?keyspace=${User.getCurrentKeySpace()}`,
+      url: `/kb/${User.getCurrentKeySpace()}`,
       accepts: 'application/json',
     });
   },
 
   getConceptTypes(id:string) {
     return this.request({
-      url: `/dashboard/types/${id}?keyspace=${User.getCurrentKeySpace()}&limitEmbedded=${User.getQueryLimit()}`,
+      url: `/dashboard/types/${id}?keyspace=${User.getCurrentKeySpace()}`,
       accepts: 'application/json',
     });
   },

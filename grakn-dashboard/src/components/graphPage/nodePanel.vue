@@ -125,7 +125,7 @@ h4{
 <script>
 /* @flow */
 
-import { URL_REGEX } from '../../js/HAL/HALParser';
+import { URL_REGEX } from '../../js/Parser/Parser';
 
 export default {
   name: 'NodePanel',

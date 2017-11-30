@@ -48,8 +48,7 @@ function doubleClick(param) {
     EngineClient.request({
       url: nodeObj.href,
     }).then(resp => CanvasHandler.onGraphResponse(resp, false, false, false, node))
-    .then((instances) => { CanvasHandler.loadInstancesAttributes(0, instances); })
-    .catch((err) => { EventHub.$emit('error-message', err.message); });
+    .catch((err) => { EventHub.$emit('error-message', err); });
   }
 }
 
@@ -71,11 +70,14 @@ function blurNode() {
 }
 
 function requestExplore(nodeObj) {
+  //This function should only show attributes nodes now.
   if (nodeObj.explore) {
     EngineClient.request({
       url: nodeObj.explore,
-    }).then(resp => CanvasHandler.onGraphResponse(resp, false, true, true, nodeObj.id), (err) => {
-      EventHub.$emit('error-message', err.message);
+    })
+    .then(resp => CanvasHandler.onGraphResponse(resp, false, true, true, nodeObj.id))
+    .catch((err) => {
+      EventHub.$emit('error-message', err);
     });
   }
 }
