@@ -40,7 +40,7 @@ public abstract class Entity extends Thing {
     public static Entity create(
             @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            @JsonProperty("type") Link type,
+            @JsonProperty("type") EmbeddedType type,
             @JsonProperty("attributes") Set<Link> attributes,
             @JsonProperty("keys") Set<Link> keys,
             @JsonProperty("relationships") Set<RolePlayer> relationships){

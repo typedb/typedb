@@ -90,7 +90,7 @@ public class ConceptBuilder {
     //TODO: This will scale poorly with super nodes. Need to introduce some sort of paging maybe?
     private static Thing buildThing(ai.grakn.concept.Thing thing) {
         Link selfLink = Link.create(thing);
-        Link type = Link.create(thing.type());
+        EmbeddedType type = EmbeddedType.create(thing.type());
         Set<Link> attributes = thing.attributes().map(Link::create).collect(Collectors.toSet());
         Set<Link> keys = thing.keys().map(Link::create).collect(Collectors.toSet());
 
@@ -133,15 +133,15 @@ public class ConceptBuilder {
         }
     }
 
-    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, Link type, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
+    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, EmbeddedType type, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
         return Entity.create(entity.getId(), selfLink, type, attributes, keys, relationships);
     }
 
-    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, Link type, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
+    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, EmbeddedType type, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
         return Attribute.create(attribute.getId(), selfLink, type, attributes, keys, relationships, attribute.type().getDataType().getName(), attribute.getValue().toString());
     }
 
-    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, Link type, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
+    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, EmbeddedType type, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
         //Get all the role players and roles part of this relationship
         Set<RolePlayer> roleplayers = new HashSet<>();
         relationship.allRolePlayers().forEach((role, things) -> {

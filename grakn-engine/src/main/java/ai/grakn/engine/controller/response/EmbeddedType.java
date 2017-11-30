@@ -18,28 +18,32 @@
 
 package ai.grakn.engine.controller.response;
 
+import ai.grakn.concept.Label;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Set;
+import com.google.auto.value.AutoValue;
 
 /**
  * <p>
- *     Wrapper class for {@link ai.grakn.concept.Thing}
+ *     Wrapper class for a light representation of {@link ai.grakn.concept.Type} which is embedded in the
+ *     {@link Thing} representation
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public abstract class Thing extends Concept {
+@AutoValue
+public abstract class EmbeddedType {
+
+    @JsonProperty("@id")
+    public abstract Link selfLink();
 
     @JsonProperty
-    public abstract EmbeddedType type();
+    public abstract Label label();
 
-    @JsonProperty
-    public abstract Set<Link> attributes();
+    public static EmbeddedType create(@JsonProperty("@id") Link selfLink, @JsonProperty("label") Label label){
+        return new AutoValue_EmbeddedType(selfLink, label);
+    }
 
-    @JsonProperty
-    public abstract Set<Link> keys();
-
-    @JsonProperty
-    public abstract Set<RolePlayer> relationships();
+    public static EmbeddedType create(ai.grakn.concept.Type type){
+        return create(Link.create(type), type.getLabel());
+    }
 }
