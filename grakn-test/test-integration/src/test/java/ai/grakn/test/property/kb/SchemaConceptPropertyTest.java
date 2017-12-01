@@ -110,16 +110,16 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenASchemaConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
-            SchemaConcept subConcept, long seed) {
-        SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(subConcept), seed);
+            @Open GraknTx tx, @FromTx SchemaConcept subConcept, long seed) {
+        SchemaConcept superConcept = PropertyUtil.choose(tx.admin().sups(subConcept), seed);
         assertThat(superConcept.subs().collect(toSet()), hasItem(subConcept));
     }
 
     @Property
     public void whenASchemaConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
-            SchemaConcept superConcept, long seed) {
+            @Open GraknTx tx, @FromTx SchemaConcept superConcept, long seed) {
         SchemaConcept subConcept = PropertyUtil.choose(superConcept.subs(), seed);
-        assertThat(PropertyUtil.indirectSupers(subConcept), hasItem(superConcept));
+        assertThat(tx.admin().sups(subConcept).collect(toSet()), hasItem(superConcept));
     }
 
     @Property
