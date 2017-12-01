@@ -33,7 +33,7 @@ import ai.grakn.client.BatchExecutorClient;
 
 # Basic Usage
 
-The loader client can be instantiated by giving the engine URI. 
+The loader client can be instantiated by giving the engine URI.
 
 ```java
 BatchExecutorClient loader = BatchExecutorClient.newBuilderforURI(uri).build();

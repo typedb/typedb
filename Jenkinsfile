@@ -249,14 +249,19 @@ def runBuild() {
 
     //This sets properties in the Jenkins server.
     properties([
-            pipelineTriggers([
-                    issueCommentTrigger('.*!rtg.*')
-            ]),
-            buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+        pipelineTriggers([
+            issueCommentTrigger('.*!rtg.*')
+        ]),
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
     ])
 
     if (!isMainBranch()) {
         stopAllRunningBuildsForThisJob()
+
+        //Keep fewer artifacts for PRs
+        properties([
+            buildDiscarder(logRotator(numToKeepStr: '7', artifactNumToKeepStr: '1'))
+        ])
     }
 
     // This is a map that we fill with jobs to perform in parallel, name -> job closure
