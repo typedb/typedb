@@ -23,7 +23,6 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.rule.SampleKBContext;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -149,8 +148,6 @@ public class QueryValidityTest {
         assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
     }
 
-    //TODO will solve in another PR
-    @Ignore
     @Test
     public void whenQueryingForIllegalResource_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);

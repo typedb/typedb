@@ -20,6 +20,7 @@ package ai.grakn.dist;
 
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.migration.csv.CSVMigrator;
+import ai.grakn.migration.export.Main;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.migration.xml.XmlMigrator;
@@ -33,17 +34,18 @@ import java.util.Arrays;
  */
 public class DistGraql {
 
+    /**
+     *
+     * Invocation from bash script 'graql'
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         DistGraql application = new DistGraql();
-        try {
-            application.run(args);
-        } catch (RuntimeException ex) {
-            System.out.println(ex.getMessage());
-        }
-
+        application.run(args);
     }
 
-    private void run(String[] args) {
+    public void run(String[] args) {
         String context = args.length > 0 ? args[0] : "";
 
         switch (context) {
@@ -75,7 +77,7 @@ public class DistGraql {
                 System.out.println("Owl migration not supported anymore");
                 break;
             case "export":
-                ai.grakn.migration.export.Main.main(valuesFrom(args, 1));
+                Main.main(valuesFrom(args, 1));
                 break;
             case "sql":
                 SQLMigrator.main(valuesFrom(args, 1));

@@ -47,3 +47,10 @@ grakn-test/test-biomed/data/*
 
 # Benchmark Files #
 grakn-test/test-integration/benchmarks/
+
+# Integration Test Files #
+grakn-package
+hadoop
+parameters_bi.log
+parameters_interactive.log
+social_network

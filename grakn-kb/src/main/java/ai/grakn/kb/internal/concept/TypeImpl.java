@@ -136,7 +136,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             vertex().tx().txCache().addedInstance(getId());
             if(isInferred) instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
         }
-        return producer.apply(instanceVertex, getThis());
+        V instance = producer.apply(instanceVertex, getThis());
+        assert instance != null : "producer should never return null";
+        return instance;
     }
 
     /**

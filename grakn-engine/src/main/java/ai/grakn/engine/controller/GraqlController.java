@@ -26,12 +26,18 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -47,6 +53,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -74,6 +83,7 @@ import static org.apache.http.HttpStatus.SC_OK;
 public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private static final JacksonPrinter printer = JacksonPrinter.create();
+    private static final int MAX_RETRY = 10;
     private final EngineGraknTxFactory factory;
     private final Timer executeGraql;
 
@@ -104,9 +114,8 @@ public class GraqlController {
             ),
             @ApiImplicitParam(name = ALLOW_MULTIPLE_QUERIES, dataType = "boolean", paramType = "query")
     })
-    private String executeGraql(Request request, Response response) {
+    private String executeGraql(Request request, Response response) throws RetryException, ExecutionException {
         response.type(APPLICATION_JSON);
-
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         String queryString = mandatoryBody(request);
 
@@ -121,16 +130,39 @@ public class GraqlController {
 
         //Execute the query and get the results
         LOG.trace(String.format("Executing graql statements: {%s}", queryString));
-        try (GraknTx tx = factory.tx(keyspace, WRITE); Timer.Context context = executeGraql.time()) {
-            QueryBuilder builder = tx.graql();
 
-            infer.ifPresent(builder::infer);
+        return executeFunctionWithRetrying(() -> {
+            try (GraknTx tx = factory.tx(keyspace, WRITE); Timer.Context context = executeGraql.time()) {
+                QueryBuilder builder = tx.graql();
+
+                infer.ifPresent(builder::infer);
 
             QueryParser parser = builder.parser();
             defineAllVars.ifPresent(parser::defineAllVars);
 
+
             response.status(SC_OK);
-            return executeQuery(tx, queryString, multiQuery, parser);
+
+            return executeQuery(tx, queryString, multiQuery, parser);}
+        });
+    }
+
+    private String executeFunctionWithRetrying(Callable<String> callable) throws RetryException, ExecutionException {
+        try {
+            Retryer<String> retryer = RetryerBuilder.<String>newBuilder()
+                .retryIfExceptionOfType(TemporaryWriteException.class)
+                .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
+                .build();
+
+            return retryer.call(callable);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            } else {
+                throw e;
+            }
         }
     }
 
