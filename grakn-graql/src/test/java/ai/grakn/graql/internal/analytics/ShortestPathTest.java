@@ -68,7 +68,6 @@ public class ShortestPathTest {
     private ConceptId relationId13;
     private ConceptId relationId24;
     private ConceptId relationId34;
-//    private ConceptId relationId1A12;
 
     public GraknSession session;
 
@@ -240,6 +239,162 @@ public class ShortestPathTest {
     }
 
     @Test
+    public void testMultiplePathsSharing1Instance() throws InvalidKBException {
+        ConceptId startId;
+        ConceptId endId;
+        Set<List<ConceptId>> correctPaths = new HashSet<>();
+
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            EntityType entityType = graph.putEntityType(thing);
+
+            Role role1 = graph.putRole("role1");
+            Role role2 = graph.putRole("role2");
+            entityType.plays(role1).plays(role2);
+            RelationshipType relationshipType1 = graph.putRelationshipType(related).relates(role1).relates(role2);
+
+            Role role3 = graph.putRole("role3");
+            Role role4 = graph.putRole("role4");
+            entityType.plays(role3).plays(role4);
+            RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated).relates(role3).relates(role4);
+
+            Entity start = entityType.addEntity();
+            Entity end = entityType.addEntity();
+            Entity middle = entityType.addEntity();
+
+            startId = start.getId();
+            endId = end.getId();
+            ConceptId middleId = middle.getId();
+
+            ConceptId assertion11 = relationshipType1.addRelationship()
+                    .addRolePlayer(role1, start)
+                    .addRolePlayer(role2, middle).getId();
+
+            ConceptId assertion12 = relationshipType1.addRelationship()
+                    .addRolePlayer(role1, middle)
+                    .addRolePlayer(role2, end).getId();
+
+            ConceptId assertion21 = relationshipType2.addRelationship()
+                    .addRolePlayer(role3, start)
+                    .addRolePlayer(role4, middle).getId();
+
+            ConceptId assertion22 = relationshipType2.addRelationship()
+                    .addRolePlayer(role3, middle)
+                    .addRolePlayer(role4, end).getId();
+
+
+            correctPaths.add(Lists.newArrayList(startId, assertion11, middleId, assertion12, endId));
+            correctPaths.add(Lists.newArrayList(startId, assertion11, middleId, assertion22, endId));
+            correctPaths.add(Lists.newArrayList(startId, assertion21, middleId, assertion12, endId));
+            correctPaths.add(Lists.newArrayList(startId, assertion21, middleId, assertion22, endId));
+
+            graph.commit();
+        }
+
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
+            List<List<Concept>> allPaths = graph.graql().compute().path().from(startId).to(endId).execute();
+            assertEquals(correctPaths.size(), allPaths.size());
+            Set<List<ConceptId>> computedPaths = allPaths.stream().map(path ->
+                    path.stream().map(Concept::getId).collect(Collectors.toList())).collect(Collectors.toSet());
+            assertEquals(correctPaths, computedPaths);
+        }
+    }
+
+    @Test
+    public void testMultiplePathsSharing3Instances() throws InvalidKBException {
+        ConceptId startId;
+        ConceptId endId;
+        Set<List<ConceptId>> correctPaths = new HashSet<>();
+
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            EntityType entityType = graph.putEntityType(thing);
+
+            Role role1 = graph.putRole("role1");
+            Role role2 = graph.putRole("role2");
+            entityType.plays(role1).plays(role2);
+            RelationshipType relationshipType1 = graph.putRelationshipType(related).relates(role1).relates(role2);
+
+            Role role3 = graph.putRole("role3");
+            Role role4 = graph.putRole("role4");
+            Role role5 = graph.putRole("role5");
+            entityType.plays(role3).plays(role4).plays(role5);
+            RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated)
+                    .relates(role3).relates(role4).relates(role5);
+
+            Entity start = entityType.addEntity();
+            Entity end = entityType.addEntity();
+            Entity middle = entityType.addEntity();
+            Entity middleA = entityType.addEntity();
+            Entity middleB = entityType.addEntity();
+
+            startId = start.getId();
+            endId = end.getId();
+            ConceptId middleId = middle.getId();
+            ConceptId middleAId = middleA.getId();
+            ConceptId middleBId = middleB.getId();
+
+            ConceptId assertion1 = relationshipType1.addRelationship()
+                    .addRolePlayer(role1, start)
+                    .addRolePlayer(role2, middle).getId();
+
+            ConceptId assertion2 = relationshipType2.addRelationship()
+                    .addRolePlayer(role3, middle)
+                    .addRolePlayer(role4, middleA)
+                    .addRolePlayer(role5, middleB).getId();
+
+            ConceptId assertion1A = relationshipType1.addRelationship()
+                    .addRolePlayer(role1, middleA)
+                    .addRolePlayer(role2, end).getId();
+
+            ConceptId assertion1B = relationshipType1.addRelationship()
+                    .addRolePlayer(role1, middleB)
+                    .addRolePlayer(role2, end).getId();
+
+            List<ConceptId> sharedPath = Lists.newArrayList(startId, assertion1, middleId, assertion2);
+            List<ConceptId> path1 = new ArrayList<>(sharedPath);
+            path1.addAll(Lists.newArrayList(middleAId, assertion1A, endId));
+            List<ConceptId> path2 = new ArrayList<>(sharedPath);
+            path2.addAll(Lists.newArrayList(middleBId, assertion1B, endId));
+            correctPaths.add(path1);
+            correctPaths.add(path2);
+
+            graph.commit();
+        }
+
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
+            List<List<Concept>> allPaths = graph.graql().compute().path().from(startId).to(endId).execute();
+            assertEquals(correctPaths.size(), allPaths.size());
+            Set<List<ConceptId>> computedPaths = allPaths.stream().map(path ->
+                    path.stream().map(Concept::getId).collect(Collectors.toList())).collect(Collectors.toSet());
+            assertEquals(correctPaths, computedPaths);
+        }
+    }
+
+    @Test
+    public void testMultiplePathInSubGraph() throws Exception {
+        List<String> correctPath;
+        List<List<Concept>> allPaths;
+        addSchemaAndEntities();
+
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
+//            System.out.println("tx.get = " + graph.getConcept(entityId2).asThing().type());
+
+            correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue(), entityId2.getValue(),
+                    relationId24.getValue(), entityId4.getValue());
+            allPaths = graph.graql().compute().path().in(thing, anotherThing).to(entityId1).from(entityId4).execute();
+            assertEquals(0, allPaths.size());
+
+            System.out.println("entityId1 = " + entityId1);
+            System.out.println("entityId2 = " + entityId2);
+            System.out.println("tx.get = " + graph.getConcept(entityId2).asThing().type());
+            allPaths = graph.graql().compute().path().in(thing, related).from(entityId1).to(entityId2).execute();
+
+            allPaths = graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1).execute();
+            assertEquals(correctPath.size(), allPaths.size());
+        }
+    }
+
+
+    @Test
     public void testResourceEdges() {
         ConceptId startId;
         ConceptId endId;
@@ -385,18 +540,6 @@ public class ShortestPathTest {
         for (int i = 0; i < correctPath.size(); i++) {
             assertEquals(correctPath.get(i), computedPath.get(i).getId());
         }
-//
-//        if (computedPath.isEmpty()) {
-//            return correctPath.isEmpty();
-//        } else {
-//            if (computedPath.size() != correctPath.size()) return false;
-//            ListIterator<Concept> elements = computedPath.listIterator();
-//            boolean returnState = true;
-//            while (elements.hasNext()) {
-//                returnState &= (correctPath.get(elements.nextIndex()).equals(elements.next().getId()));
-//            }
-//            return returnState;
-//        }
     }
 
     private void checkPath(List<String> correctPath, List<Concept> computedPath) {
@@ -445,41 +588,4 @@ public class ShortestPathTest {
             graph.commit();
         }
     }
-//    private void addSchemaAndEntities2() throws InvalidKBException {
-//        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-//            EntityType entityType = graph.putEntityType(thing);
-//
-//            Entity entity1 = entityType.addEntity();
-//            Entity entity2 = entityType.addEntity();
-//            Entity entity3 = entityType.addEntity();
-//
-//            entityId1 = entity1.getId();
-//            entityId2 = entity2.getId();
-//            entityId3 = entity3.getId();
-//
-//            Role role1 = graph.putRole("role1");
-//            Role role2 = graph.putRole("role2");
-//            entityType.plays(role1).plays(role2);
-//            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
-//
-//            Role role3 = graph.putRole("role3");
-//            Role role4 = graph.putRole("role4");
-//            entityType.plays(role3).plays(role4);
-//            relationshipType.plays(role3).plays(role4);
-//            RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated).relates(role3).relates(role4);
-//
-//            relationId12 = relationshipType.addRelationship()
-//                    .addRolePlayer(role1, entity1)
-//                    .addRolePlayer(role2, entity2).getId();
-//            relationId13 = relationshipType.addRelationship()
-//                    .addRolePlayer(role1, entity1)
-//                    .addRolePlayer(role2, entity3).getId();
-//
-//            relationId1A12 = relationshipType2.addRelationship()
-//                    .addRolePlayer(role3, entity1)
-//                    .addRolePlayer(role4, graph.getConcept(relationId12)).getId();
-//
-//            graph.commit();
-//        }
-//    }
 }
