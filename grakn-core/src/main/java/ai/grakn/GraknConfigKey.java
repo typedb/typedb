@@ -68,8 +68,8 @@ public abstract class GraknConfigKey<T> {
 
     public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
 
-    // Delay for the post processing task in milliseconds
-    public static final GraknConfigKey<Integer> POST_PROCESSING_TASK_DELAY = key("tasks.postprocessing.delay", INT);
+    public static final GraknConfigKey<Integer> TASK_DELAY = key("tasks.delay", INT);
+
     public static final GraknConfigKey<Integer> TASKS_RETRY_DELAY = key("tasks.retry.delay", INT);
 
     public static final GraknConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);

@@ -56,7 +56,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final HttpHandler httpHandler;
     private final EngineID engineId;
 
-    protected GraknEngineServer(GraknConfig prop, TaskManager taskManager, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, HttpHandler httpHandler, EngineID engineId) {
+    public GraknEngineServer(GraknConfig prop, TaskManager taskManager, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, HttpHandler httpHandler, EngineID engineId) {
         this.prop = prop;
         this.graknEngineStatus = graknEngineStatus;
         // Redis connection pool

@@ -11,7 +11,7 @@ role2 sub role;
 
 entity1 sub entity
     has name
-	plays contained;
+    plays contained;
 
 entity2 sub entity
     plays contained
@@ -26,25 +26,25 @@ entity3 sub entity
 #Relations
 
 containment sub relationship
-	relates contained
-	relates container;
+    relates contained
+    relates container;
 
 relation1 sub relationship
-	relates role1
-	relates role2;
+    relates role1
+    relates role2;
 
 name sub attribute datatype string;
 
 #Rules
 
 rule-1 sub rule
-	when {
-		(contained:$x, container: $z) isa containment;
-		(contained:$z, container: $y) isa containment;
-	}
-	then {
-		(contained: $x, container: $y) isa containment;
-	};
+    when {
+    	(contained:$x, container: $z) isa containment;
+    	(contained:$z, container: $y) isa containment;
+    }
+    then {
+    	(contained: $x, container: $y) isa containment;
+    };
 
 insert
 

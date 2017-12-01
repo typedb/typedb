@@ -3,16 +3,16 @@ define
 name sub attribute
     datatype string;
 age sub attribute
-	datatype long;
+    datatype long;
 person sub entity;
 person has name;
 person has age;
 
 weight sub attribute
-	datatype double;
+    datatype double;
 
 lang sub attribute
-	datatype string;
+    datatype string;
 software sub entity;
 software has name;
 software has lang;
@@ -24,9 +24,9 @@ person plays programmer;
 software plays programmed;
 
 programming sub relationship
-	relates programmer
-	relates programmed
-	has weight;
+    relates programmer
+    relates programmed
+    has weight;
 
 knower sub role;
 known-about sub role;
@@ -35,9 +35,9 @@ person plays knower;
 person plays known-about;
 
 knows sub relationship
-	relates knower
-	relates known-about
-	has weight;
+    relates knower
+    relates known-about
+    has weight;
 
 insert
 

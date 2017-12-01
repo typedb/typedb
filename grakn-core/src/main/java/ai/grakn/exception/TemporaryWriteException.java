@@ -18,6 +18,8 @@
 
 package ai.grakn.exception;
 
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
 import static ai.grakn.util.ErrorMessage.LOCKING_EXCEPTION;
 
 /**
@@ -44,5 +46,13 @@ public class TemporaryWriteException extends GraknBackendException{
      */
     public static TemporaryWriteException temporaryLock(Exception e){
         return new TemporaryWriteException(LOCKING_EXCEPTION.getMessage(), e);
+    }
+
+    /**
+     * Thrown when multiple transactions overlap in using an index. This results in incomplete vertices being shared
+     * between transactions.
+     */
+    public static TemporaryWriteException indexOverlap(Vertex vertex, Exception e){
+        return new TemporaryWriteException(String.format("Index overlap has led to the accidental sharing of a partially complete vertex {%s}", vertex), e);
     }
 }

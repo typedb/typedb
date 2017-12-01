@@ -3,9 +3,9 @@
 set -e
 
 # validate the number of arguments
-if [ "$#" -ne "1" ]; then
-	echo "Needs one argument that is the module name" >&2
-	exit 1
+if [ "$#" -lt "1" ]; then
+    echo "Needs one argument that is the module name" >&2
+    exit 1
 fi
 
 MODULE_NAME=$1

@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.util.CommonUtil;
@@ -57,8 +58,14 @@ class JsonPrinter implements Printer<Json> {
         }
 
         if (concept.isRule()) {
-            json.set("when", concept.asRule().getWhen().toString());
-            json.set("then", concept.asRule().getThen().toString());
+            Pattern when = concept.asRule().getWhen();
+            if (when != null) {
+                json.set("when", when.toString());
+            }
+            Pattern then = concept.asRule().getThen();
+            if (then != null) {
+                json.set("then", then.toString());
+            }
         }
 
         return json;

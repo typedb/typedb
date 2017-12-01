@@ -2,4 +2,4 @@
 
 source scripts/env.sh
 
-validate.sh
+validate.sh ${@:2}

@@ -35,7 +35,7 @@
                     </systemPropertyVariables>
                     <!-- uncomment the following to be able to run only specific packages with
                         for example -DtestGroup=ai/grakn/test/migration/sql
-					<includes>
+    				<includes>
                     	<include>**/${testGroup}/*Test.java</include>
                 	</includes>
                 -->

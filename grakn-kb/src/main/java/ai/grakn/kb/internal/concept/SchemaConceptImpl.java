@@ -114,24 +114,11 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
 
-    /**
-     *
-     * @return The supertypes of this
-     */
     @Override
     public Stream<T> sups() {
-        return this.filterSuperSet(this.superSet());
-    }
-
-    /**
-     *
-     * @return All outgoing sub parents including itself
-     */
-    public Stream<T> superSet() {
         Set<T> superSet= new HashSet<>();
 
-        superSet.add(getThis());
-        T superParent = sup();
+        T superParent = getThis();
 
         while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
             superSet.add(superParent);
@@ -141,17 +128,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         }
 
         return superSet.stream();
-    }
-
-
-    /**
-     * Filters the supers not to return meta schema nodes defined in {@link Schema.MetaSchema}
-     * @param superSet
-     * @return filtered supertypes
-     */
-    public Stream<T> filterSuperSet(Stream<T> superSet) {
-        return superSet.filter(concept -> !Schema.MetaSchema.isMetaLabel(concept.getLabel()));
-
     }
 
     /**

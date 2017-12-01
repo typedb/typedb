@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary.type;
 
-import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
@@ -27,10 +26,9 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -46,7 +44,7 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class RelatesAtom extends TypeAtom {
+public class RelatesAtom extends OntologicalAtom {
     public RelatesAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}
     private RelatesAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
@@ -60,11 +58,6 @@ public class RelatesAtom extends TypeAtom {
     @Override
     public Atomic copy(){
         return new RelatesAtom(this);
-    }
-
-    @Override
-    public Set<String> validateAsRuleHead(Rule rule) {
-        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
     }
 
     @Override

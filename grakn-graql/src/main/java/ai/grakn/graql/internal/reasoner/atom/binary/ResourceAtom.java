@@ -150,8 +150,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public int hashCode() {
-        int hashCode = 1;
-        hashCode = this.alphaEquivalenceHashCode();
+        int hashCode = this.alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
