@@ -101,16 +101,6 @@ public class JsonPrinterTest {
     }
 
     @Test
-    public void whenGettingJsonReprOfMetaRule_ThereIsNoWhenAndThen() {
-        ConceptId id = movieContext.tx().admin().getMetaRule().getId();
-        Json expected = Json.object(
-                "id", id.getValue(),
-                "name", Schema.MetaSchema.RULE.getLabel().getValue()
-        );
-        assertJsonEquals(expected, movieContext.tx().admin().getMetaRule());
-    }
-
-    @Test
     public void testJsonEntityType() {
         ConceptId id = movieContext.tx().getEntityType("movie").getId();
         assertJsonEquals(Json.object("id", id.getValue(), "name", "movie", "sub", "production"), movieContext.tx().getEntityType("movie"));

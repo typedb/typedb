@@ -19,35 +19,23 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
-import ai.grakn.Keyspace;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
+import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
-import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.mockito.InOrder;
-
-import java.util.Optional;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonResponse;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
-import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -55,10 +43,12 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -66,53 +56,62 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerInsertTest {
 
-    private final GraknTx tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
-
-    private static final Keyspace keyspace = Keyspace.of("akeyspace");
-    private static TaskManager taskManager = mock(TaskManager.class);
-    private static PostProcessor postProcessor = mock(PostProcessor.class);
+    private static GraknTx mockTx;
+    private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
+    public static SampleKBContext sampleKB = MovieKB.context();
+
+    @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, taskManager, postProcessor, new MetricRegistry());
+        new GraqlController(mockFactory, spark, new MetricRegistry());
     });
 
     @Before
     public void setupMock(){
-        when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
+        mockQueryBuilder = mock(QueryBuilder.class);
 
-        // Describe expected response to a typical query
-        Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
-        Concept person = mock(Concept.class, RETURNS_DEEP_STUBS);
-        when(person.getId()).thenReturn(ConceptId.of("V123"));
-        when(person.isThing()).thenReturn(true);
-        when(person.asThing().type().getLabel()).thenReturn(Label.of("person"));
+        when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
+        when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
 
-        when(query.execute()).thenReturn(ImmutableList.of(
-                new QueryAnswer(ImmutableMap.of(var("x"), person))
-        ));
+        QueryParser mockParser = mock(QueryParser.class);
+
+        when(mockQueryBuilder.parser()).thenReturn(mockParser);
+        when(mockParser.parseQuery(any()))
+                .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
+
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+
+        when(mockTx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(mockTx.graql()).thenReturn(mockQueryBuilder);
+
+        when(mockFactory.tx(eq(mockTx.keyspace()), any())).thenReturn(mockTx);
     }
 
     @Test
     public void POSTGraqlInsert_InsertWasExecutedOnGraph(){
-        String queryString = "insert $x isa movie;";
+        doAnswer(answer -> {
+            sampleKB.tx().commit();
+            return null;
+        }).when(mockTx).commit();
 
-        sendRequest(queryString);
+        String query = "insert $x isa movie;";
 
-        Query<?> query = tx.graql().parser().parseQuery(queryString);
+        long genreCountBefore = sampleKB.tx().getEntityType("movie").instances().count();
 
-        InOrder inOrder = inOrder(query, tx.admin());
+        sendRequest(query);
 
-        inOrder.verify(query).execute();
-        inOrder.verify(tx.admin(), times(1)).commitSubmitNoLogs();
+        // refresh graph
+        sampleKB.tx().close();
+
+        long genreCountAfter = sampleKB.tx().getEntityType("movie").instances().count();
+
+        assertEquals(genreCountBefore + 1, genreCountAfter);
     }
 
     @Test
     public void POSTMalformedGraqlQuery_ResponseStatusIs400(){
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
-        when(tx.graql().parser().parseQuery("insert $x isa ;")).thenThrow(syntaxError);
-
         String query = "insert $x isa ;";
         Response response = sendRequest(query);
 
@@ -121,9 +120,6 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
-        when(tx.graql().parser().parseQuery("insert $x isa ;")).thenThrow(syntaxError);
-
         String query = "insert $x isa ;";
         Response response = sendRequest(query);
 
@@ -149,9 +145,6 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlDefineNotValid_ResponseStatusCodeIs422(){
-        GraknTxOperationException exception = GraknTxOperationException.invalidCasting(Object.class, Object.class);
-        when(tx.graql().parser().parseQuery("define person plays movie;").execute()).thenThrow(exception);
-
         Response response = sendRequest("define person plays movie;");
 
         assertThat(response.statusCode(), equalTo(422));
@@ -159,9 +152,6 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlDefineNotValid_ResponseExceptionContainsValidationErrorMessage(){
-        GraknTxOperationException exception = GraknTxOperationException.invalidCasting(Object.class, Object.class);
-        when(tx.graql().parser().parseQuery("define person plays movie;").execute()).thenThrow(exception);
-
         Response response = sendRequest("define person plays movie;");
 
         assertThat(exception(response), containsString("is not of type"));
@@ -190,74 +180,20 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlInsertWithTextType_ResponseIsCorrectText(){
-
         Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
 
         assertThat(stringResponse(response), containsString("isa person"));
     }
 
     @Test
-    public void POSTGraqlDefine_GraphCommitNeverCalled(){
+    public void POSTGraqlDefine_GraphCommitIsCalled(){
         String query = "define thingy sub entity;";
 
-        sendRequest(query);
-
-        verify(tx, times(0)).commit();
-    }
-
-    @Test
-    public void POSTGraqlDefine_GraphCommitSubmitNoLogsIsCalled(){
-        String query = "define thingy sub entity;";
-
-        verify(tx.admin(), times(0)).commitSubmitNoLogs();
+        verify(mockTx, times(0)).commit();
 
         sendRequest(query);
 
-        verify(tx.admin(), times(1)).commitSubmitNoLogs();
-    }
-
-    @Test
-    public void POSTGraqlInsertAndNoLogs_PPTaskIsNotSubmitted(){
-        String query = "insert $x isa person has name 'Alice';";
-
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.empty());
-
-        sendRequest(query);
-
-        verify(taskManager, times(1)).addTask(any(), any());
-    }
-
-    @Test
-    public void POSTGraqlInsertAndNoLogs_CountsAreNotUpdated(){
-        String query = "insert $x isa person has name 'Alice';";
-
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.empty());
-
-        sendRequest(query);
-
-        verify(postProcessor, times(1)).updateCounts(any(), any());
-    }
-
-    @Test
-    public void POSTGraqlInsert_PPTaskIsSubmitted(){
-        String query = "insert $x isa person has name 'Alice';";
-
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of("some logs"));
-
-        sendRequest(query);
-
-        verify(taskManager, times(1)).addTask(any(), any());
-    }
-
-    @Test
-    public void POSTGraqlInsert_CountsAreUpdated(){
-        String query = "insert $x isa person has name 'Alice';";
-
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of("{}"));
-
-        sendRequest(query);
-
-        verify(postProcessor, times(1)).updateCounts(tx.keyspace(), Json.object());
+        verify(mockTx, times(1)).commit();
     }
 
     private Response sendRequest(String query){
@@ -269,6 +205,6 @@ public class GraqlControllerInsertTest {
                 .accept(acceptType)
                 .queryParam(INFER, false)
                 .body(query)
-                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
     }
 }

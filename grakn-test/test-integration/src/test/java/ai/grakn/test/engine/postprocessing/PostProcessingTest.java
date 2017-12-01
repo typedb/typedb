@@ -26,6 +26,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
@@ -121,7 +123,16 @@ public class PostProcessingTest {
                                 Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        task.initialize(configuration, engine.config(), engine.server().factory(),
+        TaskSubmitter taskSubmitter = new TaskSubmitter() {
+            @Override
+            public void addTask(TaskState taskState, TaskConfiguration configuration) {
+            }
+
+            @Override
+            public void runTask(TaskState taskState, TaskConfiguration configuration) {
+            }
+        };
+        task.initialize(configuration, taskSubmitter, engine.config(), engine.server().factory(),
                 new MetricRegistry(), postProcessor);
 
         task.start();

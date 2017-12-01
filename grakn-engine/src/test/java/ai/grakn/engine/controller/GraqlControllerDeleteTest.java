@@ -19,22 +19,19 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
-import ai.grakn.Keyspace;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
+import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.mockito.InOrder;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
@@ -43,10 +40,12 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -54,48 +53,52 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerDeleteTest {
 
-    private final GraknTx tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+    private static GraknTx tx;
+    private static QueryBuilder mockQueryBuilder;
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
-    private static final Keyspace keyspace = Keyspace.of("akeyspace");
-    private static final TaskManager taskManager = mock(TaskManager.class);
-    private static final PostProcessor postProcessor = mock(PostProcessor.class);
-    private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
+    @ClassRule
+    public static SampleKBContext sampleKB = MovieKB.context();
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, taskManager, postProcessor, new MetricRegistry());
+        new GraqlController(mockFactory, spark, new MetricRegistry());
     });
 
     @Before
     public void setupMock(){
-        when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
+        mockQueryBuilder = mock(QueryBuilder.class);
+
+        when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
+        when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
+
+        QueryParser mockParser = mock(QueryParser.class);
+
+        when(mockQueryBuilder.parser()).thenReturn(mockParser);
+        when(mockParser.parseQuery(any()))
+                .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
+
+        tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+
+        when(tx.keyspace()).thenReturn(SampleKBLoader.randomKeyspace());
+        when(tx.graql()).thenReturn(mockQueryBuilder);
+
+        when(mockFactory.tx(eq(tx.keyspace()), any())).thenReturn(tx);
     }
 
     @Test
-    public void DELETEGraqlDelete_GraphCommitNeverCalled(){
+    public void DELETEGraqlDelete_GraphCommitCalled(){
         String query = "match $x isa person; limit 1; delete $x;";
-
-        sendRequest(query);
 
         verify(tx, times(0)).commit();
-    }
-
-    @Test
-    public void DELETEGraqlDelete_GraphCommitSubmitNoLogsCalled(){
-        String query = "match $x isa person; limit 1; delete $x;";
-
-        verify(tx.admin(), times(0)).commitSubmitNoLogs();
 
         sendRequest(query);
 
-        verify(tx.admin(), times(1)).commitSubmitNoLogs();
+        verify(tx, times(1)).commit();
     }
 
     @Test
     public void DELETEMalformedGraqlQuery_ResponseStatusIs400(){
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
-        when(tx.graql().parser().parseQuery("match $x isa ; delete;")).thenThrow(syntaxError);
-
         String query = "match $x isa ; delete;";
         Response response = sendRequest(query);
 
@@ -104,9 +107,6 @@ public class GraqlControllerDeleteTest {
 
     @Test
     public void DELETEMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
-        GraqlSyntaxException syntaxError = GraqlSyntaxException.parsingError("syntax error");
-        when(tx.graql().parser().parseQuery("match $x isa ; delete;")).thenThrow(syntaxError);
-
         String query = "match $x isa ; delete;";
         Response response = sendRequest(query);
 
@@ -132,26 +132,28 @@ public class GraqlControllerDeleteTest {
 
     @Test
     public void DELETEGraqlDelete_DeleteWasExecutedOnTx(){
-        String queryString = "match $x has title \"Godfather\"; delete $x;";
+        doAnswer(answer -> {
+            sampleKB.tx().commit();
+            return null;
+        }).when(tx).commit();
 
-        sendRequest(queryString);
+        String query = "match $x has title \"Godfather\"; delete $x;";
 
-        Query<?> query = tx.graql().parser().parseQuery(queryString);
+        long movieCountBefore = sampleKB.tx().getEntityType("movie").instances().count();
 
-        InOrder inOrder = inOrder(query, tx.admin());
+        sendRequest(query);
 
-        inOrder.verify(query).execute();
-        inOrder.verify(tx.admin(), times(1)).commitSubmitNoLogs();
+        // refresh graph
+        sampleKB.tx().close();
+
+        long movieCountAfter = sampleKB.tx().getEntityType("movie").instances().count();
+
+        assertEquals(movieCountBefore - 1, movieCountAfter);
     }
 
     @Test
     public void DELETEGraqlDeleteNotValid_ResponseStatusCodeIs422(){
-        GraknTxOperationException exception = GraknTxOperationException.cannotBeDeleted(mock(SchemaConcept.class));
-
         // Not allowed to delete roles with incoming edges
-        when(tx.graql().parser().parseQuery("undefine production-being-directed sub work;").execute())
-                .thenThrow(exception);
-
         Response response = sendRequest("undefine production-being-directed sub work;");
 
         assertThat(response.statusCode(), equalTo(422));
@@ -159,12 +161,7 @@ public class GraqlControllerDeleteTest {
 
     @Test
     public void DELETEGraqlDeleteNotValid_ResponseExceptionContainsValidationErrorMessage(){
-        GraknTxOperationException exception = GraknTxOperationException.cannotBeDeleted(mock(SchemaConcept.class));
-
         // Not allowed to delete roles with incoming edges
-        when(tx.graql().parser().parseQuery("undefine production-being-directed sub work;").execute())
-                .thenThrow(exception);
-
         Response response = sendRequest("undefine production-being-directed sub work;");
 
         assertThat(exception(response), containsString("cannot be deleted"));
@@ -182,6 +179,6 @@ public class GraqlControllerDeleteTest {
                 .queryParam(INFER, false)
                 .accept(APPLICATION_TEXT)
                 .body(query)
-                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, tx.keyspace().getValue()));
     }
 }

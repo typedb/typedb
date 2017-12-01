@@ -22,7 +22,6 @@ import ai.grakn.graql.Pattern;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
@@ -46,7 +45,6 @@ public interface Rule extends SchemaConcept {
      * @return A string representing the left hand side Graql query.
      */
     @CheckReturnValue
-    @Nullable
     Pattern getWhen();
 
     /**
@@ -56,7 +54,6 @@ public interface Rule extends SchemaConcept {
      * @return A string representing the right hand side Graql query.
      */
     @CheckReturnValue
-    @Nullable
     Pattern getThen();
 
     /**
