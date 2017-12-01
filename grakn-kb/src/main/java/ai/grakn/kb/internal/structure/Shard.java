@@ -20,7 +20,6 @@ package ai.grakn.kb.internal.structure;
 
 import ai.grakn.concept.Thing;
 import ai.grakn.kb.internal.concept.ConceptImpl;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

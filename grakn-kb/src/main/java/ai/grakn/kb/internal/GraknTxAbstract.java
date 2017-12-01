@@ -567,7 +567,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         String edgeId = id.getValue().substring(1);
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if (traversal.hasNext()) {
-            return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
+            return Optional.of(factory().buildConcept(factory().buildEdgeElement(traversal.next())));
         }
         return Optional.empty();
     }

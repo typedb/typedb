@@ -37,8 +37,6 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -63,7 +61,6 @@ import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
  * @author fppt
  */
 public final class ElementFactory {
-    private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
     private final GraknTxAbstract tx;
 
     public ElementFactory(GraknTxAbstract tx){
