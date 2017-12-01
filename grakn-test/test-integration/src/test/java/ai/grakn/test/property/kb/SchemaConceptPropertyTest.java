@@ -35,6 +35,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
@@ -110,16 +111,16 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenASchemaConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
-            SchemaConcept subConcept, long seed) {
-        SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(subConcept), seed);
+            @Open GraknTx tx, @FromTx SchemaConcept subConcept, long seed) {
+        SchemaConcept superConcept = PropertyUtil.choose(tx.admin().sups(subConcept), seed);
         assertThat(superConcept.subs().collect(toSet()), hasItem(subConcept));
     }
 
     @Property
     public void whenASchemaConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
-            SchemaConcept superConcept, long seed) {
+            @Open GraknTx tx, @FromTx SchemaConcept superConcept, long seed) {
         SchemaConcept subConcept = PropertyUtil.choose(superConcept.subs(), seed);
-        assertThat(PropertyUtil.indirectSupers(subConcept), hasItem(superConcept));
+        assertThat(tx.admin().sups(subConcept).collect(toSet()), hasItem(superConcept));
     }
 
     @Property
@@ -152,6 +153,9 @@ public class SchemaConceptPropertyTest {
     public void whenSettingTheDirectSuperToAnIndirectSub_Throw(
             @NonMeta SchemaConcept concept, long seed) {
         SchemaConcept newSuperConcept = PropertyUtil.choose(concept.subs(), seed);
+
+        //Check if the mutation can be performed in a valid manner
+        if(newSuperConcept.isType()) assumeThat(newSuperConcept.asType().plays().collect(Collectors.toSet()), is(empty()));
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.loopCreated(concept, newSuperConcept).getMessage());
@@ -186,6 +190,9 @@ public class SchemaConceptPropertyTest {
     public void whenAddingADirectSubWhichIsAnIndirectSuper_Throw(
             @NonMeta SchemaConcept newSubConcept, long seed) {
         SchemaConcept concept = PropertyUtil.choose(newSubConcept.subs(), seed);
+
+        //Check if the mutation can be performed in a valid manner
+        if(concept.isType()) assumeThat(concept.asType().plays().collect(Collectors.toSet()), is(empty()));
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.loopCreated(newSubConcept, concept).getMessage());

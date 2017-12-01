@@ -11,8 +11,8 @@ ACTIVE_TASKS=16
 
 # validate the number of arguments
 if [ "$#" -lt "2" ]; then
-	echo "Wrong number of arguments." >&2
-	exit 1
+    echo "Wrong number of arguments." >&2
+    exit 1
 fi
 
 # extract the data from a tar
@@ -27,9 +27,8 @@ function extractArchData {
 	mkdir -p ${CSV_DATA}
 	case "$1" in
 		validate)
-            VALIDATION_DATA=${WORKSPACE}/${PACKAGE}/validation_set.tar.gz
-            wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz -O ${VALIDATION_DATA}
-			tar -xf ${VALIDATION_DATA} --strip=1 -C ${CSV_DATA} validation_set
+	VALIDATION_DATA=${WORKSPACE}/${PACKAGE}/validation_set.tar.gz
+            wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz -O ${VALIDATION_DATA}		tar -xf ${VALIDATION_DATA} --strip=1 -C ${CSV_DATA} validation_set
 			;;
 		SF1)
 			tar -xf ${SF1_DATA}
@@ -52,27 +51,24 @@ function generateData {
 	if [ -z ${LDBC_SNB_DATAGEN_HOME+x} ]; then
 	    echo '$LDBC_SNB_DATAGEN_HOME not set'
 	    exit 1
-	fi
+	fiparamFile=${SCRIPTPATH}/tmpParams.ini
+	cp ${LDBC_SNB_DATAGEN_HOME}/ params.ini  ${paramFile}
 
-	paramFile=${SCRIPTPATH}/tmpParams.ini
-    cp ${LDBC_SNB_DATAGEN_HOME}/params.ini ${paramFile}
+    case "$1" in
+    	SF*)
 
-	case "$1" in
-		SF*)
-
-			echo "ldbc.snb.datagen.generator.scaleFactor:snb.interactive.${1:2:4}" >> ${paramFile}
-			;;
-		P*)
-			echo "ldbc.snb.datagen.generator.numPersons:${1:1:6}" >> ${paramFile}
-			;;
-		*)
-			echo "Usage: gen {SF*|P*}"
-			exit 1
-			;;
-	esac
+    		echo "ldbc.snb.datagen.generator.scaleFactor:snb.interactive.${1:2:4}" >> ${paramFile}
+    		;;
+    	P*)
+    		echo "ldbc.snb.datagen.generator.numPersons:${1:1:6}" >> ${paramFile}
+    		;;
+    	*)
+    		echo "Usage: gen {SF*|P*}"
+    		exit 1
+    		;;
+    esac
 
 	export HADOOP_CLIENT_OPTS="-Xmx1024m"
-
 	LDBC_JAR=${LDBC_SNB_DATAGEN_HOME}/target/ldbc_snb_datagen-0.2.7-jar-with-dependencies.jar
 
     # The jar contains both a folder called `META-INF/license` and a file `META-INF/LICENSE`.
@@ -80,30 +76,29 @@ function generateData {
     # https://stackoverflow.com/questions/10522835/hadoop-java-io-ioexception-mkdirs-failed-to-create-some-path
 	zip -d ${LDBC_JAR} META-INF/LICENSE || true
 
-	# hadoop needs sudo because it writes to /var
-	${HADOOP_HOME}/bin/hadoop jar ${LDBC_JAR} ${paramFile}
+	# hadoop needs sudo because it writes to /var${HADOOP_HOME}/bin/hadoop jar ${LDBC_JAR} ${paramFile}
 
-	rm ${paramFile}
-	rm -f m*personFactors*
-	rm -f .m*personFactors*
-	rm -f m*activityFactors*
-	rm -f .m*activityFactors*
-	rm -f m0friendList*
-	rm -f .m0friendList*
+    rm ${paramFile}
+    rm -f m*personFactors*
+    rm -f .m*personFactors*
+    rm -f m*activityFactors*
+    rm -f .m*activityFactors*
+    rm -f m0friendList*
+    rm -f .m0friendList*
 }
 
 # switch between generating data or using archive data
 case "$1" in
-	gen)
-		generateData $2
-		;;
-	arch)
-		extractArchData $2
-		;;
-	*)
-		echo "Usage: $0 {gen|arch}"
-		exit 1
-		;;
+    gen)
+    	generateData $2
+    	;;
+    arch)
+    	extractArchData $2
+    	;;
+    *)
+    	echo "Usage: $0 {gen|arch}"
+    	exit 1
+    	;;
 esac
 
 # migrate the data into Grakn
