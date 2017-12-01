@@ -45,11 +45,11 @@ The loader client can be thought of as an empty bucket in which to dump insert q
 InsertQuery insert = insert(var().isa("person"));
 
 for(int i = 0; i < 100; i++){
-    loader.add(insert, keyspace).toBlocking();
+    loader.add(insert, keyspace).subscribe({System.out.println(it)});
 }
 ```
 
-Note that  the output is  a Java RX Observable that needs subscription or blocking. 
+Note that  the output is  a Java RX Observable that needs subscription or blocking.
 
 ## Close
 
