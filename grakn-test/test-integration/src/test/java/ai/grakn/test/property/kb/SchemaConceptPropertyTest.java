@@ -35,6 +35,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
@@ -153,6 +154,9 @@ public class SchemaConceptPropertyTest {
             @NonMeta SchemaConcept concept, long seed) {
         SchemaConcept newSuperConcept = PropertyUtil.choose(concept.subs(), seed);
 
+        //Check if the mutation can be performed in a valid manner
+        if(newSuperConcept.isType()) assumeThat(newSuperConcept.asType().plays().collect(Collectors.toSet()), is(empty()));
+
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.loopCreated(concept, newSuperConcept).getMessage());
         setDirectSuper(concept, newSuperConcept);
@@ -186,6 +190,9 @@ public class SchemaConceptPropertyTest {
     public void whenAddingADirectSubWhichIsAnIndirectSuper_Throw(
             @NonMeta SchemaConcept newSubConcept, long seed) {
         SchemaConcept concept = PropertyUtil.choose(newSubConcept.subs(), seed);
+
+        //Check if the mutation can be performed in a valid manner
+        if(concept.isType()) assumeThat(concept.asType().plays().collect(Collectors.toSet()), is(empty()));
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.loopCreated(newSubConcept, concept).getMessage());
