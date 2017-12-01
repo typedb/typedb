@@ -66,6 +66,9 @@ public abstract class AtomicBase implements Atomic {
     public abstract Atomic copy();
 
     @Override
+    public void checkValid(){}
+
+    @Override
     public Set<String> validateAsRuleHead(Rule rule) {
         return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
     }
