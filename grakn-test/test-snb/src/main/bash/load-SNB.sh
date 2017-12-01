@@ -27,8 +27,9 @@ function extractArchData {
 	mkdir -p ${CSV_DATA}
 	case "$1" in
 		validate)
-	VALIDATION_DATA=${WORKSPACE}/${PACKAGE}/validation_set.tar.gz
-            wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz -O ${VALIDATION_DATA}		tar -xf ${VALIDATION_DATA} --strip=1 -C ${CSV_DATA} validation_set
+            VALIDATION_DATA=${WORKSPACE}/${PACKAGE}/validation_set.tar.gz
+            wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz -O ${VALIDATION_DATA}
+            tar -xf ${VALIDATION_DATA} --strip=1 -C ${CSV_DATA} validation_set
 			;;
 		SF1)
 			tar -xf ${SF1_DATA}
@@ -51,7 +52,9 @@ function generateData {
 	if [ -z ${LDBC_SNB_DATAGEN_HOME+x} ]; then
 	    echo '$LDBC_SNB_DATAGEN_HOME not set'
 	    exit 1
-	fiparamFile=${SCRIPTPATH}/tmpParams.ini
+    fi
+
+	paramFile=${SCRIPTPATH}/tmpParams.ini
 	cp ${LDBC_SNB_DATAGEN_HOME}/ params.ini  ${paramFile}
 
     case "$1" in
@@ -76,7 +79,7 @@ function generateData {
     # https://stackoverflow.com/questions/10522835/hadoop-java-io-ioexception-mkdirs-failed-to-create-some-path
 	zip -d ${LDBC_JAR} META-INF/LICENSE || true
 
-	# hadoop needs sudo because it writes to /var${HADOOP_HOME}/bin/hadoop jar ${LDBC_JAR} ${paramFile}
+	${HADOOP_HOME}/bin/hadoop jar ${LDBC_JAR} ${paramFile}
 
     rm ${paramFile}
     rm -f m*personFactors*
