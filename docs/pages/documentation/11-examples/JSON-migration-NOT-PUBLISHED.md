@@ -59,17 +59,17 @@ define
 # Entities
 
 book sub entity
-	has bookId
-	has title
-	plays publication-item;
+    has bookId
+    has title
+    plays publication-item;
 
 author sub entity
-	has authorName
-	plays publication-author;
+    has authorName
+    plays publication-author;
 
 subject sub entity
-	has subjectName
-	plays publication-subject; 
+    has subjectName
+    plays publication-subject;
 
 
 # Resources
@@ -82,9 +82,9 @@ subjectName sub attribute datatype string;
 # Relations and Roles
 
 publication sub relationship
-	relates publication-item
-	relates publication-author
-	relates publication-subject;
+    relates publication-item
+    relates publication-author
+    relates publication-subject;
 
 publication-item sub role;
 publication-author sub role;
@@ -101,7 +101,7 @@ To load *schema.gql* into Grakn, make sure the engine is running and choose a cl
 ./grakn server start
 ./graql console -f ./schema.gql
 ```
-		
+
 
 ### Data Migration
 

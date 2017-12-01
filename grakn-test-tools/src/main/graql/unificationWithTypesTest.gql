@@ -12,12 +12,12 @@ baseEntity sub entity
     has resource;
 
 twoRoleEntity sub baseEntity
-	plays role1
-	plays role2;
+    plays role1
+    plays role2;
 
 twoRoleEntity2 sub baseEntity
     plays role1
-	plays role2;
+    plays role2;
 
 threeRoleEntity sub baseEntity
     plays role1

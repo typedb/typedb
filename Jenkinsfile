@@ -166,16 +166,17 @@ Closure createTestJob(split, i, testTimeout) {
             mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
         }
 
-        try {
-            /* Call the Maven build with tests. */
-            timeout(testTimeout) {
-                stage('Run Janus test profile') {
-                    mvn mavenVerify
+            try {
+                /* Call the Maven build with tests. */
+                timeout(testTimeout) {
+                    stage('Run Janus test profile') {
+                        mvn mavenVerify
+                    archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"}
                 }
-            }
-        } finally {
-            /* Archive the test results */
-            junit "**/TEST*.xml"
+            } finally {
+                /* Archive the test results */
+                junit "**/TEST*.xml"
+
         }
     }
 }

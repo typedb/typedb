@@ -159,7 +159,7 @@ marriage sub relatives
   relates husband
   relates wife
   has "date";
-	    
+
 spouse sub role;
 spouse1 sub spouse;
 spouse2 sub spouse;
@@ -167,7 +167,7 @@ husband sub spouse;
 wife sub spouse;
 ```
     
-	    
+
 We have defined a new super type called `relatives` which enables us to link generic relatives together, and we have said that marriage is a type of relative relationship. We have also expanded on the roles which make up a marriage, enabling us to be more expressive and detailed about the domain we are modelling.
 From now on, we can be clear if a person is a `husband` or a `wife` or just a `spouse` in a marriage. Note that, when we query for people who play the role of a `spouse` we will get all the `husbands` and `wives` as well.
  

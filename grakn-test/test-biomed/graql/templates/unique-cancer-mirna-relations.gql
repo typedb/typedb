@@ -1,5 +1,5 @@
 match
-	$mirna has mirID <mirId>;
-	$cancer has name <Cancer>;
+    $mirna has mirID <mirId>;
+    $cancer has name <Cancer>;
 insert
-	$rel (disease: $cancer, affected: $mirna) isa interaction;
+    $rel (disease: $cancer, affected: $mirna) isa interaction;
