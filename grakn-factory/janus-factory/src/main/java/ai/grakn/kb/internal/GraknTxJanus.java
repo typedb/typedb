@@ -23,6 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
@@ -109,7 +110,11 @@ public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
     }
 
     @Override
-    public boolean validElement(Element element) {
-        return super.validElement(element) && !((JanusGraphElement) element).isRemoved();
+    public boolean isValidElement(Element element) {
+        super.isValidElement(element);
+        if(((JanusGraphElement) element).isRemoved()){
+            throw GraknTxOperationException.invalidElement(element);
+        }
+        return true;
     }
 }

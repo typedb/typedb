@@ -25,7 +25,6 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.cache.Cacheable;
@@ -70,14 +69,12 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     private final Cache<Role> valueRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = Cache.createTxCache(this, Cacheable.concept(), () -> edge().source().
-            map(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
-            orElseThrow(() -> GraknTxOperationException.missingOwner(getId()))
+    private final Cache<Thing> owner = Cache.createTxCache(this, Cacheable.concept(), () ->
+            edge().tx().factory().<Thing>buildConcept(edge().source())
     );
 
-    private final Cache<Thing> value = Cache.createTxCache(this, Cacheable.concept(), () -> edge().target().
-            map(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
-            orElseThrow(() -> GraknTxOperationException.missingValue(getId()))
+    private final Cache<Thing> value = Cache.createTxCache(this, Cacheable.concept(), () ->
+            edge().tx().factory().<Thing>buildConcept(edge().target())
     );
 
     private RelationshipEdge(EdgeElement edgeElement) {

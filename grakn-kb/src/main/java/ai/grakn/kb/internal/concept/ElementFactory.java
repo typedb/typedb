@@ -33,7 +33,6 @@ import ai.grakn.kb.internal.structure.AbstractElement;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -145,8 +144,8 @@ public final class ElementFactory {
      * @param vertex A vertex of an unknown type
      * @return A concept built to the correct type
      */
-    public <X extends Concept> Optional<X> buildConcept(Vertex vertex){
-        return buildVertexElement(vertex).map(this::buildConcept);
+    public <X extends Concept> X buildConcept(Vertex vertex){
+        return buildConcept(buildVertexElement(vertex));
     }
 
     public <X extends Concept> X buildConcept(VertexElement vertexElement){
@@ -204,19 +203,12 @@ public final class ElementFactory {
      * @param edge A {@link Edge} of an unknown type
      * @return A concept built to the correct type
      */
-    public <X extends Concept> Optional<X> buildConcept(Edge edge){
+    public <X extends Concept> X buildConcept(Edge edge){
         return buildConcept(buildEdgeElement(edge));
     }
 
-    public <X extends Concept> Optional<X> buildConcept(EdgeElement edgeElement){
-        Schema.EdgeLabel label;
-
-        try {
-            label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
-        } catch (IllegalStateException e){
-            LOG.warn("Invalid edge [" + edgeElement + "] due to " + e.getMessage(), e);
-            return Optional.empty();
-        }
+    public <X extends Concept> X buildConcept(EdgeElement edgeElement){
+        Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
 
         ConceptId conceptId = ConceptId.of(edgeElement.id().getValue());
@@ -231,7 +223,7 @@ public final class ElementFactory {
             }
             tx.txCache().cacheConcept(concept);
         }
-        return Optional.of(tx.txCache().getCachedConcept(conceptId));
+        return tx.txCache().getCachedConcept(conceptId);
     }
 
     /**
@@ -248,9 +240,7 @@ public final class ElementFactory {
         } catch (IllegalArgumentException e){
             //Base type appears to be invalid. Let's try getting the type via the shard edge
             Optional<VertexElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).
-                    map(EdgeElement::target).
-                    flatMap(CommonUtil::optionalToStream).
-                    findAny();
+                    map(EdgeElement::target).findAny();
 
             if(type.isPresent()){
                 String label = type.get().label();
@@ -277,8 +267,8 @@ public final class ElementFactory {
         return new Shard(vertexElement);
     }
 
-    Optional<Shard> buildShard(Vertex vertex){
-        return buildVertexElement(vertex).map(Shard::new);
+    Shard buildShard(Vertex vertex){
+        return new Shard(buildVertexElement(vertex));
     }
 
     /**
@@ -288,13 +278,9 @@ public final class ElementFactory {
      * @param vertex A vertex which can possibly be turned into a {@link VertexElement}
      * @return A {@link VertexElement} of
      */
-    public Optional<VertexElement> buildVertexElement(Vertex vertex){
-        if(tx.validElement(vertex)) {
-            return Optional.of(new VertexElement(tx, vertex));
-        } else{
-            LOG.warn("Invalid vertex [" + vertex + "]");
-            return Optional.empty();
-        }
+    public VertexElement buildVertexElement(Vertex vertex){
+        tx.isValidElement(vertex);
+        return new VertexElement(tx, vertex);
     }
 
     /**
