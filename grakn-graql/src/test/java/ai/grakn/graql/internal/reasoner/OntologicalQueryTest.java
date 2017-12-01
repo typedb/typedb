@@ -135,8 +135,7 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa $type; $type relates role1; get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(),  15);
-        System.out.println(answers.size());
+
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
         List<Answer> relations = qb.<GetQuery>parse("match $x isa relationship;get;").execute();
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
@@ -184,6 +183,30 @@ public class OntologicalQueryTest {
                 answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet()),
                 tx.getRelationshipType("reifying-relation").relates().collect(Collectors.toSet())
         );
+    }
+
+    /** IsaAtom **/
+
+    @Test
+    public void allTypesOfRolePlayerInASpecificRelationWithSpecifiedRoles(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match (role1: $x, role2: $y) isa reifiable-relation;$x isa $type; get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing}
+        assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5);
+    }
+
+    @Test
+    public void allTypesOfRolePlayerInASpecificRelationWithUnspecifiedRoles(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match ($x, $y) isa reifiable-relation;$x isa $type; get;";
+
+        //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing} * arity
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5 * 2);
     }
 
     /** meta concepts **/

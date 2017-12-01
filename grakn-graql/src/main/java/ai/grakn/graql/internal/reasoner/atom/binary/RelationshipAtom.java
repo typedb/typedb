@@ -183,7 +183,7 @@ public class RelationshipAtom extends IsaAtom {
                 .collect(Collectors.toSet());
     }
 
-    public Answer getRoleSubstitution(){
+    private Answer getRoleSubstitution(){
         Map<Var, Concept> roleSub = new HashMap<>();
         getRolePredicates().forEach(p -> roleSub.put(p.getVarName(), tx().getConcept(p.getPredicate())));
         return new QueryAnswer(roleSub);
@@ -412,9 +412,6 @@ public class RelationshipAtom extends IsaAtom {
         if (roleConceptIdMap == null) {
             ImmutableMultimap.Builder<Role, String> builder = ImmutableMultimap.builder();
 
-            if (getPartialSubstitutions().map(AtomicBase::getVarName).distinct().count() < getPartialSubstitutions().count()){
-                System.out.println();
-            }
             Map<Var, IdPredicate> varSubMap = getPartialSubstitutions()
                     .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
             Multimap<Role, Var> roleMap = getRoleVarMap();
