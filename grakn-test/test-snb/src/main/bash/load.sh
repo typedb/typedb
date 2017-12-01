@@ -2,6 +2,8 @@
 
 source env.sh
 
-download-snb.sh
-load-SNB.sh arch validate
+# this a bash trick to specify the default value
+args=${@:-arch validate}
+
+load-SNB.sh ${args}
 measure-size.sh

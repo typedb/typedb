@@ -26,6 +26,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.structure.AbstractElement;
@@ -154,8 +155,7 @@ public final class ElementFactory {
         try {
             type = getBaseType(vertexElement);
         } catch (IllegalStateException e){
-            LOG.warn("Invalid vertex [" + vertexElement + "] due to " + e.getMessage(), e);
-            return Optional.empty();
+            throw TemporaryWriteException.indexOverlap(vertexElement.element(), e);
         }
 
         ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));

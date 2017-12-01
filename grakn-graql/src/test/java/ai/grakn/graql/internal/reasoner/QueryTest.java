@@ -24,6 +24,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -218,6 +219,22 @@ public class QueryTest {
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
         queryEquivalence(query, query2, true);
+    }
+
+    @Test
+    public void testWhenReifyingRelation_ExtraAtomIsCreatedWithUserDefinedName(){
+        GraknTx graph = geoKB.tx();
+        String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
+        String patternString2 = "{($x, $y) relates geo-entity;}";
+
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(pattern, graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(pattern2, graph);
+        assertEquals(query.getAtoms(RelationshipAtom.class).findFirst().orElse(null).isUserDefined(), false);
+        assertEquals(query2.getAtoms(RelationshipAtom.class).findFirst().orElse(null).isUserDefined(), true);
+        assertEquals(query.getAtoms().size(), 1);
+        assertEquals(query2.getAtoms().size(), 2);
     }
 
     private void queryEquivalence(ReasonerQueryImpl a, ReasonerQueryImpl b, boolean expectation){

@@ -26,7 +26,7 @@ Once you have the SQL database loaded, you need to allow the Grakn migration def
 ```sql
 CREATE USER 'mindmaps'@'localhost' IDENTIFIED BY 'mindmaps';
 GRANT ALL PRIVILEGES ON *.* TO 'mindmaps'@'localhost'
-	WITH GRANT OPTION;
+    WITH GRANT OPTION;
 ```
 
 This will allow the migration example access to your new MySQL world database. 
