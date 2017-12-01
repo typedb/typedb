@@ -144,7 +144,7 @@ export default {
   computed: {
     nodeAttributes() {
       if (this.node === undefined) return {};
-      return this.prepareAttributes(this.node.properties);
+      return this.prepareAttributes(this.node.attributes);
     },
     nodeProperties() {
       if (this.node === undefined) return {};

@@ -221,9 +221,11 @@ export default {
     },
     loadMetaTypeInstances() {
       EngineClient.getMetaTypes().then((x) => {
-        if (x != null) {
-          this.typeInstances = JSON.parse(x);
-        }
+        const types = JSON.parse(x).filter(x=>!x.implicit);
+        this.typeInstances={};
+        this.typeInstances.entities = types.filter(x=>x['base-type']==='ENTITY_TYPE').filter(x=>x.label!=='entity').map(x=>x.label);
+        this.typeInstances.attributes = types.filter(x=>x['base-type']==='ATTRIBUTE_TYPE').filter(x=>x.label!=='attribute').map(x=>x.label);
+        this.typeInstances.relationships = types.filter(x=>x['base-type']==='RELATIONSHIP_TYPE').filter(x=>x.label!=='relationship').map(x=>x.label);
       });
     },
     toggleTypeInstances() {

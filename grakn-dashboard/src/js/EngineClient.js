@@ -59,12 +59,7 @@ export default {
   },
 
   setHeaders(xhr:Object, requestData:Object) {
-    const token = localStorage.getItem('id_token');
-    if (token != null) {
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    }
     xhr.setRequestHeader('Content-Type', requestData.contentType || 'application/json; charset=utf-8');
-    xhr.setRequestHeader('Accept', requestData.accepts || 'application/hal+json');
   },
 
   sendInvite(credentials:Object, callbackFn:()=>mixed) {
@@ -148,7 +143,7 @@ export default {
              */
   getMetaTypes() {
     return this.request({
-      url: `/kb/${User.getCurrentKeySpace()}`,
+      url: `/kb/${User.getCurrentKeySpace()}/type`,
       accepts: 'application/json',
     });
   },

@@ -43,12 +43,9 @@ function doubleClick(param) {
   const nodeObj = visualiser.getNode(node);
 
   if (eventKeys.shiftKey) {
-    if (nodeObj.baseType !== API.INFERRED_RELATIONSHIP_TYPE) { requestExplore(nodeObj); }
+    CanvasHandler.showAttributes(nodeObj);
   } else {
-    EngineClient.request({
-      url: nodeObj.href,
-    }).then(resp => CanvasHandler.onGraphResponse(resp))
-    .catch((err) => { EventHub.$emit('error-message', err); });
+    CanvasHandler.showNeighbours(nodeObj);
   }
 }
 

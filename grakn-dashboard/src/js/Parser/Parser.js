@@ -43,10 +43,12 @@ function flat(array) {
 
 function newNode(nodeObj:Object) {
   const properties = conceptProperties(nodeObj);
-  //TODO: decide whether list attributes also on meta type node for now we just set empty array
+  // TODO: decide whether list attributes also on meta type node for now we just set empty array
   const attributes = ('label' in nodeObj) ? [] : instanceAttributes(nodeObj);
   const relationships = nodeObj.relationships || [];
-  return Object.assign({}, properties, { attributes, relationships });
+  const roleplayers = nodeObj.roleplayers || [];
+  const relates = nodeObj.relates || [];
+  return Object.assign({}, properties, { attributes, relationships, roleplayers, relates });
 }
 
 function populateRolesMap(nodes) {
@@ -86,7 +88,7 @@ export default {
     * @public
     */
   parseResponse(data: Object|Object[]) {
-    const dataArray = flat((Array.isArray(data)) ? data : [data]);
+    const dataArray = (Array.isArray(data)) ? flat(data) : [data];
 
     // COMPUTE NODES
     const nodes = dataArray.map(x => newNode(x)).reduce(collect, []);

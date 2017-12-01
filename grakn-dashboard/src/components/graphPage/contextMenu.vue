@@ -36,12 +36,12 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div class="dd-item active" @click="alignVertically">
             <span class="list-key">Vertically</span>
         </div>
-        <div class="dd-header" v-show="singleNodeType==='ENTITY'">Relationships</div>
-        <div class="filters">
+        <!-- <div class="dd-header" v-show="singleNodeType==='ENTITY'">Relationships</div> -->
+        <!-- <div class="filters">
             <div v-bind:class="[selectedNodes.length===1 ? 'dd-item active' : 'dd-item']" v-for="(type, key) in filterTypes">
                 <span class="list-key" @click="fetchFilteredRelationships(type.href)">{{type.value}}</span>
             </div>
-        </div>
+        </div> -->
     </div>
 </div>
 </template>
@@ -137,9 +137,10 @@ export default {
         if (this.nodeOnMousePosition !== undefined) this.singleNodeType = visualiser.getNode(this.nodeOnMousePosition).baseType;
         this.checkNodesSelection();
         // If the user right clicked on an Entity node, fetch all the relationship filters
-        if (this.singleNodeType === API.ENTITY) {
-          EngineClient.getConceptTypes(this.nodeOnMousePosition).then(resp => this.populateRelationshipFiltersList(resp));
-        }
+        //TODO: re-discuss and re-implement
+        // if (this.singleNodeType === API.ENTITY) {
+        //   EngineClient.getConceptTypes(this.nodeOnMousePosition).then(resp => this.populateRelationshipFiltersList(resp));
+        // }
       } else {
         this.filterTypes = [];
         this.singleNodeType = undefined;

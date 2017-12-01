@@ -35,9 +35,7 @@ import * as API from '../util/HALTerms';
 export default class Visualiser {
   constructor(graphOffsetTop) {
     this.graphOffsetTop = graphOffsetTop;
-    this.nodes = new vis.DataSet([], {
-      queue: { delay: 800 },
-    });
+    this.nodes = new vis.DataSet([]);
     this.edges = new vis.DataSet([]);
 
     this.callbacks = {};
@@ -283,24 +281,16 @@ export default class Visualiser {
     const hoverObj = {
       hover: highlightObj.highlight,
     };
-    this.nodes.add({
-      id: node.id,
-      href: node.href,
+    this.nodes.add(Object.assign(node,{
       label: this.generateLabel(node.type, node.attributes, node.label, node.baseType),
       baseLabel: node.label,
-      type: node.type,
-      baseType: node.baseType,
       color: Object.assign(colorObj, {
         border: colorObj.background,
       }, highlightObj, hoverObj),
       font: this.style.getNodeFont(node.type, node.baseType),
       shape: this.style.getNodeShape(node.baseType),
       size: this.style.getNodeSize(node.baseType),
-      explore: node.explore,
-      properties: node.attributes,
-    });
-    this.nodes.flush();
-
+    }));
     return this;
   }
 
@@ -355,7 +345,6 @@ export default class Visualiser {
     if (this.nodeExists(id)) {
       this.deleteEdges(id);
       this.nodes.remove(id);
-      this.flushUpdates();
     }
     return this;
   }
@@ -387,7 +376,7 @@ export default class Visualiser {
 
   getAllNodeProperties(id) {
     if (id in this.nodes._data) {
-      return Object.keys(this.nodes._data[id].properties).sort();
+      return Object.keys(this.nodes._data[id].attributes).sort();
     }
     return [];
   }
@@ -585,13 +574,9 @@ export default class Visualiser {
     });
   }
 
-  flushUpdates() {
-    this.nodes.flush();
-  }
 
   updateNode(obj) {
     this.nodes.update(obj);
-    this.nodes.flush();
   }
 
   checkSelectionRectangleStatus(node, eventKeys, param) {

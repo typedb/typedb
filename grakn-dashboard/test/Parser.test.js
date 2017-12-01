@@ -33,7 +33,6 @@ beforeAll(() => {
 
 test('Parse person instance', () => {
   const personInstanceResponse = {
-    x: {
       type: {
         label: 'person',
         '@id': '/kb/gene/type/person',
@@ -57,8 +56,8 @@ test('Parse person instance', () => {
       'base-type': 'ENTITY',
       id: 'V41080',
       '@id': '/kb/gene/concept/V41080',
-    },
-  };
+    };
+  
   const parsed = Parser.parseResponse(personInstanceResponse);
   expect(parsed.nodes[0].id).toBe('V41080');
   expect(parsed.nodes[0].baseType).toBe('ENTITY');

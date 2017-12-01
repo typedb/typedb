@@ -70,7 +70,7 @@ function buildLabel(nodeObject) {
       label = `${nodeObject[KEY_BASE_TYPE].substring(0, 3)}: ${nodeObject[KEY_TYPE]}`;
       break;
     case ATTRIBUTE:
-      label = nodeObject[KEY_VALUE];
+      label = `${nodeObject[KEY_TYPE].label}: ${nodeObject[KEY_VALUE]}`;
       break;
 
     default:

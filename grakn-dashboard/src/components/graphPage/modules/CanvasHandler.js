@@ -66,6 +66,9 @@ function flatten<T>(array: T[][]): T[] {
 
 function filterNodes(nodes) { return nodes.filter(x => !x.implicit).filter(x => !x.abstract); }
 function filterEdges(edges) {
+  
+  // Hide implicit relationship that links TYPES to ATTRIBUTE_TYPES and instead draw edge with label 'has'
+
   // (Helper map {ImplicitRelationshipID: AttributeTypeID})
   const toAttrTypeMap = edges
   .filter(edge => visualiser.getNode(edge.to).baseType === 'ATTRIBUTE_TYPE')
@@ -98,6 +101,11 @@ function onGraphResponse(resp: string) {
 
   filterNodes(parsedResponse.nodes).forEach(node => visualiser.addNode(node));
   filterEdges(parsedResponse.edges).forEach(edge => visualiser.addEdge(edge));
+
+  // Never visualise relationships without roleplayers
+  filterNodes(parsedResponse.nodes).filter(x=>x.baseType==='RELATIONSHIP')
+  .forEach(rel=>{ loadRolePlayers(rel) });
+
   visualiser.fitGraphToWindow();
 }
 
@@ -114,5 +122,53 @@ function loadAttributeOwners(attributeId: string) {
   }).then(resp => onGraphResponse(resp));
 }
 
+function getId(str){
+  return str.split('/').pop();
+}
 
-export default { initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners };
+function loadRolePlayers(rel){
+  const promises = rel.roleplayers.map(x =>  EngineClient.request({ url: x.thing }));
+  Promise.all(promises)
+  .then((resps) => { resps.forEach((res) => { onGraphResponse(res); }) })
+  .then(() => { rel.roleplayers
+    .forEach((player) => { visualiser.addEdge({from:rel.id,to:getId(player.thing), label: getId(player.role)}); }); });
+}
+
+
+function addAttributeAndEdgeToInstance(instanceId, res){
+  onGraphResponse(res);
+  visualiser.addEdge({from: instanceId, to: JSON.parse(res).id, label:'has'});
+}
+
+function showNeighbours(node: Object) {
+  const baseType = node.baseType;
+  switch (baseType) {
+    case 'RELATIONSHIP':
+      loadRolePlayers(node);
+      break;
+    case 'ENTITY':
+      node.relationships
+      .map(rel => EngineClient.request({url:rel.thing}))
+      .forEach((promise)=>{promise.then(onGraphResponse)});
+      break;
+    case 'RELATIONSHIP_TYPE':
+      // show plays and relates
+      break;
+    case 'ENTITY_TYPE':
+      // show plays - also attributes types?
+      break;
+    default:
+      console.log('ERROR: Basetype not recognised');
+    break;
+  }
+}
+function showAttributes(node: Object) {
+  node.attributes
+  .map(attr=> EngineClient.request({url:attr.href}))
+  .forEach((promise)=>{ 
+    promise.then((res)=> addAttributeAndEdgeToInstance(node.id, res));
+  });
+}
+
+
+export default { initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners, showNeighbours, showAttributes };
