@@ -11,8 +11,8 @@ role4 sub role;
 
 entity1 sub entity
     has name
-	plays role1
-	plays role2;
+    plays role1
+    plays role2;
 
 #Relations
 
@@ -21,8 +21,8 @@ binary-base sub relationship
     relates role2;
 
 binary sub binary-base
-	relates role1
-	relates role2;
+    relates role1
+    relates role2;
 
 ternary-base sub relationship
     relates role1,
@@ -30,9 +30,9 @@ ternary-base sub relationship
     relates role3;
 
 ternary sub ternary-base
-	relates role1
-	relates role2
-	relates role3;
+    relates role1
+    relates role2
+    relates role3;
 
 quaternary-base sub relationship
     relates role1
@@ -51,60 +51,60 @@ name sub attribute datatype string;
 #Rules
 
 rule-1 sub rule
-	when {
-		(role1:$x, role2:$z) isa binary-base;
-		(role1:$z, role2:$y) isa binary-base;
-	}
-	then {
-		(role1:$x, role2:$y) isa binary-base;
-	};
+    when {
+    	(role1:$x, role2:$z) isa binary-base;
+    	(role1:$z, role2:$y) isa binary-base;
+    }
+    then {
+    	(role1:$x, role2:$y) isa binary-base;
+    };
 
 rule-2 sub rule
-	when {
-		(role1:$x, role2:$z) isa binary-base;
-		(role1:$z, role2:$y) isa binary-base;
-	}
-	then {
-		(role1:$x, role2:$y, role3: $z) isa ternary-base;
-	};
+    when {
+    	(role1:$x, role2:$z) isa binary-base;
+    	(role1:$z, role2:$y) isa binary-base;
+    }
+    then {
+    	(role1:$x, role2:$y, role3: $z) isa ternary-base;
+    };
 
 rule-3 sub rule
-	when {
-		(role1:$x, role2:$z1) isa binary-base;
-		(role1:$z1, role2:$z2) isa binary-base;
-		(role1:$z2, role2:$y) isa binary-base;
-	}
-	then {
-		(role1:$x, role2:$z1, role3: $z2, role4: $y) isa quaternary-base;
-	};
+    when {
+    	(role1:$x, role2:$z1) isa binary-base;
+    	(role1:$z1, role2:$z2) isa binary-base;
+    	(role1:$z2, role2:$y) isa binary-base;
+    }
+    then {
+    	(role1:$x, role2:$z1, role3: $z2, role4: $y) isa quaternary-base;
+    };
 
 rule-4 sub rule
-	when {
-		(role1:$x, role2:$z) isa binary;
-		(role1:$z, role2:$y) isa binary;
-	}
-	then {
-		(role1:$x, role2:$y) isa binary;
-	};
+    when {
+    	(role1:$x, role2:$z) isa binary;
+    	(role1:$z, role2:$y) isa binary;
+    }
+    then {
+    	(role1:$x, role2:$y) isa binary;
+    };
 
 rule-5 sub rule
-	when {
-		(role1:$x, role2:$z) isa binary;
-		(role1:$z, role2:$y) isa binary;
-	}
-	then {
-		(role1:$x, role2:$y, role3: $z) isa ternary;
-	};
+    when {
+    	(role1:$x, role2:$z) isa binary;
+    	(role1:$z, role2:$y) isa binary;
+    }
+    then {
+    	(role1:$x, role2:$y, role3: $z) isa ternary;
+    };
 
 rule-6 sub rule
-	when {
-		(role1:$x, role2:$z1) isa binary;
-		(role1:$z1, role2:$z2) isa binary;
-		(role1:$z2, role2:$y) isa binary;
-	}
-	then {
-		(role1:$x, role2:$z1, role3: $z2, role4: $y) isa quaternary;
-	};
+    when {
+    	(role1:$x, role2:$z1) isa binary;
+    	(role1:$z1, role2:$z2) isa binary;
+    	(role1:$z2, role2:$y) isa binary;
+    }
+    then {
+    	(role1:$x, role2:$z1, role3: $z2, role4: $y) isa quaternary;
+    };
 
 insert
 

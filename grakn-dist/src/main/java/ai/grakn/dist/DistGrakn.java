@@ -24,7 +24,6 @@ import ai.grakn.util.GraknVersion;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
@@ -35,15 +34,16 @@ import java.util.Scanner;
  */
 public class DistGrakn {
 
-    private static final String GRAKN = "grakn";
-    private static final String QUEUE = "queue";
-    private static final String STORAGE = "storage";
+    protected static final String GRAKN = "grakn";
+    protected static final String QUEUE = "queue";
+    protected static final String STORAGE = "storage";
 
-    private final StorageProcess storageProcess;
-    private final QueueProcess queueProcess;
-    private final GraknProcess graknProcess;
+    protected final StorageProcess storageProcess;
+    protected final QueueProcess queueProcess;
+    protected final GraknProcess graknProcess;
 
     /**
+     * Invocation from bash script 'grakn'
      * In order to run this method you should have 'grakn.dir' and 'grakn.conf' set
      *
      * @param args
@@ -66,16 +66,12 @@ public class DistGrakn {
 
             application = new DistGrakn(storageProcess,queueProcess,graknProcess);
             application.run(context,action,option);
-        } catch (InvalidPathException ex) {
-            System.out.println("Problem with bash script: cannot run Graql");
-            return;
         } catch (RuntimeException ex) {
-            System.out.println(ex.getMessage());
-            return;
+            System.out.println("Problem with bash script: cannot run Grakn");
         }
     }
 
-    private void run(String context, String action, String option) {
+    public void run(String context, String action, String option) {
         Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
         if(Files.exists(ascii)) {
             try {
@@ -97,7 +93,7 @@ public class DistGrakn {
         }
     }
 
-    private DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
+    public DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
         this.storageProcess = storageProcess;
         this.queueProcess = queueProcess;
         this.graknProcess = graknProcess;
@@ -107,7 +103,7 @@ public class DistGrakn {
         System.out.println(GraknVersion.VERSION);
     }
 
-    private void help() {
+    protected void help() {
         System.out.println("Usage: grakn COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
@@ -211,7 +207,7 @@ public class DistGrakn {
         }
     }
 
-    private void serverHelp() {
+    protected void serverHelp() {
         System.out.println("Usage: grakn server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +

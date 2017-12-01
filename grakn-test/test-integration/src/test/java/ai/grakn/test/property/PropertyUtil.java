@@ -21,7 +21,6 @@ package ai.grakn.test.property;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import com.google.common.collect.Lists;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -43,17 +42,6 @@ public class PropertyUtil {
     @SuppressWarnings("unchecked")
     public static <T extends SchemaConcept> Collection<T> directSubs(T schemaConcept) {
         return schemaConcept.subs().filter(subType -> schemaConcept.equals(subType.sup())).map(o -> (T) o).collect(toList());
-    }
-
-    public static Collection<SchemaConcept> indirectSupers(SchemaConcept schemaConcept) {
-        Collection<SchemaConcept> supers = Lists.newArrayList();
-
-        do {
-            supers.add(schemaConcept);
-            schemaConcept = schemaConcept.sup();
-        } while (schemaConcept != null);
-
-        return supers;
     }
 
     public static Collection<Thing> directInstances(Type type) {

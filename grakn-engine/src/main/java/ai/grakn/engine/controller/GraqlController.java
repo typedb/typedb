@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -30,6 +31,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -38,6 +40,11 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -53,10 +60,12 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
@@ -64,6 +73,7 @@ import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
+import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -80,8 +90,8 @@ import static java.lang.Boolean.parseBoolean;
  * @author Marco Scoppetta, alexandraorth
  */
 public class GraqlController {
-
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
+    private static final int MAX_RETRY = 10;
     private final EngineGraknTxFactory factory;
     private final Service spark;
     private final TaskManager taskManager;
@@ -126,9 +136,10 @@ public class GraqlController {
                     name = DEFINE_ALL_VARS,
                     value = "Define all variables in response", dataType = "boolean", paramType = "query"
             ),
-            @ApiImplicitParam(name = MULTI, dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = MULTI, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = TX_TYPE, dataType = "string", paramType = "query")
     })
-    private Object executeGraql(Request request, Response response) {
+    private Object executeGraql(Request request, Response response) throws RetryException, ExecutionException {
         String queryString = mandatoryBody(request);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Optional<Boolean> infer = queryParameter(request, INFER).map(Boolean::parseBoolean);
@@ -136,22 +147,47 @@ public class GraqlController {
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = Requests.getAcceptType(request);
 
+        GraknTxType txType = Requests.queryParameter(request, TX_TYPE)
+                .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
+
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
         LOG.trace(String.format("Executing graql statements: {%s}", queryString));
-        try (GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
-            QueryBuilder builder = graph.graql();
 
-            infer.ifPresent(builder::infer);
+        return executeFunctionWithRetrying(() -> {
+            try (GraknTx graph = factory.tx(keyspace, txType); Timer.Context context = executeGraqlPostTimer.time()) {
+                QueryBuilder builder = graph.graql();
 
-            QueryParser parser = builder.parser();
-            defineAllVars.ifPresent(parser::defineAllVars);
-            Object responseBody = executeQuery(graph, limitEmbedded, queryString,
-                    acceptType, multi, parser);
+                infer.ifPresent(builder::infer);
 
-            Object resp = respond(response, acceptType, responseBody);
+                QueryParser parser = builder.parser();
+                defineAllVars.ifPresent(parser::defineAllVars);
+                Object responseBody = executeQuery(graph, limitEmbedded, queryString,
+                        acceptType, multi, parser);
 
-            return resp;
+                Object resp = respond(response, acceptType, responseBody);
+
+                return resp;
+            }
+        });
+    }
+
+    private Object executeFunctionWithRetrying(Callable<Object> callable) throws RetryException, ExecutionException {
+        try {
+            Retryer<Object> retryer = RetryerBuilder.newBuilder()
+                .retryIfExceptionOfType(TemporaryWriteException.class)
+                .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
+                .build();
+
+            return retryer.call(callable);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            } else {
+                throw e;
+            }
         }
     }
 

@@ -9,22 +9,22 @@ role2 sub role;
 
 entity1 sub entity
     has name
-	plays role1
-	plays role2;
+    plays role1
+    plays role2;
 
 #Relations
 
 relation1 sub relationship
-	relates role1
-	relates role2;
+    relates role1
+    relates role2;
 
 relation2 sub relationship
-	relates role1
-	relates role2;
+    relates role1
+    relates role2;
 
 relation3 sub relationship
-	relates role1
-	relates role2;
+    relates role1
+    relates role2;
 
 inferredRelation sub relationship
     relates role1
@@ -51,13 +51,13 @@ $c isa entity1, has name "c";
 define
 
 rule-1 sub rule
-	when {
-		(role1: $x, role2: $y) isa relation1;
-		($y, $z) isa inferredRelation;
-		($z, $u) isa relation2;
-		($u, $v) isa relation1;
-		(role1: $v, role2: $w) isa inferredRelation;
-	}
-	then {
-		(role1: $x, role2: $w) isa inferredRelation;
-	};
+    when {
+    	(role1: $x, role2: $y) isa relation1;
+    	($y, $z) isa inferredRelation;
+    	($z, $u) isa relation2;
+    	($u, $v) isa relation1;
+    	(role1: $v, role2: $w) isa inferredRelation;
+    }
+    then {
+    	(role1: $x, role2: $w) isa inferredRelation;
+    };

@@ -205,11 +205,11 @@ public abstract class Atom extends AtomicBase {
     public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
-            return getPotentialRules()
+            getPotentialRules()
                     .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
-                    .peek(applicableRules::add);
+                    .forEach(applicableRules::add);
         }
         return applicableRules.stream();
     }
@@ -331,7 +331,7 @@ public abstract class Atom extends AtomicBase {
      * @param sub partial substitution
      * @return list of possible atoms obtained by applying type inference
      */
-    public List<Atom> atomOptions(Answer sub){ return Lists.newArrayList(inferTypes());}
+    public List<Atom> atomOptions(Answer sub){ return Lists.newArrayList(inferTypes(sub));}
 
     /**
      * @param type to be added to this {@link Atom}

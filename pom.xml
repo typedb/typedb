@@ -211,12 +211,12 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-core</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-kb</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>javax.servlet</artifactId>
@@ -231,7 +231,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>slf4j-api</artifactId>
@@ -242,7 +242,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>janus-factory</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -266,12 +266,12 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-module-sdk</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-client</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -282,7 +282,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-engine</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -293,37 +293,37 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql-shell</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-base</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-sql</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-xml</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-csv</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-json</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-export</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -891,7 +891,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-test-tools</artifactId>
-                <version>${project.version}</version>
+                <version>1.0.0-SNAPSHOT</version>
                 <scope>test</scope>
             </dependency>
 

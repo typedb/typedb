@@ -20,9 +20,9 @@ To use the loader client API, add the following to your pom.xml:
 
 ```xml
 <dependency>
-	<groupId>ai.grakn</groupId>
-	<artifactId>grakn-client</artifactId>
-	<version>${grakn.version}</version>
+    <groupId>ai.grakn</groupId>
+    <artifactId>grakn-client</artifactId>
+    <version>${grakn.version}</version>
 </dependency>
 ```
  and add the following to your imports:
@@ -45,11 +45,11 @@ The loader client can be thought of as an empty bucket in which to dump insert q
 InsertQuery insert = insert(var().isa("person"));
 
 for(int i = 0; i < 100; i++){
-	loader.add(insert, keyspace).subscribe({System.out.println(it)});
+    loader.add(insert, keyspace).subscribe({System.out.println(it)});
 }
 ```
 
-Note that the output is a Java RX Observable that needs subscription or blocking.
+Note that  the output is  a Java RX Observable that needs subscription or blocking.
 
 ## Close
 
