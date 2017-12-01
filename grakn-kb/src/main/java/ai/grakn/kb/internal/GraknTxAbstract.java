@@ -804,8 +804,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     public boolean isValidElement(Element element) {
-        Objects.requireNonNull(element);
-        return true;
+        return element != null;
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------

@@ -39,6 +39,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -207,7 +208,6 @@ public final class ElementFactory {
     public <X extends Concept> X buildConcept(EdgeElement edgeElement){
         Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
-
         ConceptId conceptId = ConceptId.of(edgeElement.id().getValue());
         if(!tx.txCache().isConceptCached(conceptId)){
             Concept concept;
@@ -276,7 +276,10 @@ public final class ElementFactory {
      * @return A {@link VertexElement} of
      */
     public VertexElement buildVertexElement(Vertex vertex){
-        tx.isValidElement(vertex);
+        if(!tx.isValidElement(vertex)){
+            Objects.requireNonNull(vertex);
+            throw GraknTxOperationException.invalidElement(vertex);
+        }
         return new VertexElement(tx, vertex);
     }
 
