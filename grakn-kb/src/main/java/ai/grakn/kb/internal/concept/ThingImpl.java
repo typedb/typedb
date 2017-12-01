@@ -85,7 +85,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 map(EdgeElement::target).
                 flatMap(CommonUtil::optionalToStream).
                 map(concept -> vertex().tx().factory().<V>buildConcept(concept)).
-                flatMap(CommonUtil::optionalToStream).
                 findAny();
 
         return type.orElseThrow(() -> GraknTxOperationException.noType(this));

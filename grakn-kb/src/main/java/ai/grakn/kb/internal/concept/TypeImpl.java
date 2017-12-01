@@ -74,8 +74,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
 
-            Optional<Role> role = edge.target().flatMap(roleVertex ->
-                    vertex().tx().factory().<Role>buildConcept(roleVertex));
+            Optional<Role> role = edge.target().map(roleVertex -> vertex().tx().factory().<Role>buildConcept(roleVertex));
 
             if (role.isPresent()) {
                 Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);

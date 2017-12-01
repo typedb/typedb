@@ -123,17 +123,17 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
                         flatMap(edge -> Stream.<Optional<X>>of(
-                                edge.source().flatMap(source -> vertex().tx().factory().buildConcept(source)),
-                                edge.target().flatMap(target -> vertex().tx().factory().buildConcept(target))
+                                edge.source().map(source -> vertex().tx().factory().buildConcept(source)),
+                                edge.target().map(target -> vertex().tx().factory().buildConcept(target))
                         )).flatMap(CommonUtil::optionalToStream);
             case IN:
                 return vertex().getEdgesOfType(direction, label).flatMap(edge -> {
-                    Optional<X> optional = edge.source().flatMap(source -> vertex().tx().factory().buildConcept(source));
+                    Optional<X> optional = edge.source().map(source -> vertex().tx().factory().buildConcept(source));
                     return CommonUtil.optionalToStream(optional);
                 });
             case OUT:
                 return  vertex().getEdgesOfType(direction, label).flatMap(edge -> {
-                    Optional<X> optional = edge.target().flatMap(target -> vertex().tx().factory().buildConcept(target));
+                    Optional<X> optional = edge.target().map(target -> vertex().tx().factory().buildConcept(target));
                     return CommonUtil.optionalToStream(optional);
                 });
             default:

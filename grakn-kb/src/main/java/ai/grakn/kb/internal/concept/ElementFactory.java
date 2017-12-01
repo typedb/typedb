@@ -146,10 +146,10 @@ public final class ElementFactory {
      * @return A concept built to the correct type
      */
     public <X extends Concept> Optional<X> buildConcept(Vertex vertex){
-        return buildVertexElement(vertex).flatMap(this::buildConcept);
+        return buildVertexElement(vertex).map(this::buildConcept);
     }
 
-    public <X extends Concept> Optional<X> buildConcept(VertexElement vertexElement){
+    public <X extends Concept> X buildConcept(VertexElement vertexElement){
         Schema.BaseType type;
 
         try {
@@ -194,7 +194,7 @@ public final class ElementFactory {
             }
             tx.txCache().cacheConcept(concept);
         }
-        return Optional.of(tx.txCache().getCachedConcept(conceptId));
+        return tx.txCache().getCachedConcept(conceptId);
     }
 
     /**

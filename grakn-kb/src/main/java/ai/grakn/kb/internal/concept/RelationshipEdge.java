@@ -71,12 +71,12 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
     private final Cache<Thing> owner = Cache.createTxCache(this, Cacheable.concept(), () -> edge().source().
-            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
+            map(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingOwner(getId()))
     );
 
     private final Cache<Thing> value = Cache.createTxCache(this, Cacheable.concept(), () -> edge().target().
-            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
+            map(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
             orElseThrow(() -> GraknTxOperationException.missingValue(getId()))
     );
 
