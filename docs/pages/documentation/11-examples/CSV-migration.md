@@ -100,7 +100,7 @@ To load *schema.gql* into Grakn, make sure the engine is running and choose a cl
 ./grakn server start
 ./graql console -f ./schema.gql
 ```
-		
+
 
 ### Data Migration
 
@@ -136,7 +136,7 @@ The Graql template code for the people migrator is as follows:
 insert
   $p isa person has identifier <pid>
   has firstname <name1>,
-		
+
   if (<surname> != "") do 
     {
     has surname <surname>,
@@ -212,10 +212,10 @@ The Graql template code for the Grakn migrator is as follows:
 
 ```graql-template
 match
-	$c isa person has identifier <child>;
-	$p isa person has identifier <parent>;
+    $c isa person has identifier <child>;
+    $p isa person has identifier <parent>;
 insert
-	(child: $c, parent: $p) isa parentship;
+    (child: $c, parent: $p) isa parentship;
 
 ```
 
@@ -262,15 +262,15 @@ The Graql template code for the migrator is as follows:
 
 ```graql-template
 match
-	$x has identifier <spouse1>;
-	$y has identifier <spouse2>;
+    $x has identifier <spouse1>;
+    $y has identifier <spouse2>;
 insert
-	(spouse1: $x, spouse2: $y) isa marriage
+    (spouse1: $x, spouse2: $y) isa marriage
 
-	if (<picture> != "") do 
-		{
-		has picture <picture>
-		};
+    if (<picture> != "") do
+    	{
+    	has picture <picture>
+    	};
 ```
 
 For each row in the CSV file, the template matches the two spouse cells to their corresponding `person` entities, and then inserts a `marriage` relationship, placing the entities it has matched into the `spouse1` and `spouse2` roles. If there is data in the picture cell, a `picture` attribute is also created for the `marriage` relationship.

@@ -1,7 +1,7 @@
 define
 
 entity1 sub entity
-	has resource;
+    has resource;
 
 #Resources
 resource sub attribute datatype string;
