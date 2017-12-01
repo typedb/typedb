@@ -51,6 +51,8 @@ function generateData {
 	if [ -z ${LDBC_SNB_DATAGEN_HOME+x} ]; then
 	    echo '$LDBC_SNB_DATAGEN_HOME not set'
 	    exit 1
+    fi
+
 	fiparamFile=${SCRIPTPATH}/tmpParams.ini
 	cp ${LDBC_SNB_DATAGEN_HOME}/ params.ini  ${paramFile}
 
