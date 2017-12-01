@@ -350,7 +350,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public final Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        return Stream.concat(schemaConcept.sups(), Stream.of(getMetaConcept()));
+        Set<SchemaConcept> superSet= new HashSet<>();
+
+        while(schemaConcept != null) {
+            superSet.add(schemaConcept);
+            schemaConcept = schemaConcept.sup();
+        }
+
+        return superSet.stream();
     }
 
     private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
