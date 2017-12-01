@@ -25,8 +25,6 @@ import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSubmitter;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -55,13 +53,11 @@ public class PostProcessingTaskTest {
     private String mockResourceIndex;
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
-    private TaskSubmitter mockTaskSubmitter;
     private PostProcessor postProcessor;
 
     @Before
     public void mockPostProcessing(){
         mockResourceIndex = UUID.randomUUID().toString();
-        mockTaskSubmitter = mock(RedisTaskManager.class);
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
         postProcessor = PostProcessor.create(engine.config(), engine.getJedisPool(), engine.server().factory(), engine.server().lockProvider(), METRIC_REGISTRY);
@@ -81,7 +77,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+        task.initialize(mockConfiguration, engine.config(), engine.server().factory(),
                 METRIC_REGISTRY, postProcessor);
         task.start();
 
@@ -92,7 +88,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+        task.initialize(mockConfiguration, engine.config(), engine.server().factory(),
                 METRIC_REGISTRY, postProcessor);
         task.start();
 
@@ -104,9 +100,9 @@ public class PostProcessingTaskTest {
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
-        task1.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+        task1.initialize(mockConfiguration, engine.config(), engine.server().factory(),
                 METRIC_REGISTRY, postProcessor);
-        task2.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+        task2.initialize(mockConfiguration, engine.config(), engine.server().factory(),
                 METRIC_REGISTRY, postProcessor);
 
         Thread pp1 = new Thread(task1::start);

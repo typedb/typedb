@@ -110,20 +110,20 @@ def graknNode(Closure closure) {
 
 def archiveArtifactsS3 (String artifacts) {
     step([$class: 'S3BucketPublisher',
-	  consoleLogLevel: 'INFO',
-	  pluginFailureResultConstraint: 'FAILURE',
-	  entries: [[
-	      sourceFile: '${artifacts}',
-	      bucket: 'performance-logs.grakn.ai',
-	      selectedRegion: 'eu-west-1',
-	      noUploadOnFailure: true,
-	      managedArtifacts: true,
-	      flatten: true,
-	      showDirectlyInBrowser: true,
-	      keepForever: true
-	  ]],
-	  profileName: 'use-iam',
-	  dontWaitForConcurrentBuildCompletion: false,
+      consoleLogLevel: 'INFO',
+      pluginFailureResultConstraint: 'FAILURE',
+      entries: [[
+          sourceFile: '${artifacts}',
+          bucket: 'performance-logs.grakn.ai',
+          selectedRegion: 'eu-west-1',
+          noUploadOnFailure: true,
+          managedArtifacts: true,
+          flatten: true,
+          showDirectlyInBrowser: true,
+          keepForever: true
+      ]],
+      profileName: 'use-iam',
+      dontWaitForConcurrentBuildCompletion: false,
     ])
 }
 
@@ -250,14 +250,19 @@ def runBuild() {
 
     //This sets properties in the Jenkins server.
     properties([
-            pipelineTriggers([
-                    issueCommentTrigger('.*!rtg.*')
-            ]),
-            buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+        pipelineTriggers([
+            issueCommentTrigger('.*!rtg.*')
+        ]),
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
     ])
 
     if (!isMainBranch()) {
         stopAllRunningBuildsForThisJob()
+
+        //Keep fewer artifacts for PRs
+        properties([
+            buildDiscarder(logRotator(numToKeepStr: '7', artifactNumToKeepStr: '1'))
+        ])
     }
 
     // This is a map that we fill with jobs to perform in parallel, name -> job closure
