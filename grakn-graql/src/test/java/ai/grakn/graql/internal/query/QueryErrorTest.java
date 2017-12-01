@@ -96,6 +96,13 @@ public class QueryErrorTest {
     }
 
     @Test
+    public void whenMatchingHasWithNonExistentType_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("heffalump")).getMessage());
+        qb.match(var("x").has("heffalump", "foo")).get().execute();
+    }
+
+    @Test
     public void testErrorNotARelation() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(
