@@ -261,41 +261,6 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when a {@link Concept} does not have a shard
-     */
-    public static GraknTxOperationException missingShard(ConceptId id) {
-        return new GraknTxOperationException(String.format("Concept {%s} is missing an essential shard", id));
-    }
-
-    /**
-     * Thrown when a casting does not have a role player
-     */
-    public static GraknTxOperationException missingRolePlayer(String id) {
-        return new GraknTxOperationException(String.format("Concept {%s} is missing a role player", id));
-    }
-
-    /**
-     * Thrown when a casting is missing a {@link ai.grakn.concept.Relationship}
-     */
-    public static GraknTxOperationException missingRelationship(String id) {
-        return new GraknTxOperationException(String.format("Concept {%s} is missing a relationship", id));
-    }
-
-    /**
-     * Thrown when link to a {@link Attribute} is missing the owner
-     */
-    public static GraknTxOperationException missingOwner(ConceptId id) {
-        return new GraknTxOperationException(String.format("Relationship {%s} is missing the owner", id));
-    }
-
-    /**
-     * Thrown when link to a {@link Attribute} is missing the owner
-     */
-    public static GraknTxOperationException missingValue(ConceptId id) {
-        return new GraknTxOperationException(String.format("Relationship {%s} is missing the value", id));
-    }
-
-    /**
      * Thrown when a {@link Thing} is missing a {@link Type}
      */
     public static GraknTxOperationException missingType(ConceptId id) {
