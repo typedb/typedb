@@ -42,4 +42,7 @@ public abstract class Thing extends Concept {
 
     @JsonProperty
     public abstract Set<RolePlayer> relationships();
+
+    @JsonProperty
+    public abstract boolean inferred();
 }
