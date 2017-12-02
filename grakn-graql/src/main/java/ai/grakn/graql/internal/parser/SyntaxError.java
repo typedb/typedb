@@ -19,32 +19,30 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.util.ErrorMessage;
+import com.google.auto.value.AutoValue;
 import org.apache.commons.lang.StringUtils;
 
-class SyntaxError {
-    private final String queryLine;
-    private final int line;
-    private final int charPositionInLine;
-    private final String msg;
+import javax.annotation.Nullable;
 
-    SyntaxError(int line, String msg) {
-        this.queryLine = null;
-        this.line = line;
-        this.charPositionInLine = 0;
-        this.msg = msg;
+@AutoValue
+abstract class SyntaxError {
+    abstract @Nullable String queryLine();
+    abstract int line();
+    abstract int charPositionInLine();
+    abstract String msg();
+
+    static SyntaxError of(int line, String msg) {
+        return of(line, msg, null, 0);
     }
 
-    SyntaxError(String queryLine, int line, int charPositionInLine, String msg) {
-        this.queryLine = queryLine;
-        this.line = line;
-        this.charPositionInLine = charPositionInLine;
-        this.msg = msg;
+    static SyntaxError of(int line, String msg, @Nullable String queryLine, int charPositionInLine) {
+        return new AutoValue_SyntaxError(queryLine, line, charPositionInLine, msg);
     }
 
     @Override
     public String toString() {
-        if (queryLine == null) {
-            return ErrorMessage.SYNTAX_ERROR_NO_POINTER.getMessage(line, msg);
+        if (queryLine() == null) {
+            return ErrorMessage.SYNTAX_ERROR_NO_POINTER.getMessage(line(), msg());
         } else {
             // Error message appearance:
             //
@@ -52,8 +50,8 @@ class SyntaxError {
             // match $
             //       ^
             // blah blah antlr blah
-            String pointer = StringUtils.repeat(" ", charPositionInLine) + "^";
-            return ErrorMessage.SYNTAX_ERROR.getMessage(line, queryLine, pointer, msg);
+            String pointer = StringUtils.repeat(" ", charPositionInLine()) + "^";
+            return ErrorMessage.SYNTAX_ERROR.getMessage(line(), queryLine(), pointer, msg());
         }
     }
 }

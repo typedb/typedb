@@ -23,8 +23,8 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknCreator;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
@@ -46,9 +46,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 
 /**
@@ -64,7 +64,7 @@ public class EngineContext extends CompositeTestRule {
 
     private GraknEngineServer server;
 
-    private final GraknEngineConfig config = createTestConfig();
+    private final GraknConfig config = createTestConfig();
     private JedisPool jedisPool;
 
     private final TestRule redis;
@@ -81,16 +81,6 @@ public class EngineContext extends CompositeTestRule {
     }
 
     /**
-     * Creates a {@link EngineContext} for testing which uses a real embedded redis.
-     * This should only be used for benchmark testing where performance and memory usage matters.
-     *
-     * @return a new {@link EngineContext} for testing
-     */
-    public static EngineContext createWithEmbeddedRedis(){
-        return new EngineContext(false);
-    }
-
-    /**
      * Creates a {@link EngineContext} for testing which uses an in-memory redis mock.
      * This is the default test environment which should be used because starting an embedded redis is a costly process.
      *
@@ -104,7 +94,7 @@ public class EngineContext extends CompositeTestRule {
         return server;
     }
 
-    public GraknEngineConfig config() {
+    public GraknConfig config() {
         return config;
     }
 
@@ -137,15 +127,15 @@ public class EngineContext extends CompositeTestRule {
     }
 
     @Override
-    protected List<TestRule> testRules() {
+    protected final List<TestRule> testRules() {
         return ImmutableList.of(
-                TxFactoryContext.create(),
+                SessionContext.create(),
                 redis
         );
     }
 
     @Override
-    public void before() throws Throwable {
+    protected final void before() throws Throwable {
         RestAssured.baseURI = uri().toURI().toString();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
@@ -161,21 +151,21 @@ public class EngineContext extends CompositeTestRule {
         //
         // When using janus, add -Dgrakn.test-profile=janus
         //
-        // The reason is that the default configuration of Grakn uses the Janus factory while the default
+        // The reason is that the default configuration of Grakn uses the Janus Factory while the default
         // test profile is tinker: so when running a unit test within an IDE without any extra parameters,
         // we end up wanting to use the JanusFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
         // start engine
         setRestAssuredUri(config);
-        server = GraknCreator.cleanGraknEngineServer(config);
+        server = new GraknCreator().cleanGraknEngineServer(config);
         server.start();
 
-        LOG.info("engine started.");
+        LOG.info("engine started on " + uri());
     }
 
     @Override
-    public void after() {
+    protected final void after() {
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
@@ -204,7 +194,7 @@ public class EngineContext extends CompositeTestRule {
         final Set<String> keyspaceNames = new HashSet<String>();
         try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
-                    .forEach(x -> x.values().forEach(y -> {
+                    .forEach(x -> x.concepts().forEach(y -> {
                         keyspaceNames.add(y.asAttribute().getValue().toString());
                     }));
         }
@@ -216,11 +206,29 @@ public class EngineContext extends CompositeTestRule {
         server.factory().refreshConnections();
     }
 
+    private static void noThrow(RunnableWithExceptions fn, String errorMessage) {
+        try {
+            fn.run();
+        }
+        catch (Throwable t) {
+            LOG.error(errorMessage + "\nThe exception was: " + getFullStackTrace(t));
+        }
+    }
+
+    /**
+     * Function interface that throws exception for use in the noThrow function
+     * @param <E>
+     */
+    @FunctionalInterface
+    private interface RunnableWithExceptions<E extends Exception> {
+        void run() throws E;
+    }
+
     /**
      * Create a configuration for use in tests, using random ports.
      */
-    private static GraknEngineConfig createTestConfig() {
-        GraknEngineConfig config = GraknEngineConfig.create();
+    private static GraknConfig createTestConfig() {
+        GraknConfig config = GraknConfig.create();
 
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, GraknTestUtil.getEphemeralPort());
         config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + GraknTestUtil.getEphemeralPort()));
@@ -228,8 +236,11 @@ public class EngineContext extends CompositeTestRule {
         return config;
     }
 
-    private static void setRestAssuredUri(GraknEngineConfig config) {
+    private static void setRestAssuredUri(GraknConfig config) {
         RestAssured.baseURI = "http://" + config.uri();
     }
 
+    public JedisPool getJedisPool() {
+        return jedisPool;
+    }
 }

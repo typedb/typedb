@@ -9,27 +9,27 @@ role2 sub role;
 #Entities
 
 entity1 sub entity
-	plays role1
-	plays role2;
+    plays role1
+    plays role2;
 
 #Relations
 
 relation1 sub relationship
-	relates role1
-	relates role2
-	plays role1
-	plays role2;
+    relates role1
+    relates role2
+    plays role1
+    plays role2;
 
 #Rules
 
 rule-1 sub rule
-	when {
-		$x isa entity1;
-		$z (role1:$x, role2:$y) isa relation1;
-	}
-	then {
-		(role1:$x, role2:$z) isa relation1;
-	};
+    when {
+    	$x isa entity1;
+    	$z (role1:$x, role2:$y) isa relation1;
+    }
+    then {
+    	(role1:$x, role2:$z) isa relation1;
+    };
 
 
 insert

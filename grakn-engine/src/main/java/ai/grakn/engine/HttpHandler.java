@@ -21,20 +21,11 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
-import ai.grakn.engine.controller.ConceptController;
-import ai.grakn.engine.controller.DashboardController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
-import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.controller.api.AttributeController;
-import ai.grakn.engine.controller.api.AttributeTypeController;
-import ai.grakn.engine.controller.api.EntityController;
-import ai.grakn.engine.controller.api.EntityTypeController;
-import ai.grakn.engine.controller.api.RelationshipController;
-import ai.grakn.engine.controller.api.RelationshipTypeController;
-import ai.grakn.engine.controller.api.RoleController;
-import ai.grakn.engine.controller.api.RuleController;
+import ai.grakn.engine.controller.api.ConceptController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknBackendException;
@@ -49,9 +40,8 @@ import spark.Response;
 import spark.Service;
 
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
 
-import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static ai.grakn.engine.GraknConfig.WEBSOCKET_TIMEOUT;
 
 /**
  *
@@ -61,22 +51,22 @@ public class HttpHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpHandler.class);
 
-    private final GraknEngineConfig prop;
+    private final GraknConfig prop;
     private final Service spark;
     private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
     private final GraknEngineStatus graknEngineStatus;
     private final TaskManager taskManager;
-    private final ExecutorService taskExecutor;
+    private final PostProcessor postProcessor;
 
-    public HttpHandler(GraknEngineConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, ExecutorService taskExecutor) {
+    public HttpHandler(GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, PostProcessor postProcessor) {
         this.prop = prop;
         this.spark = spark;
         this.factory = factory;
         this.metricRegistry = metricRegistry;
         this.graknEngineStatus = graknEngineStatus;
         this.taskManager = taskManager;
-        this.taskExecutor = taskExecutor;
+        this.postProcessor = postProcessor;
     }
 
 
@@ -87,29 +77,17 @@ public class HttpHandler {
         RemoteSession graqlWebSocket = RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
-        int postProcessingDelay = prop.getProperty(GraknConfigKey.POST_PROCESSING_TASK_DELAY);
-
         // Start all the controllers
-        new GraqlController(factory, spark, metricRegistry);
+        new GraqlController(factory, spark, taskManager, postProcessor, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
-        new DashboardController(factory, spark);
-        new SystemController(spark, factory.properties(), factory.systemKeyspace(), graknEngineStatus, metricRegistry);
-        new CommitLogController(spark, postProcessingDelay, taskManager);
-        new TasksController(spark, taskManager, metricRegistry, taskExecutor);
-        new EntityController(factory, spark);
-        new EntityTypeController(factory, spark);
-        new RelationshipController(factory, spark);
-        new RelationshipTypeController(factory, spark);
-        new AttributeController(factory, spark);
-        new AttributeTypeController(factory, spark);
-        new RoleController(factory, spark);
-        new RuleController(factory, spark);
+        new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
+        new CommitLogController(spark, taskManager, postProcessor);
 
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
     }
 
-    public static void configureSpark(Service spark, GraknEngineConfig prop) {
+    public static void configureSpark(Service spark, GraknConfig prop) {
         configureSpark(spark,
                 prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
                 prop.getProperty(GraknConfigKey.SERVER_PORT),

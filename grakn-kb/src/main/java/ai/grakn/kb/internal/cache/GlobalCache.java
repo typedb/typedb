@@ -22,13 +22,13 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -54,18 +54,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class GlobalCache {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private static final int DEFAULT_CACHE_TIMEOUT_MS = 600_000;
 
     //Caches
     private final Cache<Label, SchemaConcept> cachedTypes;
     private final Map<Label, LabelId> cachedLabels;
 
-    public GlobalCache(Properties properties) {
+    public GlobalCache(GraknConfig config) {
         cachedLabels = new ConcurrentHashMap<>();
 
-        int cacheTimeout = Integer.parseInt(properties
-                .getProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS.name(),
-                        String.valueOf(DEFAULT_CACHE_TIMEOUT_MS)));
+        int cacheTimeout = config.getProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS);
         cachedTypes = CacheBuilder.newBuilder()
                 .maximumSize(1000)
                 .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)

@@ -217,7 +217,8 @@ public class MatchTest {
 
     @Test
     public void whenQueryingForRole_ResultContainsAllValidRoles() {
-        Match query = qb.match(var().rel(x, var().has("name", "Michael Corleone")));
+        //TODO: reasoner is not able to decompose and parse it correctly
+        Match query = qb.infer(false).match(var().rel(x, var().has("name", "Michael Corleone")));
 
         assertThat(query, variable(x, containsInAnyOrder(
                 role("role"), role("character-being-played"),
@@ -1075,7 +1076,7 @@ public class MatchTest {
         Entity entity = type.addEntity();
 
         Collection<Concept> results = movieKB.tx().graql().match(x.isa(type.getLabel().getValue()))
-                .stream().findAny().get().values();
+                .stream().findAny().get().concepts();
 
         assertThat(results, containsInAnyOrder(entity));
     }

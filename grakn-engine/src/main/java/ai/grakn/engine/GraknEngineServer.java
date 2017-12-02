@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
@@ -48,17 +47,16 @@ public class GraknEngineServer implements AutoCloseable {
     private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
 
-    private final GraknEngineConfig prop;
+    private final GraknConfig prop;
     private final TaskManager taskManager;
     private final EngineGraknTxFactory factory;
     private final LockProvider lockProvider;
     private final GraknEngineStatus graknEngineStatus;
     private final RedisWrapper redisWrapper;
-    private final ExecutorService taskExecutor;
     private final HttpHandler httpHandler;
     private final EngineID engineId;
 
-    protected GraknEngineServer(GraknEngineConfig prop, TaskManager taskManager, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, ExecutorService taskExecutor, HttpHandler httpHandler, EngineID engineId) {
+    public GraknEngineServer(GraknConfig prop, TaskManager taskManager, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, HttpHandler httpHandler, EngineID engineId) {
         this.prop = prop;
         this.graknEngineStatus = graknEngineStatus;
         // Redis connection pool
@@ -68,7 +66,6 @@ public class GraknEngineServer implements AutoCloseable {
         this.factory = factory;
         // Task manager
         this.taskManager = taskManager;
-        this.taskExecutor = taskExecutor;
         this.httpHandler = httpHandler;
         this.engineId = engineId;
     }
@@ -110,7 +107,6 @@ public class GraknEngineServer implements AutoCloseable {
             }
             httpHandler.stopHTTP();
             redisWrapper.close();
-            taskExecutor.shutdown();
         }
     }
 
@@ -139,7 +135,7 @@ public class GraknEngineServer implements AutoCloseable {
     private void logStartMessage(String host, int port) {
         String address = "http://" + host + ":" + port;
         LOG.info("\n==================================================");
-        LOG.info("\n" + String.format(GraknEngineConfig.GRAKN_ASCII, address));
+        LOG.info("\n" + String.format(GraknConfig.GRAKN_ASCII, address));
         LOG.info("\n==================================================");
     }
 
@@ -157,5 +153,9 @@ public class GraknEngineServer implements AutoCloseable {
 
     public HttpHandler getHttpHandler() {
         return httpHandler;
+    }
+
+    public LockProvider lockProvider(){
+        return lockProvider;
     }
 }

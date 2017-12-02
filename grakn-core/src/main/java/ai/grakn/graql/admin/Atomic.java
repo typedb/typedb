@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 
@@ -120,7 +121,7 @@ public interface Atomic {
      * @return true if the atomic can constitute the head of a rule
      */
     @CheckReturnValue
-    default boolean isAllowedToFormRuleHead(){ return false; }
+    Set<String> validateAsRuleHead(Rule rule);
 
     /**
      * @return error messages indicating ontological inconsistencies of this atomic

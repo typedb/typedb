@@ -111,7 +111,7 @@ public class AtomicTest {
         GraknTx graph = unificationTestSet.tx();
         String atomString = "{$x isa baseRoleEntity;}";
         String relString = "{($x, $y, $z) isa binary;}";
-        String resString = "{$x has res1 'value';}";
+        String resString = "{$x has resource 'value';}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(atomString, graph), graph).getAtom();
         Atom relation = ReasonerQueries.atomic(conjunction(relString, graph), graph).getAtom();
@@ -342,6 +342,21 @@ public class AtomicTest {
      */
 
     @Test
+    public void testRuleApplicability_OntologicalAtomsDoNotMatchAnyRules(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        Atom subAtom = ReasonerQueries.atomic(conjunction("{$x sub relationship;}", graph), graph).getAtom();
+        Atom hasAtom = ReasonerQueries.atomic(conjunction("{$x has description;}", graph), graph).getAtom();
+        Atom relatesAtom = ReasonerQueries.atomic(conjunction("{reifiable-relation relates $x;}", graph), graph).getAtom();
+        Atom relatesAtom2 = ReasonerQueries.atomic(conjunction("{$x relates role1;}", graph), graph).getAtom();
+        Atom playsAtom = ReasonerQueries.atomic(conjunction("{$x plays role1;}", graph), graph).getAtom();
+        assertThat(subAtom.getApplicableRules().collect(toSet()), empty());
+        assertThat(hasAtom.getApplicableRules().collect(toSet()), empty());
+        assertThat(relatesAtom.getApplicableRules().collect(toSet()), empty());
+        assertThat(relatesAtom2.getApplicableRules().collect(toSet()), empty());
+        assertThat(playsAtom.getApplicableRules().collect(toSet()), empty());
+    }
+
+    @Test
     public void testRuleApplicability_AmbiguousRoleMapping(){
         GraknTx graph = ruleApplicabilitySet.tx();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
@@ -432,7 +447,7 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_TypedResources(){
         GraknTx graph = ruleApplicabilitySet.tx();
-        String relationString = "{$x isa reified-relation; $x has description $d;}";
+        String relationString = "{$x isa reifiable-relation; $x has description $d;}";
         String relationString2 = "{$x isa typed-relation; $x has description $d;}";
         String relationString3 = "{$x isa relationship; $x has description $d;}";
         Atom resource = ReasonerQueries.create(conjunction(relationString, graph), graph).getAtoms(ResourceAtom.class).findFirst().orElse(null);
@@ -465,10 +480,21 @@ public class AtomicTest {
         assertEquals(rules.stream().filter(r -> r.getHead().getAtom().isRelation()).count(), type5.getApplicableRules().count());
     }
 
-    @Test //should assign (role: $x, role: $y) which is compatible with 3 rules
+    @Test //should assign (role: $x, role: $y) which is compatible with all rules
     public void testRuleApplicability_genericRelation(){
         GraknTx graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y);}";
+        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(
+                RuleUtils.getRules(graph).count(),
+                relation.getApplicableRules().count()
+        );
+    }
+
+    @Test
+    public void testRuleApplicability_genericType(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        String relationString = "{$x isa $type;}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertEquals(
                 RuleUtils.getRules(graph).count(),
@@ -1203,11 +1229,11 @@ public class AtomicTest {
     @Test
     public void testUnification_VariousResourceAtoms(){
         GraknTx graph = unificationTestSet.tx();
-        String resource = "{$x has res1 $r;$r val 'f';}";
-        String resource2 = "{$r has res1 $x;$x val 'f';}";
-        String resource3 = "{$r has res1 'f';}";
-        String resource4 = "{$x has res1 $y via $r;$y val 'f';}";
-        String resource5 = "{$y has res1 $r via $x;$r val 'f';}";
+        String resource = "{$x has resource $r;$r val 'f';}";
+        String resource2 = "{$r has resource $x;$x val 'f';}";
+        String resource3 = "{$r has resource 'f';}";
+        String resource4 = "{$x has resource $y via $r;$y val 'f';}";
+        String resource5 = "{$y has resource $r via $x;$r val 'f';}";
         exactUnification(resource, resource2, true, true, graph);
         exactUnification(resource, resource3, true, true, graph);
         exactUnification(resource2, resource3, true, true, graph);
@@ -1271,15 +1297,15 @@ public class AtomicTest {
     @Test
     public void testUnification_ResourceWithIndirectValuePredicate(){
         GraknTx graph = unificationTestSet.tx();
-        String resource = "{$x has res1 $r;$r val 'f';}";
-        String resource2 = "{$r has res1 $x;$x val 'f';}";
-        String resource3 = "{$r has res1 'f';}";
+        String resource = "{$x has resource $r;$r val 'f';}";
+        String resource2 = "{$r has resource $x;$x val 'f';}";
+        String resource3 = "{$r has resource 'f';}";
 
         ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction(resource, graph), graph);
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, graph), graph);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, graph), graph);
 
-        String type = "{$x isa res1;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").getId().getValue()  + "';}";
+        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").getId().getValue()  + "';}";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, graph), graph);
         Atom typeAtom = typeQuery.getAtom();
 
@@ -1314,7 +1340,7 @@ public class AtomicTest {
                         graph.graql().parser().parsePattern(childPatternString),
                         graph.graql().parser().parsePattern(childPatternString)),
                 graph)
-                .rewriteToUserDefined(parentAtom);
+                .rewrite(parentAtom);
 
         RelationshipAtom headAtom = (RelationshipAtom) testRule.getHead().getAtom();
         Var headVarName = headAtom.getVarName();

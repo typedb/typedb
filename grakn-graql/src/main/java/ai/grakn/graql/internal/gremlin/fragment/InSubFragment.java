@@ -33,8 +33,14 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Fragment following in sub edges
+ *
+ * @author Felix Chapman
+ */
+
 @AutoValue
-abstract class InSubFragment extends Fragment {
+public abstract class InSubFragment extends Fragment {
 
     @Override
     public abstract Var end();
@@ -51,8 +57,13 @@ abstract class InSubFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_SUBTYPES_PER_TYPE;
+    }
+
+    @Override
+    public Fragment getInverse() {
+        return Fragments.outSub(varProperty(), end(), start());
     }
 
     @Override

@@ -19,13 +19,13 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.test.rule.TxFactoryContext;
+import ai.grakn.test.rule.SessionContext;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
@@ -34,13 +34,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -78,16 +78,16 @@ public class RemoteSessionTest {
             INFER, false
     );
 
-    //Needed to start cass depending on profile
-    @ClassRule
-    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+    public static final SessionContext sessionContext = SessionContext.create();
+
+    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        GraknConfig graknConfig = GraknConfig.create();
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, graknConfig);
+        new SystemController(spark, graknConfig, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
+    }).port(4567);
 
     @ClassRule
-    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        Properties properties = GraknEngineConfig.create().getProperties();
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, properties);
-        new SystemController(spark, properties, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
-    }).port(4567);
+    public static final RuleChain chain = RuleChain.emptyRuleChain().around(sessionContext).around(sparkContext);
 
     private final BlockingQueue<Json> responses = new LinkedBlockingDeque<>();
     private final RemoteEndpoint remoteEndpoint = mock(RemoteEndpoint.class);

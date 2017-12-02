@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -79,9 +80,9 @@ public abstract class TypeAtom extends Binary{
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        return this.getSchemaConcept() != null
+        return this.getSchemaConcept() == null ||
                 //ensure not ontological atom query
-                && getPattern().admin().hasProperty(IsaProperty.class)
+                getPattern().admin().hasProperty(IsaProperty.class)
                 && this.getSchemaConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getSchemaConcept()));
     }
 
@@ -90,7 +91,7 @@ public abstract class TypeAtom extends Binary{
         return getTypePredicate() == null
                 //disjoint atom
                 || !this.getNeighbours(Atom.class).findFirst().isPresent()
-                || isRuleResolvable();
+                || getPotentialRules().findFirst().isPresent();
     }
 
     @Override
@@ -109,8 +110,10 @@ public abstract class TypeAtom extends Binary{
     @Nullable
     @Override
     public SchemaConcept getSchemaConcept() {
-        return getTypePredicate() != null ?
-                getParentQuery().tx().getConcept(getTypePredicate().getPredicate()) : null;
+        if (getTypePredicate() == null) return null;
+        SchemaConcept schemaConcept = tx().getConcept(getTypePredicate().getPredicate());
+        if (schemaConcept == null) throw GraqlQueryException.idNotFound(getTypePredicate().getPredicate());
+        return schemaConcept;
     }
 
     /**

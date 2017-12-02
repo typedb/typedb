@@ -19,17 +19,21 @@
 package ai.grakn.engine.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.factory.GraknSessionImpl;
 import com.google.common.annotations.VisibleForTesting;
 
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * <p>
@@ -47,23 +51,24 @@ import java.util.Properties;
  * @author fppt
  */
 public class EngineGraknTxFactory {
-    private final Properties properties;
+    private final GraknConfig engineConfig;
     private final String engineURI;
     private final SystemKeyspace systemKeyspace;
+    private final Map<Keyspace, GraknSession> openedSessions;
 
     @VisibleForTesting //Only used for testing
-    public static EngineGraknTxFactory createAndLoadSystemSchema(LockProvider lockProvider, Properties properties) {
-        return new EngineGraknTxFactory(properties, lockProvider, true);
+    public static EngineGraknTxFactory createAndLoadSystemSchema(LockProvider lockProvider, GraknConfig engineConfig) {
+        return new EngineGraknTxFactory(engineConfig, lockProvider, true);
     }
 
-    public static EngineGraknTxFactory create(LockProvider lockProvider, Properties properties) {
-        return new EngineGraknTxFactory(properties, lockProvider, false);
+    public static EngineGraknTxFactory create(LockProvider lockProvider, GraknConfig engineConfig) {
+        return new EngineGraknTxFactory(engineConfig, lockProvider, false);
     }
 
-    private EngineGraknTxFactory(Properties properties, LockProvider lockProvider, boolean loadSchema) {
-        this.properties = new Properties();
-        this.properties.putAll(properties);
-        this.engineURI = properties.getProperty(GraknConfigKey.SERVER_HOST_NAME.name()) + ":" + properties.getProperty(GraknConfigKey.SERVER_PORT.name());
+    private EngineGraknTxFactory(GraknConfig engineConfig, LockProvider lockProvider, boolean loadSchema) {
+        this.openedSessions = new HashMap<>();
+        this.engineConfig = engineConfig;
+        this.engineURI = engineConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + engineConfig.getProperty(GraknConfigKey.SERVER_PORT);
         this.systemKeyspace = SystemKeyspaceImpl.create(this, lockProvider, loadSchema);
     }
 
@@ -79,7 +84,21 @@ public class EngineGraknTxFactory {
         if(!keyspace.equals(SystemKeyspace.SYSTEM_KB_KEYSPACE)) {
             systemKeyspace.openKeyspace(keyspace);
         }
-        return FactoryBuilder.getFactory(keyspace, engineURI, properties).open(type);
+        return session(keyspace).open(type);
+    }
+
+    /**
+     * Retrieves the {@link GraknSession} needed to open the {@link GraknTx}.
+     * This will open a new one {@link GraknSession} if it hasn't been opened before
+     *
+     * @param keyspace The {@link Keyspace} of the {@link GraknSession} to retrieve
+     * @return a new or existing {@link GraknSession} connecting to the provided {@link Keyspace}
+     */
+    private GraknSession session(Keyspace keyspace){
+        if(!openedSessions.containsKey(keyspace)){
+            openedSessions.put(keyspace,GraknSessionImpl.createEngineSession(keyspace, engineURI, engineConfig));
+        }
+        return openedSessions.get(keyspace);
     }
 
     /**
@@ -87,11 +106,11 @@ public class EngineGraknTxFactory {
      * @param keyspace the new {@link Keyspace} we want to create
      */
     public void initialiseNewKeyspace(Keyspace keyspace) {
-        FactoryBuilder.getFactory(keyspace, engineURI, properties).open(GraknTxType.WRITE).close();
+        session(keyspace).open(GraknTxType.WRITE).close();
     }
 
-    public Properties properties() {
-        return properties;
+    public GraknConfig config() {
+        return engineConfig;
     }
 
     public SystemKeyspace systemKeyspace(){

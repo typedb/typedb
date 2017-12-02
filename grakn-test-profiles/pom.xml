@@ -17,8 +17,6 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-test-tools</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -27,7 +25,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
 
                 <configuration>
                     <systemPropertyVariables>
@@ -38,7 +35,7 @@
                     </systemPropertyVariables>
                     <!-- uncomment the following to be able to run only specific packages with
                         for example -DtestGroup=ai/grakn/test/migration/sql
-					<includes>
+    				<includes>
                     	<include>**/${testGroup}/*Test.java</include>
                 	</includes>
                 -->
@@ -54,7 +51,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.19.1</version>
 
                 <configuration>
                     <systemPropertyVariables>
@@ -88,22 +84,6 @@
                 <dependency>
                     <groupId>ai.grakn</groupId>
                     <artifactId>janus-factory</artifactId>
-                    <version>${project.version}</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.slf4j</groupId>
-                            <artifactId>slf4j-log4j12</artifactId>
-                        </exclusion>
-                        <exclusion>
-                            <groupId>ch.qos.logback</groupId>
-                            <artifactId>logback-classic</artifactId>
-                        </exclusion>
-                        <!--Excluded because we provide logback logger-->
-                        <exclusion>
-                            <groupId>org.slf4j</groupId>
-                            <artifactId>slf4j-nop</artifactId>
-                        </exclusion>
-                    </exclusions>
                     <scope>test</scope>
                 </dependency>
             </dependencies>

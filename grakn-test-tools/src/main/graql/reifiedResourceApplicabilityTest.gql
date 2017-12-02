@@ -2,10 +2,10 @@ define
 
 entity1 sub entity
     plays resource-owner
-	has res-string
-	has res-double
-	has res-long
-	has res-boolean;
+    has res-string
+    has res-double
+    has res-long
+    has res-boolean;
 
 
 #Resources

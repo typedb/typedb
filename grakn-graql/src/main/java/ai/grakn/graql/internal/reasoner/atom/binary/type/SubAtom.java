@@ -23,7 +23,10 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -41,13 +44,16 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class SubAtom extends TypeAtom {
+public class SubAtom extends OntologicalAtom {
     public SubAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) {
         super(pattern, predicateVar, p, par);}
     private SubAtom(SubAtom a) { super(a);}
     private SubAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
         this(var.sub(predicateVar), predicateVar, p, par);
     }
+
+    @Override
+    public Class<? extends VarProperty> getVarPropertyClass() {return SubProperty.class;}
 
     @Override
     public String toString(){

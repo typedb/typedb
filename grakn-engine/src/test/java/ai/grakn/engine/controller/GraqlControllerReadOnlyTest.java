@@ -24,13 +24,15 @@ import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
@@ -54,7 +56,7 @@ import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
@@ -95,8 +97,8 @@ public class GraqlControllerReadOnlyTest {
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(spark, mockFactory.properties(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
-        new GraqlController(mockFactory, spark, metricRegistry);
+        new SystemController(spark, mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
+        new GraqlController(mockFactory, spark, mock(TaskManager.class), mock(PostProcessor.class), metricRegistry);
     });
 
     @Before
@@ -114,12 +116,12 @@ public class GraqlControllerReadOnlyTest {
 
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomkeyspace"));
+        when(mockTx.keyspace()).thenReturn(Keyspace.of("randomkeyspace"));
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.tx(eq(mockTx.getKeyspace()), any())).thenReturn(mockTx);
+        when(mockFactory.tx(eq(mockTx.keyspace()), any())).thenReturn(mockTx);
         when(mockFactory.systemKeyspace()).thenReturn(mockSystemKeyspace);
-        when(mockFactory.properties()).thenReturn(sparkContext.config().getProperties());
+        when(mockFactory.config()).thenReturn(sparkContext.config());
     }
 
     @Test
@@ -174,7 +176,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlMatchWithNoQuery_ResponseStatusIs400() {
         Response response = RestAssured.with()
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage(QUERY)));
@@ -200,7 +202,7 @@ public class GraqlControllerReadOnlyTest {
         Response response = RestAssured.with()
                 .body("match $x isa movie; get;")
                 .accept(APPLICATION_TEXT)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -224,7 +226,7 @@ public class GraqlControllerReadOnlyTest {
         String queryString = "match $x isa movie; get;";
         Response response = sendRequest(queryString, APPLICATION_HAL);
 
-        Printer<?> printer = Printers.hal(mockTx.getKeyspace(), -1);
+        Printer<?> printer = Printers.hal(mockTx.keyspace(), -1);
         Query<?> query = sampleKB.tx().graql().parse(queryString);
         Json expectedResponse = Json.read(printer.graqlString(query.execute()));
         assertThat(jsonResponse(response), equalTo(expectedResponse));
@@ -440,12 +442,12 @@ public class GraqlControllerReadOnlyTest {
     private Response sendRequest(String match, String acceptType, boolean reasonser,
                                   int limitEmbedded) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
+                .queryParam(KEYSPACE_PARAM, mockTx.keyspace().getValue())
                 .body(match)
                 .queryParam(INFER, reasonser)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
-                .post(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, mockTx.getKeyspace().getValue()));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, mockTx.keyspace().getValue()));
     }
 
     protected static String exception(Response response) {

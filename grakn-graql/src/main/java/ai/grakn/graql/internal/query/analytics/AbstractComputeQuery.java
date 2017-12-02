@@ -18,10 +18,8 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -63,14 +61,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Optional<GraknTx> tx = Optional.empty();
     private GraknComputer graknComputer = null;
-    private Keyspace keySpace;
-
     boolean includeAttribute = false;
 
     Set<Label> subLabels = new HashSet<>();
     Set<Type> subTypes = new HashSet<>();
-
-    private String url;
 
     @Override
     public ComputeQuery<T> withTx(GraknTx tx) {
@@ -125,10 +119,6 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     void initSubGraph() {
-        GraknTx graknTx = tx.orElseThrow(GraqlQueryException::noTx);
-        keySpace = graknTx.getKeyspace();
-        url = graknTx.admin().getEngineUrl();
-
         if (this.isStatisticsQuery()) {
             includeAttribute = true;
         }
@@ -171,7 +161,11 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     GraknComputer getGraphComputer() {
         if (graknComputer == null) {
-            graknComputer = Grakn.session(url, keySpace).getGraphComputer();
+            if(tx.isPresent()){
+                graknComputer = tx.get().session().getGraphComputer();
+            } else {
+                throw new IllegalStateException("Transaction has not been provided. Cannot initialise graph computer");
+            }
         }
         return graknComputer;
     }

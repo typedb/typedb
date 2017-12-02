@@ -92,7 +92,7 @@ public class GraknMatchers {
             @Override
             Iterable<? extends MatchableConcept> transform(Match item) {
                 return item.stream()
-                        .flatMap(result -> result.values().stream())
+                        .flatMap(result -> result.concepts().stream())
                         .map(MatchableConcept::of)
                         .collect(toList());
             }

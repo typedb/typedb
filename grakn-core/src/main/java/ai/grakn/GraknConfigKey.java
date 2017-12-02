@@ -45,8 +45,6 @@ public abstract class GraknConfigKey<T> {
     private static final Function<Optional<String>, Optional<Boolean>> BOOL = required(Boolean::parseBoolean);
     private static final Function<Optional<String>, Optional<Long>> LONG = required(Long::parseLong);
 
-    public static final GraknConfigKey<String> VERSION = key("grakn.version");
-
     public static final GraknConfigKey<Integer> WEBSERVER_THREADS = key("webserver.threads", INT);
 
     public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
@@ -70,11 +68,13 @@ public abstract class GraknConfigKey<T> {
 
     public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
 
-    // Delay for the post processing task in milliseconds
-    public static final GraknConfigKey<Integer> POST_PROCESSING_TASK_DELAY = key("tasks.postprocessing.delay", INT);
+    public static final GraknConfigKey<Integer> TASK_DELAY = key("tasks.delay", INT);
+
     public static final GraknConfigKey<Integer> TASKS_RETRY_DELAY = key("tasks.retry.delay", INT);
 
     public static final GraknConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);
+    public static final GraknConfigKey<String> KB_MODE = key("knowledge-base.mode");
+    public static final GraknConfigKey<String> KB_ANALYTICS = key("knowledge-base.analytics");
 
     public static final GraknConfigKey<Boolean> TEST_START_EMBEDDED_COMPONENTS =
             key("test.start.embedded.components", BOOL);

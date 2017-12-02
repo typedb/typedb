@@ -1,0 +1,31 @@
+define
+
+role1 sub role;
+role2 sub role;
+
+newEntity sub entity;
+
+entity1 sub entity
+    plays role1
+    plays role2
+    has resource;
+
+entity2 sub entity
+    plays role1
+    plays role2
+    has resource;
+
+relation sub relationship
+    relates role1
+    relates role2
+    has resource;
+
+#Resources
+resource sub attribute datatype string;
+
+insert
+
+#Data
+
+$x isa entity1, has resource 'resource';
+$y isa entity2;

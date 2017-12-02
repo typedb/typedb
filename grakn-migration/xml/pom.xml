@@ -30,7 +30,6 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-base</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

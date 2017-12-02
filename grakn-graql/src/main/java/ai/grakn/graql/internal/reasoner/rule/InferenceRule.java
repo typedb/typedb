@@ -37,9 +37,12 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
+import ai.grakn.graql.internal.reasoner.state.RuleState;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.Sets;
 
@@ -183,8 +186,8 @@ public class InferenceRule {
      */
     public InferenceRule withSubstitution(Answer sub){
         return new InferenceRule(
-                ReasonerQueries.atomic(getHead(), sub),
-                ReasonerQueries.create(getBody(), sub),
+                getHead().withSubstitution(sub),
+                getBody().withSubstitution(sub),
                 ruleId,
                 tx
         );
@@ -264,26 +267,37 @@ public class InferenceRule {
         );
     }
 
-    private InferenceRule rewrite(Atom parentAtom){
-        ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
-        List<Atom> bodyRewrites = new ArrayList<>();
-        body.getAtoms(Atom.class)
-                .map(at -> {
-                    if (at.isRelation()
-                            && !at.isUserDefined()
-                            && Objects.equals(at.getSchemaConcept(), head.getAtom().getSchemaConcept())){
-                        return at.rewriteToUserDefined(parentAtom);
-                    } else {
-                        return at;
-                    }
-                }).forEach(bodyRewrites::add);
-
-        ReasonerQueryImpl rewrittenBody = ReasonerQueries.create(bodyRewrites, tx);
-        return new InferenceRule(rewrittenHead, rewrittenBody, ruleId, tx);
+    private InferenceRule rewriteHeadToRelation(Atom parentAtom){
+        if (parentAtom.isRelation() && getHead().getAtom().isResource()){
+            return new InferenceRule(
+                    ReasonerQueries.atomic(getHead().getAtom().toRelationshipAtom()),
+                    ReasonerQueries.create(getBody().getAtoms(), tx),
+                    ruleId,
+                    tx
+            );
+        }
+        return this;
     }
 
-    private boolean requiresRewrite(Atom parentAtom){
-        return parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion();
+    private InferenceRule rewriteVariables(Atom parentAtom){
+        if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
+            ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
+            List<Atom> bodyRewrites = new ArrayList<>();
+            body.getAtoms(Atom.class)
+                    .map(at -> {
+                        if (at.isRelation()
+                                && !at.isUserDefined()
+                                && Objects.equals(at.getSchemaConcept(), head.getAtom().getSchemaConcept())) {
+                            return at.rewriteToUserDefined(parentAtom);
+                        } else {
+                            return at;
+                        }
+                    }).forEach(bodyRewrites::add);
+
+            ReasonerQueryImpl rewrittenBody = ReasonerQueries.create(bodyRewrites, tx);
+            return new InferenceRule(rewrittenHead, rewrittenBody, ruleId, tx);
+        }
+        return this;
     }
 
     /**
@@ -291,8 +305,29 @@ public class InferenceRule {
      * @param parentAtom reference parent atom
      * @return rewritten rule
      */
-    public InferenceRule rewriteToUserDefined(Atom parentAtom){
-        return requiresRewrite(parentAtom)? rewrite(parentAtom) : this;
+    public InferenceRule rewrite(Atom parentAtom){
+        return this
+                .rewriteHeadToRelation(parentAtom)
+                .rewriteVariables(parentAtom);
+    }
+
+    /**
+     * @param parentAtom atom to which this rule is applied
+     * @param ruleUnifier unifier with parent state
+     * @param parent parent state
+     * @param visitedSubGoals set of visited sub goals
+     * @param cache query cache
+     * @return resolution subGoal formed from this rule
+     */
+    public QueryStateBase subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Unifier ruleUnifierInverse = ruleUnifier.inverse();
+
+        //delta' = theta . thetaP . delta
+        Answer partialSubPrime = parentAtom.getParentQuery()
+                .getSubstitution()
+                .unify(ruleUnifierInverse);
+
+        return new RuleState(this.propagateConstraints(parentAtom, ruleUnifierInverse), partialSubPrime, ruleUnifier, parent, visitedSubGoals, cache);
     }
 
     /**

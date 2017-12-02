@@ -21,8 +21,8 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
-
 import com.google.common.collect.ImmutableMap;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
@@ -48,10 +48,7 @@ public interface Answer {
     Set<Var> vars();
 
     @CheckReturnValue
-    Collection<Concept> values();
-
-    @CheckReturnValue
-    Set<Concept> concepts();
+    Collection<Concept> concepts();
 
     @CheckReturnValue
     Set<Map.Entry<Var, Concept>> entrySet();
@@ -76,7 +73,7 @@ public interface Answer {
     ImmutableMap<Var, Concept> map();
 
     @CheckReturnValue
-    boolean containsKey(Var var);
+    boolean containsVar(Var var);
 
     @CheckReturnValue
     boolean containsAll(Answer ans);

@@ -1,34 +1,56 @@
 #!groovy
 
-import static Constants.*;
+import static Constants.*
 
-// In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
-// `load.sh` and `validate.sh`. Add the name of the folder to the list `integrationTests` below.
-// `validate.sh` will be passed the branch name (e.g. "master") as the first argument
-def integrationTests = ["test-snb", "test-biomed"]
+def isMainBranch() {
+    return env.BRANCH_NAME in ['master', 'stable']
+}
+
+// Jenkins normally serializes every variable in a Jenkinsfile so it can pause and resume jobs.
+// This method contains variables representing 'jobs', which cannot be serialized.
+// The `@NonCPS` annotation stops Jenkins trying to serialize the variables in this method.
+@NonCPS
+def stopAllRunningBuildsForThisJob() {
+    def job = Jenkins.instance.getItemByFullName(env.JOB_NAME)
+
+    for (build in job.builds) {
+        if (build.isBuilding() && build.getNumber() != env.BUILD_NUMBER.toInteger()) {
+            build.doStop()
+        }
+    }
+}
 
 class Constants {
+
+    // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
+    // `load.sh` and `validate.sh`. Add the name of the folder to the list `INTEGRATION_TESTS` below.
+    static final INTEGRATION_TESTS = ["test-snb", "test-biomed"]
+
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
 }
 
-//This sets properties in the Jenkins server. In this case run every 8 hours
-properties([
-        pipelineTriggers([
-                issueCommentTrigger('.*!ci.*')
-        ]),
-        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
-])
+String statusHeader(String message) {
+    return "${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+}
 
-def slackGithub(String message, String color = null) {
+String statusNotification(String message, String format='slack') {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
 
     String author = "authored by - ${user}"
-    String link = "(<${env.BUILD_URL}|Open>)"
-    String branch = env.BRANCH_NAME;
 
-    String formattedMessage = "${message} on ${branch}: ${env.JOB_NAME} #${env.BUILD_NUMBER} ${link}\n${author}"
+    if (format == 'slack') {
+        String link = "(<${env.BUILD_URL}|Open>)"
+        return "${statusHeader(message)} ${link}\n${author}"
+    } else if (format == 'html') {
+        String link = "<a href=\"${env.BUILD_URL}\">Open</a>"
+        return "<p>${statusHeader(message)} ${link}</p><p>${author}</p>"
+    } else {
+        throw new RuntimeException("Unrecognised format ${format}")
+    }
+}
 
-    slackSend channel: "#github", color: color, message: formattedMessage
+def slackGithub(String message, String color = null) {
+    slackSend channel: "#github", color: color, message: statusNotification(message)
 }
 
 def runIntegrationTest(String workspace, String moduleName) {
@@ -36,7 +58,7 @@ def runIntegrationTest(String workspace, String moduleName) {
 
     stage(moduleName) {
         withPath("${modulePath}:${modulePath}/src/main/bash") {
-            withGrakn(workspace) {
+            withGrakn {
                 timeout(180) {
                     stage('Load') {
                         sh "load.sh"
@@ -44,7 +66,7 @@ def runIntegrationTest(String workspace, String moduleName) {
                 }
                 timeout(360) {
                     stage('Validate') {
-                        sh "validate.sh ${env.BRANCH_NAME}"
+                        sh "validate.sh"
                     }
                 }
             }
@@ -52,7 +74,7 @@ def runIntegrationTest(String workspace, String moduleName) {
     }
 }
 
-def withGrakn(String workspace, Closure closure) {
+def withGrakn(Closure closure) {
     //Stages allow you to organise and group things within Jenkins
     try {
         timeout(15) {
@@ -62,8 +84,9 @@ def withGrakn(String workspace, Closure closure) {
         }
         closure()
     } finally {
-        archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-        archiveArtifacts artifacts: 'grakn-package/logs/cassandra.log'
+        archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn.log"
+        archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn-postprocessing.log"
+        archiveArtifacts artifacts: "${env.PACKAGE}/logs/cassandra.log"
     }
 }
 
@@ -71,12 +94,10 @@ def graknNode(Closure closure) {
     //Everything is wrapped in a try catch so we can handle any test failures
     //If one test fails then all the others will stop. I.e. we fail fast
     node {
-        withScripts(workspace) {
+        String workspace = pwd()
+        withPath("${workspace}/grakn-test/test-integration/src/test/bash") {
             try {
-                closure()
-            } catch (error) {
-                slackGithub "Build Failure", "danger"
-                throw error
+                closure(workspace)
             } finally {
                 stage('Tear Down') {
                     sh 'tear-down.sh'
@@ -86,13 +107,27 @@ def graknNode(Closure closure) {
     }
 }
 
-def withPath(String path, Closure closure) {
-    return withEnv(["PATH+EXTRA=${path}"], closure)
+def archiveArtifactsS3 (String artifacts) {
+    step([$class: 'S3BucketPublisher',
+      consoleLogLevel: 'INFO',
+      pluginFailureResultConstraint: 'FAILURE',
+      entries: [[
+          sourceFile: '${artifacts}',
+          bucket: 'performance-logs.grakn.ai',
+          selectedRegion: 'eu-west-1',
+          noUploadOnFailure: true,
+          managedArtifacts: true,
+          flatten: true,
+          showDirectlyInBrowser: true,
+          keepForever: true
+      ]],
+      profileName: 'use-iam',
+      dontWaitForConcurrentBuildCompletion: false,
+    ])
 }
 
-
-def withScripts(String workspace, Closure closure) {
-    withPath("${workspace}/grakn-test/test-integration/src/test/bash", closure)
+def withPath(String path, Closure closure) {
+    return withEnv(["PATH+EXTRA=${path}"], closure)
 }
 
 def ssh(String command) {
@@ -104,95 +139,149 @@ def buildGrakn() {
 }
 
 def shouldRunAllTests() {
-    return env.BRANCH_NAME in ['master', 'stable']
+    return isMainBranch()
 }
 
 def shouldDeployLongRunningInstance() {
     return env.BRANCH_NAME == 'stable'
 }
 
-// This is a map that we fill with jobs to perform in parallel, name -> job closure
-jobs = [:]
+def mvn(String args) {
+    sh "mvn --batch-mode ${args}"
+}
 
-jobs['tests'] = {
-    // Run all tests
-    graknNode {
+Closure createTestJob(split, i, testTimeout) {
+    return { workspace ->
         checkout scm
 
-        slackGithub "Janus tests started"
+        def mavenVerify = 'clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1'
 
-        timeout(120) {
-            stage('Run Janus test profile') {
-                try {
-                    sh "mvn clean verify -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
-                } finally {
-                    junit "**/TEST*.xml"
-                }
-            }
+        /* Write includesFile or excludesFile for tests.  Split record provided by splitTests. */
+        /* Tell Maven to read the appropriate file. */
+        if (split.includes) {
+            writeFile file: "${workspace}/parallel-test-includes-${i}.txt", text: split.list.join("\n")
+            mavenVerify += " -Dsurefire.includesFile=${workspace}/parallel-test-includes-${i}.txt"
+        } else {
+            writeFile file: "${workspace}/parallel-test-excludes-${i}.txt", text: split.list.join("\n")
+            mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
         }
 
-        slackGithub "Janus tests success", "good"
+            try {
+                /* Call the Maven build with tests. */
+                timeout(testTimeout) {
+                    stage('Run Janus test profile') {
+                        mvn mavenVerify
+                    archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"}
+                }
+            } finally {
+                /* Archive the test results */
+                junit "**/TEST*.xml"
+
+        }
     }
 }
 
-if (shouldRunAllTests()) {
+//Add all tests to job map
+void addTests(Map<String, Closure> jobs) {
+    /* Request the test groupings.  Based on previous test results. */
+    /* see https://wiki.jenkins-ci.org/display/JENKINS/Parallel+Test+Executor+Plugin and demo on github
+    /* Using arbitrary parallelism of 4 and "generateInclusions" feature added in v1.8. */
+    def splits = splitTests parallelism: [$class: 'CountDrivenParallelism', size: 4], generateInclusions: true
 
-    // Build grakn so it can be used by benchmarks and integration tests
-    graknNode {
-        slackGithub "Build started"
+    def numSplits = splits.size()
 
-        checkout scm
+    // change timeout based on how many splits we have. e.g. 1 split = 120min, 3 splits = 60min
+    def testTimeout = 30 + 90 / numSplits;
 
-        stage('Build Grakn') {
-            buildGrakn()
-
-            archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
-
-            // Stash the built distribution so other nodes can access it
-            stash includes: 'grakn-dist/target/grakn-dist*.tar.gz', name: 'dist'
-        }
+    splits.eachWithIndex { split, i ->
+        def job = createTestJob(split, i, testTimeout)
+        addJob(jobs, "split-${i}", job)
     }
+}
 
-    jobs['benchmarks'] = {
-        graknNode {
-            String workspace = pwd()
-            checkout scm
-            unstash 'dist'
-
-            timeout(60) {
-                stage('Run the benchmarks') {
-                    sh "mvn clean test --batch-mode -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dmaven.repo.local=${workspace}/maven -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-                }
+void addJob(Map<String, Closure> jobs, String name, Closure closure) {
+    jobs[name] = {
+        graknNode { workspace ->
+            withEnv(["PACKAGE=${name}"]) {
+                closure(workspace)
             }
         }
     }
+}
 
-    for (String moduleName : integrationTests) {
-        // We have to re-assign so this variable is always the same in the closure
-        String mod = moduleName
+// Main script to run
+def runBuild() {
 
-        // Add each integration test as a parallel job
-        jobs[moduleName] = {
-            graknNode {
-                String workspace = pwd()
+    //This sets properties in the Jenkins server.
+    properties([
+        pipelineTriggers([
+            issueCommentTrigger('.*!rtg.*')
+        ]),
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
+    ])
+
+    if (!isMainBranch()) {
+        stopAllRunningBuildsForThisJob()
+
+        //Keep fewer artifacts for PRs
+        properties([
+            buildDiscarder(logRotator(numToKeepStr: '7', artifactNumToKeepStr: '1'))
+        ])
+    }
+
+    // This is a map that we fill with jobs to perform in parallel, name -> job closure
+    jobs = [:]
+
+    addTests(jobs)
+
+    if (shouldRunAllTests()) {
+
+        // Build grakn so it can be used by benchmarks and integration tests
+        graknNode { workspace ->
+            checkout scm
+
+            stage('Build Grakn') {
+                buildGrakn()
+
+                archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
+
+                // Stash the built distribution so other nodes can access it
+                stash includes: 'grakn-dist/target/grakn-dist*.tar.gz', name: 'dist'
+            }
+        }
+
+        addJob(jobs, 'benchmarks') { workspace ->
+            checkout scm
+            unstash 'dist'
+            timeout(60) {
+                stage('Run the benchmarks') {
+                    mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                    // TODO: re-enable and fix archiving in S3
+                    // archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                }
+            }
+        }
+
+        INTEGRATION_TESTS.each { String moduleName ->
+            // Add each integration test as a parallel job
+            addJob(jobs, moduleName) { workspace ->
                 checkout scm
                 unstash 'dist'
 
-                runIntegrationTest(workspace, mod)
+                runIntegrationTest(workspace, moduleName)
             }
         }
     }
-}
 
-// Execute all jobs in parallel
-parallel(jobs);
+    // Execute all jobs in parallel
+    parallel(jobs)
 
-if (shouldRunAllTests()) {
-    graknNode {
+    graknNode { workspace ->
+        checkout scm
+
         // only deploy long-running instance on stable branch if all tests pass
         if (shouldDeployLongRunningInstance()) {
-            checkout scm
             unstash 'dist'
 
             stage('Deploy Grakn') {
@@ -206,4 +295,25 @@ if (shouldRunAllTests()) {
 
         slackGithub "Build Success", "good"
     }
+}
+
+try {
+    runBuild()
+} catch (Exception e) {
+    node {
+        String message = "Build Failure"
+
+        if (isMainBranch() && currentBuild.getPreviousBuild().getResult().toString() == "SUCCESS") {
+            emailext (
+                    subject: statusHeader(message),
+                    body: statusNotification(message, 'html'),
+                    mimeType: 'text/html',
+                    recipientProviders: [[$class: 'CulpritsRecipientProvider']]
+            )
+        }
+
+        slackGithub message, "danger"
+    }
+
+    throw e
 }

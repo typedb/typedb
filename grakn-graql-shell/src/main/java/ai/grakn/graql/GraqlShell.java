@@ -43,32 +43,35 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.Charsets;
 import rx.Observable;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
-import static ai.grakn.util.ConcurrencyUtil.allObservable;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
 import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
@@ -179,7 +182,7 @@ public class GraqlShell {
         options.addOption("s", "size", true, "the size of the batches (must be used with -b)");
         options.addOption("a", "active", true, "the number of active tasks (must be used with -b)");
         options.addOption("o", "output", true, "output format for results");
-        options.addOption("n", "infer", false, "perform inference on results");
+        options.addOption("n", "no_infer", false, "do not perform inference on results");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -227,11 +230,11 @@ public class GraqlShell {
             return false;
         }
 
-        boolean infer = cmd.hasOption("n");
+        boolean infer = !cmd.hasOption("n");
 
         if (cmd.hasOption("b")) {
             try {
-                sendBatchRequest(client.loaderClient(keyspace, location), cmd.getOptionValue("b"), keyspace);
+                sendBatchRequest(client.loaderClient(location), cmd.getOptionValue("b"), keyspace);
             } catch (NumberFormatException e) {
                 printUsage(options, "Cannot cast argument to an integer " + e.getMessage());
                 return false;
@@ -300,12 +303,24 @@ public class GraqlShell {
     }
 
     private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
-        String queries = loadQuery(graqlPath);
-        List<Observable<QueryResponse>> all = new ArrayList<>();
-        Graql.parser().parseList(queries).forEach(query -> all.add(batchExecutorClient.add(query, keyspace, false)));
-        int completed = allObservable(all).toBlocking().first().size();
-        System.out.println("Statements executed: " + completed);
+        AtomicInteger queriesExecuted = new AtomicInteger(0);
+
+        FileInputStream inputStream = new FileInputStream(Paths.get(graqlPath).toFile());
+
+        try (Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
+            Graql.parser().parseList(queryReader).forEach(query -> {
+                Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
+
+                observable.subscribe(
+                    /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
+                    /* On error:   */ System.err::println
+                );
+            });
+        }
+
         batchExecutorClient.close();
+
+        System.out.println("Statements executed: " + queriesExecuted.get());
     }
 
     /**

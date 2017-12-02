@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
  */
 public enum GraknSystemProperty {
 
+    // TODO: clean and document how these behave and interact
+    // what's the difference between grakn.dir and main.basedir? how do they relate to grakn.conf? etc.
     CURRENT_DIRECTORY("grakn.dir"),
     CONFIGURATION_FILE("grakn.conf"),
     TEST_PROFILE("grakn.test-profile"),

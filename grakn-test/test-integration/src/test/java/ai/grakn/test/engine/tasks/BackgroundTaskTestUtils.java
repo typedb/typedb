@@ -21,13 +21,8 @@ package ai.grakn.test.engine.tasks;
 import ai.grakn.client.TaskResult;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSchedule;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
@@ -36,6 +31,10 @@ import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
@@ -44,12 +43,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class holding useful methods for use throughout background task tests
@@ -61,7 +61,7 @@ public class BackgroundTaskTestUtils {
     private final static Logger LOG = LoggerFactory.getLogger(BackgroundTaskTestUtils.class);
 
     public static TaskConfiguration configuration(TaskState taskState){
-        return TaskConfiguration.of(Json.object("id", taskState.getId().getValue()));
+        return TaskConfiguration.of(Json.object("id", taskState.getId().value()));
     }
 
     public static TaskState createTask() {
@@ -69,11 +69,7 @@ public class BackgroundTaskTestUtils {
     }
 
     public static TaskState createTask(Class<? extends BackgroundTask> clazz) {
-        return createTask(clazz, now());
-    }
-
-    public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule) {
-        return TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), schedule, TaskState.Priority.LOW);
+        return TaskState.of(clazz, BackgroundTaskTestUtils.class.getName());
     }
 
     public static void waitForDoneStatus(TaskStateStorage storage, Collection<TaskState> tasks) {

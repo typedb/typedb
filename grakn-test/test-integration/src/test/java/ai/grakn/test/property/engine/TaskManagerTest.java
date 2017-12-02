@@ -23,9 +23,8 @@ import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import ai.grakn.generator.TaskStates;
-import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
+import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -42,22 +41,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.now;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
@@ -119,7 +113,7 @@ public class TaskManagerTest {
         List<TaskState> manyTasks = Stream.generate(BackgroundTaskTestUtils::createTask).limit(100).collect(toList());
 
         //TODO: When no longer ingnoring create actual high priority task
-        TaskState highPriorityTask = createTask(ShortExecutionMockTask.class, now());
+        TaskState highPriorityTask = createTask(ShortExecutionMockTask.class);
 
         manyTasks.forEach((taskState) -> engine.getTaskManager().addTask(taskState, configuration(taskState)));
         engine.getTaskManager().addTask(highPriorityTask, configuration(highPriorityTask));
@@ -142,7 +136,7 @@ public class TaskManagerTest {
 
         Stream<TaskState> manyTasks = Stream.generate(BackgroundTaskTestUtils::createTask).limit(100);
 
-        TaskState recurringTask = createTask(ShortExecutionMockTask.class, recurring(recurDur));
+        TaskState recurringTask = createTask(ShortExecutionMockTask.class);
 
         // Since this test is sleeping and there are various overheads,
         // we are fairly liberal about how many times the task must run to avoid random failures
@@ -162,30 +156,6 @@ public class TaskManagerTest {
         Thread.sleep(sleepDur.toMillis());
 
         assertThat(timesRecurringTaskCompleted.get(), greaterThanOrEqualTo(expectedTimesRecurringTaskCompleted));
-    }
-
-    @Property(trials=10)
-    public void whenRecurringTaskThrowsException_ItStopsExecuting(
-            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task) {
-
-        final int expectedExecutionsBeforeFailure = 1;
-        final AtomicInteger startedCounter = new AtomicInteger(0);
-
-        whenTaskStarts(taskId -> {
-            startedCounter.incrementAndGet();
-            throw new RuntimeException("Deliberate test failure");
-        });
-
-        // Make task recurring
-        task.schedule(recurring(Instant.now(), Duration.ofSeconds(10)));
-
-        // Execute task and wait for it to complete
-        engine.getTaskManager().addTask(task, configuration(task));
-        waitForDoneStatus(engine.getTaskManager().storage(), ImmutableList.of(task));
-
-        // Assert correct state
-        assertStatus(engine.getTaskManager(), task, TaskStatus.FAILED);
-        assertThat(startedCounter.get(), equalTo(expectedExecutionsBeforeFailure));
     }
 
 

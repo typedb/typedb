@@ -50,15 +50,20 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,11 +79,17 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class QueryParserTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
+
+    // Some of these tests execute against infinite or very large input.
+    // Therefore we add a (generous) timeout so we can tell if something is wrong sooner.
+    @ClassRule
+    public static final Timeout timeout = Timeout.seconds(60 * 5);
 
     @Test
     public void testSimpleQuery() {
@@ -818,24 +829,65 @@ public class QueryParserTest {
         assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }
 
-    // TODO: This takes a long time to run and is dependent on heap size. It should run separately from other tests.
-    @Ignore
     @Test
     public void whenParsingAVeryLargeQuery_DontRunOutOfMemory() {
         int bigNumber = 1 << 20;
-        String queryText = "match $x isa movie; insert ($x, $x) isa has-genre;";
-        Query query = Graql.parse(queryText);
+        String queryText1 = "match $x isa movie; insert ($x, $x) isa has-genre;";
+        String queryText2 = "match $x isa person; insert ($x, $x) isa has-genre;";
+        Query query1 = Graql.parse(queryText1);
+        Query query2 = Graql.parse(queryText2);
 
-        String massiveQuery = Strings.repeat(queryText, bigNumber);
+        String massiveQuery = Strings.repeat(queryText1 + queryText2, bigNumber);
 
-        final int[] count = {0};
+        final int[] count = {0, 0};
 
         Graql.parser().parseList(massiveQuery).forEach(q -> {
-            assertEquals(query, q);
-            count[0]++;
+            if (q.equals(query1)) {
+                count[0] ++;
+            } else if (q.equals(query2)) {
+                count[1] ++;
+            } else {
+                fail("Bad query: " + q);
+            }
         });
 
         assertEquals(bigNumber, count[0]);
+        assertEquals(bigNumber, count[1]);
+    }
+
+    @Test
+    public void whenParsingAnInfiniteListOfQueriesAndRetrievingFirstFewQueries_Terminate() {
+        String queryText1 = "match $x isa movie; insert ($x, $x) isa has-genre;";
+        String queryText2 = "match $x isa person; insert ($x, $x) isa has-genre;";
+        Query query1 = Graql.parse(queryText1);
+        Query query2 = Graql.parse(queryText2);
+
+        char[] queryChars = (queryText1 + queryText2).toCharArray();
+
+        InputStream infStream = new InputStream() {
+            int pos = 0;
+
+            @Override
+            public int read() throws IOException {
+                char c = queryChars[pos];
+                pos += 1;
+                if (pos >= queryChars.length) {
+                    pos -= queryChars.length;
+                }
+                return c;
+            }
+        };
+
+        Stream<Query<?>> queries = Graql.parser().parseList(new InputStreamReader(infStream));
+
+        Iterator<Query<?>> iterator = queries.iterator();
+
+        assertEquals(query1, iterator.next());
+        assertEquals(query2, iterator.next());
+        assertEquals(query1, iterator.next());
+        assertEquals(query2, iterator.next());
+
+        assertTrue(iterator.hasNext());
     }
 
     @Test

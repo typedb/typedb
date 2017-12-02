@@ -18,16 +18,14 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
@@ -46,7 +44,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.Schema.VertexProperty.INDEX;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -54,6 +52,7 @@ import static org.junit.Assume.assumeTrue;
 
 public class PostProcessingTest {
 
+    private PostProcessor postProcessor;
     private GraknSession session;
 
     @ClassRule
@@ -67,6 +66,7 @@ public class PostProcessingTest {
     @Before
     public void setUp() throws Exception {
         session = engine.sessionWithNewKeyspace();
+        postProcessor = PostProcessor.create(engine.config(), engine.getJedisPool(), engine.server().factory(), engine.server().lockProvider(), new MetricRegistry());
     }
 
     @After
@@ -116,22 +116,13 @@ public class PostProcessingTest {
         PostProcessingTask task = new PostProcessingTask();
         TaskConfiguration configuration = TaskConfiguration.of(
                 Json.object(
-                        KEYSPACE, graph.getKeyspace().getValue(),
+                        KEYSPACE_PARAM, graph.keyspace().getValue(),
                         REST.Request.COMMIT_LOG_FIXING, Json.object(
                                 Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        TaskSubmitter taskSubmitter = new TaskSubmitter() {
-            @Override
-            public void addTask(TaskState taskState, TaskConfiguration configuration) {
-            }
-
-            @Override
-            public void runTask(TaskState taskState, TaskConfiguration configuration) {
-            }
-        };
-        task.initialize(null, configuration, taskSubmitter, engine.config(), null, engine.server().factory(),
-                new ProcessWideLockProvider(), new MetricRegistry());
+        task.initialize(configuration, engine.config(), engine.server().factory(),
+                new MetricRegistry(), postProcessor);
 
         task.start();
 

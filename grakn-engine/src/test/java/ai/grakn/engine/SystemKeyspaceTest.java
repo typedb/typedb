@@ -28,7 +28,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.test.rule.TxFactoryContext;
+import ai.grakn.test.rule.SessionContext;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 
 public class SystemKeyspaceTest {
 
-    private static final GraknEngineConfig config = GraknEngineConfig.create();
+    private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final LockProvider lockProvider = mock(LockProvider.class);
@@ -66,12 +66,12 @@ public class SystemKeyspaceTest {
     // the janus profile.
     @Rule
     public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark, config.getProperties(), systemKeyspace, status, metricRegistry);
+        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
     }).host("0.0.0.0").port(4567);
 
     //Needed to start cass depending on profile
     @ClassRule
-    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+    public static final SessionContext sessionContext = SessionContext.create();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -83,7 +83,7 @@ public class SystemKeyspaceTest {
 
     @BeforeClass
     public static void setup(){
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
+        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config);
         systemKeyspace = SystemKeyspaceImpl.create(graknFactory, lockProvider, false);
 
         Lock lock = mock(Lock.class);
@@ -145,9 +145,9 @@ public class SystemKeyspaceTest {
 
         //Check only 2 graphs have been built
         for(GraknTx tx:txs){
-            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
+            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.keyspace()));
     }
 
     @Test
@@ -168,9 +168,9 @@ public class SystemKeyspaceTest {
 
         //Check only 2 graphs have been built
         for(GraknTx tx:txs){
-            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.getKeyspace().getValue()));
+            assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
+        assertFalse(graknFactory.systemKeyspace().containsKeyspace(deletedGraph.keyspace()));
     }
     private Set<GraknTx> buildTxs(Function<String, GraknTx> txProvider, String ... keyspaces){
         Set<GraknTx> newTransactions = Arrays.stream(keyspaces)

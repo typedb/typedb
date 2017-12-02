@@ -2,36 +2,31 @@
 
 source snb-env.sh
 
-BRANCH_NAME=$1
-
-# TODO: it shouldn't be necessary to re-build grakn to make SNB work
-build-grakn.sh ${BRANCH_NAME}
-
-build-snb-connectors.sh
-
-LDBC_CONNECTOR=${WORKSPACE}/grakn-test/test-snb/target/test-snb-${BRANCH_NAME}-jar-with-dependencies.jar
-
-# TODO: This is weird and possibly unnecessary now
-LDBC_DRIVER=${HOME}/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar
-
 LDBC_VALIDATION_CONFIG=${WORKSPACE}/grakn-test/test-snb/src/main/bash/readwrite_grakn--ldbc_driver_config--db_validation.properties
 
 # execute validation
-java \
-    -classpath ${LDBC_DRIVER}:${LDBC_CONNECTOR} com.ldbc.driver.Client \
+mvn install --batch-mode -DskipTests --also-make --projects grakn-test/test-snb
+mvn exec:java --batch-mode --projects grakn-test/test-snb \
+    -Dexec.mainClass=com.ldbc.driver.Client \
+    -Dlogback.configurationFile=${WORKSPACE}/conf/test/logback-test.xml \
+    -Dexec.args="
     -db ai.grakn.GraknDb \
     -P ${LDBC_VALIDATION_CONFIG} \
     -vdb ${CSV_DATA}/validation_params.csv \
     -p ldbc.snb.interactive.parameters_dir ${CSV_DATA} \
     -p ai.grakn.uri ${ENGINE} \
-    -p ai.grakn.keyspace ${KEYSPACE}
+    -p ai.grakn.keyspace ${KEYSPACE}"
 
 # check for errors from LDBC
 FAILURES=$(cat ${CSV_DATA}/validation_params-failed-actual.json)
+EXPECTED=$(cat ${CSV_DATA}/validation_params-failed-expected.json)
 if [ "${FAILURES}" == "[ ]" ]; then
         echo "Validation completed without failures."
 else
         echo "There were failures during validation."
+        echo "Actual:"
         echo ${FAILURES}
+        echo "Expected:"
+        echo ${EXPECTED}
         exit 1
 fi

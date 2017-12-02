@@ -23,8 +23,10 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
+import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import java.util.Collection;
@@ -41,13 +43,16 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class HasAtom extends TypeAtom {
+public class HasAtom extends OntologicalAtom {
 
     public HasAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) { super(pattern, predicateVar, p, par);}
     private HasAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
         super(var.has(predicateVar), predicateVar, p, par);
     }
     private HasAtom(TypeAtom a) { super(a);}
+
+    @Override
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeTypeProperty.class;}
 
     @Override
     public Atomic copy(){

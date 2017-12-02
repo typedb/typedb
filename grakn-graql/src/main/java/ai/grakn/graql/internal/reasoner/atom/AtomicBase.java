@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Pattern;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
@@ -27,6 +28,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
@@ -45,6 +47,7 @@ public abstract class AtomicBase implements Atomic {
 
     private final Var varName;
     private final VarPattern atomPattern;
+    private Pattern combinedPattern = null;
     private ReasonerQuery parent = null;
 
     protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
@@ -61,6 +64,11 @@ public abstract class AtomicBase implements Atomic {
 
     @Override
     public abstract Atomic copy();
+
+    @Override
+    public Set<String> validateAsRuleHead(Rule rule) {
+        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
+    }
 
     @Override
     public String toString(){ return atomPattern.toString(); }
@@ -82,8 +90,13 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public VarPattern getPattern(){ return atomPattern;}
 
+    protected Pattern createCombinedPattern(){ return atomPattern;}
+
     @Override
-    public Pattern getCombinedPattern(){ return getPattern();}
+    public Pattern getCombinedPattern(){
+        if (combinedPattern == null) combinedPattern = createCombinedPattern();
+        return combinedPattern;
+    }
 
     @Override
     public ReasonerQuery getParentQuery(){ return parent;}

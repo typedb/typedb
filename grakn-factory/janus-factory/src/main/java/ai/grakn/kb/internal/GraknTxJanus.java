@@ -18,9 +18,9 @@
 
 package ai.grakn.kb.internal;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
@@ -35,7 +35,6 @@ import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
-import java.util.Properties;
 import java.util.function.Supplier;
 
 /**
@@ -53,8 +52,8 @@ import java.util.function.Supplier;
  * @author fppt
  */
 public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
-    public GraknTxJanus(JanusGraph graph, Keyspace keyspace, String engineUrl, Properties properties){
-        super(graph, keyspace, engineUrl, properties);
+    public GraknTxJanus(GraknSession session, JanusGraph graph){
+        super(session, graph);
     }
 
     @Override

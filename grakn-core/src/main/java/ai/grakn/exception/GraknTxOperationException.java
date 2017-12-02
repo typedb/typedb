@@ -24,8 +24,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 import static ai.grakn.util.ErrorMessage.CLOSE_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
 import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
-import static ai.grakn.util.ErrorMessage.INVALID_PATH_TO_CONFIG;
 import static ai.grakn.util.ErrorMessage.INVALID_PROPERTY_USE;
 import static ai.grakn.util.ErrorMessage.LABEL_TAKEN;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
@@ -116,7 +115,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when setting {@code superType} as the super type of {@code type} and a loop is created
      */
     public static GraknTxOperationException loopCreated(SchemaConcept type, SchemaConcept superElement){
-        throw new GraknTxOperationException(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
+        return new GraknTxOperationException(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
     }
 
     /**
@@ -124,7 +123,7 @@ public class GraknTxOperationException extends GraknException{
      * {@link ai.grakn.concept.Entity}
      */
     public static GraknTxOperationException invalidCasting(Object concept, Class type){
-        throw new GraknTxOperationException(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
+        return new GraknTxOperationException(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
     }
 
     /**
@@ -160,7 +159,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when attempting to open a transaction which is already open
      */
     public static GraknTxOperationException transactionOpen(GraknTx tx){
-        return new GraknTxOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.getKeyspace()));
+        return new GraknTxOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.keyspace()));
     }
 
     /**
@@ -174,7 +173,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when attempting to mutate a read only transaction
      */
     public static GraknTxOperationException transactionReadOnly(GraknTx tx){
-        return new GraknTxOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.getKeyspace()));
+        return new GraknTxOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
     }
 
     /**
@@ -189,7 +188,7 @@ public class GraknTxOperationException extends GraknException{
      */
     public static GraknTxOperationException transactionClosed(GraknTx tx, String reason){
         if(reason == null){
-            return new GraknTxOperationException(ErrorMessage.TX_CLOSED.getMessage(tx.getKeyspace()));
+            return new GraknTxOperationException(ErrorMessage.TX_CLOSED.getMessage(tx.keyspace()));
         } else {
             return new GraknTxOperationException(reason);
         }
@@ -199,7 +198,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when the graph can not be closed due to an unknown reason.
      */
     public static GraknTxOperationException closingFailed(GraknTx tx, Exception e){
-        return new GraknTxOperationException(CLOSE_FAILURE.getMessage(tx.getKeyspace()), e);
+        return new GraknTxOperationException(CLOSE_FAILURE.getMessage(tx.keyspace()), e);
     }
 
     /**
@@ -221,13 +220,6 @@ public class GraknTxOperationException extends GraknException{
      */
     public static GraknTxOperationException invalidDirection(Direction direction){
         return new GraknTxOperationException(INVALID_DIRECTION.getMessage(direction));
-    }
-
-    /**
-     * Thrown when attempting to read a config file which cannot be accessed
-     */
-    public static GraknTxOperationException invalidConfig(String pathToFile){
-        return new GraknTxOperationException(INVALID_PATH_TO_CONFIG.getMessage(pathToFile));
     }
 
     /**
@@ -323,5 +315,20 @@ public class GraknTxOperationException extends GraknException{
      */
     public static GraknTxOperationException invalidLabelStart(Label label){
         return new GraknTxOperationException(String.format("Cannot create a label {%s} starting with character {%s} as it is a reserved starting character", label, Schema.ImplicitType.RESERVED.getValue()));
+    }
+
+    /**
+     * Thrown when attempting to create a {@link Thing} via the execution of a {@link ai.grakn.concept.Rule} when
+     * the {@link Thing} already exists.
+     */
+    public static GraknTxOperationException nonInferredThingExists(Thing thing){
+        return new GraknTxOperationException(String.format("Thing {%s} was already created and cannot be set to inferred", thing));
+    }
+
+    /**
+     * Thrown when failing to create an {@link Attribute} after several attempts
+     */
+    public static GraknTxOperationException couldNotCreateAttribute(Attribute attribute, Exception e){
+        return new GraknTxOperationException(String.format("Could not add attribute {%s} due to {%s}", attribute, e.getMessage()), e);
     }
 }

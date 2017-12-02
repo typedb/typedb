@@ -34,6 +34,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.common.collect.ImmutableMultiset;
@@ -70,6 +71,14 @@ abstract class AbstractMatch implements MatchAdmin {
         return stream(Optional.empty());
     }
 
+    /**
+     * @param tx the {@link GraknTx} against which the pattern should be validated
+     */
+    void validatePattern(GraknTx tx){
+        for (VarPatternAdmin var : getPattern().varPatterns()) {
+            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(tx, var));}
+    }
+
     @Override
     public final Match withTx(GraknTx tx) {
         return new MatchTx(tx, this);
@@ -98,7 +107,7 @@ abstract class AbstractMatch implements MatchAdmin {
     @Override
     public final Stream<Concept> get(Var var) {
         return stream().map(result -> {
-            if (!result.containsKey(var)) {
+            if (!result.containsVar(var)) {
                 throw GraqlQueryException.varNotInQuery(var);
             }
             return result.get(var);

@@ -55,7 +55,7 @@ public class QueryToStringTest {
 
     @Test
     public void testSimpleGetQueryToString() {
-        assertSameResults(qb.match(var("x").isa("movie").label("Godfather")).get());
+        assertSameResults(qb.match(var("x").isa("movie").has("title", "Godfather")).get());
     }
 
     @Test

@@ -6,12 +6,12 @@ role2 sub role;
 entity1 sub entity
     plays role1
     plays role2
-	has resource;
+    has resource;
 
 relation sub relationship
-	relates role1
-	relates role2
-	has resource;
+    relates role1
+    relates role2
+    has resource;
 
 #Resources
 resource sub attribute datatype string;
@@ -19,26 +19,15 @@ resource sub attribute datatype string;
 #Rules
 
 rule-1 sub rule
-	when {
-		$x isa entity1 has resource $r1;
-		$y isa entity1;
-	}
-	then {
-		$y has resource $r1;
-	};
+    when {
+    	$x isa entity1 has resource $r1;
+    	$y isa entity1;
+    }
+    then {
+    	$y has resource $r1;
+    };
 
-#needed for reusingResources_copyingResourceValueToResourceOfDifferentType test
-#subResource sub resource;
-
-#rule-2 sub rule
-#	when {
-#		$x isa entity1 has resource $r1;
-#	}
-#	then {
-#		$x has subResource $r1;
-#	};
-
-rule-3 sub rule
+rule-2 sub rule
     when {
         $x isa entity1, has resource $y;
         $z isa relation;
@@ -46,6 +35,17 @@ rule-3 sub rule
     then {
         $z has resource $y;
     };
+
+#needed for reusingResources_copyingResourceValueToResourceOfDifferentType test
+#subResource sub resource;
+
+#rule-3 sub rule
+#	when {
+#		$x isa entity1 has resource $r1;
+#	}
+#	then {
+#		$x has subResource $r1;
+#	};
 
 insert
 

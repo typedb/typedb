@@ -17,6 +17,7 @@
  */
 package ai.grakn.client;
 
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
 import ai.grakn.util.REST;
@@ -33,8 +34,11 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
+import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 
@@ -45,7 +49,7 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
  */
 public class GraknClient {
 
-    public static final int CONNECT_TIMEOUT_MS = 5 * 60 * 1000;
+    public static final int CONNECT_TIMEOUT_MS = 30 * 1000;
     public static final int DEFAULT_MAX_RETRY = 3;
     private final Logger LOG = LoggerFactory.getLogger(GraknClient.class);
 
@@ -63,8 +67,10 @@ public class GraknClient {
             throws GraknClientException {
         String body = queryList.stream().map(Object::toString).reduce("; ", String::concat).substring(2);
         URI fullURI = UriBuilder.fromUri(uri.toURI())
-                .path(REST.resolveTemplate(REST.WebPath.KB.ANY_GRAQL, keyspace.getValue()))
+                .path(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()))
                 .queryParam(MULTI, true)
+                .queryParam(INFER, false) //Making inference true could lead to non-deterministic loading of data
+                .queryParam(TX_TYPE, GraknTxType.BATCH)
                 .build();
         ClientResponse response = client.resource(fullURI)
                 .accept(APPLICATION_JSON_GRAQL)
@@ -73,7 +79,8 @@ public class GraknClient {
             Response.StatusType status = response.getStatusInfo();
             String entity = response.getEntity(String.class);
             if (!status.getFamily().equals(Family.SUCCESSFUL)) {
-                throw new GraknClientException("Failed graqlExecute. Error status: " + status.getStatusCode() + ", error info: " + entity, response.getStatusInfo());
+                String queries = queryList.stream().map(Object::toString).collect(Collectors.joining("\n"));
+                throw new GraknClientException("Failed graqlExecute. Error status: " + status.getStatusCode() + ", error info: " + entity + "\nqueries: " + queries, response.getStatusInfo());
             }
             LOG.debug("Received {}", status.getStatusCode());
             return QueryResponse.from(queryList, entity);
@@ -84,7 +91,7 @@ public class GraknClient {
 
     public Optional<Keyspace> keyspace(String keyspace) throws GraknClientException {
         URI fullURI = UriBuilder.fromUri(uri.toURI())
-                .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace))
+                .path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace))
                 .build();
         ClientResponse response = client.resource(fullURI)
                 .accept(APPLICATION_JSON)

@@ -26,6 +26,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.structure.AbstractElement;
@@ -89,17 +90,17 @@ public final class ElementFactory {
     }
 
     // ---------------------------------------- Building Attribute Types  -----------------------------------------------
-    public <V> AttributeTypeImpl<V> buildResourceType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType){
+    public <V> AttributeTypeImpl<V> buildAttributeType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType){
         return getOrBuildConcept(vertex, (v) -> AttributeTypeImpl.create(v, type, dataType));
     }
 
-    // ------------------------------------------ Building Resources
-    <V> AttributeImpl<V> buildResource(VertexElement vertex, AttributeType<V> type, Object persitedValue){
+    // ------------------------------------------ Building Attribute
+    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, Object persitedValue){
         return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persitedValue));
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------
-    public RelationshipTypeImpl buildRelationType(VertexElement vertex, RelationshipType type){
+    public RelationshipTypeImpl buildRelationshipType(VertexElement vertex, RelationshipType type){
         return getOrBuildConcept(vertex, (v) -> RelationshipTypeImpl.create(v, type));
     }
 
@@ -154,8 +155,7 @@ public final class ElementFactory {
         try {
             type = getBaseType(vertexElement);
         } catch (IllegalStateException e){
-            LOG.warn("Invalid vertex [" + vertexElement + "] due to " + e.getMessage(), e);
-            return Optional.empty();
+            throw TemporaryWriteException.indexOverlap(vertexElement.element(), e);
         }
 
         ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));

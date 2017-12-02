@@ -5,7 +5,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspaceFake;
 import ai.grakn.engine.controller.SparkContext;
@@ -13,7 +13,7 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.test.rule.TxFactoryContext;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.test.rule.InMemoryRedisContext;
@@ -34,7 +34,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.mock;
 
 public class EngineGraknSessionTest {
-    private static final GraknEngineConfig config = GraknEngineConfig.create();
+    private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
@@ -47,12 +47,12 @@ public class EngineGraknSessionTest {
     //Needed so that Grakn.session() can return a session
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark, config.getProperties(), systemKeyspace, status, metricRegistry);
+        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
     });
 
     //Needed to start cass depending on profile
     @ClassRule
-    public static final TxFactoryContext txFactoryContext = TxFactoryContext.create();
+    public static final SessionContext sessionContext = SessionContext.create();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -60,7 +60,7 @@ public class EngineGraknSessionTest {
     @BeforeClass
     public static void beforeClass() {
         JedisLockProvider lockProvider = new JedisLockProvider(inMemoryRedisContext.jedisPool());
-        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config.getProperties());
+        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(lockProvider, config);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class EngineGraknSessionTest {
         factory.close();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.getKeyspace()));
+        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.keyspace()));
 
         graph.putEntityType("A thingy");
     }

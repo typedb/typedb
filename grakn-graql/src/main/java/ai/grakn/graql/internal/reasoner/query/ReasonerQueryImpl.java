@@ -36,7 +36,9 @@ import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
@@ -48,10 +50,15 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
+import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
+import ai.grakn.graql.internal.reasoner.state.CumulativeState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
+import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
+import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
@@ -61,21 +68,23 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -98,10 +107,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private Answer substitution = null;
     private ImmutableMap<Var, Type> varTypeMap = null;
 
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
+
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
+                .build();
+    }
+
+    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
+        this.tx = tx;
+        this.atomSet = ImmutableSet.<Atomic>builder()
+                .addAll(atoms.stream().map(at -> AtomicFactory.create(at, this)).iterator())
                 .build();
     }
 
@@ -114,13 +132,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .build();
     }
 
-    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
-        this.tx = tx;
-        this.atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(atoms.stream().map(at -> AtomicFactory.create(at, this)).iterator())
-                .build();
-    }
-
     ReasonerQueryImpl(Atom atom) {
         this(Collections.singletonList(atom), atom.getParentQuery().tx());
     }
@@ -130,6 +141,22 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(q.getAtoms().stream().map(at -> AtomicFactory.create(at, this)).iterator())
                 .build();
+    }
+
+    @Override
+    public ReasonerQuery conjunction(ReasonerQuery q) {
+        return new ReasonerQueryImpl(
+                Sets.union(getAtoms(), q.getAtoms()),
+                this.tx()
+        );
+    }
+
+    /**
+     * @param sub substitution to be inserted into the query
+     * @return corresponding query with additional substitution
+     */
+    public ReasonerQueryImpl withSubstitution(Answer sub){
+        return new ReasonerQueryImpl(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
     }
 
     /**
@@ -213,18 +240,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public GraknTx tx() {
         return tx;
-    }
-
-    /**
-     * @return conjunctive pattern composed of constituent atom patterns
-     */
-    public Conjunction<PatternAdmin> getBasePattern(){
-        return Patterns.conjunction(
-                getAtoms().stream()
-                        .map(Atomic::getPattern)
-                        .flatMap(p -> p.admin().varPatterns().stream())
-                        .collect(Collectors.toSet())
-        );
     }
 
     @Override
@@ -450,9 +465,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     .collect(Collectors.toSet());
             getAtoms(IdPredicate.class).forEach(predicates::add);
 
-            // the mapping function is declared separately to please the Eclipse compiler
-            Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
-            substitution = new QueryAnswer(predicates.stream().collect(Collectors.toMap(IdPredicate::getVarName, f)));
+            HashMap<Var, Concept> answerMap = new HashMap<>();
+            predicates.forEach(p -> {
+                Concept concept = tx().getConcept(p.getPredicate());
+                if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                answerMap.put(p.getVarName(), concept);
+            });
+            substitution = new QueryAnswer(answerMap);
         }
         return substitution;
     }
@@ -461,14 +480,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Map<Var, Concept> roleSub = new HashMap<>();
         getAtoms(RelationshipAtom.class)
                 .flatMap(RelationshipAtom::getRolePredicates)
-                .forEach(p -> roleSub.put(p.getVarName(), tx().getConcept(p.getPredicate())));
+                .forEach(p -> {
+                    Concept concept = tx().getConcept(p.getPredicate());
+                    if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                    roleSub.put(p.getVarName(), concept);
+                });
         return new QueryAnswer(roleSub);
     }
 
     /**
      * @return true if this query is a ground query
      */
-    public boolean isGround(){
+    boolean isGround(){
         return getSubstitution().vars().containsAll(getVarNames());
     }
 
@@ -581,7 +604,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoal formed from this query
      */
-    public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public QueryState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
@@ -593,16 +616,51 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
-    public LinkedList<QueryState> subGoals(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public Stream<QueryState> subGoals(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return getQueryStream(sub)
-                .map(q -> q.subGoal(sub, u, parent, subGoals, cache))
-                .collect(Collectors.toCollection(LinkedList::new));
+                .map(q -> q.subGoal(sub, u, parent, subGoals, cache));
     }
 
     /**
      * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
      */
-    Stream<ReasonerQueryImpl> getQueryStream(Answer sub){ return Stream.of(this);}
+    Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+        return Stream.of(this);
+    }
+
+    /**
+     * @param parent parent state
+     * @param subGoals set of visited sub goals
+     * @param cache query cache
+     * @return query state iterator (db iter + unifier + state iter) for this query
+     */
+    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Iterator<AnswerState> dbIterator;
+        Iterator<QueryStateBase> subGoalIterator;
+
+        if(!this.isRuleResolvable()) {
+            dbIterator = this.getQuery().stream()
+                    .map(ans -> ans.explain(new JoinExplanation(this, ans)))
+                    .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
+                    .iterator();
+            subGoalIterator = Collections.emptyIterator();
+        } else {
+            dbIterator = Collections.emptyIterator();
+            LinkedList<ReasonerQueryImpl> subQueries = new ResolutionPlan(this).queryPlan();
+
+            LOG.trace("CQ plan:\n" + subQueries.stream()
+                    .map(sq -> sq.toString() + (sq.isRuleResolvable()? "*" : ""))
+                    .collect(Collectors.joining("\n"))
+            );
+
+            subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
+        }
+        return new Pair<>(
+                Iterators.concat(dbIterator, subGoalIterator),
+                new MultiUnifierImpl()
+        );
+    }
+
 
     /**
      * reiteration might be required if rule graph contains loops with negative flux

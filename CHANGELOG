@@ -1,4 +1,42 @@
-Version 0.17.0
+Version 0.18.0
+- Upgrade to 0.18.0 (#2431)
+- Update 0-index.md (#2430)
+- correctly rewrite rule heads with resources (#2417)
+- Handle parsing extremely large Graql files in constant memory (#2421)
+- [Stable] More informative rule validation (#2409)
+- [Stable] Enable reasoning by default (#2406)
+- Add academy to top navigation (#2411)
+- Change trigger back to !rtg (#2408)
+- Upload perf logs s3 (#2294)
+- Only kill job if not a main branch (master/stable) (#2364)
+- Disallow invalid var names in java Graql (#2360)
+- Kill any running jobs when a new change is made (#2348)
+
+
+Version v0.17.1
+- 0.17.1 release
+- Upgrade to 0.17.1-SNAPSHOT
+- Fix bug where we ran the same tests 4 times (#2349)
+- Fix dependency issue with SNB (#2344)
+- Run PR tests in parallel (#2302)
+- homebrew workaround. (#2338)
+- Stop cleaning embedded cassandra (#2335)
+- Change trigger phrase to !ci. (#2332)
+- Remove accidentally committed code
+- Fix stages
+- Run tests in parallel with other jobs (#2329)
+- Make sure redis is killed after continuous integration (#2309)
+- Ignore randomly failing test (#2326)
+- Drop periodic CI tests. (#2322)
+- Add triggers phrases for githubPullRequest. (#2312)
+- Add acadmey link to overview side bar (#2318)
+- Link fixes (#2317)
+- Fix Academy homepage links (#2314)
+- Archive cassandra logs and increase timeout (#2301)
+
+
+Version v0.17.0
+- 0.17.0 release
 - [Stable] Minor dashboard fixes (#2308)
 - Run tests with Janus profile in Jenkinsfile (#2297)
 - enable implicit types in type inference (#2289)

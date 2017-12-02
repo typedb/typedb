@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -155,6 +156,11 @@ public final class ResolutionPlan {
     }
 
     /**
+     * @return corresponding atom plan
+     */
+    public ImmutableList<Atom> plan(){ return plan;}
+
+    /**
      * @param query for which the plan should be constructed
      * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
      */
@@ -162,23 +168,26 @@ public final class ResolutionPlan {
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         query.getAtoms(Atom.class)
                 .filter(Atomic::isSelectable)
+                .filter(at -> !(at instanceof OntologicalAtom))
                 .forEach(at -> at.getVarProperties().forEach(p -> propertyMap.put(p, at)));
         Set<VarProperty> properties = propertyMap.keySet();
 
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getBasePattern(), tx);
+        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), tx);
 
         ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
 
-        return ImmutableList.<Atom>builder().addAll(
-                fragments.stream()
-                        .map(Fragment::varProperty)
-                        .filter(Objects::nonNull)
-                        .filter(properties::contains)
-                        .distinct()
-                        .flatMap(p -> propertyMap.get(p).stream())
-                        .distinct()
-                        .iterator())
-                .build();
+        //TODO: need to double check correctness of this
+        ImmutableList.Builder<Atom> builder = ImmutableList.builder();
+        builder.addAll(query.getAtoms(OntologicalAtom.class).iterator());
+        builder.addAll(fragments.stream()
+                .map(Fragment::varProperty)
+                .filter(Objects::nonNull)
+                .filter(properties::contains)
+                .distinct()
+                .flatMap(p -> propertyMap.get(p).stream())
+                .distinct()
+                .iterator());
+        return builder.build();
     }
 
     /**

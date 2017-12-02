@@ -19,19 +19,21 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspaceFake;
+import ai.grakn.engine.controller.response.Keyspaces;
 import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
-import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import java.util.Properties;
+import java.io.IOException;
 
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.when;
@@ -44,21 +46,22 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**
  * @author Felix Chapman
  */
 public class SystemControllerTest {
-
-    private static final Properties properties = GraknEngineConfig.create().getProperties();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
 
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new SystemController(spark, properties, systemKeyspace, status, metricRegistry);
+        new SystemController(spark, config, systemKeyspace, status, metricRegistry);
     });
 
     @Before
@@ -77,8 +80,10 @@ public class SystemControllerTest {
     }
 
     @Test
-    public void whenInitiallyCallingKBEndpoint_GetEmptyList() {
-        when().get("/kb").then().body("", empty());
+    public void whenInitiallyCallingKBEndpoint_GetEmptyList() throws IOException {
+        String content = when().get("/kb").thenReturn().body().asString();
+        Keyspaces keyspaces = objectMapper.readValue(content, Keyspaces.class);
+        assertThat(keyspaces.keyspaces(), empty());
     }
 
     @Test
@@ -94,14 +99,15 @@ public class SystemControllerTest {
     }
 
     @Test
-    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() {
-        when().put("/kb/myks").then().statusCode(SC_OK).body(is(Json.make(properties).toString()));
+    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() throws JsonProcessingException {
+        when().put("/kb/myks").then().statusCode(SC_OK).body(is(new ObjectMapper().writeValueAsString(config)));
     }
 
     @Test
-    public void whenCallingPutKBEndpointOnNonExistentKeyspace_KeyspaceAppearsInList() {
+    public void whenCallingPutKBEndpointOnNonExistentKeyspace_KeyspaceAppearsInList() throws IOException {
         RestAssured.put("/kb/myks");
-        when().get("/kb").then().body("", hasItem("myks"));
+        Keyspaces keyspaces = when().get("/kb").as(Keyspaces.class);
+        assertThat(keyspaces.keyspaces(), not(empty()));
     }
 
     @Test
@@ -109,7 +115,7 @@ public class SystemControllerTest {
         RestAssured.put("/kb/myks");
         RestAssured.put("/kb/myks");
 
-        when().get("/kb").then().body("", hasItem("myks"));
+        when().get("/kb").then().body("", not(empty()));
     }
 
     @Test

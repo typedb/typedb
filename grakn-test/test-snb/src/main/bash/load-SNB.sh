@@ -8,12 +8,11 @@ SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
 GRAQL=${SCRIPTPATH}/../graql
 
 ACTIVE_TASKS=16
-VALIDATION_DATA=${WORKSPACE}/readwrite_neo4j--validation_set.tar.gz
 
 # validate the number of arguments
 if [ "$#" -lt "2" ]; then
-	echo "Wrong number of arguments." >&2
-	exit 1
+    echo "Wrong number of arguments." >&2
+    exit 1
 fi
 
 # extract the data from a tar
@@ -25,66 +24,84 @@ function extractArchData {
         exit 1
     fi
 
-	mkdir -p ${CSV_DATA}
-	case "$1" in
-		validate)
-			tar -xf ${VALIDATION_DATA} --strip=1 -C ${CSV_DATA} validation_set
-			;;
-		SF1)
-			tar -xf ${SF1_DATA}
-			;;
-		*)
-			echo "Usage: arch {SF1}"
-			exit 1
-			;;
-	esac
+    mkdir -p ${CSV_DATA}
+    case "$1" in
+        validate)
+            VALIDATION_DATA=${WORKSPACE}/${PACKAGE}/validation_set.tar.gz
+            wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz -O ${VALIDATION_DATA}
+            tar -xf ${VALIDATION_DATA} --strip=1 -C ${CSV_DATA} validation_set
+            ;;
+        SF1)
+            tar -xf ${SF1_DATA}
+            ;;
+        *)
+            echo "Usage: arch {SF1}"
+            exit 1
+            ;;
+    esac
 }
 
 # generate new data
 function generateData {
-	LDBC_SNB_DATAGEN_HOME=${LDBC_SNB_DATAGEN_HOME:-$DEFAULT_LDBC_SNB_DATAGEN_HOME}
 
-	paramFile=tmpParams.ini
-	cat params.ini > ${paramFile}
+    if [ -z ${HADOOP_HOME+x} ]; then
+        echo '$HADOOP_HOME not set'
+        exit 1
+    fi
 
-	case "$1" in
-		SF*)
+    if [ -z ${LDBC_SNB_DATAGEN_HOME+x} ]; then
+        echo '$LDBC_SNB_DATAGEN_HOME not set'
+        exit 1
+    fi
 
-			echo "ldbc.snb.datagen.generator.scaleFactor:snb.interactive.${1:2:4}" >> ${paramFile}
-			;;
-		P*)
-			echo "ldbc.snb.datagen.generator.numPersons:${1:1:6}" >> ${paramFile}
-			;;
-		*)
-			echo "Usage: gen {SF*|P*}"
-			exit 1
-			;;
-	esac
+    paramFile=${SCRIPTPATH}/tmpParams.ini
+    cp ${LDBC_SNB_DATAGEN_HOME}/ params.ini  ${paramFile}
 
-	export HADOOP_CLIENT_OPTS="-Xmx1024m"
-	${HADOOP_HOME}/bin/hadoop jar ${LDBC_JAR} ${SCRIPTPATH}/${paramFile}
+    case "$1" in
+        SF*)
 
-	rm ${paramFile}
-	rm -f m*personFactors*
-	rm -f .m*personFactors*
-	rm -f m*activityFactors*
-	rm -f .m*activityFactors*
-	rm -f m0friendList*
-	rm -f .m0friendList*
+            echo "ldbc.snb.datagen.generator.scaleFactor:snb.interactive.${1:2:4}" >> ${paramFile}
+            ;;
+        P*)
+            echo "ldbc.snb.datagen.generator.numPersons:${1:1:6}" >> ${paramFile}
+            ;;
+        *)
+            echo "Usage: gen {SF*|P*}"
+            exit 1
+            ;;
+    esac
+
+    export HADOOP_CLIENT_OPTS="-Xmx1024m"
+    LDBC_JAR=${LDBC_SNB_DATAGEN_HOME}/target/ldbc_snb_datagen-0.2.7-jar-with-dependencies.jar
+
+    # The jar contains both a folder called `META-INF/license` and a file `META-INF/LICENSE`.
+    # This causes issues when Hadoop unzips it on a case-insensitive file system such as OSX.
+    # https://stackoverflow.com/questions/10522835/hadoop-java-io-ioexception-mkdirs-failed-to-create-some-path
+    zip -d ${LDBC_JAR} META-INF/LICENSE || true
+
+    ${HADOOP_HOME}/bin/hadoop jar ${LDBC_JAR} ${paramFile}
+
+    rm ${paramFile}
+    rm -f m*personFactors*
+    rm -f .m*personFactors*
+    rm -f m*activityFactors*
+    rm -f .m*activityFactors*
+    rm -f m0friendList*
+    rm -f .m0friendList*
 }
 
 # switch between generating data or using archive data
 case "$1" in
-	gen)
-		generateData $2
-		;;
-	arch)
-		extractArchData $2
-		;;
-	*)
-		echo "Usage: $0 {gen|arch}"
-		exit 1
-		;;
+    gen)
+        generateData $2
+        ;;
+    arch)
+        extractArchData $2
+        ;;
+    *)
+        echo "Usage: $0 {gen|arch}"
+        exit 1
+        ;;
 esac
 
 # migrate the data into Grakn

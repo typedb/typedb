@@ -74,7 +74,7 @@ public class SchemaMutationTest extends TxTestBase {
         bob = man.addEntity();
         marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
     }
 
     @Test
@@ -247,7 +247,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
         animal.attribute(name);
         tx.commit();
     }
@@ -260,7 +260,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now delete the relation
-        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
         relation.delete();
 
         expectedException.expect(InvalidKBException.class);

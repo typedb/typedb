@@ -21,7 +21,6 @@
 const mainTemplate = require('./components/mainTemplate/mainTemplate.vue');
 const graphPage = require('./components/graphPage/graphPage.vue');
 const consolePage = require('./components/consolePage.vue');
-const tasksPage = require('./components/tasksPage/tasksPage.vue');
 const configPage = require('./components/configPage.vue');
 const notFoundPage = require('./components/notFoundPage.vue');
 
@@ -45,12 +44,6 @@ const routes = [
       component: consolePage,
       name: 'Console',
       description: 'Graql console page',
-    },
-    {
-      path: '/tasks',
-      component: tasksPage,
-      name: 'Tasks',
-      description: 'Page to manage Engine tasks',
     },
     {
       path: '',

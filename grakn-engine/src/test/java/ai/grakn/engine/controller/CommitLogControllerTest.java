@@ -19,21 +19,15 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
-import com.jayway.restassured.http.ContentType;
 import mjson.Json;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-
 import static com.jayway.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_OK;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isA;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,12 +42,12 @@ public class CommitLogControllerTest {
     private static final String BODY =
             Json.object("concepts-to-fix", CONCEPTS_TO_FIX, "types-with-new-counts", TYPES_WITH_NEW_COUNTS).toString();
 
-    private static final int DELAY = 100;
     private final TaskManager taskManager = mock(TaskManager.class);
+    private final PostProcessor postProcessor = mock(PostProcessor.class);
 
     @Rule
     public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new CommitLogController(spark, DELAY, taskManager);
+        new CommitLogController(spark, taskManager, postProcessor);
     });
 
     @Test
@@ -62,26 +56,9 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void whenPostingToCommitLogEndpoint_ReturnJSON() {
-        given().body(BODY).when().post("/kb/myks/commit_log").then().contentType(ContentType.JSON);
-    }
-
-    @Test
-    public void whenPostingToCommitLogEndpoint_ReceiveBodyWithTasks() {
-        given().body(BODY).when().post("/kb/myks/commit_log").then()
-                .body("postProcessingTaskId", isA(String.class))
-                .body("countingTaskId", isA(String.class));
-    }
-
-    @Test
-    public void whenPostingToCommitLogEndpoint_ReceiveBodyWithKeyspace() {
-        given().body(BODY).when().post("/kb/myks/commit_log").then().body("keyspace", is("myks"));
-    }
-
-    @Test
     public void whenPostingToCommitLogEndpoint_SubmitTwoTasks() {
         given().body(BODY).post("/kb/myks/commit_log");
 
-        verify(taskManager, Mockito.times(2)).addTask(any(), any());
+        verify(taskManager, Mockito.times(1)).addTask(any(), any());
     }
 }

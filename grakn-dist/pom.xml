@@ -39,99 +39,68 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-            <scope>compile</scope>
         </dependency>
         <!--Jaino used for conditionals in log files-->
         <dependency>
             <groupId>org.codehaus.janino</groupId>
             <artifactId>janino</artifactId>
-            <version>${janino.version}</version>
-            <scope>compile</scope>
         </dependency>
 
         <!--Core dependencies-->
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-engine</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql-shell</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!--Migrations-->
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-sql</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-xml</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-csv</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-json</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-export</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- Factories -->
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>janus-factory</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.jetty.orbit</groupId>
-                    <artifactId>javax.servlet</artifactId>
-                </exclusion>
-                <!--Excluded because we provide logback logger-->
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-nop</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <!-- Cassandra uses airline for command line parsing -->
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>airline</artifactId>
-            <version>${airline.version}</version>
-
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
         </dependency>
     </dependencies>
 
@@ -139,7 +108,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.6</version>
                 <executions>
                     <execution>
                         <id>copy-bin</id>
@@ -160,7 +128,6 @@
             <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>1.2.1</version>
                 <executions>
                     <execution><!-- Get redis and package into the distribution -->
                         <id>download-redis</id>
@@ -192,7 +159,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.5.0</version>
                 <executions>
                     <execution>
                         <id>bash-tests</id>

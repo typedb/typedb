@@ -43,7 +43,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
@@ -67,6 +70,8 @@ import static java.util.stream.Collectors.toList;
  * @author Felix Chapman
  */
 public class QueryOperationExecutor {
+
+    protected final Logger LOG = LoggerFactory.getLogger(QueryOperationExecutor.class);
 
     private final GraknTx tx;
 
@@ -256,7 +261,7 @@ public class QueryOperationExecutor {
 
         sortProperties().forEach(property -> property.executor(executionType).execute(this));
 
-        conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build()));
+        conceptBuilders.forEach(this::buildConcept);
 
         ImmutableMap.Builder<Var, Concept> allConcepts = ImmutableMap.<Var, Concept>builder().putAll(concepts);
 
@@ -267,6 +272,13 @@ public class QueryOperationExecutor {
 
         Map<Var, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Var::isUserDefinedName);
         return new QueryAnswer(namedConcepts);
+    }
+
+    private Concept buildConcept(Var var, ConceptBuilder builder) {
+        Concept concept = builder.build();
+        assert concept != null : String.format("build() should never return null. var: %s", var);
+        concepts.put(var, concept);
+        return concept;
     }
 
     /**
@@ -386,21 +398,23 @@ public class QueryOperationExecutor {
      */
     public Concept get(Var var) {
         var = equivalentVars.componentOf(var);
+        assert var != null;
 
-        Concept concept = concepts.get(var);
+        @Nullable Concept concept = concepts.get(var);
 
         if (concept == null) {
-            ConceptBuilder builder = conceptBuilders.remove(var);
+            @Nullable ConceptBuilder builder = conceptBuilders.remove(var);
 
             if (builder != null) {
-                concept = builder.build();
-                concepts.put(var, concept);
+                concept = buildConcept(var, builder);
             }
         }
 
         if (concept != null) {
             return concept;
         }
+
+        LOG.debug("Could not build concept for {}\nconcepts = {}\nconceptBuilders = {}", var, concepts, conceptBuilders);
 
         throw GraqlQueryException.insertUndefinedVariable(printableRepresentation(var));
     }

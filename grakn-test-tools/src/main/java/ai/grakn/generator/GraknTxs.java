@@ -325,7 +325,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
     }
 
     private AttributeType resourceType() {
-        return random.choose((Collection<AttributeType>) tx.admin().getMetaResourceType().subs().collect(toSet()));
+        return random.choose((Collection<AttributeType>) tx.admin().getMetaAttributeType().subs().collect(toSet()));
     }
 
     private RelationshipType relationType() {
@@ -345,7 +345,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
     }
 
     private Attribute resource() {
-        return chooseOrThrow((Stream<Attribute>) tx.admin().getMetaResourceType().instances());
+        return chooseOrThrow((Stream<Attribute>) tx.admin().getMetaAttributeType().instances());
     }
 
     //TODO: re-enable when grakn-kb can create graql constructs

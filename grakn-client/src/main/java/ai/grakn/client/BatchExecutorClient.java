@@ -23,7 +23,6 @@ import ai.grakn.graql.Query;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.github.rholder.retry.Attempt;
@@ -40,6 +39,12 @@ import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.HystrixThreadPoolProperties;
 import com.netflix.hystrix.strategy.concurrency.HystrixRequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
+
 import java.io.Closeable;
 import java.net.ConnectException;
 import java.util.Collection;
@@ -49,13 +54,11 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-import rx.Scheduler;
-import rx.schedulers.Schedulers;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Client to batch load qraql queries into Grakn that mutate the graph.
@@ -73,9 +76,13 @@ public class BatchExecutorClient implements Closeable {
     private final GraknClient graknClient;
     private final HystrixRequestContext context;
 
+    // We only allow a certain number of queries to be waiting to execute at once for performance reasons
+    private final Semaphore queryExecutionSemaphore;
+
     // Config
     private final int maxDelay;
     private final int maxRetries;
+    private final int maxQueries;
     private final int threadPoolCoreSize;
     private final int timeoutMs;
 
@@ -91,6 +98,7 @@ public class BatchExecutorClient implements Closeable {
         graknClient = builder.graknClient;
         maxDelay = builder.maxDelay;
         maxRetries = builder.maxRetries;
+        maxQueries = builder.maxQueries;
         metricRegistry = builder.metricRegistry;
         timeoutMs = builder.timeoutMs;
         threadPoolCoreSize = builder.threadPoolCoreSize;
@@ -99,15 +107,25 @@ public class BatchExecutorClient implements Closeable {
         // of the server
         executor = Executors.newFixedThreadPool(threadPoolCoreSize);
         scheduler = Schedulers.from(executor);
+        queryExecutionSemaphore = new Semaphore(maxQueries);
         addTimer = metricRegistry.timer(name(BatchExecutorClient.class, "add"));
         failureMeter = metricRegistry.meter(name(BatchExecutorClient.class, "failure"));
     }
 
+    /**
+     * Will block until there is space for the query to be submitted
+     */
     public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace) {
         return add(query, keyspace, true);
     }
 
+    /**
+     * Will block until there is space for the query to be submitted
+     */
     public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
+        // Acquire permission to execute a query - will block until a permit is available
+        queryExecutionSemaphore.acquireUninterruptibly();
+
         Context context = addTimer.time();
         Observable<QueryResponse> observable = new QueriesObservableCollapser(query, keyspace,
                 graknClient, maxDelay, maxRetries, threadPoolCoreSize, timeoutMs, metricRegistry)
@@ -119,6 +137,9 @@ public class BatchExecutorClient implements Closeable {
                     } else if (a.isOnNext()) {
                         LOG.trace("Executed {}", a.getValue());
                     }
+
+                    // Release a query execution permit, allowing a new query to execute
+                    queryExecutionSemaphore.release();
                 })
                 .subscribeOn(scheduler)
                 .doOnTerminate(context::close);
@@ -135,8 +156,15 @@ public class BatchExecutorClient implements Closeable {
         return observable;
     }
 
+    /**
+     * Will block until all submitted queries have executed
+     */
     @Override
     public void close() {
+        // Acquire ALL permits. Only possible when all the permits are released.
+        // This means this method will only return when ALL the queries are completed.
+        queryExecutionSemaphore.acquireUninterruptibly(maxQueries);
+
         context.close();
         executor.shutdownNow();
     }
@@ -145,6 +173,7 @@ public class BatchExecutorClient implements Closeable {
         return new Builder();
     }
 
+    //TODO: Remove this method used only by docs tests
     public static Builder newBuilderforURI(SimpleURI simpleURI) {
         return new Builder().taskClient(new GraknClient(simpleURI));
     }
@@ -161,6 +190,7 @@ public class BatchExecutorClient implements Closeable {
         private int maxRetries = 5;
         private int threadPoolCoreSize = 8;
         private int timeoutMs = 60_000;
+        private int maxQueries = 1000;
         private MetricRegistry metricRegistry = new MetricRegistry();
 
         private Builder() {
@@ -193,6 +223,11 @@ public class BatchExecutorClient implements Closeable {
 
         public Builder metricRegistry(int val) {
             timeoutMs = val;
+            return this;
+        }
+
+        public Builder maxQueries(int val) {
+            maxQueries = val;
             return this;
         }
 

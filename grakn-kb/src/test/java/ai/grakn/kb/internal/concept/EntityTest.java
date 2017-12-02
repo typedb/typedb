@@ -35,12 +35,17 @@ import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.util.Schema;
 import org.junit.Test;
 
+import java.util.stream.Collectors;
+
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class EntityTest extends TxTestBase {
 
@@ -203,10 +208,37 @@ public class EntityTest extends TxTestBase {
     }
 
     @Test
+    public void whenGettingEntityKeys_EnsureKeysAreReturned(){
+        AttributeType<String> attributeType = tx.putAttributeType("An Attribute", AttributeType.DataType.STRING);
+        AttributeType<String> keyType = tx.putAttributeType("A Key", AttributeType.DataType.STRING);
+        EntityType entityType = tx.putEntityType("A Thing").attribute(attributeType).key(keyType);
+
+        Attribute<String> a1 = attributeType.putAttribute("a1");
+        Attribute<String> a2 = attributeType.putAttribute("a2");
+
+        Attribute<String> k1 = keyType.putAttribute("k1");
+
+        Entity entity = entityType.addEntity().attribute(a1).attribute(a2).attribute(k1);
+
+        assertThat(entity.keys().collect(Collectors.toSet()), containsInAnyOrder(k1));
+        assertThat(entity.keys(attributeType, keyType).collect(Collectors.toSet()), containsInAnyOrder(k1));
+        assertThat(entity.keys(attributeType).collect(Collectors.toSet()), empty());
+    }
+
+    @Test
     public void whenAddingEntity_EnsureInternalTypeIsTheSameAsRealType(){
         EntityType et = tx.putEntityType("et");
         EntityImpl e = (EntityImpl) et.addEntity();
         assertEquals(et.getLabel(), e.getInternalType());
+    }
+
+    @Test
+    public void whenCreatingAnInferredEntity_EnsureMarkedAsInferred(){
+        EntityTypeImpl et = EntityTypeImpl.from(tx.putEntityType("et"));
+        Entity entity = et.addEntity();
+        Entity entityInferred = et.addEntityInferred();
+        assertFalse(entity.isInferred());
+        assertTrue(entityInferred.isInferred());
     }
 
     @Test
@@ -222,5 +254,29 @@ public class EntityTest extends TxTestBase {
 
         aPerson.deleteAttribute(tim);
         assertThat(aPerson.attributes().collect(toSet()), containsInAnyOrder(fim, pim));
+    }
+
+
+    @Test
+    public void whenCreatingInferredAttributeLink_EnsureMarkedAsInferred(){
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        Attribute<String> attribute1 = name.putAttribute("An attribute 1");
+        Attribute<String> attribute2 = name.putAttribute("An attribute 2");
+        EntityType et = tx.putEntityType("et").attribute(name);
+        Entity e = et.addEntity();
+
+        //Link Attributes
+        e.attribute(attribute1);
+        EntityImpl.from(e).attributeInferred(attribute2);
+
+        e.relationships().forEach(relationship -> {
+            relationship.rolePlayers().forEach(roleplayer ->{
+                if(roleplayer.equals(attribute1)){
+                    assertFalse(relationship.isInferred());
+                } else if(roleplayer.equals(attribute2)){
+                    assertTrue(relationship.isInferred());
+                }
+            });
+        });
     }
 }

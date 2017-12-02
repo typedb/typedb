@@ -97,7 +97,7 @@ public class GraknTxPropertyTest {
 
         exception.expect(InvocationTargetException.class);
         exception.expectCause(isA(GraknTxOperationException.class));
-        exception.expectCause(hasProperty("message", is(ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", graph.keyspace()))));
 
         method.invoke(graph, params);
     }
@@ -191,7 +191,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingGetResourcesByValue_TheResultIsAllResourcesWithTheGivenValue(
             @Open GraknTx graph, @From(ResourceValues.class) Object resourceValue) {
-        Stream<Attribute<?>> allResources = graph.admin().getMetaResourceType().instances();
+        Stream<Attribute<?>> allResources = graph.admin().getMetaAttributeType().instances();
 
         Set<Attribute<?>> allResourcesOfValue =
                 allResources.filter(resource -> resourceValue.equals(resource.getValue())).collect(toSet());
@@ -256,7 +256,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknTx graph) {
         graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).open(GraknTxType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isSchemaConcept());
@@ -268,7 +268,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknTx graph, @From(MetaLabels.class) Label label) {
         graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).open(GraknTxType.WRITE);
         assertNotNull(graph.getSchemaConcept(label));
         graph.close();
     }
@@ -294,7 +294,7 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenSetRegexOnMetaResourceType_Throw(@Open GraknTx graph, String regex) {
-        AttributeType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaAttributeType();
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.cannotSetRegex(resource).getMessage());
@@ -305,7 +305,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCreateInstanceOfMetaResourceType_Throw(
             @Open GraknTx graph, @From(ResourceValues.class) Object value) {
-        AttributeType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaAttributeType();
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
@@ -316,7 +316,7 @@ public class GraknTxPropertyTest {
     @Ignore // TODO: Fix this
     @Property
     public void whenCallingSuperTypeOnMetaResourceType_Throw(@Open GraknTx graph) {
-        AttributeType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaAttributeType();
 
         // TODO: Test for a better error message
         exception.expect(GraknTxOperationException.class);
@@ -328,7 +328,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingHasWithMetaResourceType_ThrowMetaTypeImmutableException(
             @Open GraknTx graph, @FromTx Type type) {
-        AttributeType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaAttributeType();
 
         exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())) {

@@ -69,7 +69,7 @@ You should see something similar to the screenshot below in your visualiser wind
 
 ![Person query](/images/match-isa-mother-daughter.png)
 
-{% include note.html content="You can alternatively make queries in the graql shell. You will need to use `./graql console -n` to enable inference when you start the shell." %}
+{% include note.html content="You can alternatively make queries in the graql shell.
 
 ## Inference Rules
 
@@ -141,13 +141,13 @@ then
 The four rules can be broken down as follows:
 
 * when: In the `parentship` relationship between child `$c` and parent `$p`, do they both have a `gender` attribute that is `male`?
-	* then: The `parentship` relationship is between `father` and `son`
+    * then: The `parentship` relationship is between `father` and `son`
 * when: In the `parentship` relationship between child `$c` and parent `$p`, does `$c` have a `gender` attribute that is `female` and `$p` have a `gender` attribute that is `male`?
-	* then: The `parentship` relationship is between `father` and `daughter`
+    * then: The `parentship` relationship is between `father` and `daughter`
 * when: In the `parentship` relationship between child `$c` and parent `$p`, does `$c` have a `gender` attribute that is `male` and `$p` have a `gender` attribute that is `female`?
-	* then: The `parentship` relationship is between `mother` and `son`
+    * then: The `parentship` relationship is between `mother` and `son`
 * when: In the `parentship` relationship between child `$c` and parent `$p`, do both have a `gender` attribute that is `female`?
-	* then: The `parentship` relationship is between `mother` and `daughter`
+    * then: The `parentship` relationship is between `mother` and `daughter`
 
 We can use the rule to easily discover the sons who have the same name as their fathers:
 
@@ -223,13 +223,13 @@ then
 Much as above for the `parentship` relationship, the rules can be broken down as follows:
 
 * when: There is a `parentship` relationship between son `$gc` and parent `$p`, and another `parentship` relationship where `$p` is now in the child role and `$gp` is a father.
-	* then: The `grandparentship` relationship is between `grandfather` and `grandson`
+    * then: The `grandparentship` relationship is between `grandfather` and `grandson`
 * when: There is a `parentship` relationship between daughter `$gc` and parent `$p`, and another `parentship` relationship where `$p` is now in the child role and `$gp` is a father.
-	* then: The `grandparentship` relationship is between `grandfather` and `granddaughter`
+    * then: The `grandparentship` relationship is between `grandfather` and `granddaughter`
 * when: There is a `parentship` relationship between daughter `$gc` and parent `$p`, and another `parentship` relationship where `$p` is now in the child role and `$gp` is a mother.
-	* then: The `grandparentship` relationship is between `grandmother` and `granddaughter`
+    * then: The `grandparentship` relationship is between `grandmother` and `granddaughter`
 * when: There is a `parentship` relationship between son `$gc` and parent `$p`, and another `parentship` relationship where `$p` is now in the child role and `$gp` is a mother.
-	* then: The `grandparentship` relationship is between `grandmother` and `grandson`
+    * then: The `grandparentship` relationship is between `grandmother` and `grandson`
 
 These rules allow us to find all `grandparentship` relationships, and further, it allows us to query, for example, which grandfather/grandson pairs share the same name:
 

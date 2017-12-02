@@ -24,12 +24,12 @@ You can optionally pass arguments when starting the Graql shell, as follows:
 
 | Long Option   | Option   | Description                                      | Note |
 | ------------- | -------- | ------------------------------------------------ | |
-| `--batch <arg>`     | `-b`     | A path to a file containg a query to batch load. | The REPL does not open. <br/> The resulting knowledge base is automatically committed. |
+| `--batch <arg>`     | `-b`     | A path to a file containg a query to batch load. | The REPL does not open. <br/> The resulting knowledge base is automatically committed. <br/> **Note:** In this mode inference is disabled to ensure data load is consistent regardless of load order  |
 | `--execute <arg>`     | `-e`     | A query to execute.                              | The REPL does not open. <br/> The resulting knowledge base is automatically committed. |
 | `--file <arg>`      | `-f`     | A path to a file containg a query to execute.    | The REPL does not open. <br/> The resulting knowledge base is automatically committed. |
 | `--help`      | `-h`     | Print usage message.                             | |
 | `--keyspace <arg>`  | `-k`     | The keyspace of the knowledge base.                 | |
-| `--infer`     | `-n`     | Perform inference on results.                    | Reasoning is not enabled by default at present, although as Grakn develops, we expect that to change.|
+| `--infer`     | `-n`     | Perform inference on results.                    | |
 | `--output <arg>`  | `-o` | Output format for results                        | | 
 | `--uri <arg>`   | `-r`|  The URI to connect to engine.                            | |
 | `--version`     | `-v`     | Print version                                    | |

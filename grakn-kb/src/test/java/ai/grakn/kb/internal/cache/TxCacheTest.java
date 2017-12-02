@@ -109,7 +109,7 @@ public class TxCacheTest extends TxTestBase {
         RelationshipImpl relation = (RelationshipImpl) rt1.addRelationship().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
 
         assertThat(tx.txCache().getModifiedCastings(), is(empty()));
 
@@ -122,7 +122,7 @@ public class TxCacheTest extends TxTestBase {
         EntityType t1 = tx.putEntityType("1");
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
 
         Entity i1 = t1.addEntity();
         assertThat(tx.txCache().getConceptCache().values(), hasItem(i1));
@@ -134,7 +134,7 @@ public class TxCacheTest extends TxTestBase {
         Entity i1 = t1.addEntity();
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
 
         assertThat(tx.txCache().getModifiedThings(), is(empty()));
 

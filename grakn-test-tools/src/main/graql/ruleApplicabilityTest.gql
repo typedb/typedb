@@ -39,7 +39,7 @@ anotherNoRoleEntity sub entity
     has name;
 
 singleRoleEntity sub noRoleEntity
-	plays role1;
+    plays role1;
 
 anotherSingleRoleEntity sub noRoleEntity
     plays role1;
@@ -60,24 +60,23 @@ threeRoleEntity sub noRoleEntity
     plays role2
     plays role3;
 
-
 #Relations
 
 ternary sub relationship
-	relates role1
-	relates role2
-	relates role3;
-
-binary sub relationship
     relates role1
-    relates role2;
+    relates role2
+    relates role3;
 
-reified-relation sub relationship
+reifiable-relation sub relationship
     relates role1
     relates role2
     plays role1
     plays role2
     has description;
+
+binary sub reifiable-relation
+    relates role1
+    relates role2;
 
 reifying-relation sub relationship
     relates role1
@@ -96,37 +95,41 @@ typed-relation sub relationship
 
 #Rules
 
+#3 instances in total
 rule-0 sub rule
-	when {
-		(role1: $x, role2: $y) isa binary;
-		(role1: $y, role2: $z) isa binary;
-	}
-	then {
-		(role1: $x, role2: $z) isa binary;
-	};
+    when {
+    	(role1: $x, role2: $y) isa binary;
+    	(role1: $y, role2: $z) isa binary;
+    }
+    then {
+    	(role1: $x, role2: $z) isa binary;
+    };
 
+#1 instance
 rule-1 sub rule
-	when {
-		(role1: $x, role2: $y) isa binary;
-		(role1: $y, role2: $z) isa binary;
-	}
-	then {
-		(role1:$x, role2:$y, role3: $z) isa ternary;
-	};
+    when {
+    	(role1: $x, role2: $y) isa binary;
+    	(role1: $y, role2: $z) isa binary;
+    }
+    then {
+    	(role1:$x, role2:$y, role3: $z) isa ternary;
+    };
 
+#1 instance
 rule-2 sub rule
-	when {
-		(role1: $x, role2: $y) isa binary;
-		(role1: $y, role2: $z) isa binary;
-	}
-	then {
-		(role1:$x, role2:$y, role2: $z) isa ternary;
-	};
+    when {
+    	(role1: $x, role2: $y) isa binary;
+    	(role1: $y, role2: $z) isa binary;
+    }
+    then {
+    	(role1:$x, role2:$y, role2: $z) isa ternary;
+    };
 
+#1 instance
 rule-3 sub rule
     when {
-    	$r1 (role1: $x, role2: $y) isa reified-relation;
-    	$r2 (role1: $y, role2: $z) isa reified-relation;
+    	$r1 (role1: $x, role2: $y) isa reifiable-relation;
+    	$r2 (role1: $y, role2: $z) isa reifiable-relation;
     }
     then {
     	(role1:$r1, role2:$r2) isa reifying-relation;
@@ -153,7 +156,7 @@ rule-5 sub rule
 
 resource-rule sub rule
     when {
-        $r1 (role1: $x, role2: $y) isa reified-relation;
+        $r1 (role1: $x, role2: $y) isa reifiable-relation;
     }
     then {
         $r1 has description 'reified';
@@ -181,3 +184,10 @@ insert
 #Data
 
 $x isa anotherNoRoleEntity, has name 'noRoleEntity';
+
+$y isa anotherTwoRoleEntity;
+$z isa anotherTwoRoleEntity;
+$u isa anotherTwoRoleEntity;
+
+(role1: $y, role2: $z) isa binary;
+(role1: $z, role2: $u) isa binary;

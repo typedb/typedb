@@ -207,7 +207,7 @@ public class PostProcessingTest extends TxTestBase {
         assertEquals(3, relationship.attributes().count());
 
         //There are too many resources
-        assertEquals(6, tx.admin().getMetaResourceType().instances().count());
+        assertEquals(6, tx.admin().getMetaAttributeType().instances().count());
 
         //Now fix everything for resource 1
         tx.fixDuplicateResources(r1dup1.getIndex(), new HashSet<>(Arrays.asList(r1dup1.getId(), r1dup2.getId(), r1dup3.getId())));
@@ -215,7 +215,7 @@ public class PostProcessingTest extends TxTestBase {
         //Check resource one has been sorted out
         assertEquals(2, entity.attributes().count());
         assertEquals(2, entity.attributes().count());
-        assertEquals(4, tx.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
+        assertEquals(4, tx.admin().getMetaAttributeType().instances().count()); // 4 because we still have 2 dups on r2
 
         //Now fix everything for resource 2
         tx.fixDuplicateResources(r2dup1.getIndex(), new HashSet<>(Arrays.asList(r2dup1.getId(), r2dup2.getId(), r2dup3.getId())));
@@ -223,6 +223,6 @@ public class PostProcessingTest extends TxTestBase {
         //Check resource one has been sorted out
         assertEquals(2, entity.attributes().count());
         assertEquals(2, entity.attributes().count());
-        assertEquals(2, tx.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
+        assertEquals(2, tx.admin().getMetaAttributeType().instances().count()); // 4 because we still have 2 dups on r2
     }
 }

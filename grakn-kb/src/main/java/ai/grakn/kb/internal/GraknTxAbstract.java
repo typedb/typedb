@@ -19,6 +19,8 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -81,7 +83,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -107,10 +108,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
     //----------------------------- Shared Variables
+    private final GraknSession session;
     private final CommitLog commitLog;
-    private final Keyspace keyspace;
-    private final String engineUri;
-    private final Properties properties;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
@@ -129,21 +128,24 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
     private @Nullable GraphTraversalSource graphTraversalSource = null;
 
-    public GraknTxAbstract(G graph, Keyspace keyspace, String engineUri, Properties properties) {
+    public GraknTxAbstract(GraknSession session, G graph) {
+        this.session = session;
         this.graph = graph;
-        this.keyspace = keyspace;
-        this.engineUri = engineUri;
-        this.properties = properties;
         this.elementFactory = new ElementFactory(this);
         this.commitLog = new CommitLog();
 
         //Initialise Graph Caches
-        globalCache = new GlobalCache(properties);
+        globalCache = new GlobalCache(session.config());
 
         //Initialise Graph
         txCache().openTx(GraknTxType.WRITE);
 
         if (initialiseMetaConcepts()) close(true, false);
+    }
+
+    @Override
+    public GraknSession session(){
+        return session;
     }
 
     @Override
@@ -196,17 +198,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public String getEngineUrl() {
-        return engineUri;
-    }
-
-    Properties getProperties() {
-        return properties;
+    public Keyspace keyspace() {
+        return session().keyspace();
     }
 
     @Override
-    public Keyspace getKeyspace() {
-        return keyspace;
+    public long shardingThreshold(){
+        return session().config().getProperty(GraknConfigKey.SHARDING_THRESHOLD);
     }
 
     public TxCache txCache() {
@@ -348,6 +346,18 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         } else {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public final Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
+        Set<SchemaConcept> superSet= new HashSet<>();
+
+        while(schemaConcept != null) {
+            superSet.add(schemaConcept);
+            schemaConcept = schemaConcept.sup();
+        }
+
+        return superSet.stream();
     }
 
     private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
@@ -493,12 +503,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public RelationshipType putRelationshipType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
-                v -> factory().buildRelationType(v, getMetaRelationType()));
+                v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
     public RelationshipType putRelationTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, true,
-                v -> factory().buildRelationType(v, getMetaRelationType()));
+                v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
     @Override
@@ -527,7 +537,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
         AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
-                v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
+                v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
@@ -662,7 +672,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public AttributeType getMetaResourceType() {
+    public AttributeType getMetaAttributeType() {
         return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getId());
     }
 
@@ -696,7 +706,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public void closeSession() {
         try {
-            txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
+            txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
             getTinkerPopGraph().close();
         } catch (Exception e) {
             throw GraknTxOperationException.closingFailed(this, e);
@@ -723,11 +733,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         if (isClosed()) {
             return logs;
         }
-        String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
+        String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", keyspace());
 
         try {
             if (commitRequired) {
-                closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
+                closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
                 logs = commitWithLogs(trackLogs);
                 txCache().writeToGraphCache(true);
             } else {
@@ -796,12 +806,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     private Optional<URI> getDeleteKeyspaceEndpoint() {
-        if (Grakn.IN_MEMORY.equals(engineUri)) {
+        if (Grakn.IN_MEMORY.equals(session().uri())) {
             return Optional.empty();
         }
 
-        URI uri = UriBuilder.fromUri(new SimpleURI(engineUri).toURI())
-                .path(REST.resolveTemplate(REST.WebPath.System.KB_KEYSPACE, keyspace.getValue()))
+        URI uri = UriBuilder.fromUri(new SimpleURI(session().uri()).toURI())
+                .path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace().getValue()))
                 .build();
         return Optional.of(uri);
     }
