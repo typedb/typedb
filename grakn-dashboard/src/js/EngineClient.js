@@ -16,13 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 /* @flow */
-
 import User from './User';
 /*
  * REST API client for Grakn Engine.
  */
 export default {
-    /**
+  /**
      * Make an AJAX request with @requestData parameters.
      * Required attributes of @requestData are:
      *  - url
@@ -50,7 +49,7 @@ export default {
           reject(Error('Network Error'));
         };
 
-    // Make the request
+        // Make the request
         req.send(requestData.data);
       } catch (exception) {
         reject(exception);
@@ -60,6 +59,7 @@ export default {
 
   setHeaders(xhr:Object, requestData:Object) {
     xhr.setRequestHeader('Content-Type', requestData.contentType || 'application/json; charset=utf-8');
+    if (requestData.accepts) xhr.setRequestHeader('Accept', requestData.accepts);
   },
 
   sendInvite(credentials:Object, callbackFn:()=>mixed) {
@@ -96,7 +96,7 @@ export default {
     });
   },
 
-            /**
+  /**
              * Send graql shell command to engine. Returns a string representing shell output.
              */
   graqlShell(query:string) {
@@ -108,18 +108,18 @@ export default {
       data: query,
     });
   },
-            /**
+  /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
   graqlQuery(query:string) {
-      // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
+    // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
       url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&defineAllVars=true`,
       requestType: 'POST',
       data: query,
     });
   },
-      /**
+  /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
   graqlAnalytics(query:string) {
@@ -135,10 +135,17 @@ export default {
    */
   getConfig() {
     return this.request({
-      url: '/configuration',
+      url: `/kb/${User.getCurrentKeySpace()}`,
+      requestType: 'PUT',
     });
   },
-            /**
+
+  getVersion() {
+    return this.request({
+      url: '/version',
+    });
+  },
+  /**
              * Get meta schema type instances.
              */
   getMetaTypes() {

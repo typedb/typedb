@@ -102,7 +102,7 @@ function onGraphResponse(resp: string) {
   filterEdges(parsedResponse.edges).forEach(edge => visualiser.addEdge(edge));
 
   // Never visualise relationships without roleplayers
-  filterNodes(parsedResponse.nodes).filter(x => x.baseType === 'RELATIONSHIP')
+  filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
     .forEach((rel) => { loadRolePlayers(rel); });
 
   visualiser.fitGraphToWindow();
@@ -144,6 +144,7 @@ function addAttributeAndEdgeToInstance(instanceId, res) {
 function showNeighbours(node: Object) {
   const baseType = node.baseType;
   switch (baseType) {
+    case 'INFERRED_RELATIONSHIP':
     case 'RELATIONSHIP':
       loadRolePlayers(node);
       break;

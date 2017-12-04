@@ -48,6 +48,7 @@ export const KEY_BASE_TYPE = 'base-type';
 const KEY_VALUE = 'value';
 const KEY_LABEL = 'label';
 const KEY_IMPLICIT = 'implicit';
+const KEY_INFERRED = 'inferred';
 const KEY_ABSTRACT = 'abstract';
 const KEY_DATATYPE = 'data-type';
 export const AT_ID = '@id';
@@ -91,9 +92,10 @@ export function conceptProperties(object:Object) {
     id: object[KEY_ID],
     href: object[AT_ID],
     type: (object[KEY_TYPE]) ? object[KEY_TYPE].label : '',
-    baseType: object[KEY_BASE_TYPE],
+    baseType: (!object.inferred) ? object[KEY_BASE_TYPE] : `INFERRED_${object[KEY_BASE_TYPE]}`,
     label: buildLabel(object),
     implicit: object[KEY_IMPLICIT] || false,
+    inferred: object[KEY_INFERRED] || false,
     abstract: object[KEY_ABSTRACT],
   };
 }
