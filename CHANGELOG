@@ -1,4 +1,20 @@
-Version 0.17.1
+Version 0.18.0
+- Upgrade to 0.18.0 (#2431)
+- Update 0-index.md (#2430)
+- correctly rewrite rule heads with resources (#2417)
+- Handle parsing extremely large Graql files in constant memory (#2421)
+- [Stable] More informative rule validation (#2409)
+- [Stable] Enable reasoning by default (#2406)
+- Add academy to top navigation (#2411)
+- Change trigger back to !rtg (#2408)
+- Upload perf logs s3 (#2294)
+- Only kill job if not a main branch (master/stable) (#2364)
+- Disallow invalid var names in java Graql (#2360)
+- Kill any running jobs when a new change is made (#2348)
+
+
+Version v0.17.1
+- 0.17.1 release
 - Upgrade to 0.17.1-SNAPSHOT
 - Fix bug where we ran the same tests 4 times (#2349)
 - Fix dependency issue with SNB (#2344)

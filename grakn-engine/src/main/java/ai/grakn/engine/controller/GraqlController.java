@@ -19,19 +19,30 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -47,16 +58,19 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
+import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static com.codahale.metrics.MetricRegistry.name;
@@ -74,12 +88,19 @@ import static org.apache.http.HttpStatus.SC_OK;
 public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private static final JacksonPrinter printer = JacksonPrinter.create();
+    private static final int MAX_RETRY = 10;
     private final EngineGraknTxFactory factory;
+    private final TaskManager taskManager;
+    private final PostProcessor postProcessor;
     private final Timer executeGraql;
 
-    public GraqlController(EngineGraknTxFactory factory, Service spark,
-                           MetricRegistry metricRegistry) {
+    public GraqlController(
+            EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
+            PostProcessor postProcessor, MetricRegistry metricRegistry
+    ) {
         this.factory = factory;
+        this.taskManager = taskManager;
+        this.postProcessor = postProcessor;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
 
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
@@ -102,11 +123,11 @@ public class GraqlController {
                     name = DEFINE_ALL_VARS,
                     value = "Define all variables in response", dataType = "boolean", paramType = "query"
             ),
-            @ApiImplicitParam(name = ALLOW_MULTIPLE_QUERIES, dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = ALLOW_MULTIPLE_QUERIES, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = TX_TYPE, dataType = "string", paramType = "query")
     })
-    private String executeGraql(Request request, Response response) {
+    private String executeGraql(Request request, Response response) throws RetryException, ExecutionException {
         response.type(APPLICATION_JSON);
-
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         String queryString = mandatoryBody(request);
 
@@ -119,18 +140,46 @@ public class GraqlController {
         //Define all anonymous variables in the query
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
+        //Check the transaction type to use
+        GraknTxType txType = Requests.queryParameter(request, TX_TYPE)
+                .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
+
+
         //Execute the query and get the results
         LOG.trace(String.format("Executing graql statements: {%s}", queryString));
-        try (GraknTx tx = factory.tx(keyspace, WRITE); Timer.Context context = executeGraql.time()) {
-            QueryBuilder builder = tx.graql();
 
-            infer.ifPresent(builder::infer);
+        return executeFunctionWithRetrying(() -> {
+            try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
+                QueryBuilder builder = tx.graql();
+
+                infer.ifPresent(builder::infer);
 
             QueryParser parser = builder.parser();
             defineAllVars.ifPresent(parser::defineAllVars);
 
+
             response.status(SC_OK);
-            return executeQuery(tx, queryString, multiQuery, parser);
+
+            return executeQuery(tx, queryString, multiQuery, parser);}
+        });
+    }
+
+    private String executeFunctionWithRetrying(Callable<String> callable) throws RetryException, ExecutionException {
+        try {
+            Retryer<String> retryer = RetryerBuilder.<String>newBuilder()
+                .retryIfExceptionOfType(TemporaryWriteException.class)
+                .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
+                .build();
+
+            return retryer.call(callable);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            } else {
+                throw e;
+            }
         }
     }
 
@@ -169,8 +218,23 @@ public class GraqlController {
             formatted = printer.graqlString(executeAndMonitor(query));
             commitQuery = !query.isReadOnly();
         }
-        if (commitQuery) tx.commit();
+        if (commitQuery) commitAndSubmitPPTask(tx, postProcessor, taskManager);
         return formatted;
+    }
+
+    private static void commitAndSubmitPPTask(
+            GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter
+    ) {
+        Optional<String> result = graph.admin().commitSubmitNoLogs();
+        if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
+            String logs = result.get();
+            taskSubmitter.addTask(
+                    PostProcessingTask.createTask(GraqlController.class),
+                    PostProcessingTask.createConfig(graph.keyspace(), logs)
+            );
+
+            postProcessor.updateCounts(graph.keyspace(), Json.read(logs));
+        }
     }
 
     private Object executeAndMonitor(Query<?> query) {

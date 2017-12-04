@@ -33,28 +33,28 @@ define
 # Entities
 
 vehicle sub entity
-	is-abstract;
+    is-abstract;
 
 car sub vehicle
-	is-abstract
+    is-abstract
 
-	has model
-	has mpg
-	has cyl
-	has disp
-	has hp
-	has wt
-	has gear
-	has carb
-	plays made;
+    has model
+    has mpg
+    has cyl
+    has disp
+    has hp
+    has wt
+    has gear
+    has carb
+    plays made;
 
 automatic-car sub car;
 manual-car sub car;
 
 carmaker sub entity
-	is-abstract
-	has maker-name
-	plays maker;
+    is-abstract
+    has maker-name
+    plays maker;
 
 japanese-maker sub carmaker;
 american-maker sub carmaker;
@@ -77,8 +77,8 @@ economical sub attribute datatype string;
 # Roles and Relations
 
 manufactured sub relationship
-	relates maker
-	relates made;
+    relates maker
+    relates made;
 
 maker sub role;
 made sub role;

@@ -28,7 +28,7 @@ rule-1 sub rule
         $st isa state;
         (related-state: $st) isa achieved;
         (related-state: $st2) isa prior;
-	    $st != $st2;
+        $st != $st2;
     }
     then{
         (related-state: $st) isa holds;

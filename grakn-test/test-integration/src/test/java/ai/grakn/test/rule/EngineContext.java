@@ -158,7 +158,7 @@ public class EngineContext extends CompositeTestRule {
 
         // start engine
         setRestAssuredUri(config);
-        server = GraknCreator.cleanGraknEngineServer(config);
+        server = new GraknCreator().cleanGraknEngineServer(config);
         server.start();
 
         LOG.info("engine started on " + uri());

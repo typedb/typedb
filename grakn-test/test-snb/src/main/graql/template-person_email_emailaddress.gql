@@ -1,4 +1,4 @@
 match
-	$person isa person, has person-id @long(<"Person.id">);
+    $person isa person, has person-id @long(<"Person.id">);
 insert
-	$person has email <"email">;
+    $person has email <"email">;

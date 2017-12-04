@@ -221,7 +221,7 @@ person
   plays daughter
   plays mother
   plays father;
-	
+
 parentship sub relationship
   relates mother
   relates father
@@ -283,18 +283,6 @@ If you're unfamiliar with the syntax of rules, don't worry too much about it for
 Let's test it out!
 
 First, try making a get query to find `parentship` relationships between fathers and sons in the Graql shell:
-
-```graql
-match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identifier $n2; get;
-```
-
-Did you get any results? Probably not, because reasoning is not enabled by default at present, although as Grakn develops, we expect that to change. If you didn't see any results, you need to `exit` the Graql shell and restart it, passing `-n` and `-m` flags to switch on reasoning (see our documentation for more information about [flags supported by the Graql shell](https://grakn.ai/pages/documentation/graql/graql-shell.html)).
-
-```bash
-./graql console -n -m
-```
-
-Try the query again:
 
 ```graql
 match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identifier $n2; get;

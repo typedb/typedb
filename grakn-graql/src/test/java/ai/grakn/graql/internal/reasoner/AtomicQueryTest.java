@@ -233,22 +233,6 @@ public class AtomicQueryTest {
     }
 
     @Test
-    public void testWhenReifyingRelation_ExtraAtomIsCreatedWithUserDefinedName(){
-        GraknTx graph = geoKB.tx();
-        String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
-        String patternString2 = "{($x, $y) relates geo-entity;}";
-
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
-        assertEquals(query.getAtom().isUserDefined(), false);
-        assertEquals(query2.getAtom().isUserDefined(), true);
-        assertEquals(query.getAtoms().size(), 1);
-        assertEquals(query2.getAtoms().size(), 2);
-    }
-
-    @Test
     public void testWhenUnifiyingAtomWithItself_UnifierIsIdentity(){
         GraknTx graph = unificationWithTypesSet.tx();
         String patternString = "{$x1 isa twoRoleEntity;$x2 isa twoRoleEntity2;($x1, $x2) isa binary;}";

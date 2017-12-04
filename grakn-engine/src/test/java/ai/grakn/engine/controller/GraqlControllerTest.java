@@ -7,6 +7,8 @@ import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.graql.Query;
 import ai.grakn.test.kbs.GenealogyKB;
@@ -84,7 +86,7 @@ public class GraqlControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
                 .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
-        new GraqlController(factory, spark, new MetricRegistry());
+        new GraqlController(factory, spark, mock(TaskManager.class), mock(PostProcessor.class), new MetricRegistry());
     });
 
     @ClassRule

@@ -115,7 +115,7 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when setting {@code superType} as the super type of {@code type} and a loop is created
      */
     public static GraknTxOperationException loopCreated(SchemaConcept type, SchemaConcept superElement){
-        throw new GraknTxOperationException(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
+        return new GraknTxOperationException(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
     }
 
     /**
@@ -123,7 +123,7 @@ public class GraknTxOperationException extends GraknException{
      * {@link ai.grakn.concept.Entity}
      */
     public static GraknTxOperationException invalidCasting(Object concept, Class type){
-        throw new GraknTxOperationException(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
+        return new GraknTxOperationException(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
     }
 
     /**
@@ -323,5 +323,12 @@ public class GraknTxOperationException extends GraknException{
      */
     public static GraknTxOperationException nonInferredThingExists(Thing thing){
         return new GraknTxOperationException(String.format("Thing {%s} was already created and cannot be set to inferred", thing));
+    }
+
+    /**
+     * Thrown when failing to create an {@link Attribute} after several attempts
+     */
+    public static GraknTxOperationException couldNotCreateAttribute(Attribute attribute, Exception e){
+        return new GraknTxOperationException(String.format("Could not add attribute {%s} due to {%s}", attribute, e.getMessage()), e);
     }
 }

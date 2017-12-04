@@ -348,6 +348,18 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
     }
 
+    @Override
+    public final Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
+        Set<SchemaConcept> superSet= new HashSet<>();
+
+        while(schemaConcept != null) {
+            superSet.add(schemaConcept);
+            schemaConcept = schemaConcept.sup();
+        }
+
+        return superSet.stream();
+    }
+
     private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
         Set<Concept> concepts = new HashSet<>();
         getTinkerTraversal().V().has(key.name(), value).

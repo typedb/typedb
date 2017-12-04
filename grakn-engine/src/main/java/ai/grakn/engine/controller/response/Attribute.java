@@ -50,8 +50,9 @@ public abstract class Attribute extends Thing {
             @JsonProperty("attributes") Set<EmbeddedAttribute> attributes,
             @JsonProperty("keys") Set<Link> keys,
             @JsonProperty("relationships") Set<RolePlayer> relationships,
+            @JsonProperty("inferred") boolean inferred,
             @JsonProperty("data-type") String dataType,
             @JsonProperty("value") String value){
-        return new AutoValue_Attribute(Schema.BaseType.ATTRIBUTE.name(), id, selfLink, type, attributes, keys, relationships, dataType, value);
+        return new AutoValue_Attribute(Schema.BaseType.ATTRIBUTE.name(), id, selfLink, type, attributes, keys, relationships, inferred, dataType, value);
     }
 }

@@ -111,6 +111,7 @@ public class REST {
             public static final String QUERY = "query";
             public static final String EXECUTE_WITH_INFERENCE = "infer";
             public static final String ALLOW_MULTIPLE_QUERIES = "multi";
+            public static final String TX_TYPE = "txType";
             public static final String DEFINE_ALL_VARS = "defineAllVars";
         }
     }

@@ -43,7 +43,8 @@ public abstract class Entity extends Thing {
             @JsonProperty("type") EmbeddedType type,
             @JsonProperty("attributes") Set<EmbeddedAttribute> attributes,
             @JsonProperty("keys") Set<Link> keys,
-            @JsonProperty("relationships") Set<RolePlayer> relationships){
-        return new AutoValue_Entity(Schema.BaseType.ENTITY.name(), id, selfLink, type, attributes, keys, relationships);
+            @JsonProperty("relationships") Set<RolePlayer> relationships,
+            @JsonProperty("inferred") boolean inferred){
+        return new AutoValue_Entity(Schema.BaseType.ENTITY.name(), id, selfLink, type, attributes, keys, relationships, inferred);
     }
 }

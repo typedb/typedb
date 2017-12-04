@@ -32,10 +32,16 @@ public class Grakn {
 
     private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
 
+    /**
+     *
+     * Invocation from class 'GraknProcess' in grakn-dist project
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         try {
             // Start Engine
-            GraknEngineServer graknEngineServer = GraknCreator.instantiateGraknEngineServer(Runtime.getRuntime());
+            GraknEngineServer graknEngineServer = new GraknCreator().instantiateGraknEngineServer(Runtime.getRuntime());
             graknEngineServer.start();
         } catch (Exception e) {
             LOG.error("An exception has occurred", e);

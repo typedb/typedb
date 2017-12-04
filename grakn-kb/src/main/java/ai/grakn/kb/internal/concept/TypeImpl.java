@@ -136,7 +136,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             vertex().tx().txCache().addedInstance(getId());
             if(isInferred) instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
         }
-        return producer.apply(instanceVertex, getThis());
+        V instance = producer.apply(instanceVertex, getThis());
+        assert instance != null : "producer should never return null";
+        return instance;
     }
 
     /**
@@ -162,7 +164,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Stream<Role> allRoles = directPlays().keySet().stream();
 
         //Now get the super type plays (Which may also be cached locally within their own context
-        Stream<Role> superSet =superSet().
+        Stream<Role> superSet = this.sups().
                 filter(sup -> !sup.equals(this)). //We already have the plays from ourselves
                 flatMap(sup -> TypeImpl.from(sup).directPlays().keySet().stream());
 

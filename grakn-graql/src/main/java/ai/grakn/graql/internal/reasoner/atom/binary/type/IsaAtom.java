@@ -101,6 +101,18 @@ public class IsaAtom extends TypeAtom {
         return new IsaAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
     }
 
+    private IsaAtom inferEntityType(Answer sub){
+        if (getTypePredicate() != null) return this;
+        if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
+        return this;
+    }
+
+    @Override
+    public IsaAtom inferTypes(Answer sub) {
+        return this
+                .inferEntityType(sub);
+    }
+
     @Override
     public Stream<Answer> materialise(){
         EntityType entityType = getSchemaConcept().asEntityType();

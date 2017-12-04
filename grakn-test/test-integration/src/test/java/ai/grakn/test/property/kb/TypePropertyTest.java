@@ -18,6 +18,7 @@
 
 package ai.grakn.test.property.kb;
 
+import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
@@ -27,6 +28,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromTxGenerator.FromTx;
+import ai.grakn.generator.GraknTxs.Open;
 import ai.grakn.test.property.PropertyUtil;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -154,8 +156,8 @@ public class TypePropertyTest {
 
     @Property
     public void whenAddingAPlaysToATypesIndirectSuperType_TheTypePlaysThatRole(
-            Type type, @FromTx Role role, long seed) {
-        SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
+            @Open GraknTx tx, @FromTx Type type, @FromTx Role role, long seed) {
+        SchemaConcept superConcept = PropertyUtil.choose(tx.admin().sups(type), seed);
         assumeTrue(superConcept.isType());
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 

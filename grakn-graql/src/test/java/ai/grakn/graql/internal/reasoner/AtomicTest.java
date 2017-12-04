@@ -342,6 +342,21 @@ public class AtomicTest {
      */
 
     @Test
+    public void testRuleApplicability_OntologicalAtomsDoNotMatchAnyRules(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        Atom subAtom = ReasonerQueries.atomic(conjunction("{$x sub relationship;}", graph), graph).getAtom();
+        Atom hasAtom = ReasonerQueries.atomic(conjunction("{$x has description;}", graph), graph).getAtom();
+        Atom relatesAtom = ReasonerQueries.atomic(conjunction("{reifiable-relation relates $x;}", graph), graph).getAtom();
+        Atom relatesAtom2 = ReasonerQueries.atomic(conjunction("{$x relates role1;}", graph), graph).getAtom();
+        Atom playsAtom = ReasonerQueries.atomic(conjunction("{$x plays role1;}", graph), graph).getAtom();
+        assertThat(subAtom.getApplicableRules().collect(toSet()), empty());
+        assertThat(hasAtom.getApplicableRules().collect(toSet()), empty());
+        assertThat(relatesAtom.getApplicableRules().collect(toSet()), empty());
+        assertThat(relatesAtom2.getApplicableRules().collect(toSet()), empty());
+        assertThat(playsAtom.getApplicableRules().collect(toSet()), empty());
+    }
+
+    @Test
     public void testRuleApplicability_AmbiguousRoleMapping(){
         GraknTx graph = ruleApplicabilitySet.tx();
         //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
@@ -432,7 +447,7 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_TypedResources(){
         GraknTx graph = ruleApplicabilitySet.tx();
-        String relationString = "{$x isa reified-relation; $x has description $d;}";
+        String relationString = "{$x isa reifiable-relation; $x has description $d;}";
         String relationString2 = "{$x isa typed-relation; $x has description $d;}";
         String relationString3 = "{$x isa relationship; $x has description $d;}";
         Atom resource = ReasonerQueries.create(conjunction(relationString, graph), graph).getAtoms(ResourceAtom.class).findFirst().orElse(null);
@@ -465,10 +480,21 @@ public class AtomicTest {
         assertEquals(rules.stream().filter(r -> r.getHead().getAtom().isRelation()).count(), type5.getApplicableRules().count());
     }
 
-    @Test //should assign (role: $x, role: $y) which is compatible with 3 rules
+    @Test //should assign (role: $x, role: $y) which is compatible with all rules
     public void testRuleApplicability_genericRelation(){
         GraknTx graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y);}";
+        Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(
+                RuleUtils.getRules(graph).count(),
+                relation.getApplicableRules().count()
+        );
+    }
+
+    @Test
+    public void testRuleApplicability_genericType(){
+        GraknTx graph = ruleApplicabilitySet.tx();
+        String relationString = "{$x isa $type;}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertEquals(
                 RuleUtils.getRules(graph).count(),
