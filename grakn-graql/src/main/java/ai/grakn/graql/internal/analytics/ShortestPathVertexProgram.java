@@ -56,6 +56,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     private static final int FROM_DESTINATION = -1;
     private static final int FROM_MIDDLE = 0;
 
+    // message keys
     private static final int DIRECTION = 0;
     private static final int ID = 1;
 
@@ -139,21 +140,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
         } else {
             if (memory.<Boolean>get(FOUND_PATH)) {
                 if (messenger.receiveMessages().hasNext() && vertex.property(VISITED_IN_ITERATION).isPresent()) {
-                    int visitedInIteration = vertex.value(VISITED_IN_ITERATION);
-                    int iterationLeft = memory.<Integer>get(ITERATIONS_LEFT);
-                    if (visitedInIteration == iterationLeft) {
-                        Map<String, Set<String>> predecessorsMap = getPredecessors(vertex, messenger);
-                        if (!predecessorsMap.isEmpty()) {
-                            memory.add(PREDECESSORS_FROM_SOURCE, predecessorsMap);
-                            sendMessage(messenger, Pair.with(FROM_MIDDLE, getVertexId(vertex)));
-                        }
-                    } else if (-visitedInIteration == iterationLeft) {
-                        Map<String, Set<String>> predecessorsMap = getPredecessors(vertex, messenger);
-                        if (!predecessorsMap.isEmpty()) {
-                            memory.add(PREDECESSORS_FROM_DESTINATION, predecessorsMap);
-                            sendMessage(messenger, Pair.with(FROM_MIDDLE, getVertexId(vertex)));
-                        }
-                    }
+                    recordPredecessors(vertex, messenger, memory);
                 }
             } else if (messenger.receiveMessages().hasNext()) {
                 updateInstance(vertex, messenger, memory);
@@ -164,6 +151,24 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     private static void sendMessage(Messenger<Tuple> messenger, Tuple message) {
         messenger.sendMessage(messageScopeIn, message);
         messenger.sendMessage(messageScopeOut, message);
+    }
+
+    private static void recordPredecessors(Vertex vertex, Messenger<Tuple> messenger, Memory memory) {
+        int visitedInIteration = vertex.value(VISITED_IN_ITERATION);
+        int iterationLeft = memory.<Integer>get(ITERATIONS_LEFT);
+        if (visitedInIteration == iterationLeft) {
+            Map<String, Set<String>> predecessorsMap = getPredecessors(vertex, messenger);
+            if (!predecessorsMap.isEmpty()) {
+                memory.add(PREDECESSORS_FROM_SOURCE, predecessorsMap);
+                sendMessage(messenger, Pair.with(FROM_MIDDLE, getVertexId(vertex)));
+            }
+        } else if (-visitedInIteration == iterationLeft) {
+            Map<String, Set<String>> predecessorsMap = getPredecessors(vertex, messenger);
+            if (!predecessorsMap.isEmpty()) {
+                memory.add(PREDECESSORS_FROM_DESTINATION, predecessorsMap);
+                sendMessage(messenger, Pair.with(FROM_MIDDLE, getVertexId(vertex)));
+            }
+        }
     }
 
     private static Map<String, Set<String>> getPredecessors(Vertex vertex, Messenger<Tuple> messenger) {

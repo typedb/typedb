@@ -93,6 +93,7 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
         return allPaths;
     }
 
+    // If the sub graph contains attributes, we may need to add implicit relations to the paths
     private List<List<Concept>> getExtendedPaths(List<List<Concept>> allPaths) {
         List<List<Concept>> extendedPaths = new ArrayList<>();
         for (List<Concept> currentPath : allPaths) {
@@ -108,6 +109,8 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
             }
         }
 
+        // If there exist a path without attributes, we don't need to expand any path
+        // as paths contain attributes would be longer after implicit relations are added
         int numExtensionAllowed = extendedPaths.isEmpty() ? Integer.MAX_VALUE : 0;
         for (List<Concept> currentPath : allPaths) {
             List<Concept> extendedPath = new ArrayList<>();
