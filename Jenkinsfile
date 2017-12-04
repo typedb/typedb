@@ -228,6 +228,9 @@ def runBuild() {
 
         //Keep fewer artifacts for PRs
         properties([
+            pipelineTriggers([
+              issueCommentTrigger('.*!rtg.*')
+            ]),
             buildDiscarder(logRotator(numToKeepStr: '7', artifactNumToKeepStr: '1'))
         ])
     }
