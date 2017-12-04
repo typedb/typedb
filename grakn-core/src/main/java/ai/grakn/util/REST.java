@@ -62,6 +62,7 @@ public class REST {
          * URIs to System Controller endpoints
          */
         public static final String STATUS = "/status";
+        public static final String VERSION = "/version";
         public static final String METRICS = "/metrics";
 
         /**
@@ -93,7 +94,6 @@ public class REST {
         public static final String LABEL_PARAMETER = ":label";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
-        public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String LIMIT_PARAMETER = "limit";
         public static final String OFFSET_PARAMETER = "offset";
         public static final String FORMAT = "format";
@@ -147,14 +147,6 @@ public class REST {
             public static final String APPLICATION_TEXT = "application/text";
             public static final String APPLICATION_JSON = "application/json";
             public static final String APPLICATION_ALL ="*/*";
-        }
-
-        /**
-         * Graql controller response fields
-         */
-        public static class Graql {
-            public static final String RESPONSE = "response";
-            public static final String ORIGINAL_QUERY = "originalQuery";
         }
 
         /**

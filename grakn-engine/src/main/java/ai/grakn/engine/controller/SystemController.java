@@ -27,6 +27,7 @@ import ai.grakn.engine.controller.response.Keyspace;
 import ai.grakn.engine.controller.response.Keyspaces;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.exception.GraknServerException;
+import ai.grakn.util.GraknVersion;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
@@ -109,6 +110,7 @@ public class SystemController {
         spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
         spark.get(REST.WebPath.METRICS, this::getMetrics);
         spark.get(REST.WebPath.STATUS, this::getStatus);
+        spark.get(REST.WebPath.VERSION, this::getVersion);
 
         final TimeUnit rateUnit = TimeUnit.SECONDS;
         final TimeUnit durationUnit = TimeUnit.SECONDS;
@@ -120,6 +122,13 @@ public class SystemController {
                         durationUnit,
                         showSamples,
                         filter));
+    }
+
+    @GET
+    @Path(REST.WebPath.VERSION)
+    @ApiOperation(value = "Get the version of the running engine instance")
+    private String getVersion(Request request, Response response) {
+        return GraknVersion.VERSION;
     }
 
     @GET
