@@ -23,14 +23,14 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div class="modal-header">
             <h5 class="modal-title"><div class="inner-title"><span class="bold">{{nodeType}}</span><span>label settings</span></div></h5>
             <div class="sub-title">
-              <p v-if="!allNodeProps.length">There is nothing configurable for nodes of type "{{nodeType}}".</p>
+              <p v-if="!allNodeAttributes.length">There is nothing configurable for nodes of type "{{nodeType}}".</p>
             </div>
         </div>
         <div class="panel-body">
             <div class="side-column"></div>
             <div class="properties-list">
                 <ul class="dd-list">
-                    <li class="dd-item"  @click="configureNode(prop)" v-for="prop in allNodeProps" v-bind:class="{'li-active':currentTypeProperties.includes(prop)}">
+                    <li class="dd-item"  @click="configureNode(prop)" v-for="prop in allNodeAttributes" v-bind:class="{'li-active':currentTypeProperties.includes(prop)}">
                         <div class="dd-handle noselect">{{prop}}</div>
                     </li>
                 </ul>
@@ -144,8 +144,8 @@ export default {
     return {
       state: GraphPageState,
       showNodeLabelPanel: false,
-      allNodeProps: [],
-      currentTypeProperties: {},
+      allNodeAttributes: [],
+      currentTypeProperties: [],
       nodeType: undefined,
       node: undefined,
     };
@@ -169,14 +169,16 @@ export default {
       visualiser.setDisplayProperties(this.nodeType, this.currentTypeProperties);
     },
 
-    openNodeLabelPanel(allNodePropsParam, nodeTypeParam, nodeId) {
+    openNodeLabelPanel(nodeId) {
       this.node = visualiser.getNode(nodeId);
 
-      this.allNodeProps = allNodePropsParam;
+      this.allNodeAttributes = this.node.attributes.map(x=>x.type);
 
-      if ((this.node.type !== '')) this.allNodeProps.push('type');
+      if ((this.node.type !== '')) this.allNodeAttributes.push('type');
 
-      this.nodeType = nodeTypeParam;
+      this.allNodeAttributes.sort();
+
+      this.nodeType = this.node.type;
       this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
 
       this.showNodeLabelPanel = true;
