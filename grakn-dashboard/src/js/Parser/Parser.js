@@ -71,12 +71,14 @@ function populateInstancesMap(nodes) {
 
 function relationshipEdges(relationObj, instancesMap) {
   return relationObj.roleplayers
+    .filter(player => (player.thing in instancesMap))
     .map(player => ({ from: relationObj.id, to: instancesMap[player.thing], label: player.role.split('/').pop() }))
     .reduce(collect, []);
 }
 
 function relationshipTypeEdges(relationObj, rolesMap) {
   return relationObj.relates
+    .filter(uri => (uri in rolesMap))
     .flatMap(uri => rolesMap[uri].map(to => ({ from: relationObj.id, to, label: uri.split('/').pop() })))
     .reduce(collect, []);
 }
@@ -109,7 +111,8 @@ export default {
 
     // ( Helper map {roleURI:[nodeId..]} )
     const rolesMap = populateRolesMap(dataArray.filter(node => node.plays));
-    const schemaEdges = dataArray.filter(x => x[KEY_BASE_TYPE] === RELATIONSHIP_TYPE)
+    const schemaEdges = dataArray
+      .filter(x => x[KEY_BASE_TYPE] === RELATIONSHIP_TYPE)
       .map(x => relationshipTypeEdges(x, rolesMap))
       .reduce(collect, []);
 
@@ -117,7 +120,8 @@ export default {
 
     // ( Helper map {nodeURI: nodeId} )
     const instancesMap = populateInstancesMap(dataArray);
-    const instanceEdges = dataArray.filter(x => x[KEY_BASE_TYPE] === RELATIONSHIP)
+    const instanceEdges = dataArray
+      .filter(x => x[KEY_BASE_TYPE] === RELATIONSHIP)
       .map(x => relationshipEdges(x, instancesMap))
       .reduce(collect, []);
 

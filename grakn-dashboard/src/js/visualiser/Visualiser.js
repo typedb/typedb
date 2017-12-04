@@ -314,7 +314,7 @@ export default class Visualiser {
         color: this.style.getEdgeColour(edge.label),
         font: this.style.getEdgeFont(edge.label),
         arrows: {
-          to: (edge.label !== 'relates'),
+          to: true,
         },
       });
       const connectingEdge = this.edgesBetweenTwoNodes(edge.from, edge.to);

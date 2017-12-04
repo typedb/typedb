@@ -103,7 +103,7 @@ function onGraphResponse(resp: string) {
 
   // Never visualise relationships without roleplayers
   filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
-    .forEach((rel) => { loadRolePlayers(rel); });
+    .forEach((rel) => { loadRelationshipRolePlayers(rel); });
 
   visualiser.fitGraphToWindow();
 }
@@ -125,13 +125,39 @@ function getId(str) {
   return str.split('/').pop();
 }
 
-function loadRolePlayers(rel) {
+function loadRelationshipRolePlayers(rel) {
   const promises = rel.roleplayers.map(x => EngineClient.request({ url: x.thing }));
   Promise.all(promises)
     .then((resps) => { resps.forEach((res) => { onGraphResponse(res); }); })
     .then(() => {
       rel.roleplayers
         .forEach((player) => { visualiser.addEdge({ from: rel.id, to: getId(player.thing), label: getId(player.role) }); });
+    });
+}
+
+function loadRelationshipTypeRolePlayers(rel) {
+  const promises = rel.relates.map(x => EngineClient.request({ url: x }));
+  Promise.all(promises)
+    .then((resps) => {
+      resps.forEach((res) => {
+        // Fetched all roles - dont show them - load all entities that play every role and
+        // draw them on canvas
+        const role = JSON.parse(res);
+        loadRoleRolePlayers(role, rel.id);
+      });
+    });
+}
+
+// load entities that play a given role
+function loadRoleRolePlayers(role, relId) {
+  role.roleplayers
+    .forEach((x) => {
+      EngineClient.request({ url: x })
+        .then((res) => {
+          const entity = JSON.parse(res);
+          onGraphResponse(res);
+          visualiser.addEdge({ from: relId, to: entity.id, label: role.label });
+        });
     });
 }
 
@@ -146,7 +172,7 @@ function showNeighbours(node: Object) {
   switch (baseType) {
     case 'INFERRED_RELATIONSHIP':
     case 'RELATIONSHIP':
-      loadRolePlayers(node);
+      loadRelationshipRolePlayers(node);
       break;
     case 'ENTITY':
       node.relationships
@@ -154,10 +180,10 @@ function showNeighbours(node: Object) {
         .forEach((promise) => { promise.then(onGraphResponse); });
       break;
     case 'RELATIONSHIP_TYPE':
-      // show plays and relates
+      loadRelationshipTypeRolePlayers(node);
       break;
     case 'ENTITY_TYPE':
-      // show plays - also attributes types?
+      // TODO: show nothing as we are not showing roles for now
       break;
     default:
       console.log('ERROR: Basetype not recognised');
