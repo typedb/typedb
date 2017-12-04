@@ -21,15 +21,16 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
-import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
+import ai.grakn.graql.Printer;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
@@ -77,9 +78,10 @@ public class HttpHandler {
         RemoteSession graqlWebSocket = RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
+        Printer printer = JacksonPrinter.create();
+
         // Start all the controllers
-        new GraqlController(factory, spark, taskManager, postProcessor, metricRegistry);
-        new ConceptController(factory, spark, metricRegistry);
+        new GraqlController(factory, spark, taskManager, postProcessor, printer, metricRegistry);
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
         new CommitLogController(spark, taskManager, postProcessor);
 

@@ -25,13 +25,13 @@ import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.TemporaryWriteException;
+import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
@@ -87,8 +87,8 @@ import static org.apache.http.HttpStatus.SC_OK;
  */
 public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
-    private static final JacksonPrinter printer = JacksonPrinter.create();
     private static final int MAX_RETRY = 10;
+    private final Printer printer;
     private final EngineGraknTxFactory factory;
     private final TaskManager taskManager;
     private final PostProcessor postProcessor;
@@ -96,11 +96,12 @@ public class GraqlController {
 
     public GraqlController(
             EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
-            PostProcessor postProcessor, MetricRegistry metricRegistry
+            PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.taskManager = taskManager;
         this.postProcessor = postProcessor;
+        this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
 
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
@@ -150,13 +151,12 @@ public class GraqlController {
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
-                QueryBuilder builder = tx.graql();
+            QueryBuilder builder = tx.graql();
 
-                infer.ifPresent(builder::infer);
+            infer.ifPresent(builder::infer);
 
             QueryParser parser = builder.parser();
             defineAllVars.ifPresent(parser::defineAllVars);
-
 
             response.status(SC_OK);
 

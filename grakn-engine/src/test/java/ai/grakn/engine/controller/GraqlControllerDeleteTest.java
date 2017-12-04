@@ -26,15 +26,13 @@ import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.QueryParser;
-import ai.grakn.test.kbs.MovieKB;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -63,15 +61,17 @@ public class GraqlControllerDeleteTest {
     private static final TaskManager taskManager = mock(TaskManager.class);
     private static final PostProcessor postProcessor = mock(PostProcessor.class);
     private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
+    private static final Printer printer = mock(Printer.class);
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, taskManager, postProcessor, new MetricRegistry());
+        new GraqlController(mockFactory, spark, taskManager, postProcessor, printer, new MetricRegistry());
     });
 
     @Before
     public void setupMock(){
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
+        when(printer.graqlString(any())).thenReturn(Json.object().toString());
     }
 
     @Test
