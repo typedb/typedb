@@ -54,6 +54,7 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.concept.TypeImpl;
+import ai.grakn.kb.internal.log.CommitLogHandler;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.EngineCommunicator;
@@ -109,7 +110,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     //----------------------------- Shared Variables
     private final GraknSession session;
-    private final CommitLog commitLog;
+    private final CommitLogHandler commitLogHandler;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
@@ -132,7 +133,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
-        this.commitLog = new CommitLog();
+        this.commitLogHandler = new CommitLogHandler();
 
         //Initialise Graph Caches
         globalCache = new GlobalCache(session.config());
@@ -193,8 +194,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         txCache().openTx(txType);
     }
 
-    public CommitLog commitLog(){
-        return commitLog;
+    public CommitLogHandler commitLog(){
+        return commitLogHandler;
     }
 
     @Override
@@ -782,7 +783,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
                 commitLog().addNewInstances(newInstances);
                 commitLog().addNewAttributes(newAttributes);
             } else {
-                return Optional.of(CommitLog.formatTxLog(newInstances, newAttributes).toString());
+                return Optional.of(CommitLogHandler.formatTxLog(newInstances, newAttributes).toString());
             }
         }
 

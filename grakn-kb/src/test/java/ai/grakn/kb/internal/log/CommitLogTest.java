@@ -14,13 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.kb.internal;
+package ai.grakn.kb.internal.log;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
+import ai.grakn.kb.internal.log.CommitLogHandler;
 import org.junit.Test;
 
 import java.net.URI;
@@ -35,19 +35,19 @@ public class CommitLogTest {
 
     @Test
     public void callingGetCommitLogEndPointWithInMemory_ReturnsEmpty() {
-        Optional<URI> endpoint = CommitLog.getCommitLogEndPoint(Grakn.IN_MEMORY, Keyspace.of("whatever"));
+        Optional<URI> endpoint = CommitLogHandler.getCommitLogEndPoint(Grakn.IN_MEMORY, Keyspace.of("whatever"));
         assertEquals(Optional.empty(), endpoint);
     }
 
     @Test
     public void callingGetCommitLogEndPointWithValidURI_ReturnsCorrectEndpoint() {
-        Optional<URI> endpoint = CommitLog.getCommitLogEndPoint("http://validuri.com:342", Keyspace.of("whatever"));
+        Optional<URI> endpoint = CommitLogHandler.getCommitLogEndPoint("http://validuri.com:342", Keyspace.of("whatever"));
         assertEquals(Optional.of(URI.create("http://validuri.com:342/kb/whatever/commit_log")), endpoint);
     }
 
     @Test
     public void callingGetCommitLogEndPointWithURIMissingSchema_ReturnsCorrectEndpoint() {
-        Optional<URI> endpoint = CommitLog.getCommitLogEndPoint("validuri.com:342", Keyspace.of("whatever"));
+        Optional<URI> endpoint = CommitLogHandler.getCommitLogEndPoint("validuri.com:342", Keyspace.of("whatever"));
         assertEquals(Optional.of(URI.create("http://validuri.com:342/kb/whatever/commit_log")), endpoint);
     }
 }

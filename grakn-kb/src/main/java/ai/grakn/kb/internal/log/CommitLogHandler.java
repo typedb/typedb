@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.kb.internal;
+package ai.grakn.kb.internal.log;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
@@ -35,36 +35,35 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 /**
  * <p>
- *     Stores the commit log of a {@link ai.grakn.GraknTx}.
- * </p>
- *
- * <p>
- *     Stores the commit log of a {@link ai.grakn.GraknTx} which is uploaded to the server when the {@link ai.grakn.GraknSession} is closed.
- *     The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
+ *     Wraps a {@link CommitLog} and enables thread safe operations on the commit log.
+ *     Speficially it ensure that the log is locked when trying to mutate it.
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class CommitLog {
+public class CommitLogHandler {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final Map<ConceptId, Long> newInstanceCount = new ConcurrentHashMap<>();
-    private final Map<String, Set<String>> newAttributes = new ConcurrentHashMap<>();
+    private final CommitLog commitLog = CommitLog.createThreadSafe();
 
+    public CommitLog commitLog(){
+        return commitLog;
+    }
 
-    void addNewAttributes(Map<String, ConceptId> attributes){
+    public void addNewAttributes(Map<String, ConceptId> attributes){
         lockDataAddition(() -> attributes.forEach((key, value) -> {
-            newAttributes.merge(key, Sets.newHashSet(value.getValue()), (v1, v2) -> {
+            commitLog().attributes().merge(key, Sets.newHashSet(value), (v1, v2) -> {
                 v1.addAll(v2);
                 return v1;
             });
         }));
     }
 
-    void addNewInstances(Map<ConceptId, Long> instances){
-        lockDataAddition(() -> instances.forEach((key, value) -> newInstanceCount.merge(key, value, (v1, v2) -> v1 + v2)));
+    public void addNewInstances(Map<ConceptId, Long> instances){
+        lockDataAddition(() -> instances.forEach((key, value) -> commitLog().instanceCount().merge(key, value, (v1, v2) -> v1 + v2)));
     }
 
     /**
@@ -82,20 +81,15 @@ public class CommitLog {
         }
     }
 
-    private void clear(){
-        newInstanceCount.clear();
-        newAttributes.clear();
-    }
-
     public Json getFormattedLog(){
-        return formatLog(newInstanceCount, newAttributes);
+        return formatLog(commitLog().instanceCount(), commitLog().attributes());
     }
 
     /**
      * Submits the commit logs to the provided server address and under the provided {@link Keyspace}
      */
     public Optional<String> submit(String engineUri, Keyspace keyspace){
-        if(newInstanceCount.isEmpty() && newAttributes.isEmpty()){
+        if(commitLog().instanceCount().isEmpty() && commitLog().attributes().isEmpty()){
             return Optional.empty();
         }
 
@@ -103,7 +97,7 @@ public class CommitLog {
         try{
             lock.writeLock().lock();
             String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, getFormattedLog().toString());
-            clear();
+            commitLog().clear();
             return Optional.of("Response from engine [" + response + "]");
         } finally {
             lock.writeLock().unlock();
@@ -118,10 +112,10 @@ public class CommitLog {
         return Optional.of(UriBuilder.fromUri(new SimpleURI(engineUri).toURI()).path(path).build());
     }
 
-    static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes){
-        Map<String, Set<String>> newAttributes = new ConcurrentHashMap<>();
+    public static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes){
+        Map<String, Set<ConceptId>> newAttributes = new ConcurrentHashMap<>();
         attributes.forEach((key, value) -> {
-            newAttributes.put(key, Sets.newHashSet(value.getValue()));
+            newAttributes.put(key, Sets.newHashSet(value));
         });
         return formatLog(instances, newAttributes);
     }
@@ -130,10 +124,15 @@ public class CommitLog {
      * Returns the Formatted Log which is uploaded to the server.
      * @return a formatted Json log
      */
-    static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<String>> attributes){
+    static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<ConceptId>> attributes){
+        //TODO: Remove this hack (IN THIS PR):
+        Map<String, Set<String>> map = attributes.entrySet().stream().
+                collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream().map(ConceptId::getValue).
+                        collect(Collectors.toSet())));
+
         //Concepts In Need of Inspection
         Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(attributes));
+        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(map));
 
         //Types with instance changes
         Json typesWithInstanceChanges = Json.array();
