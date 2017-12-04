@@ -198,7 +198,9 @@ public class GraqlController {
     private static class RetryLogger implements RetryListener{
         @Override
         public <V> void onRetry(Attempt<V> attempt) {
-            LOG.warn("Retrying transaction after {" + attempt.getAttemptNumber() + "} attempts due to exception {" + attempt.getExceptionCause().getMessage() + "}");
+            if(attempt.hasException()) {
+                LOG.warn("Retrying transaction after {" + attempt.getAttemptNumber() + "} attempts due to exception {" + attempt.getExceptionCause().getMessage() + "}");
+            }
         }
     }
 
