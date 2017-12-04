@@ -25,16 +25,17 @@ import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.TemporaryWriteException;
+import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
+import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -73,6 +74,7 @@ import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.lang.Boolean.parseBoolean;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -87,8 +89,8 @@ import static org.apache.http.HttpStatus.SC_OK;
  */
 public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
-    private static final JacksonPrinter printer = JacksonPrinter.create();
     private static final int MAX_RETRY = 10;
+    private final Printer printer;
     private final EngineGraknTxFactory factory;
     private final TaskManager taskManager;
     private final PostProcessor postProcessor;
@@ -96,11 +98,12 @@ public class GraqlController {
 
     public GraqlController(
             EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
-            PostProcessor postProcessor, MetricRegistry metricRegistry
+            PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.taskManager = taskManager;
         this.postProcessor = postProcessor;
+        this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
 
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
@@ -127,7 +130,6 @@ public class GraqlController {
             @ApiImplicitParam(name = TX_TYPE, dataType = "string", paramType = "query")
     })
     private String executeGraql(Request request, Response response) throws RetryException, ExecutionException {
-        response.type(APPLICATION_JSON);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         String queryString = mandatoryBody(request);
 
@@ -144,23 +146,31 @@ public class GraqlController {
         GraknTxType txType = Requests.queryParameter(request, TX_TYPE)
                 .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
 
+        //This is used to determine the response format
+        //TODO: Maybe we should really try to stick with one representation? This would require dashboard console interpreting the json representation
+        final String acceptType;
+        if(APPLICATION_TEXT.equals(Requests.getAcceptType(request))) {
+            acceptType = APPLICATION_TEXT;
+        } else {
+            acceptType = APPLICATION_JSON;
+        }
+        response.type(APPLICATION_JSON);
 
         //Execute the query and get the results
         LOG.trace(String.format("Executing graql statements: {%s}", queryString));
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
-                QueryBuilder builder = tx.graql();
+            QueryBuilder builder = tx.graql();
 
-                infer.ifPresent(builder::infer);
+            infer.ifPresent(builder::infer);
 
             QueryParser parser = builder.parser();
             defineAllVars.ifPresent(parser::defineAllVars);
 
-
             response.status(SC_OK);
 
-            return executeQuery(tx, queryString, multiQuery, parser);}
+            return executeQuery(tx, queryString, acceptType, multiQuery, parser);}
         });
     }
 
@@ -203,10 +213,15 @@ public class GraqlController {
      *
      * @param tx    open transaction to current graph
      * @param queryString read query to be executed
+     * @param acceptType  response format that the client will accept
      * @param multi       execute multiple statements
      * @param parser
      */
-    private String executeQuery(GraknTx tx, String queryString, boolean multi, QueryParser parser) {
+    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, QueryParser parser) {
+        Printer printer = this.printer;
+
+        if(APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
+
         String formatted;
         boolean commitQuery = true;
         if (multi) {

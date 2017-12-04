@@ -27,7 +27,6 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.test.kbs.MovieKB;
@@ -75,6 +74,7 @@ public class GraqlControllerReadOnlyTest {
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspaceImpl.class);
+    private static final Printer printer = mock(Printer.class);
 
     private static final JsonMapper jsonMapper = new JsonMapper();
 
@@ -85,7 +85,7 @@ public class GraqlControllerReadOnlyTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
         new SystemController(spark, mockFactory.config(), mockFactory.systemKeyspace(), new GraknEngineStatus(), metricRegistry);
-        new GraqlController(mockFactory, spark, mock(TaskManager.class), mock(PostProcessor.class), metricRegistry);
+        new GraqlController(mockFactory, spark, mock(TaskManager.class), mock(PostProcessor.class), printer, metricRegistry);
     });
 
     @Before
@@ -94,6 +94,8 @@ public class GraqlControllerReadOnlyTest {
 
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
+
+        when(printer.graqlString(any())).thenReturn(Json.object().toString());
 
         QueryParser mockParser = mock(QueryParser.class);
 
@@ -189,6 +191,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithGraqlJsonTypeAndEmptyResponse_ResponseIsEmptyJsonObject() {
+        when(printer.graqlString(any())).thenReturn(Json.array().toString());
         Response response = sendRequest("match $x isa \"runtime\"; get;");
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
@@ -205,12 +208,14 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlAggregate_ResponseIsCorrect() {
         String query = "match $x isa movie; aggregate count;";
+        long numberPeople = sampleKB.tx().getEntityType("movie").instances().count();
+        when(printer.graqlString(any())).thenReturn(String.valueOf(numberPeople));
+
         Response response = sendRequest(query);
 
         // refresh graph
         sampleKB.tx().close();
 
-        long numberPeople = sampleKB.tx().getEntityType("movie").instances().count();
         assertThat(stringResponse(response), equalTo(Long.toString(numberPeople)));
     }
 
@@ -284,6 +289,7 @@ public class GraqlControllerReadOnlyTest {
         String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
+        when(printer.graqlString(any())).thenReturn("null");
         Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(200));

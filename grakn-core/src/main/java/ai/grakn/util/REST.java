@@ -144,6 +144,7 @@ public class REST {
          * Response content types
          */
         public static class ContentType {
+            public static final String APPLICATION_TEXT = "application/text";
             public static final String APPLICATION_JSON = "application/json";
             public static final String APPLICATION_ALL ="*/*";
         }

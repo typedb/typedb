@@ -45,8 +45,7 @@ import static org.mockito.Mockito.when;
 public class GraqlControllerTest {
     private static final LockProvider mockLockProvider = mock(LockProvider.class);
     private static final Lock mockLock = mock(Lock.class);
-
-    private JacksonPrinter printer;
+    private static final JacksonPrinter printer = JacksonPrinter.create();
 
     private Response sendQuery(String query) {
         return sendQuery(query, APPLICATION_JSON);
@@ -86,7 +85,7 @@ public class GraqlControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
                 .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
-        new GraqlController(factory, spark, mock(TaskManager.class), mock(PostProcessor.class), new MetricRegistry());
+        new GraqlController(factory, spark, mock(TaskManager.class), mock(PostProcessor.class), printer, new MetricRegistry());
     });
 
     @ClassRule
@@ -94,7 +93,6 @@ public class GraqlControllerTest {
 
     @Before
     public void setUp() {
-        printer = JacksonPrinter.create();
         when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 

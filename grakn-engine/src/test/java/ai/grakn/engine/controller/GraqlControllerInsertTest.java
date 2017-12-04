@@ -24,14 +24,11 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.QueryParser;
-import ai.grakn.test.kbs.MovieKB;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.util.REST;
@@ -50,7 +47,6 @@ import java.util.Optional;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonResponse;
-import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
@@ -72,18 +68,20 @@ public class GraqlControllerInsertTest {
     private final GraknTx tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
-    private static TaskManager taskManager = mock(TaskManager.class);
-    private static PostProcessor postProcessor = mock(PostProcessor.class);
-    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
+    private static final TaskManager taskManager = mock(TaskManager.class);
+    private static final PostProcessor postProcessor = mock(PostProcessor.class);
+    private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
+    private static final Printer printer = mock(Printer.class);
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, taskManager, postProcessor, new MetricRegistry());
+        new GraqlController(mockFactory, spark, taskManager, postProcessor, printer, new MetricRegistry());
     });
 
     @Before
     public void setupMock(){
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
+        when(printer.graqlString(any())).thenReturn(Json.object().toString());
 
         // Describe expected response to a typical query
         Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
@@ -179,9 +177,9 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson(){
+        when(printer.graqlString(any())).thenReturn(Json.array().toString());
         Response response = sendRequest("insert $x isa person;");
-
-        assertThat(jsonResponse(response).asJsonList().size(), equalTo(1));
+        assertThat(jsonResponse(response).asJsonList().size(), equalTo(0));
     }
 
     @Test
