@@ -29,14 +29,10 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.factory.GraknSessionImpl;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.structure.Casting;
-import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
-import mjson.Json;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
@@ -141,34 +137,6 @@ public class TxCacheTest extends TxTestBase {
 
         i1.delete();
         assertThat(tx.txCache().getModifiedThings(), is(empty()));
-    }
-
-    @Test
-    public void whenNoOp_EnsureLogWellFormed() {
-        Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
-                REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
-        assertEquals("Unexpected graph logs", expected, ((GraknSessionImpl)tx.session()).commitLogHandler().getFormattedLog());
-    }
-
-    @Test
-    public void whenAddingEntities_EnsureLogIsFilledAfterCommit() {
-        EntityType entityType = tx.putEntityType("My Type");
-        entityType.addEntity();
-        entityType.addEntity();
-        Json emptyLog = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
-                REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
-        assertEquals("Logs are not empty", emptyLog, ((GraknSessionImpl)tx.session()).commitLogHandler().getFormattedLog());
-
-        tx.commit();
-
-        Json filledLog = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() +
-                "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
-                "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
-                "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
-        assertEquals("Logs are empty", filledLog, ((GraknSessionImpl)tx.session()).commitLogHandler().getFormattedLog());
     }
 
     @Test

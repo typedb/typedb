@@ -24,19 +24,16 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
 import ai.grakn.util.SimpleURI;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
-import mjson.Json;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -47,10 +44,11 @@ import java.util.stream.Collectors;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class CommitLogHandler {
+    private static final ObjectMapper mapper = new ObjectMapper();
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final CommitLog commitLog = CommitLog.createThreadSafe();
 
-    public CommitLog commitLog(){
+    private CommitLog commitLog(){
         return commitLog;
     }
 
@@ -82,10 +80,6 @@ public class CommitLogHandler {
         }
     }
 
-    public Json getFormattedLog(){
-        return formatLog(commitLog().instanceCount(), commitLog().attributes());
-    }
-
     /**
      * Submits the commit logs to the provided server address and under the provided {@link Keyspace}
      */
@@ -97,9 +91,11 @@ public class CommitLogHandler {
         Optional<URI> endPoint = getCommitLogEndPoint(engineUri, keyspace);
         try{
             lock.writeLock().lock();
-            String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, getFormattedLog().toString());
+            String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, mapper.writeValueAsString(commitLog()));
             commitLog().clear();
             return Optional.of("Response from engine [" + response + "]");
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         } finally {
             lock.writeLock().unlock();
         }
@@ -111,45 +107,5 @@ public class CommitLogHandler {
         }
         String path = REST.resolveTemplate(REST.WebPath.COMMIT_LOG_URI, keyspace.getValue());
         return Optional.of(UriBuilder.fromUri(new SimpleURI(engineUri).toURI()).path(path).build());
-    }
-
-    public static Json formatTxLog(Map<ConceptId, Long> instances, Map<String, ConceptId> attributes){
-        Map<String, Set<ConceptId>> newAttributes = new ConcurrentHashMap<>();
-        attributes.forEach((key, value) -> {
-            newAttributes.put(key, Sets.newHashSet(value));
-        });
-        return formatLog(instances, newAttributes);
-    }
-
-    /**
-     * Returns the Formatted Log which is uploaded to the server.
-     * @return a formatted Json log
-     */
-    static Json formatLog(Map<ConceptId, Long> instances, Map<String, Set<ConceptId>> attributes){
-        //TODO: Remove this hack (IN THIS PR):
-        Map<String, Set<String>> map = attributes.entrySet().stream().
-                collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream().map(ConceptId::getValue).
-                        collect(Collectors.toSet())));
-
-        //Concepts In Need of Inspection
-        Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), Json.make(map));
-
-        //Types with instance changes
-        Json typesWithInstanceChanges = Json.array();
-
-        instances.forEach((key, value) -> {
-            Json jsonObject = Json.object();
-            jsonObject.set(REST.Request.COMMIT_LOG_CONCEPT_ID, key.getValue());
-            jsonObject.set(REST.Request.COMMIT_LOG_SHARDING_COUNT, value);
-            typesWithInstanceChanges.add(jsonObject);
-        });
-
-        //Final Commit Log
-        Json formattedLog = Json.object();
-        formattedLog.set(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
-        formattedLog.set(REST.Request.COMMIT_LOG_COUNTING, typesWithInstanceChanges);
-
-        return formattedLog;
     }
 }

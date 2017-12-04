@@ -20,7 +20,6 @@ package ai.grakn.kb.internal.log;
 
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
-import ai.grakn.kb.internal.log.CommitLogHandler;
 import org.junit.Test;
 
 import java.net.URI;
@@ -31,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Felix Chapman
  */
-public class CommitLogTest {
+public class CommitLogHandlerTest {
 
     @Test
     public void callingGetCommitLogEndPointWithInMemory_ReturnsEmpty() {
