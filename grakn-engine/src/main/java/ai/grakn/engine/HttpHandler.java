@@ -78,7 +78,7 @@ public class HttpHandler {
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
         // Start all the controllers
-        new GraqlController(factory, spark, metricRegistry);
+        new GraqlController(factory, spark, taskManager, postProcessor, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
         new CommitLogController(spark, taskManager, postProcessor);
