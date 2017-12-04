@@ -28,6 +28,8 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.ArrayDeque;
@@ -35,8 +37,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +82,7 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
             return Collections.emptyList();
         }
 
-        Map<String, Set<String>> predecessorMapFromSource = getPredecessorMap(result);
+        Multimap<Concept, Concept> predecessorMapFromSource = getPredecessorMap(result);
         List<List<Concept>> allPaths = getAllPaths(predecessorMapFromSource);
         if (includeAttribute) { // this can be slow
             return getExtendedPaths(allPaths);
@@ -97,13 +97,7 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
     private List<List<Concept>> getExtendedPaths(List<List<Concept>> allPaths) {
         List<List<Concept>> extendedPaths = new ArrayList<>();
         for (List<Concept> currentPath : allPaths) {
-            boolean hasAttribute = false;
-            for (Concept concept : currentPath) {
-                if (concept.isAttribute()) {
-                    hasAttribute = true;
-                    break;
-                }
-            }
+            boolean hasAttribute = currentPath.stream().anyMatch(Concept::isAttribute);
             if (!hasAttribute) {
                 extendedPaths.add(currentPath);
             }
@@ -122,7 +116,7 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
                 if (resourceRelationId != null) {
                     numExtension++;
                     if (numExtension > numExtensionAllowed) break;
-                    extendedPath.add(getConcept(tx, resourceRelationId));
+                    extendedPath.add(getConcept(resourceRelationId));
                 }
             }
             if (numExtension == numExtensionAllowed) {
@@ -138,39 +132,40 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
         return extendedPaths;
     }
 
-    private static Map<String, Set<String>> getPredecessorMap(ComputerResult result) {
+    private Multimap<Concept, Concept> getPredecessorMap(ComputerResult result) {
         Map<String, Set<String>> predecessorMapFromSource =
                 result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_SOURCE);
         Map<String, Set<String>> predecessorMapFromDestination =
                 result.memory().get(ShortestPathVertexProgram.PREDECESSORS_FROM_DESTINATION);
-        predecessorMapFromDestination.forEach((key, value) -> value.forEach(id -> {
-            predecessorMapFromSource.putIfAbsent(id, new HashSet<>());
-            predecessorMapFromSource.get(id).add(key);
+
+        Multimap<Concept, Concept> predecessors = HashMultimap.create();
+        predecessorMapFromSource.forEach((id, idSet) -> idSet.forEach(id2 -> {
+            predecessors.put(getConcept(id), getConcept(id2));
         }));
-        return predecessorMapFromSource;
+        predecessorMapFromDestination.forEach((id, idSet) -> idSet.forEach(id2 -> {
+            predecessors.put(getConcept(id2), getConcept(id));
+        }));
+        return predecessors;
     }
 
-    private List<List<Concept>> getAllPaths(Map<String, Set<String>> predecessorMapFromSource) {
-        Map<Concept, Set<String>> predecessorMap = new HashMap<>(predecessorMapFromSource.size());
-        predecessorMapFromSource.forEach((key, value) -> predecessorMap.put(getConcept(tx, key), value));
-
+    private List<List<Concept>> getAllPaths(Multimap<Concept, Concept> predecessorMapFromSource) {
         List<List<Concept>> allPaths = new ArrayList<>();
         List<Concept> firstPath = new ArrayList<>();
-        firstPath.add(getConcept(tx, sourceId.getValue()));
+        firstPath.add(getConcept(sourceId.getValue()));
 
         Deque<List<Concept>> queue = new ArrayDeque<>();
         queue.addLast(firstPath);
         while (!queue.isEmpty()) {
             List<Concept> currentPath = queue.pollFirst();
-            if (predecessorMap.containsKey(currentPath.get(currentPath.size() - 1))) {
-                Set<String> successors = predecessorMap.get(currentPath.get(currentPath.size() - 1));
-                Iterator<String> iterator = successors.iterator();
+            if (predecessorMapFromSource.containsKey(currentPath.get(currentPath.size() - 1))) {
+                Collection<Concept> successors = predecessorMapFromSource.get(currentPath.get(currentPath.size() - 1));
+                Iterator<Concept> iterator = successors.iterator();
                 for (int i = 0; i < successors.size() - 1; i++) {
                     List<Concept> extendedPath = new ArrayList<>(currentPath);
-                    extendedPath.add(getConcept(tx, iterator.next()));
+                    extendedPath.add(iterator.next());
                     queue.addLast(extendedPath);
                 }
-                currentPath.add(getConcept(tx, iterator.next()));
+                currentPath.add(iterator.next());
                 queue.addLast(currentPath);
             } else {
                 allPaths.add(currentPath);
@@ -179,11 +174,11 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
         return allPaths;
     }
 
-    private static Thing getConcept(Optional<GraknTx> tx, String conceptId) {
+    private Thing getConcept(String conceptId) {
         return tx.get().getConcept(ConceptId.of(conceptId));
     }
 
-    private static Thing getConcept(Optional<GraknTx> tx, ConceptId conceptId) {
+    private Thing getConcept(ConceptId conceptId) {
         return tx.get().getConcept(conceptId);
     }
 
