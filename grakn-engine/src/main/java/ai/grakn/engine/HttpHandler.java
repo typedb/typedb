@@ -21,6 +21,7 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.controller.CommitLogController;
+import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -82,6 +83,7 @@ public class HttpHandler {
 
         // Start all the controllers
         new GraqlController(factory, spark, taskManager, postProcessor, printer, metricRegistry);
+        new ConceptController(factory, spark, metricRegistry);
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
         new CommitLogController(spark, taskManager, postProcessor);
 
