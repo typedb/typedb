@@ -40,7 +40,9 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.RetryListener;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
@@ -176,6 +178,12 @@ public class GraqlController {
         try {
             Retryer<Object> retryer = RetryerBuilder.newBuilder()
                 .retryIfExceptionOfType(TemporaryWriteException.class)
+                .withRetryListener(new RetryListener() {
+                    @Override
+                    public <V> void onRetry(Attempt<V> attempt) {
+                        LOG.warn(String.format("Retrying transaction after {%s} attempts due to exception {$s}", attempt.getAttemptNumber(), attempt.getExceptionCause().getMessage()));
+                    }
+                })
                 .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
                 .build();
