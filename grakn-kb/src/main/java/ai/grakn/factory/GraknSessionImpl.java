@@ -30,6 +30,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
+import ai.grakn.kb.internal.log.CommitLogHandler;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
@@ -73,6 +74,7 @@ public class GraknSessionImpl implements GraknSession {
     private final Keyspace keyspace;
     private final GraknConfig config;
     private final boolean remoteSubmissionNeeded;
+    private final CommitLogHandler commitLogHandler;
     private ScheduledExecutorService commitLogSubmitter;
 
 
@@ -93,10 +95,7 @@ public class GraknSessionImpl implements GraknSession {
             ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
                     .setNameFormat("commit-log-subbmit-%d").build();
             commitLogSubmitter = Executors.newSingleThreadScheduledExecutor(namedThreadFactory);
-            commitLogSubmitter.scheduleAtFixedRate(() -> {
-                submitLogs(tx);
-                submitLogs(txBatch);
-            }, 0, LOG_SUBMISSION_PERIOD, TimeUnit.SECONDS);
+            commitLogSubmitter.scheduleAtFixedRate(this::submitLogs, 0, LOG_SUBMISSION_PERIOD, TimeUnit.SECONDS);
         }
 
         //Set properties directly or via a remote call
@@ -108,6 +107,12 @@ public class GraknSessionImpl implements GraknSession {
             }
         }
         this.config = config;
+
+        this.commitLogHandler = new CommitLogHandler();
+    }
+
+    public CommitLogHandler commitLogHandler(){
+        return commitLogHandler;
     }
 
     //This must remain public because it is accessed via reflection
@@ -197,8 +202,9 @@ public class GraknSessionImpl implements GraknSession {
         if(remoteSubmissionNeeded) commitLogSubmitter.shutdown();
 
         //Close the main tx connections
-        close(tx);
-        close(txBatch);
+        submitLogs();
+        if(tx != null) tx.closeSession();
+        if(txBatch != null) txBatch.closeSession();
     }
 
     @Override
@@ -216,15 +222,8 @@ public class GraknSessionImpl implements GraknSession {
         return config;
     }
 
-    private void close(GraknTxAbstract tx){
-        if(tx != null){
-            tx.closeSession();
-            if(remoteSubmissionNeeded) submitLogs(tx);
-        }
-    }
-
-    private void submitLogs(GraknTxAbstract tx){
-        if(tx != null) tx.commitLog().submit(engineUri, keyspace).ifPresent(LOG::debug);
+    private void submitLogs(){
+        if(tx != null) commitLogHandler().submit(engineUri, keyspace).ifPresent(LOG::debug);
     }
 
     private int openTransactions(GraknTxAbstract<?> graph){

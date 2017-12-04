@@ -29,6 +29,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
+import ai.grakn.factory.GraknSessionImpl;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
@@ -147,7 +148,7 @@ public class TxCacheTest extends TxTestBase {
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
                 "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
                 REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
-        assertEquals("Unexpected graph logs", expected, tx.commitLog().getFormattedLog());
+        assertEquals("Unexpected graph logs", expected, ((GraknSessionImpl)tx.session()).commitLogHandler().getFormattedLog());
     }
 
     @Test
@@ -158,7 +159,7 @@ public class TxCacheTest extends TxTestBase {
         Json emptyLog = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
                 "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
                 REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
-        assertEquals("Logs are not empty", emptyLog, tx.commitLog().getFormattedLog());
+        assertEquals("Logs are not empty", emptyLog, ((GraknSessionImpl)tx.session()).commitLogHandler().getFormattedLog());
 
         tx.commit();
 
@@ -167,7 +168,7 @@ public class TxCacheTest extends TxTestBase {
                 "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
                 "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
                 "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
-        assertEquals("Logs are empty", filledLog, tx.commitLog().getFormattedLog());
+        assertEquals("Logs are empty", filledLog, ((GraknSessionImpl)tx.session()).commitLogHandler().getFormattedLog());
     }
 
     @Test

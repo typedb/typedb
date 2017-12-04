@@ -40,6 +40,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.factory.GraknSessionImpl;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.kb.admin.GraknAdmin;
@@ -110,7 +111,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     //----------------------------- Shared Variables
     private final GraknSession session;
-    private final CommitLogHandler commitLogHandler;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
@@ -133,7 +133,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
-        this.commitLogHandler = new CommitLogHandler();
 
         //Initialise Graph Caches
         globalCache = new GlobalCache(session.config());
@@ -192,10 +191,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      */
     public void openTransaction(GraknTxType txType) {
         txCache().openTx(txType);
-    }
-
-    public CommitLogHandler commitLog(){
-        return commitLogHandler;
     }
 
     @Override
@@ -780,8 +775,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         //If we have logs to commit get them and add them
         if (logsExist) {
             if(trackingNeeded) {
-                commitLog().addNewInstances(newInstances);
-                commitLog().addNewAttributes(newAttributes);
+                ((GraknSessionImpl) session()).commitLogHandler().addNewInstances(newInstances);
+                ((GraknSessionImpl) session()).commitLogHandler().addNewAttributes(newAttributes);
             } else {
                 return Optional.of(CommitLogHandler.formatTxLog(newInstances, newAttributes).toString());
             }
