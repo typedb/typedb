@@ -148,6 +148,17 @@ public class RelationshipAtom extends IsaAtom {
     public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
 
     @Override
+    public void checkValid(){
+        super.checkValid();
+        getRoleLabels().stream()
+                .filter(label -> tx().getRole(label.getValue()) == null)
+                .findFirst()
+                .ifPresent(label -> {
+                    throw GraqlQueryException.labelNotFound(label);
+                });
+    }
+
+    @Override
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
     @Override

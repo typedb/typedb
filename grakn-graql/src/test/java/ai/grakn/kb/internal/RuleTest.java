@@ -23,6 +23,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -58,8 +59,6 @@ public class RuleTest {
     public void setupRules(){
         session = Grakn.session(Grakn.IN_MEMORY, "absd");
         graknTx = Grakn.session(Grakn.IN_MEMORY, "absd").open(GraknTxType.WRITE);
-        when = graknTx.graql().parser().parsePattern("$x isa entity-type");
-        then = graknTx.graql().parser().parsePattern("$x isa entity-type");
     }
 
     @After
@@ -266,9 +265,10 @@ public class RuleTest {
 
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_Predicate_Throw() throws InvalidKBException {
+        ConceptId randomId = graknTx.admin().getMetaConcept().getId();
         validateIllegalHead(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                graknTx.graql().parser().parsePattern("$x id '100'"),
+                graknTx.graql().parser().parsePattern("$x id '" + randomId.getValue() + "'"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
