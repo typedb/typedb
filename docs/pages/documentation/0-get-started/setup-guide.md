@@ -11,7 +11,7 @@ folder: documentation
 
 ## First: Download GRAKN.AI
 
-[![download](/images/download.png)](https://grakn.ai/download/latest)
+[Download Grakn](https://grakn.ai/download/latest)
 {: #download-btn }
 
 For more information on how to download older versions of GRAKN.AI, compile from source code, or import the Grakn Java API library as a development dependency, please visit our [Downloads page](../resources/downloads.html).
