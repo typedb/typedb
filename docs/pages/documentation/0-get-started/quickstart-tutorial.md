@@ -221,7 +221,7 @@ person
   plays daughter
   plays mother
   plays father;
-	
+
 parentship sub relationship
   relates mother
   relates father

@@ -30,6 +30,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
@@ -47,9 +48,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -120,7 +121,7 @@ public class GraknTxTest extends TxTestBase {
         EntityType sampleEntityType = tx.putEntityType("Sample Entity Type");
         RelationshipType sampleRelationshipType = tx.putRelationshipType("Sample Relationship Type");
 
-        assertThat(tx.admin().getMetaConcept().subs().collect(Collectors.toSet()), containsInAnyOrder(
+        assertThat(tx.admin().getMetaConcept().subs().collect(toSet()), containsInAnyOrder(
                 tx.admin().getMetaConcept(),
                 tx.admin().getMetaRelationType(),
                 tx.admin().getMetaEntityType(),
@@ -146,7 +147,7 @@ public class GraknTxTest extends TxTestBase {
         tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.READ);
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
-        finalTypes.addAll(tx.getMetaConcept().subs().collect(Collectors.toSet()));
+        finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
         finalTypes.add(tx.admin().getMetaRole());
         finalTypes.add(tx.admin().getMetaRule());
 
@@ -157,7 +158,7 @@ public class GraknTxTest extends TxTestBase {
         }
     }
     private void assertCacheOnlyContainsMetaTypes(){
-        Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
+        Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(toSet());
         tx.getGlobalCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
@@ -221,7 +222,7 @@ public class GraknTxTest extends TxTestBase {
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
         assertTrue("Type [" + rel1 + "] was not cached", cachedValues.contains(rel1));
 
-        assertThat(e1.plays().collect(Collectors.toSet()), containsInAnyOrder(r1, r2));
+        assertThat(e1.plays().collect(toSet()), containsInAnyOrder(r1, r2));
 
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Schema in a separate thread
@@ -365,12 +366,12 @@ public class GraknTxTest extends TxTestBase {
         Entity s3_e2 = entityType.addEntity();
 
         //Check Type was sharded correctly
-        assertThat(entityType.shards().collect(Collectors.toSet()), containsInAnyOrder(s1, s2, s3));
+        assertThat(entityType.shards().collect(toSet()), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
-        assertThat(s1.links().collect(Collectors.toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
-        assertThat(s2.links().collect(Collectors.toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
-        assertThat(s3.links().collect(Collectors.toSet()), containsInAnyOrder(s3_e1, s3_e2));
+        assertThat(s1.links().collect(toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
+        assertThat(s2.links().collect(toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
+        assertThat(s3.links().collect(toSet()), containsInAnyOrder(s3_e1, s3_e2));
     }
 
     @Test
@@ -405,6 +406,17 @@ public class GraknTxTest extends TxTestBase {
 
         tx.admin().shard(entity.getId());
         assertEquals(2L, tx.admin().getShardCount(entity));
+    }
+
+    @Test
+    public void whenGettingSupsOfASchemaConcept_ResultIncludesMetaThing() {
+        EntityType yes = tx.putEntityType("yes");
+        EntityType entity = tx.getMetaEntityType();
+        Type thing = tx.getMetaConcept();
+
+        assertThat(tx.sups(yes).collect(toSet()), containsInAnyOrder(yes, entity, thing));
+        assertThat(tx.sups(entity).collect(toSet()), containsInAnyOrder(entity, thing));
+        assertThat(tx.sups(thing).collect(toSet()), containsInAnyOrder(thing));
     }
 }
 

@@ -1,12 +1,12 @@
 match
-	$mirna isa mirna has mirID <name>;
-	$prec has accession-number <precursor>;
+    $mirna isa mirna has mirID <name>;
+    $prec has accession-number <precursor>;
 insert
-	$loc isa location
-	has species "Homo Sapiens"
-	has chromosome <chromosome>
-	has starting-position <start>
-	has end-position <end>
-	has strand <strand>;
-	(position: $loc, sequence-in-genome: $mirna) isa coordinate;
-	(precursor: $prec, matured: $mirna) isa mirna-precursor;
+    $loc isa location
+    has species "Homo Sapiens"
+    has chromosome <chromosome>
+    has starting-position <start>
+    has end-position <end>
+    has strand <strand>;
+    (position: $loc, sequence-in-genome: $mirna) isa coordinate;
+    (precursor: $prec, matured: $mirna) isa mirna-precursor;
