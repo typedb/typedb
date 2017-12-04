@@ -48,7 +48,9 @@ function newNode(nodeObj:Object) {
   const relationships = nodeObj.relationships || [];
   const roleplayers = nodeObj.roleplayers || [];
   const relates = nodeObj.relates || [];
-  return Object.assign({}, properties, { attributes, relationships, roleplayers, relates });
+  return Object.assign({}, properties, {
+    attributes, relationships, roleplayers, relates,
+  });
 }
 
 function populateRolesMap(nodes) {
@@ -63,32 +65,42 @@ function populateRolesMap(nodes) {
 
 function populateInstancesMap(nodes) {
   return nodes
-  .map(node => ({ [node[AT_ID]]: node[KEY_ID] }))
-  .reduce((map, current) => (Object.assign(map, current)), {});
+    .map(node => ({ [node[AT_ID]]: node[KEY_ID] }))
+    .reduce((map, current) => (Object.assign(map, current)), {});
 }
 
 function relationshipEdges(relationObj, instancesMap) {
   return relationObj.roleplayers
-  .map(player => ({ from: relationObj.id, to: instancesMap[player.thing], label: player.role.split('/').pop() }))
-  .reduce(collect, []);
+    .map(player => ({ from: relationObj.id, to: instancesMap[player.thing], label: player.role.split('/').pop() }))
+    .reduce(collect, []);
 }
 
 function relationshipTypeEdges(relationObj, rolesMap) {
   return relationObj.relates
-  .flatMap(uri => rolesMap[uri].map(to => ({ from: relationObj.id, to, label: uri.split('/').pop() })))
-  .reduce(collect, []);
+    .flatMap(uri => rolesMap[uri].map(to => ({ from: relationObj.id, to, label: uri.split('/').pop() })))
+    .reduce(collect, []);
 }
 
 
 export default {
-   /**
+  /**
     * Given a JSON object/array in HAL format returns a set of graph nodes and edges
     * @param {Object|Object[]} data HAL object/array
     * @returns {Object} Object containing two arrays containing graph nodes and edges
     * @public
     */
   parseResponse(data: Object|Object[]) {
-    const dataArray = (Array.isArray(data)) ? flat(data) : [data];
+    let dataArray;
+
+    if (Array.isArray(data)) {
+      if ((data.length > 0) && ('@id' in data[0])) {
+        dataArray = data;
+      } else {
+        dataArray = flat(data);
+      }
+    } else {
+      dataArray = [data];
+    }
 
     // COMPUTE NODES
     const nodes = dataArray.map(x => newNode(x)).reduce(collect, []);
@@ -98,16 +110,16 @@ export default {
     // ( Helper map {roleURI:[nodeId..]} )
     const rolesMap = populateRolesMap(dataArray.filter(node => node.plays));
     const schemaEdges = dataArray.filter(x => x[KEY_BASE_TYPE] === RELATIONSHIP_TYPE)
-    .map(x => relationshipTypeEdges(x, rolesMap))
-    .reduce(collect, []);
+      .map(x => relationshipTypeEdges(x, rolesMap))
+      .reduce(collect, []);
 
     // COMPUTE EDGES IN INSTANCES: Relationship instances have roles in the field 'roleplayers'
 
     // ( Helper map {nodeURI: nodeId} )
     const instancesMap = populateInstancesMap(dataArray);
     const instanceEdges = dataArray.filter(x => x[KEY_BASE_TYPE] === RELATIONSHIP)
-    .map(x => relationshipEdges(x, instancesMap))
-    .reduce(collect, []);
+      .map(x => relationshipEdges(x, instancesMap))
+      .reduce(collect, []);
 
     return { nodes, edges: schemaEdges.concat(instanceEdges) };
   },

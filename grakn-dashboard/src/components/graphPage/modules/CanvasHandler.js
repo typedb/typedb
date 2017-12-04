@@ -39,20 +39,20 @@ function onClickSubmit(query:string) {
 
   if (query.startsWith('compute') && !query.includes('path')) {
     EngineClient.graqlAnalytics(query)
-    .then(resp => onGraphResponseAnalytics(resp))
-    .catch((err) => { EventHub.$emit('error-message', err); });
+      .then(resp => onGraphResponseAnalytics(resp))
+      .catch((err) => { EventHub.$emit('error-message', err); });
   } else {
     EngineClient.graqlQuery(query)
-    .then((resp, nodeId) => onGraphResponse(resp))
-    .catch((err) => { EventHub.$emit('error-message', err); });
+      .then((resp, nodeId) => onGraphResponse(resp))
+      .catch((err) => { EventHub.$emit('error-message', err); });
   }
 }
 
 function onLoadSchema(type: string) {
   const querySub = `match $x sub ${type}; get;`;
   EngineClient.graqlQuery(querySub)
-  .then(resp => onGraphResponse(resp))
-  .catch((err) => { EventHub.$emit('error-message', err); });
+    .then(resp => onGraphResponse(resp))
+    .catch((err) => { EventHub.$emit('error-message', err); });
 }
 
 function onGraphResponseAnalytics(resp: string) {
@@ -66,13 +66,12 @@ function flatten<T>(array: T[][]): T[] {
 
 function filterNodes(nodes) { return nodes.filter(x => !x.implicit).filter(x => !x.abstract); }
 function filterEdges(edges) {
-  
   // Hide implicit relationship that links TYPES to ATTRIBUTE_TYPES and instead draw edge with label 'has'
 
   // (Helper map {ImplicitRelationshipID: AttributeTypeID})
   const toAttrTypeMap = edges
-  .filter(edge => visualiser.getNode(edge.to).baseType === 'ATTRIBUTE_TYPE')
-  .reduce((map, current) => Object.assign(map, { [current.from]: current.to }), {});
+    .filter(edge => visualiser.getNode(edge.to).baseType === 'ATTRIBUTE_TYPE')
+    .reduce((map, current) => Object.assign(map, { [current.from]: current.to }), {});
   // Set with all attribute types IDs
   const attrTypeSet = new Set(Object.values(toAttrTypeMap));
   // If an edge points to an ImplicitRelationshipID, change label to 'has' and cut edge
@@ -103,8 +102,8 @@ function onGraphResponse(resp: string) {
   filterEdges(parsedResponse.edges).forEach(edge => visualiser.addEdge(edge));
 
   // Never visualise relationships without roleplayers
-  filterNodes(parsedResponse.nodes).filter(x=>x.baseType==='RELATIONSHIP')
-  .forEach(rel=>{ loadRolePlayers(rel) });
+  filterNodes(parsedResponse.nodes).filter(x => x.baseType === 'RELATIONSHIP')
+    .forEach((rel) => { loadRolePlayers(rel); });
 
   visualiser.fitGraphToWindow();
 }
@@ -113,7 +112,7 @@ function fetchFilteredRelationships(href: string) {
   EngineClient.request({
     url: href,
   }).then(resp => onGraphResponse(resp))
-  .catch((err) => { EventHub.$emit('error-message', err); });
+    .catch((err) => { EventHub.$emit('error-message', err); });
 }
 
 function loadAttributeOwners(attributeId: string) {
@@ -122,22 +121,24 @@ function loadAttributeOwners(attributeId: string) {
   }).then(resp => onGraphResponse(resp));
 }
 
-function getId(str){
+function getId(str) {
   return str.split('/').pop();
 }
 
-function loadRolePlayers(rel){
-  const promises = rel.roleplayers.map(x =>  EngineClient.request({ url: x.thing }));
+function loadRolePlayers(rel) {
+  const promises = rel.roleplayers.map(x => EngineClient.request({ url: x.thing }));
   Promise.all(promises)
-  .then((resps) => { resps.forEach((res) => { onGraphResponse(res); }) })
-  .then(() => { rel.roleplayers
-    .forEach((player) => { visualiser.addEdge({from:rel.id,to:getId(player.thing), label: getId(player.role)}); }); });
+    .then((resps) => { resps.forEach((res) => { onGraphResponse(res); }); })
+    .then(() => {
+      rel.roleplayers
+        .forEach((player) => { visualiser.addEdge({ from: rel.id, to: getId(player.thing), label: getId(player.role) }); });
+    });
 }
 
 
-function addAttributeAndEdgeToInstance(instanceId, res){
+function addAttributeAndEdgeToInstance(instanceId, res) {
   onGraphResponse(res);
-  visualiser.addEdge({from: instanceId, to: JSON.parse(res).id, label:'has'});
+  visualiser.addEdge({ from: instanceId, to: JSON.parse(res).id, label: 'has' });
 }
 
 function showNeighbours(node: Object) {
@@ -148,8 +149,8 @@ function showNeighbours(node: Object) {
       break;
     case 'ENTITY':
       node.relationships
-      .map(rel => EngineClient.request({url:rel.thing}))
-      .forEach((promise)=>{promise.then(onGraphResponse)});
+        .map(rel => EngineClient.request({ url: rel.thing }))
+        .forEach((promise) => { promise.then(onGraphResponse); });
       break;
     case 'RELATIONSHIP_TYPE':
       // show plays and relates
@@ -159,16 +160,18 @@ function showNeighbours(node: Object) {
       break;
     default:
       console.log('ERROR: Basetype not recognised');
-    break;
+      break;
   }
 }
 function showAttributes(node: Object) {
   node.attributes
-  .map(attr=> EngineClient.request({url:attr.href}))
-  .forEach((promise)=>{ 
-    promise.then((res)=> addAttributeAndEdgeToInstance(node.id, res));
-  });
+    .map(attr => EngineClient.request({ url: attr.href }))
+    .forEach((promise) => {
+      promise.then(res => addAttributeAndEdgeToInstance(node.id, res));
+    });
 }
 
 
-export default { initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners, showNeighbours, showAttributes };
+export default {
+  initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners, showNeighbours, showAttributes,
+};
