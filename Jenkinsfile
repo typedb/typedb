@@ -24,7 +24,7 @@ class Constants {
 
     // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
     // `load.sh` and `validate.sh`. Add the name of the folder to the list `INTEGRATION_TESTS` below.
-    static final INTEGRATION_TESTS = ["test-snb", "test-biomed"]
+    static final INTEGRATION_TESTS = ["test-snb"]
 
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
 }
@@ -267,7 +267,7 @@ def runBuild() {
     // This is a map that we fill with jobs to perform in parallel, name -> job closure
     jobs = [:]
 
-    addTests(jobs)
+//    addTests(jobs)
 
     if (shouldRunAllTests()) {
 
@@ -285,18 +285,18 @@ def runBuild() {
             }
         }
 
-        addJob(jobs, 'benchmarks') { workspace ->
-            checkout scm
-            unstash 'dist'
-            timeout(60) {
-                stage('Run the benchmarks') {
-                    mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-                    // TODO: re-enable and fix archiving in S3
-                    // archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-                }
-            }
-        }
+//        addJob(jobs, 'benchmarks') { workspace ->
+//            checkout scm
+//            unstash 'dist'
+//            timeout(60) {
+//                stage('Run the benchmarks') {
+//                    mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+//                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+//                    // TODO: re-enable and fix archiving in S3
+//                    // archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+//                }
+//            }
+//        }
 
         INTEGRATION_TESTS.each { String moduleName ->
             // Add each integration test as a parallel job
