@@ -2,6 +2,12 @@
 
 import static Constants.*
 
+properties([
+    pipelineTriggers([
+      issueCommentTrigger('.*!rtg.*')
+    ])
+])
+
 def isMainBranch() {
     return env.BRANCH_NAME in ['master', 'stable']
 }
@@ -214,9 +220,6 @@ def runBuild() {
 
     //This sets properties in the Jenkins server.
     properties([
-        pipelineTriggers([
-            issueCommentTrigger('.*!rtg.*')
-        ]),
         buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
     ])
 
