@@ -93,6 +93,7 @@ import static java.lang.Boolean.parseBoolean;
  */
 public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
+    private static final RetryLogger retryLogger = new RetryLogger();
     private static final int MAX_RETRY = 10;
     private final EngineGraknTxFactory factory;
     private final Service spark;
@@ -178,12 +179,7 @@ public class GraqlController {
         try {
             Retryer<Object> retryer = RetryerBuilder.newBuilder()
                 .retryIfExceptionOfType(TemporaryWriteException.class)
-                .withRetryListener(new RetryListener() {
-                    @Override
-                    public <V> void onRetry(Attempt<V> attempt) {
-                        LOG.warn(String.format("Retrying transaction after {%s} attempts due to exception {$s}", attempt.getAttemptNumber(), attempt.getExceptionCause().getMessage()));
-                    }
-                })
+                .withRetryListener(retryLogger)
                 .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
                 .build();
@@ -196,6 +192,13 @@ public class GraqlController {
             } else {
                 throw e;
             }
+        }
+    }
+
+    private static class RetryLogger implements RetryListener{
+        @Override
+        public <V> void onRetry(Attempt<V> attempt) {
+            LOG.warn("Retrying transaction after {" + attempt.getAttemptNumber() + "} attempts due to exception {" + attempt.getExceptionCause().getMessage() + "}");
         }
     }
 
