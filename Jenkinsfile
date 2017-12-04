@@ -2,12 +2,6 @@
 
 import static Constants.*
 
-properties([
-    pipelineTriggers([
-      issueCommentTrigger('.*!rtg.*')
-    ])
-])
-
 def isMainBranch() {
     return env.BRANCH_NAME in ['master', 'stable']
 }
