@@ -21,6 +21,7 @@ package ai.grakn.kb.internal.log;
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;

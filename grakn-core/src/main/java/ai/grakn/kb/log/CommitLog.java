@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.kb.internal.log;
+package ai.grakn.kb.log;
 
 import ai.grakn.concept.ConceptId;
 import com.fasterxml.jackson.annotation.JsonCreator;

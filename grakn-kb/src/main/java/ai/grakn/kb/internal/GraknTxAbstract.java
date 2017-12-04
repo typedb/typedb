@@ -55,9 +55,9 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.concept.TypeImpl;
-import ai.grakn.kb.internal.log.CommitLogHandler;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -88,6 +88,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -724,8 +725,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         close(true, true);
     }
 
-    private Optional<String> close(boolean commitRequired, boolean trackLogs) {
-        Optional<String> logs = Optional.empty();
+    private Optional<CommitLog> close(boolean commitRequired, boolean trackLogs) {
+        Optional<CommitLog> logs = Optional.empty();
         if (isClosed()) {
             return logs;
         }
@@ -756,11 +757,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Optional<String> commitSubmitNoLogs() throws InvalidKBException {
+    public Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
 
-    private Optional<String> commitWithLogs(boolean trackingNeeded) throws InvalidKBException {
+    private Optional<CommitLog> commitWithLogs(boolean trackingNeeded) throws InvalidKBException {
         validateGraph();
 
         Map<ConceptId, Long> newInstances = txCache().getShardingCount();
@@ -778,7 +779,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
                 ((GraknSessionImpl) session()).commitLogHandler().addNewInstances(newInstances);
                 ((GraknSessionImpl) session()).commitLogHandler().addNewAttributes(newAttributes);
             } else {
-                return Optional.of(CommitLogHandler.formatTxLog(newInstances, newAttributes).toString());
+                Map<String, Set<ConceptId>> attributes = newAttributes.entrySet().stream().
+                        collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.singleton(e.getValue())));
+                return Optional.of(CommitLog.create(newInstances, attributes));
             }
         }
 
