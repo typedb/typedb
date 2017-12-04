@@ -25,6 +25,7 @@ import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
@@ -37,6 +38,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -271,7 +273,7 @@ public class GraqlController {
             String logs = result.get();
             taskSubmitter.addTask(
                     PostProcessingTask.createTask(GraqlController.class),
-                    PostProcessingTask.createConfig(graph.keyspace(), logs)
+                    TaskConfiguration.of((CommitLog) logs)
             );
 
             postProcessor.updateCounts(graph.keyspace(), Json.read(logs));

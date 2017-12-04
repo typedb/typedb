@@ -46,7 +46,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class CommitLogHandler {
     private static final ObjectMapper mapper = new ObjectMapper();
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final CommitLog commitLog = CommitLog.createThreadSafe();
+    private final CommitLog commitLog;
+
+    public CommitLogHandler(Keyspace keyspace){
+        this.commitLog = CommitLog.createThreadSafe(keyspace);
+    }
 
     private CommitLog commitLog(){
         return commitLog;

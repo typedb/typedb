@@ -18,10 +18,11 @@
 
 package ai.grakn.engine.tasks.manager;
 
+import ai.grakn.kb.log.CommitLog;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
-import mjson.Json;
 
 /**
  * Internal checkpoint used to keep track of task execution
@@ -33,26 +34,22 @@ public class TaskConfiguration implements Serializable {
 
     private static final long serialVersionUID = -7301340972479426643L;
 
-    private final Json configuration;
+    private final CommitLog configuration;
 
-    public static TaskConfiguration of(Json configuration){
+    public static TaskConfiguration of(CommitLog configuration){
         return new TaskConfiguration(configuration);
     }
 
-    public TaskConfiguration(Json configuration){
+    @JsonCreator
+    public TaskConfiguration(@JsonProperty("configuration") CommitLog configuration){
         this.configuration = configuration;
     }
 
-    @JsonCreator
-    public TaskConfiguration(@JsonProperty("configuration") String configuration){
-        this.configuration = Json.read(configuration);
-    }
-
-    public Json json(){
+    public CommitLog json(){
         return configuration;
     }
 
-    public Json configuration(){
+    public CommitLog configuration(){
         return configuration;
     }
 

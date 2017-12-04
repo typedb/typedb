@@ -25,6 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
@@ -89,11 +90,11 @@ public class PostProcessor {
      * @param keyspace The {@link Keyspace} which contains {@link ai.grakn.concept.Type}s with new instances.
      * @param commitLog The commit log containing the details of the job
      */
-    public void updateCounts(Keyspace keyspace, Json commitLog){
+    public void updateCounts(Keyspace keyspace, CommitLog commitLog){
         final long shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
         final int maxRetry = engineConfig.getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
         try (Timer.Context context = metricRegistry.timer(name(PostProcessor.class, "execution")).time()) {
-            Map<ConceptId, Long> jobs = getCountUpdatingJobs(commitLog);
+            Map<ConceptId, Long> jobs = commitLog.instanceCount();
             metricRegistry.histogram(name(PostProcessor.class, "jobs"))
                     .update(jobs.size());
 

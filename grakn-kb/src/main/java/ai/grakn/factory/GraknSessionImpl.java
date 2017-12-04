@@ -108,7 +108,7 @@ public class GraknSessionImpl implements GraknSession {
         }
         this.config = config;
 
-        this.commitLogHandler = new CommitLogHandler();
+        this.commitLogHandler = new CommitLogHandler(keyspace());
     }
 
     public CommitLogHandler commitLogHandler(){

@@ -781,7 +781,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             } else {
                 Map<String, Set<ConceptId>> attributes = newAttributes.entrySet().stream().
                         collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.singleton(e.getValue())));
-                return Optional.of(CommitLog.create(newInstances, attributes));
+                return Optional.of(CommitLog.create(keyspace(), newInstances, attributes));
             }
         }
 

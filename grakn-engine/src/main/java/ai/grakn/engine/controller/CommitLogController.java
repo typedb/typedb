@@ -24,18 +24,19 @@ import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import mjson.Json;
 import spark.Request;
 import spark.Response;
 import spark.Service;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
@@ -48,6 +49,7 @@ import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class CommitLogController {
+    private static final ObjectMapper mapper = new ObjectMapper();
     private final TaskManager manager;
     private final PostProcessor postProcessor;
 
@@ -66,17 +68,23 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_FIXING, value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body"),
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
-    private String submitConcepts(Request req, Response res) throws JsonProcessingException {
+    private String submitConcepts(Request req, Response res) throws IOException {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, REST.Request.KEYSPACE_PARAM));
+
+        //TODO: Is this really necessary? Will it add that much overhead?
+        //Seperate commit logs are needed to prevent logging more info than needed.
+        // For example PP does not need to know the instance count
+        CommitLog commitLogUpdateCount = mapper.readValue(req.body(), CommitLog.class);
+        CommitLog commitLogPP = mapper.readValue(req.body(), CommitLog.class);
+        commitLogPP.instanceCount().clear();
 
         // Things to post process
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
-        TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(keyspace, req.body());
 
         // TODO Use an engine wide executor here
         CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration)),
-                CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, Json.read(req.body()))))
+                CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, commitLogUpdateCount)),
+                CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, TaskConfiguration.of(commitLogPP))))
                 .join();
 
         return "";

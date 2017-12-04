@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.log;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -42,6 +43,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @AutoValue
 public abstract class CommitLog {
 
+    @JsonProperty
+    public abstract Keyspace keyspace();
+
     @JsonProperty("instance-count")
     public abstract Map<ConceptId, Long> instanceCount();
 
@@ -50,18 +54,19 @@ public abstract class CommitLog {
 
     @JsonCreator
     public static CommitLog create(
+            @JsonProperty("keyspace") Keyspace keyspace,
             @JsonProperty("instance-count") Map<ConceptId, Long> instanceCount,
             @JsonProperty("new-attributes") Map<String, Set<ConceptId>> newAttributes
     ){
-        return new AutoValue_CommitLog(instanceCount, newAttributes);
+        return new AutoValue_CommitLog(keyspace, instanceCount, newAttributes);
     }
 
     /**
      * Creates a {@link CommitLog} which is safe to be mutated by multiple transactions
      * @return a thread safe {@link CommitLog}
      */
-    public static CommitLog createThreadSafe(){
-        return create(new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
+    public static CommitLog createThreadSafe(Keyspace keyspace){
+        return create(keyspace, new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
     }
 
     public void clear(){

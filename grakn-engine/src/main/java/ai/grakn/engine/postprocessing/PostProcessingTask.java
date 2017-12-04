@@ -24,6 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.Timer.Context;
@@ -61,7 +62,7 @@ public class PostProcessingTask extends BackgroundTask {
     public boolean start() {
         try (Context context = metricRegistry()
                 .timer(name(PostProcessingTask.class, "execution")).time()) {
-            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.ATTRIBUTE, configuration());
+            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(configuration());
 
             allToPostProcess.forEach((conceptIndex, conceptIds) -> {
                 Context contextSingle = metricRegistry()
@@ -91,10 +92,7 @@ public class PostProcessingTask extends BackgroundTask {
      * @return Map of concept indices to ids that has been extracted from the provided configuration.
      */
     private static Map<String,Set<ConceptId>> getPostProcessingJobs(Schema.BaseType type, TaskConfiguration configuration) {
-        return configuration.json().at(REST.Request.COMMIT_LOG_FIXING).at(type.name()).asJsonMap().entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> e.getValue().asList().stream().map(o -> ConceptId.of(o.toString())).collect(Collectors.toSet())
-        ));
+        return configuration.configuration().attributes();
     }
 
     /**
@@ -107,17 +105,4 @@ public class PostProcessingTask extends BackgroundTask {
         return TaskState.of(PostProcessingTask.class, creator.getName());
     }
 
-    /**
-     * Helper method which creates the task config needed in order to execute a PP task
-     *
-     * @param keyspace The keyspace of the graph to execute this on.
-     * @param config The config which contains the concepts to post process
-     * @return The task configuration encapsulating the above details in a manner executable by the task runner
-     */
-    public static TaskConfiguration createConfig(Keyspace keyspace, String config){
-        Json postProcessingConfiguration = Json.object();
-        postProcessingConfiguration.set(REST.Request.KEYSPACE_PARAM, keyspace.getValue());
-        postProcessingConfiguration.set(REST.Request.COMMIT_LOG_FIXING, Json.read(config).at(REST.Request.COMMIT_LOG_FIXING));
-        return TaskConfiguration.of(postProcessingConfiguration);
-    }
 }
