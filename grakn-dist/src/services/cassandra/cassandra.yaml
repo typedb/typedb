@@ -242,7 +242,7 @@ saved_caches_directory: db/cassandra/saved_caches
 # commitlog_sync_batch_window_in_ms: 2
 #
 # the other option is "periodic" where writes may be acked immediately
-# and the CommitLogHandler is simply synced every commitlog_sync_period_in_ms
+# and the CommitLog is simply synced every commitlog_sync_period_in_ms
 # milliseconds. 
 commitlog_sync: periodic
 commitlog_sync_period_in_ms: 10000
