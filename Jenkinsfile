@@ -79,7 +79,7 @@ def withGrakn(Closure closure) {
     try {
         timeout(15) {
             stage('Start Grakn') {
-                sh 'init-grakn.sh'
+                sh "init-grakn.sh ${env.BRANCH_NAME}"
             }
         }
         closure()
