@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -51,8 +52,9 @@ public abstract class Attribute extends Thing {
             @JsonProperty("keys") Set<Link> keys,
             @JsonProperty("relationships") Set<RolePlayer> relationships,
             @JsonProperty("inferred") boolean inferred,
+            @Nullable @JsonProperty("explanation-query")  String explanation,
             @JsonProperty("data-type") String dataType,
             @JsonProperty("value") String value){
-        return new AutoValue_Attribute(Schema.BaseType.ATTRIBUTE.name(), id, selfLink, type, attributes, keys, relationships, inferred, dataType, value);
+        return new AutoValue_Attribute(Schema.BaseType.ATTRIBUTE.name(), id, selfLink, type, attributes, keys, relationships, inferred, explanation, dataType, value);
     }
 }

@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -45,4 +46,8 @@ public abstract class Thing extends Concept {
 
     @JsonProperty
     public abstract boolean inferred();
+
+    @Nullable
+    @JsonProperty("explanation-query")
+    public abstract String explanation();
 }

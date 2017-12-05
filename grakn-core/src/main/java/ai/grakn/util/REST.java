@@ -45,6 +45,7 @@ public class REST {
         public static final String KEYSPACE_ROLE = "/kb/:keyspace/role";
         public static final String KEYSPACE_RULE = "/kb/:keyspace/rule";
         public static final String KEYSPACE_GRAQL = "/kb/:keyspace/graql";
+        public static final String KEYSPACE_EXPLAIN = "/kb/:keyspace/explain";
         public static final String COMMIT_LOG_URI = "/kb/:keyspace/commit_log";
 
         /**
@@ -64,26 +65,6 @@ public class REST {
         public static final String STATUS = "/status";
         public static final String VERSION = "/version";
         public static final String METRICS = "/metrics";
-
-        /**
-         * URIs to concept controller endpoints
-         */
-        @Deprecated
-        public static class Concept {
-            @Deprecated
-            public static final String CONCEPT = "/kb/concept/";
-        }
-
-        /**
-         * URIs to dashboard controller endpoints
-         */
-        @Deprecated
-        public static class Dashboard {
-            @Deprecated
-            public static final String EXPLORE = "/dashboard/explore/";
-            @Deprecated
-            public static final String EXPLAIN = "/dashboard/explain";
-        }
     }
 
     /**

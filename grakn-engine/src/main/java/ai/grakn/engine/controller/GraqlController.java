@@ -110,6 +110,7 @@ public class GraqlController {
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
 
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
+        spark.post(REST.WebPath.KEYSPACE_EXPLAIN, this::explainGraql);
 
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
@@ -117,6 +118,22 @@ public class GraqlController {
         // Handle invalid type castings and invalid insertions
         spark.exception(GraknTxOperationException.class, (e, req, res) -> handleError(422, e, res));
         spark.exception(InvalidKBException.class, (e, req, res) -> handleError(422, e, res));
+    }
+
+    @POST
+    @Path("/kb/{keyspace}/graql")
+    @ApiOperation(value = "Execute an arbitrary Graql query and get the explination from the results")
+    @ApiImplicitParams({
+            @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "body"),
+            @ApiImplicitParam(
+                    name = DEFINE_ALL_VARS,
+                    value = "Define all variables in response", dataType = "boolean", paramType = "query"
+            ),
+            @ApiImplicitParam(name = ALLOW_MULTIPLE_QUERIES, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = TX_TYPE, dataType = "string", paramType = "query")
+    })
+    private String explainGraql(Request request, Response response) {
+        throw new UnsupportedOperationException("Not Yet Implemented");
     }
 
     @POST
