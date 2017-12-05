@@ -40,8 +40,6 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
 
 /**
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
@@ -65,14 +63,12 @@ public class CommitLogController {
     @ApiOperation(value = "Submits post processing jobs for a specific keyspace")
     @ApiImplicitParams({
         @ApiImplicitParam(name = REST.Request.KEYSPACE_PARAM, value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path"),
-        @ApiImplicitParam(name = COMMIT_LOG_FIXING, value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body"),
-        @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) throws IOException {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, REST.Request.KEYSPACE_PARAM));
 
         //TODO: Is this really necessary? Will it add that much overhead?
-        //Seperate commit logs are needed to prevent logging more info than needed.
+        //Separate commit logs are needed to prevent logging more info than needed.
         // For example PP does not need to know the instance count
         CommitLog commitLogUpdateCount = mapper.readValue(req.body(), CommitLog.class);
         CommitLog commitLogPP = mapper.readValue(req.body(), CommitLog.class);
