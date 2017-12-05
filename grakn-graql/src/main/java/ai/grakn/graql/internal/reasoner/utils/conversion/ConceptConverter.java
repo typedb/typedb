@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.utils.conversion;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.CommonUtil;
 
 /**
  * <p>
@@ -45,7 +46,7 @@ public interface ConceptConverter<T extends Concept> {
         } else if (concept.isAttribute()) {
             return new AttributeConverter().pattern(concept.asAttribute());
         } else {
-            return null;
+            throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
     }
 
