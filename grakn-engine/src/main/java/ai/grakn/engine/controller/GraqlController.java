@@ -137,6 +137,8 @@ public class GraqlController {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         String queryString = mandatoryBody(request);
 
+        response.status(SC_OK);
+
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
                 List<Answer> answers = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute();
