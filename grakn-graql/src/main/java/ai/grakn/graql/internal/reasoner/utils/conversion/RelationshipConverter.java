@@ -45,11 +45,11 @@ class RelationshipConverter implements ConceptConverter<Relationship> {
         for (Map.Entry<Role, Set<Thing>> entry : concept.allRolePlayers().entrySet()) {
             for (Thing var : entry.getValue()) {
                 Var rolePlayer = Graql.var();
-                relationPattern = relationPattern.rel(entry.getKey().getLabel().getValue(), rolePlayer);
+                relationPattern = relationPattern.rel(Graql.label(entry.getKey().getLabel()), rolePlayer);
                 idPatterns.add(rolePlayer.asUserDefined().id(var.getId()));
             }
         }
-        relationPattern = relationPattern.isa(concept.type().getLabel().getValue());
+        relationPattern = relationPattern.isa(Graql.label(concept.type().getLabel()));
 
         Pattern pattern = relationPattern;
         for (Pattern idPattern : idPatterns) {

@@ -33,9 +33,9 @@ class EntityConverter implements ConceptConverter<Entity>{
 
     @Override
     public Pattern pattern(Entity concept) {
-            Var entityVar = Graql.var();
-            return entityVar
-                    .isa(concept.type().getLabel().getValue())
-                    .and(entityVar.asUserDefined().id(concept.getId()));
+        Var entityVar = Graql.var().asUserDefined();
+        return entityVar
+                .isa(Graql.label(concept.type().getLabel()))
+                .id(concept.getId());
     }
 }

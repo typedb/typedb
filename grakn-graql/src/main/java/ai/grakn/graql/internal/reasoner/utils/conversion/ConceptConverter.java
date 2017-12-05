@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.utils.conversion;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 
 /**
@@ -34,7 +35,9 @@ public interface ConceptConverter<T extends Concept> {
     Pattern pattern(T concept);
 
     static Pattern toPattern(Concept concept) {
-        if (!concept.isThing()) return null;
+        if (!concept.isThing()){
+            throw GraqlQueryException.conceptNotAThing(concept);
+        }
         if (concept.isEntity()) {
             return new EntityConverter().pattern(concept.asEntity());
         } else if (concept.isRelationship()) {
