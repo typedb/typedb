@@ -276,7 +276,7 @@ def runBuild() {
             checkout scm
 
             stage('Build Grakn') {
-                    buildGrakn()
+                buildGrakn()
 
                 archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 
