@@ -281,7 +281,7 @@ def runBuild() {
         checkout scm
 
         // Push to Grakn Maven if tests pass
-        if (!isMainBranch()) {
+        if (isMainBranch()) {
             withMaven(
                 options: [artifactsPublisher(disabled: true)],
                 mavenSettingsConfig: '8358fa5c-17c9-4a16-b501-4ebacb7f163d',
