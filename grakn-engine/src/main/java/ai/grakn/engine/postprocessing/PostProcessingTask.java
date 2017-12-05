@@ -28,7 +28,6 @@ import ai.grakn.util.Schema;
 import com.codahale.metrics.Timer.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,8 +114,7 @@ public class PostProcessingTask extends BackgroundTask {
      */
     public static TaskConfiguration createConfig(CommitLog commitLog){
         try {
-            Json postProcessingConfiguration = Json.read(mapper.writeValueAsString(commitLog));
-            return TaskConfiguration.of(postProcessingConfiguration);
+            return TaskConfiguration.of(mapper.writeValueAsString(commitLog));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

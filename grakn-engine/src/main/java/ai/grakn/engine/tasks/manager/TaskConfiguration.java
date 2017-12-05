@@ -20,58 +20,26 @@ package ai.grakn.engine.tasks.manager;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import mjson.Json;
+import com.google.auto.value.AutoValue;
 
 import java.io.Serializable;
 
 /**
- * Internal checkpoint used to keep track of task execution
+ * Stores the configuration necessary to run {@link ai.grakn.engine.tasks.manager.redisqueue.Task}s.
+ * This is used by the {@link TaskManager}
  *
- * @author alexandraorth
+ * @author alexandraorth, Filipe Peliz Pinto Teixeira
  */
-public class TaskConfiguration implements Serializable {
-
+@AutoValue
+public abstract class TaskConfiguration implements Serializable {
     private static final long serialVersionUID = -7301340972479426643L;
 
-    private final Json configuration;
-
-    public static TaskConfiguration of(Json configuration){
-        return new TaskConfiguration(configuration);
-    }
-
-    public TaskConfiguration(Json configuration){
-        this.configuration = configuration;
-    }
+    @JsonProperty
+    public abstract String configuration();
 
     @JsonCreator
-    public TaskConfiguration(@JsonProperty("configuration") String configuration){
-        this.configuration = Json.read(configuration);
+    public static TaskConfiguration of(@JsonProperty("configuration") String configuration){
+        return new AutoValue_TaskConfiguration(configuration);
     }
 
-
-    @JsonProperty
-    public String configuration(){
-        return configuration.toString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        TaskConfiguration that = (TaskConfiguration) o;
-
-        return configuration.toString().equals(that.configuration.toString());
-    }
-
-    @Override
-    public int hashCode() {
-        int result = configuration != null ? configuration.hashCode() : 0;
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "TaskConfiguration.of(" + configuration + ")";
-    }
 }

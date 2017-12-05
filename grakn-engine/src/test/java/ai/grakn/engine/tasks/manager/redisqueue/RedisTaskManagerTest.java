@@ -139,7 +139,7 @@ public class RedisTaskManagerTest {
             throws ExecutionException, RetryException, InterruptedException, StateFutureInitializationException, TimeoutException {
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName());
         Future<Void> s = taskManager.subscribeToTask(state.getId());
-        taskManager.addTask(state, TaskConfiguration.of(Json.object()));
+        taskManager.addTask(state, TaskConfiguration.of(null));
         s.get();
         assertEquals(FAILED, taskManager.storage().getState(state.getId()).status());
     }
@@ -172,6 +172,6 @@ public class RedisTaskManagerTest {
         return TaskConfiguration.of(Json.object(
                 KEYSPACE_PARAM, "keyspace",
                 "id", generate.value()
-        ));
+        ).toString());
     }
 }
