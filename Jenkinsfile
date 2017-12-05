@@ -244,8 +244,8 @@ def runBuild() {
                 withMaven(
                     options: [artifactsPublisher(disabled: true)],
                     mavenSettingsConfig: '8358fa5c-17c9-4a16-b501-4ebacb7f163d',
-                    ){
-                  sh 'mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo'
+                ){
+                    buildGrakn()
                 }
 
                 archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
