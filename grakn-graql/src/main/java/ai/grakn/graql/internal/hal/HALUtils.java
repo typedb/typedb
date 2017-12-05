@@ -20,22 +20,17 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.internal.reasoner.utils.conversion.ConceptConverter;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
 
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Utils class used by HALBuilders
@@ -131,27 +126,9 @@ public class HALUtils {
     }
 
     static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit) {
-
-        VarPattern relationPattern = Graql.var();
-        Set<Pattern> idPatterns = new HashSet<>();
-
-        for (Map.Entry<Role, Set<Thing>> entry : currentConcept.asRelationship().allRolePlayers().entrySet()) {
-            for (Thing var : entry.getValue()) {
-                Var rolePlayer = Graql.var();
-                relationPattern = relationPattern.rel(entry.getKey().getLabel().getValue(), rolePlayer);
-                idPatterns.add(rolePlayer.asUserDefined().id(var.getId()));
-            }
-        }
-        relationPattern = relationPattern.isa(currentConcept.asRelationship().type().getLabel().getValue());
-
-        Pattern pattern = relationPattern;
-        for (Pattern idPattern : idPatterns) {
-            pattern = pattern.and(idPattern);
-        }
-
+        Pattern pattern = ConceptConverter.toPattern(currentConcept);
         String withoutURL = String.format(ASSERTION_URL, keyspace, Graql.match(pattern).get().toString(), limit);
         String URL = REST.WebPath.Dashboard.EXPLAIN;
-
         return URL + withoutURL;
     }
 
