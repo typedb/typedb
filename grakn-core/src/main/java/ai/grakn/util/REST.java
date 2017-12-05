@@ -133,7 +133,6 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
-        public static final String GET_METHOD = "TASK_ID";
     }
 
     /**
@@ -152,14 +151,6 @@ public class REST {
             public static final String APPLICATION_TEXT = "application/text";
             public static final String APPLICATION_HAL ="application/hal+json";
             public static final String APPLICATION_ALL ="*/*";
-        }
-
-        /**
-         * Graql controller response fields
-         */
-        public static class Graql {
-            public static final String RESPONSE = "response";
-            public static final String ORIGINAL_QUERY = "originalQuery";
         }
 
         /**
