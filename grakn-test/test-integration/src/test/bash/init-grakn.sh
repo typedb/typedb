@@ -2,11 +2,19 @@
 
 source env.sh
 
+if [ "$#" -gt "0" ]; then
+    echo "Using branch name ${1}"
+    DIST=grakn-dist-${1}.tar.gz
+else
+    # get first thing matching wildcard pattern
+    DIST=(grakn-dist*.tar.gz)[0]
+fi
+
 if [ -d "${PACKAGE}" ] ;  then rm -rf ${PACKAGE} ; fi
 
 mkdir ${PACKAGE}
 
-tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C ${PACKAGE}
+tar -xf ${DIST} --strip=1 -C ${PACKAGE}
 
 # set DEBUG log level
 # TODO: support this in a more elegant way (command line arg?)
