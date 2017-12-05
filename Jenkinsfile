@@ -246,7 +246,7 @@ def runBuild() {
                 archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 
                 // Stash the built distribution so other nodes can access it
-                stash includes: 'grakn-dist/target/grakn-dist*.tar.gz', name: 'dist'
+                stash includes: "grakn-dist/target/grakn-dist-${env.BRANCH_NAME}.tar.gz", name: 'dist'
             }
         }
 
