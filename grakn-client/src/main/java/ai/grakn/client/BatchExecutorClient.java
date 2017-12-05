@@ -54,7 +54,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -76,13 +75,9 @@ public class BatchExecutorClient implements Closeable {
     private final GraknClient graknClient;
     private final HystrixRequestContext context;
 
-    // We only allow a certain number of queries to be waiting to execute at once for performance reasons
-    private final Semaphore queryExecutionSemaphore;
-
     // Config
     private final int maxDelay;
     private final int maxRetries;
-    private final int maxQueries;
     private final int threadPoolCoreSize;
     private final int timeoutMs;
 
@@ -98,7 +93,6 @@ public class BatchExecutorClient implements Closeable {
         graknClient = builder.graknClient;
         maxDelay = builder.maxDelay;
         maxRetries = builder.maxRetries;
-        maxQueries = builder.maxQueries;
         metricRegistry = builder.metricRegistry;
         timeoutMs = builder.timeoutMs;
         threadPoolCoreSize = builder.threadPoolCoreSize;
@@ -107,25 +101,15 @@ public class BatchExecutorClient implements Closeable {
         // of the server
         executor = Executors.newFixedThreadPool(threadPoolCoreSize);
         scheduler = Schedulers.from(executor);
-        queryExecutionSemaphore = new Semaphore(maxQueries);
         addTimer = metricRegistry.timer(name(BatchExecutorClient.class, "add"));
         failureMeter = metricRegistry.meter(name(BatchExecutorClient.class, "failure"));
     }
 
-    /**
-     * Will block until there is space for the query to be submitted
-     */
     public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace) {
         return add(query, keyspace, true);
     }
 
-    /**
-     * Will block until there is space for the query to be submitted
-     */
     public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
-        // Acquire permission to execute a query - will block until a permit is available
-        queryExecutionSemaphore.acquireUninterruptibly();
-
         Context context = addTimer.time();
         Observable<QueryResponse> observable = new QueriesObservableCollapser(query, keyspace,
                 graknClient, maxDelay, maxRetries, threadPoolCoreSize, timeoutMs, metricRegistry)
@@ -137,9 +121,6 @@ public class BatchExecutorClient implements Closeable {
                     } else if (a.isOnNext()) {
                         LOG.trace("Executed {}", a.getValue());
                     }
-
-                    // Release a query execution permit, allowing a new query to execute
-                    queryExecutionSemaphore.release();
                 })
                 .subscribeOn(scheduler)
                 .doOnTerminate(context::close);
@@ -156,15 +137,8 @@ public class BatchExecutorClient implements Closeable {
         return observable;
     }
 
-    /**
-     * Will block until all submitted queries have executed
-     */
     @Override
     public void close() {
-        // Acquire ALL permits. Only possible when all the permits are released.
-        // This means this method will only return when ALL the queries are completed.
-        queryExecutionSemaphore.acquireUninterruptibly(maxQueries);
-
         context.close();
         executor.shutdownNow();
     }
@@ -190,7 +164,6 @@ public class BatchExecutorClient implements Closeable {
         private int maxRetries = 5;
         private int threadPoolCoreSize = 8;
         private int timeoutMs = 60_000;
-        private int maxQueries = 1000;
         private MetricRegistry metricRegistry = new MetricRegistry();
 
         private Builder() {
@@ -223,11 +196,6 @@ public class BatchExecutorClient implements Closeable {
 
         public Builder metricRegistry(int val) {
             timeoutMs = val;
-            return this;
-        }
-
-        public Builder maxQueries(int val) {
-            maxQueries = val;
             return this;
         }
 
