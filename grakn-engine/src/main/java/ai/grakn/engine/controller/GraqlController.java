@@ -117,7 +117,7 @@ public class GraqlController {
         this.executeExplanation = metricRegistry.timer(name(GraqlController.class, "execute-explanation"));
 
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
-        spark.post(REST.WebPath.KEYSPACE_EXPLAIN, this::explainGraql);
+        spark.get(REST.WebPath.KEYSPACE_EXPLAIN, this::explainGraql);
 
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
