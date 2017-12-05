@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,6 +68,14 @@ public abstract class CommitLog {
      */
     public static CommitLog createThreadSafe(Keyspace keyspace){
         return create(keyspace, new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
+    }
+
+    /**
+     * Creates a {@link CommitLog} which should only be used by a single transaction.
+     * @return a simple {@link CommitLog}
+     */
+    public static CommitLog createDefault(Keyspace keyspace){
+        return create(keyspace, new HashMap<>(), new HashMap<>());
     }
 
     public void clear(){

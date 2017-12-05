@@ -26,12 +26,10 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.kb.log.CommitLog;
-import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
-import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -42,7 +40,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
-import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -187,18 +184,6 @@ public class PostProcessor {
 
     private static String getLockingKey(Keyspace keyspace, ConceptId conceptId){
         return "/updating-instance-count-lock/" + keyspace + "/" + conceptId.getValue();
-    }
-
-    /**
-     * Extracts the type labels and count from the Json configuration
-     * @param json The configuration which contains types counts
-     * @return A map indicating the number of instances each type has gained or lost
-     */
-    private static Map<ConceptId, Long> getCountUpdatingJobs(Json json){
-        return  json.at(REST.Request.COMMIT_LOG_COUNTING).asJsonList().stream()
-                .collect(Collectors.toMap(
-                        e -> ConceptId.of(e.at(REST.Request.COMMIT_LOG_CONCEPT_ID).asString()),
-                        e -> e.at(REST.Request.COMMIT_LOG_SHARDING_COUNT).asLong()));
     }
 
     /**

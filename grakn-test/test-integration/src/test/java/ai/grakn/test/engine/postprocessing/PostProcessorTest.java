@@ -9,18 +9,15 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;
-import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
-import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
 import static org.junit.Assert.assertEquals;
 
 public class PostProcessorTest {
@@ -58,14 +55,12 @@ public class PostProcessorTest {
     }
 
     private void createAndExecuteCountTask(Keyspace keyspace, ConceptId conceptId, long count){
-        Json instanceCounts = Json.array();
-        instanceCounts.add(Json.object(COMMIT_LOG_CONCEPT_ID, conceptId.getValue(), COMMIT_LOG_SHARDING_COUNT, count));
-
-        Json fakeCommitLog = Json.object();
-        fakeCommitLog.set(REST.Request.COMMIT_LOG_COUNTING, instanceCounts);
+        //Create the fake commit log
+        CommitLog commitLog = CommitLog.createDefault(keyspace);
+        commitLog.instanceCount().put(conceptId, count);
 
         //Start up the Job
-        postProcessor.updateCounts(keyspace, fakeCommitLog);
+        postProcessor.updateCounts(keyspace, commitLog);
     }
 
     @Test
