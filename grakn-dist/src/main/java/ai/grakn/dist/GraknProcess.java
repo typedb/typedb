@@ -45,9 +45,9 @@ import java.util.stream.Stream;
  */
 public class GraknProcess extends AbstractProcessHandler implements ProcessHandler {
 
-    protected Path homePath;
-    protected Path configPath;
-    private GraknConfig graknConfig;
+    protected final Path homePath;
+    protected final Path configPath;
+    private final GraknConfig graknConfig;
 
     private static final long GRAKN_STARTUP_TIMEOUT_S = 120;
     private static final Path GRAKN_PID = Paths.get(File.separator,"tmp","grakn.pid");

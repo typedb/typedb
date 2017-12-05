@@ -37,7 +37,7 @@ public class StorageProcess extends AbstractProcessHandler implements ProcessHan
     private static final long STORAGE_STARTUP_TIMEOUT_S=60;
     private static final String NAME = "Storage";
 
-    private Path homePath;
+    private final Path homePath;
 
     public StorageProcess(Path homePath) {
         this.homePath = homePath;
