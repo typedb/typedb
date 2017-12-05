@@ -43,35 +43,32 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.Charsets;
 import rx.Observable;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
+import static ai.grakn.util.ConcurrencyUtil.allObservable;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
 import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
@@ -303,24 +300,12 @@ public class GraqlShell {
     }
 
     private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
-        AtomicInteger queriesExecuted = new AtomicInteger(0);
-
-        FileInputStream inputStream = new FileInputStream(Paths.get(graqlPath).toFile());
-
-        try (Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
-            Graql.parser().parseList(queryReader).forEach(query -> {
-                Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
-
-                observable.subscribe(
-                    /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
-                    /* On error:   */ System.err::println
-                );
-            });
-        }
-
+        String queries = loadQuery(graqlPath);
+        List<Observable<QueryResponse>> all = new ArrayList<>();
+        Graql.parser().parseList(queries).forEach(query -> all.add(batchExecutorClient.add(query, keyspace, false)));
+        int completed = allObservable(all).toBlocking().first().size();
+        System.out.println("Statements executed: " + completed);
         batchExecutorClient.close();
-
-        System.out.println("Statements executed: " + queriesExecuted.get());
     }
 
     /**
