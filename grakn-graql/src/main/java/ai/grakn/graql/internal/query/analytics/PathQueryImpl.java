@@ -108,7 +108,7 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
         int numExtensionAllowed = extendedPaths.isEmpty() ? Integer.MAX_VALUE : 0;
         for (List<Concept> currentPath : allPaths) {
             List<Concept> extendedPath = new ArrayList<>();
-            int numExtension = 0;
+            int numExtension = 0; // record the number of extensions needed for the current path
             for (int j = 0; j < currentPath.size() - 1; j++) {
                 extendedPath.add(currentPath.get(j));
                 ConceptId resourceRelationId = getResourceEdgeId(tx.get(),
@@ -124,8 +124,9 @@ class PathQueryImpl extends AbstractComputeQuery<List<List<Concept>>> implements
                 extendedPaths.add(extendedPath);
             } else if (numExtension < numExtensionAllowed) {
                 extendedPath.add(currentPath.get(currentPath.size() - 1));
-                extendedPaths.clear();
+                extendedPaths.clear(); // longer paths are discarded
                 extendedPaths.add(extendedPath);
+                // update the minimum number of extensions needed so all the paths have the same length
                 numExtensionAllowed = numExtension;
             }
         }
