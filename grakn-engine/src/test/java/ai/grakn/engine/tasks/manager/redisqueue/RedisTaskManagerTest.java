@@ -139,7 +139,7 @@ public class RedisTaskManagerTest {
             throws ExecutionException, RetryException, InterruptedException, StateFutureInitializationException, TimeoutException {
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName());
         Future<Void> s = taskManager.subscribeToTask(state.getId());
-        taskManager.addTask(state, TaskConfiguration.of(null));
+        taskManager.addTask(state, TaskConfiguration.of(""));
         s.get();
         assertEquals(FAILED, taskManager.storage().getState(state.getId()).status());
     }
