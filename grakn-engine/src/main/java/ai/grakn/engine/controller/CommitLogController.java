@@ -37,6 +37,7 @@ import spark.Service;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
@@ -70,9 +71,8 @@ public class CommitLogController {
         //TODO: Is this really necessary? Will it add that much overhead?
         //Separate commit logs are needed to prevent logging more info than needed.
         // For example PP does not need to know the instance count
-        CommitLog commitLogUpdateCount = mapper.readValue(req.body(), CommitLog.class);
-        CommitLog commitLogPP = mapper.readValue(req.body(), CommitLog.class);
-        commitLogPP.instanceCount().clear();
+        CommitLog commitLog = mapper.readValue(req.body(), CommitLog.class);
+        CommitLog commitLogPP = CommitLog.create(keyspace, Collections.emptyMap(), commitLog.attributes());
 
         // Things to post process
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
@@ -80,7 +80,7 @@ public class CommitLogController {
 
         // TODO Use an engine wide executor here
         CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, commitLogUpdateCount)),
+                CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, commitLog)),
                 CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration)))
                 .join();
 
