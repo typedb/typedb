@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Comparator;
@@ -177,17 +178,32 @@ public final class ResolutionPlan {
         ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
 
         //TODO: need to double check correctness of this
-        ImmutableList.Builder<Atom> builder = ImmutableList.builder();
-        builder.addAll(query.getAtoms(OntologicalAtom.class).iterator());
-        builder.addAll(fragments.stream()
+        List<Atom> atomList = new ArrayList<>();
+        query.getAtoms(OntologicalAtom.class).forEach(atomList::add);
+        fragments.stream()
                 .map(Fragment::varProperty)
                 .filter(Objects::nonNull)
                 .filter(properties::contains)
                 .distinct()
                 .flatMap(p -> propertyMap.get(p).stream())
                 .distinct()
-                .iterator());
-        return builder.build();
+                .forEach(atomList::add);
+        return refine(atomList);
+    }
+
+    private ImmutableList<Atom> refine(List<Atom> atoms){
+        //flip the order if one of neighbouring atoms is non-resolvable and flip preserves connectedness
+        atoms.sort((a, b) -> {
+            if (a.isRuleResolvable() == b.isRuleResolvable()) return 0;
+            Set<Atom> nbsA = a.getNeighbours(Atom.class).filter(atoms::contains).collect(Collectors.toSet());
+            Set<Atom> nbsB = b.getNeighbours(Atom.class).filter(atoms::contains).collect(Collectors.toSet());
+            //flip safe if both atoms are neighbours and share a neighbour or are only neighbours
+            boolean flipSafe = nbsA.contains(b) && nbsB.contains(a)
+                    && !Sets.intersection(nbsA, nbsB).isEmpty()
+                    || nbsA.size() == 1 && nbsA.size() == nbsB.size();
+            return flipSafe? (a.isRuleResolvable()? 1 : -1) : 0;
+        });
+        return ImmutableList.copyOf(atoms);
     }
 
     /**

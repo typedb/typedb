@@ -140,16 +140,22 @@ public class ResolutionPlanTest {
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
         ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
+        checkConnectedness(plan);
+    }
 
-        UnmodifiableIterator<Atom> iterator = plan.iterator();
-        Set<Var> vars = new HashSet<>();
-        iterator.next().getVarNames().forEach(vars::add);
-        while(iterator.hasNext()){
-            Atom next = iterator.next();
-            Set<Var> varNames = next.getVarNames();
-            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
-            varNames.forEach(vars::add);
-        }
+    @Test
+    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_someRelationsRuleResolvable(){
+        GraknTx testTx = testContext.tx();
+        String queryString = "{" +
+                "(role1:$x, role2: $y) isa relation;" +
+                "(role1:$y, role2: $z) isa recursiveRelation;" +
+                "(role1:$z, role2: $w) isa relation;" +
+                "(role1:$w, role2: $u) isa recursiveRelation;" +
+                "(role1:$u, role2: $v) isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
+        checkConnectedness(plan);
     }
 
     @Test
@@ -165,7 +171,68 @@ public class ResolutionPlanTest {
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
         ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
+        checkConnectedness(plan);
+    }
 
+    @Test
+    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain_someRelationsRuleResolvable(){
+        GraknTx testTx = testContext.tx();
+        String queryString = "{" +
+                "(role1:$x, role2: $y) isa relation;" +
+                "(role1:$y, role2: $z) isa anotherRelation;" +
+                "(role1:$z, role2: $w) isa recursiveRelation;" +
+                "(role1:$w, role2: $u) isa relation;" +
+                "(role1:$u, role2: $v) isa anotherRelation;" +
+                "(role1:$v, role2: $q) isa recursiveRelation;"+
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
+        checkConnectedness(plan);
+    }
+
+    @Test
+    public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_circularPattern_someRelationsRuleResolvable(){
+        GraknTx testTx = testContext.tx();
+        String queryString = "{" +
+                "(role1:$x, role2: $y) isa relation;" +
+                "(role1:$x, role2: $w) isa anotherRelation;" +
+                "(role1:$y, role2: $z) isa recursiveRelation;" +
+                "(role1:$z, role2: $w) isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
+        checkConnectedness(plan);
+    }
+
+    @Test
+    public void makeSureNonResolvableRelationFavouredInResolvable_NonResolvablePair(){
+        GraknTx testTx = testContext.tx();
+        String queryString = "{" +
+                "(role1:$x, role2: $y) isa relation;" +
+                "(role1:$y, role2: $z) isa recursiveRelation;" +
+                "}";
+
+        String queryString2 = "{" +
+                "(role1:$x, role2: $y) isa recursiveRelation;" +
+                "(role1:$y, role2: $z) isa relation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(queryString2, testTx), testTx);
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
+                getAtom(query, "relation", testTx),
+                getAtom(query, "recursiveRelation", testTx)
+        );
+        ImmutableList<Atom> correctPlan2 = ImmutableList.of(
+                getAtom(query2, "relation", testTx),
+                getAtom(query2, "recursiveRelation", testTx)
+        );
+        ImmutableList<Atom> plan = new ResolutionPlan(query).plan();
+        ImmutableList<Atom> plan2 = new ResolutionPlan(query2).plan();
+        assertEquals(plan, correctPlan);
+        assertEquals(plan2, correctPlan2);
+    }
+
+    private void checkConnectedness(ImmutableList<Atom> plan){
         UnmodifiableIterator<Atom> iterator = plan.iterator();
         Set<Var> vars = new HashSet<>();
         iterator.next().getVarNames().forEach(vars::add);
