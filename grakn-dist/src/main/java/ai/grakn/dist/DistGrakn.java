@@ -95,7 +95,7 @@ public class DistGrakn {
         }
     }
 
-    private static void printAscii() {
+    public static void printAscii() {
         Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
         if(Files.exists(ascii)) {
             try {
