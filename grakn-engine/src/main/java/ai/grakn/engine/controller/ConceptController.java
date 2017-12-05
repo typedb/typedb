@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.api;
+package ai.grakn.engine.controller;
 
 
 import ai.grakn.GraknTx;
@@ -54,7 +54,6 @@ import static ai.grakn.util.REST.Request.LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAMETER;
 import static ai.grakn.util.REST.Request.OFFSET_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
@@ -141,14 +140,14 @@ public class ConceptController {
     }
 
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
-        Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
+        Requests.validateRequest(request, APPLICATION_ALL);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getSchemaConcept(label));
     }
 
     private String getConceptById(Request request, Response response) throws JsonProcessingException {
-        Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
+        Requests.validateRequest(request, APPLICATION_ALL);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getConcept(conceptId));

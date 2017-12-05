@@ -32,11 +32,17 @@ import java.util.Set;
 public abstract class Thing extends Concept {
 
     @JsonProperty
-    public abstract Set<Link> attributes();
+    public abstract EmbeddedType type();
+
+    @JsonProperty
+    public abstract Set<EmbeddedAttribute> attributes();
 
     @JsonProperty
     public abstract Set<Link> keys();
 
     @JsonProperty
     public abstract Set<RolePlayer> relationships();
+
+    @JsonProperty
+    public abstract boolean inferred();
 }

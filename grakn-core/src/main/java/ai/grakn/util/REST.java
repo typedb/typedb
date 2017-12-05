@@ -62,6 +62,7 @@ public class REST {
          * URIs to System Controller endpoints
          */
         public static final String STATUS = "/status";
+        public static final String VERSION = "/version";
         public static final String METRICS = "/metrics";
 
         /**
@@ -93,7 +94,6 @@ public class REST {
         public static final String LABEL_PARAMETER = ":label";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
-        public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String LIMIT_PARAMETER = "limit";
         public static final String OFFSET_PARAMETER = "offset";
         public static final String FORMAT = "format";
@@ -105,22 +105,13 @@ public class REST {
         public static final String COMMIT_LOG_SHARDING_COUNT = "sharding-count";
 
         /**
-         * Concept controller request parameters
-         */
-        public static final class Concept {
-            public static final String LIMIT_EMBEDDED = "limitEmbedded";
-            public static final String OFFSET_EMBEDDED = "offsetEmbedded";
-        }
-
-        /**
          * Graql controller request parameters
          */
         public static final class Graql {
             public static final String QUERY = "query";
-            public static final String INFER = "infer";
-            public static final String MULTI = "multi";
+            public static final String EXECUTE_WITH_INFERENCE = "infer";
+            public static final String ALLOW_MULTIPLE_QUERIES = "multi";
             public static final String TX_TYPE = "txType";
-            public static final String LIMIT_EMBEDDED = "limitEmbedded";
             public static final String DEFINE_ALL_VARS = "defineAllVars";
         }
     }
@@ -140,7 +131,6 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
-        public static final String GET_METHOD = "TASK_ID";
     }
 
     /**
@@ -154,19 +144,9 @@ public class REST {
          * Response content types
          */
         public static class ContentType {
-            public static final String APPLICATION_JSON_GRAQL = "application/graql+json";
-            public static final String APPLICATION_JSON = "application/json";
             public static final String APPLICATION_TEXT = "application/text";
-            public static final String APPLICATION_HAL ="application/hal+json";
+            public static final String APPLICATION_JSON = "application/json";
             public static final String APPLICATION_ALL ="*/*";
-        }
-
-        /**
-         * Graql controller response fields
-         */
-        public static class Graql {
-            public static final String RESPONSE = "response";
-            public static final String ORIGINAL_QUERY = "originalQuery";
         }
 
         /**

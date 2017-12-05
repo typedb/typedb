@@ -132,7 +132,7 @@ export default {
     };
   },
   mounted() {
-    this.$nextTick(() => {});
+    this.$nextTick(() => {    });
   },
   methods: {
     updateCurrentTab(key) {

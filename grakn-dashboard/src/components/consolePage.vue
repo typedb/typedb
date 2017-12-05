@@ -81,7 +81,7 @@ export default {
   data() {
     return {
       graqlResponse: undefined,
-      halParser: {},
+      parser: {},
       typeInstances: false,
       typeKeys: [],
       state: ConsolePageState,
@@ -111,12 +111,12 @@ export default {
     onLoadSchema(type) {
       const querySub = `match $x sub ${type}; get;`;
       EngineClient.graqlShell(querySub).then(this.shellResponse, (err) => {
-        this.state.eventHub.$emit('error-message', err.message);
+        this.state.eventHub.$emit('error-message', err);
       });
     },
     queryEngine(query) {
       EngineClient.graqlShell(query).then(this.shellResponse, (err) => {
-        this.state.eventHub.$emit('error-message', err.message);
+        this.state.eventHub.$emit('error-message', err);
       });
     },
     onClear() {

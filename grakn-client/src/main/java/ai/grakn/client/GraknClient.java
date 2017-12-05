@@ -36,11 +36,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.MULTI;
+import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 
 /**
  * Grakn http client. Extend this for more http endpoint.
@@ -68,12 +67,12 @@ public class GraknClient {
         String body = queryList.stream().map(Object::toString).reduce("; ", String::concat).substring(2);
         URI fullURI = UriBuilder.fromUri(uri.toURI())
                 .path(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()))
-                .queryParam(MULTI, true)
-                .queryParam(INFER, false) //Making inference true could lead to non-deterministic loading of data
+                .queryParam(ALLOW_MULTIPLE_QUERIES, true)
+                .queryParam(EXECUTE_WITH_INFERENCE, false) //Making inference true could lead to non-deterministic loading of data
                 .queryParam(TX_TYPE, GraknTxType.BATCH)
                 .build();
         ClientResponse response = client.resource(fullURI)
-                .accept(APPLICATION_JSON_GRAQL)
+                .accept(APPLICATION_JSON)
                 .post(ClientResponse.class, body);
         try {
             Response.StatusType status = response.getStatusInfo();

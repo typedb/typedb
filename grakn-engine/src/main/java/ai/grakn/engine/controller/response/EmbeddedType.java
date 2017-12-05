@@ -18,26 +18,34 @@
 
 package ai.grakn.engine.controller.response;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.Jacksonisable;
+import ai.grakn.concept.Label;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.auto.value.AutoValue;
 
 /**
  * <p>
- *     Wrapper class for {@link ai.grakn.concept.Concept}
+ *     Wrapper class for a light representation of {@link ai.grakn.concept.Type} which is embedded in the
+ *     {@link Thing} representation
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public abstract class Concept implements Jacksonisable{
-
-    @JsonProperty("base-type")
-    public abstract String baseType();
-
-    @JsonProperty("id")
-    public abstract ConceptId id();
+@AutoValue
+public abstract class EmbeddedType {
 
     @JsonProperty("@id")
     public abstract Link selfLink();
 
+    @JsonProperty
+    public abstract Label label();
+
+    @JsonCreator
+    public static EmbeddedType create(@JsonProperty("@id") Link selfLink, @JsonProperty("label") Label label){
+        return new AutoValue_EmbeddedType(selfLink, label);
+    }
+
+    public static EmbeddedType create(ai.grakn.concept.Type type){
+        return create(Link.create(type), type.getLabel());
+    }
 }

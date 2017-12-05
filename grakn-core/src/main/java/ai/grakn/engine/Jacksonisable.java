@@ -31,6 +31,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-@JsonIgnoreProperties(value={ "@id", "roles", "types", "graql", "rules" }, allowGetters=true)
+@JsonIgnoreProperties(value={ "@id", "roles", "types", "graql", "rules", "base-type" }, allowGetters=true)
 public interface Jacksonisable {
 }

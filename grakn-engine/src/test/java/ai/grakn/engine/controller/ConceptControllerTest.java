@@ -16,13 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.api;
+package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.response.Attribute;
 import ai.grakn.engine.controller.response.AttributeType;
 import ai.grakn.engine.controller.response.Concept;
@@ -33,6 +32,7 @@ import ai.grakn.engine.controller.response.Relationship;
 import ai.grakn.engine.controller.response.RelationshipType;
 import ai.grakn.engine.controller.response.Role;
 import ai.grakn.engine.controller.response.Rule;
+import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Pattern;
@@ -44,6 +44,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import mjson.Json;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -52,8 +53,10 @@ import org.junit.rules.RuleChain;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -154,10 +157,14 @@ public class ConceptControllerTest {
         assertConceptsReturned(REST.WebPath.KEYSPACE_ROLE, (response) -> response.as(Role[].class), roleWrapper1, roleWrapper2);
         assertConceptsReturned(REST.WebPath.KEYSPACE_RULE, (response) -> response.as(Rule[].class), ruleWrapper);
 
-        //TODO: Figure out how to get jackson to build child classes
-        //assertConceptsReturned(REST.WebPath.KEYSPACE_TYPE, (response) -> response.as(RelationshipType[].class), relationshipTypeWrapper);
-        //assertConceptsReturned(REST.WebPath.KEYSPACE_TYPE, (response) -> response.as(EntityType[].class), entityTypeWrapper);
-        //assertConceptsReturned(REST.WebPath.KEYSPACE_TYPE, (response) -> response.as(AttributeType[].class), attributeTypeWrapper);
+        //Manual Check is necessary due to collection containing mixture of concepts
+        String request = REST.resolveTemplate(REST.WebPath.KEYSPACE_TYPE, keyspace.getValue());
+        List<Json> response = Json.read(RestAssured.when().get(request).body().asString()).asJsonList();
+        Set<Concept> types = response.stream().map(JsonConceptBuilder::<Concept>build).collect(Collectors.toSet());
+
+        assertTrue(String.format("Type {$s} missing from response", relationshipTypeWrapper), types.contains(relationshipTypeWrapper));
+        assertTrue(String.format("Type {$s} missing from response", attributeTypeWrapper), types.contains(attributeTypeWrapper));
+        assertTrue(String.format("Type {$s} missing from response", entityTypeWrapper), types.contains(entityTypeWrapper));
     }
 
     private static void assertConceptsReturned(String path, Function<Response, Concept []> wrapper, Concept ... concepts){
