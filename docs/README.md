@@ -94,3 +94,6 @@ $
 ```
 
 You can now view the documentation by navigating your web browser to `http://127.0.0.1:4005/`
+
+## Deployment
+Run the `deploy.sh` script after making changes. Deploys the application to our heroku server. Make sure you have the correct git credentials.
