@@ -19,14 +19,11 @@
 
 import User from './User';
 
-<<<<<<< HEAD
-=======
 let spinner = { style: {} };
 $(document).ready(() => {
   spinner = document.getElementById('loading-spinner');
 });
 
->>>>>>> bad3147... Spinner loader instead of Pace progress bar
 /*
  * REST API client for Grakn Engine.
  */
