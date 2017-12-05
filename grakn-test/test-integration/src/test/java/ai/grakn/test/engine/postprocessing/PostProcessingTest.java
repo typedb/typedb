@@ -36,7 +36,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
-import mjson.Json;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
@@ -116,13 +115,9 @@ public class PostProcessingTest {
         CommitLog commitLog = CommitLog.createDefault(tx.keyspace());
         commitLog.attributes().put(resourceIndex, resourceConcepts);
 
-        //TODO: This conversion should not be needed when we get rid of task configs
-        //Convert it to Json
-        Json json = Json.read(mapper.writeValueAsString(commitLog));
-
         //Now fix everything
         PostProcessingTask task = new PostProcessingTask();
-        TaskConfiguration configuration = TaskConfiguration.of(json);
+        TaskConfiguration configuration = TaskConfiguration.of(mapper.writeValueAsString(commitLog));
         task.initialize(configuration, engine.config(), engine.server().factory(),
                 new MetricRegistry(), postProcessor);
 
