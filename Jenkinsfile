@@ -276,6 +276,16 @@ def runBuild() {
             checkout scm
 
             stage('Build Grakn') {
+                // Push to Grakn Maven if tests pass
+                if (!isMainBranch()) {
+                  withMaven(
+                      options: [artifactsPublisher(disabled: true)],
+                      mavenSettingsConfig: '8358fa5c-17c9-4a16-b501-4ebacb7f163d',
+                      ){
+                    sh 'mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo'
+                  }
+                }
+
                 buildGrakn()
 
                 archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
@@ -314,16 +324,6 @@ def runBuild() {
 
     graknNode { workspace ->
         checkout scm
-
-        // Push to Grakn Maven if tests pass
-        if (!isMainBranch()) {
-            withMaven(
-                options: [artifactsPublisher(disabled: true)],
-                mavenSettingsConfig: '8358fa5c-17c9-4a16-b501-4ebacb7f163d',
-            ){
-                sh 'mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo'
-            }
-        }
 
         // only deploy long-running instance on stable branch if all tests pass
         if (shouldDeployLongRunningInstance()) {
