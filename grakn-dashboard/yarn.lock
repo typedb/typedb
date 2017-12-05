@@ -2930,10 +2930,13 @@ jest@^19.0.2:
   dependencies:
     jest-cli "^19.0.2"
 
+<<<<<<< HEAD
 jquery@^3.1.0:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.2.1.tgz#5c4d9de652af6cd0a770154a631bba12b015c787"
 
+=======
+>>>>>>> bad3147... Spinner loader instead of Pace progress bar
 js-base64@^2.1.9:
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/js-base64/-/js-base64-2.3.2.tgz#a79a923666372b580f8e27f51845c6f7e8fbfbaf"
@@ -3546,6 +3549,7 @@ p-locate@^2.0.0:
   dependencies:
     p-limit "^1.1.0"
 
+<<<<<<< HEAD
 pace-progress@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/pace-progress/-/pace-progress-1.0.2.tgz#fdc565c57dd91725a3167b360bf2578d3c3b548d"
@@ -3553,6 +3557,11 @@ pace-progress@^1.0.2:
 pako@~0.2.0:
   version "0.2.9"
   resolved "https://registry.yarnpkg.com/pako/-/pako-0.2.9.tgz#f3f7522f4ef782348da8161bad9ecfd51bf83a75"
+=======
+pako@~1.0.5:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/pako/-/pako-1.0.6.tgz#0101211baa70c4bca4a0f63f2206e97b7dfaf258"
+>>>>>>> bad3147... Spinner loader instead of Pace progress bar
 
 parse-asn1@^5.0.0:
   version "5.1.0"

@@ -13,9 +13,13 @@
   },
   "homepage": "https://github.com/graknlabs/grakn",
   "dependencies": {
+<<<<<<< HEAD
     "codemirror": "^5.19.0",
     "jquery": "^3.1.0",
     "pace-progress": "^1.0.2",
+=======
+    "codemirror": "^5.32.0",
+>>>>>>> bad3147... Spinner loader instead of Pace progress bar
     "prismjs": "^1.5.1",
     "underscore": "1.8",
     "vee-validate": "^2.0.0-beta.17",
