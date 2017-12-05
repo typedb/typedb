@@ -52,8 +52,15 @@ public class DistGrakn {
         printAscii();
 
         try {
-            String homeStatic = GraknSystemProperty.CURRENT_DIRECTORY.value();
-            String configStatic = GraknSystemProperty.CONFIGURATION_FILE.value();
+            Path homeStatic = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
+            Path configStatic = Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
+
+            if(!Files.exists(homeStatic.resolve("grakn"))) {
+                throw new RuntimeException("Cannot find home folder");
+            }
+            if(!Files.exists(homeStatic)) {
+                throw new RuntimeException("Cannot find config folder");
+            }
 
             newDistGrakn(homeStatic, configStatic).run(args);
         } catch (RuntimeException ex) {
@@ -61,21 +68,10 @@ public class DistGrakn {
         }
     }
 
-    private static DistGrakn newDistGrakn(String homeStatic, String configStatic) {
-        Path homePathFolder = Paths.get(homeStatic);
-        Path configPath = Paths.get(configStatic);
-        if(!Files.exists(homePathFolder.resolve("grakn"))) {
-            throw new RuntimeException("Cannot find home folder");
-        }
-        if(!Files.exists(configPath)) {
-            throw new RuntimeException("Cannot find config folder");
-        }
-
-        StorageProcess storageProcess = new StorageProcess(homePathFolder);
-        QueueProcess queueProcess = new QueueProcess(homePathFolder);
-        GraknProcess graknProcess = new GraknProcess(homePathFolder, configPath);
-
-        return new DistGrakn(storageProcess,queueProcess,graknProcess);
+    private static DistGrakn newDistGrakn(Path homePathFolder, Path configPath) {
+        return new DistGrakn(new StorageProcess(homePathFolder),
+                new QueueProcess(homePathFolder),
+                new GraknProcess(homePathFolder, configPath));
     }
 
     public void run(String[] args) {
