@@ -98,7 +98,6 @@ public abstract class MockBackgroundTask extends BackgroundTask {
             LOG.error("Missing id in {}: {}", this.getClass().getName(), json);
         }
         this.id = TaskId.generate();
-        //this.id = TaskId.of(id.asString());
         onTaskStart(this.id);
 
         boolean wasCancelled = cancelled.get();

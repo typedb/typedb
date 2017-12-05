@@ -223,7 +223,7 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     protected void submitLogs(){
-        if(tx != null) commitLogHandler().submit(engineUri, keyspace).ifPresent(LOG::debug);
+        commitLogHandler().submit(engineUri, keyspace).ifPresent(LOG::debug);
     }
 
     private int openTransactions(GraknTxAbstract<?> graph){
