@@ -117,6 +117,7 @@
         <reactivex.version>1.3.2</reactivex.version>
         <!--TODO: Delete Jackson dependency when we change to dropwizard-->
         <jackson.version>2.9.2</jackson.version>
+        <deploy.dist>false</deploy.dist>
     </properties>
 
     <organization>
@@ -1286,6 +1287,9 @@
                     <value>true</value>
                 </property>
             </activation>
+            <properties>
+              <deploy.dist>true</deploy.dist>
+            </properties>
             <distributionManagement>
                 <snapshotRepository>
                     <id>grakn-snapshots</id>
