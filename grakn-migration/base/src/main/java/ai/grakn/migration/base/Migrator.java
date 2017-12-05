@@ -38,11 +38,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import static ai.grakn.util.ConcurrencyUtil.allObservableWithTimeout;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -114,9 +116,6 @@ public class Migrator {
      */
     public void load(String template, Stream<Map<String, Object>> data) {
         GraknClient graknClient = new GraknClient(uri);
-
-        AtomicInteger queriesExecuted = new AtomicInteger(0);
-
         try (BatchExecutorClient loader =
                 BatchExecutorClient.newBuilder()
                         .taskClient(graknClient)
@@ -125,6 +124,7 @@ public class Migrator {
                         .metricRegistry(metricRegistry)
                         .build()) {
             checkKeyspace(graknClient);
+            List<Observable<QueryResponse>> allObservables = new ArrayList<>();
             Stream<Query> queryStream = data.flatMap(d -> template(template, d, failFast));
             if (maxLines > -1) {
                 queryStream = queryStream.limit(maxLines);
@@ -134,21 +134,21 @@ public class Migrator {
                         LOG.trace("Adding query {}", q);
                         totalMeter.mark();
                         // We add get a hot observable. It starts immediately
-                        Observable<QueryResponse> observable = loader.add(q, keyspace, failFast);
-                        subscribeToReportOutcome(failFast, observable, queriesExecuted);
+                        Observable<QueryResponse> addObservable =
+                                loader.add(q, keyspace, failFast);
+                        allObservables.add(addObservable);
+                        subscribeToReportOutcome(failFast, addObservable);
                     });
+            int completed = allObservableWithTimeout(allObservables, OBSERVABLE_TIMEOUT_MINUTES,
+                    TimeUnit.MINUTES).toBlocking().first().size();
+            LOG.info("Loaded {} statements", completed);
         }
-
-        LOG.info("Loaded {} statements", queriesExecuted);
     }
 
-    private void subscribeToReportOutcome(
-            boolean failFast, Observable<QueryResponse> addObservable, AtomicInteger queriesExecuted
-    ) {
+    private void subscribeToReportOutcome(boolean failFast, Observable<QueryResponse> addObservable) {
         addObservable.subscribe(
                 taskResult -> {
                     LOG.trace("Successfully executed: {}", taskResult);
-                    queriesExecuted.incrementAndGet();
                     successMeter.mark();
                 },
                 error -> {

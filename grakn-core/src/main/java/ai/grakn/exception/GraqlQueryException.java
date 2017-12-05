@@ -308,6 +308,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(reasonerQuery.toString()));
     }
 
+    public static GraqlQueryException conceptNotAThing(Object value) {
+        return new GraqlQueryException(ErrorMessage.CONCEPT_NOT_THING.getMessage(value));
+    }
+
     public static GraqlQueryException nonRoleIdAssignedToRoleVariable(VarPatternAdmin var) {
         return new GraqlQueryException(ErrorMessage.ROLE_ID_IS_NOT_ROLE.getMessage(var.toString()));
     }
