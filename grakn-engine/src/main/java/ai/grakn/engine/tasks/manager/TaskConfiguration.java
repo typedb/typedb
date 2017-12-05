@@ -48,12 +48,9 @@ public class TaskConfiguration implements Serializable {
         this.configuration = Json.read(configuration);
     }
 
-    public Json configuration(){
-        return configuration;
-    }
 
     @JsonProperty
-    public String getConfiguration(){
+    public String configuration(){
         return configuration.toString();
     }
 

@@ -32,7 +32,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
-import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -51,7 +50,6 @@ public class PostProcessingTaskTest {
     @ClassRule
     public static EngineContext engine = EngineContext.createWithInMemoryRedis();
 
-
     private String mockResourceIndex;
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
@@ -68,8 +66,7 @@ public class PostProcessingTaskTest {
         //Configure commit log to be returned
         CommitLog commitLog = CommitLog.createDefault(keyspace);
         commitLog.attributes().put(mockResourceIndex, mockResourceSet);
-        Json json = Json.read(mapper.writeValueAsString(commitLog));
-        when(mockConfiguration.configuration()).thenReturn(json);
+        when(mockConfiguration.configuration()).thenReturn(mapper.writeValueAsString(commitLog));
 
         //Initialise keyspaces
         Grakn.session(engine.uri(), SystemKeyspace.SYSTEM_KB_KEYSPACE).open(GraknTxType.WRITE).close();

@@ -88,12 +88,17 @@ public abstract class MockBackgroundTask extends BackgroundTask {
 
     @Override
     public final boolean start() {
-        Json json = configuration().configuration();
+        Json json = Json.read(configuration().configuration());
+        if(json.equals(Json.object())){
+            throw new RuntimeException("Invalid task config");
+        }
+
         Json id = json.at("id");
         if (id == null) {
             LOG.error("Missing id in {}: {}", this.getClass().getName(), json);
         }
-        this.id = TaskId.of(id.asString());
+        this.id = TaskId.generate();
+        //this.id = TaskId.of(id.asString());
         onTaskStart(this.id);
 
         boolean wasCancelled = cancelled.get();
