@@ -17,6 +17,12 @@
  */
 /* @flow */
 import User from './User';
+
+let spinner = { style: {} };
+$(document).ready(() => {
+  spinner = document.getElementById('loading-spinner');
+});
+
 /*
  * REST API client for Grakn Engine.
  */
@@ -42,6 +48,7 @@ export default {
           } else {
             reject(Error(req.response));
           }
+          spinner.style.visibility = 'hidden';
         };
 
         // Handle network errors
@@ -51,6 +58,7 @@ export default {
 
         // Make the request
         req.send(requestData.data);
+        spinner.style.visibility = 'visible';
       } catch (exception) {
         reject(exception);
       }
