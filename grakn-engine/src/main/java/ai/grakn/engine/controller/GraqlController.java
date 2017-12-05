@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.controller.response.ExplanationBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
@@ -31,14 +32,17 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.TemporaryWriteException;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.RetryListener;
@@ -90,6 +94,7 @@ import static org.apache.http.HttpStatus.SC_OK;
  * @author Marco Scoppetta, alexandraorth
  */
 public class GraqlController {
+    private static final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private static final RetryLogger retryLogger = new RetryLogger();
     private static final int MAX_RETRY = 10;
@@ -98,6 +103,7 @@ public class GraqlController {
     private final TaskManager taskManager;
     private final PostProcessor postProcessor;
     private final Timer executeGraql;
+    private final Timer executeExplanation;
 
     public GraqlController(
             EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
@@ -108,6 +114,7 @@ public class GraqlController {
         this.postProcessor = postProcessor;
         this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
+        this.executeExplanation = metricRegistry.timer(name(GraqlController.class, "execute-explanation"));
 
         spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
         spark.post(REST.WebPath.KEYSPACE_EXPLAIN, this::explainGraql);
@@ -121,19 +128,21 @@ public class GraqlController {
     }
 
     @POST
-    @Path("/kb/{keyspace}/graql")
-    @ApiOperation(value = "Execute an arbitrary Graql query and get the explination from the results")
+    @Path("/kb/{keyspace}/explain")
+    @ApiOperation(value = "Execute an arbitrary Graql query and get the explanation from the results")
     @ApiImplicitParams({
             @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "body"),
-            @ApiImplicitParam(
-                    name = DEFINE_ALL_VARS,
-                    value = "Define all variables in response", dataType = "boolean", paramType = "query"
-            ),
-            @ApiImplicitParam(name = ALLOW_MULTIPLE_QUERIES, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = TX_TYPE, dataType = "string", paramType = "query")
     })
-    private String explainGraql(Request request, Response response) {
-        throw new UnsupportedOperationException("Not Yet Implemented");
+    private String explainGraql(Request request, Response response) throws RetryException, ExecutionException {
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        String queryString = mandatoryBody(request);
+
+        return executeFunctionWithRetrying(() -> {
+            try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
+                List<Answer> answers = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute();
+                return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answers, printer));
+            }
+        });
     }
 
     @POST
