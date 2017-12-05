@@ -80,11 +80,12 @@ public class CommitLogController {
 
         // Things to post process
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
+        TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(commitLogPP);
 
         // TODO Use an engine wide executor here
         CompletableFuture.allOf(
                 CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, commitLogUpdateCount)),
-                CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, TaskConfiguration.of(commitLogPP))))
+                CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration)))
                 .join();
 
         return "";

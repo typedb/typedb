@@ -28,6 +28,8 @@ import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.Timer.Context;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,7 @@ import static com.codahale.metrics.MetricRegistry.name;
  * @author alexandraorth, fppt
  */
 public class PostProcessingTask extends BackgroundTask {
+    private static ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private static final String JOB_FINISHED = "Post processing Job [{}] completed for indeces and ids: [{}]";
 
@@ -62,7 +65,7 @@ public class PostProcessingTask extends BackgroundTask {
     public boolean start() {
         try (Context context = metricRegistry()
                 .timer(name(PostProcessingTask.class, "execution")).time()) {
-            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(configuration());
+            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.ATTRIBUTE, configuration());
 
             allToPostProcess.forEach((conceptIndex, conceptIds) -> {
                 Context contextSingle = metricRegistry()
@@ -92,7 +95,10 @@ public class PostProcessingTask extends BackgroundTask {
      * @return Map of concept indices to ids that has been extracted from the provided configuration.
      */
     private static Map<String,Set<ConceptId>> getPostProcessingJobs(Schema.BaseType type, TaskConfiguration configuration) {
-        return configuration.configuration().attributes();
+        return configuration.json().at(REST.Request.COMMIT_LOG_FIXING).at(type.name()).asJsonMap().entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> e.getValue().asList().stream().map(o -> ConceptId.of(o.toString())).collect(Collectors.toSet())
+        ));
     }
 
     /**
@@ -105,4 +111,18 @@ public class PostProcessingTask extends BackgroundTask {
         return TaskState.of(PostProcessingTask.class, creator.getName());
     }
 
+    /**
+     * Helper method which creates the task config needed in order to execute a PP task
+     *
+     * @param commitLog The {@link CommitLog} which contains all the information needed to perform PP
+     * @return The task configuration encapsulating the above details in a manner executable by the task runner
+     */
+    public static TaskConfiguration createConfig(CommitLog commitLog){
+        try {
+            Json postProcessingConfiguration = Json.read(mapper.writeValueAsString(commitLog));
+            return TaskConfiguration.of(postProcessingConfiguration);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
