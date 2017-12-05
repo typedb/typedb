@@ -29,7 +29,6 @@ import java.io.Serializable;
  *
  * @author alexandraorth
  */
-
 public class TaskConfiguration implements Serializable {
 
     private static final long serialVersionUID = -7301340972479426643L;
@@ -47,10 +46,6 @@ public class TaskConfiguration implements Serializable {
     @JsonCreator
     public TaskConfiguration(@JsonProperty("configuration") String configuration){
         this.configuration = Json.read(configuration);
-    }
-
-    public Json json(){
-        return configuration;
     }
 
     public Json configuration(){

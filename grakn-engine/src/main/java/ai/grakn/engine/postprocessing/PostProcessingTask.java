@@ -91,7 +91,7 @@ public class PostProcessingTask extends BackgroundTask {
      */
     private static CommitLog getPostProcessingCommitLog(TaskConfiguration configuration) {
         try {
-            return mapper.readValue(configuration.json().toString(), CommitLog.class);
+            return mapper.readValue(configuration.configuration().toString(), CommitLog.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

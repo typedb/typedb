@@ -69,7 +69,7 @@ public class PostProcessingTaskTest {
         CommitLog commitLog = CommitLog.createDefault(keyspace);
         commitLog.attributes().put(mockResourceIndex, mockResourceSet);
         Json json = Json.read(mapper.writeValueAsString(commitLog));
-        when(mockConfiguration.json()).thenReturn(json);
+        when(mockConfiguration.configuration()).thenReturn(json);
 
         //Initialise keyspaces
         Grakn.session(engine.uri(), SystemKeyspace.SYSTEM_KB_KEYSPACE).open(GraknTxType.WRITE).close();
@@ -84,7 +84,7 @@ public class PostProcessingTaskTest {
                 METRIC_REGISTRY, postProcessor);
         task.start();
 
-        verify(mockConfiguration, times(1)).json();
+        verify(mockConfiguration, times(1)).configuration();
     }
 
     @Test
@@ -95,7 +95,7 @@ public class PostProcessingTaskTest {
                 METRIC_REGISTRY, postProcessor);
         task.start();
 
-        verify(mockConfiguration, times(1)).json();
+        verify(mockConfiguration, times(1)).configuration();
     }
 
     @Test
@@ -117,6 +117,6 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockConfiguration, times(2)).json();
+        verify(mockConfiguration, times(2)).configuration();
     }
 }

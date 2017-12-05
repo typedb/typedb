@@ -88,7 +88,7 @@ public abstract class MockBackgroundTask extends BackgroundTask {
 
     @Override
     public final boolean start() {
-        Json json = configuration().json();
+        Json json = configuration().configuration();
         Json id = json.at("id");
         if (id == null) {
             LOG.error("Missing id in {}: {}", this.getClass().getName(), json);
