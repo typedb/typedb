@@ -222,7 +222,7 @@ public class GraknSessionImpl implements GraknSession {
         return config;
     }
 
-    private void submitLogs(){
+    protected void submitLogs(){
         if(tx != null) commitLogHandler().submit(engineUri, keyspace).ifPresent(LOG::debug);
     }
 

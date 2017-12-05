@@ -49,11 +49,16 @@ public class GraknSessionLocal extends GraknSessionImpl{
     }
 
     public static GraknSessionLocal create(Keyspace keyspace) {
-        return new GraknSessionLocal(keyspace, "fake-engine-uri", null);
+        return new GraknSessionLocal(keyspace, "fake-local-engine-uri", null);
     }
 
     public static GraknSessionLocal create(Keyspace keyspace, String engineUri, GraknConfig config) {
         return new GraknSessionLocal(keyspace, engineUri, config);
+    }
+
+    @Override
+    protected void submitLogs(){
+        //No Op
     }
 
     @Override
