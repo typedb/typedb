@@ -62,7 +62,7 @@ public class BatchExecutorClientTest {
 
             return Lists.transform(queries, query -> {
                 assert query != null;
-                return new QueryResponse(query, Json.object());
+                return new QueryResponse(query, Json.object("response", "I ran query " + query));
             });
         });
 
@@ -83,7 +83,7 @@ public class BatchExecutorClientTest {
             }
         }
 
-        assertThat(queriesExecuted, containsInAnyOrder(queriesToExecute));
+        assertThat(queriesExecuted, containsInAnyOrder(queriesToExecute.toArray()));
     }
 
     private InsertQuery createInsertQuery(int i) {
