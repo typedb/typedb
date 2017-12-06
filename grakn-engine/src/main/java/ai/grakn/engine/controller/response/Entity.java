@@ -42,8 +42,8 @@ public abstract class Entity extends Thing {
             @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("type") EmbeddedType type,
-            @JsonProperty("attributes") Set<EmbeddedAttribute> attributes,
-            @JsonProperty("keys") Set<Link> keys,
+            @JsonProperty("attributes") Link attributes,
+            @JsonProperty("keys") Link keys,
             @JsonProperty("relationships") Set<RolePlayer> relationships,
             @JsonProperty("inferred") boolean inferred,
             @Nullable @JsonProperty("explanation-query")  String explanation

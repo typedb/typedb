@@ -53,6 +53,8 @@ public class REST {
          */
         public static final String CONCEPT_LINK = "/kb/:keyspace/:base-type/:id";
         public static final String CONCEPT_ID = "/kb/:keyspace/concept/:id";
+        public static final String CONCEPT_ATTRIBUTES = "/kb/:keyspace/concept/:id/attributes";
+        public static final String CONCEPT_KEYS = "/kb/:keyspace/concept/:id/keys";
         public static final String TYPE_LABEL = "/kb/:keyspace/type/:label";
         public static final String TYPE_INSTANCES = "/kb/:keyspace/type/:label/instances";
         public static final String RULE_LABEL = "/kb/:keyspace/rule/:label";

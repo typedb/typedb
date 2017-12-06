@@ -93,8 +93,8 @@ public class ConceptBuilder {
     private static Thing buildThing(ai.grakn.concept.Thing thing) {
         Link selfLink = Link.create(thing);
         EmbeddedType type = EmbeddedType.create(thing.type());
-        Set<EmbeddedAttribute> attributes = thing.attributes().map(EmbeddedAttribute::create).collect(Collectors.toSet());
-        Set<Link> keys = thing.keys().map(Link::create).collect(Collectors.toSet());
+        Link attributes = Link.createAttributeLink(thing);
+        Link keys = Link.createKeyLink(thing);
 
         Set<RolePlayer> relationships = new HashSet<>();
         thing.plays().forEach(role -> {
@@ -138,15 +138,15 @@ public class ConceptBuilder {
         }
     }
 
-    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, EmbeddedType type, Set<EmbeddedAttribute> attributes, Set<Link> keys, Set<RolePlayer> relationships, String explanation){
+    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, EmbeddedType type, Link attributes, Link keys, Set<RolePlayer> relationships, String explanation){
         return Entity.create(entity.getId(), selfLink, type, attributes, keys, relationships, entity.isInferred(), explanation);
     }
 
-    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, EmbeddedType type, Set<EmbeddedAttribute> attributes, Set<Link> keys, Set<RolePlayer> relationships, String explanation){
+    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, EmbeddedType type, Link attributes, Link keys, Set<RolePlayer> relationships, String explanation){
         return Attribute.create(attribute.getId(), selfLink, type, attributes, keys, relationships, attribute.isInferred(), explanation, attribute.type().getDataType().getName(), attribute.getValue().toString());
     }
 
-    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, EmbeddedType type, Set<EmbeddedAttribute> attributes, Set<Link> keys, Set<RolePlayer> relationships, String explanation){
+    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, EmbeddedType type, Link attributes, Link keys, Set<RolePlayer> relationships, String explanation){
         //Get all the role players and roles part of this relationship
         Set<RolePlayer> roleplayers = new HashSet<>();
         relationship.allRolePlayers().forEach((role, things) -> {
