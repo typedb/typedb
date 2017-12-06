@@ -94,6 +94,7 @@ public class REST {
             public static final String ALLOW_MULTIPLE_QUERIES = "multi";
             public static final String TX_TYPE = "txType";
             public static final String DEFINE_ALL_VARS = "defineAllVars";
+            public static final String LOADING_DATA = "loading";
         }
     }
 

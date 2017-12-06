@@ -42,6 +42,7 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.RetryException;
@@ -77,6 +78,7 @@ import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
+import static ai.grakn.util.REST.Request.Graql.LOADING_DATA;
 import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
@@ -173,6 +175,9 @@ public class GraqlController {
         //Define all anonymous variables in the query
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
+        //Used to check if serialisation of results is needed. When loading we skip this for the sake of speed
+        boolean skipSerialisation = parseBoolean(queryParameter(request, LOADING_DATA).orElse("false"));
+
         //Check the transaction type to use
         GraknTxType txType = Requests.queryParameter(request, TX_TYPE)
                 .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
@@ -192,16 +197,17 @@ public class GraqlController {
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
-            QueryBuilder builder = tx.graql();
+                QueryBuilder builder = tx.graql();
 
-            infer.ifPresent(builder::infer);
+                infer.ifPresent(builder::infer);
 
-            QueryParser parser = builder.parser();
-            defineAllVars.ifPresent(parser::defineAllVars);
+                QueryParser parser = builder.parser();
+                defineAllVars.ifPresent(parser::defineAllVars);
 
-            response.status(SC_OK);
+                response.status(SC_OK);
 
-            return executeQuery(tx, queryString, acceptType, multiQuery, parser);}
+                return executeQuery(tx, queryString, acceptType, multiQuery, skipSerialisation, parser);
+            }
         });
     }
 
@@ -258,23 +264,33 @@ public class GraqlController {
      * @param multi       execute multiple statements
      * @param parser
      */
-    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, QueryParser parser) {
+    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
         Printer printer = this.printer;
 
         if(APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
 
-        String formatted;
+        String formatted = "";
         boolean commitQuery = true;
         if (multi) {
             Stream<Query<?>> query = parser.parseList(queryString);
             List<?> collectedResults = query.map(this::executeAndMonitor).collect(Collectors.toList());
-            formatted = printer.graqlString(collectedResults);
+            if(skipSerialisation) {
+                formatted = mapper.writeValueAsString(new Object [collectedResults.size()]);
+            } else {
+                formatted = printer.graqlString(collectedResults);
+            }
         } else {
             Query<?> query = parser.parseQuery(queryString);
-            formatted = printer.graqlString(executeAndMonitor(query));
+            if(skipSerialisation){
+                formatted = "";
+            } else {
+                formatted = printer.graqlString(executeAndMonitor(query));
+            }
             commitQuery = !query.isReadOnly();
         }
+
         if (commitQuery) commitAndSubmitPPTask(tx, postProcessor, taskManager);
+
         return formatted;
     }
 
