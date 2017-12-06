@@ -30,5 +30,22 @@ yetAnotherRelation sub relationship
     relates role1
     relates role2;
 
+recursiveRelation sub relationship
+    relates role1
+    relates role2;
+
 resource sub attribute datatype string;
 anotherResource sub attribute datatype string;
+
+rule-1 sub rule,
+when {
+(role1: $x, role2: $y) isa relation;},
+then {
+(role1: $x, role2: $y) isa recursiveRelation;};
+
+rule-2 sub rule,
+when {
+(role1: $x, role2: $z) isa relation;
+(role1: $z, role2: $y) isa recursiveRelation;},
+then {
+(role1: $x, role2: $y) isa recursiveRelation;};
