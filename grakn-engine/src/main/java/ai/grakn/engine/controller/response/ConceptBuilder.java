@@ -106,7 +106,7 @@ public class ConceptBuilder {
         });
 
         String explanation = null;
-        if(thing.isInferred()) explanation = Graql.match(ConceptConverter.toPattern(thing)).toString();
+        if(thing.isInferred()) explanation = Graql.match(ConceptConverter.toPattern(thing)).get().toString();
 
         if(thing.isAttribute()){
             return buildAttribute(thing.asAttribute(), selfLink, type, attributes, keys, relationships, explanation);
