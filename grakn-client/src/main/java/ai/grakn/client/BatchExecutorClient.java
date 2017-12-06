@@ -139,7 +139,12 @@ public class BatchExecutorClient implements Closeable {
                     }
 
                     // Release a query execution permit, allowing a new query to execute
-                    queryExecutionSemaphore.release();
+                    if (!a.isOnCompleted()) {
+                        queryExecutionSemaphore.release();
+
+                        assert queryExecutionSemaphore.availablePermits() <= maxQueries :
+                                "Number of available permits should never exceed max queries";
+                    }
                 })
                 .subscribeOn(scheduler)
                 .doOnTerminate(context::close);
