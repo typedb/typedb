@@ -111,7 +111,6 @@ ul{
 <script>
 import QueryBuilder from './modules/QueryBuilder';
 import EngineClient from '../../js/EngineClient';
-import * as API from '../../js/util/HALTerms';
 
 export default {
   name: 'ContextMenu',

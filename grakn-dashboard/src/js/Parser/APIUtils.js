@@ -22,39 +22,39 @@
 export const RELATIONSHIP_TYPE = 'RELATIONSHIP_TYPE';
 export const RELATIONSHIP = 'RELATIONSHIP';
 
-const TYPE_TYPE = 'TYPE';
+export const TYPE_TYPE = 'TYPE';
 
-const RULE_TYPE = 'RULE_TYPE';
-const RULE = 'RULE';
-
-
-const ATTRIBUTE = 'ATTRIBUTE';
-const ATTRIBUTE_TYPE = 'ATTRIBUTE_TYPE';
-
-const ROLE_TYPE = 'ROLE_TYPE';
-const ROLE = 'ROLE';
-
-const ENTITY_TYPE = 'ENTITY_TYPE';
-const ENTITY = 'ENTITY';
-
-const INFERRED_RELATIONSHIP_TYPE = 'INFERRED_RELATIONSHIP';
+export const RULE_TYPE = 'RULE_TYPE';
+export const RULE = 'RULE';
 
 
-const ROOT_CONCEPT = 'thing';
+export const ATTRIBUTE = 'ATTRIBUTE';
+export const ATTRIBUTE_TYPE = 'ATTRIBUTE_TYPE';
+
+export const ROLE_TYPE = 'ROLE_TYPE';
+export const ROLE = 'ROLE';
+
+export const ENTITY_TYPE = 'ENTITY_TYPE';
+export const ENTITY = 'ENTITY';
+
+export const INFERRED_RELATIONSHIP_TYPE = 'INFERRED_RELATIONSHIP';
+
+
+export const ROOT_CONCEPT = 'thing';
 
 export const KEY_ID = 'id';
-const KEY_TYPE = 'type';
+export const KEY_TYPE = 'type';
 export const KEY_BASE_TYPE = 'base-type';
-const KEY_VALUE = 'value';
-const KEY_LABEL = 'label';
-const KEY_IMPLICIT = 'implicit';
-const KEY_INFERRED = 'inferred';
-const KEY_ABSTRACT = 'abstract';
-const KEY_DATATYPE = 'data-type';
+export const KEY_VALUE = 'value';
+export const KEY_LABEL = 'label';
+export const KEY_IMPLICIT = 'implicit';
+export const KEY_INFERRED = 'inferred';
+export const KEY_ABSTRACT = 'abstract';
+export const KEY_DATATYPE = 'data-type';
 export const AT_ID = '@id';
+export const KEY_EXPLANATION_QUERY = 'explanation-query';
 
-
- /*
+/*
   * Build label to show in the visualiser, based on the node type.
   */
 function buildLabel(nodeObject) {
@@ -97,6 +97,7 @@ export function conceptProperties(object:Object) {
     implicit: object[KEY_IMPLICIT] || false,
     inferred: object[KEY_INFERRED] || false,
     abstract: object[KEY_ABSTRACT],
+    explanationQuery: object[KEY_EXPLANATION_QUERY] || '',
   };
 }
 
@@ -108,6 +109,6 @@ export function instanceAttributes(object:Object) {
     dataType: attr[KEY_DATATYPE],
     type: attr[KEY_TYPE].label,
   }))
-  .reduce((array, current) => array.concat(current), []);
+    .reduce((array, current) => array.concat(current), []);
 }
 

@@ -23,7 +23,7 @@ import vis from 'vis';
 import Style from './Style';
 import User from '../User';
 import NodeSettings from '../NodeSettings';
-import * as API from '../util/HALTerms';
+import * as API from '../Parser/APIUtils';
 
 
 /*

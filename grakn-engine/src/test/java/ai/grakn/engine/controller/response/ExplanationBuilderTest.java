@@ -60,7 +60,7 @@ public class ExplanationBuilderTest {
             GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
             ai.grakn.graql.admin.Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
 
-            List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer.getExplanation().getAnswers(), printer);
+            List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer, printer);
 
             assertEquals(3, explanation.size());
             explanation.forEach(explanationAnswer -> {

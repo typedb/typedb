@@ -18,9 +18,7 @@
 /* @flow */
 
 import Parser from '../../../js/Parser/Parser';
-import * as Utils from '../../../js/Parser/APIUtils';
 import EngineClient from '../../../js/EngineClient';
-import * as API from '../../../js/util/HALTerms';
 import { EventHub } from '../../../js/state/graphPageState';
 import CanvasEvents from './CanvasEvents';
 
@@ -135,6 +133,11 @@ function loadRelationshipRolePlayers(rel) {
     });
 }
 
+function explainConcept(node) {
+  EngineClient.graqlQuery(node.explanationQuery)
+    .then(onGraphResponse);
+}
+
 function loadRelationshipTypeRolePlayers(rel) {
   const promises = rel.relates.map(x => EngineClient.request({ url: x }));
   Promise.all(promises)
@@ -200,5 +203,5 @@ function showAttributes(node: Object) {
 
 
 export default {
-  initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners, showNeighbours, showAttributes,
+  initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners, showNeighbours, showAttributes, explainConcept,
 };
