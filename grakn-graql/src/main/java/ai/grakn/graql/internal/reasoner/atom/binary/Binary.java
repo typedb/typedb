@@ -75,6 +75,11 @@ public abstract class Binary extends Atom {
         this.type = a.type;
     }
 
+    @Override
+    public void checkValid() {
+        if (getTypePredicate() != null) getTypePredicate().checkValid();
+    }
+
     public Var getPredicateVariable() { return predicateVariable;}
 
     @Nullable

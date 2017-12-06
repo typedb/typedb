@@ -57,7 +57,6 @@ public abstract class TypeAtom extends Binary{
         super(pattern, predicateVar, p, par);}
     protected TypeAtom(TypeAtom a) { super(a);}
 
-
     @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;

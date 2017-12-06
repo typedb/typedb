@@ -54,6 +54,14 @@ public class IdPredicate extends Predicate<ConceptId>{
     private IdPredicate(IdPredicate a) { super(a);}
 
     @Override
+    public void checkValid() {
+        ConceptId conceptId = getPredicate();
+        if (tx().getConcept(conceptId) == null){
+            throw GraqlQueryException.idNotFound(conceptId);
+        }
+    }
+
+    @Override
     public String toString(){
         return "[" + getVarName() + "/" + getPredicateValue() + "]";
     }
