@@ -19,9 +19,13 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
@@ -36,7 +40,9 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.RetryListener;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
@@ -62,7 +68,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
@@ -70,6 +75,7 @@ import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MULTI;
+import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
@@ -87,15 +93,24 @@ import static java.lang.Boolean.parseBoolean;
  */
 public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
+    private static final RetryLogger retryLogger = new RetryLogger();
     private static final int MAX_RETRY = 10;
     private final EngineGraknTxFactory factory;
+    private final Service spark;
+    private final TaskManager taskManager;
+    private final PostProcessor postProcessor;
     private final Timer executeGraqlGetTimer;
     private final Timer executeGraqlPostTimer;
     private final Timer singleExecutionTimer;
 
-    public GraqlController(EngineGraknTxFactory factory, Service spark,
-                           MetricRegistry metricRegistry) {
+    public GraqlController(
+            EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
+            PostProcessor postProcessor, MetricRegistry metricRegistry
+    ) {
         this.factory = factory;
+        this.spark = spark;
+        this.taskManager = taskManager;
+        this.postProcessor = postProcessor;
         this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
         this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
         this.singleExecutionTimer = metricRegistry.timer(name(GraqlController.class, "single", "execution"));
@@ -124,7 +139,8 @@ public class GraqlController {
                     name = DEFINE_ALL_VARS,
                     value = "Define all variables in response", dataType = "boolean", paramType = "query"
             ),
-            @ApiImplicitParam(name = MULTI, dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = MULTI, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = TX_TYPE, dataType = "string", paramType = "query")
     })
     private Object executeGraql(Request request, Response response) throws RetryException, ExecutionException {
         String queryString = mandatoryBody(request);
@@ -134,12 +150,15 @@ public class GraqlController {
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = Requests.getAcceptType(request);
 
+        GraknTxType txType = Requests.queryParameter(request, TX_TYPE)
+                .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
+
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
         LOG.trace(String.format("Executing graql statements: {%s}", queryString));
 
         return executeFunctionWithRetrying(() -> {
-            try (GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
+            try (GraknTx graph = factory.tx(keyspace, txType); Timer.Context context = executeGraqlPostTimer.time()) {
                 QueryBuilder builder = graph.graql();
 
                 infer.ifPresent(builder::infer);
@@ -160,6 +179,7 @@ public class GraqlController {
         try {
             Retryer<Object> retryer = RetryerBuilder.newBuilder()
                 .retryIfExceptionOfType(TemporaryWriteException.class)
+                .withRetryListener(retryLogger)
                 .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
                 .build();
@@ -171,6 +191,15 @@ public class GraqlController {
                 throw (RuntimeException) cause;
             } else {
                 throw e;
+            }
+        }
+    }
+
+    private static class RetryLogger implements RetryListener{
+        @Override
+        public <V> void onRetry(Attempt<V> attempt) {
+            if(attempt.hasException()) {
+                LOG.warn("Retrying transaction after {" + attempt.getAttemptNumber() + "} attempts due to exception {" + attempt.getExceptionCause().getMessage() + "}");
             }
         }
     }
@@ -243,8 +272,23 @@ public class GraqlController {
             formatted = printer.graqlString(executeAndMonitor(query));
             commitQuery = !query.isReadOnly();
         }
-        if (commitQuery) graph.commit();
+        if (commitQuery) commitAndSubmitPPTask(graph, postProcessor, taskManager);
         return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
+    }
+
+    private static void commitAndSubmitPPTask(
+            GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter
+    ) {
+        Optional<String> result = graph.admin().commitSubmitNoLogs();
+        if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
+            String logs = result.get();
+            taskSubmitter.addTask(
+                    PostProcessingTask.createTask(GraqlController.class),
+                    PostProcessingTask.createConfig(graph.keyspace(), logs)
+            );
+
+            postProcessor.updateCounts(graph.keyspace(), Json.read(logs));
+        }
     }
 
     private Object executeAndMonitor(Query<?> query) {

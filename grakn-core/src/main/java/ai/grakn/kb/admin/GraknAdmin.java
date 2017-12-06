@@ -28,6 +28,7 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.Schema;
@@ -38,6 +39,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Admin interface for {@link GraknTx}.
@@ -187,6 +189,18 @@ public interface GraknAdmin {
      */
     @CheckReturnValue
     <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value);
+
+    /**
+     * Get all super-concepts of the given {@link SchemaConcept} including itself and including the meta-type
+     * {@link Schema.MetaSchema#THING}.
+     *
+     * <p>
+     *     If you want a more precise type that will exclude {@link Schema.MetaSchema#THING}, use
+     *     {@link SchemaConcept#sups()}.
+     * </p>
+     */
+    @CheckReturnValue
+    Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.

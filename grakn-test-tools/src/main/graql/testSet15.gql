@@ -1,8 +1,8 @@
 define
 
 general-entity sub entity
-	has resource
-	has boolean-resource;
+    has resource
+    has boolean-resource;
 
 sub-entity sub general-entity;
 

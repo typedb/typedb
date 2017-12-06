@@ -34,7 +34,7 @@ noRoleEntity sub entity;
 
 #plays in rel2, rel3
 singleRoleEntity sub noRoleEntity
-	plays role3;
+    plays role3;
 #plays in rel2, rel3
 twoRoleEntity sub singleRoleEntity
     plays role4;
@@ -51,14 +51,14 @@ threeRoleEntity sub anotherTwoRoleEntity
 
 #plays in rel1
 yetAnotherSingleRoleEntity sub noRoleEntity
-	plays role1;
+    plays role1;
 
 
 #Relations
 
 relation1 sub relationship
-	relates role1
-	relates role2;
+    relates role1
+    relates role2;
 
 relation2 sub relationship
     relates role2

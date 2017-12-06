@@ -8,7 +8,7 @@ newEntity sub entity;
 entity1 sub entity
     plays role1
     plays role2
-	has resource;
+    has resource;
 
 entity2 sub entity
     plays role1
@@ -16,9 +16,9 @@ entity2 sub entity
     has resource;
 
 relation sub relationship
-	relates role1
-	relates role2
-	has resource;
+    relates role1
+    relates role2
+    has resource;
 
 #Resources
 resource sub attribute datatype string;

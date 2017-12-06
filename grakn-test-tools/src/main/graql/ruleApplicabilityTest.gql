@@ -39,7 +39,7 @@ anotherNoRoleEntity sub entity
     has name;
 
 singleRoleEntity sub noRoleEntity
-	plays role1;
+    plays role1;
 
 anotherSingleRoleEntity sub noRoleEntity
     plays role1;
@@ -63,9 +63,9 @@ threeRoleEntity sub noRoleEntity
 #Relations
 
 ternary sub relationship
-	relates role1
-	relates role2
-	relates role3;
+    relates role1
+    relates role2
+    relates role3;
 
 reifiable-relation sub relationship
     relates role1
@@ -97,33 +97,33 @@ typed-relation sub relationship
 
 #3 instances in total
 rule-0 sub rule
-	when {
-		(role1: $x, role2: $y) isa binary;
-		(role1: $y, role2: $z) isa binary;
-	}
-	then {
-		(role1: $x, role2: $z) isa binary;
-	};
+    when {
+    	(role1: $x, role2: $y) isa binary;
+    	(role1: $y, role2: $z) isa binary;
+    }
+    then {
+    	(role1: $x, role2: $z) isa binary;
+    };
 
 #1 instance
 rule-1 sub rule
-	when {
-		(role1: $x, role2: $y) isa binary;
-		(role1: $y, role2: $z) isa binary;
-	}
-	then {
-		(role1:$x, role2:$y, role3: $z) isa ternary;
-	};
+    when {
+    	(role1: $x, role2: $y) isa binary;
+    	(role1: $y, role2: $z) isa binary;
+    }
+    then {
+    	(role1:$x, role2:$y, role3: $z) isa ternary;
+    };
 
 #1 instance
 rule-2 sub rule
-	when {
-		(role1: $x, role2: $y) isa binary;
-		(role1: $y, role2: $z) isa binary;
-	}
-	then {
-		(role1:$x, role2:$y, role2: $z) isa ternary;
-	};
+    when {
+    	(role1: $x, role2: $y) isa binary;
+    	(role1: $y, role2: $z) isa binary;
+    }
+    then {
+    	(role1:$x, role2:$y, role2: $z) isa ternary;
+    };
 
 #1 instance
 rule-3 sub rule
