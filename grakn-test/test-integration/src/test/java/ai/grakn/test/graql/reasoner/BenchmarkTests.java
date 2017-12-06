@@ -29,34 +29,21 @@ import ai.grakn.client.GraknClient;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.kbs.RandomLinearTransitivityKB;
 import ai.grakn.test.rule.EngineContext;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.rule.SessionContext;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import java.io.File;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -89,14 +76,15 @@ public class BenchmarkTests {
         GraknClient graknClient = new GraknClient(engine.uri());
 
         try {
-            File graqlFile = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + fileName);
+            File graqlFile = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/../grakn-test-tools/src/main/graql/" + fileName);
             String s = Files.toString(graqlFile, Charset.forName("UTF-8"));
             GraknTx tx = session.open(GraknTxType.WRITE);
             tx.graql().parser().parseQuery(s).execute();
             tx.commit();
             tx.close();
         } catch (Exception e){
-            System.out.println(e);
+            System.err.println(e);
+            System.exit(1);
         }
 
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()){
@@ -146,7 +134,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testRandomSetLinearTransitivity()  {
-        final int N = 10000;
+        final int N = 100;
         final int limit = 100;
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         load("linearTransitivity.gql", N);
