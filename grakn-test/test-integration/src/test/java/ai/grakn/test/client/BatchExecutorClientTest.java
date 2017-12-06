@@ -27,7 +27,6 @@ import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import mjson.Json;
@@ -40,7 +39,8 @@ import java.util.stream.IntStream;
 import static ai.grakn.graql.Graql.insert;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -82,16 +82,8 @@ public class BatchExecutorClientTest {
                 client.add(query, keyspace).subscribe(a -> {});
             }
         }
-        // Freeze set in case it gets modified concurrently after the executor has closed
-        Set<Query<?>> queriesExecutedCopy = ImmutableSet.copyOf(queriesExecuted);
 
-        if (!queriesToExecute.equals(queriesExecutedCopy)) {
-            // Add some more helpful information
-            Set<Query<?>> missingQueries = Sets.difference(queriesToExecute, queriesExecutedCopy);
-            Set<Query<?>> unexpectedQueries = Sets.difference(queriesExecutedCopy, queriesToExecute);
-            String message = "Missing queries: " + missingQueries + "\n" + "Unexpected queries: " + unexpectedQueries;
-            fail(message);
-        }
+        assertThat(queriesExecuted, containsInAnyOrder(queriesToExecute));
     }
 
     private InsertQuery createInsertQuery(int i) {
