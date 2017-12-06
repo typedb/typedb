@@ -335,6 +335,10 @@ public class BatchExecutorClient implements Closeable {
                 } else {
                     throw new RuntimeException("Unexpected exception while retrying, " + queryList.size() + " queries failed.", e);
                 }
+            } finally {
+                // The last 1000 requests are stored in `HystrixRequestLog`.
+                // Our requests are big, so this will help reduce memory usage.
+                queries.clear();
             }
         }
     }
