@@ -50,9 +50,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class TypeInferenceQueryTest {
@@ -66,7 +64,6 @@ public class TypeInferenceQueryTest {
     @Test
     public void testTypeInference_singleGuard() {
         GraknTx graph = testContext.tx();
-        QueryBuilder qb = graph.graql();
 
         //parent of all roles so all relations possible
         String patternString = "{$x isa noRoleEntity; ($x, $y);}";
@@ -325,13 +322,6 @@ public class TypeInferenceQueryTest {
         typeInferenceQueries(possibleTypes, subbedPattern, graph);
     }
 
-    private void typeInferenceQueries(String expectedQueryPattern, String pattern, GraknTx graph) {
-        QueryBuilder qb = graph.graql();
-        GraqlTestUtil.assertCollectionsEqual(
-                qb.match(qb.parser().parsePattern(expectedQueryPattern)).get().execute(),
-                qb.match(qb.parser().parsePattern(pattern)).get().execute());
-    }
-
     private void typeInferenceQueries(List<RelationshipType> possibleTypes, String pattern, GraknTx graph) {
         QueryBuilder qb = graph.graql();
         List<Answer> typedAnswers = typedAnswers(possibleTypes, pattern, graph);
@@ -339,19 +329,6 @@ public class TypeInferenceQueryTest {
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
-
-    /*
-    private void typeInferenceQueries(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, GraknTx graph) {
-        QueryBuilder qb = graph.graql();
-        List<Answer> typedAnswers = typedAnswers(possibleTypes, pattern, graph);
-        List<Answer> unTypedAnswers = qb.match(qb.parser().parsePattern(pattern)).get().execute();
-        List<Answer> unTypedSubbedAnswers = qb.match(qb.parser().parsePattern(subbedPattern)).get().execute();
-        assertEquals(typedAnswers.size(), unTypedAnswers.size());
-        assertEquals(typedAnswers.size(), unTypedSubbedAnswers.size());
-        GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
-        GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedSubbedAnswers);
-    }
-    */
 
     private List<Answer> typedAnswers(List<RelationshipType> possibleTypes, String pattern, GraknTx graph){
         List<Answer> answers = new ArrayList<>();
