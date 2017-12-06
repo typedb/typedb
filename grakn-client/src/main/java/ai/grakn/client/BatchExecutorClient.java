@@ -138,8 +138,11 @@ public class BatchExecutorClient implements Closeable {
                         LOG.trace("Executed {}", a.getValue());
                     }
 
+                    // This represents a query response only if it's not a "completed" message
+                    boolean isQueryResponse = !a.isOnCompleted();
+
                     // Release a query execution permit, allowing a new query to execute
-                    if (!a.isOnCompleted()) {
+                    if (isQueryResponse) {
                         queryExecutionSemaphore.release();
 
                         assert queryExecutionSemaphore.availablePermits() <= maxQueries :
