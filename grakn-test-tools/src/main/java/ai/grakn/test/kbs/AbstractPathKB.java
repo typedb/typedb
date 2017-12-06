@@ -54,13 +54,13 @@ public abstract class AbstractPathKB extends TestKB {
         Role arcTo = tx.getRole("arc-to");
 
         RelationshipType arc = tx.getRelationshipType("arc");
-        putEntity(tx, "a0", startVertex, key);
+        putEntityWithResource(tx, "a0", startVertex, key);
 
         int outputThreshold = 500;
         for(int i = 1; i <= n ; i++) {
             int m = IntMath.pow(children, i);
             for (int j = 0; j < m; j++) {
-                putEntity(tx, "a" + i + "," + j, vertex, key);
+                putEntityWithResource(tx, "a" + i + "," + j, vertex, key);
                 if (j != 0 && j % outputThreshold ==0) {
                     System.out.println(j + " entities out of " + m + " inserted");
                 }

@@ -59,7 +59,7 @@ public abstract class TestKB {
         return SampleKBContext.load(build());
     }
 
-    public static Thing putEntity(GraknTx tx, String id, EntityType type, Label key) {
+    public static Thing putEntityWithResource(GraknTx tx, String id, EntityType type, Label key) {
         Thing inst = type.addEntity();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;

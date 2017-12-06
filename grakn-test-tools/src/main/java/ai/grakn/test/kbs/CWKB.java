@@ -133,10 +133,10 @@ public class CWKB extends TestKB {
 
     @Override
     protected void buildInstances(GraknTx tx) {
-        colonelWest =  putEntity(tx, "colonelWest", person, key.getLabel());
-        Nono =  putEntity(tx, "Nono", country, key.getLabel());
-        America =  putEntity(tx, "America", country, key.getLabel());
-        Tomahawk =  putEntity(tx, "Tomahawk", rocket, key.getLabel());
+        colonelWest =  putEntityWithResource(tx, "colonelWest", person, key.getLabel());
+        Nono =  putEntityWithResource(tx, "Nono", country, key.getLabel());
+        America =  putEntityWithResource(tx, "America", country, key.getLabel());
+        Tomahawk =  putEntityWithResource(tx, "Tomahawk", rocket, key.getLabel());
 
         putResource(colonelWest, nationality, "American");
         putResource(Tomahawk, propulsion, "gsp");
