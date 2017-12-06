@@ -55,7 +55,7 @@ public interface GraknAdmin {
      * @return A concept built using the provided vertex
      */
     @CheckReturnValue
-    <T extends Concept> Optional<T> buildConcept(Vertex vertex);
+    <T extends Concept> T buildConcept(Vertex vertex);
 
     /**
      *
@@ -64,7 +64,7 @@ public interface GraknAdmin {
      * @return A {@link Concept} built using the provided {@link Edge}
      */
     @CheckReturnValue
-    <T extends Concept> Optional<T> buildConcept(Edge edge);
+    <T extends Concept> T buildConcept(Edge edge);
 
 
     /**

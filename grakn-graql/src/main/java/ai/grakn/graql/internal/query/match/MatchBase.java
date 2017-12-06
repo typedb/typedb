@@ -116,17 +116,15 @@ public class MatchBase extends AbstractMatch {
             if (element == null) {
                 throw GraqlQueryException.unexpectedResult(var);
             } else {
-                Optional<Concept> concept = buildConcept(graph.admin(), element);
-
-                if(!concept.isPresent()) return Optional.empty();
-                map.put(var, concept.get());
+                Concept concept = buildConcept(graph.admin(), element);
+                map.put(var, concept);
             }
         }
 
         return Optional.of(map);
     }
 
-    private static Optional<Concept> buildConcept(GraknAdmin graph, Element element) {
+    private static Concept buildConcept(GraknAdmin graph, Element element) {
         if (element instanceof Vertex) {
             return graph.buildConcept((Vertex) element);
         } else {
