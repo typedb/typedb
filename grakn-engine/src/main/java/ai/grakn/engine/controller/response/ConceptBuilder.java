@@ -62,18 +62,6 @@ public class ConceptBuilder {
      * @param type The {@link ai.grakn.concept.Type} to extract the {@link ai.grakn.concept.Thing}s from
      * @return The wrapper of the {@link ai.grakn.concept.Thing}s
      */
-    public static Things buildThings(ai.grakn.concept.Type type){
-        return buildThings(type, 0, 100);
-    }
-
-    public static Things buildThingsWithOffset(ai.grakn.concept.Type type, int offset){
-        return buildThings(type, offset, 100);
-    }
-
-    public static Things buildThingsWithLimit(ai.grakn.concept.Type type, int limit){
-        return buildThings(type, 0, limit);
-    }
-
     public static Things buildThings(ai.grakn.concept.Type type, int offset, int limit){
         Link selfLink = Link.createInstanceLink(type);
         Link next = Link.createInstanceLink(type, offset + limit, limit);
@@ -95,15 +83,7 @@ public class ConceptBuilder {
         EmbeddedType type = EmbeddedType.create(thing.type());
         Link attributes = Link.createAttributeLink(thing);
         Link keys = Link.createKeyLink(thing);
-
-        Set<RolePlayer> relationships = new HashSet<>();
-        thing.plays().forEach(role -> {
-            Link roleWrapper = Link.create(role);
-            thing.relationships(role).forEach(relationship -> {
-                Link relationshipWrapper = Link.create(relationship);
-                relationships.add(RolePlayer.create(roleWrapper, relationshipWrapper));
-            });
-        });
+        Link relationships = Link.createRelationshipLink(thing);
 
         String explanation = null;
         if(thing.isInferred()) explanation = Graql.match(ConceptConverter.toPattern(thing)).get().toString();
@@ -138,15 +118,15 @@ public class ConceptBuilder {
         }
     }
 
-    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, EmbeddedType type, Link attributes, Link keys, Set<RolePlayer> relationships, String explanation){
+    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, EmbeddedType type, Link attributes, Link keys, Link relationships, String explanation){
         return Entity.create(entity.getId(), selfLink, type, attributes, keys, relationships, entity.isInferred(), explanation);
     }
 
-    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, EmbeddedType type, Link attributes, Link keys, Set<RolePlayer> relationships, String explanation){
+    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, EmbeddedType type, Link attributes, Link keys, Link relationships, String explanation){
         return Attribute.create(attribute.getId(), selfLink, type, attributes, keys, relationships, attribute.isInferred(), explanation, attribute.type().getDataType().getName(), attribute.getValue().toString());
     }
 
-    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, EmbeddedType type, Link attributes, Link keys, Set<RolePlayer> relationships, String explanation){
+    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, EmbeddedType type, Link attributes, Link keys, Link relationships, String explanation){
         //Get all the role players and roles part of this relationship
         Set<RolePlayer> roleplayers = new HashSet<>();
         relationship.allRolePlayers().forEach((role, things) -> {

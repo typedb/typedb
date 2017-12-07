@@ -24,11 +24,14 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
+import ai.grakn.engine.Jacksonisable;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.response.EmbeddedAttribute;
+import ai.grakn.engine.controller.response.Link;
+import ai.grakn.engine.controller.response.RolePlayer;
 import ai.grakn.engine.controller.response.Things;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -93,8 +96,24 @@ public class ConceptController {
 
         spark.get(WebPath.CONCEPT_ATTRIBUTES, this::getAttributes);
         spark.get(WebPath.CONCEPT_KEYS, this::getKeys);
+        spark.get(WebPath.CONCEPT_RELATIONSHIPS, this::getRelationships);
 
         spark.get(WebPath.TYPE_INSTANCES, this::getTypeInstances);
+    }
+
+    private String getRelationships(Request request, Response response) throws JsonProcessingException {
+        //TODO: Figure out how to incorporate offset and limit
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> {
+            Set<Role> roles = thing.plays().collect(Collectors.toSet());
+            return roles.stream().flatMap(role -> {
+                Link roleWrapper = Link.create(role);
+                return thing.relationships(role).map(relationship -> {
+                    Link relationshipWrapper = Link.create(relationship);
+                    return RolePlayer.create(roleWrapper, relationshipWrapper);
+                });
+            });
+        };
+        return this.getConceptCollection(request, response, collector);
     }
 
     private String getKeys(Request request, Response response) throws JsonProcessingException {
@@ -106,6 +125,23 @@ public class ConceptController {
     }
 
     private String getAttributes(Request request, Response response, boolean isKey) throws JsonProcessingException {
+        int offset = getOffset(request);
+        int limit = getLimit(request);
+
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> {
+            Stream<Attribute<?>> attributes;
+            if(isKey){
+                attributes = thing.keys();
+            } else {
+                attributes = thing.attributes();
+            }
+            return attributes.skip(offset).limit(limit).map(EmbeddedAttribute::create);
+        };
+
+        return this.getConceptCollection(request, response, collector);
+    }
+
+    private <X> String getConceptCollection(Request request, Response response, Function<X, Stream<Jacksonisable>> collector) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
@@ -120,15 +156,7 @@ public class ConceptController {
                 return "[]";
             }
 
-            //Get the attributes including keys if needed
-            Stream<Attribute<?>> attributes;
-            if(isKey){
-                attributes = concept.asThing().keys();
-            } else {
-                attributes = concept.asThing().attributes();
-            }
-
-            return objectMapper.writeValueAsString(attributes.map(EmbeddedAttribute::create).collect(Collectors.toSet()));
+            return objectMapper.writeValueAsString(collector.apply((X) concept).collect(Collectors.toList()));
         }
     }
 
@@ -138,8 +166,8 @@ public class ConceptController {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
 
-        Optional<String> offset = queryParameter(request, OFFSET_PARAMETER);
-        Optional<String> limit = queryParameter(request, LIMIT_PARAMETER);
+        int offset = getOffset(request);
+        int limit = getLimit(request);
 
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = instancesGetTimer.time()) {
             Type type = tx.getType(label);
@@ -149,34 +177,24 @@ public class ConceptController {
                 return "";
             }
 
-            Stream<? extends Thing> instances = type.instances();
-            int offsetValue = -1;
-            int limitValue = -1;
-            if(offset.isPresent()) {
-                offsetValue = Integer.parseInt(offset.get());
-                instances.skip(offsetValue);
-            }
-
-            if(limit.isPresent()){
-                limitValue = Integer.parseInt(limit.get());
-                instances.limit(limitValue);
-            }
-
             //Get the wrapper
-            Things things;
-            if(offset.isPresent() && limit.isPresent()){
-                things = ConceptBuilder.buildThings(type, offsetValue, limitValue);
-            } else if(offset.isPresent()){
-                things = ConceptBuilder.buildThingsWithOffset(type, offsetValue);
-            } else if(limit.isPresent()){
-                things = ConceptBuilder.buildThingsWithLimit(type, limitValue);
-            } else {
-                things = ConceptBuilder.buildThings(type);
-            }
-
+            Things things = ConceptBuilder.buildThings(type, offset, limit);
             response.status(SC_OK);
             return objectMapper.writeValueAsString(things);
         }
+    }
+
+    private int getOffset(Request request){
+        return getIntegerQueryParameter(request, OFFSET_PARAMETER, 0);
+    }
+
+    private int getLimit(Request request){
+        return getIntegerQueryParameter(request, LIMIT_PARAMETER, 100);
+    }
+
+    private int getIntegerQueryParameter(Request request, String parameter, int defaultValue){
+        Optional<String> value = queryParameter(request, parameter);
+        return value.map(Integer::parseInt).orElse(defaultValue);
     }
 
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {

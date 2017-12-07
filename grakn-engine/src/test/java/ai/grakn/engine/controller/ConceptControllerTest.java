@@ -29,9 +29,11 @@ import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.response.EmbeddedAttribute;
 import ai.grakn.engine.controller.response.Entity;
 import ai.grakn.engine.controller.response.EntityType;
+import ai.grakn.engine.controller.response.Link;
 import ai.grakn.engine.controller.response.Relationship;
 import ai.grakn.engine.controller.response.RelationshipType;
 import ai.grakn.engine.controller.response.Role;
+import ai.grakn.engine.controller.response.RolePlayer;
 import ai.grakn.engine.controller.response.Rule;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -54,6 +56,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -140,6 +143,31 @@ public class ConceptControllerTest {
 
             tx.commit();
         }
+    }
+
+    @Test
+    public void whenGettingRelationships_EnsureRolePlayersAreReturned() throws IOException {
+        //Get Expected Relationships
+        Set<RolePlayer> relationshipsExpected = new HashSet<>();
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+            entity.plays().forEach(role -> {
+                Link roleWrapper = Link.create(role);
+                entity.relationships(role).forEach(relationship -> {
+                    Link relationshipWrapper = Link.create(relationship);
+                    relationshipsExpected.add(RolePlayer.create(roleWrapper, relationshipWrapper));
+                });
+            });
+        }
+
+        //Make the request
+        String request = entityWrapper.relationships().id();
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.getStatusCode());
+
+        //Check relationships are embedded
+        List<RolePlayer> relationships = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<RolePlayer>>(){});
+        assertEquals(relationshipsExpected.size(), relationships.size());
+        assertTrue(relationships.containsAll(relationshipsExpected));
     }
 
     @Test

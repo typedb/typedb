@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
-import java.util.Set;
 
 /**
  * <p>
@@ -50,7 +49,7 @@ public abstract class Attribute extends Thing {
             @JsonProperty("type") EmbeddedType type,
             @JsonProperty("attributes") Link attributes,
             @JsonProperty("keys") Link keys,
-            @JsonProperty("relationships") Set<RolePlayer> relationships,
+            @JsonProperty("relationships") Link relationships,
             @JsonProperty("inferred") boolean inferred,
             @Nullable @JsonProperty("explanation-query")  String explanation,
             @JsonProperty("data-type") String dataType,
