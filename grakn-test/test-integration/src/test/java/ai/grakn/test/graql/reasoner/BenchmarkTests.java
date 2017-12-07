@@ -80,11 +80,11 @@ public class BenchmarkTests {
         }
     }
 
-    private void loadEntities(String entityLabel, int N, GraknClient graknClient){
+    private void loadEntities(String entityLabel, int N, GraknClient graknClient, Keyspace keyspace){
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()){
             for(int i = 0 ; i < N ;i++){
                 InsertQuery entityInsert = Graql.insert(var().asUserDefined().isa(entityLabel));
-                loader.add(entityInsert, keyspace).subscribe(System.out::println);
+                loader.add(entityInsert, keyspace).subscribe();
             }
         }
     }
@@ -119,7 +119,7 @@ public class BenchmarkTests {
                         .isa(Graql.label(relationType.getLabel()))
                         .and(fromRolePlayer.asUserDefined().id(instances[from]))
                         .and(toRolePlayer.asUserDefined().id(instances[to]));
-                loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace).subscribe(System.out::println);
+                loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace).subscribe();
             }
             tx.close();
         }
@@ -129,7 +129,7 @@ public class BenchmarkTests {
         final GraknClient graknClient = new GraknClient(engine.uri());
         final int M = N/5;
         loadOntology("multiJoin.gql", session);
-        loadEntities("genericEntity", M, graknClient);
+        loadEntities("genericEntity", M, graknClient, keyspace);
         loadRelations("genericEntity", "fromRole", "toRole", "C2", M, session, graknClient, keyspace);
         loadRelations("genericEntity", "fromRole", "toRole", "C3", M, session, graknClient, keyspace);
         loadRelations("genericEntity", "fromRole", "toRole", "C4", M, session, graknClient, keyspace);
@@ -140,7 +140,7 @@ public class BenchmarkTests {
     private void loadTransitivityData(int N){
         final GraknClient graknClient = new GraknClient(engine.uri());
         loadOntology("linearTransitivity.gql", session);
-        loadEntities("a-entity", N, graknClient);
+        loadEntities("a-entity", N, graknClient, keyspace);
         loadRelations("a-entity", "Q-from", "Q-to", "Q", N, session, graknClient, keyspace);
     }
 
