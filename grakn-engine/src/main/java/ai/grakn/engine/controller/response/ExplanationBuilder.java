@@ -29,7 +29,6 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
