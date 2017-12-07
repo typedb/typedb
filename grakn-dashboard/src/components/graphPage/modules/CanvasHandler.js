@@ -18,11 +18,10 @@
 /* @flow */
 
 import Parser from '../../../js/Parser/Parser';
-import * as Utils from '../../../js/Parser/APIUtils';
 import EngineClient from '../../../js/EngineClient';
-import * as API from '../../../js/util/HALTerms';
 import { EventHub } from '../../../js/state/graphPageState';
 import CanvasEvents from './CanvasEvents';
+import Visualiser from '../../../js/visualiser/Visualiser';
 
 function clearGraph() {
   visualiser.clearGraph();
@@ -70,7 +69,7 @@ function filterEdges(edges) {
 
   // (Helper map {ImplicitRelationshipID: AttributeTypeID})
   const toAttrTypeMap = edges
-    .filter(edge => visualiser.getNode(edge.to).baseType === 'ATTRIBUTE_TYPE')
+    .filter(edge => visualiser.getNode(edge.to) && visualiser.getNode(edge.to).baseType === 'ATTRIBUTE_TYPE')
     .reduce((map, current) => Object.assign(map, { [current.from]: current.to }), {});
   // Set with all attribute types IDs
   const attrTypeSet = new Set(Object.values(toAttrTypeMap));
@@ -89,6 +88,21 @@ function initialise(graphElement: Object) {
   visualiser.render(graphElement);
 }
 
+function lazyLoadAttributes(nodes) {
+  nodes
+    .filter(x => !x.inferred)
+    .filter(x => !Array.isArray(x.attributes)) // filter out nodes with empty array ad 'attributes'
+    .forEach((node) => {
+      EngineClient
+        .request({ url: node.attributes })
+        .then((resp) => {
+          const attributes = Parser.parseAttributes(resp);
+          const label = Visualiser.generateLabel(node.type, attributes, node.label, node.baseType);          
+          visualiser.updateNode({ id: node.id, attributes, label });
+        });
+    });
+}
+
 function onGraphResponse(resp: string) {
   const responseObject = JSON.parse(resp);
   const parsedResponse = Parser.parseResponse(responseObject);
@@ -98,8 +112,12 @@ function onGraphResponse(resp: string) {
     return;
   }
 
+  // Add nodes and edges to canvas
   filterNodes(parsedResponse.nodes).forEach(node => visualiser.addNode(node));
   filterEdges(parsedResponse.edges).forEach(edge => visualiser.addEdge(edge));
+
+  // Lazy load attributes once nodes are in the graph
+  lazyLoadAttributes(parsedResponse.nodes);
 
   // Never visualise relationships without roleplayers
   filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
@@ -135,6 +153,11 @@ function loadRelationshipRolePlayers(rel) {
     });
 }
 
+function explainConcept(node) {
+  EngineClient.getExplanation(node.explanationQuery)
+    .then(onGraphResponse);
+}
+
 function loadRelationshipTypeRolePlayers(rel) {
   const promises = rel.relates.map(x => EngineClient.request({ url: x }));
   Promise.all(promises)
@@ -167,6 +190,14 @@ function addAttributeAndEdgeToInstance(instanceId, res) {
   visualiser.addEdge({ from: instanceId, to: JSON.parse(res).id, label: 'has' });
 }
 
+function loadEntityRelationships(node) {
+  EngineClient.request({ url: node.relationships })
+    .then((relationships) => {
+      JSON.parse(relationships).map(rel => EngineClient.request({ url: rel.thing }))
+        .forEach((promise) => { promise.then(onGraphResponse); });
+    });
+}
+
 function showNeighbours(node: Object) {
   const baseType = node.baseType;
   switch (baseType) {
@@ -175,9 +206,7 @@ function showNeighbours(node: Object) {
       loadRelationshipRolePlayers(node);
       break;
     case 'ENTITY':
-      node.relationships
-        .map(rel => EngineClient.request({ url: rel.thing }))
-        .forEach((promise) => { promise.then(onGraphResponse); });
+      loadEntityRelationships(node);
       break;
     case 'RELATIONSHIP_TYPE':
       loadRelationshipTypeRolePlayers(node);
@@ -200,5 +229,5 @@ function showAttributes(node: Object) {
 
 
 export default {
-  initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners, showNeighbours, showAttributes,
+  initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners, showNeighbours, showAttributes, explainConcept,
 };

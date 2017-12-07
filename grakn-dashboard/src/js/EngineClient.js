@@ -127,6 +127,14 @@ export default {
       data: query,
     });
   },
+
+  getExplanation(query:string) {
+    // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
+    return this.request({
+      url: `/kb/${User.getCurrentKeySpace()}/explain?query=${query}`,
+      requestType: 'GET',
+    });
+  },
   /**
              * Send graql query to Engine, returns an array of HAL objects.
              */

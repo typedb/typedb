@@ -58,7 +58,6 @@ public class GraqlControllerTest {
     private Response sendQuery(String query,
                                String acceptType,
                                boolean reasoner,
-                               int limitEmbedded,
                                boolean multi) {
         return sendQuery(query, acceptType, reasoner, sampleKB.tx().keyspace().getValue(), multi);
     }
@@ -75,6 +74,13 @@ public class GraqlControllerTest {
                 .queryParam(DEFINE_ALL_VARS, true)
                 .accept(acceptType)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace));
+    }
+
+    private Response sendExplanationQuery(String query, String keyspace) {
+        return RestAssured.with()
+                .body(query)
+                .accept(APPLICATION_JSON)
+                .get(REST.resolveTemplate(REST.WebPath.KEYSPACE_EXPLAIN, keyspace));
     }
 
 
@@ -113,6 +119,20 @@ public class GraqlControllerTest {
     }
 
     @Test
+    public void whenExecutingExplainQuery_responseIsValid() {
+        List<Json> json = Json.read(sendQuery("match ($x,$y) isa cousins; offset 0; limit 1; get;", APPLICATION_JSON, true, genealogyKB.tx().keyspace().getValue(),false).body().asString()).
+                asJsonList();
+        String explQuery = json.get(0).asJsonMap().values().stream()
+                .filter(x->x.at("base-type").asString().equals("RELATIONSHIP")).findFirst().get()
+                .asJsonMap().get("explanation-query").asString();
+        List<Json> explanation = Json.read(sendExplanationQuery(explQuery,genealogyKB.tx().keyspace().getValue()).body().asString()).
+                asJsonList();
+        System.out.println("stop");
+        assertEquals(3, explanation.size());
+
+    }
+
+    @Test
     public void testInsertQuery() {
         Response resp = sendQuery("insert $x isa movie;");
         try {
@@ -138,7 +158,7 @@ public class GraqlControllerTest {
     public void whenRunningMultiIdempotentInsertQuery_JsonResponseIsTheSameAsJavaGraql() {
         String single = "insert $x label movie;";
         String queryString = single + "\n" + single;
-        Response resp = sendQuery(queryString, APPLICATION_JSON, true, -1, true);
+        Response resp = sendQuery(queryString, APPLICATION_JSON, true, sampleKB.tx().keyspace().getValue(), true);
         resp.then().statusCode(200);
         sampleKB.rollback();
         Stream<Query<?>> query = sampleKB.tx().graql().parser().parseList(queryString);
@@ -172,8 +192,7 @@ public class GraqlControllerTest {
     @Test
     public void whenMatchingRules_ResponseStatusIs200() {
         String queryString = "match $x sub " + Schema.MetaSchema.RULE.getLabel().getValue() + "; get;";
-        int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_JSON, false, limitEmbedded, false);
+        Response resp = sendQuery(queryString, APPLICATION_JSON);
         resp.then().statusCode(200);
     }
 

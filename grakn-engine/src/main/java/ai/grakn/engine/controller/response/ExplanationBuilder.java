@@ -34,23 +34,23 @@ import java.util.List;
 
 /**
  * <p>
- *     Builds the explanation for a given series of {@link Answer}s
+ * Builds the explanation for a given series of {@link Answer}s
  * </p>
  *
  * @author Marco Scoppetta
  */
 public class ExplanationBuilder {
 
-    public static List<Answer> buildExplanation(Collection<ai.grakn.graql.admin.Answer> answers, Printer printer) {
+    public static List<Answer> buildExplanation(ai.grakn.graql.admin.Answer queryAnswer, Printer printer) {
         final List<Answer> explanation = new ArrayList<>();
-        answers.forEach(answer -> {
+        queryAnswer.getExplanation().getAnswers().forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();
             Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
             List<ai.grakn.graql.admin.Answer> userDefinedAnswers = ReasonerQueries.atomic(atom.rewriteWithRelationVariable()).getQuery().execute();
             ai.grakn.graql.admin.Answer inferredAnswer = new QueryAnswer();
 
             if (!userDefinedAnswers.isEmpty()) {
-                inferredAnswer =  userDefinedAnswers.get(0);
+                inferredAnswer = userDefinedAnswers.get(0);
             } else if (expl.isRuleExplanation()) {
                 Atom headAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
 

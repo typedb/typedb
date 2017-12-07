@@ -39,6 +39,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
@@ -75,11 +76,13 @@ import java.util.stream.Stream;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.LOADING_DATA;
+import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
@@ -134,18 +137,18 @@ public class GraqlController {
     @Path("/kb/{keyspace}/explain")
     @ApiOperation(value = "Execute an arbitrary Graql query and get the explanation from the results")
     @ApiImplicitParams({
-            @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "body"),
+            @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "query"),
     })
     private String explainGraql(Request request, Response response) throws RetryException, ExecutionException {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
-        String queryString = mandatoryBody(request);
+        String queryString = mandatoryQueryParameter(request, QUERY);
 
         response.status(SC_OK);
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
-                List<Answer> answers = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute();
-                return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answers, printer));
+                Answer answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new QueryAnswer());
+                return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer, printer));
             }
         });
     }
@@ -180,13 +183,13 @@ public class GraqlController {
         boolean skipSerialisation = parseBoolean(queryParameter(request, LOADING_DATA).orElse("false"));
 
         //Check the transaction type to use
-        GraknTxType txType = Requests.queryParameter(request, TX_TYPE)
+        GraknTxType txType = queryParameter(request, TX_TYPE)
                 .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
 
         //This is used to determine the response format
         //TODO: Maybe we should really try to stick with one representation? This would require dashboard console interpreting the json representation
         final String acceptType;
-        if(APPLICATION_TEXT.equals(Requests.getAcceptType(request))) {
+        if (APPLICATION_TEXT.equals(Requests.getAcceptType(request))) {
             acceptType = APPLICATION_TEXT;
         } else {
             acceptType = APPLICATION_JSON;
@@ -198,6 +201,7 @@ public class GraqlController {
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
+
                 System.out.println("RUNNING: " + queryString);
                 QueryBuilder builder = tx.graql();
 
@@ -216,16 +220,16 @@ public class GraqlController {
     private String executeFunctionWithRetrying(Callable<String> callable) throws RetryException, ExecutionException {
         try {
             Retryer<String> retryer = RetryerBuilder.<String>newBuilder()
-                .retryIfExceptionOfType(TemporaryWriteException.class)
-                .withRetryListener(retryLogger)
-                .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
-                .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
-                .build();
+                    .retryIfExceptionOfType(TemporaryWriteException.class)
+                    .withRetryListener(retryLogger)
+                    .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
+                    .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
+                    .build();
 
             return retryer.call(callable);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            if(cause instanceof RuntimeException) {
+            if (cause instanceof RuntimeException) {
                 throw (RuntimeException) cause;
             } else {
                 throw e;
@@ -233,10 +237,10 @@ public class GraqlController {
         }
     }
 
-    private static class RetryLogger implements RetryListener{
+    private static class RetryLogger implements RetryListener {
         @Override
         public <V> void onRetry(Attempt<V> attempt) {
-            if(attempt.hasException()) {
+            if (attempt.hasException()) {
                 LOG.warn("Retrying transaction after {" + attempt.getAttemptNumber() + "} attempts due to exception {" + attempt.getExceptionCause().getMessage() + "}");
             }
         }
@@ -260,7 +264,7 @@ public class GraqlController {
     /**
      * Execute a query and return a response in the format specified by the request.
      *
-     * @param tx    open transaction to current graph
+     * @param tx          open transaction to current graph
      * @param queryString read query to be executed
      * @param acceptType  response format that the client will accept
      * @param multi       execute multiple statements
@@ -269,21 +273,21 @@ public class GraqlController {
     private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
         Printer printer = this.printer;
 
-        if(APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
+        if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
 
-        String formatted = "";
+        String formatted;
         boolean commitQuery = true;
         if (multi) {
             Stream<Query<?>> query = parser.parseList(queryString);
             List<?> collectedResults = query.map(this::executeAndMonitor).collect(Collectors.toList());
-            if(skipSerialisation) {
-                formatted = mapper.writeValueAsString(new Object [collectedResults.size()]);
+            if (skipSerialisation) {
+                formatted = mapper.writeValueAsString(new Object[collectedResults.size()]);
             } else {
                 formatted = printer.graqlString(collectedResults);
             }
         } else {
             Query<?> query = parser.parseQuery(queryString);
-            if(skipSerialisation){
+            if (skipSerialisation) {
                 formatted = "";
             } else {
                 formatted = printer.graqlString(executeAndMonitor(query));
@@ -300,7 +304,7 @@ public class GraqlController {
             GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter
     ) {
         Optional<CommitLog> result = graph.admin().commitSubmitNoLogs();
-        if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
+        if (result.isPresent()) { // Submit more tasks if commit resulted in created commit logs
             CommitLog logs = result.get();
 
             //Update the attributes which need to be merged

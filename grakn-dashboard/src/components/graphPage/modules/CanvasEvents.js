@@ -18,7 +18,6 @@
 
 
 import EngineClient from '../../../js/EngineClient';
-import * as API from '../../../js/util/HALTerms';
 import { EventHub } from '../../../js/state/graphPageState';
 import CanvasHandler from './CanvasHandler';
 
@@ -44,8 +43,10 @@ function doubleClick(param) {
 
   if (eventKeys.shiftKey) {
     CanvasHandler.showAttributes(nodeObj);
-  } else {
+  } else if (!nodeObj.inferred) {
     CanvasHandler.showNeighbours(nodeObj);
+  } else {
+    CanvasHandler.explainConcept(nodeObj);
   }
 }
 

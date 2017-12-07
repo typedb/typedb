@@ -18,7 +18,7 @@
 
 /* @flow */
 
-import { KEY_BASE_TYPE, RELATIONSHIP_TYPE, RELATIONSHIP, AT_ID, KEY_ID, conceptProperties, instanceAttributes } from './APIUtils';
+import { KEY_BASE_TYPE, RELATIONSHIP_TYPE, RELATIONSHIP, AT_ID, KEY_ID, conceptProperties, parseAttributes } from './APIUtils';
 
 
 /**
@@ -44,7 +44,7 @@ function flat(array) {
 function newNode(nodeObj:Object) {
   const properties = conceptProperties(nodeObj);
   // TODO: decide whether list attributes also on meta type node for now we just set empty array
-  const attributes = ('label' in nodeObj) ? [] : instanceAttributes(nodeObj);
+  const attributes = ('label' in nodeObj) ? [] : nodeObj.attributes;
   const relationships = nodeObj.relationships || [];
   const roleplayers = nodeObj.roleplayers || [];
   const relates = nodeObj.relates || [];
@@ -127,4 +127,5 @@ export default {
 
     return { nodes, edges: schemaEdges.concat(instanceEdges) };
   },
+  parseAttributes(data) { return parseAttributes(JSON.parse(data)); },
 };
