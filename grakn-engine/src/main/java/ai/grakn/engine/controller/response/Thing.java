@@ -21,7 +21,6 @@ package ai.grakn.engine.controller.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.annotation.Nullable;
-import java.util.Set;
 
 /**
  * <p>
@@ -42,7 +41,7 @@ public abstract class Thing extends Concept {
     public abstract Link keys();
 
     @JsonProperty
-    public abstract Set<RolePlayer> relationships();
+    public abstract Link relationships();
 
     @JsonProperty
     public abstract boolean inferred();

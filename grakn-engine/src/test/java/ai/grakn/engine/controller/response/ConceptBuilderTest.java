@@ -26,7 +26,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -67,17 +66,9 @@ public class ConceptBuilderTest {
         Link keyWrapperIds = entityWrapper.keys();
         assertEquals(keyIds, keyWrapperIds);
 
-        Set<RolePlayer> relationshipIds = new HashSet<>();
-        entity.plays().forEach(role -> {
-            Link roleWrapper = Link.create(role);
-            entity.relationships(role).forEach(relationship -> {
-                Link relationshipWrapper = Link.create(relationship);
-                relationshipIds.add(RolePlayer.create(roleWrapper, relationshipWrapper));
-            });
-        });
-
-        Set<RolePlayer> relationshipWrapperIds = entityWrapper.relationships();
-        assertEquals(relationshipIds, relationshipWrapperIds);
+        Link relationshipLinkExpected = Link.createRelationshipLink(entity);
+        Link relationshipLink = entityWrapper.relationships();
+        assertEquals(relationshipLinkExpected, relationshipLink);
     }
 
     @Test

@@ -50,7 +50,7 @@ public abstract class Attribute extends Thing {
             @JsonProperty("type") EmbeddedType type,
             @JsonProperty("attributes") Link attributes,
             @JsonProperty("keys") Link keys,
-            @JsonProperty("relationships") Set<RolePlayer> relationships,
+            @JsonProperty("relationships") Link relationships,
             @JsonProperty("inferred") boolean inferred,
             @Nullable @JsonProperty("explanation-query")  String explanation,
             @JsonProperty("data-type") String dataType,
