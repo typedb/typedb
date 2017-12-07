@@ -34,21 +34,21 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class MatrixKB extends TestKB {
+public class DualLinearTransitivityMatrixKB extends TestKB {
 
     private final static Label key = Label.of("index");
-    private final static String gqlFile = "matrix-test.gql";
+    private final static String gqlFile = "dualLinearTransitivity.gql";
 
     private final int n;
     private final int m;
 
-    public MatrixKB(int n, int m){
+    public DualLinearTransitivityMatrixKB(int n, int m){
         this.m = m;
         this.n = n;
     }
 
     public static SampleKBContext context(int n, int m) {
-        return new MatrixKB(n, m).makeContext();
+        return new DualLinearTransitivityMatrixKB(n, m).makeContext();
     }
 
     @Override
@@ -72,15 +72,15 @@ public class MatrixKB extends TestKB {
 
         ConceptId[] aInstancesIds = new ConceptId[m+1];
         ConceptId[][] bInstancesIds = new ConceptId[m][n+1];
-        aInstancesIds[0] = putEntity(graph, "a0", graph.getEntityType("start"), key).getId();
-        aInstancesIds[m] = putEntity(graph, "a" + m, graph.getEntityType("end"), key).getId();
+        aInstancesIds[0] = putEntityWithResource(graph, "a0", graph.getEntityType("start"), key).getId();
+        aInstancesIds[m] = putEntityWithResource(graph, "a" + m, graph.getEntityType("end"), key).getId();
         for(int i = 1 ; i < m ;i++) {
-            aInstancesIds[i] = putEntity(graph, "a" + i, aEntity, key).getId();
+            aInstancesIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).getId();
         }
 
         for(int i = 1 ; i < m ;i++) {
             for (int j = 1; j <= n; j++) {
-                bInstancesIds[i][j] = putEntity(graph, "b" + i + j, bEntity, key).getId();
+                bInstancesIds[i][j] = putEntityWithResource(graph, "b" + i + j, bEntity, key).getId();
             }
         }
 

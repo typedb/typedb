@@ -66,10 +66,10 @@ public class TailRecursionKB extends TestKB {
         EntityType bEntity = graph.getEntityType("b-entity");
         RelationshipType q = graph.getRelationshipType("Q");
 
-        putEntity(graph, "a0", aEntity, key);
+        putEntityWithResource(graph, "a0", aEntity, key);
         for(int i = 1 ; i <= m + 1 ;i++) {
             for (int j = 1; j <= n; j++) {
-                putEntity(graph, "b" + i + "," + j, bEntity, key);
+                putEntityWithResource(graph, "b" + i + "," + j, bEntity, key);
             }
         }
 
