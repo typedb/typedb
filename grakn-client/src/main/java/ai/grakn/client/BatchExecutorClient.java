@@ -127,9 +127,9 @@ public class BatchExecutorClient implements Closeable {
         UUID queryId = queryWithId.id;
 
         // Acquire permission to execute a query - will block until a permit is available
-        LOG.trace("Acquiring a permit for %s (%s available)", queryId, queryExecutionSemaphore.availablePermits());
+        LOG.trace("Acquiring a permit for {} ({} available)", queryId, queryExecutionSemaphore.availablePermits());
         queryExecutionSemaphore.acquireUninterruptibly();
-        LOG.trace("Acquired a permit for %s (%s available)", queryId, queryExecutionSemaphore.availablePermits());
+        LOG.trace("Acquired a permit for {} ({} available)", queryId, queryExecutionSemaphore.availablePermits());
 
         Context context = addTimer.time();
         Observable<QueryResponse> observable = new QueriesObservableCollapser(queryWithId, keyspace,
@@ -151,7 +151,7 @@ public class BatchExecutorClient implements Closeable {
                         queryExecutionSemaphore.release();
 
                         int availablePermits = queryExecutionSemaphore.availablePermits();
-                        LOG.trace("Released a permit for %s (%s available)", queryId, availablePermits);
+                        LOG.trace("Released a permit for {} ({} available)", queryId, availablePermits);
 
                         assert queryExecutionSemaphore.availablePermits() <= maxQueries :
                                 "Number of available permits should never exceed max queries";
@@ -181,9 +181,9 @@ public class BatchExecutorClient implements Closeable {
 
         // Acquire ALL permits. Only possible when all the permits are released.
         // This means this method will only return when ALL the queries are completed.
-        LOG.trace("Acquiring all %s permits (%s available)", maxQueries, queryExecutionSemaphore.availablePermits());
+        LOG.trace("Acquiring all {} permits ({} available)", maxQueries, queryExecutionSemaphore.availablePermits());
         queryExecutionSemaphore.acquireUninterruptibly(maxQueries);
-        LOG.trace("Acquired all %s permits (%s available)", maxQueries, queryExecutionSemaphore.availablePermits());
+        LOG.trace("Acquired all {} permits ({} available)", maxQueries, queryExecutionSemaphore.availablePermits());
 
         context.close();
         executor.shutdownNow();
