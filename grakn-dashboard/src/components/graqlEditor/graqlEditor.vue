@@ -36,17 +36,23 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div class="right-side">
           <scroll-button :editorLinesNumber="editorLinesNumber" :codeMirror="codeMirror"></scroll-button>
           <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries" :state="state"></add-current-query>
-            <button @click="runQuery" class="btn"><i
-                          class="pe-7s-angle-right-circle"></i></button>
-            <button @click="clearGraph" @click.shift="clearGraphAndPage" class="btn"><i class="pe-7s-close-circle"></i>
-                          </button>
-            <query-settings :state="state"></query-settings>
+            <div class="right-buttons">
+              <button @click="runQuery" class="btn"><i class="pe-7s-angle-right-circle"></i></button>
+              <button @click="clearGraph" @click.shift="clearGraphAndPage" class="btn"><i class="pe-7s-close-circle"></i></button>
+              <query-settings :state="state"></query-settings>
+              <spinner></spinner>
+            </div>
         </div>
     </div>
 </transition>
 </template>
 
 <style scoped>
+.right-buttons{
+  position: relative;
+  display: inline-flex;
+}
+
 span {
     margin-right: 3px;
 }
@@ -117,6 +123,8 @@ import TypesPanel from './typesPanel.vue';
 import MessagePanel from './messagePanel.vue';
 import QuerySettings from './querySettings.vue';
 import ScrollButton from './scrollButton.vue';
+import Spinner from '../Spinner.vue';
+
 
 export default {
   name: 'GraqlEditor',
@@ -127,6 +135,7 @@ export default {
     MessagePanel,
     QuerySettings,
     ScrollButton,
+    Spinner
   },
   props: ['errorMessage', 'errorPanelClass'],
   data() {
