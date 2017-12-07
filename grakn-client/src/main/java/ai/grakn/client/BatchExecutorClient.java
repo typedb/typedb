@@ -210,7 +210,7 @@ public class BatchExecutorClient implements Closeable {
         private int maxRetries = 5;
         private int threadPoolCoreSize = 8;
         private int timeoutMs = 60_000;
-        private int maxQueries = 1_000_000;
+        private int maxQueries = 10_000;
         private MetricRegistry metricRegistry = new MetricRegistry();
 
         private Builder() {
