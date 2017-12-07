@@ -139,7 +139,7 @@ public class Migrator {
                     });
         }
 
-        LOG.info("Loaded {} statements", queriesExecuted);
+        System.out.println("Loaded " + queriesExecuted + " statements");
     }
 
     private void subscribeToReportOutcome(
