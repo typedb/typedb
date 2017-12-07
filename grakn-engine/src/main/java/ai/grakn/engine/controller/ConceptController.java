@@ -24,7 +24,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
@@ -111,6 +110,9 @@ public class ConceptController {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
 
+        int offset = getOffset(request);
+        int limit = getLimit(request);
+
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
             ai.grakn.concept.Concept concept = tx.getConcept(conceptId);
 
@@ -127,6 +129,7 @@ public class ConceptController {
             } else {
                 attributes = concept.asThing().attributes();
             }
+            attributes = attributes.skip(offset).limit(limit);
 
             return objectMapper.writeValueAsString(attributes.map(EmbeddedAttribute::create).collect(Collectors.toSet()));
         }
@@ -138,8 +141,8 @@ public class ConceptController {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
 
-        Optional<String> offset = queryParameter(request, OFFSET_PARAMETER);
-        Optional<String> limit = queryParameter(request, LIMIT_PARAMETER);
+        int offset = getOffset(request);
+        int limit = getLimit(request);
 
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = instancesGetTimer.time()) {
             Type type = tx.getType(label);
@@ -149,34 +152,24 @@ public class ConceptController {
                 return "";
             }
 
-            Stream<? extends Thing> instances = type.instances();
-            int offsetValue = -1;
-            int limitValue = -1;
-            if(offset.isPresent()) {
-                offsetValue = Integer.parseInt(offset.get());
-                instances.skip(offsetValue);
-            }
-
-            if(limit.isPresent()){
-                limitValue = Integer.parseInt(limit.get());
-                instances.limit(limitValue);
-            }
-
             //Get the wrapper
-            Things things;
-            if(offset.isPresent() && limit.isPresent()){
-                things = ConceptBuilder.buildThings(type, offsetValue, limitValue);
-            } else if(offset.isPresent()){
-                things = ConceptBuilder.buildThingsWithOffset(type, offsetValue);
-            } else if(limit.isPresent()){
-                things = ConceptBuilder.buildThingsWithLimit(type, limitValue);
-            } else {
-                things = ConceptBuilder.buildThings(type);
-            }
-
+            Things things = ConceptBuilder.buildThings(type, offset, limit);
             response.status(SC_OK);
             return objectMapper.writeValueAsString(things);
         }
+    }
+
+    private int getOffset(Request request){
+        return getIntegerQueryParameter(request, OFFSET_PARAMETER, 0);
+    }
+
+    private int getLimit(Request request){
+        return getIntegerQueryParameter(request, LIMIT_PARAMETER, 100);
+    }
+
+    private int getIntegerQueryParameter(Request request, String parameter, int defaultValue){
+        Optional<String> value = queryParameter(request, parameter);
+        return value.map(Integer::parseInt).orElse(defaultValue);
     }
 
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {

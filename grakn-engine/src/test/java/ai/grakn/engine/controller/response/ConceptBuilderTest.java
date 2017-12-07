@@ -96,7 +96,7 @@ public class ConceptBuilderTest {
     @Test
     public void whenWrappingTheInstancesOfAType_EnsureInstancesAreEmbedded(){
         ai.grakn.concept.EntityType entityType = tx.getEntityType("person");
-        Things things = ConceptBuilder.buildThings(entityType);
+        Things things = ConceptBuilder.buildThings(entityType, 0, 100);
 
         entityType.instances().forEach(realInstance -> {
             Concept wrapperInstance = ConceptBuilder.build(realInstance);

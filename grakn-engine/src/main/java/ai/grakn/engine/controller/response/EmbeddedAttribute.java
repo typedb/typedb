@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller.response;
 
+import ai.grakn.engine.Jacksonisable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
@@ -31,7 +32,7 @@ import com.google.auto.value.AutoValue;
  * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
-public abstract class EmbeddedAttribute {
+public abstract class EmbeddedAttribute implements Jacksonisable {
 
     @JsonProperty("@id")
     public abstract Link selfLink();

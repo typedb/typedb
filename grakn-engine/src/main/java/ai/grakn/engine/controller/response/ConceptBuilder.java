@@ -62,18 +62,6 @@ public class ConceptBuilder {
      * @param type The {@link ai.grakn.concept.Type} to extract the {@link ai.grakn.concept.Thing}s from
      * @return The wrapper of the {@link ai.grakn.concept.Thing}s
      */
-    public static Things buildThings(ai.grakn.concept.Type type){
-        return buildThings(type, 0, 100);
-    }
-
-    public static Things buildThingsWithOffset(ai.grakn.concept.Type type, int offset){
-        return buildThings(type, offset, 100);
-    }
-
-    public static Things buildThingsWithLimit(ai.grakn.concept.Type type, int limit){
-        return buildThings(type, 0, limit);
-    }
-
     public static Things buildThings(ai.grakn.concept.Type type, int offset, int limit){
         Link selfLink = Link.createInstanceLink(type);
         Link next = Link.createInstanceLink(type, offset + limit, limit);
