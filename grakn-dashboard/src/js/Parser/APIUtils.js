@@ -101,9 +101,8 @@ export function conceptProperties(object:Object) {
   };
 }
 
-export function instanceAttributes(object:Object) {
-  if (!object.attributes) return [];
-  return object.attributes.map(attr => ({
+export function parseAttributes(attributes:Object[]) {
+  return attributes.map(attr => ({
     href: attr[AT_ID],
     value: attr[KEY_VALUE],
     dataType: attr[KEY_DATATYPE],

@@ -87,6 +87,22 @@ function initialise(graphElement: Object) {
   visualiser.render(graphElement);
 }
 
+function lazyLoadAttributes(nodes) {
+  nodes
+    .filter(x => !x.inferred)
+    .filter(x => !Array.isArray(x.attributes)) // filter out nodes with empty array ad 'attributes'
+    .forEach((node) => {
+      EngineClient
+        .request({ url: node.attributes })
+        .then((resp) => {
+          visualiser.updateNode({
+            id: node.id,
+            attributes: Parser.parseAttributes(resp),
+          });
+        });
+    });
+}
+
 function onGraphResponse(resp: string) {
   const responseObject = JSON.parse(resp);
   const parsedResponse = Parser.parseResponse(responseObject);
@@ -96,8 +112,12 @@ function onGraphResponse(resp: string) {
     return;
   }
 
+  // Add nodes and edges to canvas
   filterNodes(parsedResponse.nodes).forEach(node => visualiser.addNode(node));
   filterEdges(parsedResponse.edges).forEach(edge => visualiser.addEdge(edge));
+
+  // Lazy load attributes once nodes are in the graph
+  lazyLoadAttributes(parsedResponse.nodes);
 
   // Never visualise relationships without roleplayers
   filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
