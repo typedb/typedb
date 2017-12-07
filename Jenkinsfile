@@ -138,6 +138,7 @@ def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
 
+
 def shouldRunAllTests() {
     // We run all the tests for all PRs to keep things stable
     return true

@@ -31,6 +31,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -55,7 +56,7 @@ public interface GraknAdmin {
      * @return A concept built using the provided vertex
      */
     @CheckReturnValue
-    <T extends Concept> Optional<T> buildConcept(Vertex vertex);
+    <T extends Concept> T buildConcept(Vertex vertex);
 
     /**
      *
@@ -64,7 +65,7 @@ public interface GraknAdmin {
      * @return A {@link Concept} built using the provided {@link Edge}
      */
     @CheckReturnValue
-    <T extends Concept> Optional<T> buildConcept(Edge edge);
+    <T extends Concept> T buildConcept(Edge edge);
 
 
     /**
@@ -149,7 +150,7 @@ public interface GraknAdmin {
      * @return the commit log that would have been submitted if it is needed.
      * @throws InvalidKBException when the graph does not conform to the object concept
      */
-    Optional<String> commitSubmitNoLogs() throws InvalidKBException;
+    Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException;
 
     /**
      * Check if there are duplicate resources in the provided set of vertex IDs

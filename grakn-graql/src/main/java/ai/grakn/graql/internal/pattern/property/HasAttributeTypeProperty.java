@@ -79,7 +79,9 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
      * @throws GraqlQueryException if no label is specified on {@code resourceType}
      */
     public static HasAttributeTypeProperty of(VarPatternAdmin resourceType, boolean required) {
-        Label resourceLabel = resourceType.getTypeLabel().orElseThrow(GraqlQueryException::noLabelSpecifiedForHas);
+        Label resourceLabel = resourceType.getTypeLabel().orElseThrow(() ->
+                GraqlQueryException.noLabelSpecifiedForHas(resourceType)
+        );
 
         VarPattern role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
 

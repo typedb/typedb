@@ -71,8 +71,7 @@ public abstract class Predicate<T> extends AtomicBase {
     public Set<String> validateAsRuleHead(Rule rule) {
         return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
     }
-
-
+    
     @Override
     public boolean isAlphaEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;

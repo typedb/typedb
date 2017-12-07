@@ -81,12 +81,6 @@ public class REST {
         public static final String OFFSET_PARAMETER = "offset";
         public static final String FORMAT = "format";
 
-        //Commit Logs
-        public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
-        public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
-        public static final String COMMIT_LOG_CONCEPT_ID = "concept-id";
-        public static final String COMMIT_LOG_SHARDING_COUNT = "sharding-count";
-
         /**
          * Graql controller request parameters
          */

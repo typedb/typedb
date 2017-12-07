@@ -39,6 +39,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -197,6 +198,7 @@ public class GraqlController {
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
+                System.out.println("RUNNING: " + queryString);
                 QueryBuilder builder = tx.graql();
 
                 infer.ifPresent(builder::infer);
@@ -297,15 +299,20 @@ public class GraqlController {
     private static void commitAndSubmitPPTask(
             GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter
     ) {
-        Optional<String> result = graph.admin().commitSubmitNoLogs();
+        Optional<CommitLog> result = graph.admin().commitSubmitNoLogs();
         if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
-            String logs = result.get();
+            CommitLog logs = result.get();
+
+            //Update the attributes which need to be merged
+            System.out.println("Adding task to manager . . . ");
             taskSubmitter.addTask(
                     PostProcessingTask.createTask(GraqlController.class),
-                    PostProcessingTask.createConfig(graph.keyspace(), logs)
+                    PostProcessingTask.createConfig(logs)
             );
 
-            postProcessor.updateCounts(graph.keyspace(), Json.read(logs));
+            //Update the counts which need to be updated
+            System.out.println("Updating counts . . . ");
+            postProcessor.updateCounts(graph.keyspace(), logs);
         }
     }
 

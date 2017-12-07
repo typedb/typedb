@@ -163,7 +163,6 @@ public enum ErrorMessage {
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
-    NO_LABEL_SPECIFIED_FOR_HAS("no label was specified for a resource type in a 'has' property"),
     MULTIPLE_TX("a graph has been specified twice for this query"),
 
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
