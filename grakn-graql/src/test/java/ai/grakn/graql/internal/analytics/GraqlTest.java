@@ -99,7 +99,8 @@ public class GraqlTest {
     public void testDegrees() throws Exception {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery>parse("compute degrees;").execute();
+            Map<Long, Set<ConceptId>> degrees =
+                    graph.graql().<DegreeQuery>parse("compute degrees;").execute();
 
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
@@ -112,8 +113,8 @@ public class GraqlTest {
             assertTrue(!degrees.isEmpty());
             degrees.forEach((key, value) -> value.forEach(
                     id -> {
-                        assertTrue(correctDegrees.containsKey(id));
-                        assertEquals(correctDegrees.get(id), key);
+                        assertTrue(correctDegrees.containsKey(id.getValue()));
+                        assertEquals(correctDegrees.get(id.getValue()), key);
                     }
             ));
         }
