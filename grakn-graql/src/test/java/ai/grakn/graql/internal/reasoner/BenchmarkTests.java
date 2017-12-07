@@ -20,11 +20,9 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.kbs.RandomLinearTransitivityKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.test.kbs.DiagonalKB;
@@ -48,35 +46,6 @@ public class BenchmarkTests {
     public static final SessionContext sessionContext = SessionContext.create();
 
     private static final Logger LOG = LoggerFactory.getLogger(BenchmarkTests.class);
-
-    /**
-     * 2-rule transitive test with transitivity expressed in terms of two linear rules.
-     * Data arranged randomly with N number of db relation instances.
-     */
-    @Test
-    public void testRandomSetLinearTransitivity()  {
-        final int N = 1000;
-        final int limit = 100;
-        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
-        SampleKBContext kb = RandomLinearTransitivityKB.context(N);
-
-        ConceptId entityId = kb.tx().getEntityType("a-entity").instances().findFirst().get().getId();
-        String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
-        String subbedQueryString = "match (P-from: $x, P-to: $y) isa P;" +
-                "$x id '" + entityId.getValue() + "';" +
-                "get;";
-        String subbedQueryString2 = "match (P-from: $x, P-to: $y) isa P;" +
-                "$y id '" + entityId.getValue() + "';" +
-                "get;";
-        String limitedQueryString = "match (P-from: $x, P-to: $y) isa P;" +
-                "limit " + limit + ";" +
-                "get;";
-
-        executeQuery(queryString, kb.tx(), "full");
-        executeQuery(subbedQueryString, kb.tx(), "first argument bound");
-        executeQuery(subbedQueryString2, kb.tx(), "second argument bound");
-        executeQuery(limitedQueryString, kb.tx(), "limit " + limit);
-    }
 
     /**
      * 2-rule transitive test with transitivity expressed in terms of two linear rules
@@ -104,7 +73,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveMatrixLinear()  {
-        final int N = 20;
+        final int N = 10;
         final int limit = 100;
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
 
