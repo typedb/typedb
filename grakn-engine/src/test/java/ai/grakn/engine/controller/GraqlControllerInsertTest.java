@@ -30,18 +30,20 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
-import mjson.Json;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.util.Collections;
 import java.util.Optional;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
@@ -60,6 +62,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -81,6 +84,7 @@ public class GraqlControllerInsertTest {
     @Before
     public void setupMock(){
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
+        when(tx.keyspace()).thenReturn(keyspace);
 
         // Describe expected response to a typical query
         Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
@@ -92,6 +96,12 @@ public class GraqlControllerInsertTest {
         when(query.execute()).thenReturn(ImmutableList.of(
                 new QueryAnswer(ImmutableMap.of(var("x"), person))
         ));
+    }
+
+    @After
+    public void clearExceptions(){
+        reset(taskManager);
+        reset(postProcessor);
     }
 
     @Test
@@ -224,7 +234,7 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(taskManager, times(1)).addTask(any(), any());
+        verify(taskManager, times(0)).addTask(any(), any());
     }
 
     @Test
@@ -235,14 +245,15 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(postProcessor, times(1)).updateCounts(any(), any());
+        verify(postProcessor, times(0)).updateCounts(any(), any());
     }
 
     @Test
     public void POSTGraqlInsert_PPTaskIsSubmitted(){
         String query = "insert $x isa person has name 'Alice';";
 
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of("some logs"));
+        CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
+        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of(commitLog));
 
         sendRequest(query);
 
@@ -253,11 +264,12 @@ public class GraqlControllerInsertTest {
     public void POSTGraqlInsert_CountsAreUpdated(){
         String query = "insert $x isa person has name 'Alice';";
 
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of("{}"));
+        CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
+        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of(commitLog));
 
         sendRequest(query);
 
-        verify(postProcessor, times(1)).updateCounts(tx.keyspace(), Json.object());
+        verify(postProcessor, times(1)).updateCounts(tx.keyspace(), commitLog);
     }
 
     private Response sendRequest(String query){

@@ -93,16 +93,9 @@ public class REST {
         public static final String LABEL_PARAMETER = ":label";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
-        public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String LIMIT_PARAMETER = "limit";
         public static final String OFFSET_PARAMETER = "offset";
         public static final String FORMAT = "format";
-
-        //Commit Logs
-        public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
-        public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
-        public static final String COMMIT_LOG_CONCEPT_ID = "concept-id";
-        public static final String COMMIT_LOG_SHARDING_COUNT = "sharding-count";
 
         /**
          * Concept controller request parameters
@@ -140,7 +133,6 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
-        public static final String GET_METHOD = "TASK_ID";
     }
 
     /**
@@ -159,14 +151,6 @@ public class REST {
             public static final String APPLICATION_TEXT = "application/text";
             public static final String APPLICATION_HAL ="application/hal+json";
             public static final String APPLICATION_ALL ="*/*";
-        }
-
-        /**
-         * Graql controller response fields
-         */
-        public static class Graql {
-            public static final String RESPONSE = "response";
-            public static final String ORIGINAL_QUERY = "originalQuery";
         }
 
         /**

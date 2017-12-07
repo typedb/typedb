@@ -41,8 +41,7 @@ public class DistGraql {
      * @param args
      */
     public static void main(String[] args) {
-        DistGraql application = new DistGraql();
-        application.run(args);
+        new DistGraql().run(args);
     }
 
     public void run(String[] args) {
