@@ -39,7 +39,7 @@ class RelationshipConverter implements ConceptConverter<Relationship> {
 
     @Override
     public Pattern pattern(Relationship concept) {
-        VarPattern relationPattern = Graql.var().asUserDefined();
+        VarPattern relationPattern = Graql.var();
         Set<Pattern> idPatterns = new HashSet<>();
 
         for (Map.Entry<Role, Set<Thing>> entry : concept.allRolePlayers().entrySet()) {
