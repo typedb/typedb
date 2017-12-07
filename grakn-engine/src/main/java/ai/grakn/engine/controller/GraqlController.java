@@ -156,7 +156,8 @@ public class GraqlController {
 
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
-        LOG.trace(String.format("Executing graql statements: {%s}", queryString));
+        LOG.debug("Executing graql query: {}", queryString.substring(0, 100));
+        LOG.trace("Full query: {}", queryString);
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx graph = factory.tx(keyspace, txType); Timer.Context context = executeGraqlPostTimer.time()) {
@@ -173,6 +174,8 @@ public class GraqlController {
                 Object resp = respond(response, acceptType, responseBody);
 
                 return resp;
+            } finally {
+                LOG.debug("Executed graql query");
             }
         });
     }
