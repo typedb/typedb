@@ -18,7 +18,7 @@ For more information on how to download older versions of GRAKN.AI, compile from
 
 ## Install GRAKN.AI
 {% include note.html content="**Prerequisites**   <br />
-GRAKN.AI requires Oracle Java 8 (Standard Edition) with the `$JAVA_HOME` set accordingly. If you don't already have this installed, you can find it [here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
+GRAKN.AI requires Java 8 (OpenJDK or Oracle Java) with the `$JAVA_HOME` set accordingly. If you don't already have this installed, you can find it here: [OpenJDK](http://openjdk.java.net/install/) or [Oracle Java](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
 <br /> 
 If you intend to build Grakn from source code, or develop on top of it, you will also need Maven 3.
 <br /> 
