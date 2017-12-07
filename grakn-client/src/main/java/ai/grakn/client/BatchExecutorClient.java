@@ -123,11 +123,16 @@ public class BatchExecutorClient implements Closeable {
      * Will block until there is space for the query to be submitted
      */
     public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
+        QueryWithId<?> queryWithId = new QueryWithId<>(query);
+        UUID queryId = queryWithId.id;
+
         // Acquire permission to execute a query - will block until a permit is available
+        LOG.trace("Acquiring a permit for %s (%s available)", queryId, queryExecutionSemaphore.availablePermits());
         queryExecutionSemaphore.acquireUninterruptibly();
+        LOG.trace("Acquired a permit for %s (%s available)", queryId, queryExecutionSemaphore.availablePermits());
 
         Context context = addTimer.time();
-        Observable<QueryResponse> observable = new QueriesObservableCollapser(query, keyspace,
+        Observable<QueryResponse> observable = new QueriesObservableCollapser(queryWithId, keyspace,
                 graknClient, maxDelay, maxRetries, threadPoolCoreSize, timeoutMs, metricRegistry)
                 .observe()
                 .doOnError((error) -> failureMeter.mark())
@@ -144,6 +149,9 @@ public class BatchExecutorClient implements Closeable {
                     // Release a query execution permit, allowing a new query to execute
                     if (isQueryResponse) {
                         queryExecutionSemaphore.release();
+
+                        int availablePermits = queryExecutionSemaphore.availablePermits();
+                        LOG.trace("Released a permit for %s (%s available)", queryId, availablePermits);
 
                         assert queryExecutionSemaphore.availablePermits() <= maxQueries :
                                 "Number of available permits should never exceed max queries";
@@ -169,9 +177,13 @@ public class BatchExecutorClient implements Closeable {
      */
     @Override
     public void close() {
+        LOG.debug("Closing BatchExecutorClient");
+
         // Acquire ALL permits. Only possible when all the permits are released.
         // This means this method will only return when ALL the queries are completed.
+        LOG.trace("Acquiring all %s permits (%s available)", maxQueries, queryExecutionSemaphore.availablePermits());
         queryExecutionSemaphore.acquireUninterruptibly(maxQueries);
+        LOG.trace("Acquired all %s permits (%s available)", maxQueries, queryExecutionSemaphore.availablePermits());
 
         context.close();
         executor.shutdownNow();
@@ -396,7 +408,7 @@ public class BatchExecutorClient implements Closeable {
         private int timeoutMs;
         private final MetricRegistry metricRegistry;
 
-        public QueriesObservableCollapser(Query<?> query, Keyspace keyspace,
+        public QueriesObservableCollapser(QueryWithId<?> query, Keyspace keyspace,
                 GraknClient client, int delay, int retries, int threadPoolCoreSize, int timeoutMs,
                 MetricRegistry metricRegistry) {
             super(Setter.withCollapserKey(
@@ -408,7 +420,7 @@ public class BatchExecutorClient implements Closeable {
                             HystrixCollapserProperties.Setter()
                                     .withRequestCacheEnabled(false)
                                     .withTimerDelayInMilliseconds(delay)));
-            this.query = new QueryWithId<>(query);
+            this.query = query;
             this.keyspace = keyspace;
             this.client = client;
             this.retries = retries;
