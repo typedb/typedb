@@ -73,6 +73,13 @@ public class HttpHandler {
     public void startHTTP() {
         configureSpark(spark, prop);
 
+        startCollaborators();
+
+        // This method will block until all the controllers are ready to serve requests
+        spark.awaitInitialization();
+    }
+
+    protected void startCollaborators() {
         // Start the websocket for Graql
         RemoteSession graqlWebSocket = RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
@@ -82,9 +89,6 @@ public class HttpHandler {
         new ConceptController(factory, spark, metricRegistry);
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
         new CommitLogController(spark, taskManager, postProcessor);
-
-        // This method will block until all the controllers are ready to serve requests
-        spark.awaitInitialization();
     }
 
     public static void configureSpark(Service spark, GraknConfig prop) {

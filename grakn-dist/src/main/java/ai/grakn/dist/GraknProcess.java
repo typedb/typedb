@@ -35,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,9 +45,9 @@ import java.util.stream.Stream;
  */
 public class GraknProcess extends AbstractProcessHandler implements ProcessHandler {
 
-    private Path homePath;
-    private Path configPath;
-    private GraknConfig graknConfig;
+    protected final Path homePath;
+    protected final Path configPath;
+    private final GraknConfig graknConfig;
 
     private static final long GRAKN_STARTUP_TIMEOUT_S = 120;
     private static final Path GRAKN_PID = Paths.get(File.separator,"tmp","grakn.pid");
@@ -70,7 +71,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
         }
     }
 
-    private String getClassPathFrom(Path home){
+    protected String getClassPathFrom(Path home){
         FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
         File folder = new File(home + File.separator+"services"+File.separator+"lib"); // services/lib folder
         File[] values = folder.listFiles(jarFiles);
@@ -98,7 +99,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
             }
         }
 
-        String command = "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath +" "+graknClass().getName()+" > /dev/null 2>&1 &";
+        String command = commandToRun();
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -146,6 +147,10 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
         throw new ProcessNotStartedException();
     }
 
+    protected String commandToRun() {
+        return "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath +" "+graknClass().getName()+" > /dev/null 2>&1 &";
+    }
+
     private boolean graknCheckIfReady(String host, int port, String path) {
         try {
             URL siteURL = UriBuilder.fromUri(new SimpleURI(host, port).toURI()).path(path).build().toURL();
@@ -155,11 +160,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
             connection.connect();
 
             int code = connection.getResponseCode();
-            if (code == 200) {
-                return true;
-            } else {
-                return false;
-            }
+            return code == 200;
         } catch (IOException e) {
             return false;
         }
@@ -174,15 +175,19 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     }
 
     public void statusVerbose() {
-        System.out.println(graknClass().getSimpleName()+" pid = '"+ getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+ getPidFromPsOf(graknClass().getSimpleName()) +"' (from ps -ef)");
+        System.out.println(graknClass().getSimpleName()+" pid = '"+ getPidFromFile(GRAKN_PID).orElse("")+"' (from "+GRAKN_PID+"), '"+ getPidFromPsOf(graknClass().getName()) +"' (from ps -ef)");
     }
 
     public void clean() {
         System.out.print("Cleaning "+graknClass().getSimpleName()+"...");
         System.out.flush();
         try {
-            Files.delete(Paths.get(homePath +"logs"));
-            Files.createDirectories(Paths.get(homePath +"logs"));
+            Path rootPath = homePath.resolve("logs");
+            Files.walk(rootPath)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+            Files.createDirectories(homePath.resolve("logs"));
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
