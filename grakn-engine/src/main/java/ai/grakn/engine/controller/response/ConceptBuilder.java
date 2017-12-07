@@ -85,15 +85,6 @@ public class ConceptBuilder {
         Link keys = Link.createKeyLink(thing);
         Link relationships = Link.createRelationshipLink(thing);
 
-        /*Set<RolePlayer> relationships = new HashSet<>();
-        thing.plays().forEach(role -> {
-            Link roleWrapper = Link.create(role);
-            thing.relationships(role).forEach(relationship -> {
-                Link relationshipWrapper = Link.create(relationship);
-                relationships.add(RolePlayer.create(roleWrapper, relationshipWrapper));
-            });
-        });*/
-
         String explanation = null;
         if(thing.isInferred()) explanation = Graql.match(ConceptConverter.toPattern(thing)).get().toString();
 
