@@ -7,7 +7,8 @@ if [ "$#" -gt "0" ]; then
     DIST=grakn-dist/target/grakn-dist-${1}.tar.gz
 else
     # get first thing matching wildcard pattern
-    DIST=(grakn-dist/target/grakn-dist*.tar.gz)[0]
+    DIST=(grakn-dist/target/grakn-dist*.tar.gz)
+    DIST=${DIST[0]}
 fi
 
 if [ -d "${PACKAGE}" ] ;  then rm -rf ${PACKAGE} ; fi
