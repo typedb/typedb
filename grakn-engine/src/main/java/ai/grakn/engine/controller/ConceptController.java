@@ -21,12 +21,14 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.engine.controller.response.EmbeddedAttribute;
 import ai.grakn.engine.controller.response.Things;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -89,7 +91,45 @@ public class ConceptController {
         spark.get(WebPath.KEYSPACE_RULE, this::getRules);
         spark.get(WebPath.KEYSPACE_ROLE, this::getRoles);
 
+        spark.get(WebPath.CONCEPT_ATTRIBUTES, this::getAttributes);
+        spark.get(WebPath.CONCEPT_KEYS, this::getKeys);
+
         spark.get(WebPath.TYPE_INSTANCES, this::getTypeInstances);
+    }
+
+    private String getKeys(Request request, Response response) throws JsonProcessingException {
+        return getAttributes(request, response, true);
+    }
+
+    private String getAttributes(Request request, Response response) throws JsonProcessingException {
+        return getAttributes(request, response, false);
+    }
+
+    private String getAttributes(Request request, Response response, boolean isKey) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
+
+        try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
+            ai.grakn.concept.Concept concept = tx.getConcept(conceptId);
+
+            //If the concept was not found or is not a thing there are no results to return;
+            if(concept == null || !concept.isThing()){
+                response.status(SC_NOT_FOUND);
+                return "[]";
+            }
+
+            //Get the attributes including keys if needed
+            Stream<Attribute<?>> attributes;
+            if(isKey){
+                attributes = concept.asThing().keys();
+            } else {
+                attributes = concept.asThing().attributes();
+            }
+
+            return objectMapper.writeValueAsString(attributes.map(EmbeddedAttribute::create).collect(Collectors.toSet()));
+        }
     }
 
     private String getTypeInstances(Request request, Response response) throws JsonProcessingException {

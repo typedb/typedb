@@ -55,6 +55,12 @@ public interface ReasonerQuery{
     @CheckReturnValue
     GraknTx tx();
 
+
+    /**
+     * validate the query wrt transaction it is defined in
+     */
+    void checkValid();
+
     /**
      * @return conjunctive pattern corresponding to this reasoner query
      */

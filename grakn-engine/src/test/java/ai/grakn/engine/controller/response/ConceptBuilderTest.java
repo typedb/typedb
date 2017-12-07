@@ -59,12 +59,12 @@ public class ConceptBuilderTest {
         assertEquals(entity.getId(), entityWrapper.id());
 
         //Check Links to other concepts
-        Set<EmbeddedAttribute> attributes = entity.attributes().map(EmbeddedAttribute::create).collect(Collectors.toSet());
-        Set<EmbeddedAttribute> attributeWrappers = entityWrapper.attributes();
+        Link attributes = Link.createAttributeLink(entity);
+        Link attributeWrappers = entityWrapper.attributes();
         assertEquals(attributes, attributeWrappers);
 
-        Set<Link> keyIds = entity.keys().map(Link::create).collect(Collectors.toSet());
-        Set<Link> keyWrapperIds = entityWrapper.keys();
+        Link keyIds = Link.createKeyLink(entity);
+        Link keyWrapperIds = entityWrapper.keys();
         assertEquals(keyIds, keyWrapperIds);
 
         Set<RolePlayer> relationshipIds = new HashSet<>();

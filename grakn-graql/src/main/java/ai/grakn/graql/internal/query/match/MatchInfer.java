@@ -58,6 +58,7 @@ class MatchInfer extends MatchModifier {
             Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
             Conjunction<VarPatternAdmin> conj = conjIt.next();
             ReasonerQuery conjQuery = ReasonerQueries.create(conj, graph);
+            conjQuery.checkValid();
             Stream<Answer> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve(materialise) : graph.graql().infer(false).match(conj).stream();
             while (conjIt.hasNext()) {
                 conj = conjIt.next();

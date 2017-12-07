@@ -125,7 +125,10 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     @Override
     void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
         SchemaConcept schemaConcept = graph.getSchemaConcept(type());
-        if(schemaConcept == null || !schemaConcept.isAttributeType()) {
+        if (schemaConcept == null) {
+            throw GraqlQueryException.labelNotFound(type());
+        }
+        if(!schemaConcept.isAttributeType()) {
             throw GraqlQueryException.mustBeAttributeType(type());
         }
     }

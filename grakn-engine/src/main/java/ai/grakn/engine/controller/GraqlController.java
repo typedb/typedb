@@ -40,9 +40,11 @@ import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.RetryException;
@@ -74,10 +76,13 @@ import java.util.stream.Stream;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
 import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
+import static ai.grakn.util.REST.Request.Graql.LOADING_DATA;
+import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
@@ -132,11 +137,11 @@ public class GraqlController {
     @Path("/kb/{keyspace}/explain")
     @ApiOperation(value = "Execute an arbitrary Graql query and get the explanation from the results")
     @ApiImplicitParams({
-            @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "body"),
+            @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "query"),
     })
     private String explainGraql(Request request, Response response) throws RetryException, ExecutionException {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
-        String queryString = mandatoryBody(request);
+        String queryString = mandatoryQueryParameter(request, QUERY);
 
         response.status(SC_OK);
 
@@ -174,8 +179,11 @@ public class GraqlController {
         //Define all anonymous variables in the query
         Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
 
+        //Used to check if serialisation of results is needed. When loading we skip this for the sake of speed
+        boolean skipSerialisation = parseBoolean(queryParameter(request, LOADING_DATA).orElse("false"));
+
         //Check the transaction type to use
-        GraknTxType txType = Requests.queryParameter(request, TX_TYPE)
+        GraknTxType txType = queryParameter(request, TX_TYPE)
                 .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
 
         //This is used to determine the response format
@@ -193,6 +201,8 @@ public class GraqlController {
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
+
+                System.out.println("RUNNING: " + queryString);
                 QueryBuilder builder = tx.graql();
 
                 infer.ifPresent(builder::infer);
@@ -202,7 +212,7 @@ public class GraqlController {
 
                 response.status(SC_OK);
 
-                return executeQuery(tx, queryString, acceptType, multiQuery, parser);
+                return executeQuery(tx, queryString, acceptType, multiQuery, skipSerialisation, parser);
             }
         });
     }
@@ -260,7 +270,7 @@ public class GraqlController {
      * @param multi       execute multiple statements
      * @param parser
      */
-    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, QueryParser parser) {
+    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
         Printer printer = this.printer;
 
         if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
@@ -270,28 +280,43 @@ public class GraqlController {
         if (multi) {
             Stream<Query<?>> query = parser.parseList(queryString);
             List<?> collectedResults = query.map(this::executeAndMonitor).collect(Collectors.toList());
-            formatted = printer.graqlString(collectedResults);
+            if (skipSerialisation) {
+                formatted = mapper.writeValueAsString(new Object[collectedResults.size()]);
+            } else {
+                formatted = printer.graqlString(collectedResults);
+            }
         } else {
             Query<?> query = parser.parseQuery(queryString);
-            formatted = printer.graqlString(executeAndMonitor(query));
+            if (skipSerialisation) {
+                formatted = "";
+            } else {
+                formatted = printer.graqlString(executeAndMonitor(query));
+            }
             commitQuery = !query.isReadOnly();
         }
+
         if (commitQuery) commitAndSubmitPPTask(tx, postProcessor, taskManager);
+
         return formatted;
     }
 
     private static void commitAndSubmitPPTask(
             GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter
     ) {
-        Optional<String> result = graph.admin().commitSubmitNoLogs();
+        Optional<CommitLog> result = graph.admin().commitSubmitNoLogs();
         if (result.isPresent()) { // Submit more tasks if commit resulted in created commit logs
-            String logs = result.get();
+            CommitLog logs = result.get();
+
+            //Update the attributes which need to be merged
+            System.out.println("Adding task to manager . . . ");
             taskSubmitter.addTask(
                     PostProcessingTask.createTask(GraqlController.class),
-                    PostProcessingTask.createConfig(graph.keyspace(), logs)
+                    PostProcessingTask.createConfig(logs)
             );
 
-            postProcessor.updateCounts(graph.keyspace(), Json.read(logs));
+            //Update the counts which need to be updated
+            System.out.println("Updating counts . . . ");
+            postProcessor.updateCounts(graph.keyspace(), logs);
         }
     }
 

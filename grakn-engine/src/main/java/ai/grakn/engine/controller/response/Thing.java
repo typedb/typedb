@@ -36,10 +36,10 @@ public abstract class Thing extends Concept {
     public abstract EmbeddedType type();
 
     @JsonProperty
-    public abstract Set<EmbeddedAttribute> attributes();
+    public abstract Link attributes();
 
     @JsonProperty
-    public abstract Set<Link> keys();
+    public abstract Link keys();
 
     @JsonProperty
     public abstract Set<RolePlayer> relationships();

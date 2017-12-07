@@ -134,7 +134,7 @@ function loadRelationshipRolePlayers(rel) {
 }
 
 function explainConcept(node) {
-  EngineClient.graqlQuery(node.explanationQuery)
+  EngineClient.getExplanation(node.explanationQuery)
     .then(onGraphResponse);
 }
 

@@ -165,7 +165,7 @@ public class GraknTxTest extends TxTestBase {
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
         EntityTypeImpl et = (EntityTypeImpl) tx.putEntityType("Sample Entity Type");
-        assertEquals(et, tx.factory().buildConcept(et.vertex()).get());
+        assertEquals(et, tx.factory().buildConcept(et.vertex()));
     }
 
     @Test

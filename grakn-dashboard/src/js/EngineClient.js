@@ -17,6 +17,12 @@
  */
 /* @flow */
 import User from './User';
+
+let spinner = { style: {} };
+$(document).ready(() => {
+  spinner = document.getElementById('loading-spinner');
+});
+
 /*
  * REST API client for Grakn Engine.
  */
@@ -42,6 +48,7 @@ export default {
           } else {
             reject(Error(req.response));
           }
+          spinner.style.visibility = 'hidden';
         };
 
         // Handle network errors
@@ -51,6 +58,7 @@ export default {
 
         // Make the request
         req.send(requestData.data);
+        spinner.style.visibility = 'visible';
       } catch (exception) {
         reject(exception);
       }
@@ -117,6 +125,14 @@ export default {
       url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&defineAllVars=true`,
       requestType: 'POST',
       data: query,
+    });
+  },
+
+  getExplanation(query:string) {
+    // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
+    return this.request({
+      url: `/kb/${User.getCurrentKeySpace()}/explain?query=${query}`,
+      requestType: 'GET',
     });
   },
   /**

@@ -293,7 +293,7 @@ public class GraqlControllerReadOnlyTest {
         Response response = sendRequest(query);
 
         assertThat(response.statusCode(), equalTo(200));
-        assertThat(jsonResponse(response), equalTo(Json.array()));
+        assertThat(jsonResponse(response), equalTo(Json.nil()));
     }
 
     private Response sendRequest(String match) {
