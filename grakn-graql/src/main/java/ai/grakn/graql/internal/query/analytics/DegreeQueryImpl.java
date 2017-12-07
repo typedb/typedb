@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
@@ -42,7 +43,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
-class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> implements DegreeQuery {
+class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<ConceptId>>> implements DegreeQuery {
 
     private boolean ofTypeLabelsSet = false;
     private Set<Label> ofLabels = new HashSet<>();
@@ -52,7 +53,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     }
 
     @Override
-    public Map<Long, Set<String>> execute() {
+    public Map<Long, Set<ConceptId>> execute() {
         LOGGER.info("DegreeVertexProgram is called");
         long startTime = System.currentTimeMillis();
 
