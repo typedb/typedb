@@ -29,9 +29,9 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 import java.util.stream.Collectors;
 
@@ -45,7 +45,6 @@ import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.REGEX_NOT_STRING;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
 import static ai.grakn.util.ErrorMessage.UNKNOWN_CONCEPT;
-import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
  * <p>
@@ -202,13 +201,6 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when using incompatible versions of Grakn
-     */
-    public static GraknTxOperationException versionMistmatch(Attribute versionAttribute){
-        return new GraknTxOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionAttribute.getValue()));
-    }
-
-    /**
      * Thrown when an thing does not have a type
      */
     public static GraknTxOperationException noType(Thing thing){
@@ -269,41 +261,6 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when a {@link Concept} does not have a shard
-     */
-    public static GraknTxOperationException missingShard(ConceptId id) {
-        return new GraknTxOperationException(String.format("Concept {%s} is missing an essential shard", id));
-    }
-
-    /**
-     * Thrown when a casting does not have a role player
-     */
-    public static GraknTxOperationException missingRolePlayer(String id) {
-        return new GraknTxOperationException(String.format("Concept {%s} is missing a role player", id));
-    }
-
-    /**
-     * Thrown when a casting is missing a {@link ai.grakn.concept.Relationship}
-     */
-    public static GraknTxOperationException missingRelationship(String id) {
-        return new GraknTxOperationException(String.format("Concept {%s} is missing a relationship", id));
-    }
-
-    /**
-     * Thrown when link to a {@link Attribute} is missing the owner
-     */
-    public static GraknTxOperationException missingOwner(ConceptId id) {
-        return new GraknTxOperationException(String.format("Relationship {%s} is missing the owner", id));
-    }
-
-    /**
-     * Thrown when link to a {@link Attribute} is missing the owner
-     */
-    public static GraknTxOperationException missingValue(ConceptId id) {
-        return new GraknTxOperationException(String.format("Relationship {%s} is missing the value", id));
-    }
-
-    /**
      * Thrown when a {@link Thing} is missing a {@link Type}
      */
     public static GraknTxOperationException missingType(ConceptId id) {
@@ -326,9 +283,9 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when failing to create an {@link Attribute} after several attempts
+     * Thrown when trying to build a {@link Concept} from an invalid vertex or edge
      */
-    public static GraknTxOperationException couldNotCreateAttribute(Attribute attribute, Exception e){
-        return new GraknTxOperationException(String.format("Could not add attribute {%s} due to {%s}", attribute, e.getMessage()), e);
+    public static GraknTxOperationException invalidElement(Element element){
+        return new GraknTxOperationException(String.format("Cannot build a concept from element {%s} due to it being deleted.", element));
     }
 }

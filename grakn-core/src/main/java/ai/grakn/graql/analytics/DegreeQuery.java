@@ -62,8 +62,8 @@ public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
     DegreeQuery of(Collection<Label> ofLabels);
 
     /**
-     * @param tx the graph to execute the query on
-     * @return a DegreeQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a DegreeQuery with the transaction set
      */
     @Override
     DegreeQuery withTx(GraknTx tx);

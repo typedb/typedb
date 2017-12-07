@@ -23,7 +23,6 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.cache.Cacheable;
@@ -50,16 +49,13 @@ import java.util.Set;
 public class Casting implements CacheOwner{
     private final Set<Cache> registeredCaches = new HashSet<>();
     private final EdgeElement edgeElement;
-    private final Cache<Role> cachedRole = Cache.createTxCache(this, Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
-    private final Cache<Thing> cachedInstance = Cache.createTxCache(this, Cacheable.concept(), () -> edge().target().
-            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
-            orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
-    );
 
-    private final Cache<Relationship> cachedRelationship = Cache.createTxCache(this, Cacheable.concept(), () -> edge().source().
-            flatMap(vertexElement -> edge().tx().factory().<Relationship>buildConcept(vertexElement)).
-            orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()))
-    );
+    private final Cache<Role> cachedRole = Cache.createTxCache(this, Cacheable.concept(), () ->
+            (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
+    private final Cache<Thing> cachedInstance = Cache.createTxCache(this, Cacheable.concept(), () ->
+            edge().tx().factory().<Thing>buildConcept(edge().target()));
+    private final Cache<Relationship> cachedRelationship = Cache.createTxCache(this, Cacheable.concept(), () ->
+            edge().tx().factory().<Thing>buildConcept(edge().source()));
 
     private final Cache<RelationshipType> cachedRelationshipType = Cache.createTxCache(this, Cacheable.concept(), () -> {
         if(cachedRelationship.isPresent()){
