@@ -113,7 +113,7 @@ public class BenchmarkTests {
                     .toArray(ConceptId[]::new);
 
             System.out.println(aInstances.length);
-            assert(aInstances.length == N - 1);
+            assert(aInstances.length == N);
             Role Qfrom = tx.getRole("Q-from");
             Role Qto = tx.getRole("Q-to");
             RelationshipType Q = tx.getRelationshipType("Q");
