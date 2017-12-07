@@ -26,6 +26,7 @@ import ai.grakn.engine.controller.response.Attribute;
 import ai.grakn.engine.controller.response.AttributeType;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.engine.controller.response.EmbeddedAttribute;
 import ai.grakn.engine.controller.response.Entity;
 import ai.grakn.engine.controller.response.EntityType;
 import ai.grakn.engine.controller.response.Relationship;
@@ -41,6 +42,7 @@ import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
@@ -85,13 +87,14 @@ public class ConceptControllerTest {
     private static Attribute attributeWrapper2;
     private static Rule ruleWrapper;
 
+    private static ai.grakn.concept.Entity entity;
+
     public static SessionContext sessionContext = SessionContext.create();
 
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
         new ConceptController(factory, spark, new MetricRegistry());
     });
-
     @ClassRule
     public static final RuleChain chain = RuleChain.emptyRuleChain().around(sessionContext).around(sparkContext);
 
@@ -110,7 +113,7 @@ public class ConceptControllerTest {
             ai.grakn.concept.Attribute attribute2 = attributeType.putAttribute("An attribute 2");
 
             ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).attribute(attributeType);
-            ai.grakn.concept.Entity entity = entityType.addEntity().attribute(attribute1).attribute(attribute2);
+            entity = entityType.addEntity().attribute(attribute1).attribute(attribute2);
 
             ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
             ai.grakn.concept.Relationship relationship = relationshipType.addRelationship().addRolePlayer(role1, entity).addRolePlayer(role2, entity);
@@ -139,6 +142,23 @@ public class ConceptControllerTest {
         }
     }
 
+    @Test
+    public void whenGettingAttributesOfConcept_EnsureEmbeddedAttributesAreReturned() throws IOException {
+        //Get the attributes we expect
+        List<EmbeddedAttribute> expectedAttributes;
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
+            expectedAttributes = entity.attributes().map(EmbeddedAttribute::create).collect(Collectors.toList());
+        }
+
+        //Ask the controller for the attributes
+        String request = entityWrapper.attributes().id();
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.getStatusCode());
+
+        List<EmbeddedAttribute> attributes = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<EmbeddedAttribute>>(){});
+        assertEquals(expectedAttributes.size(), attributes.size());
+        assertTrue(attributes.containsAll(expectedAttributes));
+    }
 
     @Test
     public void whenGettingTypesInstances_EnsureInstancesAreReturned() throws JsonProcessingException {
