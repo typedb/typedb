@@ -119,7 +119,7 @@ public class Utility {
     /**
      * Check whether it is possible that there is a resource edge between the two given concepts.
      */
-    static boolean mayHaveResourceEdge(GraknTx graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
+    private static boolean mayHaveResourceEdge(GraknTx graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
         Concept concept1 = graknGraph.getConcept(conceptId1);
         Concept concept2 = graknGraph.getConcept(conceptId2);
         return concept1 != null && concept2 != null && (concept1.isAttribute() || concept2.isAttribute());
@@ -141,5 +141,12 @@ public class Utility {
             }
         }
         return null;
+    }
+
+    /**
+     * Get the id of given vertex.
+     */
+    static String getVertexId(Vertex vertex) {
+        return vertex.value(Schema.VertexProperty.ID.name());
     }
 }

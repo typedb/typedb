@@ -193,6 +193,6 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
     }
 
     public final boolean isDeleted() {
-        return !tx().validElement(element());
+        return !tx().isValidElement(element());
     }
 }

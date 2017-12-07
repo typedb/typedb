@@ -235,12 +235,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <T extends Concept> Optional<T> buildConcept(Vertex vertex) {
+    public <T extends Concept> T buildConcept(Vertex vertex) {
         return factory().buildConcept(vertex);
     }
 
     @Override
-    public <T extends Concept> Optional<T> buildConcept(Edge edge) {
+    public <T extends Concept> T buildConcept(Edge edge) {
         return factory().buildConcept(edge);
     }
 
@@ -339,7 +339,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             if (vertices.hasNext()) {
                 LOG.warn(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
             }
-            return factory().buildConcept(vertex);
+            return Optional.of(factory().buildConcept(vertex));
         } else {
             return Optional.empty();
         }
@@ -359,8 +359,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
         Set<Concept> concepts = new HashSet<>();
-        getTinkerTraversal().V().has(key.name(), value).
-                forEachRemaining(v -> factory().buildConcept(v).ifPresent(concepts::add));
+        getTinkerTraversal().V().has(key.name(), value).forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
         return concepts;
     }
 
@@ -577,7 +576,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         String edgeId = id.getValue().substring(1);
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if (traversal.hasNext()) {
-            return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
+            return Optional.of(factory().buildConcept(factory().buildEdgeElement(traversal.next())));
         }
         return Optional.empty();
     }
@@ -815,7 +814,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return Optional.of(uri);
     }
 
-    public boolean validElement(Element element) {
+    public boolean isValidElement(Element element) {
         return element != null;
     }
 

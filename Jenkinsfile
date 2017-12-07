@@ -79,7 +79,7 @@ def withGrakn(Closure closure) {
     try {
         timeout(15) {
             stage('Start Grakn') {
-                sh 'init-grakn.sh'
+                sh "init-grakn.sh ${env.BRANCH_NAME}"
             }
         }
         closure()
@@ -138,7 +138,13 @@ def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
 
+
 def shouldRunAllTests() {
+    // We run all the tests for all PRs to keep things stable
+    return true
+}
+
+def shouldRunBenchmarks() {
     return isMainBranch()
 }
 
@@ -229,12 +235,15 @@ def runBuild() {
         ])
     }
 
-    // This is a map that we fill with jobs to perform in parallel, name -> job closure
-    jobs = [:]
-
-    addTests(jobs)
+    // A map of jobs for JUnit Tests
+    junitTests = [:]
+    addTests(junitTests)
+    parallel(junitTests)
 
     if (shouldRunAllTests()) {
+
+        // A map of jobs for end-to-end tests
+        e2eTests = [:]
 
         // Build grakn so it can be used by benchmarks and integration tests
         graknNode { workspace ->
@@ -246,39 +255,50 @@ def runBuild() {
                 archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 
                 // Stash the built distribution so other nodes can access it
-                stash includes: 'grakn-dist/target/grakn-dist*.tar.gz', name: 'dist'
+                stash includes: "grakn-dist/target/grakn-dist-${env.BRANCH_NAME}.tar.gz", name: 'dist'
             }
         }
 
-        addJob(jobs, 'benchmarks') { workspace ->
-            checkout scm
-            unstash 'dist'
-            timeout(60) {
-                stage('Run the benchmarks') {
-                    mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-                    // TODO: re-enable and fix archiving in S3
-                    // archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+        if (shouldRunBenchmarks()) {
+            addJob(e2eTests, 'benchmarks') { workspace ->
+                checkout scm
+                unstash 'dist'
+                timeout(60) {
+                    stage('Run the benchmarks') {
+                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                        archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                        // TODO: re-enable and fix archiving in S3
+                        // archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                    }
                 }
             }
         }
 
         INTEGRATION_TESTS.each { String moduleName ->
             // Add each integration test as a parallel job
-            addJob(jobs, moduleName) { workspace ->
+            addJob(e2eTests, moduleName) { workspace ->
                 checkout scm
                 unstash 'dist'
 
                 runIntegrationTest(workspace, moduleName)
             }
         }
-    }
 
-    // Execute all jobs in parallel
-    parallel(jobs)
+        parallel(e2eTests)
+    }
 
     graknNode { workspace ->
         checkout scm
+
+        // Push to Grakn Maven if tests pass
+        if (isMainBranch()) {
+            withMaven(
+                options: [artifactsPublisher(disabled: true)],
+                mavenSettingsConfig: '8358fa5c-17c9-4a16-b501-4ebacb7f163d',
+            ){
+                sh 'mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo'
+            }
+        }
 
         // only deploy long-running instance on stable branch if all tests pass
         if (shouldDeployLongRunningInstance()) {

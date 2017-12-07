@@ -67,8 +67,8 @@ public interface StdQuery extends ComputeQuery<Optional<Double>> {
     Optional<Double> execute();
 
     /**
-     * @param tx the graph to execute the query on
-     * @return a StdQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a StdQuery with the transaction set
      */
     @Override
     StdQuery withTx(GraknTx tx);

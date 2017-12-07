@@ -41,7 +41,9 @@ import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.RetryListener;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
@@ -92,6 +94,7 @@ import static java.lang.Boolean.parseBoolean;
  */
 public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
+    private static final RetryLogger retryLogger = new RetryLogger();
     private static final int MAX_RETRY = 10;
     private final EngineGraknTxFactory factory;
     private final Service spark;
@@ -178,6 +181,7 @@ public class GraqlController {
         try {
             Retryer<Object> retryer = RetryerBuilder.newBuilder()
                 .retryIfExceptionOfType(TemporaryWriteException.class)
+                .withRetryListener(retryLogger)
                 .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
                 .build();
@@ -189,6 +193,15 @@ public class GraqlController {
                 throw (RuntimeException) cause;
             } else {
                 throw e;
+            }
+        }
+    }
+
+    private static class RetryLogger implements RetryListener{
+        @Override
+        public <V> void onRetry(Attempt<V> attempt) {
+            if(attempt.hasException()) {
+                LOG.warn("Retrying transaction after {" + attempt.getAttemptNumber() + "} attempts due to exception {" + attempt.getExceptionCause().getMessage() + "}");
             }
         }
     }
