@@ -76,7 +76,7 @@ public class BenchmarkTests {
         GraknClient graknClient = new GraknClient(engine.uri());
 
         try {
-            File graqlFile = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/../grakn-test-tools/src/main/graql/" + fileName);
+            File graqlFile = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + fileName);
             String s = Files.toString(graqlFile, Charset.forName("UTF-8"));
             GraknTx tx = session.open(GraknTxType.WRITE);
             tx.graql().parser().parseQuery(s).execute();
@@ -101,7 +101,7 @@ public class BenchmarkTests {
                     .toArray(ConceptId[]::new);
 
             System.out.println(aInstances.length);
-            assert(aInstances.length == N - 1);
+            assert(aInstances.length == N);
             Role Qfrom = tx.getRole("Q-from");
             Role Qto = tx.getRole("Q-to");
             RelationshipType Q = tx.getRelationshipType("Q");
@@ -134,7 +134,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testRandomSetLinearTransitivity()  {
-        final int N = 100;
+        final int N = 10000;
         final int limit = 100;
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         load("linearTransitivity.gql", N);
