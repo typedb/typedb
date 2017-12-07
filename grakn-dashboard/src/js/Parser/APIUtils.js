@@ -68,7 +68,7 @@ function buildLabel(nodeObject) {
       label = `${nodeObject[KEY_TYPE].label}: ${nodeObject[KEY_ID]}`;
       break;
     case RELATIONSHIP:
-      label = `${nodeObject[KEY_BASE_TYPE].substring(0, 3)}: ${nodeObject[KEY_TYPE]}`;
+      label = '';
       break;
     case ATTRIBUTE:
       label = `${nodeObject[KEY_TYPE].label}: ${nodeObject[KEY_VALUE]}`;

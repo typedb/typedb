@@ -283,7 +283,7 @@ export default class Visualiser {
       hover: highlightObj.highlight,
     };
     this.nodes.add(Object.assign(node, {
-      label: Visualiser.generateLabel(node.type, node.attributes, node.label, node.baseType),
+      label: node.label,
       baseLabel: node.label,
       color: Object.assign(colorObj, {
         border: colorObj.background,
@@ -535,7 +535,9 @@ export default class Visualiser {
         }
         value = attributes.filter(attr => attr.type === x).map(a => a.value);
         if (!value) value = '';
-        if (value.length > 40) value = `${value.substring(0, 40)}...`;
+        if (Array.isArray(value)) {
+          value = value.join(', ');
+        } else if (value.length > 40) value = `${value.substring(0, 40)}...`;
         return `${(l.length ? `${l}\n` : l) + x}: ${value}`;
       }, '');
     }

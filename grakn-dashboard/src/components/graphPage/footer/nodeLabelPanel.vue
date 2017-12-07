@@ -172,7 +172,8 @@ export default {
     openNodeLabelPanel(nodeId) {
       this.node = visualiser.getNode(nodeId);
 
-      this.allNodeAttributes = this.node.attributes.map(x=>x.type);
+      // unique values
+      this.allNodeAttributes = [...new Set(this.node.attributes.map(x=>x.type))];
 
       if ((this.node.type !== '')) this.allNodeAttributes.push('type');
 

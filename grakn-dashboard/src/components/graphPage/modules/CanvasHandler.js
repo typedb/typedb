@@ -21,6 +21,7 @@ import Parser from '../../../js/Parser/Parser';
 import EngineClient from '../../../js/EngineClient';
 import { EventHub } from '../../../js/state/graphPageState';
 import CanvasEvents from './CanvasEvents';
+import Visualiser from '../../../js/visualiser/Visualiser';
 
 function clearGraph() {
   visualiser.clearGraph();
@@ -68,7 +69,7 @@ function filterEdges(edges) {
 
   // (Helper map {ImplicitRelationshipID: AttributeTypeID})
   const toAttrTypeMap = edges
-    .filter(edge => visualiser.getNode(edge.to).baseType === 'ATTRIBUTE_TYPE')
+    .filter(edge => visualiser.getNode(edge.to) && visualiser.getNode(edge.to).baseType === 'ATTRIBUTE_TYPE')
     .reduce((map, current) => Object.assign(map, { [current.from]: current.to }), {});
   // Set with all attribute types IDs
   const attrTypeSet = new Set(Object.values(toAttrTypeMap));
@@ -95,10 +96,9 @@ function lazyLoadAttributes(nodes) {
       EngineClient
         .request({ url: node.attributes })
         .then((resp) => {
-          visualiser.updateNode({
-            id: node.id,
-            attributes: Parser.parseAttributes(resp),
-          });
+          const attributes = Parser.parseAttributes(resp);
+          const label = Visualiser.generateLabel(node.type, attributes, node.label, node.baseType);          
+          visualiser.updateNode({ id: node.id, attributes, label });
         });
     });
 }
@@ -190,6 +190,14 @@ function addAttributeAndEdgeToInstance(instanceId, res) {
   visualiser.addEdge({ from: instanceId, to: JSON.parse(res).id, label: 'has' });
 }
 
+function loadEntityRelationships(node) {
+  EngineClient.request({ url: node.relationships })
+    .then((relationships) => {
+      JSON.parse(relationships).map(rel => EngineClient.request({ url: rel.thing }))
+        .forEach((promise) => { promise.then(onGraphResponse); });
+    });
+}
+
 function showNeighbours(node: Object) {
   const baseType = node.baseType;
   switch (baseType) {
@@ -198,9 +206,7 @@ function showNeighbours(node: Object) {
       loadRelationshipRolePlayers(node);
       break;
     case 'ENTITY':
-      node.relationships
-        .map(rel => EngineClient.request({ url: rel.thing }))
-        .forEach((promise) => { promise.then(onGraphResponse); });
+      loadEntityRelationships(node);
       break;
     case 'RELATIONSHIP_TYPE':
       loadRelationshipTypeRolePlayers(node);
