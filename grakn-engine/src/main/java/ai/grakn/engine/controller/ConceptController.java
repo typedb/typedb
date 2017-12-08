@@ -24,7 +24,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.engine.Jacksonisable;
 import ai.grakn.engine.controller.response.Concept;
@@ -103,52 +102,42 @@ public class ConceptController {
 
     private String getRelationships(Request request, Response response) throws JsonProcessingException {
         //TODO: Figure out how to incorporate offset and limit
-        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> {
-            Set<Role> roles = thing.plays().collect(Collectors.toSet());
-            return roles.stream().flatMap(role -> {
-                Link roleWrapper = Link.create(role);
-                return thing.relationships(role).map(relationship -> {
-                    Link relationshipWrapper = Link.create(relationship);
-                    return RolePlayer.create(roleWrapper, relationshipWrapper);
-                });
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> thing.plays().flatMap(role -> {
+            Link roleWrapper = Link.create(role);
+            return thing.relationships(role).map(relationship -> {
+                Link relationshipWrapper = Link.create(relationship);
+                return RolePlayer.create(roleWrapper, relationshipWrapper);
             });
-        };
+        });
         return this.getConceptCollection(request, response, collector);
     }
 
     private String getKeys(Request request, Response response) throws JsonProcessingException {
-        return getAttributes(request, response, true);
+        return getAttributes(request, response, thing -> thing.keys());
     }
 
     private String getAttributes(Request request, Response response) throws JsonProcessingException {
-        return getAttributes(request, response, false);
+        return getAttributes(request, response, thing -> thing.attributes());
     }
 
-    private String getAttributes(Request request, Response response, boolean isKey) throws JsonProcessingException {
+    private String getAttributes(Request request, Response response, Function<ai.grakn.concept.Thing,  Stream<Attribute<?>>> attributeFetcher) throws JsonProcessingException {
         int offset = getOffset(request);
         int limit = getLimit(request);
 
-        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> {
-            Stream<Attribute<?>> attributes;
-            if(isKey){
-                attributes = thing.keys();
-            } else {
-                attributes = thing.attributes();
-            }
-            return attributes.skip(offset).limit(limit).map(EmbeddedAttribute::create);
-        };
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing ->
+                attributeFetcher.apply(thing).skip(offset).limit(limit).map(EmbeddedAttribute::create);
 
         return this.getConceptCollection(request, response, collector);
     }
 
-    private <X> String getConceptCollection(Request request, Response response, Function<X, Stream<Jacksonisable>> collector) throws JsonProcessingException {
+    private <X extends ai.grakn.concept.Concept> String getConceptCollection(Request request, Response response, Function<X, Stream<Jacksonisable>> collector) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
 
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
-            ai.grakn.concept.Concept concept = tx.getConcept(conceptId);
+            X concept = tx.getConcept(conceptId);
 
             //If the concept was not found or is not a thing there are no results to return;
             if(concept == null || !concept.isThing()){
@@ -156,7 +145,7 @@ public class ConceptController {
                 return "[]";
             }
 
-            return objectMapper.writeValueAsString(collector.apply((X) concept).collect(Collectors.toList()));
+            return objectMapper.writeValueAsString(collector.apply(concept).collect(Collectors.toList()));
         }
     }
 

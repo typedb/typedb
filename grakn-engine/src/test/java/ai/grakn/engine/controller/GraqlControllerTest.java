@@ -8,8 +8,8 @@ import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.printer.JacksonPrinter;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.graql.Query;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
@@ -36,6 +36,7 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
 import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
+import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,14 +59,6 @@ public class GraqlControllerTest {
     private Response sendQuery(String query,
                                String acceptType,
                                boolean reasoner,
-                               boolean multi) {
-        return sendQuery(query, acceptType, reasoner, sampleKB.tx().keyspace().getValue(), multi);
-    }
-
-
-    private Response sendQuery(String query,
-                               String acceptType,
-                               boolean reasoner,
                                String keyspace, boolean multi) {
         return RestAssured.with()
                 .body(query)
@@ -78,7 +71,7 @@ public class GraqlControllerTest {
 
     private Response sendExplanationQuery(String query, String keyspace) {
         return RestAssured.with()
-                .body(query)
+                .queryParam(QUERY, query)
                 .accept(APPLICATION_JSON)
                 .get(REST.resolveTemplate(REST.WebPath.KEYSPACE_EXPLAIN, keyspace));
     }
@@ -118,18 +111,13 @@ public class GraqlControllerTest {
         assertEquals(expectedInstances, instances);
     }
 
+    //TODO: THis test should be improved
     @Test
     public void whenExecutingExplainQuery_responseIsValid() {
-        List<Json> json = Json.read(sendQuery("match ($x,$y) isa cousins; offset 0; limit 1; get;", APPLICATION_JSON, true, genealogyKB.tx().keyspace().getValue(),false).body().asString()).
-                asJsonList();
-        String explQuery = json.get(0).asJsonMap().values().stream()
-                .filter(x->x.at("base-type").asString().equals("RELATIONSHIP")).findFirst().get()
-                .asJsonMap().get("explanation-query").asString();
-        List<Json> explanation = Json.read(sendExplanationQuery(explQuery,genealogyKB.tx().keyspace().getValue()).body().asString()).
-                asJsonList();
-        System.out.println("stop");
-        assertEquals(3, explanation.size());
-
+        String keyspace = genealogyKB.tx().keyspace().getValue();
+        Response response = sendExplanationQuery("match ($x,$y) isa cousins; offset 0; limit 1; get;", keyspace);
+        List<Json> json = Json.read(response.body().asString()).asJsonList();
+        assertEquals(3, json.size());
     }
 
     @Test
