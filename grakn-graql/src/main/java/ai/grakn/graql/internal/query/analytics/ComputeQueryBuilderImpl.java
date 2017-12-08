@@ -28,6 +28,7 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 
@@ -94,6 +95,11 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     @Override
     public PathQuery path() {
         return new PathQueryImpl(tx);
+    }
+
+    @Override
+    public PathsQuery paths() {
+        return new PathsQueryImpl(tx);
     }
 
     @Override

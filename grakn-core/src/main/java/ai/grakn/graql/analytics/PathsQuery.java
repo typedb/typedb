@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.graql.analytics;
@@ -26,40 +27,39 @@ import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Compute the shortest path between two instances.
+ * Compute all the shortest path(s) between two instances.
  *
  * @author Jason Liu
  */
-public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
+public interface PathsQuery extends ComputeQuery<List<List<Concept>>> {
 
     /**
      * @param sourceId the id of the source instance
      * @return a PathQuery with the source instance set
      */
-    PathQuery from(ConceptId sourceId);
+    PathsQuery from(ConceptId sourceId);
 
     /**
      * @param destinationId the id of the destination instance
      * @return a PathQuery with the the destination instance set
      */
-    PathQuery to(ConceptId destinationId);
+    PathsQuery to(ConceptId destinationId);
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph
      * @return a PathQuery with the subTypeLabels set
      */
     @Override
-    PathQuery in(String... subTypeLabels);
+    PathsQuery in(String... subTypeLabels);
 
     /**
      * @param subLabels a collection of types to include in the subgraph
      * @return a PathQuery with the subLabels set
      */
     @Override
-    PathQuery in(Collection<Label> subLabels);
+    PathsQuery in(Collection<Label> subLabels);
 
     /**
      * Execute the query.
@@ -67,18 +67,18 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
      * @return the list of shortest paths
      */
     @Override
-    Optional<List<Concept>> execute();
+    List<List<Concept>> execute();
 
     /**
      * @param tx the transaction to execute the query on
      * @return a PathQuery with the transaction set
      */
     @Override
-    PathQuery withTx(GraknTx tx);
+    PathsQuery withTx(GraknTx tx);
 
     /**
      * Allow attributes and their relationships to be included.
      */
     @Override
-    PathQuery includeAttribute();
+    PathsQuery includeAttribute();
 }
