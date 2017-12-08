@@ -21,12 +21,14 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.utils.conversion.ConceptConverter;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
@@ -270,6 +272,35 @@ public class ExplanationTest {
             Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
             assertEquals(answer, specificAnswer);
             testExplanation(specificAnswer);
+        });
+    }
+
+    @Test
+    public void testExplanationConsistency_ExplanationObtainedViaRelationConcept(){
+        GraknTx genealogyGraph = genealogyKB.tx();
+        QueryBuilder iqb = genealogyGraph.graql().infer(true);
+        String queryString = "match " +
+                "$r ($x, $y) isa cousins;" +
+                "limit 3; get;";
+
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+
+        answers.forEach(answer -> {
+            testExplanation(answer);
+
+            String specificQuery = "match " +
+                    "$r (cousin: $x, cousin: $y) isa cousins;" +
+                    "$x id '" + answer.get(var("x")).getId().getValue() + "';" +
+                    "$y id '" + answer.get(var("y")).getId().getValue() + "';" +
+                    "$r id '" + answer.get(var("r")).getId().getValue() + "';" +
+                    "limit 1; get;";
+            Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+            assertEquals(answer, specificAnswer);
+            testExplanation(specificAnswer);
+
+            Answer answerFromConcept = Iterables.getOnlyElement(Graql.match(ConceptConverter.toPattern(answer.get("r"))).limit(1).get());
+            assertEquals(answer, answerFromConcept);
+            testExplanation(answerFromConcept);
         });
     }
 
