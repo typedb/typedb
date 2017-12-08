@@ -245,7 +245,7 @@ In the genealogy-knowledge-base example, there should be three results returned.
 
 Another rule can be used to infer `person` entities who are cousins:
 
-```
+```graql
 define
 
 peopleWithSiblingsParentsAreCousins sub rule
