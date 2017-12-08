@@ -8,8 +8,8 @@ import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.printer.JacksonPrinter;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.graql.Query;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
@@ -38,7 +38,6 @@ import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
 import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static org.apache.zookeeper.ZooDefs.OpCode.multi;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -72,7 +71,7 @@ public class GraqlControllerTest {
 
     private Response sendExplanationQuery(String query, String keyspace) {
         return RestAssured.with()
-                .body(query)
+                .queryParam(QUERY, query)
                 .accept(APPLICATION_JSON)
                 .get(REST.resolveTemplate(REST.WebPath.KEYSPACE_EXPLAIN, keyspace));
     }
@@ -116,17 +115,8 @@ public class GraqlControllerTest {
     @Test
     public void whenExecutingExplainQuery_responseIsValid() {
         String keyspace = genealogyKB.tx().keyspace().getValue();
-
-        Response response = RestAssured.with()
-                .queryParam(QUERY, "match ($x,$y) isa cousins; offset 0; limit 1; get;")
-                .queryParam(EXECUTE_WITH_INFERENCE, true)
-                .queryParam(ALLOW_MULTIPLE_QUERIES, multi)
-                .queryParam(DEFINE_ALL_VARS, true)
-                .accept(APPLICATION_JSON)
-                .get(REST.resolveTemplate(REST.WebPath.KEYSPACE_EXPLAIN, keyspace));
-
+        Response response = sendExplanationQuery("match ($x,$y) isa cousins; offset 0; limit 1; get;", keyspace);
         List<Json> json = Json.read(response.body().asString()).asJsonList();
-
         assertEquals(3, json.size());
     }
 
