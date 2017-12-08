@@ -64,6 +64,7 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.List;
@@ -133,7 +134,7 @@ public class GraqlController {
         spark.exception(InvalidKBException.class, (e, req, res) -> handleError(422, e, res));
     }
 
-    @POST
+    @GET
     @Path("/kb/{keyspace}/explain")
     @ApiOperation(value = "Execute an arbitrary Graql query and get the explanation from the results")
     @ApiImplicitParams({
