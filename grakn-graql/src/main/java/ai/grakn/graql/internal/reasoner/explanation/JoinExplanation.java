@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,7 +50,7 @@ public class JoinExplanation extends Explanation {
 
     @Override
     public AnswerExplanation withAnswers(Set<Answer> answers) {
-        return new JoinExplanation(answers);
+        return new JoinExplanation(Sets.union(getAnswers(), answers));
     }
 
     @Override
