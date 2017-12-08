@@ -19,18 +19,12 @@
 package ai.grakn.migration.xml;
 
 import ai.grakn.migration.base.MigrationOptions;
-import ai.grakn.migration.base.Migrator;
-
-import static java.lang.Integer.parseInt;
 
 /**
  * Configure the default XML migration options and access arguments passed by the user
  * @author alexandraorth
  */
 public class XmlMigrationOptions extends MigrationOptions {
-
-    private final String batch = Integer.toString(Migrator.BATCH_SIZE);
-    private final String active = Integer.toString(Migrator.ACTIVE_TASKS);
 
     public XmlMigrationOptions(String[] args) {
         super();
@@ -39,8 +33,6 @@ public class XmlMigrationOptions extends MigrationOptions {
         options.addOption("s", "schema", true, "The XML Schema file name, usually .xsd extension defining with type information about the data.");        
         options.addOption("e", "element", true, "The name of the XML element to migrate - all others will be ignored.");
         options.addOption("t", "template", true, "Graql template to apply to the data.");
-        options.addOption("b", "batch", true, "Number of rows to execute in one Grakn transaction. Default 25.");
-        options.addOption("a", "active", true, "Number of tasks (batches) running on the server at any one time. Default 25.");
 
         parse(args);
     }
@@ -51,13 +43,5 @@ public class XmlMigrationOptions extends MigrationOptions {
 
     public String getSchemaFile() {
         return command.getOptionValue("s", null);
-    }
-    
-    public int getBatch() {
-        return parseInt(command.getOptionValue("b", batch));
-    }
-
-    public int getNumberActiveTasks() {
-        return parseInt(command.getOptionValue("a", active));
     }
 }

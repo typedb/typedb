@@ -69,7 +69,7 @@ You should see something similar to the screenshot below in your visualiser wind
 
 ![Person query](/images/match-isa-mother-daughter.png)
 
-{% include note.html content="You can alternatively make queries in the graql shell.
+{% include note.html content="You can alternatively make queries in the graql shell." %}
 
 ## Inference Rules
 

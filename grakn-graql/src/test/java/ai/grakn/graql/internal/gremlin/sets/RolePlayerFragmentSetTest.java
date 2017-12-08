@@ -23,7 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertEquals;
 public class RolePlayerFragmentSetTest {
 
     @ClassRule
-    public static final SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext sampleKB = MovieKB.context();
 
     private final Var a = Graql.var("a"), b = Graql.var("b"), c = Graql.var("c"), d = Graql.var("d");
 

@@ -9,8 +9,9 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.migration.base.Migrator;
+import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.xml.XmlMigrator;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
 import ai.grakn.util.SampleKBLoader;
 import org.junit.After;
@@ -33,7 +34,7 @@ public class XMLMigratorTest {
     private static GraknSession session;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @BeforeClass
     public static void loadSchema(){
@@ -105,7 +106,8 @@ public class XMLMigratorTest {
         MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "schema.gql"));
 
         // load the data
-        Migrator migrator = Migrator.to(engine.uri(), keyspace);
+        Migrator migrator = new MigratorBuilder().setUri(engine.uri()).setKeyspace(keyspace)
+                .build();
 
         File xmlFile = MigratorTestUtils.getFile("xml", "data.xml");
 

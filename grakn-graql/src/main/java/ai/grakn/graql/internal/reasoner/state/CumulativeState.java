@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -38,17 +37,17 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-class CumulativeState extends QueryState{
+public class CumulativeState extends QueryStateBase{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
     private final Iterator<QueryState> feederStateIterator;
 
-    CumulativeState(LinkedList<ReasonerQueryImpl> qs,
-                    Answer sub,
-                    Unifier u,
-                    QueryState parent,
-                    Set<ReasonerAtomicQuery> subGoals,
-                    QueryCache<ReasonerAtomicQuery> cache) {
+    public CumulativeState(LinkedList<ReasonerQueryImpl> qs,
+                           Answer sub,
+                           Unifier u,
+                           QueryStateBase parent,
+                           Set<ReasonerAtomicQuery> subGoals,
+                           QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
         this.feederStateIterator = !subQueries.isEmpty()?
@@ -57,22 +56,21 @@ class CumulativeState extends QueryState{
     }
 
     @Override
-    ReasonerQueryImpl getQuery() { return getParentState().getQuery();}
-
-    @Override
-    MultiUnifier getCacheUnifier() { return getParentState().getCacheUnifier();}
-
-    @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         Answer answer = getSubstitution().merge(state.getSubstitution(), true);
         if (subQueries.isEmpty()){
             return new AnswerState(answer, getUnifier(), getParentState());
         }
-        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getSubGoals(), getCache());
+        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals(), getCache());
     }
 
     @Override
     public ResolutionState generateSubGoal(){
         return feederStateIterator.hasNext()? feederStateIterator.next() : null;
+    }
+
+    @Override
+    Answer consumeAnswer(AnswerState state) {
+        return state.getSubstitution();
     }
 }

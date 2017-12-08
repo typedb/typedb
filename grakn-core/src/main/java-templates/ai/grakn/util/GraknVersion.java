@@ -1,7 +1,7 @@
 package ai.grakn.util;
 
 /**
- * Class for storing the maven version. The templating-maven-plugin in grakn-dist will automatically insert the
+ * Class for storing the maven version. The templating-maven-plugin in grakn-core will automatically insert the
  * project version here.
  */
 public class GraknVersion {

@@ -72,7 +72,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      */
     @Override
     public AttributeType<D> sup(AttributeType<D> superType){
-        ((AttributeTypeImpl<D>) superType).superSet().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
+        ((AttributeTypeImpl<D>) superType).sups().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
         return super.sup(superType);
     }
 
@@ -113,41 +113,23 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @SuppressWarnings("unchecked")
     @Override
     public Attribute<D> putAttribute(D value) {
+        return putAttribute(value, false);
+    }
+
+    public Attribute<D> putAttributeInferred(D value) {
+        return putAttribute(value, true);
+    }
+
+    private Attribute<D> putAttribute(D value, boolean isInferred) {
         Objects.requireNonNull(value);
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
-            Object persistenceValue = castValue(value);
-            AttributeImpl<D> resource = vertex().tx().factory().buildResource(vertex, type, persistenceValue);
-            resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
-            return resource;
+            return vertex().tx().factory().buildAttribute(vertex, type, value);
         };
 
         return putInstance(Schema.BaseType.ATTRIBUTE,
-                () -> getAttribute(value), instanceBuilder);
-    }
-
-    /**
-     * This is to handle casting longs and doubles when the type allows for the data type to be a number
-     * @param value The value of the resource
-     * @return The value casted to the correct type
-     */
-    private Object castValue(D value){
-        AttributeType.DataType<D> dataType = getDataType();
-        try {
-            if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-                return ((Number) value).doubleValue();
-            } else if (dataType.equals(AttributeType.DataType.LONG)) {
-                if (value instanceof Double) {
-                    throw new ClassCastException();
-                }
-                return ((Number) value).longValue();
-            } else {
-                return dataType.getPersistenceValue(value);
-            }
-        } catch (ClassCastException e) {
-            throw GraknTxOperationException.invalidResourceValue(value, dataType);
-        }
+                () -> getAttribute(value), instanceBuilder, isInferred);
     }
 
     /**
@@ -158,7 +140,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      */
     private void checkConformsToRegexes(D value){
         //Not checking the datatype because the regex will always be null for non strings.
-        superSet().forEach(sup -> {
+        this.sups().forEach(sup -> {
             String regex = sup.getRegex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
                 throw GraknTxOperationException.regexFailure(this, (String) value, regex);
@@ -188,6 +170,10 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public String getRegex() {
         return vertex().property(Schema.VertexProperty.REGEX);
+    }
+
+    public static AttributeTypeImpl from(AttributeType attributeType){
+        return (AttributeTypeImpl) attributeType;
     }
 
 }

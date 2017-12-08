@@ -100,6 +100,7 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("Atomic [%s] is not allowed to form a rule head of rule [%s]\n"),
 
+
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE("Atom [%s] is not allowed to form a rule head of rule [%s] as it contains an unbound variable\n"),
 
     VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT("Atom [%s] is not allowed to form a rule head of rule [%s] as it has an ambiguous schema concept\n"),
@@ -162,7 +163,6 @@ public enum ErrorMessage {
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
-    NO_LABEL_SPECIFIED_FOR_HAS("no label was specified for a resource type in a 'has' property"),
     MULTIPLE_TX("a graph has been specified twice for this query"),
 
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
@@ -177,6 +177,8 @@ public enum ErrorMessage {
 
     //Templating
     TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
+
+    UNEXPECTED_RESULT("the concept [%s] could not be found in results"),
 
     //--------------------------------------------- Engine Errors -----------------------------------------------
     ILLEGAL_ARGUMENT_EXCEPTION("Illegal argument exception caused by [%s]"),
@@ -197,8 +199,7 @@ public enum ErrorMessage {
     INVALID_QUERY_USAGE("Only %s queries are allowed."),
     MISSING_TASK_ID("Could not retrieve id %s"),
     TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
-    ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s:%s]"),
-    AUTHENTICATION_FAILURE("Authentication parameters are incorrect or invalid"),
+    ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s]"),
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
     //Post processing Errors
@@ -215,10 +216,12 @@ public enum ErrorMessage {
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
     ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
     ROLE_ID_IS_NOT_ROLE("Assignment of non-role id to a role variable in pattern [%s]."),
+    INVALID_UNIFIER_TYPE("Unifier type [%s] is invalid."),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]."),
-    RULE_CREATION_ARITY_ERROR("Arity mismatch when creating a rule."),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
+    NON_EXISTENT_UNIFIER("Could not proceed with unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal conversion of atom [%s]."),
+    CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     NO_SOURCE("No valid source id provided"),

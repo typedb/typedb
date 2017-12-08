@@ -18,10 +18,8 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -62,13 +60,11 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
     Optional<GraknTx> tx = Optional.empty();
-    GraknComputer graknComputer = null;
-    Keyspace keySpace;
+    private GraknComputer graknComputer = null;
+    boolean includeAttribute = false;
 
     Set<Label> subLabels = new HashSet<>();
     Set<Type> subTypes = new HashSet<>();
-
-    private String url;
 
     @Override
     public ComputeQuery<T> withTx(GraknTx tx) {
@@ -85,6 +81,12 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     @Override
     public ComputeQuery<T> in(Collection<Label> subLabels) {
         this.subLabels = Sets.newHashSet(subLabels);
+        return this;
+    }
+
+    @Override
+    public ComputeQuery<T> includeAttribute() {
+        this.includeAttribute = true;
         return this;
     }
 
@@ -113,38 +115,57 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 });
             }
         }
-
         return Stream.of(printer.graqlString(computeResult));
     }
 
     void initSubGraph() {
-        GraknTx theGraph = tx.orElseThrow(GraqlQueryException::noTx);
-        keySpace = theGraph.getKeyspace();
-        url = theGraph.admin().getEngineUrl();
-
-        getAllSubTypes(theGraph);
+        if (this.isStatisticsQuery()) {
+            includeAttribute = true;
+        }
     }
 
-    private void getAllSubTypes(GraknTx tx) {
+    void getAllSubTypes() {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
+        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
+        GraknTx graknTx = tx.get();
         if (subLabels.isEmpty()) {
-            tx.admin().getMetaConcept().subs().forEach(subTypes::add);
+            if (includeAttribute) {
+                graknTx.admin().getMetaConcept().subs().forEach(subTypes::add);
+            } else {
+                graknTx.admin().getMetaEntityType().subs().forEach(subTypes::add);
+                graknTx.admin().getMetaRelationType().subs()
+                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypes::add);
+            }
         } else {
             subTypes = subLabels.stream().map(label -> {
-                SchemaConcept type = tx.getSchemaConcept(label);
+                SchemaConcept type = graknTx.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
-                if (type.isRole() || type.isRule()) throw GraqlQueryException.roleAndRuleDoNotHaveInstance();
+                if (!type.isType()) {
+                    throw GraqlQueryException.cannotGetInstancesOfNonType(type.getLabel());
+                }
+                if (!includeAttribute && (type.isAttributeType() || type.isImplicit())) {
+                    includeAttribute = true;
+                }
                 return type.asType();
             }).collect(Collectors.toSet());
 
-            subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
+            if (includeAttribute) {
+                subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
+            } else {
+                subTypes = subTypes.stream().flatMap(Type::subs)
+                        .filter(relationshipType -> !relationshipType.isImplicit()).collect(Collectors.toSet());
+            }
         }
         subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
     }
 
     GraknComputer getGraphComputer() {
         if (graknComputer == null) {
-            graknComputer = Grakn.session(url, keySpace).getGraphComputer();
+            if(tx.isPresent()){
+                graknComputer = tx.get().session().getGraphComputer();
+            } else {
+                throw new IllegalStateException("Transaction has not been provided. Cannot initialise graph computer");
+            }
         }
         return graknComputer;
     }
@@ -199,12 +220,13 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
 
-        return tx.equals(that.tx) && subLabels.equals(that.subLabels);
+        return tx.equals(that.tx) && includeAttribute == that.includeAttribute && subLabels.equals(that.subLabels);
     }
 
     @Override
     public int hashCode() {
         int result = tx.hashCode();
+        result = 31 * result + Boolean.hashCode(includeAttribute);
         result = 31 * result + subLabels.hashCode();
         return result;
     }

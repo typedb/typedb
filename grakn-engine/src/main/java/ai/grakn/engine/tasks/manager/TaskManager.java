@@ -18,7 +18,8 @@
 
 package ai.grakn.engine.tasks.manager;
 
-import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.BackgroundTask;
+
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 
@@ -35,7 +36,15 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public interface TaskManager extends TaskSubmitter, Closeable {
+public interface TaskManager extends Closeable {
+
+    /**
+     * Schedule a {@link BackgroundTask} for execution.
+     * @param taskState Task to execute
+     */
+    void addTask(TaskState taskState, TaskConfiguration configuration);
+
+    void runTask(TaskState taskState, TaskConfiguration configuration);
 
     /**
      * Make sure the manager is initialized and starts processing tasks
@@ -43,17 +52,9 @@ public interface TaskManager extends TaskSubmitter, Closeable {
     CompletableFuture<Void> start();
 
     /**
-     * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the
-     * task is killed afterwards.
-     * @param id ID of task to stop.
-     */
-    void stopTask(TaskId id);
-
-    /**
      * Return the StateStorage instance that is used by this class.
      * @return A StateStorage instance.
      */
     TaskStateStorage storage();
 
-    // TODO: Add 'pause' and 'restart' methods
 }

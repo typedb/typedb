@@ -25,8 +25,9 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.migration.base.Migrator;
+import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.sql.SQLMigrator;
-import ai.grakn.test.EngineContext;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
 import ai.grakn.util.SampleKBLoader;
 import org.jooq.exception.DataAccessException;
@@ -49,18 +50,20 @@ public class SQLMigratorTest {
 
     private Migrator migrator;
     private GraknSession factory;
+    private Keyspace keyspace;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.inMemoryServer();
+    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     @Before
     public void setup(){
-        Keyspace keyspace = SampleKBLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
-        migrator = Migrator.to(engine.uri(), keyspace);
+        migrator = new MigratorBuilder().setUri(engine.uri()).setKeyspace(keyspace)
+                .build();
     }
 
     @Test
@@ -70,7 +73,6 @@ public class SQLMigratorTest {
 
         try(Connection connection = setupExample(factory, "pets")){
             migrator.load(template, new SQLMigrator(query, connection).convert());
-
             assertPetGraphCorrect(factory);
         }
     }

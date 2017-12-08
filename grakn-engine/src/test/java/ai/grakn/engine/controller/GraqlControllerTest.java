@@ -1,13 +1,19 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.controller.response.Concept;
+import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.graql.Printer;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.printer.JacksonPrinter;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
@@ -18,78 +24,100 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-import java.util.function.Function;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
+import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
+import static ai.grakn.util.REST.Request.Graql.QUERY;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GraqlControllerTest {
-
-    private Printer<Json> jsonPrinter;
-    private Printer<Function<StringBuilder, StringBuilder>> graqlPrinter;
-    private Printer halPrinter;
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
+    private static final Lock mockLock = mock(Lock.class);
+    private static final JacksonPrinter printer = JacksonPrinter.create();
 
     private Response sendQuery(String query) {
-        return sendQuery(query, APPLICATION_JSON_GRAQL);
+        return sendQuery(query, APPLICATION_JSON);
     }
 
     private Response sendQuery(String query, String acceptType) {
-        return sendQuery(query, acceptType, true, false, -1);
+        return sendQuery(query, acceptType, true, sampleKB.tx().keyspace().getValue(), false);
     }
 
     private Response sendQuery(String query,
                                String acceptType,
-                               boolean reasonser,
-                               boolean materialise,
-                               int limitEmbedded) {
+                               boolean reasoner,
+                               String keyspace, boolean multi) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, sampleKB.tx().getKeyspace().getValue())
                 .body(query)
-                .queryParam(INFER, reasonser)
-                .queryParam(MATERIALISE, materialise)
-                .queryParam(LIMIT_EMBEDDED, limitEmbedded)
+                .queryParam(EXECUTE_WITH_INFERENCE, reasoner)
+                .queryParam(ALLOW_MULTIPLE_QUERIES, multi)
+                .queryParam(DEFINE_ALL_VARS, true)
                 .accept(acceptType)
-                .post(REST.WebPath.KB.ANY_GRAQL);
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace));
     }
 
-    @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    private Response sendExplanationQuery(String query, String keyspace) {
+        return RestAssured.with()
+                .queryParam(QUERY, query)
+                .accept(APPLICATION_JSON)
+                .get(REST.resolveTemplate(REST.WebPath.KEYSPACE_EXPLAIN, keyspace));
+    }
+
+
+    public static SampleKBContext sampleKB = MovieKB.context();
+
+    public static SampleKBContext genealogyKB = GenealogyKB.context();
+
+    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        EngineGraknTxFactory factory = EngineGraknTxFactory
+                .createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
+        new GraqlController(factory, spark, mock(TaskManager.class), mock(PostProcessor.class), printer, new MetricRegistry());
+    });
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
-        new GraqlController(factory, spark, new MetricRegistry());
-    });
+    public static final RuleChain chain = RuleChain.emptyRuleChain().around(sampleKB).around(genealogyKB).around(sparkContext);
 
     @Before
     public void setUp() {
-        jsonPrinter = Printers.json();
-        graqlPrinter = Printers.graql(false);
-        halPrinter = Printers.hal(sampleKB.tx().getKeyspace(), -1);
+        when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
     @Test
-    public void whenRunningGetQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; get;", jsonPrinter, APPLICATION_JSON_GRAQL);
+    public void whenRunningGetQuery_EnsureAllInstancesAreReturned() {
+        Set<Concept> expectedInstances = sampleKB.tx().getEntityType("movie").instances().
+                map(ConceptBuilder::<Concept>build).collect(Collectors.toSet());
+
+        List<Json> json = Json.read(sendQuery("match $x isa movie; get;", APPLICATION_JSON).body().asString()).
+                asJsonList();
+
+        Set<Concept> instances = json.stream().
+                map(j -> j.at("x")).
+                map(JsonConceptBuilder::<Concept>build).
+                collect(Collectors.toSet());
+
+        assertEquals(expectedInstances, instances);
     }
 
+    //TODO: THis test should be improved
     @Test
-    public void whenRunningGetQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; get;", graqlPrinter, APPLICATION_TEXT);
-    }
-
-    @Test
-    public void whenRunningGetQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; get;", halPrinter, APPLICATION_HAL);
+    public void whenExecutingExplainQuery_responseIsValid() {
+        String keyspace = genealogyKB.tx().keyspace().getValue();
+        Response response = sendExplanationQuery("match ($x,$y) isa cousins; offset 0; limit 1; get;", keyspace);
+        List<Json> json = Json.read(response.body().asString()).asJsonList();
+        assertEquals(3, json.size());
     }
 
     @Test
@@ -106,18 +134,27 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void whenRunningIdempotentInsertQuery_JsonResponseIsTheSameAsJavaGraql() {
-        assertResponseSameAsJavaGraql("insert $x label movie;", jsonPrinter, APPLICATION_JSON_GRAQL);
+    public void whenRunningInsertQuery_JsonResponseCanBeMappedToJavaObject() {
+        Concept expectedConcept = ConceptBuilder.build(sampleKB.tx().getEntityType("movie"));
+        Json json = Json.read(sendQuery("insert $x label movie;", APPLICATION_JSON).body().asString()).
+                asJsonList().iterator().next().at("x");
+        Concept concept = JsonConceptBuilder.build(json);
+        assertEquals(expectedConcept, concept);
     }
 
     @Test
-    public void whenRunningIdempotentInsertQuery_GraqlResponseIsTheSameAsJavaGraql() {
-        assertResponseSameAsJavaGraql("insert $x label movie;", graqlPrinter, APPLICATION_TEXT);
-    }
+    public void whenRunningMultiIdempotentInsertQuery_JsonResponseIsTheSameAsJavaGraql() {
+        String single = "insert $x label movie;";
+        String queryString = single + "\n" + single;
+        Response resp = sendQuery(queryString, APPLICATION_JSON, true, sampleKB.tx().keyspace().getValue(), true);
+        resp.then().statusCode(200);
+        sampleKB.rollback();
+        Stream<Query<?>> query = sampleKB.tx().graql().parser().parseList(queryString);
+        String graqlResult = printer.graqlString(query.map(Query::execute).collect(
+                Collectors.toList()));
+        Json expected = Json.read(graqlResult);
+        assertEquals(expected, Json.read(resp.body().asString()));
 
-    @Test
-    public void whenRunningIdempotentInsertQuery_HalResponseIsTheSameAsJavaGraql() {
-        assertResponseSameAsJavaGraql("insert $x label movie;", halPrinter, APPLICATION_HAL);
     }
 
     @Test
@@ -131,94 +168,44 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void wehnRunningAggregateQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", jsonPrinter, APPLICATION_JSON_GRAQL);
-    }
-
-    @Test
-    public void whenRunningAggregateQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", graqlPrinter, APPLICATION_TEXT);
-    }
-
-    @Test
-    public void whenRunningAggregateQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate count;", halPrinter, APPLICATION_HAL);
+    public void whenRunningAggregateQuery_JsonResponseIsTheSameAsJava() {
+        assertResponseMatchesExpectedObject("match $x isa movie; aggregate count;");
     }
 
     @Test
     public void whenRunningAskQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", jsonPrinter, APPLICATION_JSON_GRAQL);
-    }
-
-    @Test
-    public void whenRunningAskQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", graqlPrinter, APPLICATION_TEXT);
-    }
-
-    @Test
-    public void whenRunningAskQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", halPrinter, APPLICATION_HAL);
-    }
-
-    @Test
-    public void whenRunningQueryWithLimitEmbedded_HalResponseIsTheSameAsJava() {
-        String queryString = "match $x isa movie; get;";
-        int limitEmbedded = 42;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
-        Printer printer = Printers.hal(sampleKB.tx().getKeyspace(), limitEmbedded);
-        assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
+        assertResponseMatchesExpectedObject("match $x isa movie; aggregate ask;");
     }
 
     @Test
     public void whenMatchingRules_ResponseStatusIs200() {
-        String queryString = "match $x sub "+ Schema.MetaSchema.RULE.getLabel().getValue()+"; get;";
-        int limitEmbedded = 10;
-        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
+        String queryString = "match $x sub " + Schema.MetaSchema.RULE.getLabel().getValue() + "; get;";
+        Response resp = sendQuery(queryString, APPLICATION_JSON);
         resp.then().statusCode(200);
     }
 
-    @Test
-    public void whenMatchingSchema_NoInstancesInResponse() {
-        String queryString = "match $x sub thing; get;";
-        Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, -1);
-        Json jsonResp = Json.read(resp.body().asString());
-        jsonResp.asJsonList().stream().map(map -> map.at("x")).forEach(thing -> {
-            assertNotEquals("ENTITY", thing.at("_baseType").asString());
-            if (thing.has("_embedded")) {
-                thing.at("_embedded").asJsonMap().entrySet().forEach(stringJsonEntry -> {
-                    stringJsonEntry.getValue().asJsonList().forEach(embeddedObj -> {
-                        assertNotEquals("ENTITY", embeddedObj.at("_baseType").asString());
-                    });
-                });
-            }
-        });
-    }
 
     @Test
-    public void testBadQuery() {
+    public void whenSendingGibberish_Ensure400IsReturned() {
         sendQuery(" gibberish ads a;49 agfdgdsf").then().statusCode(400);
     }
 
-    @Test
-    public void whenAcceptHeaderIsInvalid_Return406Code() {
-        sendQuery("match $x isa movie; aggregate ask;", "application/msword", true, false, -1).then().statusCode(406);
+    private void assertResponseMatchesExpectedObject(String queryString) {
+        Response resp = sendQuery(queryString, APPLICATION_JSON);
+        assertResponseMatchesExpectedObject(resp, queryString);
     }
 
-    private void assertResponseSameAsJavaGraql(String queryString, Printer<?> printer, String acceptType) {
-        Response resp = sendQuery(queryString, acceptType);
-        assertResponseSameAsJavaGraql(resp, queryString, printer, acceptType);
-    }
-
-    private void assertResponseSameAsJavaGraql(Response resp, String queryString, Printer<?> printer, String acceptType) {
+    private void assertResponseMatchesExpectedObject(Response resp, String queryString) {
         resp.then().statusCode(200);
 
         sampleKB.rollback();
         Query<?> query = sampleKB.tx().graql().parse(queryString);
 
-        String expectedString = printer.graqlString(query.execute());
+        String expectedObject = printer.graqlString(query.execute());
 
-        Object expected = acceptType.equals(APPLICATION_TEXT) ? expectedString : Json.read(expectedString);
+        Object expected = Json.read(expectedObject);
 
         assertEquals(expected.toString(), resp.body().asString());
     }
+
 }

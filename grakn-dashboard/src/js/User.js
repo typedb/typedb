@@ -3,33 +3,13 @@ import EngineClient from './EngineClient';
 
 // Default constant values
 const DEFAULT_USE_REASONER = true;
-const DEFAULT_MATERIALISE = false;
 export const DEFAULT_KEYSPACE = 'grakn';
 const DEFAULT_QUERY_LIMIT = '30';
 
 
 export default {
 
-    // --------- User Login and Authentication ----------- //
-  newSession(creds, fn) {
-    return EngineClient.newSession(creds);
-  },
-
-  setAuthToken(token) {
-    localStorage.setItem('id_token', token);
-  },
-
-  logout() {
-    localStorage.removeItem('id_token');
-  },
-
-  isAuthenticated() {
-    const jwt = localStorage.getItem('id_token');
-    if (jwt) return true;
-    return false;
-  },
-
-    // -------------- Reasoner and materialisation toggles ------------ //
+    // -------------- Reasoner toggles ------------ //
   setReasonerStatus(status) {
     localStorage.setItem('use_reasoner', status);
   },
@@ -44,10 +24,6 @@ export default {
     return (useReasoner === 'true');
   },
 
-  setMaterialiseStatus(status) {
-    localStorage.setItem('reasoner_materialise', status);
-  },
-
   getFreezeNodes() {
     const freezeNodes = localStorage.getItem('freeze_nodes');
     if (freezeNodes == null) {
@@ -59,16 +35,6 @@ export default {
 
   setFreezeNodes(status) {
     localStorage.setItem('freeze_nodes', status);
-  },
-
-    // @return boolean
-  getMaterialiseStatus() {
-    const materialiseReasoner = localStorage.getItem('reasoner_materialise');
-    if (materialiseReasoner == null) {
-      this.setMaterialiseStatus(DEFAULT_MATERIALISE);
-      return DEFAULT_MATERIALISE;
-    }
-    return (materialiseReasoner === 'true');
   },
 
     // ---- Current Keyspace -----//

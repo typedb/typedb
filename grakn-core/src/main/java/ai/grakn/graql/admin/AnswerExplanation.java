@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
@@ -32,8 +33,21 @@ import java.util.Set;
  */
 public interface AnswerExplanation {
 
+    /**
+     * produce a new explanation with provided query set
+     * @param q query this explanation should be associated with
+     * @return explanation with provided query
+     */
     @CheckReturnValue
-    AnswerExplanation copy();
+    AnswerExplanation setQuery(ReasonerQuery q);
+
+    /**
+     * produce a new explanation with dependent answers provided
+     * @param answers dependent answers
+     * @return new explanation with dependent answers
+     */
+    @CheckReturnValue
+    AnswerExplanation withAnswers(Set<Answer> answers);
 
     /**
      * @return query associated with this explanation
@@ -42,29 +56,10 @@ public interface AnswerExplanation {
     ReasonerQuery getQuery();
 
     /**
-     * @param q query this explanation should be associated with
-     * @return explanation with provided query
-     */
-    AnswerExplanation setQuery(ReasonerQuery q);
-
-    /**
-     * @param a answer this explanation is dependent on
-     * @return true if added successfully
-     */
-    boolean addAnswer(Answer a);
-
-    /**
      * @return answers this explanation is dependent on
      */
     @CheckReturnValue
-    Set<Answer> getAnswers();
-
-    /**
-     * @param a2 explanation to be merged with
-     * @return merged explanation
-     */
-    @CheckReturnValue
-    AnswerExplanation merge(AnswerExplanation a2);
+    ImmutableSet<Answer> getAnswers();
 
     /**
      *

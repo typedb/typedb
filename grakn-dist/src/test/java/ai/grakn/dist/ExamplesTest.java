@@ -68,6 +68,6 @@ public class ExamplesTest {
 
     private void runInsertQuery(String path) throws IOException {
         String query = Files.readAllLines(Paths.get(path)).stream().collect(joining("\n"));
-        tx.graql().parseList(query).forEach(Query::execute);
+        tx.graql().parser().parseList(query).forEach(Query::execute);
     }
 }

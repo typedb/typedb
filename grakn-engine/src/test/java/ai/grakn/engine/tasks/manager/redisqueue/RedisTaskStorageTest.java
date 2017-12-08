@@ -48,7 +48,7 @@ public class RedisTaskStorageTest {
         TaskId taskId = TaskId.generate();
 
         //Make sure the fake task is returned
-        when(redisq.getState(taskId.getValue())).thenReturn(Optional.of(info));
+        when(redisq.getState(taskId.value())).thenReturn(Optional.of(info));
 
         //Check the exception is preserved
         TaskState state = redisTaskStorage.getState(taskId);

@@ -31,14 +31,18 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
+import ai.grakn.graql.internal.reasoner.state.RuleState;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.Sets;
 
@@ -157,7 +161,7 @@ public class InferenceRule {
      *
      * @return true if the rule needs to be materialised
      */
-    public boolean requiresMaterialisation(Atom parentAtom) {
+    public boolean requiresMaterialisation(Atom parentAtom){
         if (requiresMaterialisation == null) {
             requiresMaterialisation = parentAtom.requiresMaterialisation()
                     || getHead().getAtom().requiresMaterialisation()
@@ -182,8 +186,8 @@ public class InferenceRule {
      */
     public InferenceRule withSubstitution(Answer sub){
         return new InferenceRule(
-                ReasonerQueries.atomic(getHead(), sub),
-                ReasonerQueries.create(getBody(), sub),
+                getHead().withSubstitution(sub),
+                getBody().withSubstitution(sub),
                 ruleId,
                 tx
         );
@@ -229,7 +233,7 @@ public class InferenceRule {
                     .peek(bodyAtoms::add)
                     .collect(toSet());
             headAtom = new ResourceAtom(
-                    headAtom.getPattern().asVarPattern(),
+                    headAtom.getPattern(),
                     headAtom.getPredicateVariable(),
                     resourceHead.getRelationVariable(),
                     resourceHead.getTypePredicate(),
@@ -308,20 +312,39 @@ public class InferenceRule {
     }
 
     /**
+     * @param parentAtom atom to which this rule is applied
+     * @param ruleUnifier unifier with parent state
+     * @param parent parent state
+     * @param visitedSubGoals set of visited sub goals
+     * @param cache query cache
+     * @return resolution subGoal formed from this rule
+     */
+    public QueryStateBase subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Unifier ruleUnifierInverse = ruleUnifier.inverse();
+
+        //delta' = theta . thetaP . delta
+        Answer partialSubPrime = parentAtom.getParentQuery()
+                .getSubstitution()
+                .unify(ruleUnifierInverse);
+
+        return new RuleState(this.propagateConstraints(parentAtom, ruleUnifierInverse), partialSubPrime, ruleUnifier, parent, visitedSubGoals, cache);
+    }
+
+    /**
      * @param parentAtom atom to unify the rule with
      * @return corresponding unifier
      */
     public MultiUnifier getMultiUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         if (parentAtom.getSchemaConcept() != null){
-            return childAtom.getMultiUnifier(parentAtom, false);
+            return childAtom.getMultiUnifier(parentAtom, UnifierType.RULE);
         }
         //case of match all atom (atom without type)
         else{
             Atom extendedParent = parentAtom
                     .addType(childAtom.getSchemaConcept())
                     .inferTypes();
-            return childAtom.getMultiUnifier(extendedParent, false);
+            return childAtom.getMultiUnifier(extendedParent, UnifierType.RULE);
         }
     }
 }

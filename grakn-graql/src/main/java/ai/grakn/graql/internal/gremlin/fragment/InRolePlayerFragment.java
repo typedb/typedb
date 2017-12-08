@@ -100,7 +100,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_RELATIONS_PER_INSTANCE;
     }
 }

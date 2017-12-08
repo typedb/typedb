@@ -18,18 +18,13 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.query.QueryAnswer;
-import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -76,17 +71,6 @@ public class QueryAnswers implements Iterable<Answer>{
 
     public int size(){ return set.size();}
     public boolean isEmpty(){ return set.isEmpty();}
-
-    /**
-     * filter answers by constraining the variable set to the provided one
-     * @param vars set of variable names
-     * @return filtered answers
-     */
-    public QueryAnswers filterVars(Set<Var> vars) {
-        return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result.map(), vars::contains))
-                .map(QueryAnswer::new)
-                .collect(Collectors.toSet()));
-    }
 
     /**
      * unify the answers by applying unifier to variable set

@@ -24,6 +24,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
+import ai.grakn.test.rule.SampleKBContext;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -54,7 +55,11 @@ public abstract class TestKB {
         };
     }
 
-    public static Thing putEntity(GraknTx tx, String id, EntityType type, Label key) {
+    public SampleKBContext makeContext() {
+        return SampleKBContext.load(build());
+    }
+
+    public static Thing putEntityWithResource(GraknTx tx, String id, EntityType type, Label key) {
         Thing inst = type.addEntity();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;

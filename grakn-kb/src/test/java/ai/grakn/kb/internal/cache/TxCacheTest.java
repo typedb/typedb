@@ -25,7 +25,6 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
@@ -34,9 +33,6 @@ import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.structure.Casting;
-import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
-import mjson.Json;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
@@ -110,7 +106,7 @@ public class TxCacheTest extends TxTestBase {
         RelationshipImpl relation = (RelationshipImpl) rt1.addRelationship().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
 
         assertThat(tx.txCache().getModifiedCastings(), is(empty()));
 
@@ -123,27 +119,10 @@ public class TxCacheTest extends TxTestBase {
         EntityType t1 = tx.putEntityType("1");
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
 
         Entity i1 = t1.addEntity();
         assertThat(tx.txCache().getConceptCache().values(), hasItem(i1));
-    }
-
-    @Test
-    public void whenCreatingRelations_EnsureLogContainsRelation(){
-        Role r1 = tx.putRole("r1");
-        Role r2 = tx.putRole("r2");
-        EntityType t1 = tx.putEntityType("t1").plays(r1).plays(r2);
-        RelationshipType rt1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
-        Entity i1 = t1.addEntity();
-        Entity i2 = t1.addEntity();
-
-        tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
-
-        assertThat(tx.txCache().getModifiedRelationships(), is(empty()));
-        Relationship rel1 = rt1.addRelationship().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
-        assertThat(tx.txCache().getModifiedRelationships(), containsInAnyOrder(rel1));
     }
 
     @Test
@@ -152,40 +131,12 @@ public class TxCacheTest extends TxTestBase {
         Entity i1 = t1.addEntity();
 
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
 
-        assertThat(tx.txCache().getModifiedEntities(), is(empty()));
+        assertThat(tx.txCache().getModifiedThings(), is(empty()));
 
         i1.delete();
-        assertThat(tx.txCache().getModifiedEntities(), is(empty()));
-    }
-
-    @Test
-    public void whenNoOp_EnsureLogWellFormed() {
-        Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
-                REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
-        assertEquals("Unexpected graph logs", expected, tx.commitLog().getFormattedLog());
-    }
-
-    @Test
-    public void whenAddingEntities_EnsureLogIsFilledAfterCommit() {
-        EntityType entityType = tx.putEntityType("My Type");
-        entityType.addEntity();
-        entityType.addEntity();
-        Json emptyLog = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
-                REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
-        assertEquals("Logs are not empty", emptyLog, tx.commitLog().getFormattedLog());
-
-        tx.commit();
-
-        Json filledLog = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() +
-                "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
-                "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
-                "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
-        assertEquals("Logs are empty", filledLog, tx.commitLog().getFormattedLog());
+        assertThat(tx.txCache().getModifiedThings(), is(empty()));
     }
 
     @Test
@@ -235,7 +186,6 @@ public class TxCacheTest extends TxTestBase {
         assertThat(cache.getConceptCache().keySet(), not(empty()));
         assertThat(cache.getSchemaConceptCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
-        assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
         assertThat(cache.getModifiedCastings(), not(empty()));
 
@@ -246,14 +196,11 @@ public class TxCacheTest extends TxTestBase {
         assertThat(cache.getConceptCache().keySet(), empty());
         assertThat(cache.getSchemaConceptCache().keySet(), empty());
         assertThat(cache.getLabelCache().keySet(), empty());
-        assertThat(cache.getRelationIndexCache().keySet(), empty());
         assertThat(cache.getShardingCount().keySet(), empty());
-        assertThat(cache.getModifiedEntities(), empty());
+        assertThat(cache.getModifiedThings(), empty());
         assertThat(cache.getModifiedRoles(), empty());
         assertThat(cache.getModifiedRelationshipTypes(), empty());
-        assertThat(cache.getModifiedRelationships(), empty());
         assertThat(cache.getModifiedRules(), empty());
-        assertThat(cache.getModifiedAttributes(), empty());
         assertThat(cache.getModifiedCastings(), empty());
     }
 

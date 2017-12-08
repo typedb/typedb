@@ -74,7 +74,7 @@ public class SchemaMutationTest extends TxTestBase {
         bob = man.addEntity();
         marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
         tx.commit();
-        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
     }
 
     @Test
@@ -247,7 +247,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
         animal.attribute(name);
         tx.commit();
     }
@@ -260,7 +260,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now delete the relation
-        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
         relation.delete();
 
         expectedException.expect(InvalidKBException.class);
@@ -278,7 +278,7 @@ public class SchemaMutationTest extends TxTestBase {
 
         //Create a man which is a person and is therefore allowed to have a name
         EntityType man = tx.putEntityType("man").sup(person);
-        RelationshipType has_name = tx.putRelationshipType("has-name");
+        RelationshipType has_name = tx.getRelationshipType("@has-name");
 
         //Create a Man and name him Bob
         Attribute<String> nameBob = name.putAttribute("Bob");
@@ -286,7 +286,7 @@ public class SchemaMutationTest extends TxTestBase {
 
         //Get The Relationship which says that our man is name bob
         Relationship expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
-        Role hasNameOwner = tx.getRole("has-name-owner");
+        Role hasNameOwner = tx.getRole("@has-name-owner");
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
 

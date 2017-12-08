@@ -70,6 +70,8 @@ public class JsonMigrator implements AutoCloseable {
 
         try(JsonMigrator jsonMigrator = new JsonMigrator(jsonDataFile)){
             MigrationCLI.loadOrPrint(jsonTemplateFile, jsonMigrator.convert(), options);
+        } catch(Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 

@@ -31,14 +31,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.time.Instant;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.time.Instant.now;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
@@ -53,25 +48,9 @@ public class TaskState implements Serializable {
     private static final long serialVersionUID = -7301340972479426653L;
 
     /**
-     * The priority of the task which decides which queue the task should go into
-     */
-    public enum Priority{
-        LOW,
-        HIGH;
-
-        public String queue(){
-            return name() + "-priority-queue";
-        }
-    }
-
-    /**
      * Id of this task.
      */
     private final String taskId;
-    /**
-     * The priority of the task which decides which queue the task should go into
-     */
-    private final Priority priority;
     /**
      * Task status, @see TaskStatus.
      */
@@ -80,6 +59,7 @@ public class TaskState implements Serializable {
      * Time when task status was last updated.
      */
     private Instant statusChangeTime;
+
     /**
      * Name of Class implementing the BackgroundTask interface that should be executed when task is run.
      */
@@ -93,53 +73,39 @@ public class TaskState implements Serializable {
      */
     private EngineID engineID;
     /**
-     * Schedule for when this task should execute
-     */
-    private TaskSchedule schedule;
-    /**
      * Used to store any executing failures for the given task.
      */
     private String stackTrace;
     private String exception;
-    /**
-     * Used to store a task checkpoint allowing it to resume from the same point of execution as at the time of the checkpoint.
-     */
-    private TaskCheckpoint taskCheckpoint;
 
-    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, Priority priority) {
-        return new TaskState(taskClass, creator, schedule, TaskId.generate(), priority);
+    public static TaskState of(Class<?> taskClass, String creator) {
+        return new TaskState(taskClass, creator, TaskId.generate());
     }
 
     public static TaskState of(TaskId id) {
-        return new TaskState(null, null, null, id, null);
+        return new TaskState(null, null, id);
     }
 
     public static TaskState of(TaskId id, TaskStatus taskStatus) {
-        return new TaskState(null, null, null, id, null, taskStatus);
+        return new TaskState(null, null, id, taskStatus);
     }
 
     @JsonCreator
     public TaskState(@JsonProperty("taskClass") Class<?> taskClass,
             @JsonProperty("creator") String creator,
-            @JsonProperty("schedule") TaskSchedule schedule,
             @JsonProperty("id") TaskId id,
-            @JsonProperty("priority") Priority priority,
             @JsonProperty("status") TaskStatus status) {
         this.status = status;
         this.statusChangeTime = now();
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
         this.creator = creator;
-        this.schedule = schedule;
-        this.taskId = id.getValue();
-        this.priority = priority;
+        this.taskId = id.value();
     }
 
     public TaskState(Class<?> taskClass,
             String creator,
-            TaskSchedule schedule,
-            TaskId id,
-            Priority priority) {
-        this(taskClass, creator, schedule, id, priority, CREATED);
+            TaskId id) {
+        this(taskClass, creator, id, CREATED);
     }
 
     private TaskState(TaskState taskState) {
@@ -149,11 +115,8 @@ public class TaskState implements Serializable {
         this.taskClassName = taskState.taskClassName;
         this.creator = taskState.creator;
         this.engineID = taskState.engineID;
-        this.schedule = taskState.schedule;
         this.stackTrace = taskState.stackTrace;
         this.exception = taskState.exception;
-        this.taskCheckpoint = taskState.taskCheckpoint;
-        this.priority = taskState.priority;
     }
 
     @JsonProperty("id")
@@ -161,45 +124,6 @@ public class TaskState implements Serializable {
         return TaskId.of(taskId);
     }
 
-    public TaskState markRunning(EngineID engineID){
-        this.status = RUNNING;
-        this.engineID = engineID;
-        this.statusChangeTime = now();
-
-        return this;
-    }
-
-    public TaskState markCompleted(){
-        this.status = COMPLETED;
-        this.statusChangeTime = now();
-
-        // Clearing out any not relevant information
-        this.taskCheckpoint = null;
-
-        return this;
-    }
-
-    public TaskState markScheduled(){
-        this.status = SCHEDULED;
-        this.statusChangeTime = now();
-
-        return this;
-    }
-
-    public TaskState markStopped(){
-        this.status = STOPPED;
-        this.statusChangeTime = now();
-
-        return this;
-    }
-
-    public TaskState markFailed(Throwable exception){
-        this.status = FAILED;
-        this.exception = exception.getClass().getName();
-        this.stackTrace = getFullStackTrace(exception);
-        this.statusChangeTime = now();
-        return this;
-    }
 
     public TaskState markFailed(String reason){
         this.status = FAILED;
@@ -225,52 +149,12 @@ public class TaskState implements Serializable {
         }
     }
 
-    public String creator() {
-        return creator;
-    }
-
-    @JsonProperty("creator")
-    public String getCreator() {
-        return creator;
-    }
-
-    public EngineID engineID() {
-        return engineID;
-    }
-
-    public TaskSchedule schedule() {
-        return schedule;
-    }
-
-    @JsonProperty("schedule")
-    public TaskSchedule getSchedule() {
-        return schedule;
-    }
-
-    public TaskState schedule(TaskSchedule schedule){
-        this.schedule = schedule;
-        return this;
-    }
-
     public String stackTrace() {
         return stackTrace;
     }
 
     public String exception() {
         return exception;
-    }
-
-    public TaskState checkpoint(TaskCheckpoint taskCheckpoint) {
-        this.taskCheckpoint = taskCheckpoint;
-        return this;
-    }
-
-    public Priority priority(){
-        return priority;
-    }
-
-    public TaskCheckpoint checkpoint() {
-        return taskCheckpoint;
     }
 
     public TaskState copy() {
@@ -280,11 +164,6 @@ public class TaskState implements Serializable {
     @JsonProperty("serialVersionUID")
     public static long getSerialVersionUID() {
         return serialVersionUID;
-    }
-
-    @JsonProperty("priority")
-    public Priority getPriority() {
-        return priority;
     }
 
     @JsonProperty("status")
@@ -300,11 +179,6 @@ public class TaskState implements Serializable {
     @JsonProperty("engineId")
     public EngineID getEngineID() {
         return engineID;
-    }
-
-    @JsonProperty("taskCheckpoint")
-    public TaskCheckpoint getTaskCheckpoint() {
-        return taskCheckpoint;
     }
 
     @Override

@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
@@ -28,7 +29,7 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -52,7 +53,7 @@ public class QueryErrorTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @ClassRule
     public static final SampleKBContext empty = SampleKBContext.empty();
@@ -85,6 +86,20 @@ public class QueryErrorTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("thingy");
         qb.match(var("x").has("thingy", "value")).delete("x").execute();
+    }
+
+    @Test
+    public void whenMatchingWildcardHas_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.noLabelSpecifiedForHas(var("x")).getMessage());
+        qb.match(label("thing").has(var("x"))).get().execute();
+    }
+
+    @Test
+    public void whenMatchingHasWithNonExistentType_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("heffalump")).getMessage());
+        qb.match(var("x").has("heffalump", "foo")).get().execute();
     }
 
     @Test
@@ -158,12 +173,17 @@ public class QueryErrorTest {
     @Test
     public void testExceptionInstanceOfRoleType() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(
-                containsString("actor"),
-                containsString("role")
-        ));
+        exception.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("actor")).getMessage());
         //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("actor")).stream();
+    }
+
+    @Test
+    public void testExceptionInstanceOfRule() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
+        //noinspection ResultOfMethodCallIgnored
+        qb.match(var("x").isa("rule")).stream();
     }
 
     @Test

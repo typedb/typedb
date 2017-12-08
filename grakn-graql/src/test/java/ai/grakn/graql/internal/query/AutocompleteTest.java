@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.graql.Autocomplete;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -39,7 +39,7 @@ public class AutocompleteTest {
     private final Set<String> types = ImmutableSet.of("production", "movie", "person");
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Test
     public void whenAutocompletingAnEmptyQuery_CandidatesIncludeTypesAndKeywords() {

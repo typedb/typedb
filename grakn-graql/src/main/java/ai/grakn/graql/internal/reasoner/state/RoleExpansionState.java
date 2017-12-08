@@ -39,7 +39,7 @@ class RoleExpansionState extends ResolutionState {
 
     private final Iterator<AnswerState> answerStateIterator;
 
-    RoleExpansionState(Answer sub, Unifier u, Set<Var> toExpand, QueryState parent) {
+    RoleExpansionState(Answer sub, Unifier u, Set<Var> toExpand, QueryStateBase parent) {
         super(sub, parent);
         this.answerStateIterator = getSubstitution()
                 .expandHierarchies(toExpand)

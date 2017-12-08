@@ -20,156 +20,238 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Concept;
-import ai.grakn.engine.GraknEngineStatus;
+import ai.grakn.Keyspace;
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.controller.response.Attribute;
+import ai.grakn.engine.controller.response.AttributeType;
+import ai.grakn.engine.controller.response.Concept;
+import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.engine.controller.response.EmbeddedAttribute;
+import ai.grakn.engine.controller.response.Entity;
+import ai.grakn.engine.controller.response.EntityType;
+import ai.grakn.engine.controller.response.Link;
+import ai.grakn.engine.controller.response.Relationship;
+import ai.grakn.engine.controller.response.RelationshipType;
+import ai.grakn.engine.controller.response.Role;
+import ai.grakn.engine.controller.response.RolePlayer;
+import ai.grakn.engine.controller.response.Rule;
+import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.graql.Pattern;
+import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
-import org.junit.Before;
+import mjson.Json;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
-import static ai.grakn.engine.controller.Utilities.exception;
-import static ai.grakn.engine.controller.Utilities.stringResponse;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
-import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
-import static com.jayway.restassured.RestAssured.with;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.fail;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ConceptControllerTest {
+    private static final Lock mockLock = mock(Lock.class);
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
+    private static final Keyspace keyspace = SampleKBLoader.randomKeyspace();
 
-    private static GraknTx mockTx;
-    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
+    private static EngineGraknTxFactory factory;
+    private static Role roleWrapper1;
+    private static Role roleWrapper2;
+    private static RelationshipType relationshipTypeWrapper;
+    private static Relationship relationshipWrapper;
+    private static EntityType entityTypeWrapper;
+    private static Entity entityWrapper;
+    private static AttributeType attributeTypeWrapper;
+    private static Attribute attributeWrapper1;
+    private static Attribute attributeWrapper2;
+    private static Rule ruleWrapper;
 
-    @ClassRule
-    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
+    private static ai.grakn.concept.Entity entity;
 
-    @ClassRule
+    public static SessionContext sessionContext = SessionContext.create();
+
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        MetricRegistry metricRegistry = new MetricRegistry();
-        new SystemController(mockFactory, spark, new GraknEngineStatus(), metricRegistry);
-        new ConceptController(mockFactory, spark, metricRegistry);
+        factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
+        new ConceptController(factory, spark, new MetricRegistry());
     });
+    @ClassRule
+    public static final RuleChain chain = RuleChain.emptyRuleChain().around(sessionContext).around(sparkContext);
 
-    @Before
-    public void setupMock(){
-        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+    @BeforeClass
+    public static void setUp() {
+        when(mockLockProvider.getLock(any())).thenReturn(mockLock);
 
-        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
-        when(mockTx.getConcept(any())).thenAnswer(invocation ->
-                sampleKB.tx().getConcept(invocation.getArgument(0)));
+        //Load Silly Sample Data
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)){
+            //Build The Sample KB
+            ai.grakn.concept.Role role1 = tx.putRole("My Special Role 1");
+            ai.grakn.concept.Role role2 = tx.putRole("My Special Role 2");
 
-        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
-    }
+            ai.grakn.concept.AttributeType attributeType = tx.putAttributeType("My Attribute Type", ai.grakn.concept.AttributeType.DataType.STRING);
+            ai.grakn.concept.Attribute attribute1 = attributeType.putAttribute("An attribute 1");
+            ai.grakn.concept.Attribute attribute2 = attributeType.putAttribute("An attribute 2");
 
+            ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).attribute(attributeType);
+            entity = entityType.addEntity().attribute(attribute1).attribute(attribute2);
 
-    @Test
-    public void gettingConceptById_ResponseStatusIs200(){
-        Response response = sendRequest(sampleKB.tx().getEntityType("movie"), 0);
+            ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
+            ai.grakn.concept.Relationship relationship = relationshipType.addRelationship().addRolePlayer(role1, entity).addRolePlayer(role2, entity);
 
-        assertThat(response.statusCode(), equalTo(200));
-    }
+            Pattern when = tx.graql().parser().parsePattern("$x isa \"My Relationship Type\"");
+            Pattern then = tx.graql().parser().parsePattern("$x isa \"My Special Entity Type\"");
+            ai.grakn.concept.Rule rule = tx.putRule("My Special Snowflake of a Rule", when, then);
 
-    @Test
-    public void gettingConceptByIdWithNoAcceptType_ResponseContentTypeIsHAL() {
-        Concept concept = sampleKB.tx().getEntityType("movie");
+            //Manually Serialise The Concepts
+            roleWrapper1 = ConceptBuilder.build(role1);
+            roleWrapper2 = ConceptBuilder.build(role2);
 
-        Response response = with()
-                .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-                .queryParam(IDENTIFIER, concept.getId().getValue())
-                .get(REST.WebPath.Concept.CONCEPT + concept.getId());
+            relationshipTypeWrapper = ConceptBuilder.build(relationshipType);
+            relationshipWrapper = ConceptBuilder.build(relationship);
 
-        assertThat(response.contentType(), equalTo(APPLICATION_HAL));
-    }
+            entityTypeWrapper = ConceptBuilder.build(entityType);
+            entityWrapper = ConceptBuilder.build(entity);
 
-    @Test
-    public void gettingConceptByIdWithHAlAcceptType_ResponseContentTypeIsHAL(){
-        Concept concept = sampleKB.tx().getEntityType("movie");
+            attributeTypeWrapper = ConceptBuilder.build(attributeType);
+            attributeWrapper1 = ConceptBuilder.build(attribute1);
+            attributeWrapper2 = ConceptBuilder.build(attribute2);
 
-        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-                .accept(APPLICATION_HAL)
-                .get(REST.WebPath.Concept.CONCEPT + concept.getId());
+            ruleWrapper = ConceptBuilder.build(rule);
 
-        assertThat(response.contentType(), equalTo(APPLICATION_HAL));
-    }
-
-    @Test
-    public void gettingConceptByIdWithInvalidAcceptType_ResponseStatusIs406(){
-        Concept concept = sampleKB.tx().getEntityType("movie");
-
-        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace())
-                .queryParam(IDENTIFIER, concept.getId().getValue())
-                .accept("invalid")
-                .get(REST.WebPath.Concept.CONCEPT + concept.getId());
-
-        assertThat(response.statusCode(), equalTo(406));
-        assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("invalid")));
+            tx.commit();
+        }
     }
 
     @Test
-    @Ignore //TODO Figure out how to properly check the Json objects
-    public void gettingInstanceElementById_ConceptIdIsReturnedWithCorrectHAL(){
-        Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
+    public void whenGettingRelationships_EnsureRolePlayersAreReturned() throws IOException {
+        //Get Expected Relationships
+        Set<RolePlayer> relationshipsExpected = new HashSet<>();
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+            entity.plays().forEach(role -> {
+                Link roleWrapper = Link.create(role);
+                entity.relationships(role).forEach(relationship -> {
+                    Link relationshipWrapper = Link.create(relationship);
+                    relationshipsExpected.add(RolePlayer.create(roleWrapper, relationshipWrapper));
+                });
+            });
+        }
 
-        Response response = sendRequest(concept, 1);
+        //Make the request
+        String request = entityWrapper.relationships().id();
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.getStatusCode());
 
-        String expectedResponse = renderHALConceptData(concept, 1, SampleKBLoader.randomKeyspace(), 0, 1);
-        assertThat(stringResponse(response), equalTo(expectedResponse));
+        //Check relationships are embedded
+        List<RolePlayer> relationships = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<RolePlayer>>(){});
+        assertEquals(relationshipsExpected.size(), relationships.size());
+        assertTrue(relationships.containsAll(relationshipsExpected));
     }
 
     @Test
-    @Ignore //TODO Figure out how to properly check the Json objects
-    public void gettingSchemaConceptById_ConceptIdIsReturnedWithCorrectHAL(){
-        Concept concept = sampleKB.tx().getEntityType("movie");
+    public void whenGettingAttributesOfConcept_EnsureEmbeddedAttributesAreReturned() throws IOException {
+        //Get the attributes we expect
+        List<EmbeddedAttribute> expectedAttributes;
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
+            expectedAttributes = entity.attributes().map(EmbeddedAttribute::create).collect(Collectors.toList());
+        }
 
-        Response response = sendRequest(concept, 1);
+        //Ask the controller for the attributes
+        String request = entityWrapper.attributes().id();
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.getStatusCode());
 
-        String expectedResponse = renderHALConceptData(concept, 1, SampleKBLoader.randomKeyspace(), 0, 1);
-        assertThat(stringResponse(response), equalTo(expectedResponse));
+        List<EmbeddedAttribute> attributes = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<EmbeddedAttribute>>(){});
+        assertEquals(expectedAttributes.size(), attributes.size());
+        assertTrue(attributes.containsAll(expectedAttributes));
     }
 
     @Test
-    @Ignore //TODO Figure out how should work and how to test
-    public void gettingConceptByIdWithNumberEmbedded2_Only2EmbeddedConceptsReturned(){
-        fail();
+    public void whenGettingTypesInstances_EnsureInstancesAreReturned() throws JsonProcessingException {
+        //TODO: Same as below get jackson to deserialise via a child constructor
+        String request = REST.resolveTemplate(REST.WebPath.TYPE_INSTANCES, keyspace.getValue(), entityTypeWrapper.label().getValue());
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.getStatusCode());
+
+        //Hacky way to check if instance is embedded
+        String instance = new ObjectMapper().writeValueAsString(entityWrapper);
+        assertTrue(response.body().asString().contains(instance));
     }
 
     @Test
-    @Ignore //TODO Figure out how should work and how to test
-    public void gettingConceptByIdWithOffset1_SecondConceptIsReturned(){
-        fail();
+    public void whenGettingConceptsByLabel_EnsureConceptsAreReturned(){
+        assertConceptsReturned(REST.WebPath.KEYSPACE_ROLE, (response) -> response.as(Role[].class), roleWrapper1, roleWrapper2);
+        assertConceptsReturned(REST.WebPath.KEYSPACE_RULE, (response) -> response.as(Rule[].class), ruleWrapper);
+
+        //Manual Check is necessary due to collection containing mixture of concepts
+        String request = REST.resolveTemplate(REST.WebPath.KEYSPACE_TYPE, keyspace.getValue());
+        List<Json> response = Json.read(RestAssured.when().get(request).body().asString()).asJsonList();
+        Set<Concept> types = response.stream().map(JsonConceptBuilder::<Concept>build).collect(Collectors.toSet());
+
+        assertTrue(String.format("Type {$s} missing from response", relationshipTypeWrapper), types.contains(relationshipTypeWrapper));
+        assertTrue(String.format("Type {$s} missing from response", attributeTypeWrapper), types.contains(attributeTypeWrapper));
+        assertTrue(String.format("Type {$s} missing from response", entityTypeWrapper), types.contains(entityTypeWrapper));
+    }
+
+    private static void assertConceptsReturned(String path, Function<Response, Concept []> wrapper, Concept ... concepts){
+        String request = REST.resolveTemplate(path, keyspace.getValue());
+
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.statusCode());
+
+        List<Concept> conceptsFound = Arrays.asList(wrapper.apply(response));
+        for (Concept concept : concepts) {
+            assertThat(conceptsFound, hasItem(concept));
+        }
     }
 
     @Test
-    public void gettingNonExistingElementById_ResponseStatusIs404(){
-        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-                .queryParam(IDENTIFIER, "invalid")
-                .accept(APPLICATION_HAL)
-                .get(REST.WebPath.Concept.CONCEPT + "blah");
-
-        assertThat(response.statusCode(), equalTo(404));
+    public void whenGettingConceptWhichExists_ConceptIsReturned() throws IOException {
+        assertExists(roleWrapper1, Role.class);
+        assertExists(roleWrapper2, Role.class);
+        assertExists(relationshipTypeWrapper, RelationshipType.class);
+        assertExists(relationshipWrapper, Relationship.class);
+        assertExists(entityTypeWrapper, EntityType.class);
+        assertExists(entityWrapper, Entity.class);
+        assertExists(attributeTypeWrapper, AttributeType.class);
+        assertExists(attributeWrapper1, Attribute.class);
+        assertExists(attributeWrapper2, Attribute.class);
+        assertExists(ruleWrapper, Rule.class);
     }
 
-    private Response sendRequest(Concept concept, int numberEmbeddedComponents){
-        return with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
-                .queryParam(LIMIT_EMBEDDED, numberEmbeddedComponents)
-                .accept(APPLICATION_HAL)
-                .get(REST.WebPath.Concept.CONCEPT + concept.getId().getValue());
+    @Test
+    public void whenGettingConceptByIdAndConceptDoeNotExist_EmptyResponse(){
+        String request = REST.resolveTemplate(REST.WebPath.CONCEPT_ID, keyspace.getValue(), "bob's smelly uncle");
+        RestAssured.when().get(request).then().statusCode(SC_NOT_FOUND);
+    }
+
+    //We can't use the class of the wrapper because it will be an AutoValue class
+    private static void assertExists(Concept wrapper, Class clazz) throws IOException {
+        String request = wrapper.selfLink().id();
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.statusCode());
+        assertEquals(wrapper, response.as(clazz));
     }
 }

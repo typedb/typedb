@@ -20,6 +20,7 @@ package ai.grakn.util;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
@@ -133,7 +134,8 @@ public final class Schema {
         ATTRIBUTE(Attribute.class),
 
         //Internal
-        SHARD(Vertex.class);
+        SHARD(Vertex.class),
+        CONCEPT(Concept.class);//No concept actually has this base type. This is used to prevent string hardcoding
 
         private final Class classType;
 
@@ -155,8 +157,9 @@ public final class Schema {
         SCHEMA_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
 
         //Other Properties
-        THING_TYPE_LABEL_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
-        REGEX(String.class), DATA_TYPE(String.class), SHARD_COUNT(Long.class), CURRENT_LABEL_ID(Integer.class),
+        THING_TYPE_LABEL_ID(Integer.class),
+        IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_INFERRED(Boolean.class),
+        REGEX(String.class), DATA_TYPE(String.class), CURRENT_LABEL_ID(Integer.class),
         RULE_WHEN(String.class), RULE_THEN(String.class), CURRENT_SHARD(String.class),
 
         //Supported Data Types
@@ -185,7 +188,8 @@ public final class Schema {
         RELATIONSHIP_ROLE_VALUE_LABEL_ID(Integer.class),
         ROLE_LABEL_ID(Integer.class),
         RELATIONSHIP_TYPE_LABEL_ID(Integer.class),
-        REQUIRED(Boolean.class);
+        REQUIRED(Boolean.class),
+        IS_INFERRED(Boolean.class);
 
         private final Class dataType;
 
@@ -204,34 +208,39 @@ public final class Schema {
      */
     public enum ImplicitType {
         /**
+         * Reserved character used by all implicit {@link Type}s
+         */
+        RESERVED("@"),
+
+        /**
          * The label of the generic has-{@link Attribute} relationship, used for attaching {@link Attribute}s to instances with the 'has' syntax
          */
-        HAS("has-%s"),
+        HAS("@has-%s"),
 
         /**
          * The label of a role in has-{@link Attribute}, played by the owner of the {@link Attribute}
          */
-        HAS_OWNER("has-%s-owner"),
+        HAS_OWNER("@has-%s-owner"),
 
         /**
          * The label of a role in has-{@link Attribute}, played by the {@link Attribute}
          */
-        HAS_VALUE("has-%s-value"),
+        HAS_VALUE("@has-%s-value"),
 
         /**
          * The label of the generic key relationship, used for attaching {@link Attribute}s to instances with the 'has' syntax and additionally constraining them to be unique
          */
-        KEY("key-%s"),
+        KEY("@key-%s"),
 
         /**
          * The label of a role in key, played by the owner of the key
          */
-        KEY_OWNER("key-%s-owner"),
+        KEY_OWNER("@key-%s-owner"),
 
         /**
          * The label of a role in key, played by the {@link Attribute}
          */
-        KEY_VALUE("key-%s-value");
+        KEY_VALUE("@key-%s-value");
 
         private final String label;
 
@@ -247,6 +256,11 @@ public final class Schema {
         @CheckReturnValue
         public Label getLabel(String attributeType) {
             return Label.of(String.format(label, attributeType));
+        }
+
+        @CheckReturnValue
+        public String getValue(){
+            return label;
         }
 
         /**

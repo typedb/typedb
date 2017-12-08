@@ -121,7 +121,7 @@ You can also specify a variable to represent the relationship connecting the thi
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell5">
 <pre>
-match $x has identifier "Bar" as $r; get;
+match $x has identifier "Bar" via $r; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java5">
@@ -294,12 +294,12 @@ The above is equivalent to:
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell11">
 <pre>
-match $x plays has-firstname-owner; get;
+match $x plays @has-firstname-owner; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java11">
 <pre>
-qb.match(var("x").plays("has-firstname-owner")).get();
+qb.match(var("x").plays("@has-firstname-owner")).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

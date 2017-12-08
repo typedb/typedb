@@ -103,11 +103,29 @@ public interface Thing extends Concept{
     Stream<Attribute<?>> attributes(AttributeType... attributeTypes);
 
     /**
+     * Retrieves a collection of {@link Attribute} attached to this {@link Thing} as a key
+     * @see Attribute
+     *
+     * @param attributeTypes {@link AttributeType}s of the {@link Attribute}s attached to this entity
+     * @return A collection of {@link AttributeType}s attached to this Thing.
+     */
+    @CheckReturnValue
+    Stream<Attribute<?>> keys(AttributeType... attributeTypes);
+
+    /**
      * Removes the provided {@link Attribute} from this {@link Thing}
      * @param attribute the {@link Attribute} to be removed
      * @return The {@link Thing} itself
      */
     Thing deleteAttribute(Attribute attribute);
+
+    /**
+     * Used to indicate if this {@link Thing} has been created as the result of a {@link Rule} inference.
+     * @see Rule
+     *
+     * @return true if this {@link Thing} exists due to a rule
+     */
+    boolean isInferred();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

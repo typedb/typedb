@@ -20,8 +20,8 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.graql.internal.shell.ErrorMessage;
-import ai.grakn.test.DistributionContext;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.rule.DistributionContext;
+import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
@@ -56,7 +56,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
@@ -71,8 +70,7 @@ import static org.junit.Assume.assumeFalse;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(true);
-
+    public static final DistributionContext dist = DistributionContext.create().inheritIO(true);
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;
@@ -92,7 +90,7 @@ public class GraqlShellIT {
         trueErr = System.err;
 
         // TODO: Get these tests working consistently on Jenkins - causes timeouts
-        assumeFalse(GraknTestSetup.usingJanus());
+        assumeFalse(GraknTestUtil.usingJanus());
     }
 
     @Before
@@ -350,7 +348,7 @@ public class GraqlShellIT {
     @Test
     public void testRollback() throws Exception {
         // Tinker graph doesn't support rollback
-        assumeFalse(GraknTestSetup.usingTinker());
+        assumeFalse(GraknTestUtil.usingTinker());
 
         String[] result = runShellWithoutErrors("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
 
@@ -388,21 +386,9 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void testHALOutput() throws Exception {
-        String[] result = runShellWithoutErrors(
-                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "hal"
-        ).split("\n");
-        assertThat(result, arrayWithSize(NUM_METATYPES));
-        Json json = Json.read(result[0]);
-        Json x = json.at("x");
-        assertTrue(x.has("_id"));
-        assertTrue(x.has("_baseType"));
-    }
-
-    @Test
     public void testRollbackSemicolon() throws Exception {
         // Tinker graph doesn't support rollback
-        assumeFalse(GraknTestSetup.usingTinker());
+        assumeFalse(GraknTestUtil.usingTinker());
 
         String result = runShellWithoutErrors(
                 "insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n"
@@ -576,7 +562,6 @@ public class GraqlShellIT {
     }
 
     @Test
-    @Ignore("Causes Travis build to halt")
     public void whenRunningBatchLoad_LoadCompletes() throws Exception {
         runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
         runShellWithoutErrors("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
@@ -584,19 +569,6 @@ public class GraqlShellIT {
         assertShellMatches(ImmutableList.of("-k", "batch"),
                 "match $x isa movie; aggregate ask;",
                 containsString("True")
-        );
-    }
-
-    @Test
-    @Ignore("Causes Travis build to halt")
-    public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
-        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
-
-        assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
-                is("Status of batch: FAILED"),
-                is("Number batches completed: 1"),
-                containsString("Approximate queries executed:"),
-                containsString("All tasks completed")
         );
     }
 
@@ -620,22 +592,6 @@ public class GraqlShellIT {
 
         String err2 = runShell("", "-e", query).err();
         assertEquals(err1, err2);
-    }
-
-    @Test
-    public void testDuplicateRelation() throws Exception {
-        String err = runShell(
-                "define R sub " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue() + ", relates R1, relates R2; R1 sub role; R2 sub role;\n" +
-                        "define X sub entity, plays R1, plays R2;\n" +
-                        "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
-                        "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
-                        "commit\n"
-        ).err();
-
-        assertThat(err.toLowerCase(), allOf(
-                anyOf(containsString("exists"), containsString("one or more")),
-                containsString("relationships")
-        ));
     }
 
     @Test

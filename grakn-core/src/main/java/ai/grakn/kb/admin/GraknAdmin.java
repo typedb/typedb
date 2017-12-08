@@ -28,17 +28,19 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Admin interface for {@link GraknTx}.
@@ -54,7 +56,7 @@ public interface GraknAdmin {
      * @return A concept built using the provided vertex
      */
     @CheckReturnValue
-    <T extends Concept> Optional<T> buildConcept(Vertex vertex);
+    <T extends Concept> T buildConcept(Vertex vertex);
 
     /**
      *
@@ -63,7 +65,7 @@ public interface GraknAdmin {
      * @return A {@link Concept} built using the provided {@link Edge}
      */
     @CheckReturnValue
-    <T extends Concept> Optional<T> buildConcept(Edge edge);
+    <T extends Concept> T buildConcept(Edge edge);
 
 
     /**
@@ -113,7 +115,7 @@ public interface GraknAdmin {
      * @return The meta resource type -> resource-type.
      */
     @CheckReturnValue
-    AttributeType getMetaResourceType();
+    AttributeType getMetaAttributeType();
 
     /**
      * Get the root of all the Entity Types.
@@ -148,7 +150,7 @@ public interface GraknAdmin {
      * @return the commit log that would have been submitted if it is needed.
      * @throws InvalidKBException when the graph does not conform to the object concept
      */
-    Optional<String> commitNoLogs() throws InvalidKBException;
+    Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException;
 
     /**
      * Check if there are duplicate resources in the provided set of vertex IDs
@@ -167,17 +169,18 @@ public interface GraknAdmin {
     boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds);
 
     /**
-     * Updates the counts of all the types
-     *
-     * @param conceptCounts The concepts and the changes to put on their counts
-     */
-    void updateConceptCounts(Map<ConceptId, Long> conceptCounts);
-
-    /**
      * Creates a new shard for the concept
      * @param conceptId the id of the concept to shard
      */
     void shard(ConceptId conceptId);
+
+    /**
+     * Gets the config option which determines the number of instances a {@link Type} must have before the {@link Type}
+     * if automatically sharded.
+     *
+     * @return the number of instances a {@link Type} must have before it is shareded
+     */
+    long shardingThreshold();
 
     /**
      *
@@ -187,6 +190,18 @@ public interface GraknAdmin {
      */
     @CheckReturnValue
     <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value);
+
+    /**
+     * Get all super-concepts of the given {@link SchemaConcept} including itself and including the meta-type
+     * {@link Schema.MetaSchema#THING}.
+     *
+     * <p>
+     *     If you want a more precise type that will exclude {@link Schema.MetaSchema#THING}, use
+     *     {@link SchemaConcept#sups()}.
+     * </p>
+     */
+    @CheckReturnValue
+    Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.
@@ -200,8 +215,11 @@ public interface GraknAdmin {
     void delete();
 
     /**
-     * Get the URL where the graph is located
-     * @return the URL where the graph is located
+     * Returns the current number of shards the provided {@link Type} has. This is used in creating more
+     * efficient query plans.
+     *
+     * @param type The {@link Type} which may contain some shards.
+     * @return the number of Shards the {@link Type} currently has.
      */
-    String getEngineUrl();
+    long getShardCount(Type type);
 }

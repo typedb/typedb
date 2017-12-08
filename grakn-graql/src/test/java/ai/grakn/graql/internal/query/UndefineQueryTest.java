@@ -35,11 +35,13 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -78,8 +80,8 @@ public class UndefineQueryTest {
     private static final VarPattern ROLE = Graql.label(Schema.MetaSchema.ROLE.getLabel());
     private static final Label NEW_TYPE = Label.of("new-type");
 
-    @Rule
-    public final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
+    @ClassRule
+    public static final SampleKBContext movieKB = MovieKB.context();
     public static final Var x = var("x");
 
     private QueryBuilder qb;
@@ -92,6 +94,11 @@ public class UndefineQueryTest {
     public void setUp() {
         tx = movieKB.tx();
         qb = tx.graql();
+    }
+
+    @After
+    public void cleanUp(){
+        movieKB.rollback();
     }
 
     @Test
@@ -330,7 +337,7 @@ public class UndefineQueryTest {
 
         assertNotNull(tx.getType(NEW_TYPE));
 
-        Stream<String> stream = qb.undefine(label(NEW_TYPE).sub(ENTITY)).resultsString(Printers.json());
+        Stream<String> stream = qb.undefine(label(NEW_TYPE).sub(ENTITY)).resultsString(Printers.graql(false));
 
         assertNull(tx.getType(NEW_TYPE));
 

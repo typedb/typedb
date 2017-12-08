@@ -24,7 +24,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 
 import java.util.function.Consumer;
 
@@ -44,14 +45,14 @@ public class NguyenKB extends TestKB {
         this.n = n;
     }
 
-    public static Consumer<GraknTx> get(int n) {
-        return new NguyenKB(n).build();
+    public static SampleKBContext context(int n) {
+        return new NguyenKB(n).makeContext();
     }
 
     @Override
     public Consumer<GraknTx> build(){
         return (GraknTx graph) -> {
-            SampleKBContext.loadFromFile(graph, gqlFile);
+            SampleKBLoader.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n);
         };
     }
@@ -71,17 +72,17 @@ public class NguyenKB extends TestKB {
         RelationshipType p = graph.getRelationshipType("P");
         RelationshipType q = graph.getRelationshipType("Q");
 
-        ConceptId cId = putEntity(graph, "c", entity, key).getId();
-        ConceptId dId = putEntity(graph, "d", entity, key).getId();
-        ConceptId eId = putEntity(graph, "e", entity, key).getId();
+        ConceptId cId = putEntityWithResource(graph, "c", entity, key).getId();
+        ConceptId dId = putEntityWithResource(graph, "d", entity, key).getId();
+        ConceptId eId = putEntityWithResource(graph, "e", entity, key).getId();
 
         ConceptId[] aInstancesIds = new ConceptId[n+2];
         ConceptId[] bInstancesIds = new ConceptId[n+2];
 
-        aInstancesIds[n+1] = putEntity(graph, "a" + (n+1), aEntity, key).getId();
+        aInstancesIds[n+1] = putEntityWithResource(graph, "a" + (n+1), aEntity, key).getId();
         for(int i = 0 ; i <= n ;i++) {
-            aInstancesIds[i] = putEntity(graph, "a" + i, aEntity, key).getId();
-            bInstancesIds[i] = putEntity(graph, "b" + i, bEntity, key).getId();
+            aInstancesIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).getId();
+            bInstancesIds[i] = putEntityWithResource(graph, "b" + i, bEntity, key).getId();
         }
 
 

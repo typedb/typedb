@@ -23,7 +23,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 
 import java.util.function.Consumer;
 
@@ -45,14 +46,14 @@ public class PathKBII extends TestKB {
         this.n = n;
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new PathKBII(n, m).build();
+    public static SampleKBContext context(int n, int m) {
+        return new PathKBII(n, m).makeContext();
     }
 
     @Override
     public Consumer<GraknTx> build(){
         return (GraknTx graph) -> {
-            SampleKBContext.loadFromFile(graph, gqlFile);
+            SampleKBLoader.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }
@@ -66,11 +67,11 @@ public class PathKBII extends TestKB {
         Role arcTo = graph.getRole("arc-to");
 
         RelationshipType arc = graph.getRelationshipType("arc");
-        putEntity(graph, "a0", startVertex, key);
+        putEntityWithResource(graph, "a0", startVertex, key);
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                putEntity(graph, "a" + i + "," + j, vertex, key);
+                putEntityWithResource(graph, "a" + i + "," + j, vertex, key);
             }
         }
 

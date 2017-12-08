@@ -25,7 +25,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 
 import java.util.function.Consumer;
 
@@ -37,7 +38,7 @@ import java.util.function.Consumer;
 public class TransitivityChainKB extends TestKB {
 
     private final static Label key = Label.of("index");
-    private final static String gqlFile = "simple-transitivity.gql";
+    private final static String gqlFile = "quadraticTransitivity.gql";
 
     private final int n;
 
@@ -45,14 +46,14 @@ public class TransitivityChainKB extends TestKB {
         this.n = n;
     }
 
-    public static Consumer<GraknTx> get(int n) {
-        return new TransitivityChainKB(n).build();
+    public static SampleKBContext context(int n) {
+        return new TransitivityChainKB(n).makeContext();
     }
 
     @Override
     public Consumer<GraknTx> build(){
         return (GraknTx graph) -> {
-            SampleKBContext.loadFromFile(graph, gqlFile);
+            SampleKBLoader.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n);
         };
     }
@@ -63,10 +64,10 @@ public class TransitivityChainKB extends TestKB {
 
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationshipType q = graph.getRelationshipType("Q");
-        Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
+        Thing aInst = putEntityWithResource(graph, "a", graph.getEntityType("entity2"), key);
         ConceptId[] aInstanceIds = new ConceptId[n];
         for(int i = 0 ; i < n ;i++) {
-            aInstanceIds[i] = putEntity(graph, "a" + i, aEntity, key).getId();
+            aInstanceIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).getId();
         }
 
         q.addRelationship()

@@ -22,26 +22,13 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathQuery;
-import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
-import ai.grakn.graql.internal.analytics.NoResultException;
-import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import ai.grakn.graql.analytics.PathsQuery;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.analytics.Utility.getResourceEdgeId;
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
 class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implements PathQuery {
@@ -55,56 +42,9 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
 
     @Override
     public Optional<List<Concept>> execute() {
-        LOGGER.info("ShortestPathVertexProgram is called");
-        long startTime = System.currentTimeMillis();
-
-        if (sourceId == null) throw GraqlQueryException.noPathSource();
-        if (destinationId == null) throw GraqlQueryException.noPathDestination();
-        initSubGraph();
-        if (!verticesExistInSubgraph(sourceId, destinationId)) {
-            throw GraqlQueryException.instanceDoesNotExist();
-        }
-        if (sourceId.equals(destinationId)) {
-            return Optional.of(Collections.singletonList(tx.get().getConcept(sourceId)));
-        }
-        ComputerResult result;
-
-        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
-
-        try {
-            result = getGraphComputer().compute(
-                    new ShortestPathVertexProgram(sourceId, destinationId),
-                    new ClusterMemberMapReduce(ShortestPathVertexProgram.FOUND_IN_ITERATION),
-                    subLabelIds);
-        } catch (NoResultException e) {
-            LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-            return Optional.empty();
-        }
-        Map<Integer, Set<String>> map = result.memory().get(ClusterMemberMapReduce.class.getName());
-        String middlePoint = result.memory().get(ShortestPathVertexProgram.MIDDLE);
-        if (!middlePoint.equals("")) map.put(0, Collections.singleton(middlePoint));
-
-        List<ConceptId> path = new ArrayList<>();
-        path.add(sourceId);
-        path.addAll(map.entrySet().stream()
-                .sorted(Comparator.comparingInt(Map.Entry::getKey))
-                .map(pair -> ConceptId.of(pair.getValue().iterator().next()))
-                .collect(Collectors.toList()));
-        path.add(destinationId);
-
-        List<ConceptId> fullPath = new ArrayList<>();
-        for (int index = 0; index < path.size() - 1; index++) {
-            fullPath.add(path.get(index));
-            ConceptId resourceRelationId = getResourceEdgeId(tx.get(), path.get(index), path.get(index + 1));
-            if (resourceRelationId != null) {
-                fullPath.add(resourceRelationId);
-            }
-        }
-        fullPath.add(destinationId);
-
-        LOGGER.debug("The path found is: " + fullPath);
-        LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(fullPath.stream().map(tx.get()::<Thing>getConcept).collect(Collectors.toList()));
+        PathsQuery pathsQuery = new PathsQueryImpl(tx);
+        if (includeAttribute) pathsQuery = pathsQuery.includeAttribute();
+        return pathsQuery.from(sourceId).to(destinationId).in(subLabels).execute().stream().findAny();
     }
 
     @Override
@@ -117,6 +57,11 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     public PathQuery to(ConceptId destinationId) {
         this.destinationId = destinationId;
         return this;
+    }
+
+    @Override
+    public PathQuery includeAttribute() {
+        return (PathQuery) super.includeAttribute();
     }
 
     @Override
@@ -152,8 +97,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
 
         PathQueryImpl pathQuery = (PathQueryImpl) o;
 
-        if (!sourceId.equals(pathQuery.sourceId)) return false;
-        return destinationId.equals(pathQuery.destinationId);
+        return sourceId.equals(pathQuery.sourceId) && destinationId.equals(pathQuery.destinationId);
     }
 
     @Override

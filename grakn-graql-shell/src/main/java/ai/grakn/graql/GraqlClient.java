@@ -18,9 +18,10 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.Keyspace;
-import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.Client;
+import ai.grakn.client.GraknClient;
+import ai.grakn.util.SimpleURI;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
@@ -65,11 +66,15 @@ class GraqlClient {
         }
     }
 
-    public BatchMutatorClient loaderClient(Keyspace keyspace, String uriString) {
-        return new BatchMutatorClient(keyspace, uriString, true, DEFAULT_MAX_RETRY);
+    public BatchExecutorClient loaderClient(SimpleURI uri) {
+        return BatchExecutorClient.newBuilder()
+                .threadPoolCoreSize(Runtime.getRuntime().availableProcessors() * 8)
+                .taskClient(new GraknClient(uri))
+                .maxRetries(DEFAULT_MAX_RETRY)
+                .build();
     }
 
-    public boolean serverIsRunning(String uri) {
+    public boolean serverIsRunning(SimpleURI uri) {
         return Client.serverIsRunning(uri);
     }
 }

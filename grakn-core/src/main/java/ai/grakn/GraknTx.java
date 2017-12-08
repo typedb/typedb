@@ -322,14 +322,19 @@ public interface GraknTx extends AutoCloseable{
     @CheckReturnValue
     boolean isReadOnly();
 
-    // TODO: what does this do when the graph is closed?
+    /**
+     * Returns the {@link GraknSession} which was used to create this {@link GraknTx}
+     * @return the owner {@link GraknSession}
+     */
+    GraknSession session();
+
     /**
      * Utility function to get {@link Keyspace} of the knowledge base.
      *
      * @return The {@link Keyspace} of the knowledge base.
      */
     @CheckReturnValue
-    Keyspace getKeyspace();
+    Keyspace keyspace();
 
     /**
      * Utility function to determine whether the graph has been closed.

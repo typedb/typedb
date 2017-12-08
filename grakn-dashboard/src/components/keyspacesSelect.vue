@@ -104,12 +104,12 @@ export default {
   mounted() {
     this.$nextTick(function () {
       EngineClient.fetchKeyspaces().then((res, err) => {
-        const list = JSON.parse(res);
+        const list = JSON.parse(res).keyspaces;
 
         this.currentKeyspace = User.getCurrentKeySpace();
 
         for (let i = 0; i < list.length; i++) {
-          this.keyspaces.push(list[i]);
+          this.keyspaces.push(list[i].name);
         }
       });
     });
