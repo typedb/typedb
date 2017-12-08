@@ -344,7 +344,8 @@ code {
 }
 
 .navbar-brand svg {
-    height: 30px;
+    width: 160px;
+    height: 33.55px;
     display: inline-block;
     vertical-align: middle;
 }
@@ -750,9 +751,6 @@ a.dropdown-toggle,
 }
 
 @media (min-width: 1600px) {
-    .nav li a {
-        font-size: 1.27em;
-    }
 
     #mysidebar li a{
         padding-top: 7px;
