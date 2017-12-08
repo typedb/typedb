@@ -40,7 +40,7 @@
         alias: 'number'
     },
     operator: {
-        pattern: /=|!=|>|<|>=|<=|contains|regex/,
+        pattern: /=|;|\.|\+|\-|\*|,|\(|\)|:|{|}|!=|>|<|>=|<=|contains|regex/,
         alias: 'operator'
     }
   };
