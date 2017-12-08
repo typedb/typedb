@@ -29,6 +29,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.rule.SessionContext;
@@ -68,6 +69,7 @@ public class ClusteringTest {
     private ConceptId entityId2;
     private ConceptId entityId3;
     private ConceptId entityId4;
+    private ConceptId aDisconnectedAttribute;
 
     public GraknSession session;
 
@@ -77,6 +79,26 @@ public class ClusteringTest {
     @Before
     public void setUp() {
         session = sessionContext.newSession();
+    }
+
+    @Test
+    public void testNullSourceIdIsIgnored() throws Exception {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
+            graph.graql().compute().cluster().from(null).execute();
+        }
+
+        addSchemaAndEntities();
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
+            graph.graql().compute().cluster().in(thing).from(null).execute();
+        }
+    }
+
+    @Test(expected = GraqlQueryException.class)
+    public void testSourceDoesNotExistInSubGraph() throws Exception {
+        addSchemaAndEntities();
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
+            graph.graql().compute().cluster().in(thing).from(entityId4).execute();
+        }
     }
 
     @Test
@@ -111,7 +133,13 @@ public class ClusteringTest {
             sizeMap = graph.graql().compute().cluster().includeAttribute().clusterSize(1L).execute();
             assertEquals(5, sizeMap.size());
 
+            sizeMap = graph.graql().compute().cluster().includeAttribute().clusterSize(1L).from(entityId1).execute();
+            assertEquals(0, sizeMap.size());
+
             memberMap = graph.graql().compute().cluster().members().clusterSize(1L).execute();
+            assertEquals(0, memberMap.size());
+
+            memberMap = graph.graql().compute().cluster().from(entityId4).members().clusterSize(1L).execute();
             assertEquals(0, memberMap.size());
         }
     }
@@ -142,6 +170,14 @@ public class ClusteringTest {
             assertEquals(1, result.size());
             assertEquals(5, result.values().iterator().next().size());
 
+            result = graph.graql().compute()
+                    .cluster().in(thing, anotherThing, aResourceTypeLabel,
+                            Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
+                    .members().from(entityId2).execute();
+            assertEquals(1, result.size());
+            assertEquals(entityId2.getValue(), result.keySet().iterator().next());
+            assertEquals(5, result.values().iterator().next().size());
+
             assertEquals(1, graph.graql().compute().cluster().includeAttribute()
                     .in(thing, anotherThing, aResourceTypeLabel,
                             Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue())
@@ -154,7 +190,6 @@ public class ClusteringTest {
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
 
-        // add something, test again
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
@@ -162,9 +197,19 @@ public class ClusteringTest {
             assertEquals(1, sizeMap.size());
             assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
 
+            sizeMap = Graql.compute().withTx(graph).cluster().from(entityId1).includeAttribute().execute();
+            assertEquals(1, sizeMap.size());
+            assertEquals(7L, sizeMap.values().iterator().next().longValue());
+            assertEquals(entityId1.getValue(), sizeMap.keySet().iterator().next());
+
             memberMap = Graql.compute().withTx(graph).cluster().in().members().execute();
             assertEquals(1, memberMap.size());
             assertEquals(7, memberMap.values().iterator().next().size());
+
+            memberMap = Graql.compute().withTx(graph).cluster().from(entityId4).in().members().execute();
+            assertEquals(1, memberMap.size());
+            assertEquals(7, memberMap.values().iterator().next().size());
+            assertEquals(entityId1.getValue(), sizeMap.keySet().iterator().next());
         }
 
         // add different resources. This may change existing cluster labels.
@@ -178,6 +223,9 @@ public class ClusteringTest {
             // 5 resources are not connected to anything
             assertEquals(5, populationCount00.get(1L).intValue());
             assertEquals(1, populationCount00.get(15L).intValue());
+
+            sizeMap = graph.graql().compute().cluster().from(aDisconnectedAttribute).includeAttribute().execute();
+            assertEquals(1, sizeMap.size());
 
             memberMap = graph.graql().compute().cluster().members().execute();
             assertEquals(1, memberMap.size());
@@ -297,7 +345,7 @@ public class ClusteringTest {
                     .attribute(graph.getAttributeType(resourceType6).putAttribute(7.5));
 
             // some resources in, but not connect them to any instances
-            graph.getAttributeType(resourceType1).putAttribute(2.8);
+            aDisconnectedAttribute = graph.getAttributeType(resourceType1).putAttribute(2.8).getId();
             graph.getAttributeType(resourceType2).putAttribute(-5L);
             graph.getAttributeType(resourceType3).putAttribute(100L);
             graph.getAttributeType(resourceType5).putAttribute(10L);

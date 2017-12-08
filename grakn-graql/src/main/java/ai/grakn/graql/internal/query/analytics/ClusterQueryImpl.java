@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
@@ -62,9 +63,17 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
 
-        GraknVertexProgram vertexProgram = sourceId.isPresent() ?
-                new ConnectedComponentVertexProgram(sourceId.get()) :
-                new ConnectedComponentsVertexProgram();
+        GraknVertexProgram vertexProgram;
+        if (sourceId.isPresent()) {
+            ConceptId conceptId = sourceId.get();
+            if (!verticesExistInSubgraph(conceptId)) {
+                throw GraqlQueryException.instanceDoesNotExist();
+            }
+            vertexProgram = new ConnectedComponentVertexProgram(conceptId);
+        } else {
+            vertexProgram = new ConnectedComponentsVertexProgram();
+        }
+
         GraknMapReduce mapReduce;
         if (members) {
             if (anySize) {
@@ -103,8 +112,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> clusterSize(ConceptId conceptId) {
-        this.sourceId = Optional.of(conceptId);
+    public ClusterQuery<T> from(ConceptId conceptId) {
+        this.sourceId = Optional.ofNullable(conceptId);
         return this;
     }
 
