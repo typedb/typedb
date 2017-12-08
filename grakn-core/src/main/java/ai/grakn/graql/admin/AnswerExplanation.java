@@ -42,7 +42,7 @@ public interface AnswerExplanation {
     AnswerExplanation setQuery(ReasonerQuery q);
 
     /**
-     * produce a new explanation with dependent answers provided
+     * produce a new explanation with dependent answers augmented by answers provided
      * @param answers dependent answers
      * @return new explanation with dependent answers
      */
