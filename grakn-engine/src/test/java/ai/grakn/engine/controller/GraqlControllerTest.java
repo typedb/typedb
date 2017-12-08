@@ -112,7 +112,7 @@ public class GraqlControllerTest {
         assertEquals(expectedInstances, instances);
     }
 
-    //TODO: THis test should be imoproved
+    //TODO: THis test should be improved
     @Test
     public void whenExecutingExplainQuery_responseIsValid() {
         String keyspace = genealogyKB.tx().keyspace().getValue();
