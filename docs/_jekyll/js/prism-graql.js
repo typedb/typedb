@@ -20,7 +20,7 @@
         lookbehind: true
     },
     super: {
-        pattern: /((?:(?![-a-zA-Z_0-9]).)|^|\s)(entity|role|relationship|attribute|rule|concept)(?![-a-zA-Z_0-9])/,
+        pattern: /((?:(?![-a-zA-Z_0-9]).)|^|\s)(entity|role|relationship|attribute|rule|concept|thing)(?![-a-zA-Z_0-9])/,
         alias: 'system',
         lookbehind: true
     },

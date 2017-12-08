@@ -1161,7 +1161,7 @@ h4.panel-title {
 }
 
 pre {
-    color: #ffffff;
+    color: #46cc90;
     background-color: #2f3543;    
 }
 .highlight {
@@ -1181,7 +1181,7 @@ pre {
 }
 
 .token.system {
-  color: #e252d0;
+  color: #f176f1;
 }
 
 .token.special {
@@ -1194,6 +1194,7 @@ pre {
 .token.deleted {
     color: #f92672;
 }
+
 
 .token.boolean,
 .token.number {
@@ -1215,6 +1216,9 @@ pre {
 .language-css .token.string,
 .style .token.string {
     color: #f8f8f2;
+}
+.token.operator {
+    color: #7897f2;
 }
 .token.string {
   color: #46cc90;
