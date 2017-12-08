@@ -716,7 +716,7 @@ a.dropdown-toggle,
     font-weight: 400;
     padding-top: 5px;
     padding-bottom: 5px;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     color: #383838;
     background-color: #BCB5EB;
 }
@@ -757,9 +757,6 @@ a.dropdown-toggle,
         padding-bottom: 7px;
     }
 
-    .nav li li a {
-        font-size: 1.15em;
-    }
 }
 
 /*  */
