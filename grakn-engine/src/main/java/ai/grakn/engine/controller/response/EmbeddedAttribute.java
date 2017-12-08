@@ -18,42 +18,46 @@
 
 package ai.grakn.engine.controller.response;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.util.Schema;
+import ai.grakn.engine.Jacksonisable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
-
 /**
  * <p>
- *     Wrapper class for {@link ai.grakn.concept.Attribute}
+ *     Wrapper class for a light representation of {@link ai.grakn.concept.Attribute}s which are embedded in the
+ *     {@link Thing} representations
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
-public abstract class Attribute extends Thing {
+public abstract class EmbeddedAttribute implements Jacksonisable {
 
-    @JsonProperty("data-type")
-    public abstract String dataType();
+    @JsonProperty("@id")
+    public abstract Link selfLink();
+
+    @JsonProperty
+    public abstract EmbeddedType type();
 
     @JsonProperty
     public abstract String value();
 
+    @JsonProperty("data-type")
+    public abstract String dataType();
+
+
     @JsonCreator
-    public static Attribute create(
-            @JsonProperty("id") ConceptId id,
+    public static EmbeddedAttribute create(
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("type") EmbeddedType type,
-            @JsonProperty("attributes") Link attributes,
-            @JsonProperty("keys") Link keys,
-            @JsonProperty("relationships") Link relationships,
-            @JsonProperty("inferred") boolean inferred,
-            @Nullable @JsonProperty("explanation-query")  String explanation,
-            @JsonProperty("data-type") String dataType,
-            @JsonProperty("value") String value){
-        return new AutoValue_Attribute(Schema.BaseType.ATTRIBUTE.name(), id, selfLink, type, attributes, keys, relationships, inferred, explanation, dataType, value);
+            @JsonProperty("value") String value,
+            @JsonProperty("data-type") String dataType
+    ){
+        return new AutoValue_EmbeddedAttribute(selfLink, type, value, dataType);
+    }
+
+    public static EmbeddedAttribute create(ai.grakn.concept.Attribute attribute){
+        return create(Link.create(attribute), EmbeddedType.create(attribute.type()), attribute.getValue().toString(), attribute.dataType().getName());
     }
 }

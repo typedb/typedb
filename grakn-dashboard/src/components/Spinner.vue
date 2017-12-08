@@ -8,17 +8,16 @@
 
 <style scoped>
 #loading-spinner{
-    visibility: hidden;
+  visibility: hidden;
+  z-index: 2;
+  position: absolute;
+  top: 115%;
+  left: -30px;
 }
 
 .spinner {
   -webkit-animation: rotate 1.5s linear infinite;
           animation: rotate 1.5s linear infinite;
-  z-index: 2;
-  position: absolute;
-  top: 30px;
-  left: 50%;
-  margin: -25px 0 0 -25px;
   width: 30px;
   height: 30px;
 }

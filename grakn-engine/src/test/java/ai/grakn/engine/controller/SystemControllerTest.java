@@ -22,12 +22,14 @@ package ai.grakn.engine.controller;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspaceFake;
+import ai.grakn.engine.controller.response.Keyspace;
 import ai.grakn.engine.controller.response.Keyspaces;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.response.Response;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -46,6 +48,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -92,15 +95,20 @@ public class SystemControllerTest {
     }
 
     @Test
-    public void whenCallingGetKBEndpointOnExistingKeyspace_Return200() {
-        RestAssured.put("/kb/myks");
-
-        when().get("/kb/myks").then().statusCode(SC_OK).body(isEmptyString());
+    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() throws JsonProcessingException {
+        when().put("/kb/myks").then().statusCode(SC_OK).body(is(new ObjectMapper().writeValueAsString(config)));
     }
 
     @Test
-    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() throws JsonProcessingException {
-        when().put("/kb/myks").then().statusCode(SC_OK).body(is(new ObjectMapper().writeValueAsString(config)));
+    public void whenCallingGETKBKeyspaceEndpoint_EnsureSpecificKeyspaceReturned(){
+        Keyspace expected = Keyspace.of(ai.grakn.Keyspace.of("myks"));
+        RestAssured.put(expected.id());
+
+        Response response = when().get(expected.id());
+        assertEquals(SC_OK, response.statusCode());
+
+        Keyspace foundKeyspace = response.as(Keyspace.class);
+        assertEquals(expected, foundKeyspace);
     }
 
     @Test

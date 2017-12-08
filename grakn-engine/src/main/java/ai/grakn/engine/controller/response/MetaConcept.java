@@ -19,41 +19,36 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * <p>
- *     Wrapper class for {@link ai.grakn.concept.Attribute}
+ *     Special wrapper class for the top meta concept {@link ai.grakn.util.Schema.MetaSchema#THING};
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
+@JsonIgnoreProperties(value={ "abstract", "plays", "attributes", "keys", "implicit" }, allowGetters=true)
 @AutoValue
-public abstract class Attribute extends Thing {
-
-    @JsonProperty("data-type")
-    public abstract String dataType();
-
-    @JsonProperty
-    public abstract String value();
+public abstract class MetaConcept extends Type{
 
     @JsonCreator
-    public static Attribute create(
+    public static MetaConcept create(
             @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            @JsonProperty("type") EmbeddedType type,
-            @JsonProperty("attributes") Link attributes,
-            @JsonProperty("keys") Link keys,
-            @JsonProperty("relationships") Link relationships,
-            @JsonProperty("inferred") boolean inferred,
-            @Nullable @JsonProperty("explanation-query")  String explanation,
-            @JsonProperty("data-type") String dataType,
-            @JsonProperty("value") String value){
-        return new AutoValue_Attribute(Schema.BaseType.ATTRIBUTE.name(), id, selfLink, type, attributes, keys, relationships, inferred, explanation, dataType, value);
+            @JsonProperty("label") Label label,
+            @JsonProperty("super") @Nullable Link sup,
+            @JsonProperty("subs") Set<Link> subs
+    ){
+        return new AutoValue_MetaConcept(Schema.BaseType.TYPE.name(), id, selfLink, label, false, sup, subs, true, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
     }
 }

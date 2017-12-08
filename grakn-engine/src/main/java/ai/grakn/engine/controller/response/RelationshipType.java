@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
@@ -52,6 +53,6 @@ public abstract class RelationshipType extends Type{
             @JsonProperty("attributes") Set<Link> attributes,
             @JsonProperty("keys") Set<Link> keys,
             @JsonProperty("relates") Set<Link> relates){
-        return new AutoValue_RelationshipType(id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys, relates);
+        return new AutoValue_RelationshipType(Schema.BaseType.RELATIONSHIP_TYPE.name(), id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys, relates);
     }
 }

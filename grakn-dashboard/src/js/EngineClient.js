@@ -16,7 +16,6 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 /* @flow */
-
 import User from './User';
 
 let spinner = { style: {} };
@@ -28,7 +27,7 @@ $(document).ready(() => {
  * REST API client for Grakn Engine.
  */
 export default {
-    /**
+  /**
      * Make an AJAX request with @requestData parameters.
      * Required attributes of @requestData are:
      *  - url
@@ -57,7 +56,7 @@ export default {
           reject(Error('Network Error'));
         };
 
-    // Make the request
+        // Make the request
         req.send(requestData.data);
         spinner.style.visibility = 'visible';
       } catch (exception) {
@@ -67,12 +66,8 @@ export default {
   },
 
   setHeaders(xhr:Object, requestData:Object) {
-    const token = localStorage.getItem('id_token');
-    if (token != null) {
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    }
     xhr.setRequestHeader('Content-Type', requestData.contentType || 'application/json; charset=utf-8');
-    xhr.setRequestHeader('Accept', requestData.accepts || 'application/hal+json');
+    if (requestData.accepts) xhr.setRequestHeader('Accept', requestData.accepts);
   },
 
   sendInvite(credentials:Object, callbackFn:()=>mixed) {
@@ -109,35 +104,43 @@ export default {
     });
   },
 
-            /**
+  /**
              * Send graql shell command to engine. Returns a string representing shell output.
              */
   graqlShell(query:string) {
     return this.request({
-      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&limitEmbedded=${User.getQueryLimit()}`,
+      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}`,
       contentType: 'application/text',
       accepts: 'application/text',
       requestType: 'POST',
       data: query,
     });
   },
-            /**
+  /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
-  graqlHAL(query:string) {
-      // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
+  graqlQuery(query:string) {
+    // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
-      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&limitEmbedded=${User.getQueryLimit()}&defineAllVars=true`,
+      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&defineAllVars=true`,
       requestType: 'POST',
       data: query,
     });
   },
-            /**
+
+  getExplanation(query:string) {
+    // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
+    return this.request({
+      url: `/kb/${User.getCurrentKeySpace()}/explain?query=${query}`,
+      requestType: 'GET',
+    });
+  },
+  /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
   graqlAnalytics(query:string) {
     return this.request({
-      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&limitEmbedded=${User.getQueryLimit()}`,
+      url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}`,
       requestType: 'POST',
       accepts: 'application/text',
       data: query,
@@ -148,22 +151,29 @@ export default {
    */
   getConfig() {
     return this.request({
-      url: '/configuration',
+      url: `/kb/${User.getCurrentKeySpace()}`,
+      requestType: 'PUT',
     });
   },
-            /**
+
+  getVersion() {
+    return this.request({
+      url: '/version',
+    });
+  },
+  /**
              * Get meta schema type instances.
              */
   getMetaTypes() {
     return this.request({
-      url: `/kb/schema?keyspace=${User.getCurrentKeySpace()}`,
+      url: `/kb/${User.getCurrentKeySpace()}/type`,
       accepts: 'application/json',
     });
   },
 
   getConceptTypes(id:string) {
     return this.request({
-      url: `/dashboard/types/${id}?keyspace=${User.getCurrentKeySpace()}&limitEmbedded=${User.getQueryLimit()}`,
+      url: `/dashboard/types/${id}?keyspace=${User.getCurrentKeySpace()}`,
       accepts: 'application/json',
     });
   },
