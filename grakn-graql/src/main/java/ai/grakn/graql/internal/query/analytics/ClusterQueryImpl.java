@@ -169,7 +169,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (sourceId != null ? sourceId.hashCode() : 0);
+        result = 31 * result + sourceId.hashCode();
         result = 31 * result + (members ? 1 : 0);
         result = 31 * result + (anySize ? 1 : 0);
         result = 31 * result + (int) (clusterSize ^ (clusterSize >>> 32));

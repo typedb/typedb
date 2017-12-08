@@ -75,7 +75,6 @@ public class ConnectedComponentsVertexProgram extends GraknVertexProgram<String>
             messenger.sendMessage(messageScopeOut, id);
         } else {
             update(vertex, messenger, memory);
-
         }
     }
 
