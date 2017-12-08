@@ -24,7 +24,7 @@ Let’s write a template to migrate oil platforms into our knowledge base. First
 
 A GRAQL template file looks as simple as this:
 
-```graql-template
+```graql
 insert $x isa oil-platform has platform-id <ID>
 has distance-from-coast <DistCoast>;
 ```
@@ -41,7 +41,7 @@ For example, if the line currently being scanned reads
 
 Our template will be produce the statement
 
-```
+```graql
 insert $x isa oil-platform has platform-id "13"
 has distance-from-coast "24";
 ```
@@ -53,7 +53,7 @@ If you have looked carefully at the CSV file containing the information about th
 To avoid that, we need to introduce the second GRAQL extension used in making templates: flow control. More commonly known as "if then" statements. In our templating language, an "if" statement looks like `if (CONDITION) do { STUFF TO BE ADDED }`.
 Modify the template like the following:
 
-```graql-template
+```graql
 insert $x isa oil-platform has platform-id <ID>
 if (<DistCoast> != "") do {
 has distance-from-coast <DistCoast>}
@@ -78,7 +78,7 @@ Notice that the last semicolon is out of the curly braces, so it gets added ever
 There is one more thing to add to our template before we can actually use it.
 If you read back, you will notice that the example of GRAQL statement into which the template gets translated looks like
 
-```
+```graql
 insert $x isa oil-platform has platform-id "13"
 has distance-from-coast "24";
 ```
@@ -91,7 +91,7 @@ A macro in GRAQL is a snippet of code that does some useful data manipulation to
 
 Let’s add our macro to the template:
 
-```graql-template
+```graql
 insert $x isa oil-platform has platform-id <ID>
 if (<DistCoast> != "") do {
 has distance-from-coast @long(<DistCoast>)}

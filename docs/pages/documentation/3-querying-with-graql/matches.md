@@ -32,10 +32,10 @@ Match instances that have the given type. In the example, find all `person` enti
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell1">
-<pre>match $x isa person; get;</pre>
+<pre class="language-graql"><code>match $x isa person; get;</code></pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java1">
-<pre>qb.match(var("x").isa("person")).get();</pre>
+<pre  class="language-java"><code>qb.match(var("x").isa("person")).get();</code></pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
@@ -49,14 +49,18 @@ Match concepts that have a system id that matches the [predicate](#predicates).
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell2">
-<pre>
+<pre class="language-graql">
+<code>
 # Insert one of the system id values that were displayed from the previous query. For example:
 match $x id "1216728"; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java2">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").has("id", "1216728")).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -72,13 +76,17 @@ Match all attributes that have a value matching the given [predicate](#predicate
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell3">
-<pre>
+<pre class="language-graql">
+<code>
 match $x val contains "Bar"; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java3">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").val(contains("Bar"))).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -97,15 +105,19 @@ Match things that have the attribute specified. If a [predicate](#predicates) is
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell4">
-<pre>
+<pre class="language-graql">
+<code>
 match $x has identifier $y; get;
 match $x has identifier contains "Bar"; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java4">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").has("identifier", var("x"))).get();
 qb.match(var("x").has("identifier", contains("Bar"))).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -120,13 +132,17 @@ You can also specify a variable to represent the relationship connecting the thi
 <!-- TODO: Update to final syntax -->
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell5">
-<pre>
+<pre class="language-graql">
+<code>
 match $x has identifier "Bar" as $r; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java5">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").has(Label.of("identifier"), var().val("Bar"), var("r"))).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -143,14 +159,17 @@ Match things that have a relationship with the given variable. If a role is prov
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell6">
-<pre>
+<pre class="language-graql">
+<code>
 match $x isa person; ($x, $y); get;
 match $x isa person; (spouse:$x, $y); get;
 match $x isa person; (spouse:$x, $y); $x has identifier $xn; $y has identifier $yn; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java6">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").isa("person"), var().rel("x").rel("y")).get();
 qb.match(var("x").isa("person"), var().rel("spouse", "x").rel("y")).get();
 qb.match(
@@ -159,6 +178,7 @@ qb.match(
   var("x").has("identifier", var("xn")),
   var("y").has("identifier", var("yn"))
 ).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -175,10 +195,12 @@ Patterns can be combined into a disjunction ('or') and grouped together with cur
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell">
-<pre>match $x isa person, has identifier $y; {$y val contains "Elizabeth";} or {$y val contains "Mary";}; get;</pre>
+<pre class="language-graql">
+<code>match $x isa person, has identifier $y; {$y val contains "Elizabeth";} or {$y val contains "Mary";}; get;</code></pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(
     var("x").isa("person").has("identifier", var("y")),
     or(
@@ -186,6 +208,7 @@ qb.match(
         var("y").val(contains("Mary"))
     )
 ).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -204,17 +227,21 @@ Match types that are a subclass of the given type.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell7">
-<pre>
+<pre class="language-graql">
+<code>
 match $x sub thing; get; # List all types
 match $x sub attribute; get; # List all attribute types
 match $x sub entity; get; # List all entity types
 match $x sub role; get; # List all role types
 match $x sub relationship; get; # List all relationship types
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java7">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").sub("thing")).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -230,13 +257,17 @@ Match roles to a given relationship.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell8">
-<pre>
+<pre class="language-graql">
+<code>
 match parentship relates $x; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java8">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(label("parentship").relates(var("x"))).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -251,13 +282,17 @@ Match types that play the given role.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell9">
-<pre>
+<pre class="language-graql">
+<code>
 match $x plays child; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java9">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").plays("child")).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -273,13 +308,17 @@ Match types that can have the given attribute.
 <!--JCS: Why so many duplicates?-->
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell10">
-<pre>
+<pre class="language-graql">
+<code>
 match $x has firstname; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java10">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").has("firstname")).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -293,13 +332,17 @@ The above is equivalent to:
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell11">
-<pre>
+<pre class="language-graql">
+<code>
 match $x plays has-firstname-owner; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java11">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").plays("has-firstname-owner")).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -307,13 +350,13 @@ qb.match(var("x").plays("has-firstname-owner")).get();
 ### label
 Allows you to refer to a specific types by its typename. For example:
 
-```
+```graql
 match $x isa $type; $type label 'person'; get;
 ```
 
 This is equivalent to the following:
 
-```
+```graql
 match $x isa person; get;
 ``` 
 
@@ -332,13 +375,17 @@ longs and doubles, these sort by value. Strings are ordered lexicographically.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell12">
-<pre>
+<pre class="language-graql">
+<code>
 match $x has age > 70; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java12">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").has("age", gt(70))).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -360,17 +407,20 @@ Asks if the given string is a substring.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell13">
-<pre>
+<pre class="language-graql">
+<code>
 match $x has identifier $id; $id val contains "Niesz"; get;
-
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java13">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(
     var("x").has("identifier", var("id")),
     var("id").val(contains("Niesz"))
 ).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -387,13 +437,17 @@ surround the expression with `.*`.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell14">
-<pre>
+<pre class="language-graql">
+<code>
 match $x val /.*(Mary|Barbara).*/; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java14">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").val(regex(".*(Mary|Barbara).*"))).get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -414,18 +468,22 @@ There are a number of modifiers that can be applied to a query:
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell16">
-<pre>
+<pre class="language-graql">
+<code>
 match $x isa person, has identifier $id; limit 10; offset 5; order by $id asc; get;
 match $x isa person, has firstname $y; order by $y asc; get;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java16">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").isa("person").has("identifier", var("id")))
     .limit(10)
     .offset(5)
     .orderBy("id", Order.asc)
     .get();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

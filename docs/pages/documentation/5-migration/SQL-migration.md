@@ -187,7 +187,7 @@ SELECT * FROM pet;
 
 We also prepare a Graql template, *pet-template.gql* which creates instances for data according to the defined schema. The template will create an entity of the appropriate pet subtype (`cat`, `dog`, `snake`, `hamster` or `bird`) for each row returned by the query. It will attach name, owner and sex resources to each of these entities, and if the birth and death dates are present in the data, attaches those too.
 
-```
+```graql
 insert
 
 $x isa <SPECIES>
@@ -216,7 +216,7 @@ FROM event;
 
 We prepare a Graql template *event-template.gql*:
 
-```graql-test-ignore
+```graql
 match $pet has name <name>
 insert $event isa event 
   has "date" <date>
@@ -235,7 +235,7 @@ Note: The SQL query is entered into the command line in quotes, although in futu
 
 At this point, the SQL data has been added to a knowledge base in Grakn, and can be queried. For example:
 
-```bash
+```graql
 match $x isa cat; # Get all cats
 match ($x, $y) isa occurs; $x isa cat; $y isa event has description "litter"; select $x; # Get all cats that have had litters of kittens
 

@@ -54,7 +54,7 @@ We need a "for" loop.
 
 The syntax of a "for" loop is very similar to that of an "if" statement:
 
-```
+```graql
 ...
 for (<NESTED> do {
   $x has <LEVEL3>
@@ -86,7 +86,7 @@ graql migrate xml -i INPUT_FILE.xml -s SCHEMA_FILE.xsd -e BASE_ELEMENT -t TEMPLA
 ## Putting it all together
 In your VM, in the folder `academy/short-training/data` you will find an xml file called `bonds.xml` with its schema called `bonds.xsd` you can also visualise them [here](https://github.com/graknlabs/academy/tree/master/short-training/data). Examine both of them carefully and then have a look at the following template (that is stored as the `bonds-template.gql` file).
 
-```graql-template
+```graql
 match $issuer isa company has name <issuerName>;
 insert
 for (<bonds.bond>) do {

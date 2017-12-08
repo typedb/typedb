@@ -36,7 +36,7 @@ The shortest path, as the name suggests, finds the quickest way (if there is one
 
 The basic syntax for the shortest path query is
 
-```
+```graql
 compute path from CONCEPT_ID1 to CONCEPT_ID2 in TYPES;
 ```
 
@@ -48,7 +48,7 @@ As for the other analytics queries, the `in TYPES` part of the query is optional
 
 Let's make an example: let us find the shortest path that links the company "ENI" to the country "UK" in our dataset. With the GRAKN server running in your VM, run the following query in the dashboard
 
-```
+```graql
 match $x isa company has name "ENI";
 $y isa country has name "UK"; get;
 ```
@@ -81,7 +81,7 @@ Although it might seems a bit confusing at first, an example will make it cleare
 
 This is how the query looks like in GRAQL:
 
-```
+```graql
 compute degrees of company in company, owns;
 ```
 
@@ -99,13 +99,13 @@ A word of caution: depending on your kb the response of a compute degree query c
 
 In graph theory, a _cluster_ (or connected component) is formally a maximal set of nodes where every two nodes are connected by a path. To explain the definition, let us make an example: consider the query
 
-```
+```graql
 compute cluster in oil-company, located-in, country, region;
 ```
 
 If two concepts are in the same cluster according to this query, say having IDs `123` and `234`, it means that the query
 
-```
+```graql
 compute path from 123 to 234 in oil-company, located-in, country, region;
 ```
 
