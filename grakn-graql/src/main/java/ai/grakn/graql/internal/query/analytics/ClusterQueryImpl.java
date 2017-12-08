@@ -41,7 +41,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
     private boolean members = false;
     private boolean anySize = true;
-    private ConceptId sourceId = null;
+    private Optional<ConceptId> sourceId = Optional.empty();
     private long clusterSize = -1L;
 
     ClusterQueryImpl(Optional<GraknTx> graph) {
@@ -62,9 +62,9 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
 
-        GraknVertexProgram vertexProgram = sourceId == null ?
-                new ConnectedComponentsVertexProgram() :
-                new ConnectedComponentVertexProgram(sourceId);
+        GraknVertexProgram vertexProgram = sourceId.isPresent() ?
+                new ConnectedComponentVertexProgram(sourceId.get()) :
+                new ConnectedComponentsVertexProgram();
         GraknMapReduce mapReduce;
         if (members) {
             if (anySize) {
@@ -104,7 +104,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
     @Override
     public ClusterQuery<T> clusterSize(ConceptId conceptId) {
-        this.sourceId = conceptId;
+        this.sourceId = Optional.of(conceptId);
         return this;
     }
 
@@ -128,8 +128,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     @Override
     String graqlString() {
         String string = "cluster" + subtypeString();
-        if (sourceId != null) {
-            string += " from " + sourceId.getValue() + ";";
+        if (sourceId.isPresent()) {
+            string += " from " + sourceId.get().getValue() + ";";
         }
         if (members) {
             string += " members;";
