@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -60,7 +61,7 @@ public class Explanation implements AnswerExplanation {
 
     @Override
     public AnswerExplanation withAnswers(Set<Answer> answers) {
-        return new Explanation(getQuery(), answers);
+        return new Explanation(getQuery(), Sets.union(getAnswers(), answers));
     }
 
     @Override

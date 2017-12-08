@@ -250,6 +250,26 @@ public class ExplanationTest {
     }
 
     @Test
+    public void testExplainingMixedAtomicQueries(){
+        GraknTx expGraph = explanationKB.tx();
+        QueryBuilder eiqb = expGraph.graql().infer(true);
+
+        String queryString = "match " +
+                "$x has value 'high';" +
+                "($x, $y) isa carried-relation;" +
+                "get;";
+
+        GetQuery query = eiqb.parse(queryString);
+        List<Answer> answers = query.execute();
+        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
+        Answer answer = answers.stream()
+                .filter(ans -> ans.getExplanations().stream().filter(AnswerExplanation::isRuleExplanation).findFirst().isPresent())
+                .findFirst().orElse(null);
+        Set<AnswerExplanation> explanations = answer.getExplanations();
+        assertEquals(explanations.stream().filter(AnswerExplanation::isLookupExplanation).count(), 4);
+    }
+
+    @Test
     public void testExplanationConsistency(){
         GraknTx genealogyGraph = genealogyKB.tx();
         QueryBuilder iqb = genealogyGraph.graql().infer(true);
