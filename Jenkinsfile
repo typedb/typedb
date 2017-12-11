@@ -178,7 +178,7 @@ Closure createTestJob(split, i, testTimeout) {
                 timeout(testTimeout) {
                     stage('Run Janus test profile') {
                         mvn mavenVerify
-                    archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"}
+                    }
                 }
             } finally {
                 /* Archive the test results */
