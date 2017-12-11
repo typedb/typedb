@@ -23,7 +23,4 @@ package ai.grakn.dist.lock;
  * @author Ganeshwara Herawan Hananda
  */
 public class LockAlreadyAcquiredException extends RuntimeException {
-    public LockAlreadyAcquiredException() {
-        super();
-    }
 }
