@@ -18,8 +18,15 @@
 
 package ai.grakn.engine;
 
+import ai.grakn.GraknSystemProperty;
+import ai.grakn.engine.processid.GraknPid;
+import org.hyperic.sigar.Sigar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
 
 /**
  *
@@ -40,6 +47,10 @@ public class Grakn {
      */
     public static void main(String[] args) {
         try {
+
+            GraknPid pidFile = newPidFile_deleteOnExit();
+            pidFile.createPidFile_deleteOnExit();
+
             // Start Engine
             GraknEngineServer graknEngineServer = new GraknCreator().instantiateGraknEngineServer(Runtime.getRuntime());
             graknEngineServer.start();
@@ -48,4 +59,12 @@ public class Grakn {
         }
     }
 
+    private static GraknPid newPidFile_deleteOnExit() {
+        Path pidfilePath = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
+                .map(Paths::get)
+                .orElseThrow(() -> new RuntimeException("Unable to find the property 'grakn.pidfile'"));
+        long pid = new Sigar().getPid();
+        return new GraknPid(pidfilePath, pid);
+    }
 }
+
