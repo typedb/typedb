@@ -67,11 +67,11 @@ public class PathKBII extends TestKB {
         Role arcTo = graph.getRole("arc-to");
 
         RelationshipType arc = graph.getRelationshipType("arc");
-        putEntity(graph, "a0", startVertex, key);
+        putEntityWithResource(graph, "a0", startVertex, key);
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                putEntity(graph, "a" + i + "," + j, vertex, key);
+                putEntityWithResource(graph, "a" + i + "," + j, vertex, key);
             }
         }
 

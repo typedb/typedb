@@ -29,7 +29,7 @@ fi
 update_classpath_global_var() {
   # Define CLASSPATH, exclude slf4j as we use logback
   for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
-      if [[ $jar != *slf4j-log4j12* ]] ; then
+      if [[ ${jar} != *slf4j-log4j12* ]] ; then
           CLASSPATH="$CLASSPATH":"$jar"
       fi
   done

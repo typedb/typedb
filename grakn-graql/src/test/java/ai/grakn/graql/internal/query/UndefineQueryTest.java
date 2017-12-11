@@ -337,7 +337,7 @@ public class UndefineQueryTest {
 
         assertNotNull(tx.getType(NEW_TYPE));
 
-        Stream<String> stream = qb.undefine(label(NEW_TYPE).sub(ENTITY)).resultsString(Printers.json());
+        Stream<String> stream = qb.undefine(label(NEW_TYPE).sub(ENTITY)).resultsString(Printers.graql(false));
 
         assertNull(tx.getType(NEW_TYPE));
 

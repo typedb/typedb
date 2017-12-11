@@ -18,9 +18,10 @@
 package ai.grakn.client;
 
 import ai.grakn.graql.Query;
+import mjson.Json;
+
 import java.util.ArrayList;
 import java.util.List;
-import mjson.Json;
 
 /**
  * Encapsulates a response. (TODO) We should migrate this away from a json

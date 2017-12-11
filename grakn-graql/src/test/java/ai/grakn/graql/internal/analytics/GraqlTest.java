@@ -39,6 +39,7 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.Schema;
@@ -195,8 +196,24 @@ public class GraqlTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            PathQuery query =
-                    graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
+            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
+
+            Optional<List<Concept>> path = query.execute();
+            List<String> result =
+                    path.get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+
+            List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
+
+            assertEquals(expected, result);
+        }
+    }
+
+    @Test
+    public void testPaths() throws InvalidKBException {
+        addSchemaAndEntities();
+
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            PathsQuery query = graph.graql().parse("compute paths from '" + entityId1 + "' to '" + entityId2 + "';");
 
             List<List<Concept>> path = query.execute();
             assertEquals(1, path.size());

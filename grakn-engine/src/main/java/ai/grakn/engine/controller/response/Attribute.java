@@ -19,11 +19,12 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
-import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * <p>
@@ -45,11 +46,14 @@ public abstract class Attribute extends Thing {
     public static Attribute create(
             @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            @JsonProperty("attributes") Set<Link> attributes,
-            @JsonProperty("keys") Set<Link> keys,
-            @JsonProperty("relationships") Set<RolePlayer> relationships,
+            @JsonProperty("type") EmbeddedType type,
+            @JsonProperty("attributes") Link attributes,
+            @JsonProperty("keys") Link keys,
+            @JsonProperty("relationships") Link relationships,
+            @JsonProperty("inferred") boolean inferred,
+            @Nullable @JsonProperty("explanation-query")  String explanation,
             @JsonProperty("data-type") String dataType,
             @JsonProperty("value") String value){
-        return new AutoValue_Attribute(id, selfLink, attributes, keys, relationships, dataType, value);
+        return new AutoValue_Attribute(Schema.BaseType.ATTRIBUTE.name(), id, selfLink, type, attributes, keys, relationships, inferred, explanation, dataType, value);
     }
 }

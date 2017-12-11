@@ -26,8 +26,8 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.DiagonalKB;
-import ai.grakn.test.kbs.MatrixKB;
-import ai.grakn.test.kbs.MatrixKBII;
+import ai.grakn.test.kbs.DualLinearTransitivityMatrixKB;
+import ai.grakn.test.kbs.LinearTransitivityMatrixKB;
 import ai.grakn.test.kbs.NguyenKB;
 import ai.grakn.test.kbs.PathKB;
 import ai.grakn.test.kbs.PathKBII;
@@ -293,7 +293,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testMatrix(){
         final int N = 5;
-        SampleKBContext kb = MatrixKB.context(N, N);
+        SampleKBContext kb = DualLinearTransitivityMatrixKB.context(N, N);
         QueryBuilder qb = kb.tx().graql().infer(false);
         QueryBuilder iqb = kb.tx().graql().infer(true);
 
@@ -376,7 +376,7 @@ public class RecursiveInferenceTest {
     public void testMatrixII(){
         final int N = 5;
         final int M = 5;
-        SampleKBContext kb = MatrixKBII.context(N, M);
+        SampleKBContext kb = LinearTransitivityMatrixKB.context(N, M);
         QueryBuilder qb = kb.tx().graql().infer(false);
         QueryBuilder iqb = kb.tx().graql().infer(true);
 

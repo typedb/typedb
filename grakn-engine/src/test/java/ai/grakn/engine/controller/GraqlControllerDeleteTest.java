@@ -26,11 +26,13 @@ import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -38,8 +40,7 @@ import org.mockito.InOrder;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
-import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -60,15 +61,17 @@ public class GraqlControllerDeleteTest {
     private static final TaskManager taskManager = mock(TaskManager.class);
     private static final PostProcessor postProcessor = mock(PostProcessor.class);
     private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
+    private static final Printer printer = mock(Printer.class);
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, taskManager, postProcessor, new MetricRegistry());
+        new GraqlController(mockFactory, spark, taskManager, postProcessor, printer, new MetricRegistry());
     });
 
     @Before
     public void setupMock(){
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
+        when(printer.graqlString(any())).thenReturn(Json.object().toString());
     }
 
     @Test
@@ -116,7 +119,7 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "some-kb"));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "somekb"));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -170,17 +173,9 @@ public class GraqlControllerDeleteTest {
         assertThat(exception(response), containsString("cannot be deleted"));
     }
 
-    @Test
-    public void DELETEGraqlDelete_ResponseContentTypeIsText(){
-        Response response = sendRequest("match $x has name \"Harry\"; limit 1; delete $x;");
-
-        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
     private Response sendRequest(String query){
         return RestAssured.with()
-                .queryParam(INFER, false)
-                .accept(APPLICATION_TEXT)
+                .queryParam(EXECUTE_WITH_INFERENCE, false)
                 .body(query)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()));
     }
