@@ -84,10 +84,10 @@ def withGrakn(Closure closure) {
         }
         closure()
     } finally {
-        sh 'stop-grakn.sh'
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn.log"
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn-postprocessing.log"
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/cassandra.log"
+        sh 'stop-grakn.sh'
     }
 }
 
