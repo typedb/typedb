@@ -18,16 +18,17 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary.type;
 
-import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
+import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -36,33 +37,26 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty} property.
+ * TypeAtom corresponding to graql a {@link HasAttributeTypeProperty} property.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class HasAtom extends TypeAtom {
+public class HasAtom extends OntologicalAtom {
 
-    public HasAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) { super(pattern, predicateVar, p, par);}
+    public HasAtom(VarPattern pattern, Var predicateVar, IdPredicate p, ReasonerQuery par) { super(pattern, predicateVar, p, par);}
     private HasAtom(Var var, Var predicateVar, IdPredicate p, ReasonerQuery par){
-        super(
-                var.has(predicateVar).admin(),
-                predicateVar,
-                p,
-                par
-        );
+        super(var.has(predicateVar), predicateVar, p, par);
     }
     private HasAtom(TypeAtom a) { super(a);}
 
     @Override
-    public Atomic copy(){
-        return new HasAtom(this);
-    }
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeTypeProperty.class;}
 
     @Override
-    public Set<String> validateAsRuleHead(Rule rule) {
-        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
+    public Atomic copy(){
+        return new HasAtom(this);
     }
 
     @Override
@@ -71,5 +65,17 @@ public class HasAtom extends TypeAtom {
         return vars.isEmpty()?
                 Collections.singleton(this) :
                 vars.stream().map(v -> new HasAtom(v, getPredicateVariable(), getTypePredicate(), this.getParentQuery())).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Atom rewriteWithTypeVariable() {
+        return new HasAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery());
+    }
+
+    @Override
+    public Atom rewriteToUserDefined(Atom parentAtom) {
+        return parentAtom.getPredicateVariable().isUserDefinedName()?
+                new HasAtom(getPattern(), getPredicateVariable().asUserDefined(), getTypePredicate(), getParentQuery()) :
+                this;
     }
 }

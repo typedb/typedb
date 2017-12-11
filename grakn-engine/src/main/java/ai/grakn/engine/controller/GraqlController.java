@@ -19,24 +19,40 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.controller.response.ExplanationBuilder;
+import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.exception.GraknServerException;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import io.swagger.annotations.Api;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.rholder.retry.Attempt;
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.RetryListener;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -51,25 +67,30 @@ import spark.Service;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
+import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
+import static ai.grakn.util.REST.Request.Graql.ALLOW_MULTIPLE_QUERIES;
+import static ai.grakn.util.REST.Request.Graql.DEFINE_ALL_VARS;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
+import static ai.grakn.util.REST.Request.Graql.LOADING_DATA;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
+import static ai.grakn.util.REST.Request.Graql.TX_TYPE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.lang.Boolean.parseBoolean;
+import static org.apache.http.HttpStatus.SC_OK;
 
 
 /**
@@ -79,24 +100,31 @@ import static java.lang.Boolean.parseBoolean;
  *
  * @author Marco Scoppetta, alexandraorth
  */
-@Path("/graph/graql")
-@Api(value = "/graph/graql", description = "Endpoints used to query the graph by ID or Graql get query and build HAL objects.")
-@Produces({"application/json", "text/plain"})
 public class GraqlController {
-
+    private static final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
+    private static final RetryLogger retryLogger = new RetryLogger();
+    private static final int MAX_RETRY = 10;
+    private final Printer printer;
     private final EngineGraknTxFactory factory;
-    private final Timer executeGraqlGetTimer;
-    private final Timer executeGraqlPostTimer;
+    private final TaskManager taskManager;
+    private final PostProcessor postProcessor;
+    private final Timer executeGraql;
+    private final Timer executeExplanation;
 
-    public GraqlController(EngineGraknTxFactory factory, Service spark,
-                           MetricRegistry metricRegistry) {
+    public GraqlController(
+            EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
+            PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
+    ) {
         this.factory = factory;
-        this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
-        this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
+        this.taskManager = taskManager;
+        this.postProcessor = postProcessor;
+        this.printer = printer;
+        this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
+        this.executeExplanation = metricRegistry.timer(name(GraqlController.class, "execute-explanation"));
 
-        spark.post(REST.WebPath.KB.ANY_GRAQL, this::executeGraql);
-        spark.get(REST.WebPath.KB.GRAQL,    this::executeGraqlGET);
+        spark.post(REST.WebPath.KEYSPACE_GRAQL, this::executeGraql);
+        spark.get(REST.WebPath.KEYSPACE_EXPLAIN, this::explainGraql);
 
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
@@ -106,64 +134,128 @@ public class GraqlController {
         spark.exception(InvalidKBException.class, (e, req, res) -> handleError(422, e, res));
     }
 
-    @POST
-    @Path("/execute")
-    @ApiOperation(value = "Execute an arbitrary Graql queryEndpoints used to query the graph by ID or Graql get query and build HAL objects.")
-    private Object executeGraql(Request request, Response response) {
-        String queryString = mandatoryBody(request);
-        Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(request, KEYSPACE));
-        boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
-        boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
-        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        String acceptType = getAcceptType(request);
-
-        try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
-            Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
-            Object resp = respond(response, acceptType, executeQuery(graph.getKeyspace(), limitEmbedded, query, acceptType));
-            graph.commit();
-            return resp;
-        }
-    }
-    
     @GET
-    @Path("/")
-    @ApiOperation(
-            value = "Executes graql query on the server and build a representation for each concept in the query result. " +
-                    "Return type is determined by the provided accept type: application/graql+json, application/hal+json or application/text")
+    @Path("/kb/{keyspace}/explain")
+    @ApiOperation(value = "Execute an arbitrary Graql query and get the explanation from the results")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Get query to execute", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = INFER,       value = "Should reasoner with the current query.", required = true, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = MATERIALISE, value = "Should reasoner materialise results with the current query.", required = true, dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "query"),
     })
-    private Object executeGraqlGET(Request request, Response response) {
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+    private String explainGraql(Request request, Response response) throws RetryException, ExecutionException {
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         String queryString = mandatoryQueryParameter(request, QUERY);
-        boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
-        boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
-        int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        String acceptType = getAcceptType(request);
 
-        try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlGetTimer.time()) {
-            Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
+        response.status(SC_OK);
 
-            if(!query.isReadOnly()) throw GraknServerException.invalidQuery("\"read-only\"");
+        return executeFunctionWithRetrying(() -> {
+            try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
+                Answer answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new QueryAnswer());
+                return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer, printer));
+            }
+        });
+    }
 
-            if(!validContentType(acceptType, query)) throw GraknServerException.contentTypeQueryMismatch(acceptType, query);
+    @POST
+    @Path("/kb/{keyspace}/graql")
+    @ApiOperation(value = "Execute an arbitrary Graql query")
+    @ApiImplicitParams({
+            @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "body"),
+            @ApiImplicitParam(name = EXECUTE_WITH_INFERENCE, value = "Enable inference", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(
+                    name = DEFINE_ALL_VARS,
+                    value = "Define all variables in response", dataType = "boolean", paramType = "query"
+            ),
+            @ApiImplicitParam(name = ALLOW_MULTIPLE_QUERIES, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = TX_TYPE, dataType = "string", paramType = "query")
+    })
+    private String executeGraql(Request request, Response response) throws RetryException, ExecutionException {
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        String queryString = mandatoryBody(request);
 
-            Object responseBody = executeGET(graph.getKeyspace(), limitEmbedded, query, acceptType);
-            return respond(response, acceptType, responseBody);
+        //Run the query with reasoning on or off
+        Optional<Boolean> infer = queryParameter(request, EXECUTE_WITH_INFERENCE).map(Boolean::parseBoolean);
+
+        //Allow multiple queries to be executed
+        boolean multiQuery = parseBoolean(queryParameter(request, ALLOW_MULTIPLE_QUERIES).orElse("false"));
+
+        //Define all anonymous variables in the query
+        Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
+
+        //Used to check if serialisation of results is needed. When loading we skip this for the sake of speed
+        boolean skipSerialisation = parseBoolean(queryParameter(request, LOADING_DATA).orElse("false"));
+
+        //Check the transaction type to use
+        GraknTxType txType = queryParameter(request, TX_TYPE)
+                .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
+
+        //This is used to determine the response format
+        //TODO: Maybe we should really try to stick with one representation? This would require dashboard console interpreting the json representation
+        final String acceptType;
+        if (APPLICATION_TEXT.equals(Requests.getAcceptType(request))) {
+            acceptType = APPLICATION_TEXT;
+        } else {
+            acceptType = APPLICATION_JSON;
+        }
+        response.type(APPLICATION_JSON);
+
+        //Execute the query and get the results
+        LOG.trace(String.format("Executing graql statements: {%s}", queryString));
+
+        return executeFunctionWithRetrying(() -> {
+            try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
+
+                System.out.println("RUNNING: " + queryString);
+                QueryBuilder builder = tx.graql();
+
+                infer.ifPresent(builder::infer);
+
+                QueryParser parser = builder.parser();
+                defineAllVars.ifPresent(parser::defineAllVars);
+
+                response.status(SC_OK);
+
+                return executeQuery(tx, queryString, acceptType, multiQuery, skipSerialisation, parser);
+            }
+        });
+    }
+
+    private String executeFunctionWithRetrying(Callable<String> callable) throws RetryException, ExecutionException {
+        try {
+            Retryer<String> retryer = RetryerBuilder.<String>newBuilder()
+                    .retryIfExceptionOfType(TemporaryWriteException.class)
+                    .withRetryListener(retryLogger)
+                    .withWaitStrategy(WaitStrategies.exponentialWait(100, 5, TimeUnit.MINUTES))
+                    .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRY))
+                    .build();
+
+            return retryer.call(callable);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            } else {
+                throw e;
+            }
         }
     }
+
+    private static class RetryLogger implements RetryListener {
+        @Override
+        public <V> void onRetry(Attempt<V> attempt) {
+            if (attempt.hasException()) {
+                LOG.warn("Retrying transaction after {" + attempt.getAttemptNumber() + "} attempts due to exception {" + attempt.getExceptionCause().getMessage() + "}");
+            }
+        }
+    }
+
 
     /**
      * Handle any {@link Exception} that are thrown by the server. Configures and returns
      * the correct JSON response with the given status.
      *
      * @param exception exception thrown by the server
-     * @param response response to the client
+     * @param response  response to the client
      */
-    private static void handleError(int status, Exception exception, Response response){
+    private static void handleError(int status, Exception exception, Response response) {
         LOG.error("REST error", exception);
         response.status(status);
         response.body(Json.object("exception", exception.getMessage()).toString());
@@ -171,130 +263,66 @@ public class GraqlController {
     }
 
     /**
-     * Check if the supported combinations of query type and content type are true
-     * @param acceptType provided accept type of the request
-     * @param query provided query from the request
-     * @return if the combination of query and accept type is valid
-     */
-    private boolean validContentType(String acceptType, Query<?> query){
-
-        // If compute other than path and not TEXT invalid
-        if (query instanceof ComputeQuery && !(query instanceof PathQuery) && acceptType.equals(APPLICATION_HAL)) {
-            return false;
-        }
-        // If aggregate and HAL invalid
-        else if(query instanceof AggregateQuery && acceptType.equals(APPLICATION_HAL)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Format the response with the correct content type based on the request.
-     *
-     * @param contentType content type being provided in the response
-     * @param response response to the client
-     * @return formatted result of the executed query
-     */
-    private Object respond(Response response, String contentType, Object responseBody){
-        response.type(contentType);
-        response.body(responseBody.toString());
-        response.status(200);
-
-        return responseBody;
-    }
-
-    /**
      * Execute a query and return a response in the format specified by the request.
      *
-     * @param keyspace the keyspace the query is running on
-     * @param query read query to be executed
-     * @param acceptType response format that the client will accept
+     * @param tx          open transaction to current graph
+     * @param queryString read query to be executed
+     * @param acceptType  response format that the client will accept
+     * @param multi       execute multiple statements
+     * @param parser
      */
-    private Object executeQuery(Keyspace keyspace, int limitEmbedded, Query<?> query, String acceptType){
-        Printer<?> printer;
+    private String executeQuery(GraknTx tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
+        Printer printer = this.printer;
 
-        switch (acceptType) {
-            case APPLICATION_TEXT:
-                printer = Printers.graql(false);
-                break;
-            case APPLICATION_JSON_GRAQL:
-                printer = Printers.json();
-                break;
-            case APPLICATION_HAL:
-                printer = Printers.hal(keyspace, limitEmbedded);
-                break;
-            default:
-                throw GraknServerException.unsupportedContentType(acceptType);
+        if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
+
+        String formatted;
+        boolean commitQuery = true;
+        if (multi) {
+            Stream<Query<?>> query = parser.parseList(queryString);
+            List<?> collectedResults = query.map(this::executeAndMonitor).collect(Collectors.toList());
+            if (skipSerialisation) {
+                formatted = mapper.writeValueAsString(new Object[collectedResults.size()]);
+            } else {
+                formatted = printer.graqlString(collectedResults);
+            }
+        } else {
+            Query<?> query = parser.parseQuery(queryString);
+            if (skipSerialisation) {
+                formatted = "";
+            } else {
+                formatted = printer.graqlString(executeAndMonitor(query));
+            }
+            commitQuery = !query.isReadOnly();
         }
 
-        String formatted = printer.graqlString(query.execute());
+        if (commitQuery) commitAndSubmitPPTask(tx, postProcessor, taskManager);
 
-        return acceptType.equals(APPLICATION_TEXT) ? formatted : Json.read(formatted);
+        return formatted;
     }
 
-    static String getAcceptType(Request request) {
-        // TODO - we are not handling multiple values here and we should!
-        String header = request.headers("Accept");
-        return header == null ? "" : request.headers("Accept").split(",")[0];
-    }
+    private static void commitAndSubmitPPTask(
+            GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter
+    ) {
+        Optional<CommitLog> result = graph.admin().commitSubmitNoLogs();
+        if (result.isPresent()) { // Submit more tasks if commit resulted in created commit logs
+            CommitLog logs = result.get();
 
-    /**
-     * Execute a read query and return a response in the format specified by the request.
-     *
-     * @param keyspace the {@link Keyspace} the query is running on
-     * @param query read query to be executed
-     * @param acceptType response format that the client will accept
-     */
-    private Object executeGET(Keyspace keyspace, int limitEmbedded, Query<?> query, String acceptType){
-        switch (acceptType){
-            case APPLICATION_TEXT:
-                return formatGETAsGraql(Printers.graql(false), query);
-            case APPLICATION_JSON_GRAQL:
-                return formatGETAsGraql(Printers.json(), query);
-            case APPLICATION_HAL:
-                return formatGETAsHAL(query, keyspace, limitEmbedded);
-            default:
-                throw GraknServerException.unsupportedContentType(acceptType);
+            //Update the attributes which need to be merged
+            System.out.println("Adding task to manager . . . ");
+            taskSubmitter.addTask(
+                    PostProcessingTask.createTask(GraqlController.class),
+                    PostProcessingTask.createConfig(logs)
+            );
+
+            //Update the counts which need to be updated
+            System.out.println("Updating counts . . . ");
+            postProcessor.updateCounts(graph.keyspace(), logs);
         }
     }
 
-    /**
-     * Format a query as HAL
-     *
-     * @param query query to format
-     * @param numberEmbeddedComponents the number of embedded components for the HAL format, taken from the request
-     * @param keyspace the {@link Keyspace} from the request //TODO only needed because HAL does not support admin interface
-     * @return HAL representation
-     */
-    private Json formatGETAsHAL(Query<?> query, Keyspace keyspace, int numberEmbeddedComponents) {
-        // This ugly instanceof business needs to be done because the HAL array renderer does not
-        // support Compute queries and because Compute queries do not have the "admin" interface
-
-        if(query instanceof GetQuery) {
-            return renderHALArrayData((GetQuery) query, 0, numberEmbeddedComponents);
-        } else if(query instanceof PathQuery) {
-            Json array = Json.array();
-            // The below was taken line-for-line from previous way of rendering
-            ((PathQuery) query).execute()
-                    .orElse(new ArrayList<>())
-                    .forEach(c -> array.add(
-                            Json.read(renderHALConceptData(c, 0, keyspace, 0, numberEmbeddedComponents))));
-
-            return array;
-        }
-
-        throw new RuntimeException("Unsupported query type in HAL formatter");
+    private Object executeAndMonitor(Query<?> query) {
+        return query.execute();
     }
 
-    /**
-     * Format query results as Graql based on the provided printer
-     *
-     * @param query query to format
-     * @return Graql representation
-     */
-    private Object formatGETAsGraql(Printer printer, Query<?> query) {
-        return printer.graqlString(query.execute());
-    }
 }

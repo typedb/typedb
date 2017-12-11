@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.AdmissionsKB;
+import ai.grakn.util.GraknTestUtil;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,11 +33,11 @@ import static org.junit.Assume.assumeTrue;
 public class AdmissionsInferenceTest {
 
     @Rule
-    public final SampleKBContext admissionsKB = SampleKBContext.preLoad(AdmissionsKB.get());
+    public final SampleKBContext admissionsKB = AdmissionsKB.context();
 
     @BeforeClass
     public static void onStartup(){
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
     }
 
     @Test

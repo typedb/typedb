@@ -81,7 +81,7 @@ $myRule has description 'this is my rule';
 
 In Graql the "when" of the rule is required to be a [conjunctive pattern](https://en.wikipedia.org/wiki/Logical_conjunction), whereas the "then" should contain a single pattern. If your use case requires a rule with a disjunction on the "when", please notice that, when using the disjunctive normal form, it can be decomposed into series of conjunctive rules.
 
-A classic reasoning example is the ancestor example. Yhe two Graql rules R1 and R2 stated below define the ancestor relationship, which can be understood as either happening between two generations directly between a parent and a child or between three generations when the first generation hop is expressed via a parentship relationship and the second generation hop is captured by an ancestor relationship.
+A classic reasoning example is the ancestor example. The two Graql rules R1 and R2 stated below define the ancestor relationship, which can be understood as either happening between two generations directly between a parent and a child or between three generations when the first generation hop is expressed via a parentship relationship and the second generation hop is captured by an ancestor relationship.
 
 ```graql
 define
@@ -153,10 +153,8 @@ That means atomic queries contain at most one statement that can potentially app
 | `regex` | `$x isa attribute, regex /hello/;` | ✓ | x |
 
 ## Configuration options
-Graql offers certain degrees of freedom in deciding how and if reasoning should be performed. Namely it offers two options:
-
-* **whether reasoning should be on**. This option is self-explanatory. If the reasoning is not turned on, the rules will not be triggered and no knowledge will be inferred.
-* **whether inferred knowledge should be materialised (persisted to the knowledge base) or stored in memory**. Persisting to knowledge base has a huge impact on performance when compared to in-memory inference, and, for larger graphs, materialisation should either be avoided or queries be limited by employing the _limit_ modifier, which allows termination in sensible time.
+Graql provides an option to decide whether reasoning should be performed.
+If the reasoning is not turned on, the rules will not be triggered and no knowledge will be inferred.
 
 ## Where Next?
 

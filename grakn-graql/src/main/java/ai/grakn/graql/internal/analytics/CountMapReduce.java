@@ -26,8 +26,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 
 /**
- * The MapReduce program for counting the number of instances in a graph
- * <p>
+ * The MapReduce program for counting the number of instances excluding attributes and implicit relationships
  *
  * @author Jason Liu
  * @author Sheldon Hall
@@ -41,10 +40,6 @@ public class CountMapReduce extends GraknMapReduce<Long> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
-        if (vertex.property(CountVertexProgram.EDGE_COUNT).isPresent()) {
-            emitter.emit(RESERVED_TYPE_LABEL_KEY,
-                    vertex.value(CountVertexProgram.EDGE_COUNT));
-        }
         emitter.emit(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()), 1L);
     }
 

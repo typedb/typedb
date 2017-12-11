@@ -55,9 +55,6 @@ There is an example of using the [Java Migration API for JSON data](https://gith
 
 There is an example of [SQL migration using the Java API](../examples/SQL-migration.html) discussed on this portal. 
 
-### OWL Migration
-
-There is an example of [OWL migration using the Java API](../migration/OWL-migration.html) on this portal.
 
 {% include links.html %}
 

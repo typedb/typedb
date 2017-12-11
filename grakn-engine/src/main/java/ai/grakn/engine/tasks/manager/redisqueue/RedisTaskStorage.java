@@ -76,7 +76,7 @@ public class RedisTaskStorage implements TaskStateStorage {
     @Override
     public Boolean updateState(TaskState state) {
         try {
-            redis.setState(state.getId().getValue(), mapStatus(state.status()));
+            redis.setState(state.getId().value(), mapStatus(state.status()));
             return true;
         } catch (RuntimeException e) {
             writeError.mark();
@@ -89,7 +89,7 @@ public class RedisTaskStorage implements TaskStateStorage {
     @Nullable
     public TaskState getState(TaskId id) throws GraknBackendException {
         // TODO this is a temporary wrap
-        Optional<StateInfo> state = redis.getState(id.getValue());
+        Optional<StateInfo> state = redis.getState(id.value());
         if (!state.isPresent()) {
             // TODO return optional
             throw GraknBackendException.stateStorage();
@@ -108,7 +108,7 @@ public class RedisTaskStorage implements TaskStateStorage {
 
     @Override
     public boolean containsTask(TaskId id) {
-        return redis.getState(id.getValue()).isPresent();
+        return redis.getState(id.value()).isPresent();
     }
 
     @Override

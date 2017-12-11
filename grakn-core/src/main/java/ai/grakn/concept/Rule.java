@@ -22,6 +22,7 @@ import ai.grakn.graql.Pattern;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
@@ -45,6 +46,7 @@ public interface Rule extends SchemaConcept {
      * @return A string representing the left hand side Graql query.
      */
     @CheckReturnValue
+    @Nullable
     Pattern getWhen();
 
     /**
@@ -54,6 +56,7 @@ public interface Rule extends SchemaConcept {
      * @return A string representing the right hand side Graql query.
      */
     @CheckReturnValue
+    @Nullable
     Pattern getThen();
 
     /**
@@ -94,6 +97,12 @@ public interface Rule extends SchemaConcept {
      * @return The {@link Rule} itself
      */
     Rule sup(Rule superRule);
+
+    /**
+     * @return All the super-types of this this {@link Rule}
+     */
+    @Override
+    Stream<Rule> sups();
 
     /**
      * Adds another subtype to this {@link Rule}

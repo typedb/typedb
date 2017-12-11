@@ -23,11 +23,12 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -35,6 +36,8 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -59,7 +62,7 @@ public abstract class Binary extends Atom {
     private final Var predicateVariable;
     private Type type = null;
 
-    Binary(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
+    Binary(VarPattern pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicateVariable = predicateVar;
         this.typePredicate = p;
@@ -70,6 +73,11 @@ public abstract class Binary extends Atom {
         this.predicateVariable = a.predicateVariable;
         this.typePredicate = a.getTypePredicate() != null ? (IdPredicate) AtomicFactory.create(a.getTypePredicate(), getParentQuery()) : null;
         this.type = a.type;
+    }
+
+    @Override
+    public void checkValid() {
+        if (getTypePredicate() != null) getTypePredicate().checkValid();
     }
 
     public Var getPredicateVariable() { return predicateVariable;}
@@ -92,20 +100,35 @@ public abstract class Binary extends Atom {
     public ConceptId getTypeId(){ return typePredicate != null? typePredicate.getPredicate() : null;}
 
     @Override
-    public int equivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        return hashCode;
-    }
-
-    @Override
-    public boolean isEquivalent(Object obj) {
+    public boolean isAlphaEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Binary a2 = (Binary) obj;
         return  (isUserDefined() == a2.isUserDefined())
                 && Objects.equals(this.getTypeId(), a2.getTypeId())
                 && hasEquivalentPredicatesWith(a2);
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        return hashCode;
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Binary a2 = (Binary) obj;
+        return  (isUserDefined() == a2.isUserDefined())
+                && Objects.equals(this.getTypeId(), a2.getTypeId())
+                && predicateBindingsAreEquivalent(a2);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
     }
 
     boolean hasEquivalentPredicatesWith(Binary atom) {
@@ -115,14 +138,25 @@ public abstract class Binary extends Atom {
 
         IdPredicate thisTypePredicate = this.getTypePredicate();
         IdPredicate typePredicate = atom.getTypePredicate();
-        return ((thisVarPredicate == null && varPredicate == null || thisVarPredicate != null && thisVarPredicate.isEquivalent(varPredicate)))
-                && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && thisTypePredicate.isEquivalent(typePredicate));
+        return ((thisVarPredicate == null && varPredicate == null || thisVarPredicate != null && thisVarPredicate.isAlphaEquivalent(varPredicate)))
+                && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && thisTypePredicate.isAlphaEquivalent(typePredicate));
+    }
+
+    boolean predicateBindingsAreEquivalent(Binary atom) {
+        //check if there is a substitution for varName
+        IdPredicate thisVarPredicate = this.getIdPredicate(getVarName());
+        IdPredicate varPredicate = atom.getIdPredicate(atom.getVarName());
+
+        IdPredicate thisTypePredicate = this.getTypePredicate();
+        IdPredicate typePredicate = atom.getTypePredicate();
+        return (thisVarPredicate == null) == (varPredicate == null)
+                && (thisTypePredicate == null) == (typePredicate == null);
     }
 
     @Override
-    public PatternAdmin getCombinedPattern() {
-        Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVarPattern());
-        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().asVarPattern());
+    protected Pattern createCombinedPattern(){
+        Set<PatternAdmin> vars = Sets.newHashSet(super.getPattern().admin());
+        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().admin());
         return Patterns.conjunction(vars);
     }
 
@@ -136,7 +170,7 @@ public abstract class Binary extends Atom {
     public Set<Var> getVarNames() {
         Set<Var> vars = new HashSet<>();
         if (getVarName().isUserDefinedName()) vars.add(getVarName());
-        if (!predicateVariable.getValue().isEmpty()) vars.add(predicateVariable);
+        if (getPredicateVariable().isUserDefinedName()) vars.add(predicateVariable);
         return vars;
     }
 
@@ -151,22 +185,22 @@ public abstract class Binary extends Atom {
             throw GraqlQueryException.unificationAtomIncompatibility();
         }
 
-        Unifier unifier = new UnifierImpl();
+        Multimap<Var, Var> varMappings = HashMultimap.create();
+        Var childVarName = this.getVarName();
+        Var parentVarName = parentAtom.getVarName();
         Var childPredicateVarName = this.getPredicateVariable();
         Var parentPredicateVarName = parentAtom.getPredicateVariable();
 
-        if (parentAtom.getVarName().isUserDefinedName()){
-            Var childVarName = this.getVarName();
-            Var parentVarName = parentAtom.getVarName();
-            if (!childVarName.equals(parentVarName)) {
-                unifier.addMapping(childVarName, parentVarName);
-            }
+        if (parentVarName.isUserDefinedName()
+                && childVarName.isUserDefinedName()
+                && !childVarName.equals(parentVarName)) {
+            varMappings.put(childVarName, parentVarName);
         }
-        if (!childPredicateVarName.getValue().isEmpty()
-                && !parentPredicateVarName.getValue().isEmpty()
+        if (parentPredicateVarName.isUserDefinedName()
+                && childPredicateVarName.isUserDefinedName()
                 && !childPredicateVarName.equals(parentPredicateVarName)) {
-            unifier.addMapping(childPredicateVarName, parentPredicateVarName);
+            varMappings.put(childPredicateVarName, parentPredicateVarName);
         }
-        return unifier;
+        return new UnifierImpl(varMappings);
     }
 }

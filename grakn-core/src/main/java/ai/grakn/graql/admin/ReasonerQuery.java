@@ -55,6 +55,12 @@ public interface ReasonerQuery{
     @CheckReturnValue
     GraknTx tx();
 
+
+    /**
+     * validate the query wrt transaction it is defined in
+     */
+    void checkValid();
+
     /**
      * @return conjunctive pattern corresponding to this reasoner query
      */
@@ -88,6 +94,12 @@ public interface ReasonerQuery{
     GetQuery getQuery();
 
     /**
+     * @return (partial) substitution obtained from all id predicates (including internal) in the query
+     */
+    @CheckReturnValue
+    Answer getSubstitution();
+
+    /**
      * @return error messages indicating ontological inconsistencies of the query
      */
     @CheckReturnValue
@@ -98,6 +110,14 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     boolean isRuleResolvable();
+
+    /**
+     * @param typedVar variable of interest
+     * @param parentType which playability in this query is to be checked
+     * @return true if typing the typeVar with type is compatible with role configuration of this query
+     */
+    @CheckReturnValue
+    boolean isTypeRoleCompatible(Var typedVar, Type parentType);
 
     /**
      * @param parent query to unify wth

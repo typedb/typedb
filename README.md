@@ -31,6 +31,8 @@ This product includes software developed by [Grakn Labs](http://grakn.ai/).  It'
 
 [Grakn Community](https://grakn.ai/community.html) - a useful page with links to various communication channels such as Slack and our Discussion boards.
 
+[Contribute To Grakn](https://grakn.ai/pages/contributors/index.html) - Contributions are *very* welcome! The section contains information which covers the contribution process to Grakn.
+
 ## System Requirements
 
 Operating System: Unix based systems (Linux and Mac OS X)

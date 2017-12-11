@@ -114,15 +114,33 @@ public class EntityTypeTest extends TxTestBase {
         EntityType c3 = tx.putEntityType("c3").sup(c2);
         EntityType c4 = tx.putEntityType("c4").sup(c1);
 
-        Set<Type> c1SuperTypes = EntityTypeImpl.from(c1).superSet().collect(toSet());
-        Set<Type> c2SuperTypes = EntityTypeImpl.from(c2).superSet().collect(toSet());
-        Set<Type> c3SuperTypes = EntityTypeImpl.from(c3).superSet().collect(toSet());
-        Set<Type> c4SuperTypes = EntityTypeImpl.from(c4).superSet().collect(toSet());
+        Set<Type> c1SuperTypes = EntityTypeImpl.from(c1).sups().collect(toSet());
+        Set<Type> c2SuperTypes = EntityTypeImpl.from(c2).sups().collect(toSet());
+        Set<Type> c3SuperTypes = EntityTypeImpl.from(c3).sups().collect(toSet());
+        Set<Type> c4SuperTypes = EntityTypeImpl.from(c4).sups().collect(toSet());
 
         assertThat(c1SuperTypes, containsInAnyOrder(entityType, c1));
         assertThat(c2SuperTypes, containsInAnyOrder(entityType, c2, c1));
         assertThat(c3SuperTypes, containsInAnyOrder(entityType, c3, c2, c1));
         assertThat(c4SuperTypes, containsInAnyOrder(entityType, c4, c1));
+    }
+
+    @Test
+    public void whenGettingTheSuperSetViaSupsMethod_ReturnAllOfItsSuperTypes(){
+        EntityType child = tx.putEntityType("child");
+        EntityType p2 = tx.putEntityType("p2").sub(child);
+        EntityType p3 = tx.putEntityType("p3").sub(p2);
+        EntityType p4 = tx.putEntityType("p4").sub(p3);
+        EntityType entity = tx.getMetaEntityType();
+        Type thing = tx.getMetaConcept();
+
+        assertThat(child.sups().collect(toSet()), containsInAnyOrder(child, p2, p3, p4, entity));
+        assertThat(p2.sups().collect(toSet()), containsInAnyOrder(p2,p3, p4, entity));
+        assertThat(p3.sups().collect(toSet()), containsInAnyOrder(p3,p4, entity));
+        assertThat(p4.sups().collect(toSet()), containsInAnyOrder(p4, entity));
+        assertThat(entity.sups().collect(toSet()), containsInAnyOrder(entity));
+        assertThat(thing.sups().collect(toSet()), empty());
+
     }
 
     @Test
@@ -457,6 +475,16 @@ public class EntityTypeTest extends TxTestBase {
         person.deleteKey(id);
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
         assertThat(person.keys().collect(toSet()), empty());
+    }
+
+    @Test
+    public void whenCreatingAnEntityTypeWithLabelStartingWithReservedCharachter_Throw(){
+        String label = "@what-a-dumb-label-name";
+
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.invalidLabelStart(Label.of(label)).getMessage());
+
+        tx.putEntityType(label);
     }
 
 }

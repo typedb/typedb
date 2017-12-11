@@ -5,7 +5,7 @@
     <parent>
         <artifactId>grakn-test</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.18.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,13 +15,7 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>janus-factory</artifactId>
-            <version>${project.version}</version>
             <exclusions>
-                <!--Excluded because we provide logback logger-->
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-nop</artifactId>
-                </exclusion>
                 <!--Excluded because LDBC provides and requires a newer version -->
                 <exclusion>
                     <groupId>commons-cli</groupId>
@@ -32,7 +26,6 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!--
@@ -45,12 +38,10 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
         </dependency>
         <dependency>
             <groupId>com.ldbc.driver</groupId>
             <artifactId>jeeves</artifactId>
-            <version>${ldbc-driver.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.guava</groupId>
@@ -67,12 +58,10 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
         </dependency>
     </dependencies>
 </project>

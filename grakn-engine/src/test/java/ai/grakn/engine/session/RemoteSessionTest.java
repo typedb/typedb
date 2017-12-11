@@ -19,12 +19,34 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.test.rule.SessionContext;
+import com.codahale.metrics.MetricRegistry;
+import mjson.Json;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.mockito.Mockito;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
@@ -33,30 +55,11 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
 import static ai.grakn.util.REST.RemoteShell.INFER;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
-import static ai.grakn.util.REST.RemoteShell.MATERIALISE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
-import com.codahale.metrics.MetricRegistry;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
-import mjson.Json;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.Session;
-import org.junit.After;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
 import static org.mockito.ArgumentMatchers.any;
-import org.mockito.Mockito;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,22 +68,26 @@ import static org.mockito.Mockito.when;
  * @author Felix Chapman
  */
 public class RemoteSessionTest {
+    private static final LockProvider mockLockProvider = mock(LockProvider.class);
+    private static final Lock mockLock = mock(Lock.class);
 
     private static final Json INIT_JSON = Json.object(
             ACTION, ACTION_INIT,
             KEYSPACE, "yes",
             OUTPUT_FORMAT, "graql",
-            INFER, false,
-            MATERIALISE, false
+            INFER, false
     );
 
-    @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EmbeddedCassandra.start();
-        Properties properties = GraknEngineConfig.create().getProperties();
-        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(properties);
-        new SystemController(factory, spark, new GraknEngineStatus(), new MetricRegistry());
+    public static final SessionContext sessionContext = SessionContext.create();
+
+    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
+        GraknConfig graknConfig = GraknConfig.create();
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, graknConfig);
+        new SystemController(spark, graknConfig, factory.systemKeyspace(), new GraknEngineStatus(), new MetricRegistry());
     }).port(4567);
+
+    @ClassRule
+    public static final RuleChain chain = RuleChain.emptyRuleChain().around(sessionContext).around(sparkContext);
 
     private final BlockingQueue<Json> responses = new LinkedBlockingDeque<>();
     private final RemoteEndpoint remoteEndpoint = mock(RemoteEndpoint.class);
@@ -92,6 +99,8 @@ public class RemoteSessionTest {
             responses.offer(Json.read((String)invocation.getArgument(0)));
             return null;
         }).when(remoteEndpoint).sendString(any());
+
+        when(mockLockProvider.getLock(any())).thenReturn(mockLock);
     }
 
     @After

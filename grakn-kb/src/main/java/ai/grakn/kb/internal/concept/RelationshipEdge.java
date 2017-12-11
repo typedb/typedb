@@ -18,14 +18,15 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
@@ -33,6 +34,7 @@ import ai.grakn.util.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,27 +55,26 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationshipEdge implements RelationshipStructure {
+public class RelationshipEdge implements RelationshipStructure, CacheOwner {
+    private final Set<Cache> registeredCaches = new HashSet<>();
     private final Logger LOG = LoggerFactory.getLogger(RelationshipEdge.class);
     private final EdgeElement edgeElement;
 
-    private final Cache<RelationshipType> relationType = new Cache<>(Cacheable.concept(), () ->
+    private final Cache<RelationshipType> relationType = Cache.createTxCache(this, Cacheable.concept(), () ->
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
 
-    private final Cache<Role> ownerRole = new Cache<>(Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> ownerRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID))));
 
-    private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> valueRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().source().
-            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
-            orElseThrow(() -> GraknTxOperationException.missingOwner(getId()))
+    private final Cache<Thing> owner = Cache.createTxCache(this, Cacheable.concept(), () ->
+            edge().tx().factory().<Thing>buildConcept(edge().source())
     );
 
-    private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().target().
-            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
-            orElseThrow(() -> GraknTxOperationException.missingValue(getId()))
+    private final Cache<Thing> value = Cache.createTxCache(this, Cacheable.concept(), () ->
+            edge().tx().factory().<Thing>buildConcept(edge().target())
     );
 
     private RelationshipEdge(EdgeElement edgeElement) {
@@ -107,6 +108,11 @@ public class RelationshipEdge implements RelationshipStructure {
     @Override
     public ConceptId getId() {
         return ConceptId.of(edge().id().getValue());
+    }
+
+    @Override
+    public Keyspace keyspace() {
+        return edge().tx().keyspace();
     }
 
     @Override
@@ -157,15 +163,6 @@ public class RelationshipEdge implements RelationshipStructure {
         return result.stream();
     }
 
-    @Override
-    public void txCacheClear() {
-        relationType.clear();
-        ownerRole.clear();
-        valueRole.clear();
-        owner.clear();
-        value.clear();
-    }
-
     public Role ownerRole(){
         return ownerRole.get();
     }
@@ -191,9 +188,19 @@ public class RelationshipEdge implements RelationshipStructure {
     }
 
     @Override
+    public boolean isInferred() {
+        return edge().propertyBoolean(Schema.EdgeProperty.IS_INFERRED);
+    }
+
+    @Override
     public String toString(){
         return "ID [" + getId() + "] Type [" + type().getLabel() + "] Roles and Role Players: \n" +
                 "Role [" + ownerRole().getLabel() + "] played by [" + owner().getId() + "] \n" +
                 "Role [" + valueRole().getLabel() + "] played by [" + value().getId() + "] \n";
+    }
+
+    @Override
+    public Collection<Cache> caches() {
+        return registeredCaches;
     }
 }

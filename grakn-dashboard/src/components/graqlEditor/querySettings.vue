@@ -33,9 +33,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
                 <div class="dd-item">
                    <div class="left"><input type="checkbox" v-model="useReasoner"></div><div class="right"> Activate inference</div>
                 </div>
-                <div class="dd-item">
-                  <div class="left"><input type="checkbox" v-model="materialiseReasoner" :disabled="!useReasoner"></div><div :class="{'grey':!useReasoner}" :disabled="!useReasoner" class="right">Materialise inference</div>
-                </div>
                 <div class="divide"></div>
                 <div class="dd-item">
                   <div class="left">Query Limit:</div><div class="right"><input v-model="queryLimit" type="text" class="form-control" maxlength="3" size="4"></div>
@@ -71,10 +68,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 }
 .fa-times{
   cursor: pointer;
-}
-
-.grey{
-  opacity: 0.5;
 }
 
 .page-header-icon {
@@ -123,7 +116,6 @@ export default {
   data() {
     return {
       useReasoner: User.getReasonerStatus(),
-      materialiseReasoner: User.getMaterialiseStatus(),
       showSettings: false,
       queryLimit: User.getQueryLimit(),
       freezeNodes: User.getFreezeNodes(),
@@ -147,10 +139,6 @@ export default {
   watch: {
     useReasoner(newVal, oldVal) {
       User.setReasonerStatus(newVal);
-      if (!newVal) this.materialiseReasoner = false;
-    },
-    materialiseReasoner(newVal, oldVal) {
-      User.setMaterialiseStatus(newVal);
     },
     freezeNodes(newVal, oldVal) {
       User.setFreezeNodes(newVal);

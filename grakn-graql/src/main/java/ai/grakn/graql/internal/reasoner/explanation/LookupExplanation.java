@@ -18,9 +18,10 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -33,20 +34,21 @@ import java.util.HashSet;
  */
 public class LookupExplanation extends Explanation {
 
-
-    public LookupExplanation(ReasonerQuery q){ super(q, new HashSet<>());}
-    private LookupExplanation(LookupExplanation exp){
-        super(exp.getQuery(), exp.getAnswers());
+    public LookupExplanation(ReasonerQuery q){ super(q);}
+    private LookupExplanation(ReasonerQuery q, Set<Answer> answers){
+        super(q, answers);
     }
-
-    @Override
-    public AnswerExplanation copy(){ return new LookupExplanation(this);}
-
-    @Override
-    public boolean isLookupExplanation(){ return true;}
 
     @Override
     public AnswerExplanation setQuery(ReasonerQuery q){
         return new LookupExplanation(q);
     }
+
+    @Override
+    public AnswerExplanation withAnswers(Set<Answer> answers) {
+        return new LookupExplanation(getQuery(), answers);
+    }
+
+    @Override
+    public boolean isLookupExplanation(){ return true;}
 }

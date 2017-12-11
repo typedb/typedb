@@ -23,87 +23,68 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.18.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grakn-test-tools</artifactId>
 
 
+    <!-- We explicitly set <scope>compile</scope> to override parent pom scope (which is often "test")-->
     <dependencies>
         <!-- Needed to be able to create graphs in a rule context -->
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-kb</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- Needed so we can create rule contexts -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
+            <scope>compile</scope>
         </dependency>
 
         <!-- Used to create embedded cassandra for testing -->
         <dependency>
             <groupId>org.cassandraunit</groupId>
             <artifactId>cassandra-unit</artifactId>
-            <version>${cassandra-unit.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
-            <version>${cassandra-driver-core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.dropwizard.metrics</groupId>
-                    <artifactId>metrics-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
-        <!-- Used for creating an embedded Redis for testing -->
+        <!-- Used for creating a embedded Redis for benchmark testing -->
         <dependency>
             <groupId>com.github.kstyrc</groupId>
             <artifactId>embedded-redis</artifactId>
-            <version>${redis-test.version}</version>
+            <scope>compile</scope>
         </dependency>
+
+        <!-- Used for creating a in memory mock Redis for testing -->
         <dependency>
-            <groupId>com.github.zxl0714</groupId>
+            <groupId>ai.grakn</groupId>
             <artifactId>redis-mock</artifactId>
-            <version>${redis-mock.version}</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
-            <version>${spark-core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>com.pholser</groupId>
             <artifactId>junit-quickcheck-generators</artifactId>
-            <version>${quickcheck.version}</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
+            <scope>compile</scope>
         </dependency>
-
     </dependencies>
 </project>

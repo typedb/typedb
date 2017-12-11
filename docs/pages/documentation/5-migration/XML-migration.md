@@ -13,7 +13,7 @@ KB: plants
 ## Introduction
 This is reference documenation for how to migrate XML data into grakn. Make sure you have set up the [Grakn environment](../get-started/setup-guide.html) before continuing. 
 
-## Migration Shell Script for JSON
+## Migration Shell Script for XML
 The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
 
 ```bash

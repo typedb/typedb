@@ -18,18 +18,21 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.Keyspace;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.cache.ContainsTxCache;
+import ai.grakn.kb.internal.cache.Cache;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.structure.VertexElement;
 import com.google.common.collect.Iterables;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -48,11 +51,14 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTxCache {
+public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner{
     private RelationshipStructure relationshipStructure;
 
     private RelationshipImpl(RelationshipStructure relationshipStructure) {
         this.relationshipStructure = relationshipStructure;
+        if(relationshipStructure.isReified()){
+            relationshipStructure.reify().owner(this);
+        }
     }
 
     public static RelationshipImpl create(RelationshipStructure relationshipStructure) {
@@ -114,6 +120,15 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     }
 
     @Override
+    public Stream<Attribute<?>> keys(AttributeType[] attributeTypes) {
+        if(reified().isPresent()){
+            return reified().get().attributes(attributeTypes);
+        } else {
+            return Stream.empty();
+        }
+    }
+
+    @Override
     public RelationshipType type() {
         return structure().type();
     }
@@ -161,7 +176,6 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     @Override
     public Relationship addRolePlayer(Role role, Thing thing) {
         reify().addRolePlayer(role, thing);
-        vertex().tx().txCache().trackForValidation(this); //This is so we can reassign the hash if needed
         return this;
     }
 
@@ -169,6 +183,16 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     public Relationship deleteAttribute(Attribute attribute) {
         reified().ifPresent(rel -> rel.deleteAttribute(attribute));
         return this;
+    }
+
+    @Override
+    public boolean isInferred() {
+        return structure().isInferred();
+    }
+
+    @Override
+    public void removeRolePlayer(Role role, Thing thing) {
+        reified().ifPresent(relationshipReified -> relationshipReified.removeRolePlayer(role, thing));
     }
 
     /**
@@ -203,6 +227,11 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     }
 
     @Override
+    public Keyspace keyspace() {
+        return structure().keyspace();
+    }
+
+    @Override
     public void delete() {
         structure().delete();
     }
@@ -227,7 +256,12 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     }
 
     @Override
-    public void txCacheClear() {
-        structure().txCacheClear();
+    public Collection<Cache> caches() {
+        return structure().caches();
+    }
+
+    public Relationship attributeInferred(Attribute attribute) {
+        reify().attributeInferred(attribute);
+        return this;
     }
 }

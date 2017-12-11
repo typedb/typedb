@@ -9,18 +9,22 @@ permalink: /documentation/graql/graql-overview.html
 folder: documentation
 ---
 
-Graql enables users to write queries against a Grakn knowledge base leveraging the inherent semantics of the data. Concepts can be retrieved by specifying the patterns of types and relationships that identify them. Graql is declarative and therefore it handles the optimisation of the knowledge base queries needed to retrieve information.
+Graql enables users to write queries against a Grakn knowledge base leveraging the inherent semantics of the data.
+Concepts can be retrieved by specifying the patterns of types and relationships that identify them. Graql is declarative
+and therefore it handles the optimisation of the knowledge base queries needed to retrieve information.
 
 You can execute Graql in the [Graql Shell](graql-shell.html) or using [Java
 Graql](../developing-with-java/java-graql.html).
 
 ## Query types
 
-There are several types of queries, which are begun with the following keywords:
-- [get](get-queries.html) - for finding patterns in the knowledge base
-- [define](define-queries.html) - for defining schema concepts
-- [insert](insert-queries.html) - for inserting data
-- [delete](delete-queries.html) - for deleting schema concepts and data
+There are seven types of queries, which are begun with the following keywords:
+- [get](dml.html#get-query) - for getting concepts from the knowledge base
+- [aggregate](dml.html#aggregate-query) - for transforming data in the knowledge base
+- [define](ddl.html#define-query) - for defining schema concepts
+- [undefine](ddl.html#undefine-query) - for removing schema concepts
+- [insert](dml.html#insert-query) - for inserting data
+- [delete](dml.html#delete-query) - for deleting data
 - [compute](compute-queries.html) - for computing useful information about your knowledge base
 
 ## Reserved keywords

@@ -67,8 +67,8 @@ public interface MaxQuery extends ComputeQuery<Optional<Number>> {
     Optional<Number> execute();
 
     /**
-     * @param tx the graph to execute the query on
-     * @return a MaxQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a MaxQuery with the transaction set
      */
     @Override
     MaxQuery withTx(GraknTx tx);

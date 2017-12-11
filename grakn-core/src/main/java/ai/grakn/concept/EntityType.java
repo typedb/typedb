@@ -153,6 +153,14 @@ public interface EntityType extends Type{
     EntityType sup();
 
     /**
+     * Returns a collection of supertypes of this EntityType.
+     *
+     * @return All the super classes of this EntityType
+     */
+    @Override
+    Stream<EntityType> sups();
+
+    /**
      * Returns a collection of subtypes of this EntityType.
      *
      * @return All the sub classes of this EntityType

@@ -18,20 +18,14 @@
 
 package ai.grakn.migration.sql;
 
-import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigrationOptions;
 import java.sql.Driver;
-
-import static java.lang.Integer.parseInt;
 
 /**
  * Configure the default SQL migration options and access arguments passed by the user
  * @author alexandraorth
  */
 public class SQLMigrationOptions extends MigrationOptions {
-
-    private final String batch = Integer.toString(Migrator.BATCH_SIZE);
-    private final String active = Integer.toString(Migrator.ACTIVE_TASKS);
 
     public SQLMigrationOptions(String[] args){
         super();
@@ -42,9 +36,6 @@ public class SQLMigrationOptions extends MigrationOptions {
         options.addOption("pass", true, "JDBC password");
         options.addOption("q", "query", true, "SQL Query");
         options.addOption("t", "template", true, "Graql template to apply to the data.");
-        options.addOption("b", "batch", true, "Number of rows to execute in one Grakn transaction. Default 25.");
-        options.addOption("a", "active", true, "Number of tasks (batches) running on the server at any one time. Default 25.");
-
         parse(args);
     }
 
@@ -94,13 +85,5 @@ public class SQLMigrationOptions extends MigrationOptions {
         }
 
         throw new IllegalArgumentException("No SQL query specified (-query)");
-    }
-
-    public int getBatch() {
-        return parseInt(command.getOptionValue("b", batch));
-    }
-
-    public int getNumberActiveTasks() {
-        return parseInt(command.getOptionValue("a", active));
     }
 }

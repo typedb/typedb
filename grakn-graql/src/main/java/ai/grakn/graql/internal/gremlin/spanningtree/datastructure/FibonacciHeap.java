@@ -19,13 +19,13 @@
 package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.collect.Iterators.concat;
@@ -229,8 +229,8 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
                 }))).orElse(Collections.emptyIterator());
     }
 
-    private LinkedList<Entry> getCycle(Entry start) {
-        final LinkedList<Entry> results = Lists.newLinkedList();
+    private List<Entry> getCycle(Entry start) {
+        final List<Entry> results = new ArrayList<>();
         Entry current = start;
         do {
             results.add(current);

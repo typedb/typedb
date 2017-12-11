@@ -41,12 +41,16 @@ public interface MultiUnifier extends Iterable<Unifier>, Streamable<Unifier> {
     @CheckReturnValue
     boolean isEmpty();
 
-
     /**
      * @return unique unifier if exists, throws an exception otherwise
      */
     @CheckReturnValue
     Unifier getUnifier();
+
+    /**
+     * @return a unifier from this unifier
+     */
+    Unifier getAny();
 
     /**
      * @return the set of unifiers corresponding to this multiunifier

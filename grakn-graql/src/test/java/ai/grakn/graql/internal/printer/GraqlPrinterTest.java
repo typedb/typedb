@@ -27,7 +27,7 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
 import org.apache.commons.lang.StringUtils;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
 public class GraqlPrinterTest {
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext rule = MovieKB.context();
 
     @Test
     public void testRelationOutput() {

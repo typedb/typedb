@@ -19,6 +19,8 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -34,11 +36,11 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.factory.GraknSessionImpl;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.kb.admin.GraknAdmin;
@@ -55,10 +57,12 @@ import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.concept.TypeImpl;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import ai.grakn.util.SimpleURI;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -70,7 +74,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.ws.rs.core.UriBuilder;
 import java.lang.reflect.Constructor;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -79,10 +85,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -104,16 +110,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     final Logger LOG = LoggerFactory.getLogger(GraknTxAbstract.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
-    //TODO: Is this the correct place for these config paths
-    //----------------------------- Config Paths
-    public static final String SHARDING_THRESHOLD = "knowledge-base.sharding-threshold";
-    public static final String NORMAL_CACHE_TIMEOUT_MS = "knowledge-base.schema-cache-timeout-ms";
-
     //----------------------------- Shared Variables
-    private final CommitLog commitLog;
-    private final Keyspace keyspace;
-    private final String engineUri;
-    private final Properties properties;
+    private final GraknSession session;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
@@ -132,21 +130,23 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
     private @Nullable GraphTraversalSource graphTraversalSource = null;
 
-    public GraknTxAbstract(G graph, Keyspace keyspace, String engineUri, Properties properties) {
+    public GraknTxAbstract(GraknSession session, G graph) {
+        this.session = session;
         this.graph = graph;
-        this.keyspace = keyspace;
-        this.engineUri = engineUri;
-        this.properties = properties;
         this.elementFactory = new ElementFactory(this);
-        this.commitLog = new CommitLog();
 
         //Initialise Graph Caches
-        globalCache = new GlobalCache(properties);
+        globalCache = new GlobalCache(session.config());
 
         //Initialise Graph
         txCache().openTx(GraknTxType.WRITE);
 
         if (initialiseMetaConcepts()) close(true, false);
+    }
+
+    @Override
+    public GraknSession session(){
+        return session;
     }
 
     @Override
@@ -183,12 +183,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     /**
-     * @param concept A concept in the graph
-     * @return True if the concept has been modified in the transaction
-     */
-    public abstract boolean isConceptModified(Concept concept);
-
-    /**
      * @return The number of open transactions currently.
      */
     public abstract int numOpenTx();
@@ -200,22 +194,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         txCache().openTx(txType);
     }
 
-    public CommitLog commitLog(){
-        return commitLog;
+    @Override
+    public Keyspace keyspace() {
+        return session().keyspace();
     }
 
     @Override
-    public String getEngineUrl() {
-        return engineUri;
-    }
-
-    Properties getProperties() {
-        return properties;
-    }
-
-    @Override
-    public Keyspace getKeyspace() {
-        return keyspace;
+    public long shardingThreshold(){
+        return session().config().getProperty(GraknConfigKey.SHARDING_THRESHOLD);
     }
 
     public TxCache txCache() {
@@ -249,12 +235,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <T extends Concept> Optional<T> buildConcept(Vertex vertex) {
+    public <T extends Concept> T buildConcept(Vertex vertex) {
         return factory().buildConcept(vertex);
     }
 
     @Override
-    public <T extends Concept> Optional<T> buildConcept(Edge edge) {
+    public <T extends Concept> T buildConcept(Edge edge) {
         return factory().buildConcept(edge);
     }
 
@@ -353,16 +339,27 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             if (vertices.hasNext()) {
                 LOG.warn(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
             }
-            return factory().buildConcept(vertex);
+            return Optional.of(factory().buildConcept(vertex));
         } else {
             return Optional.empty();
         }
     }
 
+    @Override
+    public final Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
+        Set<SchemaConcept> superSet= new HashSet<>();
+
+        while(schemaConcept != null) {
+            superSet.add(schemaConcept);
+            schemaConcept = schemaConcept.sup();
+        }
+
+        return superSet.stream();
+    }
+
     private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
         Set<Concept> concepts = new HashSet<>();
-        getTinkerTraversal().V().has(key.name(), value).
-                forEachRemaining(v -> factory().buildConcept(v).ifPresent(concepts::add));
+        getTinkerTraversal().V().has(key.name(), value).forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
         return concepts;
     }
 
@@ -414,14 +411,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public EntityType putEntityType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE,
+        return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
     /**
      * This is a helper method which will either find or create a {@link SchemaConcept}.
      * When a new {@link SchemaConcept} is created it is added for validation through it's own creation method for
-     * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role, Boolean)}.
+     * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role)}.
      *
      * When an existing {@link SchemaConcept} is found it is build via it's get method such as
      * {@link ai.grakn.kb.internal.concept.RoleImpl#get(VertexElement)} and skips validation.
@@ -431,17 +428,28 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      *
      * @param label The {@link Label} of the {@link SchemaConcept} to find or create
      * @param baseType The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
+     * @param isImplicit a flag indicating if the label we are creating is for an implicit {@link Type} or not
      * @param newConceptFactory the factory to be using when creating a new {@link SchemaConcept}
      * @param <T> The type of {@link SchemaConcept} to return
      * @return a new or existing {@link SchemaConcept}
      */
-    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, Function<VertexElement, T> newConceptFactory) {
+    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
         checkSchemaMutationAllowed();
 
         //Get the type if it already exists otherwise build a new one
         SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
         if (schemaConcept == null) {
+            if(!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())){
+                throw GraknTxOperationException.invalidLabelStart(label);
+            }
+
             VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
+
+            //Mark it as implicit here so we don't have to pass it down the constructors
+            if(isImplicit){
+                vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
+            }
+
             schemaConcept = SchemaConceptImpl.from(buildSchemaConcept(label, () -> newConceptFactory.apply(vertexElement)));
         } else if (!baseType.equals(schemaConcept.baseType())) {
             throw labelTaken(schemaConcept);
@@ -490,13 +498,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE,
-                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
+        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, false,
+                v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
     public RelationshipType putRelationTypeImplicit(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE,
-                v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
+        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE, true,
+                v -> factory().buildRelationshipType(v, getMetaRelationType()));
     }
 
     @Override
@@ -506,13 +514,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public Role putRole(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ROLE,
-                v -> factory().buildRole(v, getMetaRole(), Boolean.FALSE));
+        return putSchemaConcept(label, Schema.BaseType.ROLE, false,
+                v -> factory().buildRole(v, getMetaRole()));
     }
 
     public Role putRoleTypeImplicit(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ROLE,
-                v -> factory().buildRole(v, getMetaRole(), Boolean.TRUE));
+        return putSchemaConcept(label, Schema.BaseType.ROLE, true,
+                v -> factory().buildRole(v, getMetaRole()));
     }
 
     @Override
@@ -524,8 +532,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
-        AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE,
-                v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
+        AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
+                v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
@@ -544,7 +552,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return putSchemaConcept(label, Schema.BaseType.RULE,
+        return putSchemaConcept(label, Schema.BaseType.RULE, false,
                 v -> factory().buildRule(v, getMetaRule(), when, then));
     }
 
@@ -568,7 +576,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         String edgeId = id.getValue().substring(1);
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if (traversal.hasNext()) {
-            return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
+            return Optional.of(factory().buildConcept(factory().buildEdgeElement(traversal.next())));
         }
         return Optional.empty();
     }
@@ -660,7 +668,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public AttributeType getMetaResourceType() {
+    public AttributeType getMetaAttributeType() {
         return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getId());
     }
 
@@ -672,21 +680,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public Rule getMetaRule() {
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
-    }
-
-    public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
-        boolean exists = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).inV().
-                has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
-
-        if (!exists) {
-            EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
-            edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
-            edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
-            txCache().trackForValidation(factory().buildCasting(edge));
-        }
     }
 
     @Override
@@ -709,7 +702,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public void closeSession() {
         try {
-            txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
+            txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
             getTinkerPopGraph().close();
         } catch (Exception e) {
             throw GraknTxOperationException.closingFailed(this, e);
@@ -731,16 +724,16 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         close(true, true);
     }
 
-    private Optional<String> close(boolean commitRequired, boolean trackLogs) {
-        Optional<String> logs = Optional.empty();
+    private Optional<CommitLog> close(boolean commitRequired, boolean trackLogs) {
+        Optional<CommitLog> logs = Optional.empty();
         if (isClosed()) {
             return logs;
         }
-        String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
+        String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", keyspace());
 
         try {
             if (commitRequired) {
-                closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
+                closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
                 logs = commitWithLogs(trackLogs);
                 txCache().writeToGraphCache(true);
             } else {
@@ -763,11 +756,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Optional<String> commitNoLogs() throws InvalidKBException {
+    public Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
 
-    private Optional<String> commitWithLogs(boolean trackingNeeded) throws InvalidKBException {
+    private Optional<CommitLog> commitWithLogs(boolean trackingNeeded) throws InvalidKBException {
         validateGraph();
 
         Map<ConceptId, Long> newInstances = txCache().getShardingCount();
@@ -782,10 +775,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         //If we have logs to commit get them and add them
         if (logsExist) {
             if(trackingNeeded) {
-                commitLog().addNewInstances(newInstances);
-                commitLog().addNewAttributes(newAttributes);
+                ((GraknSessionImpl) session()).commitLogHandler().addNewInstances(newInstances);
+                ((GraknSessionImpl) session()).commitLogHandler().addNewAttributes(newAttributes);
             } else {
-                return Optional.of(CommitLog.formatTxLog(newInstances, newAttributes).toString());
+                Map<String, Set<ConceptId>> attributes = newAttributes.entrySet().stream().
+                        collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.singleton(e.getValue())));
+                return Optional.of(CommitLog.create(keyspace(), newInstances, attributes));
             }
         }
 
@@ -808,14 +803,18 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
     }
 
-    private String getDeleteKeyspaceEndpoint() {
-        if (Grakn.IN_MEMORY.equals(engineUri)) {
-            return Grakn.IN_MEMORY;
+    private Optional<URI> getDeleteKeyspaceEndpoint() {
+        if (Grakn.IN_MEMORY.equals(session().uri())) {
+            return Optional.empty();
         }
-        return engineUri + REST.WebPath.System.DELETE_KEYSPACE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+
+        URI uri = UriBuilder.fromUri(new SimpleURI(session().uri()).toURI())
+                .path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace().getValue()))
+                .build();
+        return Optional.of(uri);
     }
 
-    public boolean validElement(Element element) {
+    public boolean isValidElement(Element element) {
         return element != null;
     }
 
@@ -904,44 +903,29 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         Optional<RelationshipReified> reifiedRelation = ((RelationshipImpl) otherRelationship).reified();
 
         if (reifiedRelation.isPresent()) {
-            copyRelation(main, other, otherRelationship, reifiedRelation.get());
+            copyRelationshipReified(main, other, otherRelationship);
         } else {
-            copyRelation(main, other, otherRelationship, (RelationshipEdge) RelationshipImpl.from(otherRelationship).structure());
+            copyRelationshipEdge(main, other, (RelationshipEdge) RelationshipImpl.from(otherRelationship).structure());
         }
     }
 
     /**
      * Copy a relation which has been reified - {@link RelationshipReified}
      */
-    private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship, RelationshipReified reifiedRelation) {
-        String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
-        Relationship foundRelationship = txCache().getCachedRelation(newIndex);
-        if (foundRelationship == null) {
-            Optional<Relationship> optional = getConcept(Schema.VertexProperty.INDEX, newIndex);
-            if(optional.isPresent()) foundRelationship = optional.get();
-        }
-
-        if (foundRelationship != null) {//If it exists delete the other one
-            reifiedRelation.deleteNode(); //Raw deletion because the castings should remain
-        } else { //If it doesn't exist transfer the edge to the relevant casting node
-            foundRelationship = otherRelationship;
-            //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-            otherRelationship.allRolePlayers().forEach((roleType, instances) -> {
-                Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
-                if (instances.contains(other) && relationReified.isPresent()) {
-                    putShortcutEdge(main, relationReified.get(), roleType);
-                }
-            });
-        }
-
-        //Explicitly track this new relation so we don't create duplicates
-        txCache().getRelationIndexCache().put(newIndex, foundRelationship);
+    private void copyRelationshipReified(Attribute main, Attribute other, Relationship otherRelationship) {
+        //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
+        otherRelationship.allRolePlayers().forEach((role, instances) -> {
+            Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
+            if (instances.contains(other) && relationReified.isPresent()) {
+                relationReified.get().putRolePlayerEdge(role, main);
+            }
+        });
     }
 
     /**
      * Copy a relation which is an edge - {@link RelationshipEdge}
      */
-    private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship, RelationshipEdge relationEdge) {
+    private void copyRelationshipEdge(Attribute main, Attribute other, RelationshipEdge relationEdge) {
         ConceptVertex newOwner;
         ConceptVertex newValue;
 
@@ -958,16 +942,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public void updateConceptCounts(Map<ConceptId, Long> typeCounts) {
-        typeCounts.forEach((key, value) -> {
-            if (value != 0) {
-                ConceptImpl concept = getConcept(key);
-                concept.setShardCount(concept.getShardCount() + value);
-            }
-        });
-    }
-
-    @Override
     public void shard(ConceptId conceptId) {
         ConceptImpl type = getConcept(conceptId);
         if (type == null) {
@@ -975,5 +949,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         } else {
             type.createShard();
         }
+    }
+
+    @Override
+    public long getShardCount(Type concept){
+        return TypeImpl.from(concept).shardCount();
     }
 }

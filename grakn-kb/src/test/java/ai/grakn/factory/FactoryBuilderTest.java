@@ -19,53 +19,58 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.engine.GraknConfig;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
+import java.io.File;
+import java.nio.file.Paths;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class FactoryBuilderTest {
-    private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
+    private final static GraknSession session = mock(GraknSession.class);
+    private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
     private final static String ENGINE_URL = Grakn.IN_MEMORY;
-    private final static Properties TEST_PROPERTIES = new Properties();
+    private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
-    public static void setupProperties(){
-        try (InputStream in = new FileInputStream(TEST_CONFIG)){
-            TEST_PROPERTIES.load(in);
-        } catch (IOException e) {
-            throw GraknTxOperationException.invalidConfig(TEST_CONFIG);
-        }
+    public static void setup(){
+        when(session.config()).thenReturn(TEST_CONFIG);
     }
 
     @Test
     public void whenBuildingInMemoryFactory_ReturnTinkerFactory(){
-        assertThat(FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES), instanceOf(TxFactoryTinker.class));
+        assertThat(FactoryBuilder.getFactory(session, false), instanceOf(TxFactoryTinker.class));
     }
 
     @Test
     public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs(){
-        TxFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf3 = FactoryBuilder.getFactory(Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
-        TxFactory mgf4 = FactoryBuilder.getFactory(Keyspace.of("key"), ENGINE_URL, TEST_PROPERTIES);
+        //Factory 1 & 2 Definition
+        when(session.keyspace()).thenReturn(KEYSPACE);
+        when(session.uri()).thenReturn(ENGINE_URL);
+        when(session.config()).thenReturn(TEST_CONFIG);
+        TxFactory mgf1 = FactoryBuilder.getFactory(session, false);
+        TxFactory mgf2 = FactoryBuilder.getFactory(session, false);
+
+        //Factory 3 & 4
+        when(session.keyspace()).thenReturn(Keyspace.of("key"));
+        TxFactory mgf3 = FactoryBuilder.getFactory(session, false);
+        TxFactory mgf4 = FactoryBuilder.getFactory(session, false);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);

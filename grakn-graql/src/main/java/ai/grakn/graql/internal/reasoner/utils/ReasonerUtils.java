@@ -18,54 +18,39 @@
 
 package ai.grakn.graql.internal.reasoner.utils;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
-import ai.grakn.util.CommonUtil;
+
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
+import java.util.Collections;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
 
@@ -146,59 +131,6 @@ public class ReasonerUtils {
     }
 
     /**
-     * get unifiers by comparing permutations with original variables
-     * @param originalVars original ordered variables
-     * @param permutations different permutations on the variables
-     * @return set of unifiers
-     */
-    public static Set<Unifier> getUnifiersFromPermutations(List<Pair<Var, Var>> originalVars, List<List<Pair<Var, Var>>> permutations){
-        Set<Unifier> unifierSet = new HashSet<>();
-        permutations.forEach(perm -> {
-            Unifier unifier = new UnifierImpl();
-            Iterator<Pair<Var, Var>> pIt = originalVars.iterator();
-            Iterator<Pair<Var, Var>> cIt = perm.iterator();
-            while(pIt.hasNext() && cIt.hasNext()){
-                Pair<Var, Var> pPair = pIt.next();
-                Pair<Var, Var> chPair = cIt.next();
-                Var parentPlayer = pPair.getKey();
-                Var childPlayer = chPair.getKey();
-                Var parentRole = pPair.getValue();
-                Var childRole = chPair.getValue();
-                if (!parentPlayer.equals(childPlayer)) unifier.addMapping(parentPlayer, childPlayer);
-                if (parentRole != null && childRole != null && !parentRole.equals(childRole)) unifier.addMapping(parentRole, childRole);
-            }
-            unifierSet.add(unifier);
-        });
-        return unifierSet;
-    }
-
-    /**
-     * get all permutations of an entry list
-     * @param entryList entry list to generate permutations of
-     * @param <T> element type
-     * @return set of all possible permutations
-     */
-    public static <T> List<List<T>> getListPermutations(List<T> entryList) {
-        if (entryList.isEmpty()) {
-            List<List<T>> result = new ArrayList<>();
-            result.add(new ArrayList<>());
-            return result;
-        }
-        List<T> list = new ArrayList<>(entryList);
-        T firstElement = list.remove(0);
-        List<List<T>> returnValue = new ArrayList<>();
-        List<List<T>> permutations = getListPermutations(list);
-        for (List<T> smallerPermuted : permutations) {
-            for (int index = 0; index <= smallerPermuted.size(); index++) {
-                List<T> temp = new ArrayList<>(smallerPermuted);
-                temp.add(index, firstElement);
-                returnValue.add(temp);
-            }
-        }
-        return returnValue;
-    }
-
-    /**
      * @param schemaConcept input type
      * @return set of all non-meta super types of the role
      */
@@ -269,12 +201,20 @@ public class ReasonerUtils {
      * @param parentRole parent {@link Role}
      * @param parentType parent {@link Type}
      * @param entryRoles entry set of possible {@link Role}s
-     * @return set of playable {@link Role}s defined by type-role parent combination
+     * @return set of playable {@link Role}s defined by type-role parent combination, parent role assumed as possible
      */
     public static Set<Role> compatibleRoles(Role parentRole, Type parentType, Set<Role> entryRoles) {
-        Set<Role> compatibleRoles = parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ?
-                Sets.intersection(new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()), entryRoles) :
-                entryRoles;
+        Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();
+
+        if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ){
+            Sets.intersection(
+                    new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()),
+                    entryRoles
+            )
+                    .forEach(compatibleRoles::add);
+        } else {
+            entryRoles.forEach(compatibleRoles::add);
+        }
 
         if (parentType != null && !Schema.MetaSchema.isMetaLabel(parentType.getLabel())) {
             Set<Role> compatibleRolesFromTypes = new TypeConverter().toCompatibleRoles(parentType).collect(toSet());
@@ -283,6 +223,8 @@ public class ReasonerUtils {
             compatibleRoles = compatibleRoles.stream()
                     .filter(role -> Schema.MetaSchema.isMetaLabel(role.getLabel()) || compatibleRolesFromTypes.contains(role))
                     .collect(toSet());
+            //parent role also possible
+            if (parentRole != null) compatibleRoles.add(parentRole);
         }
         return compatibleRoles;
     }
@@ -292,13 +234,25 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param schemaConcepts entry set
-     * @return top non-meta {@link SchemaConcept}s from within the provided set of {@link Role}
+     * @param schemaConcepts entry {@link SchemaConcept} set
+     * @return top non-meta {@link SchemaConcept}s from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
                 .filter(rt -> Sets.intersection(supers(rt), schemaConcepts).isEmpty())
                 .collect(toSet());
+    }
+
+    /**
+     * @param schemaConcepts entry {@link SchemaConcept} set
+     * @return top {@link SchemaConcept}s from within the provided set or meta concept if it exists
+     */
+    public static <T extends SchemaConcept> Set<T> topOrMeta(Set<T> schemaConcepts) {
+        Set<T> concepts = top(schemaConcepts);
+        T meta = concepts.stream()
+                .filter(c -> Schema.MetaSchema.isMetaLabel(c.getLabel()))
+                .findFirst().orElse(null);
+        return meta != null ? Collections.singleton(meta) : concepts;
     }
 
     /**
@@ -314,128 +268,6 @@ public class ReasonerUtils {
     }
 
     /**
-     * compute all rolePlayer-roleType combinations complementing provided roleMap
-     * @param vars set of rolePlayers
-     * @param roles set of roleTypes
-     * @param roleMap initial rolePlayer-roleType roleMap to be complemented
-     * @param roleMaps output set containing possible role mappings complementing the roleMap configuration
-     */
-    public static void computeRoleCombinations(Set<Var> vars, Set<Role> roles, Map<Var, VarPattern> roleMap,
-                                               Set<Map<Var, VarPattern>> roleMaps){
-        Set<Var> tempVars = Sets.newHashSet(vars);
-        Set<Role> tempRoles = Sets.newHashSet(roles);
-        Var var = vars.iterator().next();
-
-        roles.forEach(role -> {
-            tempVars.remove(var);
-            tempRoles.remove(role);
-            roleMap.put(var, var().label(role.getLabel()).admin());
-            if (!tempVars.isEmpty() && !tempRoles.isEmpty()) {
-                computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
-            } else {
-                if (!roleMap.isEmpty()) {
-                    roleMaps.add(Maps.newHashMap(roleMap));
-                }
-                roleMap.remove(var);
-            }
-            tempVars.add(var);
-            tempRoles.add(role);
-        });
-    }
-
-    /**
-     * create transitive {@link Rule} R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
-     * @param label the {@link Label} of the new {@link Rule} to create
-     * @param relType transitive {@link RelationshipType}
-     * @param fromRoleLabel  from directional {@link Role} {@link Label}
-     * @param toRoleLabel to directional {@link Role} {@link Label}
-     * @param tx for the {@link Rule} to be inserted
-     * @return the new {@link Rule}
-     */
-    public static Rule createTransitiveRule(String label, RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx tx){
-        if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
-
-        VarPatternAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
-        VarPatternAdmin endVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "z").rel(Graql.label(toRoleLabel), "y").admin();
-        VarPatternAdmin headVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y").admin();
-        Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
-        return tx.putRule(label, body, headVar);
-    }
-
-    /**
-     * create reflexive rule R(from: X, to: X) :- R(from: X,to: Y)
-     * @param label the {@link Label} of the new {@link Rule} to create
-     * @param relType reflexive {@link RelationshipType}
-     * @param fromRoleLabel from directional {@link Role} {@link Label}
-     * @param toRoleLabel to directional {@link Role} {@link Label}
-     * @param tx for the {@link Rule} to be inserted
-     * @return the new {@link Rule}
-     */
-    public static Rule createReflexiveRule(String label, RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx tx){
-        if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
-
-        VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
-        VarPattern head = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "x");
-        return tx.putRule(label, body, head);
-    }
-
-    /**
-     * creates rule parent :- child
-     * @param label the {@link Label} of the new {@link Rule} to create
-     * @param parent {@link RelationshipType} of parent
-     * @param child {@link RelationshipType} of child
-     * @param roleMappings map of corresponding {@link Role} names
-     * @param tx for the {@link Rule} to be inserted
-     * @return the new {@link Rule}
-     */
-    public static Rule createSubPropertyRule(String label, RelationshipType parent, RelationshipType child, Map<Label, Label> roleMappings,
-                                             GraknTx tx){
-        final long parentArity = parent.relates().count();
-        final long childArity = child.relates().count();
-        if (parentArity != childArity || parentArity != roleMappings.size()) {
-            throw GraqlQueryException.ruleCreationArityMismatch();
-        }
-        VarPattern parentVar = var().isa(Graql.label(parent.getLabel()));
-        VarPattern childVar = var().isa(Graql.label(child.getLabel()));
-
-        for (Map.Entry<Label, Label> entry : roleMappings.entrySet()) {
-            Var varName = var().asUserDefined();
-            parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
-            childVar = childVar.rel(Graql.label(entry.getValue()), varName);
-        }
-        return tx.putRule(label, childVar, parentVar);
-    }
-
-    /**
-     * creates rule R(fromRole: x, toRole: xm) :- R1(fromRole: x, ...), , R2, ... , Rn(..., toRole: xm)
-     * @param label the {@link Label} of the new {@link Rule} to create
-     * @param relation head {@link RelationshipType}
-     * @param fromRoleLabel specifies the {@link Role} directionality of the head {@link RelationshipType}
-     * @param toRoleLabel specifies the {@link Role} directionality of the head {@link RelationshipType}
-     * @param chain map containing ordered relation with their corresponding {@link Role} mappings
-     * @param tx for the {@link Rule} to be inserted
-     * @return the new {@link Rule}
-     */
-    public static Rule createPropertyChainRule(String label, RelationshipType relation, Label fromRoleLabel, Label toRoleLabel,
-                                               LinkedHashMap<RelationshipType, Pair<Label, Label>> chain, GraknTx tx){
-        Stack<Var> varNames = new Stack<>();
-        varNames.push(var("x"));
-        Set<VarPatternAdmin> bodyVars = new HashSet<>();
-        chain.forEach( (relType, rolePair) ->{
-            Var varName = var().asUserDefined();
-            VarPatternAdmin var = var().isa(Graql.label(relType.getLabel()))
-                    .rel(Graql.label(rolePair.getKey()), varNames.peek())
-                    .rel(Graql.label(rolePair.getValue()), varName).admin();
-            varNames.push(varName);
-            bodyVars.add(var);
-        });
-
-        VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), varNames.peek());
-        return tx.putRule(label, Patterns.conjunction(bodyVars), headVar);
-    }
-
-    /**
-     *
      * @param childTypes type atoms of child query
      * @param parentTypes type atoms of parent query
      * @param childParentUnifier unifier to unify child with parent
@@ -471,21 +303,9 @@ public class ReasonerUtils {
         return false;
     }
 
-    /**
-     * @param parent predicate
-     * @param child predicate
-     * @param exact whether compatibility criterion should be exact
-     * @param <T> type generic
-     * @return true if predicates compatible
-     */
-    public static <T extends Predicate> boolean predicatesCompatible(T parent, T child, boolean exact){
-        if (exact) return parent == null || parent.isCompatibleWith(child);
-        else return child == null || parent == null || parent.isCompatibleWith(child);
-    }
-
     /** determines disjointness of parent-child types, parent defines the bound on the child
-     * @param parent type
-     * @param child type
+     * @param parent {@link SchemaConcept}
+     * @param child {@link SchemaConcept}
      * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
      */
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child) {
@@ -501,9 +321,7 @@ public class ReasonerUtils {
      */
     public static <T> Collection<T> subtract(Collection<T> a, Collection<T> b){
         ArrayList<T> list = new ArrayList<>(a);
-        for (T aC2 : b) {
-            list.remove(aC2);
-        }
+        b.forEach(list::remove);
         return list;
     }
 }

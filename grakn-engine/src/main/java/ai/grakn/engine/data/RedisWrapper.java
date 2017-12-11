@@ -17,7 +17,7 @@
  */
 package ai.grakn.engine.data;
 
-import ai.grakn.engine.util.SimpleURI;
+import ai.grakn.util.SimpleURI;
 import ai.grakn.exception.GraknBackendException;
 import com.google.common.base.Preconditions;
 import java.util.Collection;
@@ -63,8 +63,11 @@ public class RedisWrapper {
             getJedisPool().getResource();
         } catch (JedisConnectionException e) {
             throw GraknBackendException.serverStartupException(
-                    "Redis is not available. Make sure it's running on " + String
-                            .join(", ", uriSet), e);
+                "Redis is not available. Make sure it's running on "
+                        + String.join(", ", uriSet)
+                        + ". It's possible the destination"
+                        + "directory for the rdb and aof files is not writable. Restarting "
+                        + "Redis could fix it.", e);
         }
     }
 

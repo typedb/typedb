@@ -27,7 +27,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import org.junit.After;
 import org.junit.ClassRule;
@@ -51,7 +51,7 @@ public class QueryBuilderTest {
     private static final Var x = Graql.var("x");
 
     @ClassRule
-    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieKB = MovieKB.context();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

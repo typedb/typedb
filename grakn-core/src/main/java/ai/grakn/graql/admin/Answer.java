@@ -21,6 +21,7 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
+import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -47,10 +48,7 @@ public interface Answer {
     Set<Var> vars();
 
     @CheckReturnValue
-    Collection<Concept> values();
-
-    @CheckReturnValue
-    Set<Concept> concepts();
+    Collection<Concept> concepts();
 
     @CheckReturnValue
     Set<Map.Entry<Var, Concept>> entrySet();
@@ -71,19 +69,11 @@ public interface Answer {
     @CheckReturnValue
     Concept get(Var var);
 
-    Concept put(Var var, Concept con);
-
-    Concept remove(Var var);
+    @CheckReturnValue
+    ImmutableMap<Var, Concept> map();
 
     @CheckReturnValue
-    Map<Var, Concept> map();
-
-    void putAll(Answer a);
-
-    void putAll(Map<Var, Concept> m2);
-
-    @CheckReturnValue
-    boolean containsKey(Var var);
+    boolean containsVar(Var var);
 
     @CheckReturnValue
     boolean containsAll(Answer ans);
@@ -116,6 +106,13 @@ public interface Answer {
      */
     @CheckReturnValue
     Answer merge(Answer a2, boolean explanation);
+
+    /**
+     * @param a2 answer with which explanation of this answer should be merged
+     * @return merged explanation of this and provided answer
+     */
+    @CheckReturnValue
+    AnswerExplanation mergeExplanation(Answer a2);
 
     /**
      * explain this answer by providing explanation with preserving the structure of dependent answers
@@ -160,12 +157,6 @@ public interface Answer {
     AnswerExplanation getExplanation();
 
     /**
-     * @param e explanation to be set for this answer
-     * @return answer with provided explanation
-     */
-    Answer setExplanation(AnswerExplanation e);
-
-    /**
      * @return set of answers corresponding to the explicit path
      */
     @CheckReturnValue
@@ -175,7 +166,7 @@ public interface Answer {
      * @return set of all answers taking part in the derivation of this answer
      */
     @CheckReturnValue
-    Set<Answer> getAnswers();
+    Set<Answer> getPartialAnswers();
 
     /**
      * @return all explanations taking part in the derivation of this answer

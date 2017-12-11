@@ -39,17 +39,23 @@ import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
+import static ai.grakn.util.Schema.EdgeLabel.ATTRIBUTE;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
-import static ai.grakn.util.Schema.EdgeLabel.ATTRIBUTE;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.VertexProperty.IS_IMPLICIT;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 
+/**
+ * A fragment representing traversing an isa edge from type to instance.
+ *
+ * @author Felix Chapman
+ */
+
 @AutoValue
-abstract class InIsaFragment extends Fragment {
+public abstract class InIsaFragment extends Fragment {
 
     @Override
     public abstract Var end();
@@ -127,7 +133,7 @@ abstract class InIsaFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_INSTANCES_PER_TYPE;
     }
 
