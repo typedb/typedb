@@ -16,14 +16,14 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist;
+package ai.grakn.dist.lock;
 
 /**
  *
- * @author Michele Orsi
+ * @author Ganeshwara Herawan Hananda
  */
-class ProcessNotStartedException extends RuntimeException {
-    public ProcessNotStartedException() {
+public class LockAlreadyAcquiredException extends RuntimeException {
+    public LockAlreadyAcquiredException() {
         super();
     }
 }
