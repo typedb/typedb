@@ -101,13 +101,13 @@ public class SystemController {
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
 
-        spark.get(REST.WebPath.KB, this::getKeyspaces);
+        spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
         spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
         spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
         spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
         spark.get(REST.WebPath.METRICS, this::getMetrics);
-        spark.get(REST.WebPath.STATUS, this::getStatus);
-        spark.get(REST.WebPath.VERSION, this::getVersion);
+        spark.get(REST.WebPath.STATUS, (req, res) -> getStatus());
+        spark.get(REST.WebPath.VERSION, (req, res) -> getVersion());
 
         final TimeUnit rateUnit = TimeUnit.SECONDS;
         final TimeUnit durationUnit = TimeUnit.SECONDS;
@@ -123,13 +123,13 @@ public class SystemController {
 
     @GET
     @Path(REST.WebPath.VERSION)
-    private String getVersion(Request request, Response response) {
+    private String getVersion() {
         return GraknVersion.VERSION;
     }
 
     @GET
     @Path(REST.WebPath.KB)
-    private String getKeyspaces(Request request, Response response) throws JsonProcessingException {
+    private String getKeyspaces(Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
         Set<Keyspace> keyspaces = systemKeyspace.keyspaces().stream().
                 map(Keyspace::of).
@@ -177,7 +177,7 @@ public class SystemController {
 
     @GET
     @Path("/status")
-    private String getStatus(Request request, Response response) {
+    private String getStatus() {
         return graknEngineStatus.isReady() ? "READY" : "INITIALIZING";
     }
 
