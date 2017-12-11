@@ -27,9 +27,6 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -61,10 +58,6 @@ public class CommitLogController {
 
     @POST
     @Path("/kb/{keyspace}/commit_log")
-    @ApiOperation(value = "Submits post processing jobs for a specific keyspace")
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = REST.Request.KEYSPACE_PARAM, value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path"),
-    })
     private String submitConcepts(Request req, Response res) throws IOException {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, REST.Request.KEYSPACE_PARAM));
 

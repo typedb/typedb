@@ -38,9 +38,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -126,14 +123,12 @@ public class SystemController {
 
     @GET
     @Path(REST.WebPath.VERSION)
-    @ApiOperation(value = "Get the version of the running engine instance")
     private String getVersion(Request request, Response response) {
         return GraknVersion.VERSION;
     }
 
     @GET
     @Path(REST.WebPath.KB)
-    @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
         Set<Keyspace> keyspaces = systemKeyspace.keyspaces().stream().
@@ -144,7 +139,6 @@ public class SystemController {
 
     @GET
     @Path("/kb/{keyspace}")
-    @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
     private String getKeyspace(Request request, Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
@@ -160,8 +154,6 @@ public class SystemController {
 
     @PUT
     @Path("/kb/{keyspace}")
-    @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
-    @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
     private String putKeyspace(Request request, Response response) throws JsonProcessingException {
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         systemKeyspace.openKeyspace(keyspace);
@@ -171,8 +163,6 @@ public class SystemController {
 
     @DELETE
     @Path("/kb/{keyspace}")
-    @ApiOperation(value = "Delete a keyspace from the system graph.")
-    @ApiImplicitParam(name = KEYSPACE_PARAM, value = "Name of knowledge base to use", required = true, dataType = "string", paramType = "path")
     private boolean deleteKeyspace(Request request, Response response) {
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         boolean deletionComplete = systemKeyspace.deleteKeyspace(keyspace);
@@ -187,17 +177,12 @@ public class SystemController {
 
     @GET
     @Path("/status")
-    @ApiOperation(value = "Return the status of the engine: READY, INITIALIZING")
     private String getStatus(Request request, Response response) {
         return graknEngineStatus.isReady() ? "READY" : "INITIALIZING";
     }
 
     @GET
     @Path("/metrics")
-    @ApiOperation(value = "Exposes internal metrics")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = FORMAT, value = "prometheus", dataType = "string", paramType = "path")
-    })
     private String getMetrics(Request request, Response response) throws IOException {
         response.header(CACHE_CONTROL, "must-revalidate,no-cache,no-store");
         response.status(HttpServletResponse.SC_OK);
