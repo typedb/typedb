@@ -19,6 +19,8 @@
 package ai.grakn.concept;
 
 import ai.grakn.GraknTx;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
@@ -34,7 +36,7 @@ import java.io.Serializable;
  *     Also contains a static method for producing concept IDs from Strings.
  * </p>
  *
- * @author fppt
+ * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
 public abstract class ConceptId implements Comparable<ConceptId>, Serializable {
@@ -45,6 +47,7 @@ public abstract class ConceptId implements Comparable<ConceptId>, Serializable {
      * @return Used for indexing purposes and for graql traversals
      */
     @CheckReturnValue
+    @JsonValue
     public abstract String getValue();
 
     @Override
@@ -58,6 +61,7 @@ public abstract class ConceptId implements Comparable<ConceptId>, Serializable {
      * @return The matching concept ID
      */
     @CheckReturnValue
+    @JsonCreator
     public static ConceptId of(String value){
         return new AutoValue_ConceptId(value);
     }

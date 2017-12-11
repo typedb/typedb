@@ -19,8 +19,8 @@
 
 package ai.grakn.test.docs;
 
-import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.rule.EngineContext;
+import ai.grakn.util.GraknTestUtil;
 import groovy.util.Eval;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -66,7 +66,7 @@ public class JavaDocsTest {
     private static int numFound = 0;
 
     @ClassRule
-    public static EngineContext engine = EngineContext.inMemoryServer();
+    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
 
     public static String knowledgeBaseName;
 
@@ -79,13 +79,13 @@ public class JavaDocsTest {
 
     @BeforeClass
     public static void loadGroovyPrefix() throws IOException {
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
         groovyPrefix = new String(Files.readAllBytes(Paths.get("src/test/java/ai/grakn/test/docs/prefix.groovy")));
     }
 
     @AfterClass
     public static void assertEnoughExamplesFound() {
-        if (GraknTestSetup.usingTinker() && numFound < 8) {
+        if (GraknTestUtil.usingTinker() && numFound < 8) {
             fail("Only found " + numFound + " Java examples. Perhaps the regex is wrong?");
         }
     }

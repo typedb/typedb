@@ -18,9 +18,7 @@
 
 package ai.grakn.test.kbs;
 
-import ai.grakn.GraknTx;
-
-import java.util.function.Consumer;
+import ai.grakn.test.rule.SampleKBContext;
 
 /**
  *
@@ -34,7 +32,7 @@ public class PathKBSymmetric extends AbstractPathKB {
         super(gqlFile, n, m);
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new PathKBSymmetric(n, m).build();
+    public static SampleKBContext context(int n, int m) {
+        return new PathKBSymmetric(n, m).makeContext();
     }
 }

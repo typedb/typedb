@@ -18,6 +18,9 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.util.Schema;
+
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
@@ -70,6 +73,18 @@ public interface SchemaConcept extends Concept {
     @CheckReturnValue
     @Nullable
     SchemaConcept sup();
+
+    /**
+     * @return All super-concepts of this {@link SchemaConcept } including itself and excluding the meta
+     * {@link Schema.MetaSchema#THING}.
+     *
+     * <p>
+     *     If you want to include {@link Schema.MetaSchema#THING}, use {@link GraknAdmin#sups(SchemaConcept)}.
+     * </p>
+     *
+     * @see Schema.MetaSchema#THING
+     */
+    Stream<? extends SchemaConcept> sups();
 
     /**
      * Get all indirect subs of this concept.

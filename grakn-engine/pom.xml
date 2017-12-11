@@ -24,7 +24,7 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>0.18.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -32,288 +32,97 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.auth0</groupId>
-            <artifactId>java-jwt</artifactId>
-            <version>${java-jwt.version}</version>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-module-sdk</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ro.fortsoft.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <artifactId>jackson-core</artifactId>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <artifactId>jackson-databind</artifactId>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>${netty-all.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-kb</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-            	<exclusion>
-            		<artifactId>javax.servlet</artifactId>
-            		<groupId>org.eclipse.jetty.orbit</groupId>
-            	</exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!-- Exposes metrics as a servlet -->
         <dependency>
           <groupId>io.dropwizard.metrics</groupId>
           <artifactId>metrics-servlets</artifactId>
-          <version>${metrics.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>jackson-databind</artifactId>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jackson-core</artifactId>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!-- Used to format metrics for Prometheus -->
         <dependency>
             <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient</artifactId>
-            <version>${prometheus.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.prometheus</groupId>
             <artifactId>simpleclient_servlet</artifactId>
-            <version>${prometheus.version}</version>
         </dependency>
         <dependency>
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient_dropwizard</artifactId>
-            <version>${prometheus.version}</version>
         </dependency>
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
-            <version>${spark-core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-jersey2-jaxrs</artifactId>
-            <version>${swagger.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-annotations</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>joda-time</groupId>
-                    <artifactId>joda-time</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.datatype</groupId>
-                    <artifactId>jackson-datatype-joda</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
+
+        <!-- Used for Response Serialisation -->
         <dependency>
-            <groupId>org.sharegov</groupId>
-            <artifactId>mjson</artifactId>
-            <version>${mjson.version}</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.jayway.restassured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>${rest-assured.version}</version>
-            <scope>test</scope>
         </dependency>
 
        <dependency>
             <groupId>com.github.stefanbirkner</groupId>
             <artifactId>system-rules</artifactId>
-            <version>${systen-rules.version}</version>
-            <scope>test</scope>
         </dependency>
 
-       <dependency>
-          <groupId>io.dropwizard.metrics</groupId>
-          <artifactId>metrics-core</artifactId>
-          <version>${metrics.version}</version>
-           <exclusions>
-               <exclusion>
-                   <artifactId>slf4j-api</artifactId>
-                   <groupId>org.slf4j</groupId>
-               </exclusion>
-           </exclusions>
-       </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+        </dependency>
         <dependency>
             <groupId>jline</groupId>
             <artifactId>jline</artifactId>
-            <version>${jline.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>${redis.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.rholder</groupId>
             <artifactId>guava-retrying</artifactId>
-            <version>${guava-retrying.version}</version>
         </dependency>
 
         <!-- Required For REST Components and Headers-->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
-            <version>${apache-http-core.version}</version>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <version>1.3.4</version>
-                <groupId>org.raml.plugins</groupId>
-                <artifactId>jaxrs-raml-maven-plugin</artifactId>
-                <configuration>
-                    <sourceDirectory>src/main/java/ai/grakn/engine/controller</sourceDirectory>
-                    <outputFile>${project.build.directory}/jaxrs-raml/engine-apis.raml</outputFile>
-                    <removeOldOutput>true</removeOldOutput>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generate-raml</goal>
-                        </goals>
-                        <phase>package</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.5.0</version>
-                <executions>
-                    <execution>
-                        <id>npm install</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <skip>${maven.javadoc.skip}</skip>
-                            <executable>./npm-install-retry/bin/npm-install-retry</executable>
-                            <arguments>
-                                <argument>--</argument>
-                                <argument>-g</argument>
-                                <argument>--prefix=./npm/</argument>
-                                <argument>raml2html@3.0.1</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>raml2html</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <skip>${maven.javadoc.skip}</skip>
-                            <executable>npm/bin/raml2html</executable>
-                            <arguments>
-                                <argument>-i</argument>
-                                <argument>${project.build.directory}/jaxrs-raml/engine-apis.raml</argument>
-                                <argument>-o</argument>
-                                <argument>${project.build.directory}/jaxrs-raml/engine-apis.html</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-        <pluginManagement>
-        	<plugins>
-        		<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-        		<plugin>
-        			<groupId>org.eclipse.m2e</groupId>
-        			<artifactId>lifecycle-mapping</artifactId>
-        			<version>1.0.0</version>
-        			<configuration>
-        				<lifecycleMappingMetadata>
-        					<pluginExecutions>
-        						<pluginExecution>
-        							<pluginExecutionFilter>
-        								<groupId>
-        									org.raml.plugins
-        								</groupId>
-        								<artifactId>
-        									jaxrs-raml-maven-plugin
-        								</artifactId>
-        								<versionRange>
-        									[1.3.4,)
-        								</versionRange>
-        								<goals>
-        									<goal>generate-raml</goal>
-        								</goals>
-        							</pluginExecutionFilter>
-        							<action>
-        								<ignore></ignore>
-        							</action>
-        						</pluginExecution>
-        						<pluginExecution>
-        							<pluginExecutionFilter>
-        								<groupId>
-        									org.codehaus.mojo
-        								</groupId>
-        								<artifactId>
-        									exec-maven-plugin
-        								</artifactId>
-        								<versionRange>
-        									[1.5.0,)
-        								</versionRange>
-        								<goals>
-        									<goal>exec</goal>
-        								</goals>
-        							</pluginExecutionFilter>
-        							<action>
-        								<ignore></ignore>
-        							</action>
-        						</pluginExecution>
-        					</pluginExecutions>
-        				</lifecycleMappingMetadata>
-        			</configuration>
-        		</plugin>
-        	</plugins>
-        </pluginManagement>
-    </build>
 </project>

@@ -25,8 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
-
-import java.util.function.Consumer;
+import ai.grakn.test.rule.SampleKBContext;
 
 /**
  *
@@ -51,8 +50,8 @@ public class GeoKB extends TestKB {
     private static Thing Imperial;
     private static Thing UCL;
 
-    public static Consumer<GraknTx> get(){
-        return new GeoKB().build();
+    public static SampleKBContext context(){
+        return new GeoKB().makeContext();
     }
 
     @Override
@@ -91,34 +90,34 @@ public class GeoKB extends TestKB {
 
     @Override
     public void buildInstances(GraknTx tx) {
-        Europe = putEntity(tx, "Europe", continent, key.getLabel());
+        Europe = putEntityWithResource(tx, "Europe", continent, key.getLabel());
 
-        Poland = putEntity(tx, "Poland", country, key.getLabel());
-        Masovia = putEntity(tx, "Masovia", region, key.getLabel());
-        Silesia = putEntity(tx, "Silesia", region, key.getLabel());
-        Warsaw = putEntity(tx, "Warsaw", city, key.getLabel());
-        Wroclaw = putEntity(tx, "Wroclaw", city, key.getLabel());
-        UW = putEntity(tx, "University-of-Warsaw", university, key.getLabel());
-        PW = putEntity(tx, "Warsaw-Polytechnics", university, key.getLabel());
+        Poland = putEntityWithResource(tx, "Poland", country, key.getLabel());
+        Masovia = putEntityWithResource(tx, "Masovia", region, key.getLabel());
+        Silesia = putEntityWithResource(tx, "Silesia", region, key.getLabel());
+        Warsaw = putEntityWithResource(tx, "Warsaw", city, key.getLabel());
+        Wroclaw = putEntityWithResource(tx, "Wroclaw", city, key.getLabel());
+        UW = putEntityWithResource(tx, "University-of-Warsaw", university, key.getLabel());
+        PW = putEntityWithResource(tx, "Warsaw-Polytechnics", university, key.getLabel());
 
-        England = putEntity(tx, "England", country, key.getLabel());
-        GreaterLondon = putEntity(tx, "GreaterLondon", region, key.getLabel());
-        London = putEntity(tx, "London", city, key.getLabel());
-        Imperial = putEntity(tx, "Imperial College London", university, key.getLabel());
-        UCL = putEntity(tx, "University College London", university, key.getLabel());
+        England = putEntityWithResource(tx, "England", country, key.getLabel());
+        GreaterLondon = putEntityWithResource(tx, "GreaterLondon", region, key.getLabel());
+        London = putEntityWithResource(tx, "London", city, key.getLabel());
+        Imperial = putEntityWithResource(tx, "Imperial College London", university, key.getLabel());
+        UCL = putEntityWithResource(tx, "University College London", university, key.getLabel());
 
-        Germany = putEntity(tx, "Germany", country, key.getLabel());
-        Bavaria = putEntity(tx, "Bavaria", region, key.getLabel());
-        Munich = putEntity(tx, "Munich", city, key.getLabel());
-        putEntity(tx, "University of Munich", university, key.getLabel());
+        Germany = putEntityWithResource(tx, "Germany", country, key.getLabel());
+        Bavaria = putEntityWithResource(tx, "Bavaria", region, key.getLabel());
+        Munich = putEntityWithResource(tx, "Munich", city, key.getLabel());
+        putEntityWithResource(tx, "University of Munich", university, key.getLabel());
 
-        France = putEntity(tx, "France", country, key.getLabel());
-        IleDeFrance = putEntity(tx, "IleDeFrance", region, key.getLabel());
-        Paris = putEntity(tx, "Paris", city, key.getLabel());
+        France = putEntityWithResource(tx, "France", country, key.getLabel());
+        IleDeFrance = putEntityWithResource(tx, "IleDeFrance", region, key.getLabel());
+        Paris = putEntityWithResource(tx, "Paris", city, key.getLabel());
 
-        Italy = putEntity(tx, "Italy", country, key.getLabel());
-        Lombardy = putEntity(tx, "Lombardy", region, key.getLabel());
-        Milan = putEntity(tx, "Milan", city, key.getLabel());
+        Italy = putEntityWithResource(tx, "Italy", country, key.getLabel());
+        Lombardy = putEntityWithResource(tx, "Lombardy", region, key.getLabel());
+        Milan = putEntityWithResource(tx, "Milan", city, key.getLabel());
     }
 
     @Override
@@ -203,10 +202,9 @@ public class GeoKB extends TestKB {
 
     @Override
     public void buildRules(GraknTx tx) {
-        Pattern transitivity_LHS = tx.graql().parsePattern(
-                "{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+        Pattern transitivity_LHS = tx.graql().parser().parsePattern("{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;}");
-        Pattern transitivity_RHS = tx.graql().parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
+        Pattern transitivity_RHS = tx.graql().parser().parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
         tx.putRule("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 }

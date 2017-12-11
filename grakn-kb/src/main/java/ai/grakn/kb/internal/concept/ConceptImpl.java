@@ -18,21 +18,23 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.cache.Cacheable;
-import ai.grakn.kb.internal.cache.ContainsTxCache;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 
@@ -49,15 +51,16 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxCache {
+public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
+    private final Set<Cache> registeredCaches = new HashSet<>();
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
-    private final Cache<Shard> currentShard = new Cache<>(Cacheable.shard(), () -> {
+    private final Cache<Shard> currentShard = Cache.createTxCache(this, Cacheable.shard(), () -> {
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
         Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
-        Optional<Shard> shard = vertex().tx().factory().buildShard(shardVertex);
-        return shard.orElseThrow(() -> GraknTxOperationException.missingShard(getId()));
+        return vertex().tx().factory().buildShard(shardVertex);
     });
-    private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
+    private final Cache<Long> shardCount = Cache.createSessionCache(this, Cacheable.number(), () -> shards().count());
+    private final Cache<ConceptId> conceptId = Cache.createPersistentCache(this, Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
     ConceptImpl(VertexElement vertexElement){
@@ -84,6 +87,11 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     }
 
     @Override
+    public Keyspace keyspace(){
+        return vertex().tx().keyspace();
+    }
+
+    @Override
     public boolean isDeleted() {
         return vertex().isDeleted();
     }
@@ -96,6 +104,11 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         vertex().delete();
     }
 
+    @Override
+    public Collection<Cache> caches(){
+        return registeredCaches;
+    }
+
     /**
      *
      * @param direction the direction of the neigouring concept to get
@@ -106,20 +119,14 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         switch (direction){
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
-                        flatMap(edge -> Stream.<Optional<X>>of(
-                                edge.source().flatMap(source -> vertex().tx().factory().buildConcept(source)),
-                                edge.target().flatMap(target -> vertex().tx().factory().buildConcept(target))
-                        )).flatMap(CommonUtil::optionalToStream);
+                        flatMap(edge -> Stream.<X>of(
+                                vertex().tx().factory().buildConcept(edge.source()),
+                                vertex().tx().factory().buildConcept(edge.target()))
+                        );
             case IN:
-                return vertex().getEdgesOfType(direction, label).flatMap(edge -> {
-                    Optional<X> optional = edge.source().flatMap(source -> vertex().tx().factory().buildConcept(source));
-                    return CommonUtil.optionalToStream(optional);
-                });
+                return vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.source()));
             case OUT:
-                return  vertex().getEdgesOfType(direction, label).flatMap(edge -> {
-                    Optional<X> optional = edge.target().flatMap(target -> vertex().tx().factory().buildConcept(target));
-                    return CommonUtil.optionalToStream(optional);
-                });
+                return  vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.target()));
             default:
                 throw GraknTxOperationException.invalidDirection(direction);
         }
@@ -129,7 +136,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         return vertex().putEdge(to.vertex(), label);
     }
 
-    public EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
+    EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
         return vertex().addEdge(to.vertex(), label);
     }
 
@@ -180,11 +187,11 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
 
     @Override
     public final String toString(){
-        if (vertex().tx().validElement(vertex().element())) {
+        if(vertex().tx().isValidElement(vertex().element())){
             return innerToString();
         } else {
-            // Vertex is broken somehow. Most likely deleted.
-            return "Id [" + getId() + "]";
+            // Vertex has been deleted so all we can do is print the id
+            return "Id [" + vertex().id() + "]";
         }
     }
 
@@ -208,26 +215,25 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
+
+        //Updated the cached shard count if needed
+        if(shardCount.isPresent()){
+            shardCount.set(shardCount() + 1);
+        }
     }
 
     public Stream<Shard> shards(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
                 map(EdgeElement::source).
-                flatMap(CommonUtil::optionalToStream).
                 map(edge -> vertex().tx().factory().buildShard(edge));
+    }
+
+    public Long shardCount(){
+        return shardCount.get();
     }
 
     public Shard currentShard(){
         return currentShard.get();
     }
 
-    public long getShardCount(){
-        Long value = vertex().property(Schema.VertexProperty.SHARD_COUNT);
-        if(value == null) return 0L;
-        return value;
-    }
-
-    public void setShardCount(Long instanceCount){
-        vertex().property(Schema.VertexProperty.SHARD_COUNT, instanceCount);
-    }
 }

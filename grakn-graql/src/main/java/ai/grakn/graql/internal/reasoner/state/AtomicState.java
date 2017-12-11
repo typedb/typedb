@@ -18,19 +18,18 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
 
-import java.util.Collections;
-import java.util.Iterator;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  *
@@ -41,85 +40,100 @@ import java.util.stream.Stream;
  * @author Kasper Piskorski
  *
  */
-public class AtomicState extends QueryState{
-
-    private final ReasonerAtomicQuery query;
-    private final Iterator<Answer> dbIterator;
-    private final Iterator<Pair<InferenceRule, Unifier>> ruleIterator;
-
-    private InferenceRule currentRule = null;
-    private final MultiUnifier cacheUnifier;
+@SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
+public class AtomicState extends QueryState<ReasonerAtomicQuery>{
 
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
                        Unifier u,
-                       QueryState parent,
+                       QueryStateBase parent,
                        Set<ReasonerAtomicQuery> subGoals,
                        QueryCache<ReasonerAtomicQuery> cache) {
-
-        super(sub, u, parent, subGoals, cache);
-        this.query = ReasonerQueries.atomic(q, sub);
-
-        Pair<Stream<Answer>, MultiUnifier> streamUnifierPair = cache.getAnswerStreamWithUnifier(query);
-        this.dbIterator = streamUnifierPair.getKey()
-                .map(a -> a.explain(a.getExplanation().setQuery(query)))
-                .iterator();
-        this.cacheUnifier = streamUnifierPair.getValue().inverse();
-
-        //if this is ground and exists in the db then do not resolve further
-        if(subGoals.contains(query)
-                || (query.isGround() && dbIterator.hasNext() ) ){
-            this.ruleIterator = Collections.emptyIterator();
-        } else {
-            this.ruleIterator = query.getRuleIterator();
-        }
-
-        //mark as visited and hence not admissible
-        if (ruleIterator.hasNext()) subGoals.add(query);
+        super(ReasonerQueries.atomic(q, sub), sub, u, parent, subGoals, cache);
     }
 
     @Override
-    boolean isAtomicState(){ return true;}
-
     ResolutionState propagateAnswer(AnswerState state){
         Answer answer = state.getAnswer();
+        ReasonerAtomicQuery query = getQuery();
         if (answer.isEmpty()) return null;
 
-        if (currentRule != null && query.getAtom().requiresRoleExpansion()){
+        if (state.getRule() != null && query.getAtom().requiresRoleExpansion()){
             return new RoleExpansionState(answer, getUnifier(), query.getAtom().getRoleExpansionVariables(), getParentState());
         }
-
         return new AnswerState(answer, getUnifier(), getParentState());
     }
 
     @Override
-    public ResolutionState generateSubGoal() {
-        if (dbIterator.hasNext()){
-            return new AnswerState(dbIterator.next(), getUnifier(), this);
+    Answer consumeAnswer(AnswerState state) {
+        Answer answer;
+        ReasonerAtomicQuery query = getQuery();
+        Answer baseAnswer = state.getSubstitution();
+        InferenceRule rule = state.getRule();
+        Unifier unifier = state.getUnifier();
+        if (rule == null) answer = state.getSubstitution();
+        else{
+            answer = rule.requiresMaterialisation(query.getAtom()) ?
+                    materialisedAnswer(baseAnswer, rule, unifier) :
+                    ruleAnswer(baseAnswer, rule, unifier);
         }
-        if (ruleIterator.hasNext()) return generateSubGoalFromRule(ruleIterator.next());
-        return null;
+        return getCache().recordAnswerWithUnifier(query, answer, getCacheUnifier());
     }
 
-    @Override
-    ReasonerAtomicQuery getQuery(){return query;}
+    private Answer ruleAnswer(Answer baseAnswer, InferenceRule rule, Unifier unifier){
+        ReasonerAtomicQuery query = getQuery();
+        Answer answer = baseAnswer
+                .merge(rule.getHead().getRoleSubstitution())
+                .unify(unifier);
+        if (answer.isEmpty()) return answer;
 
-    @Override
-    MultiUnifier getCacheUnifier(){ return cacheUnifier;}
+        return answer
+                .merge(query.getSubstitution())
+                .project(query.getVarNames())
+                .explain(new RuleExplanation(query, rule));
+    }
 
-    InferenceRule getCurrentRule(){ return currentRule;}
+    private Answer materialisedAnswer(Answer baseAnswer, InferenceRule rule, Unifier unifier){
+        Answer answer = baseAnswer;
+        ReasonerAtomicQuery query = getQuery();
+        QueryCache<ReasonerAtomicQuery> cache = getCache();
 
-    private ResolutionState generateSubGoalFromRule(Pair<InferenceRule, Unifier> rulePair){
-        Unifier ruleUnifier = rulePair.getValue();
-        Unifier ruleUnifierInverse = ruleUnifier.inverse();
+        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, answer);
+        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);
 
-        //delta' = theta . thetaP . delta
-        Answer partialSubPrime = query.getSubstitution()
-                .unify(ruleUnifierInverse);
+        Set<Var> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size()?
+                unifier.keySet() :
+                ruleHead.getVarNames();
 
-        currentRule = rulePair.getKey()
-                .propagateConstraints(query.getAtom(), ruleUnifierInverse);
+        boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
 
-        return currentRule.getBody().subGoal(partialSubPrime, ruleUnifier, this, getSubGoals(), getCache());
+        //check if the specific answer to ruleHead already in cache/db
+        Answer headAnswer = cache
+                .getAnswer(ruleHead, answer)
+                .project(queryVars)
+                .unify(unifier);
+
+        //if not and query different than rule head do the same with the query
+        Answer queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
+                cache.getAnswer(query, answer) :
+                new QueryAnswer();
+
+        //ensure no duplicates created - only materialise answer if it doesn't exist in the db
+        if (headAnswer.isEmpty()
+                && queryAnswer.isEmpty()) {
+            Answer materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
+            if (!queryEquivalentToHead) cache.recordAnswer(ruleHead, materialisedSub);
+            answer = materialisedSub
+                    .project(queryVars)
+                    .unify(unifier);
+        } else {
+            answer = headAnswer.isEmpty()? queryAnswer : headAnswer;
+        }
+
+        if (answer.isEmpty()) return answer;
+
+        return answer
+                .merge(query.getSubstitution())
+                .explain(new RuleExplanation(query, rule));
     }
 }

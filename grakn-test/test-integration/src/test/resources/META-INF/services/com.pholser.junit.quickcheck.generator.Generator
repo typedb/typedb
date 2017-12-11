@@ -18,4 +18,17 @@
 #
 
 ai.grakn.generator.TaskStates
-ai.grakn.generator.TaskManagers
+
+ai.grakn.generator.Vars
+ai.grakn.generator.VarPatternAdmins
+ai.grakn.generator.Conjunctions
+ai.grakn.generator.Disjunctions
+
+ai.grakn.generator.DataTypeProperties
+ai.grakn.generator.HasAttributeProperties
+ai.grakn.generator.HasAttributeTypeProperties
+ai.grakn.generator.IsAbstractProperties
+ai.grakn.generator.IsaProperties
+ai.grakn.generator.LabelProperties
+ai.grakn.generator.RelationPlayers
+ai.grakn.generator.RelationProperties

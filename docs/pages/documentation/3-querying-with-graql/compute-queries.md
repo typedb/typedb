@@ -157,7 +157,7 @@ For further information see the individual sections below.
 
 ## When to Use `aggregate` and When to Use `compute`
 
-[Aggregate queries](./aggregate-queries.html) are computationally light and run single-threaded on a single machine, but are more flexible than the equivalent compute queries described above.
+[Aggregate queries](./dml.html#aggregate-query) are computationally light and run single-threaded on a single machine, but are more flexible than the equivalent compute queries described above.
 
 For example, you can use an aggregate query to filter results by attribute. The following  aggregate query, allows you to match the number of people of a particular name:
 

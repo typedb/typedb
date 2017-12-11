@@ -23,8 +23,6 @@ import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
-import java.util.Optional;
-
 /**
  * <p>
  *     Represent an {@link Edge} in a {@link GraknTx}
@@ -64,19 +62,11 @@ public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
         return element().id().equals(edge.id());
     }
 
-    /**
-     *
-     * @return The source of the edge.
-     */
-    public Optional<VertexElement> source(){
+    public VertexElement source(){
         return tx().factory().buildVertexElement(element().outVertex());
     }
 
-    /**
-     *
-     * @return The target of the edge
-     */
-    public Optional<VertexElement> target(){
+    public VertexElement target(){
         return tx().factory().buildVertexElement(element().inVertex());
     }
 }

@@ -20,8 +20,6 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 
-import ai.grakn.engine.tasks.manager.TaskCheckpoint;
-
 /**
  * Mocked task that will throw exception
  *
@@ -34,8 +32,4 @@ public class FailingMockTask extends MockBackgroundTask {
         throw new RuntimeException("deliberate test failure");
     }
 
-    @Override
-    protected void executeResumeInner(TaskCheckpoint checkpoint) {
-        throw new RuntimeException("deliberate test failure");
-    }
 }

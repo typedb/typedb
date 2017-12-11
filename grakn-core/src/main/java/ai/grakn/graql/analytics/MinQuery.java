@@ -67,8 +67,8 @@ public interface MinQuery extends ComputeQuery<Optional<Number>> {
     Optional<Number> execute();
 
     /**
-     * @param tx the graph to execute the query on
-     * @return a MinQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a MinQuery with the transaction set
      */
     @Override
     MinQuery withTx(GraknTx tx);

@@ -24,7 +24,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.matcher.MatchableConcept;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -164,11 +164,14 @@ public class MatchTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieKB = MovieKB.context();
+
+    @ClassRule
+    public static final SampleKBContext emptyKB = SampleKBContext.empty();
 
     // This is a graph to contain unusual edge cases
     @ClassRule
-    public static final SampleKBContext weirdKB = SampleKBContext.preLoad(graph -> {
+    public static final SampleKBContext weirdKB = SampleKBContext.load(graph -> {
         AttributeType<String> weirdLoopType = graph.putAttributeType("name", AttributeType.DataType.STRING);
         weirdLoopType.attribute(weirdLoopType);
         Attribute<String> weird = weirdLoopType.putAttribute("weird");
@@ -219,7 +222,7 @@ public class MatchTest {
 
         assertThat(query, variable(x, containsInAnyOrder(
                 role("role"), role("character-being-played"),
-                role("has-name-owner")
+                role("@has-name-owner")
         )));
     }
 
@@ -580,7 +583,7 @@ public class MatchTest {
 
     @Test
     public void testMatchRuleRightHandSide() {
-        Match query = qb.match(x.when(qb.parsePattern("$x id 'expect-when'")).then(qb.parsePattern("$x id 'expect-then'")));
+        Match query = qb.match(x.when(qb.parser().parsePattern("$x id 'expect-when'")).then(qb.parser().parsePattern("$x id 'expect-then'")));
 
         expectedException.expect(UnsupportedOperationException.class);
         expectedException.expectMessage(MATCH_INVALID.getMessage("when"));
@@ -617,8 +620,8 @@ public class MatchTest {
 
     @Test
     public void testGraqlPlaysSemanticsMatchGraphAPI() {
-        GraknTx graph = SampleKBContext.empty().tx(); // TODO: Try and remove this call if possible
-        QueryBuilder qb = graph.graql();
+        GraknTx tx = emptyKB.tx();
+        QueryBuilder qb = tx.graql();
 
         Label a = Label.of("a");
         Label b = Label.of("b");
@@ -637,7 +640,7 @@ public class MatchTest {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get(x).collect(Collectors.toSet());
             Collection<Role> graphAPIPlays;
 
-            SchemaConcept schemaConcept = graph.getSchemaConcept(type);
+            SchemaConcept schemaConcept = tx.getSchemaConcept(type);
             if (schemaConcept.isType()) {
                 graphAPIPlays = schemaConcept.asType().plays().collect(toSet());
             } else {
@@ -649,7 +652,7 @@ public class MatchTest {
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get(x).collect(toSet());
-            Collection<Type> graphAPIPlayedBy = graph.<Role>getSchemaConcept(type).playedByTypes().collect(toSet());
+            Collection<Type> graphAPIPlayedBy = tx.<Role>getSchemaConcept(type).playedByTypes().collect(toSet());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
@@ -1073,7 +1076,7 @@ public class MatchTest {
         Entity entity = type.addEntity();
 
         Collection<Concept> results = movieKB.tx().graql().match(x.isa(type.getLabel().getValue()))
-                .stream().findAny().get().values();
+                .stream().findAny().get().concepts();
 
         assertThat(results, containsInAnyOrder(entity));
     }

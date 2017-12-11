@@ -5,7 +5,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.18.0</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,8 +17,6 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-test-tools</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -27,7 +25,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
 
                 <configuration>
                     <systemPropertyVariables>
@@ -46,12 +43,14 @@
                     don't contain stack traces! -->
                     <trimStackTrace>false</trimStackTrace>
                     <argLine>-XX:+HeapDumpOnOutOfMemoryError</argLine>
+
+                    <!-- Added this config to try and help sort out flaky tests -->
+                    <runOrder>random</runOrder>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.19.1</version>
 
                 <configuration>
                     <systemPropertyVariables>
@@ -85,22 +84,6 @@
                 <dependency>
                     <groupId>ai.grakn</groupId>
                     <artifactId>janus-factory</artifactId>
-                    <version>${project.version}</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.slf4j</groupId>
-                            <artifactId>slf4j-log4j12</artifactId>
-                        </exclusion>
-                        <exclusion>
-                            <groupId>ch.qos.logback</groupId>
-                            <artifactId>logback-classic</artifactId>
-                        </exclusion>
-                        <!--Excluded because we provide logback logger-->
-                        <exclusion>
-                            <groupId>org.slf4j</groupId>
-                            <artifactId>slf4j-nop</artifactId>
-                        </exclusion>
-                    </exclusions>
                     <scope>test</scope>
                 </dependency>
             </dependencies>

@@ -18,7 +18,7 @@ For more information on how to download older versions of GRAKN.AI, compile from
 
 ## Install GRAKN.AI
 {% include note.html content="**Prerequisites**   <br />
-GRAKN.AI requires Oracle Java 8 (Standard Edition) with the `$JAVA_HOME` set accordingly. If you don't already have this installed, you can find it [here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
+GRAKN.AI requires Java 8 (OpenJDK or Oracle Java) with the `$JAVA_HOME` set accordingly. If you don't already have this installed, you can find it here: [OpenJDK](http://openjdk.java.net/install/) or [Oracle Java](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
 <br /> 
 If you intend to build Grakn from source code, or develop on top of it, you will also need Maven 3.
 <br /> 
@@ -47,7 +47,7 @@ Grakn Engine is configured by default to use port 4567, but this can be changed 
 
 ## Test the Graql Shell
 
-To test that the installation is working correctly, we will load a simple schema and some data from a file and test it in the Graql shell and Grakn visualiser. The file we will use is *basic-genealogy.gql*, which is included in the */examples* folder of the Grakn installation zip.
+To test that the installation is working correctly, we will load a simple schema and some data from a file and test it in the Graql shell and Grakn visualiser. The file we will use is *basic-genealogy.gql*, which is included in the */examples* folder of the Grakn installation zip, or */usr/local/Cellar/grakn/\<version\>/libexec/examples* folder if you installed with brew.
 
 Type in the following in the terminal to load the example knowledge base. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
 

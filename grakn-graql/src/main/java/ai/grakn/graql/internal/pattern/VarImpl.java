@@ -70,7 +70,7 @@ abstract class VarImpl extends AbstractVarPattern implements Var {
 
     @Override
     public String shortName() {
-        return kind().prefix() + StringUtils.left(getValue(), 3);
+        return kind().prefix() + StringUtils.right(getValue(), 3);
     }
 
     @Override

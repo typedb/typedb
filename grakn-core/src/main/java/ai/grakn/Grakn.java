@@ -18,6 +18,8 @@
 
 package ai.grakn;
 
+import ai.grakn.util.SimpleURI;
+
 import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -85,9 +87,11 @@ public class Grakn {
      * Constant to be passed to {@link #session(String, String)} to specify the default localhost Grakn Engine location.
      * This default constant, which is set to localhost: 4567 cannot be changed in development"
      */
-    public static final String DEFAULT_URI = "localhost:4567";
+    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost", 4567);
 
-    private static final String GRAKN_SESSION_IMPLEMENTATION = "ai.grakn.factory.GraknSessionImpl";
+    private static final String SESSION_CLASS = "ai.grakn.factory.GraknSessionImpl";
+
+    private static final String SESSION_BUILDER = "create";
 
     /**
      * Constant to be passed to {@link #session(String, String)} to specify an in-memory graph.
@@ -101,10 +105,9 @@ public class Grakn {
                                                                  Keyspace keyspace) {
         try {
             @SuppressWarnings("unchecked")
-            Class<F> cl = (Class<F>)Class.forName(className);
-            return cl.getConstructor(Keyspace.class, String.class).newInstance(keyspace, location);
-        } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException
-                | ClassNotFoundException e) {
+            Class cl = Class.forName(className);
+            return (F) cl.getMethod(SESSION_BUILDER, Keyspace.class, String.class).invoke(null, keyspace, location);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
@@ -131,8 +134,18 @@ public class Grakn {
     }
 
     @CheckReturnValue
+    public static GraknSession session(SimpleURI location, String keyspace) {
+        return session(location.toString(), Keyspace.of(keyspace));
+    }
+
+    @CheckReturnValue
+    public static GraknSession session(SimpleURI location, Keyspace keyspace) {
+        return session(location.toString(), keyspace);
+    }
+
+    @CheckReturnValue
     public static GraknSession session(String location, Keyspace keyspace) {
         String key = location + keyspace.getValue();
-        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_SESSION_IMPLEMENTATION, location, keyspace));
+        return clients.computeIfAbsent(key, (k) -> loadImplementation(SESSION_CLASS, location, keyspace));
     }
 }

@@ -44,7 +44,7 @@ abstract class IsAbstractFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_NODE_IS_ABSTRACT;
     }
 }

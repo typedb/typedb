@@ -19,10 +19,10 @@
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 
 import java.util.Set;
@@ -57,8 +57,8 @@ public class NeqPredicate extends Predicate<Var> {
     }
 
     @Override
-    protected Var extractPredicate(VarPatternAdmin pattern) {
-        return pattern.getProperties(NeqProperty.class).iterator().next().var().var();
+    protected Var extractPredicate(VarPattern pattern) {
+        return pattern.admin().getProperties(NeqProperty.class).iterator().next().var().var();
     }
 
     @Override
@@ -73,8 +73,8 @@ public class NeqPredicate extends Predicate<Var> {
      * @return true if provided subsitution satisfies the predicate
      */
     public boolean isSatisfied(Answer sub) {
-        return !sub.containsKey(getVarName())
-                || !sub.containsKey(getReferenceVarName())
+        return !sub.containsVar(getVarName())
+                || !sub.containsVar(getReferenceVarName())
                 || !sub.get(getVarName()).equals(sub.get(getReferenceVarName()));
     }
 

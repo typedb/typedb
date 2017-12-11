@@ -23,7 +23,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.util.CommonUtil;
 import com.google.common.io.Files;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.HelpFormatter;
 import org.yaml.snakeyaml.Yaml;
 
@@ -102,13 +104,25 @@ public class MigrationCLI {
 
     public static void loadOrPrint(File templateFile, Stream<Map<String, Object>> data, MigrationOptions options){
         String template = fileAsString(templateFile);
-        Migrator migrator = Migrator.to(options.getUri(), options.getKeyspace());
-
+        Migrator migrator = new MigratorBuilder()
+                .setUri(options.getUri())
+                .setMigrationOptions(options)
+                .setKeyspace(options.getKeyspace())
+                .build();
         if(options.isNo()){
             migrator.print(template, data);
         } else {
             printInitMessage(options);
-            migrator.load(template, data, options.getBatch(), options.getNumberActiveTasks(), options.getRetry(), options.isDebug());
+            migrator.getReporter().start(1, TimeUnit.MINUTES);
+            try {
+                migrator.load(template, data);
+            } catch (Throwable e) {
+                // This is to catch migration exceptions and return intelligible output messages
+                StringBuilder message = CommonUtil.simplifyExceptionMessage(e);
+                System.out.println("ERROR: Exception while loading data (disabling debug mode might skip and continue): " + message.toString());
+            } finally {
+                migrator.getReporter().stop();
+            }
             printWholeCompletionMessage(options);
         }
     }
@@ -133,7 +147,7 @@ public class MigrationCLI {
             builder.append("\t ").append(graph.admin().getMetaEntityType().instances().count()).append(" entity types\n");
             builder.append("\t ").append(graph.admin().getMetaRelationType().instances().count()).append(" relation types\n");
             builder.append("\t ").append(graph.admin().getMetaRole().subs().count()).append(" roles\n\n");
-            builder.append("\t ").append(graph.admin().getMetaResourceType().instances().count()).append(" resource types\n");
+            builder.append("\t ").append(graph.admin().getMetaAttributeType().instances().count()).append(" resource types\n");
             builder.append("\t ").append(graph.admin().getMetaRule().subs().count()).append(" rules\n\n");
 
             builder.append("Graph data contains:\n");

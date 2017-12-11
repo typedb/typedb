@@ -20,6 +20,7 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Var;
 
+import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
@@ -50,14 +51,6 @@ public interface Unifier{
     Collection<Var> get(Var key);
 
     /**
-     * add a new mapping
-     * @param key variable
-     * @param value term
-     * @return previous value associated with key, or null if there was no mapping for key
-     */
-    boolean addMapping(Var key, Var value);
-
-    /**
      * @return true if the set of mappings is empty
      */
     @CheckReturnValue
@@ -79,7 +72,7 @@ public interface Unifier{
      * @return set of mappings constituting this unifier
      */
     @CheckReturnValue
-    Set<Map.Entry<Var, Var>> mappings();
+    ImmutableSet<Map.Entry<Var, Var>> mappings();
 
     /**
      * @param key variable to be inspected for presence

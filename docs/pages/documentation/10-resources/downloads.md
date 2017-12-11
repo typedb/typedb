@@ -23,7 +23,7 @@ A list of previously released versions of Grakn can be found on [Github](https:/
 
 ## Prerequisites
 
-{% include note.html content="We currently support Mac OS X and Linux. Grakn requires Oracle Java 8 (Standard Edition) with the `$JAVA_HOME` set accordingly. Grakn also requires Maven 3." %}
+{% include note.html content="We currently support Mac OS X and Linux. Grakn requires Java 8 (OpenJDK or Oracle) with the `$JAVA_HOME` set accordingly. Grakn also requires Maven 3." %}
 
 ## Code
 We are an open source project. If you want to look at our code, we are on Github at [https://github.com/graknlabs/grakn](https://github.com/graknlabs/grakn).

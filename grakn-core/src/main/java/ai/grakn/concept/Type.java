@@ -121,6 +121,13 @@ public interface Type extends SchemaConcept {
     Type sup();
 
     /**
+     *
+     * @return All the the super-types of this {@link Type}
+     */
+    @Override
+    Stream<? extends Type> sups();
+
+    /**
      * Get all indirect sub-types of this type.
      *
      * The indirect sub-types are the type itself and all indirect sub-types of direct sub-types.

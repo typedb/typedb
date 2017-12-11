@@ -24,12 +24,13 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
+import ai.grakn.util.GraknTestUtil;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -44,14 +45,14 @@ import static org.junit.Assume.assumeTrue;
 public class QueryTest {
 
     @ClassRule
-    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = GeoKB.context();
 
     @ClassRule
-    public static final SampleKBContext genealogySchema = SampleKBContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext genealogySchema = SampleKBContext.load("genealogy/schema.gql");
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        assumeTrue(GraknTestSetup.usingTinker());
+        assumeTrue(GraknTestUtil.usingTinker());
     }
 
     @Test //simple equality tests between original and a copy of a query
@@ -220,6 +221,22 @@ public class QueryTest {
         queryEquivalence(query, query2, true);
     }
 
+    @Test
+    public void testWhenReifyingRelation_ExtraAtomIsCreatedWithUserDefinedName(){
+        GraknTx graph = geoKB.tx();
+        String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
+        String patternString2 = "{($x, $y) relates geo-entity;}";
+
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        ReasonerQueryImpl query = ReasonerQueries.create(pattern, graph);
+        ReasonerQueryImpl query2 = ReasonerQueries.create(pattern2, graph);
+        assertEquals(query.getAtoms(RelationshipAtom.class).findFirst().orElse(null).isUserDefined(), false);
+        assertEquals(query2.getAtoms(RelationshipAtom.class).findFirst().orElse(null).isUserDefined(), true);
+        assertEquals(query.getAtoms().size(), 1);
+        assertEquals(query2.getAtoms().size(), 2);
+    }
+
     private void queryEquivalence(ReasonerQueryImpl a, ReasonerQueryImpl b, boolean expectation){
         assertEquals(a.toString() + " =? " + b.toString(), a.equals(b), expectation);
         assertEquals(b.toString() + " =? " + a.toString(), b.equals(a), expectation);
@@ -230,7 +247,7 @@ public class QueryTest {
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
-        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
+        Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

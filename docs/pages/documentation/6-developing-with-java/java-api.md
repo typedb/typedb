@@ -282,11 +282,11 @@ Pattern rule2then = var().rel("ancestor", "p").rel("descendant", "d").isa("Ances
 If we have a specific `GraknTx tx` already defined, we can use the Graql pattern parser:
 
 ```java
-rule1when = and(tx.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));
-rule1then = and(tx.graql().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
+rule1when = and(tx.graql().parser().parsePatterns("(parent: $p, child: $c) isa Parent;"));
+rule1then = and(tx.graql().parser().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
 
-rule2when = and(tx.graql().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
-rule2then = and(tx.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
+rule2when = and(tx.graql().parser().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
+rule2then = and(tx.graql().parser().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
 ```
 
 We conclude the rule creation with defining the rules from their constituent patterns:

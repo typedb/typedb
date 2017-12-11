@@ -30,7 +30,6 @@ import java.util.Set;
  * Compute the connected components in the subgraph.
  *
  * @param <T> the type of result this query will return
- *
  * @author Jason Liu
  */
 public interface ClusterQuery<T> extends ComputeQuery<T> {
@@ -64,9 +63,15 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     ClusterQuery<T> in(Collection<Label> subLabels);
 
     /**
-     * @param tx the graph to execute the query on
-     * @return a ClusterQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a ClusterQuery with the transaction set
      */
     @Override
     ClusterQuery<T> withTx(GraknTx tx);
+
+    /**
+     * Allow attributes and their relationships to be included.
+     */
+    @Override
+    ClusterQuery<T> includeAttribute();
 }

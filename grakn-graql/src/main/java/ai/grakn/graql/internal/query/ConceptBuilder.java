@@ -182,6 +182,10 @@ public class ConceptBuilder {
 
         if (has(ID)) {
             concept = executor.tx().getConcept(use(ID));
+
+            if (has(LABEL)) {
+                concept.asSchemaConcept().setLabel(use(LABEL));
+            }
         } else if (has(LABEL)) {
             concept = executor.tx().getSchemaConcept(use(LABEL));
         }
@@ -389,5 +393,14 @@ public class ConceptBuilder {
         } else {
             throw GraqlQueryException.insertMetaType(subConcept.getLabel(), superConcept);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "ConceptBuilder{" +
+                "var=" + var +
+                ", preProvidedParams=" + preProvidedParams +
+                ", usedParams=" + usedParams +
+                '}';
     }
 }

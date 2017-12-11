@@ -132,10 +132,15 @@ You can also specify a variable to represent the relationship connecting the thi
 <!-- TODO: Update to final syntax -->
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell5">
+<<<<<<< HEAD
 <pre class="language-graql">
 <code>
 match $x has identifier "Bar" as $r; get;
 </code>
+=======
+<pre>
+match $x has identifier "Bar" via $r; get;
+>>>>>>> upstream/stable
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java5">
@@ -332,6 +337,7 @@ The above is equivalent to:
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell11">
+<<<<<<< HEAD
 <pre class="language-graql">
 <code>
 match $x plays has-firstname-owner; get;
@@ -343,6 +349,15 @@ match $x plays has-firstname-owner; get;
 <code>
 qb.match(var("x").plays("has-firstname-owner")).get();
 </code>
+=======
+<pre>
+match $x plays @has-firstname-owner; get;
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java11">
+<pre>
+qb.match(var("x").plays("@has-firstname-owner")).get();
+>>>>>>> upstream/stable
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

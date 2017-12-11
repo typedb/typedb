@@ -18,12 +18,14 @@
 
 package ai.grakn.kb.internal.concept;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.cache.ContainsTxCache;
+import ai.grakn.kb.internal.cache.CacheOwner;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 
@@ -46,13 +48,20 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-interface RelationshipStructure extends ContainsTxCache {
+interface RelationshipStructure extends CacheOwner{
 
     /**
      *
      * @return The {@link ConceptId} of the {@link Relationship}
      */
     ConceptId getId();
+
+    /**
+     * Used for determining which {@link Keyspace} a {@link RelationshipStructure} was created in and is bound to.
+     *
+     * @return The {@link Keyspace} this {@link RelationshipStructure} belongs to.
+     */
+    Keyspace keyspace();
 
     /**
      *
@@ -94,4 +103,13 @@ interface RelationshipStructure extends ContainsTxCache {
      * Return whether the relationship has been deleted.
      */
     boolean isDeleted();
+
+    /**
+     * Used to indicate if this {@link Relationship} has been created as the result of a {@link Rule} inference.
+     * @see Rule
+     *
+     * @return true if this {@link Relationship} exists due to a rule
+     */
+    boolean isInferred();
+
 }

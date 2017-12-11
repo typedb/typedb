@@ -107,7 +107,7 @@ abstract class AbstractMatch implements MatchAdmin {
     @Override
     public final Stream<Concept> get(Var var) {
         return stream().map(result -> {
-            if (!result.containsKey(var)) {
+            if (!result.containsVar(var)) {
                 throw GraqlQueryException.varNotInQuery(var);
             }
             return result.get(var);

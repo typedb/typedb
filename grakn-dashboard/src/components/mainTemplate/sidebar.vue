@@ -9,14 +9,10 @@
                 <router-link tag="li" to="/console" class="link">
                     <a class="noselect">Console</a>
                 </router-link>
-                <router-link tag="li" to="/tasks" class="link">
-                    <a class="noselect">Tasks</a>
-                </router-link>
                 <router-link tag="li" to="/config" class="link">
                     <a class="noselect">Config</a>
                 </router-link>
                 <li class="link"><a target="_blank" href="https://grakn.ai/pages/index.html" class="noselect">Documentation</a></li>
-                <li v-show="isUserAuth" @click="logout()"><a href="#">Log Out</a></li>
             </ul>
         </nav>
         <div class="divide"></div>
@@ -94,7 +90,6 @@ export default {
   props: ['showSideBar'],
   data() {
     return {
-      isUserAuth: User.isAuthenticated(),
     };
   },
   created() {},
@@ -105,10 +100,6 @@ export default {
   methods: {
     openSignUp() {
       $('.modal-wrapper').toggleClass('open');
-    },
-    logout() {
-      User.logout();
-      this.$router.push('/login');
     },
   },
 };

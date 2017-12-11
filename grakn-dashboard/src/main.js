@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-
 import Vue from 'vue';
 import VeeValidate from 'vee-validate';
 import VueRouter from 'vue-router';
@@ -24,6 +23,10 @@ import VueRouter from 'vue-router';
 import User, { DEFAULT_KEYSPACE } from './js/User';
 import EngineClient from './js/EngineClient';
 import routes from './routes';
+
+Array.prototype.flatMap = function (lambda) {
+  return Array.prototype.concat.apply([], this.map(lambda));
+};
 
 
 Vue.use(VueRouter);
@@ -35,26 +38,11 @@ const router = new VueRouter({
   routes,
 });
 
-let authNeeded;
-
-// Function used to ask Engine if a token is needed to use its APIs
-const checkIfAuthNeeded = function contactEngine(next) {
-  EngineClient.request({
-    url: '/auth/enabled/',
-  }).then((result) => {
-    authNeeded = (result === 'true');
-    if (authNeeded === false) {
-      next();
-    } else {
-      next('/login');
-    }
-  }, () => {});
-};
 
 // Check if the currentKeyspace is in the list of keyspaces sent from grakn
 // If not, set the currentKeyspace to the default one.
 const checkCurrentKeySpace = () => EngineClient.fetchKeyspaces().then((resp) => {
-  const keyspaces = JSON.parse(resp);
+  const keyspaces = JSON.parse(resp).keyspaces.map(ks => ks.name);
   if (!keyspaces.includes(User.getCurrentKeySpace())) {
     User.setCurrentKeySpace(DEFAULT_KEYSPACE);
   }
@@ -62,18 +50,9 @@ const checkCurrentKeySpace = () => EngineClient.fetchKeyspaces().then((resp) => 
 
 // Middleware to ensure:
 // - current keyspace saved in localStorage is still available in Grakn
-// - the user is authenticated when needed
 router.beforeEach((to, from, next) => {
   checkCurrentKeySpace()
-  .then(() => {
-    if (authNeeded === undefined) {
-      checkIfAuthNeeded(next);
-    } else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
-      next();
-    } else {
-      next('/login');
-    }
-  });
+    .then(() => { next(); });
 });
 
 new Vue({

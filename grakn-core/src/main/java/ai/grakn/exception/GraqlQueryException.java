@@ -25,6 +25,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
@@ -42,6 +43,7 @@ import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
 import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
+import static ai.grakn.util.ErrorMessage.UNEXPECTED_RESULT;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 
 /**
@@ -96,10 +98,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 
-    public static GraqlQueryException roleAndRuleDoNotHaveInstance() {
-        return new GraqlQueryException(ErrorMessage.ROLE_AND_RULE_DO_NOT_HAVE_INSTANCE.getMessage());
-    }
-
     public static GraqlQueryException deleteSchemaConcept(SchemaConcept schemaConcept) {
         return create("cannot delete schema concept %s. Use `undefine` instead.", schemaConcept);
     }
@@ -116,8 +114,8 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage(attributeType));
     }
 
-    public static GraqlQueryException queryInstanceOfRoleType(Label label) {
-        return new GraqlQueryException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(label));
+    public static GraqlQueryException cannotGetInstancesOfNonType(Label label) {
+        return GraqlQueryException.create("%s is not a type and so does not have instances", label);
     }
 
     public static GraqlQueryException notARelationType(Label label) {
@@ -247,7 +245,7 @@ public class GraqlQueryException extends GraknException {
                 .getMessage(clazz.toString()));
     }
 
-    public static GraqlQueryException statisticsResourceTypesNotSpecified() {
+    public static GraqlQueryException statisticsAttributeTypesNotSpecified() {
         return new GraqlQueryException(ErrorMessage.ATTRIBUTE_TYPE_NOT_SPECIFIED.getMessage());
     }
 
@@ -287,12 +285,16 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.ROLE_PATTERN_ABSENT.getMessage(relation));
     }
 
-    public static GraqlQueryException illegalAtomConversion(Atomic atom){
-        return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom));
+    public static GraqlQueryException invalidUnifierType(Object value) {
+        return new GraqlQueryException(ErrorMessage.INVALID_UNIFIER_TYPE.getMessage(value));
     }
 
-    public static GraqlQueryException ruleCreationArityMismatch() {
-        return new GraqlQueryException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+    public static GraqlQueryException nonExistentUnifier() {
+        return new GraqlQueryException(ErrorMessage.NON_EXISTENT_UNIFIER.getMessage());
+    }
+
+    public static GraqlQueryException illegalAtomConversion(Atomic atom){
+        return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom));
     }
 
     public static GraqlQueryException valuePredicateAtomWithMultiplePredicates() {
@@ -307,6 +309,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(reasonerQuery.toString()));
     }
 
+    public static GraqlQueryException conceptNotAThing(Object value) {
+        return new GraqlQueryException(ErrorMessage.CONCEPT_NOT_THING.getMessage(value));
+    }
+
     public static GraqlQueryException nonRoleIdAssignedToRoleVariable(VarPatternAdmin var) {
         return new GraqlQueryException(ErrorMessage.ROLE_ID_IS_NOT_ROLE.getMessage(var.toString()));
     }
@@ -319,8 +325,8 @@ public class GraqlQueryException extends GraknException {
         throw new GraqlQueryException("Cannot parse date value " + originalDate + " with format " + originalFormat, cause);
     }
 
-    public static GraqlQueryException noLabelSpecifiedForHas() {
-        return new GraqlQueryException(ErrorMessage.NO_LABEL_SPECIFIED_FOR_HAS.getMessage());
+    public static GraqlQueryException noLabelSpecifiedForHas(VarPattern varPattern) {
+        return create("'has' argument '%s' requires a label", varPattern);
     }
 
     public static GraqlQueryException insertRolePlayerWithoutRoleType() {
@@ -329,5 +335,9 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException insertAbstractOnNonType(SchemaConcept concept) {
         return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
+    }
+
+    public static GraqlQueryException unexpectedResult(Var var) {
+        return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.getValue()));
     }
 }

@@ -18,177 +18,226 @@
 
 package ai.grakn.engine.controller;
 
+
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
-import ai.grakn.concept.Concept;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
+import ai.grakn.engine.Jacksonisable;
+import ai.grakn.engine.controller.response.Concept;
+import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.engine.controller.response.EmbeddedAttribute;
+import ai.grakn.engine.controller.response.Link;
+import ai.grakn.engine.controller.response.RolePlayer;
+import ai.grakn.engine.controller.response.Things;
+import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.exception.GraknServerException;
+import ai.grakn.util.REST.WebPath;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.codahale.metrics.Timer.Context;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import mjson.Json;
-import org.apache.commons.httpclient.HttpStatus;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import javax.annotation.Nullable;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.GraknTxType.READ;
-import static ai.grakn.engine.controller.GraqlController.getAcceptType;
-import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.queryParameter;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.LABEL_PARAMETER;
+import static ai.grakn.util.REST.Request.LIMIT_PARAMETER;
+import static ai.grakn.util.REST.Request.OFFSET_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
-import static ai.grakn.util.REST.Response.Json.ENTITIES_JSON_FIELD;
-import static ai.grakn.util.REST.Response.Json.RELATIONSHIPS_JSON_FIELD;
-import static ai.grakn.util.REST.Response.Json.ATTRIBUTES_JSON_FIELD;
-import static ai.grakn.util.REST.Response.Json.ROLES_JSON_FIELD;
-import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
-import static ai.grakn.util.REST.WebPath.Concept.SCHEMA;
 import static com.codahale.metrics.MetricRegistry.name;
-import static java.util.stream.Collectors.toList;
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
 
 /**
  * <p>
- *     Endpoints used to query the graph by concept type or identifier
+ *     Endpoints used to query for {@link ai.grakn.concept.Concept}s
  * </p>
  *
- * @author alexandraorth
+ * @author Filipe Peliz Pinto Teixeira
  */
-@Path("/kb")
 public class ConceptController {
-
-    private static final int separationDegree = 1;
-    private final EngineGraknTxFactory factory;
-    private final Timer conceptIdGetTimer;
-    private final Timer schemaGetTimer;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private EngineGraknTxFactory factory;
+    private Timer conceptIdGetTimer;
+    private Timer labelGetTimer;
+    private Timer instancesGetTimer;
 
     public ConceptController(EngineGraknTxFactory factory, Service spark,
                              MetricRegistry metricRegistry){
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
-        this.schemaGetTimer = metricRegistry.timer(name(ConceptController.class, "schema"));
+        this.labelGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-label"));
+        this.instancesGetTimer = metricRegistry.timer(name(ConceptController.class, "instances-of-type"));
 
-        spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
-        spark.get(SCHEMA,  this::schema);
+        spark.get(WebPath.CONCEPT_ID,  this::getConceptById);
+        spark.get(WebPath.TYPE_LABEL,  this::getSchemaByLabel);
+        spark.get(WebPath.RULE_LABEL,  this::getSchemaByLabel);
+        spark.get(WebPath.ROLE_LABEL,  this::getSchemaByLabel);
 
+        spark.get(WebPath.KEYSPACE_TYPE, this::getTypes);
+        spark.get(WebPath.KEYSPACE_RULE, this::getRules);
+        spark.get(WebPath.KEYSPACE_ROLE, this::getRoles);
+
+        spark.get(WebPath.CONCEPT_ATTRIBUTES, this::getAttributes);
+        spark.get(WebPath.CONCEPT_KEYS, this::getKeys);
+        spark.get(WebPath.CONCEPT_RELATIONSHIPS, this::getRelationships);
+
+        spark.get(WebPath.TYPE_INSTANCES, this::getTypeInstances);
     }
 
-    @GET
-    @Path("concept/{id}")
-    @ApiOperation(
-            value = "Return the HAL representation of a given concept.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = IDENTIFIER,      value = "Identifier of the concept", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = KEYSPACE,        value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = OFFSET_EMBEDDED, value = "Offset to begin at for embedded HAL concepts", required = true, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = LIMIT_EMBEDDED,  value = "Limit on the number of embedded HAL concepts", required = true, dataType = "boolean", paramType = "query")
-    })
-    private Json conceptByIdentifier(Request request, Response response){
-        validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
+    private String getRelationships(Request request, Response response) throws JsonProcessingException {
+        //TODO: Figure out how to incorporate offset and limit
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> thing.plays().flatMap(role -> {
+            Link roleWrapper = Link.create(role);
+            return thing.relationships(role).map(relationship -> {
+                Link relationshipWrapper = Link.create(relationship);
+                return RolePlayer.create(roleWrapper, relationshipWrapper);
+            });
+        });
+        return this.getConceptCollection(request, response, collector);
+    }
 
-        Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(request, KEYSPACE));
-        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
-        int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
-        int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        try(GraknTx tx = factory.tx(keyspace, READ); Context context = conceptIdGetTimer.time()){
-            Concept concept = retrieveExistingConcept(tx, conceptId);
+    private String getKeys(Request request, Response response) throws JsonProcessingException {
+        return getAttributes(request, response, thing -> thing.keys());
+    }
 
-            response.type(APPLICATION_HAL);
-            response.status(HttpStatus.SC_OK);
+    private String getAttributes(Request request, Response response) throws JsonProcessingException {
+        return getAttributes(request, response, thing -> thing.attributes());
+    }
 
-            return Json.read(renderHALConceptData(concept, separationDegree, keyspace, offset, limit));
+    private String getAttributes(Request request, Response response, Function<ai.grakn.concept.Thing,  Stream<Attribute<?>>> attributeFetcher) throws JsonProcessingException {
+        int offset = getOffset(request);
+        int limit = getLimit(request);
+
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing ->
+                attributeFetcher.apply(thing).skip(offset).limit(limit).map(EmbeddedAttribute::create);
+
+        return this.getConceptCollection(request, response, collector);
+    }
+
+    private <X extends ai.grakn.concept.Concept> String getConceptCollection(Request request, Response response, Function<X, Stream<Jacksonisable>> collector) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
+
+        try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
+            X concept = tx.getConcept(conceptId);
+
+            //If the concept was not found or is not a thing there are no results to return;
+            if(concept == null || !concept.isThing()){
+                response.status(SC_NOT_FOUND);
+                return "[]";
+            }
+
+            return objectMapper.writeValueAsString(collector.apply(concept).collect(Collectors.toList()));
         }
     }
 
-    @GET
-    @Path("/schema")
-    @ApiOperation(
-            value = "Produces a Json object containing meta-schema types instances.",
-            notes = "The built Json object will contain schema nodes divided in roles, entities, relations and resources.",
-            response = Json.class)
-    @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
-    private String schema(Request request, Response response) {
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
-        try(GraknTx graph = factory.tx(keyspace, READ); Context context = schemaGetTimer.time()){
-            Json responseObj = Json.object();
-            responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRole()));
-            responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));
-            responseObj.set(RELATIONSHIPS_JSON_FIELD, subLabels(graph.admin().getMetaRelationType()));
-            responseObj.set(ATTRIBUTES_JSON_FIELD, subLabels(graph.admin().getMetaResourceType()));
+    private String getTypeInstances(Request request, Response response) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
 
-            response.type(APPLICATION_JSON);
-            response.status(HttpStatus.SC_OK);
-            return responseObj.toString();
-        } catch (Exception e) {
-            throw GraknServerException.serverException(500, e);
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
+
+        int offset = getOffset(request);
+        int limit = getLimit(request);
+
+        try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = instancesGetTimer.time()) {
+            Type type = tx.getType(label);
+
+            if(type == null){
+                response.status(SC_NOT_FOUND);
+                return "";
+            }
+
+            //Get the wrapper
+            Things things = ConceptBuilder.buildThings(type, offset, limit);
+            response.status(SC_OK);
+            return objectMapper.writeValueAsString(things);
         }
     }
 
-    static Concept retrieveExistingConcept(GraknTx tx, ConceptId conceptId){
-        Concept concept = tx.getConcept(conceptId);
+    private int getOffset(Request request){
+        return getIntegerQueryParameter(request, OFFSET_PARAMETER, 0);
+    }
 
-        if (notPresent(concept)) {
-            throw GraknServerException.noConceptFound(conceptId, tx.getKeyspace());
+    private int getLimit(Request request){
+        return getIntegerQueryParameter(request, LIMIT_PARAMETER, 100);
+    }
+
+    private int getIntegerQueryParameter(Request request, String parameter, int defaultValue){
+        Optional<String> value = queryParameter(request, parameter);
+        return value.map(Integer::parseInt).orElse(defaultValue);
+    }
+
+    private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
+        Requests.validateRequest(request, APPLICATION_ALL);
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
+        return getConcept(response, keyspace, (tx) -> tx.getSchemaConcept(label));
+    }
+
+    private String getConceptById(Request request, Response response) throws JsonProcessingException {
+        Requests.validateRequest(request, APPLICATION_ALL);
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
+        return getConcept(response, keyspace, (tx) -> tx.getConcept(conceptId));
+    }
+
+    private String getConcept(Response response, Keyspace keyspace, Function<GraknTx, ai.grakn.concept.Concept> getter) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+
+        try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()) {
+            ai.grakn.concept.Concept concept = getter.apply(tx);
+
+            Optional<Concept> conceptWrapper = Optional.ofNullable(concept).map(ConceptBuilder::build);
+            if(conceptWrapper.isPresent()){
+                response.status(SC_OK);
+                return objectMapper.writeValueAsString(conceptWrapper.get());
+            } else {
+                response.status(SC_NOT_FOUND);
+                return "";
+            }
         }
-
-        return concept;
     }
 
-    static void validateRequest(Request request, String... contentTypes){
-        String acceptType = getAcceptType(request);
+    private String getTypes(Request request, Response response) throws JsonProcessingException {
+        return getConcepts(request, response, (tx) -> tx.admin().getMetaConcept().subs());
+    }
 
-        if(!Arrays.asList(contentTypes).contains(acceptType)){
-            throw GraknServerException.unsupportedContentType(acceptType);
+    private String getRules(Request request, Response response) throws JsonProcessingException {
+        return getConcepts(request, response, (tx) -> tx.admin().getMetaRule().subs());
+    }
+
+    private String getRoles(Request request, Response response) throws JsonProcessingException {
+        return getConcepts(request, response, (tx) -> tx.admin().getMetaRole().subs());
+    }
+
+    private String getConcepts(Request request, Response response, Function<GraknTx, Stream<? extends ai.grakn.concept.Concept>>getter) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+
+        try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
+            Set<Concept> concepts = getter.apply(tx).map(ConceptBuilder::<Concept>build).collect(Collectors.toSet());
+            response.status(SC_OK);
+            return objectMapper.writeValueAsString(concepts);
         }
     }
-
-    private List<String> subLabels(SchemaConcept schemaConcept) {
-        return schemaConcept.subs().
-                filter(concept-> !concept.isImplicit()).
-                map(SchemaConcept::getLabel).
-                map(Label::getValue).collect(toList());
-    }
-
-    /**
-     * Given a {@link Request} object retrieve the value of the {@param parameter} argument. If it is not present
-     * in the request URL, return a 404 to the client.
-     *
-     * @param request information about the HTTP request
-     * @param parameter value to retrieve from the HTTP request
-     * @return value of the given parameter
-     */
-    static String mandatoryRequestParameter(Request request, String parameter){
-        return Optional.ofNullable(request.params(parameter)).orElseThrow(() -> GraknServerException.requestMissingParameters(parameter));
-    }
-
-    /**
-     * Check if the concept is a valid concept
-     * @param concept the concept to validate
-     * @return true if the concept is valid, false otherwise
-     */
-    private static boolean notPresent(@Nullable Concept concept){
-        return concept == null;
-    }
-
 }

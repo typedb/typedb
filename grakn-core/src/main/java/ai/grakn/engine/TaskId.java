@@ -20,7 +20,7 @@
 package ai.grakn.engine;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
@@ -36,7 +36,7 @@ public abstract class TaskId {
 
     @CheckReturnValue
     @JsonCreator
-    public static TaskId of(@JsonProperty("value") String value) {
+    public static TaskId of(String value) {
         return new AutoValue_TaskId(value);
     }
 
@@ -49,6 +49,6 @@ public abstract class TaskId {
      * Get the string value of the task ID
      */
     @CheckReturnValue
-    @JsonProperty("value")
-    public abstract String getValue();
+    @JsonValue
+    public abstract String value();
 }

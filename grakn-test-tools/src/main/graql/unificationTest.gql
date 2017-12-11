@@ -31,7 +31,7 @@ subSubRole3 sub subRole3;
 #simple vertical hierarchy
 
 baseRoleEntity sub entity
-    has res1
+    has resource
     plays role1
     plays role2
     plays role3;
@@ -49,7 +49,7 @@ subSubRoleEntity sub subRoleEntity
     plays subSubRole3;
 
 binary sub relationship
-    has res1
+    has resource
     relates role1
     relates role2
     relates subRole1
@@ -60,7 +60,7 @@ binary sub relationship
     relates subSubRole2;
     
 ternary sub relationship
-    has res1
+    has resource
     relates role1
     relates role2
     relates role3
@@ -75,18 +75,18 @@ ternary sub relationship
 
 #Resources
 
-res1 sub attribute datatype string;
+resource sub attribute datatype string;
 
 insert
 
 #Instances
 
-$b isa baseRoleEntity, has res1 'b';
+$b isa baseRoleEntity, has resource 'b';
 
-$f isa subRoleEntity, has res1 'f';
-$m isa subSubRoleEntity, has res1 'm';
-$d isa subSubRoleEntity, has res1 'd';
-$s isa subSubRoleEntity, has res1 's';
+$f isa subRoleEntity, has resource 'f';
+$m isa subSubRoleEntity, has resource 'm';
+$d isa subSubRoleEntity, has resource 'd';
+$s isa subSubRoleEntity, has resource 's';
 
 (anotherSubRole1: $m, subRole2: $s) isa binary;
 (subRole1: $f, anotherSubRole2: $d) isa binary;

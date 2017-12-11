@@ -21,7 +21,7 @@ computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-computeMethod  : min | max | median | mean | std | sum | count | path | cluster | degrees ;
+computeMethod  : min | max | median | mean | std | sum | count | path | paths | cluster | degrees ;
 
 min            : MIN      'of' ofList      ('in' inList)? ';' ;
 max            : MAX      'of' ofList      ('in' inList)? ';' ;
@@ -32,6 +32,7 @@ sum            : SUM      'of' ofList      ('in' inList)? ';' ;
 degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
 cluster        : CLUSTER                   ('in' inList)? ';' clusterParam* ;
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
+paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
 clusterParam   : MEMBERS      ';' # clusterMembers
@@ -68,7 +69,7 @@ property       : 'isa' variable                     # isa
                | 'val' predicate                    # propValue
                | 'when' '{' patterns '}'            # propWhen
                | 'then' '{' varPatterns '}'         # propThen
-               | 'has' label (resource=VARIABLE | predicate) ('as' relation=VARIABLE)?# propHas
+               | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)?# propHas
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey
                | '(' casting (',' casting)* ')'     # propRel
@@ -104,7 +105,7 @@ value          : STRING   # valueString
                | DATETIME # valueDateTime
                ;
 
-label          : identifier ;
+label          : identifier | IMPLICIT_IDENTIFIER;
 id             : identifier ;
 
 // Some keywords can also be used as identifiers
@@ -122,6 +123,7 @@ STD            : 'std' ;
 SUM            : 'sum' ;
 COUNT          : 'count' ;
 PATH           : 'path' ;
+PATHS          : 'paths' ;
 CLUSTER        : 'cluster' ;
 DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;
@@ -155,6 +157,8 @@ fragment SECOND        : [0-6][0-9] ('.' [0-9]+)? ;
 fragment ESCAPE_SEQ : '\\' . ;
 
 COMMENT : '#' .*? '\r'? ('\n' | EOF) -> channel(HIDDEN) ;
+
+IMPLICIT_IDENTIFIER : '@' [a-zA-Z0-9_-]+ ;
 
 WS : [ \t\r\n]+ -> channel(HIDDEN) ;
 

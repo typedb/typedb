@@ -19,14 +19,10 @@
 
 package ai.grakn.test.engine;
 
-import ai.grakn.client.TaskClient;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
-import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
-import ai.grakn.generator.TaskStates.WithClass;
-import ai.grakn.test.EngineContext;
-import com.google.common.collect.ImmutableList;
+import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.Multiset;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -47,19 +43,15 @@ import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
-@Ignore("Ignored due to failing randomly on travis because of redis failures")
+@Ignore("Ignored due to redis related failiures")
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
 
@@ -67,10 +59,10 @@ public class GraknEngineServerIT {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine1 = EngineContext.singleQueueServer();
+    public static final EngineContext engine1 = EngineContext.createWithInMemoryRedis();
 
     @ClassRule
-    public static final EngineContext engine2 = EngineContext.singleQueueServer();
+    public static final EngineContext engine2 = EngineContext.createWithInMemoryRedis();
 
     private TaskStateStorage storage;
 
@@ -86,6 +78,8 @@ public class GraknEngineServerIT {
         assertNotEquals(engine1.getTaskManager(), engine2.getTaskManager());
     }
 
+    //TODO: Repair this test. The test needs to be redefined
+    @Ignore("This test needs to be revisited due to test engine having to share redis now")
     @Property(trials=10)
     public void whenSendingTasksToTwoEngines_TheyAllComplete(
             List<TaskState> tasks1, List<TaskState> tasks2) {
@@ -107,55 +101,5 @@ public class GraknEngineServerIT {
 
         assertThat(tasks.stream().filter(t -> t.status().equals(COMPLETED)).count(), equalTo((long)
                 completableTasks.size()));
-    }
-
-    @Property(trials=10)
-    @Ignore("Stop not implemented yet")
-    public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
-        assertTrue(TaskClient.of("localhost", engine1.port()).stopTask(task.getId()));
-
-        engine1.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(storage, ImmutableList.of(task));
-
-        assertThat(completedTasks(), empty());
-    }
-
-    @Property(trials=10)
-    @Ignore("Stop not implemented yet")
-    public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
-        assertTrue(TaskClient.of("localhost", engine2.port()).stopTask(task.getId()));
-
-        engine1.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(storage, ImmutableList.of(task));
-
-        assertThat(completedTasks(), empty());
-    }
-
-    @Property(trials=10)
-    @Ignore("Stop not implemented yet")
-    public void whenEngine1StopsATaskDuringExecution_TheTaskIsStopped(
-            @WithClass(EndlessExecutionMockTask.class) TaskState task) {
-        whenTaskStarts(id -> TaskClient.of("localhost", engine1.port()).stopTask(task.getId()));
-
-        engine1.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(storage, ImmutableList.of(task));
-
-        assertThat(completedTasks(), empty());
-    }
-
-    @Property(trials=10)
-    @Ignore("Stop not implemented yet")
-    public void whenEngine2StopsATaskDuringExecution_TheTaskIsStopped(
-            @WithClass(EndlessExecutionMockTask.class) TaskState task) {
-        whenTaskStarts(id -> TaskClient.of("localhost", engine2.port()).stopTask(task.getId()));
-
-        engine1.getTaskManager().addTask(task, configuration(task));
-
-        waitForDoneStatus(storage, ImmutableList.of(task));
-
-        assertThat(completedTasks(), empty());
     }
 }

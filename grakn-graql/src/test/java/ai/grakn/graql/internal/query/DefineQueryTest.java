@@ -22,6 +22,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Graql;
@@ -31,10 +32,10 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -81,7 +82,7 @@ public class DefineQueryTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final SampleKBContext movies = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movies = MovieKB.context();
 
     @Before
     public void setUp() {
@@ -294,8 +295,8 @@ public class DefineQueryTest {
 
     @Test
     public void whenDefiningARule_TheRuleIsInTheKB() {
-        Pattern when = qb.parsePattern("$x isa entity");
-        Pattern then = qb.parsePattern("$x isa entity");
+        Pattern when = qb.parser().parsePattern("$x isa entity");
+        Pattern then = qb.parser().parsePattern("$x isa entity");
         VarPattern vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
         qb.define(vars).execute();
 
@@ -403,11 +404,23 @@ public class DefineQueryTest {
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(Matchers.anyOf(
-                is(GraqlQueryException.defineUnsupportedProperty(HasResourceProperty.NAME).getMessage()),
+                is(GraqlQueryException.defineUnsupportedProperty(HasAttributeProperty.NAME).getMessage()),
                 is(GraqlQueryException.defineUnsupportedProperty(ValueProperty.NAME).getMessage())
         ));
 
         qb.define(var().id(id).has("title", "Bob")).execute();
+    }
+
+    @Test
+    public void whenSpecifyingLabelOfAnExistingConcept_LabelIsChanged() {
+        movies.tx().putEntityType("a-new-type");
+
+        EntityType type = movies.tx().getEntityType("a-new-type");
+        Label newLabel = Label.of("a-new-new-type");
+
+        qb.define(label(newLabel).id(type.getId())).execute();
+
+        assertEquals(newLabel, type.getLabel());
     }
 
     @Test

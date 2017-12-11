@@ -21,22 +21,13 @@ package ai.grakn.graql.internal.reasoner.state;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -47,61 +38,28 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class ConjunctiveState extends QueryState {
-
-    private final ReasonerQueryImpl query;
-    private final LinkedList<ReasonerQueryImpl> subQueries;
-    private final Iterator<Answer> dbIterator;
-
-    private boolean visited = false;
-    private static final Logger LOG = LoggerFactory.getLogger(ConjunctiveState.class);
+public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
 
     public ConjunctiveState(ReasonerQueryImpl q,
                             Answer sub,
                             Unifier u,
-                            QueryState parent,
-                            Set<ReasonerAtomicQuery> subGoals,
+                            QueryStateBase parent,
+                            Set<ReasonerAtomicQuery> visitedSubGoals,
                             QueryCache<ReasonerAtomicQuery> cache) {
-        super(sub, u, parent, subGoals, cache);
-        this.query = ReasonerQueries.create(q, sub);
-
-        if (!query.isRuleResolvable()){
-            dbIterator = query.getQuery().stream()
-                    .map(at -> at.explain(new JoinExplanation(query, at)))
-                    .iterator();
-            subQueries = new LinkedList<>();
-        } else {
-            dbIterator = Collections.emptyIterator();
-            subQueries = new ResolutionPlan(query).queryPlan();
-
-            LOG.trace("CQ plan:\n" + subQueries.stream()
-                    .map(aq -> aq.toString() + (aq.isRuleResolvable()? "*" : ""))
-                    .collect(Collectors.joining("\n"))
-            );
-        }
+        super(ReasonerQueries.create(q, sub), sub, u, parent, visitedSubGoals, cache);
     }
-
-    @Override
-    ReasonerQueryImpl getQuery(){return query;}
 
     @Override
     MultiUnifier getCacheUnifier() { return new MultiUnifierImpl();}
 
+    @Override
     ResolutionState propagateAnswer(AnswerState state){
         Answer answer = state.getAnswer();
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
     }
 
     @Override
-    public ResolutionState generateSubGoal(){
-        if (dbIterator.hasNext()){
-            return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
-        }
-
-        if (!subQueries.isEmpty() && !visited) {
-            visited = true;
-            return new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
-        }
-        return null;
+    Answer consumeAnswer(AnswerState state) {
+        return state.getSubstitution();
     }
 }

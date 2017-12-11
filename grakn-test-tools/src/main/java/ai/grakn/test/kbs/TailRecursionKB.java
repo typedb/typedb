@@ -23,7 +23,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.rule.SampleKBContext;
+import ai.grakn.util.SampleKBLoader;
 
 import java.util.function.Consumer;
 
@@ -45,14 +46,14 @@ public class TailRecursionKB extends TestKB {
         this.m = m;
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new TailRecursionKB(n, m).build();
+    public static SampleKBContext context(int n, int m) {
+        return new TailRecursionKB(n, m).makeContext();
     }
 
     @Override
     public Consumer<GraknTx> build(){
         return (GraknTx graph) -> {
-            SampleKBContext.loadFromFile(graph, gqlFile);
+            SampleKBLoader.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }
@@ -65,10 +66,10 @@ public class TailRecursionKB extends TestKB {
         EntityType bEntity = graph.getEntityType("b-entity");
         RelationshipType q = graph.getRelationshipType("Q");
 
-        putEntity(graph, "a0", aEntity, key);
+        putEntityWithResource(graph, "a0", aEntity, key);
         for(int i = 1 ; i <= m + 1 ;i++) {
             for (int j = 1; j <= n; j++) {
-                putEntity(graph, "b" + i + "," + j, bEntity, key);
+                putEntityWithResource(graph, "b" + i + "," + j, bEntity, key);
             }
         }
 

@@ -24,7 +24,7 @@ class Constants {
 
     // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
     // `load.sh` and `validate.sh`. Add the name of the folder to the list `INTEGRATION_TESTS` below.
-    static final INTEGRATION_TESTS = ["test-snb"]
+    static final INTEGRATION_TESTS = ["test-snb", "test-biomed"]
 
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
 }
@@ -79,7 +79,7 @@ def withGrakn(Closure closure) {
     try {
         timeout(15) {
             stage('Start Grakn') {
-                sh 'init-grakn.sh'
+                sh "init-grakn.sh ${env.BRANCH_NAME}"
             }
         }
         closure()
@@ -109,20 +109,20 @@ def graknNode(Closure closure) {
 
 def archiveArtifactsS3 (String artifacts) {
     step([$class: 'S3BucketPublisher',
-	  consoleLogLevel: 'INFO',
-	  pluginFailureResultConstraint: 'FAILURE',
-	  entries: [[
-	      sourceFile: '${artifacts}',
-	      bucket: 'performance-logs.grakn.ai',
-	      selectedRegion: 'eu-west-1',
-	      noUploadOnFailure: true,
-	      managedArtifacts: true,
-	      flatten: true,
-	      showDirectlyInBrowser: true,
-	      keepForever: true
-	  ]],
-	  profileName: 'use-iam',
-	  dontWaitForConcurrentBuildCompletion: false,
+      consoleLogLevel: 'INFO',
+      pluginFailureResultConstraint: 'FAILURE',
+      entries: [[
+          sourceFile: '${artifacts}',
+          bucket: 'performance-logs.grakn.ai',
+          selectedRegion: 'eu-west-1',
+          noUploadOnFailure: true,
+          managedArtifacts: true,
+          flatten: true,
+          showDirectlyInBrowser: true,
+          keepForever: true
+      ]],
+      profileName: 'use-iam',
+      dontWaitForConcurrentBuildCompletion: false,
     ])
 }
 
@@ -138,7 +138,13 @@ def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
 
+
 def shouldRunAllTests() {
+    // We run all the tests for all PRs to keep things stable
+    return true
+}
+
+def shouldRunBenchmarks() {
     return isMainBranch()
 }
 
@@ -166,17 +172,18 @@ Closure createTestJob(split, i, testTimeout) {
             mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
         }
 
-        try {
-            /* Call the Maven build with tests. */
-            timeout(testTimeout) {
-                stage('Run Janus test profile') {
-                    mvn mavenVerify
-                    archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
+            try {
+                /* Call the Maven build with tests. */
+                timeout(testTimeout) {
+                    stage('Run Janus test profile') {
+                        mvn mavenVerify
+                        archiveArtifacts artifacts: graknDist()
+                    }
                 }
-            }
-        } finally {
-            /* Archive the test results */
-            junit "**/TEST*.xml"
+            } finally {
+                /* Archive the test results */
+                junit "**/TEST*.xml"
+
         }
     }
 }
@@ -209,14 +216,15 @@ void addJob(Map<String, Closure> jobs, String name, Closure closure) {
     }
 }
 
+String graknDist() {
+    return "grakn-dist/target/grakn-dist-${env.BRANCH_NAME}.tar.gz"
+}
+
 // Main script to run
 def runBuild() {
 
     //This sets properties in the Jenkins server.
     properties([
-        pipelineTriggers([
-            issueCommentTrigger('.*!rtg.*')
-        ]),
         buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
     ])
 
@@ -225,16 +233,22 @@ def runBuild() {
 
         //Keep fewer artifacts for PRs
         properties([
+            pipelineTriggers([
+              issueCommentTrigger('.*!rtg.*')
+            ]),
             buildDiscarder(logRotator(numToKeepStr: '7', artifactNumToKeepStr: '1'))
         ])
     }
 
-    // This is a map that we fill with jobs to perform in parallel, name -> job closure
-    jobs = [:]
-
-    addTests(jobs)
+    // A map of jobs for JUnit Tests
+    junitTests = [:]
+    addTests(junitTests)
+    parallel(junitTests)
 
     if (shouldRunAllTests()) {
+
+        // A map of jobs for end-to-end tests
+        e2eTests = [:]
 
         // Build grakn so it can be used by benchmarks and integration tests
         graknNode { workspace ->
@@ -243,42 +257,53 @@ def runBuild() {
             stage('Build Grakn') {
                 buildGrakn()
 
-                archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
+                archiveArtifacts artifacts: graknDist()
 
                 // Stash the built distribution so other nodes can access it
-                stash includes: 'grakn-dist/target/grakn-dist*.tar.gz', name: 'dist'
+                stash includes: graknDist(), name: 'dist'
             }
         }
 
-        addJob(jobs, 'benchmarks') { workspace ->
-            checkout scm
-            unstash 'dist'
-            timeout(60) {
-                stage('Run the benchmarks') {
-                    mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
-                    archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
-                    // TODO: re-enable and fix archiving in S3
-                    // archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+        if (shouldRunBenchmarks()) {
+            addJob(e2eTests, 'benchmarks') { workspace ->
+                checkout scm
+                unstash 'dist'
+                timeout(60) {
+                    stage('Run the benchmarks') {
+                        mvn "clean test -P janus -Dtest=*Benchmark -DfailIfNoTests=false -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+                        archiveArtifacts artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                        // TODO: re-enable and fix archiving in S3
+                        // archiveArtifactsS3 artifacts: 'grakn-test/test-integration/benchmarks/*.json'
+                    }
                 }
             }
         }
 
         INTEGRATION_TESTS.each { String moduleName ->
             // Add each integration test as a parallel job
-            addJob(jobs, moduleName) { workspace ->
+            addJob(e2eTests, moduleName) { workspace ->
                 checkout scm
                 unstash 'dist'
 
                 runIntegrationTest(workspace, moduleName)
             }
         }
-    }
 
-    // Execute all jobs in parallel
-    parallel(jobs)
+        parallel(e2eTests)
+    }
 
     graknNode { workspace ->
         checkout scm
+
+        // Push to Grakn Maven if tests pass
+        if (isMainBranch()) {
+            withMaven(
+                options: [artifactsPublisher(disabled: true)],
+                mavenSettingsConfig: '8358fa5c-17c9-4a16-b501-4ebacb7f163d',
+            ){
+                sh 'mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo'
+            }
+        }
 
         // only deploy long-running instance on stable branch if all tests pass
         if (shouldDeployLongRunningInstance()) {
@@ -286,7 +311,7 @@ def runBuild() {
 
             stage('Deploy Grakn') {
                 sshagent(credentials: ['jenkins-aws-ssh']) {
-                    sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                    sh "scp -o StrictHostKeyChecking=no ${graknDist()} ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
                     sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
                     ssh "'bash -s' < scripts/start-long-running-instance.sh"
                 }

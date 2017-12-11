@@ -32,7 +32,6 @@ import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -66,22 +64,16 @@ import java.util.stream.Stream;
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private final Cache<Boolean> cachedIsAbstract = new Cache<>(Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
-    private final Cache<Set<T>> cachedShards = new Cache<>(Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsAbstract = Cache.createSessionCache(this, Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 
     //This cache is different in order to keep track of which plays are required
-    private final Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(Cacheable.map(), () -> {
+    private final Cache<Map<Role, Boolean>> cachedDirectPlays = Cache.createSessionCache(this, Cacheable.map(), () -> {
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-
-            Optional<Role> role = edge.target().flatMap(roleVertex ->
-                    vertex().tx().factory().<Role>buildConcept(roleVertex));
-
-            if (role.isPresent()) {
-                Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
-                roleTypes.put(role.get(), required);
-            }
+            Role role = vertex().tx().factory().buildConcept(edge.target());
+            Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
+            roleTypes.put(role, required);
         });
 
         return roleTypes;
@@ -97,34 +89,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         createShard();
     }
 
-    TypeImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
-        super(vertexElement, superType, isImplicit);
-        //This constructor is ONLY used when CREATING new types. Which is why we shard here
-        createShard();
-    }
-
-    /**
-     * Flushes the internal transaction caches so they can refresh with persisted graph
-     */
-    @Override
-    public void txCacheFlush(){
-        super.txCacheFlush();
-        cachedIsAbstract.flush();
-        cachedShards.flush();
-        cachedDirectPlays.flush();
-    }
-
-    /**
-     * Clears the internal transaction caches
-     */
-    @Override
-    public void txCacheClear(){
-        super.txCacheClear();
-        cachedIsAbstract.clear();
-        cachedShards.clear();
-        cachedDirectPlays.clear();
-    }
-
     /**
      * Utility method used to create or find an instance of this type
      *
@@ -133,11 +97,17 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param producer The factory method to produce the instance if it doesn't exist
      * @return A new or already existing instance
      */
-    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<VertexElement, T, V> producer) {
+    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<VertexElement, T, V> producer, boolean isInferred) {
         preCheckForInstanceCreation();
 
         V instance = finder.get();
-        if(instance == null) instance = addInstance(instanceBaseType, producer, false);
+        if(instance == null) {
+            instance = addInstance(instanceBaseType, producer, isInferred, false);
+        } else {
+            if(isInferred && !instance.isInferred()){
+                throw GraknTxOperationException.nonInferredThingExists(instance);
+            }
+        }
         return instance;
     }
 
@@ -149,7 +119,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param checkNeeded indicates if a check is necessary before adding the instance
      * @return A new instance
      */
-    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean checkNeeded){
+    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean isInferred, boolean checkNeeded){
         if(checkNeeded) preCheckForInstanceCreation();
 
         if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
@@ -157,8 +127,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             vertex().tx().txCache().addedInstance(getId());
+            if(isInferred) instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
         }
-        return producer.apply(instanceVertex, getThis());
+        V instance = producer.apply(instanceVertex, getThis());
+        assert instance != null : "producer should never return null";
+        return instance;
     }
 
     /**
@@ -184,7 +157,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Stream<Role> allRoles = directPlays().keySet().stream();
 
         //Now get the super type plays (Which may also be cached locally within their own context
-        Stream<Role> superSet =superSet().
+        Stream<Role> superSet = this.sups().
                 filter(sup -> !sup.equals(this)). //We already have the plays from ourselves
                 flatMap(sup -> TypeImpl.from(sup).directPlays().keySet().stream());
 
@@ -253,7 +226,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     Stream<V> instancesDirect(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
                 map(EdgeElement::source).
-                flatMap(CommonUtil::optionalToStream).
                 map(source -> vertex().tx().factory().buildShard(source)).
                 flatMap(Shard::<V>links);
     }

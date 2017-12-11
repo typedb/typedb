@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.auto.value.AutoValue;
@@ -31,6 +32,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
@@ -63,12 +65,22 @@ abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    public double fragmentCost() {
+    public double internalFragmentCost() {
         return COST_NODE_INDEX;
     }
 
     @Override
     public boolean hasFixedFragmentCost() {
         return true;
+    }
+
+    @Override
+    public Optional<Long> getShardCount(GraknTx tx) {
+        return Optional.of(labels().stream()
+                .map(tx::<SchemaConcept>getSchemaConcept)
+                .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
+                .flatMap(SchemaConcept::subs)
+                .mapToLong(schemaConcept -> tx.admin().getShardCount(schemaConcept.asType()))
+                .sum());
     }
 }

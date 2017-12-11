@@ -61,6 +61,7 @@ public class JsonSession {
     private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = Executors.defaultThreadFactory().newThread(runnable);
         thread.setDaemon(true);
+        thread.setName("json-session");
         return thread;
     });
 

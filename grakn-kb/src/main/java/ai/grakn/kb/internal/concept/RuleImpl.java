@@ -106,7 +106,7 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
         if(value == null) {
             return null;
         } else {
-            return vertex().tx().graql().parsePattern(value);
+            return vertex().tx().graql().parser().parsePattern(value);
         }
     }
 

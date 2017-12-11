@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
@@ -67,16 +68,15 @@ import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighte
  */
 public abstract class Fragment {
 
-    // TODO: Find a better way to represent these values (either abstractly, or better estimates)
-
-    private static final long NUM_INSTANCES_PER_TYPE = 100;
-    private static final long NUM_SUBTYPES_PER_TYPE = 3;
-    private static final long NUM_RELATIONS_PER_INSTANCE = 30;
-    private static final long NUM_TYPES_PER_ROLE = 3;
-    private static final long NUM_ROLES_PER_TYPE = 3;
-    private static final long NUM_ROLE_PLAYERS_PER_RELATION = 2;
-    private static final long NUM_ROLE_PLAYERS_PER_ROLE = 1;
-    private static final long NUM_RESOURCES_PER_VALUE = 2;
+    // Default values used for estimate internal fragment cost
+    private static final double NUM_INSTANCES_PER_TYPE = 100D;
+    private static final double NUM_SUBTYPES_PER_TYPE = 1.5D;
+    private static final double NUM_RELATIONS_PER_INSTANCE = 30D;
+    private static final double NUM_TYPES_PER_ROLE = 3D;
+    private static final double NUM_ROLES_PER_TYPE = 3D;
+    private static final double NUM_ROLE_PLAYERS_PER_RELATION = 2D;
+    private static final double NUM_ROLE_PLAYERS_PER_ROLE = 1D;
+    private static final double NUM_RESOURCES_PER_VALUE = 2D;
 
     static final double COST_INSTANCES_PER_TYPE = Math.log1p(NUM_INSTANCES_PER_TYPE);
     static final double COST_SUBTYPES_PER_TYPE = Math.log1p(NUM_SUBTYPES_PER_TYPE);
@@ -98,10 +98,24 @@ public abstract class Fragment {
     static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
     static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
-    /**
+    // By default we assume the latest shard is 25% full
+    public static final double SHARD_LOAD_FACTOR = 0.25;
+
+    private Optional<Double> accurateFragmentCost = Optional.empty();
+
+    /*
      * This is the memoized result of {@link #vars()}
      */
-    private @Nullable ImmutableSet<Var> vars = null;
+    private @Nullable
+    ImmutableSet<Var> vars = null;
+
+    /**
+     * @param transform map defining id transform var -> new id
+     * @return transformed fragment with id predicates transformed according to the transform
+     */
+    public Fragment transform(Map<Var, ConceptId> transform) {
+        return this;
+    }
 
     /**
      * Get the corresponding property
@@ -151,8 +165,7 @@ public abstract class Fragment {
      */
     public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
             GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph,
-            Collection<Var> vars, @Nullable Var currentVar
-    ) {
+            Collection<Var> vars, @Nullable Var currentVar) {
         if (currentVar != null) {
             if (!currentVar.equals(start())) {
                 if (vars.contains(start())) {
@@ -200,6 +213,7 @@ public abstract class Fragment {
     abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars);
 
+
     /**
      * The name of the fragment
      */
@@ -216,7 +230,15 @@ public abstract class Fragment {
     /**
      * Get the cost for executing the fragment.
      */
-    public abstract double fragmentCost();
+    public double fragmentCost() {
+        return accurateFragmentCost.orElse(internalFragmentCost());
+    }
+
+    public void setAccurateFragmentCost(double fragmentCost) {
+        accurateFragmentCost = Optional.of(fragmentCost);
+    }
+
+    public abstract double internalFragmentCost();
 
     /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
@@ -224,6 +246,14 @@ public abstract class Fragment {
      */
     public boolean hasFixedFragmentCost() {
         return false;
+    }
+
+    public Fragment getInverse() {
+        return this;
+    }
+
+    public Optional<Long> getShardCount(GraknTx tx) {
+        return Optional.empty();
     }
 
     /**
