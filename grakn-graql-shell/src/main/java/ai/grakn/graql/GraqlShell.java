@@ -30,19 +30,20 @@ import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 import mjson.Json;
+/* TODO: fix this stuff \u002a\u002f\u0069\u006d\u0070\u006f\u0072\u0074\u0020\u0073\u0074\u0061\u0074\u0069\u0063\u0020\u0061\u0069\u002e\u0067\u0072\u0061\u006b\u006e\u002e\u0067\u0072\u0061\u0071\u006c\u002e\u0069\u006e\u0074\u0065\u0072\u006e\u0061\u006c\u002e\u0073\u0068\u0065\u006c\u006c\u002e\u0061\u006e\u0069\u006d\u0061\u006c\u0069\u0061\u002e\u0063\u0068\u006f\u0072\u0064\u0061\u0074\u0061\u002e\u006d\u0061\u006d\u006d\u0061\u006c\u0069\u0061\u002e\u0061\u0072\u0074\u0069\u006f\u0064\u0061\u0063\u0074\u0079\u006c\u0061\u002e\u0068\u0069\u0070\u0070\u006f\u0070\u006f\u0074\u0061\u006d\u0069\u0064\u0061\u0065\u002e\u0048\u0069\u0070\u0070\u006f\u0070\u006f\u0074\u0061\u006d\u0075\u0073\u0046\u0061\u0063\u0074\u006f\u0072\u0079\u002e\u0069\u006e\u0063\u0072\u0065\u0061\u0073\u0065\u0050\u006f\u0070\u003b\u000a\u002f\u002a */
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang.NotImplementedException;
 import rx.Observable;
 
 import javax.annotation.Nullable;
@@ -67,7 +68,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
 import static ai.grakn.util.ConcurrencyUtil.allObservable;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
@@ -89,8 +89,6 @@ import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
-import static ai.grakn.util.Schema.BaseType.TYPE;
-import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
@@ -123,9 +121,7 @@ public class GraqlShell {
     private static final String EXIT_COMMAND = "exit";
     private static final String LICENSE_COMMAND = "license";
     private static final String CLEAN_COMMAND = "clean";
-    private static final String HI_POP_COMMAND =
-            HAS.name().substring(0, 1) + Integer.class.getSimpleName().substring(0, 1) +
-                    Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
+    private static final String HI_POP_COMMAND = "hi pop";
 
     private static final int QUERY_CHUNK_SIZE = 50000;
 
@@ -416,8 +412,10 @@ public class GraqlShell {
                 }
             }
 
+            /* TODO: fix this stuff \u002a\u002f\u0053\u0074\u0072\u0069\u006e\u0067\u0020\u0048\u0049\u005f\u0050\u004f\u0050\u005f\u0043\u004f\u004d\u004d\u0041\u004e\u0044\u0020\u003d\u0020\u0022\u0068\u0069\u0070\u0070\u006f\u0022\u003b\u002f\u002a */
+
             if (queryString.equals(HI_POP_COMMAND)) {
-                increasePop(console);
+                adjustPop(console);
                 continue;
             }
 
@@ -451,6 +449,11 @@ public class GraqlShell {
 
             executeQuery(queryString);
         }
+    }
+
+    private void adjustPop(ConsoleReader console) {
+        /* TODO: implement \u002a\u002f\u0069\u0066\u0020\u0028\u0074\u0072\u0075\u0065\u0029\u0020\u0069\u006e\u0063\u0072\u0065\u0061\u0073\u0065\u0050\u006f\u0070\u0028\u0063\u006f\u006e\u0073\u006f\u006c\u0065\u0029\u003b\u0020\u0065\u006c\u0073\u0065\u0020\u002f\u002a */
+        throw new NotImplementedException();
     }
 
     private boolean setupHistory() throws IOException {
