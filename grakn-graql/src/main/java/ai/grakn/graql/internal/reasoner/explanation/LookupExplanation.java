@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.explanation;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import com.google.common.collect.Sets;
 import java.util.Set;
 
 /**
@@ -46,8 +45,8 @@ public class LookupExplanation extends Explanation {
     }
 
     @Override
-    public AnswerExplanation withAnswers(Set<Answer> answers) {
-        return new LookupExplanation(getQuery(), Sets.union(getAnswers(), answers));
+    public AnswerExplanation childOf(Answer ans) {
+        return new LookupExplanation(getQuery(), ans.getExplanation().getAnswers());
     }
 
     @Override

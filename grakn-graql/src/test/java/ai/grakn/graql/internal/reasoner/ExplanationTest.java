@@ -257,10 +257,11 @@ public class ExplanationTest {
         GetQuery query = eiqb.parse(queryString);
         List<Answer> answers = query.execute();
         testExplanation(answers);
-        Answer answer = answers.stream()
+        Answer inferredAnswer = answers.stream()
                 .filter(ans -> ans.getExplanations().stream().filter(AnswerExplanation::isRuleExplanation).findFirst().isPresent())
                 .findFirst().orElse(null);
-        Set<AnswerExplanation> explanations = answer.getExplanations();
+        Set<AnswerExplanation> explanations = inferredAnswer.getExplanations();
+        assertEquals(explanations.stream().filter(AnswerExplanation::isRuleExplanation).count(), 2);
         assertEquals(explanations.stream().filter(AnswerExplanation::isLookupExplanation).count(), 4);
     }
 

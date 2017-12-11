@@ -49,8 +49,8 @@ public class JoinExplanation extends Explanation {
     }
 
     @Override
-    public AnswerExplanation withAnswers(Set<Answer> answers) {
-        return new JoinExplanation(Sets.union(getAnswers(), answers));
+    public AnswerExplanation childOf(Answer ans) {
+        return new JoinExplanation(Sets.union(this.getAnswers(), ans.getExplanation().getAnswers()));
     }
 
     @Override
