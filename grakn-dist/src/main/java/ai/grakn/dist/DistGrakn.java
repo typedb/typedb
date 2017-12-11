@@ -36,7 +36,7 @@ import java.util.Scanner;
  * @author Michele Orsi
  */
 public class DistGrakn {
-    private static final String SYNCHRONIZED_BOOTUP_LOCK_PATH = "/tmp/.grakn.synchronizedBootupLock";
+    private static final String SYNCHRONIZED_BOOTUP_LOCK_PATH = "/tmp/grakn-synchronized-bootup.lock";
 
     private static final String GRAKN = "grakn";
     private static final String QUEUE = "queue";
