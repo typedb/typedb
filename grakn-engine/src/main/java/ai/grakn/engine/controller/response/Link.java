@@ -74,6 +74,27 @@ public abstract class Link implements Jacksonisable{
     }
 
     /**
+     * Creates a link to fetch all the {@link EmbeddedAttribute}s of a {@link Thing}
+     */
+    public static Link createAttributeLink(ai.grakn.concept.Thing thing){
+        return create(REST.resolveTemplate(WebPath.CONCEPT_ATTRIBUTES, thing.keyspace().getValue(), thing.getId().getValue()));
+    }
+
+    /**
+     * Creates a link to fetch all the {@link EmbeddedAttribute}s of a {@link Thing}
+     */
+    public static Link createKeyLink(ai.grakn.concept.Thing thing){
+        return create(REST.resolveTemplate(WebPath.CONCEPT_KEYS, thing.keyspace().getValue(), thing.getId().getValue()));
+    }
+
+    /**
+     * Creates a link to fetch all the {@link Relationship)s of a {@link Thing}
+     */
+    public static Link createRelationshipLink(ai.grakn.concept.Thing thing){
+        return create(REST.resolveTemplate(WebPath.CONCEPT_RELATIONSHIPS, thing.keyspace().getValue(), thing.getId().getValue()));
+    }
+
+    /**
      * Creates a link to fetch the instances of a {@link Type}
      */
     public static Link createInstanceLink(ai.grakn.concept.Type type){

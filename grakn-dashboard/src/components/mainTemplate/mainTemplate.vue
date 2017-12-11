@@ -25,7 +25,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <nav-bar :componentCenterLeft="componentCenterLeft" :componentCenter="componentCenter" :componentCenterRight="componentCenterRight" v-on:toogle-sidebar="showSideBar=!showSideBar"></nav-bar>
     </div>
     <div class="content">
-        <side-bar :showSideBar="showSideBar"></side-bar><spinner></spinner>
+        <side-bar :showSideBar="showSideBar"></side-bar>
         <keep-alive include="GraphPage">
             <router-view></router-view>
         </keep-alive>
@@ -55,7 +55,6 @@ import NavBar from './navbar.vue';
 import SignupModal from './signupModal.vue';
 import SideBar from './sidebar.vue';
 import User from '../../js/User';
-import Spinner from '../Spinner.vue';
 
 
 const computeComponentCenter = function computeComponentCenter(path) {
@@ -90,7 +89,6 @@ export default {
     NavBar,
     SignupModal,
     SideBar,
-    Spinner
   },
   beforeRouteEnter(to, from, next) {
     next((vm) => {

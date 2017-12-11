@@ -17,7 +17,7 @@
  */
 
 
-import * as API from '../util/HALTerms';
+import * as API from '../Parser/APIUtils';
 import NodeSettings from '../NodeSettings';
 
 /*

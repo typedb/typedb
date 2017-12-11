@@ -35,21 +35,21 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class MatrixKBII extends TestKB {
+public class LinearTransitivityMatrixKB extends TestKB {
 
     private final static Label key = Label.of("index");
-    private final static String gqlFile = "matrix-testII.gql";
+    private final static String gqlFile = "linearTransitivity.gql";
 
     private final int n;
     private final int m;
 
-    private MatrixKBII(int n, int m){
+    private LinearTransitivityMatrixKB(int n, int m){
         this.m = m;
         this.n = n;
     }
 
     public static SampleKBContext context(int n, int m) {
-        return new MatrixKBII(n, m).makeContext();
+        return new LinearTransitivityMatrixKB(n, m).makeContext();
     }
 
     @Override
@@ -67,10 +67,10 @@ public class MatrixKBII extends TestKB {
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationshipType Q = graph.getRelationshipType("Q");
         ConceptId[][] aInstancesIds = new ConceptId[n+1][m+1];
-        Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
+        Thing aInst = putEntityWithResource(graph, "a", graph.getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++) {
             for (int j = 1; j <= m; j++) {
-                aInstancesIds[i][j] = putEntity(graph, "a" + i + "," + j, aEntity, key).getId();
+                aInstancesIds[i][j] = putEntityWithResource(graph, "a" + i + "," + j, aEntity, key).getId();
             }
         }
 

@@ -26,13 +26,14 @@ import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
- * Compute all the shortest path(s) between two instances.
+ * Compute the shortest path between two instances.
  *
  * @author Jason Liu
  */
-public interface PathQuery extends ComputeQuery<List<List<Concept>>> {
+public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
 
     /**
      * @param sourceId the id of the source instance
@@ -66,7 +67,7 @@ public interface PathQuery extends ComputeQuery<List<List<Concept>>> {
      * @return the list of shortest paths
      */
     @Override
-    List<List<Concept>> execute();
+    Optional<List<Concept>> execute();
 
     /**
      * @param tx the transaction to execute the query on

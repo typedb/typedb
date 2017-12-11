@@ -367,9 +367,6 @@ class GraqlSession {
         switch (outputFormat) {
             case "json":
                 return Printers.json();
-            case "hal":
-                // TODO: Make this parameter configurable
-                return Printers.hal(tx.keyspace(), 100);
             case "graql":
             default:
                 return Printers.graql(true, resources);
