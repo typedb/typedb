@@ -30,7 +30,7 @@ mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
 degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
-cluster        : CLUSTER                   ('in' inList)? ';' clusterParam* ;
+cluster        : CLUSTER ('of' id    )?    ('in' inList)? ';' clusterParam* ;
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
