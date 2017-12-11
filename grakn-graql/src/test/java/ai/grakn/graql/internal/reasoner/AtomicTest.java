@@ -20,9 +20,6 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
@@ -32,7 +29,6 @@ import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
@@ -47,17 +43,14 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.stream.Collectors;
-import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -74,9 +67,6 @@ public class AtomicTest {
 
     @ClassRule
     public static final SampleKBContext roleInferenceSet = SampleKBContext.load("roleInferenceTest.gql");
-
-    @ClassRule
-    public static final SampleKBContext typeInferenceSet = SampleKBContext.load("typeInferenceTest.gql");
 
     @ClassRule
     public static final SampleKBContext ruleApplicabilitySet = SampleKBContext.load("ruleApplicabilityTest.gql");
@@ -852,232 +842,6 @@ public class AtomicTest {
     /**
      * ##################################
      *
-     *      TYPE INFERENCE Tests
-     *
-     * ##################################
-     */
-
-    @Test
-    public void testTypeInference_singleGuard() {
-        GraknTx graph = typeInferenceSet.tx();
-
-        //parent of all roles so all relations possible
-        String patternString = "{$x isa noRoleEntity; ($x, $y);}";
-        String subbedPatternString = "{$x id '" + conceptId(graph, "noRoleEntity") + "';($x, $y);}";
-
-        //SRE -> rel2
-        //sub(SRE)=TRE -> rel3
-        String patternString2 = "{$x isa singleRoleEntity; ($x, $y);}";
-        String subbedPatternString2 = "{$x id '" + conceptId(graph, "singleRoleEntity") + "';($x, $y);}";
-
-        //TRE -> rel3
-        String patternString3 = "{$x isa twoRoleEntity; ($x, $y);}";
-        String subbedPatternString3 = "{$x id '" + conceptId(graph, "twoRoleEntity") + "';($x, $y);}";
-
-        List<RelationshipType> possibleTypes = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation2")),
-                graph.getSchemaConcept(Label.of("relation3"))
-        );
-
-        typeInference(allRelations(graph), patternString, subbedPatternString, graph);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
-        typeInference(possibleTypes, patternString3, subbedPatternString3, graph);
-    }
-
-    @Test
-    public void testTypeInference_doubleGuard() {
-        GraknTx graph = typeInferenceSet.tx();
-
-        //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
-        String patternString = "{$x isa singleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString = "{($x, $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-
-        //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
-        String patternString2 = "{$x isa twoRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString2 = "{($x, $y);" +
-                "$x id '" + conceptId(graph, "twoRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-
-        //{rel1} ^ {rel1, rel2, rel3} = {rel1}
-        String patternString3 = "{$x isa yetAnotherSingleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString3 = "{($x, $y);" +
-                "$x id '" + conceptId(graph, "yetAnotherSingleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-
-        List<RelationshipType> possibleTypes = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation2")),
-                graph.getSchemaConcept(Label.of("relation3"))
-        );
-
-        typeInference(possibleTypes, patternString, subbedPatternString, graph);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
-        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation1"))), patternString3, subbedPatternString3, graph);
-    }
-
-    @Test
-    public void testTypeInference_singleRole() {
-        GraknTx graph = typeInferenceSet.tx();
-        String patternString = "{(role1: $x, $y);}";
-        String patternString2 = "{(role2: $x, $y);}";
-        String patternString3 = "{(role3: $x, $y);}";
-
-        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation1"))), patternString, graph);
-        typeInference(allRelations(graph), patternString2, graph);
-
-        List<RelationshipType> possibleTypes = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation2")),
-                graph.getSchemaConcept(Label.of("relation3"))
-        );
-        typeInference(possibleTypes, patternString3, graph);
-    }
-
-    @Test
-    public void testTypeInference_singleRole_subType() {
-        GraknTx graph = typeInferenceSet.tx();
-        String patternString = "{(subRole2: $x, $y);}";
-        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation3"))), patternString, graph);
-    }
-
-    @Test
-    public void testTypeInference_singleRole_singleGuard() {
-        GraknTx graph = typeInferenceSet.tx();
-
-        //{rel1, rel2, rel3} ^ {rel2, rel3}
-        String patternString = "{(role2: $x, $y); $y isa singleRoleEntity;}";
-        String subbedPatternString = "{(role2: $x, $y);" +
-                "$y id '" + conceptId(graph, "singleRoleEntity") + "';}";
-        //{rel1, rel2, rel3} ^ {rel2, rel3}
-        String patternString2 = "{(role2: $x, $y); $y isa twoRoleEntity;}";
-        String subbedPatternString2 = "{(role2: $x, $y);" +
-                "$y id '" + conceptId(graph, "twoRoleEntity") + "';}";
-        //{rel1} ^ {rel1, rel2, rel3}
-        String patternString3 = "{(role1: $x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString3 = "{(role1: $x, $y);" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") + "';}";
-
-        List<RelationshipType> possibleTypes = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation2")),
-                graph.getSchemaConcept(Label.of("relation3"))
-        );
-
-        typeInference(possibleTypes, patternString, subbedPatternString, graph);
-        typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
-        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation1"))), patternString3, subbedPatternString3, graph);
-    }
-
-    @Test
-    public void testTypeInference_singleRole_singleGuard_bothConceptsAreSubConcepts() {
-        GraknTx graph = typeInferenceSet.tx();
-
-        //{rel3} ^ {rel2, rel3}
-        String patternString = "{(subRole2: $x, $y); $y isa twoRoleEntity;}";
-        String subbedPatternString = "{(subRole2: $x, $y);" +
-                "$y id '" + conceptId(graph, "twoRoleEntity") + "';}";
-        //{rel3} ^ {rel1, rel2, rel3}
-        String patternString2 = "{(subRole2: $x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString2 = "{(subRole2: $x, $y);" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") + "';}";
-
-        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation3"))), patternString, subbedPatternString, graph);
-        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation3"))), patternString2, subbedPatternString2, graph);
-    }
-
-    @Test
-    public void testTypeInference_singleRole_singleGuard_typeContradiction() {
-        GraknTx graph = typeInferenceSet.tx();
-
-        //{rel1} ^ {rel2}
-        String patternString = "{(role1: $x, $y); $y isa singleRoleEntity;}";
-        String subbedPatternString = "{(role1: $x, $y);" +
-                "$y id '" + conceptId(graph, "singleRoleEntity") + "';}";
-        String patternString2 = "{(role1: $x, $y); $x isa singleRoleEntity;}";
-        String subbedPatternString2 = "{(role1: $x, $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';}";
-
-        typeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
-        typeInference(Collections.emptyList(), patternString2, subbedPatternString2, graph);
-    }
-
-    @Test
-    public void testTypeInference_singleRole_doubleGuard() {
-        GraknTx graph = typeInferenceSet.tx();
-        //{rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString = "{$x isa singleRoleEntity;(role2: $x, $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString = "{(role2: $x, $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-
-        List<RelationshipType> possibleTypes = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation2")),
-                graph.getSchemaConcept(Label.of("relation3"))
-        );
-        typeInference(possibleTypes, patternString, subbedPatternString, graph);
-    }
-
-    @Test
-    public void testTypeInference_doubleRole_doubleGuard() {
-        GraknTx graph = typeInferenceSet.tx();
-
-        //{rel1, rel2, rel3} ^ {rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString = "{$x isa threeRoleEntity;(subRole2: $x, role3: $y); $y isa threeRoleEntity;}";
-        String subbedPatternString = "{(subRole2: $x, role3: $y);" +
-                "$x id '" + conceptId(graph, "threeRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "threeRoleEntity") + "';}";
-
-        //{rel1, rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString2 = "{$x isa threeRoleEntity;(role2: $x, role3: $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString2 = "{(role2: $x, role3: $y);" +
-                "$x id '" + conceptId(graph, "threeRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-
-        typeInference(Collections.singletonList(graph.getSchemaConcept(Label.of("relation3"))), patternString, subbedPatternString, graph);
-
-        List<RelationshipType> possibleTypes = Lists.newArrayList(
-                graph.getSchemaConcept(Label.of("relation2")),
-                graph.getSchemaConcept(Label.of("relation3"))
-        );
-        typeInference(possibleTypes, patternString2, subbedPatternString2, graph);
-    }
-
-    @Test
-    public void testTypeInference_doubleRole_doubleGuard_contradiction() {
-        GraknTx graph = typeInferenceSet.tx();
-
-        //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity;}";
-        String subbedPatternString = "{(role1: $x, role2: $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherTwoRoleEntity") +"';}";
-
-        //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
-        String patternString2 = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherSingleRoleEntity;}";
-        String subbedPatternString2 = "{(role1: $x, role2: $y);" +
-                "$x id '" + conceptId(graph, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(graph, "anotherSingleRoleEntity") +"';}";
-
-        typeInference(Collections.emptyList(), patternString, subbedPatternString, graph);
-        typeInference(Collections.emptyList(), patternString2, subbedPatternString2, graph);
-    }
-
-    @Test
-    public void testTypeInference_metaGuards() {
-        GraknTx graph = typeInferenceSet.tx();
-        String patternString = "{($x, $y);$x isa entity; $y isa entity;}";
-        typeInference(allRelations(graph), patternString, graph);
-    }
-
-    @Test
-    public void testTypeInference_genericRelation() {
-        GraknTx graph = typeInferenceSet.tx();
-        String patternString = "{($x, $y);}";
-        typeInference(allRelations(graph), patternString, graph);
-    }
-
-    /**
-     * ##################################
-     *
      *      UNIFICATION Tests
      *
      * ##################################
@@ -1444,40 +1208,6 @@ public class AtomicTest {
         assertEquals(expectedRoleMAp, roleMap);
 
     }
-    private void typeInference(List<RelationshipType> possibleTypes, String pattern, GraknTx graph){
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-
-        if (possibleTypes.size() == 1){
-            assertEquals(possibleTypes, relationshipTypes);
-            assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
-        } else {
-            assertTrue(CollectionUtils.isEqualCollection(possibleTypes, relationshipTypes));
-            assertEquals(atom.getSchemaConcept(), null);
-        }
-    }
-
-    private void typeInference(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, GraknTx graph){
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
-        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom subbedAtom = (RelationshipAtom) subbedQuery.getAtom();
-
-        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationshipType> subbedRelationshipTypes = subbedAtom.inferPossibleRelationTypes(new QueryAnswer());
-        if (possibleTypes.size() == 1){
-            assertEquals(possibleTypes, relationshipTypes);
-            assertEquals(relationshipTypes, subbedRelationshipTypes);
-            assertEquals(atom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
-            assertEquals(subbedAtom.getSchemaConcept(), Iterables.getOnlyElement(possibleTypes));
-        } else {
-            assertTrue(CollectionUtils.isEqualCollection(possibleTypes, relationshipTypes));
-            assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, subbedRelationshipTypes));
-            assertEquals(atom.getSchemaConcept(), null);
-            assertEquals(subbedAtom.getSchemaConcept(), null);
-        }
-    }
 
     /**
      * checks that the child query is not unifiable with parent - a unifier does not exist
@@ -1543,15 +1273,6 @@ public class AtomicTest {
                 ReasonerQueries.atomic(conjunction(childPatternString, graph), graph),
                 checkInverse,
                 checkEquality);
-    }
-
-    private List<RelationshipType> allRelations(GraknTx tx){
-        RelationshipType metaType = tx.getRelationshipType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
-        return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
-    }
-
-    private ConceptId conceptId(GraknTx graph, String type){
-        return graph.getEntityType(type).instances().map(Concept::getId).findFirst().orElse(null);
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){

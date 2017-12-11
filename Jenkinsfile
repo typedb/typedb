@@ -139,6 +139,7 @@ def buildGrakn() {
     sh "build-grakn.sh ${env.BRANCH_NAME}"
 }
 
+
 def shouldRunAllTests() {
     // We run all the tests for all PRs to keep things stable
     return true
@@ -220,9 +221,6 @@ def runBuild() {
 
     //This sets properties in the Jenkins server.
     properties([
-        pipelineTriggers([
-            issueCommentTrigger('.*!rtg.*')
-        ]),
         buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '7'))
     ])
 
@@ -231,6 +229,9 @@ def runBuild() {
 
         //Keep fewer artifacts for PRs
         properties([
+            pipelineTriggers([
+              issueCommentTrigger('.*!rtg.*')
+            ]),
             buildDiscarder(logRotator(numToKeepStr: '7', artifactNumToKeepStr: '1'))
         ])
     }
@@ -289,6 +290,16 @@ def runBuild() {
 
     graknNode { workspace ->
         checkout scm
+
+        // Push to Grakn Maven if tests pass
+        if (isMainBranch()) {
+            withMaven(
+                options: [artifactsPublisher(disabled: true)],
+                mavenSettingsConfig: '8358fa5c-17c9-4a16-b501-4ebacb7f163d',
+            ){
+                sh 'mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo'
+            }
+        }
 
         // only deploy long-running instance on stable branch if all tests pass
         if (shouldDeployLongRunningInstance()) {

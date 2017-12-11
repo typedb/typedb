@@ -16,23 +16,26 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.api;
+package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.response.Attribute;
 import ai.grakn.engine.controller.response.AttributeType;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.engine.controller.response.EmbeddedAttribute;
 import ai.grakn.engine.controller.response.Entity;
 import ai.grakn.engine.controller.response.EntityType;
+import ai.grakn.engine.controller.response.Link;
 import ai.grakn.engine.controller.response.Relationship;
 import ai.grakn.engine.controller.response.RelationshipType;
 import ai.grakn.engine.controller.response.Role;
+import ai.grakn.engine.controller.response.RolePlayer;
 import ai.grakn.engine.controller.response.Rule;
+import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.graql.Pattern;
@@ -41,9 +44,11 @@ import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import mjson.Json;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -51,9 +56,12 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -82,13 +90,14 @@ public class ConceptControllerTest {
     private static Attribute attributeWrapper2;
     private static Rule ruleWrapper;
 
+    private static ai.grakn.concept.Entity entity;
+
     public static SessionContext sessionContext = SessionContext.create();
 
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         factory = EngineGraknTxFactory.createAndLoadSystemSchema(mockLockProvider, GraknConfig.create());
         new ConceptController(factory, spark, new MetricRegistry());
     });
-
     @ClassRule
     public static final RuleChain chain = RuleChain.emptyRuleChain().around(sessionContext).around(sparkContext);
 
@@ -107,7 +116,7 @@ public class ConceptControllerTest {
             ai.grakn.concept.Attribute attribute2 = attributeType.putAttribute("An attribute 2");
 
             ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).attribute(attributeType);
-            ai.grakn.concept.Entity entity = entityType.addEntity().attribute(attribute1).attribute(attribute2);
+            entity = entityType.addEntity().attribute(attribute1).attribute(attribute2);
 
             ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
             ai.grakn.concept.Relationship relationship = relationshipType.addRelationship().addRolePlayer(role1, entity).addRolePlayer(role2, entity);
@@ -136,6 +145,48 @@ public class ConceptControllerTest {
         }
     }
 
+    @Test
+    public void whenGettingRelationships_EnsureRolePlayersAreReturned() throws IOException {
+        //Get Expected Relationships
+        Set<RolePlayer> relationshipsExpected = new HashSet<>();
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+            entity.plays().forEach(role -> {
+                Link roleWrapper = Link.create(role);
+                entity.relationships(role).forEach(relationship -> {
+                    Link relationshipWrapper = Link.create(relationship);
+                    relationshipsExpected.add(RolePlayer.create(roleWrapper, relationshipWrapper));
+                });
+            });
+        }
+
+        //Make the request
+        String request = entityWrapper.relationships().id();
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.getStatusCode());
+
+        //Check relationships are embedded
+        List<RolePlayer> relationships = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<RolePlayer>>(){});
+        assertEquals(relationshipsExpected.size(), relationships.size());
+        assertTrue(relationships.containsAll(relationshipsExpected));
+    }
+
+    @Test
+    public void whenGettingAttributesOfConcept_EnsureEmbeddedAttributesAreReturned() throws IOException {
+        //Get the attributes we expect
+        List<EmbeddedAttribute> expectedAttributes;
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
+            expectedAttributes = entity.attributes().map(EmbeddedAttribute::create).collect(Collectors.toList());
+        }
+
+        //Ask the controller for the attributes
+        String request = entityWrapper.attributes().id();
+        Response response = RestAssured.when().get(request);
+        assertEquals(SC_OK, response.getStatusCode());
+
+        List<EmbeddedAttribute> attributes = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<EmbeddedAttribute>>(){});
+        assertEquals(expectedAttributes.size(), attributes.size());
+        assertTrue(attributes.containsAll(expectedAttributes));
+    }
 
     @Test
     public void whenGettingTypesInstances_EnsureInstancesAreReturned() throws JsonProcessingException {
@@ -154,10 +205,14 @@ public class ConceptControllerTest {
         assertConceptsReturned(REST.WebPath.KEYSPACE_ROLE, (response) -> response.as(Role[].class), roleWrapper1, roleWrapper2);
         assertConceptsReturned(REST.WebPath.KEYSPACE_RULE, (response) -> response.as(Rule[].class), ruleWrapper);
 
-        //TODO: Figure out how to get jackson to build child classes
-        //assertConceptsReturned(REST.WebPath.KEYSPACE_TYPE, (response) -> response.as(RelationshipType[].class), relationshipTypeWrapper);
-        //assertConceptsReturned(REST.WebPath.KEYSPACE_TYPE, (response) -> response.as(EntityType[].class), entityTypeWrapper);
-        //assertConceptsReturned(REST.WebPath.KEYSPACE_TYPE, (response) -> response.as(AttributeType[].class), attributeTypeWrapper);
+        //Manual Check is necessary due to collection containing mixture of concepts
+        String request = REST.resolveTemplate(REST.WebPath.KEYSPACE_TYPE, keyspace.getValue());
+        List<Json> response = Json.read(RestAssured.when().get(request).body().asString()).asJsonList();
+        Set<Concept> types = response.stream().map(JsonConceptBuilder::<Concept>build).collect(Collectors.toSet());
+
+        assertTrue(String.format("Type {$s} missing from response", relationshipTypeWrapper), types.contains(relationshipTypeWrapper));
+        assertTrue(String.format("Type {$s} missing from response", attributeTypeWrapper), types.contains(attributeTypeWrapper));
+        assertTrue(String.format("Type {$s} missing from response", entityTypeWrapper), types.contains(entityTypeWrapper));
     }
 
     private static void assertConceptsReturned(String path, Function<Response, Concept []> wrapper, Concept ... concepts){

@@ -40,6 +40,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.factory.GraknSessionImpl;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.kb.admin.GraknAdmin;
@@ -56,6 +57,7 @@ import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.concept.TypeImpl;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -86,6 +88,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -109,7 +112,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     //----------------------------- Shared Variables
     private final GraknSession session;
-    private final CommitLog commitLog;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
@@ -132,7 +134,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
-        this.commitLog = new CommitLog();
 
         //Initialise Graph Caches
         globalCache = new GlobalCache(session.config());
@@ -193,10 +194,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         txCache().openTx(txType);
     }
 
-    public CommitLog commitLog(){
-        return commitLog;
-    }
-
     @Override
     public Keyspace keyspace() {
         return session().keyspace();
@@ -238,12 +235,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <T extends Concept> Optional<T> buildConcept(Vertex vertex) {
+    public <T extends Concept> T buildConcept(Vertex vertex) {
         return factory().buildConcept(vertex);
     }
 
     @Override
-    public <T extends Concept> Optional<T> buildConcept(Edge edge) {
+    public <T extends Concept> T buildConcept(Edge edge) {
         return factory().buildConcept(edge);
     }
 
@@ -342,7 +339,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             if (vertices.hasNext()) {
                 LOG.warn(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
             }
-            return factory().buildConcept(vertex);
+            return Optional.of(factory().buildConcept(vertex));
         } else {
             return Optional.empty();
         }
@@ -362,8 +359,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
         Set<Concept> concepts = new HashSet<>();
-        getTinkerTraversal().V().has(key.name(), value).
-                forEachRemaining(v -> factory().buildConcept(v).ifPresent(concepts::add));
+        getTinkerTraversal().V().has(key.name(), value).forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
         return concepts;
     }
 
@@ -580,7 +576,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         String edgeId = id.getValue().substring(1);
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if (traversal.hasNext()) {
-            return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
+            return Optional.of(factory().buildConcept(factory().buildEdgeElement(traversal.next())));
         }
         return Optional.empty();
     }
@@ -728,8 +724,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         close(true, true);
     }
 
-    private Optional<String> close(boolean commitRequired, boolean trackLogs) {
-        Optional<String> logs = Optional.empty();
+    private Optional<CommitLog> close(boolean commitRequired, boolean trackLogs) {
+        Optional<CommitLog> logs = Optional.empty();
         if (isClosed()) {
             return logs;
         }
@@ -760,11 +756,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Optional<String> commitSubmitNoLogs() throws InvalidKBException {
+    public Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
 
-    private Optional<String> commitWithLogs(boolean trackingNeeded) throws InvalidKBException {
+    private Optional<CommitLog> commitWithLogs(boolean trackingNeeded) throws InvalidKBException {
         validateGraph();
 
         Map<ConceptId, Long> newInstances = txCache().getShardingCount();
@@ -779,10 +775,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         //If we have logs to commit get them and add them
         if (logsExist) {
             if(trackingNeeded) {
-                commitLog().addNewInstances(newInstances);
-                commitLog().addNewAttributes(newAttributes);
+                ((GraknSessionImpl) session()).commitLogHandler().addNewInstances(newInstances);
+                ((GraknSessionImpl) session()).commitLogHandler().addNewAttributes(newAttributes);
             } else {
-                return Optional.of(CommitLog.formatTxLog(newInstances, newAttributes).toString());
+                Map<String, Set<ConceptId>> attributes = newAttributes.entrySet().stream().
+                        collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.singleton(e.getValue())));
+                return Optional.of(CommitLog.create(keyspace(), newInstances, attributes));
             }
         }
 
@@ -816,7 +814,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return Optional.of(uri);
     }
 
-    public boolean validElement(Element element) {
+    public boolean isValidElement(Element element) {
         return element != null;
     }
 

@@ -25,7 +25,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -173,8 +172,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
                             outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
                             has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), getLabelId().getValue()).
                             toStream().
-                            map(edge -> vertex().tx().factory().<Relationship>buildConcept(edge)).
-                            flatMap(CommonUtil::optionalToStream);
+                            map(edge -> vertex().tx().factory().<Relationship>buildConcept(edge));
                 });
     }
 

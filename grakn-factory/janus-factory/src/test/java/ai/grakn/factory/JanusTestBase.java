@@ -19,9 +19,9 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.kb.internal.log.CommitLogHandler;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -36,9 +36,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public abstract class JanusTestBase {
-    protected final static GraknSession session = mock(GraknSession.class);
+    protected final static GraknSessionImpl session = mock(GraknSessionImpl.class);
     private final static File CONFIG_LOCATION = Paths.get("../../conf/main/grakn.properties").toFile();
     private final static Keyspace TEST_SHARED = Keyspace.of("shared");
+    private final static CommitLogHandler commitLogHandler = mock(CommitLogHandler.class);
     static TxFactoryJanus janusGraphFactory;
     final static GraknConfig TEST_CONFIG = GraknConfig.read(CONFIG_LOCATION);
 
@@ -53,6 +54,7 @@ public abstract class JanusTestBase {
         when(session.keyspace()).thenReturn(TEST_SHARED);
         when(session.uri()).thenReturn(Grakn.IN_MEMORY);
         when(session.config()).thenReturn(TEST_CONFIG);
+        when(session.commitLogHandler()).thenReturn(commitLogHandler);
         janusGraphFactory = new TxFactoryJanus(session);
     }
 

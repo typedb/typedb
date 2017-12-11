@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.printer;
 
-import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Printer;
 import mjson.Json;
@@ -42,7 +41,4 @@ public class Printers {
         return new JsonPrinter();
     }
 
-    public static Printer hal(Keyspace keyspace, int limitEmbedded) {
-        return new HALPrinter(keyspace, limitEmbedded);
-    }
 }

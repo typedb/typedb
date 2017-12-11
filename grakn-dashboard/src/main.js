@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-
 import Vue from 'vue';
 import VeeValidate from 'vee-validate';
 import VueRouter from 'vue-router';
@@ -24,7 +23,6 @@ import VueRouter from 'vue-router';
 import User, { DEFAULT_KEYSPACE } from './js/User';
 import EngineClient from './js/EngineClient';
 import routes from './routes';
-
 
 Array.prototype.flatMap = function (lambda) {
   return Array.prototype.concat.apply([], this.map(lambda));
@@ -54,7 +52,7 @@ const checkCurrentKeySpace = () => EngineClient.fetchKeyspaces().then((resp) => 
 // - current keyspace saved in localStorage is still available in Grakn
 router.beforeEach((to, from, next) => {
   checkCurrentKeySpace()
-  .then(() => { next(); });
+    .then(() => { next(); });
 });
 
 new Vue({

@@ -38,7 +38,7 @@ import java.util.function.Consumer;
 public class TransitivityChainKB extends TestKB {
 
     private final static Label key = Label.of("index");
-    private final static String gqlFile = "simple-transitivity.gql";
+    private final static String gqlFile = "quadraticTransitivity.gql";
 
     private final int n;
 
@@ -64,10 +64,10 @@ public class TransitivityChainKB extends TestKB {
 
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationshipType q = graph.getRelationshipType("Q");
-        Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
+        Thing aInst = putEntityWithResource(graph, "a", graph.getEntityType("entity2"), key);
         ConceptId[] aInstanceIds = new ConceptId[n];
         for(int i = 0 ; i < n ;i++) {
-            aInstanceIds[i] = putEntity(graph, "a" + i, aEntity, key).getId();
+            aInstanceIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).getId();
         }
 
         q.addRelationship()

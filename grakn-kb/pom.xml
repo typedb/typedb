@@ -34,6 +34,10 @@
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
+        </dependency>
         <!--Spark Computer Dependencies-->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>

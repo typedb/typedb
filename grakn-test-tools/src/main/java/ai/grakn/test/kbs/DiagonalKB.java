@@ -70,7 +70,7 @@ public class DiagonalKB extends TestKB {
         long inserts = 0;
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                instanceIds[i][j] = putEntity(tx, "a" + i + "," + j, entity1, key).getId();
+                instanceIds[i][j] = putEntityWithResource(tx, "a" + i + "," + j, entity1, key).getId();
                 inserts++;
                 if (inserts % 100 == 0) System.out.println("inst inserts: " + inserts);
 

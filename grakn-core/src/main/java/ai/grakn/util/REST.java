@@ -45,6 +45,7 @@ public class REST {
         public static final String KEYSPACE_ROLE = "/kb/:keyspace/role";
         public static final String KEYSPACE_RULE = "/kb/:keyspace/rule";
         public static final String KEYSPACE_GRAQL = "/kb/:keyspace/graql";
+        public static final String KEYSPACE_EXPLAIN = "/kb/:keyspace/explain";
         public static final String COMMIT_LOG_URI = "/kb/:keyspace/commit_log";
 
         /**
@@ -52,6 +53,9 @@ public class REST {
          */
         public static final String CONCEPT_LINK = "/kb/:keyspace/:base-type/:id";
         public static final String CONCEPT_ID = "/kb/:keyspace/concept/:id";
+        public static final String CONCEPT_ATTRIBUTES = "/kb/:keyspace/concept/:id/attributes";
+        public static final String CONCEPT_KEYS = "/kb/:keyspace/concept/:id/keys";
+        public static final String CONCEPT_RELATIONSHIPS = "/kb/:keyspace/concept/:id/relationships";
         public static final String TYPE_LABEL = "/kb/:keyspace/type/:label";
         public static final String TYPE_INSTANCES = "/kb/:keyspace/type/:label/instances";
         public static final String RULE_LABEL = "/kb/:keyspace/rule/:label";
@@ -62,27 +66,8 @@ public class REST {
          * URIs to System Controller endpoints
          */
         public static final String STATUS = "/status";
+        public static final String VERSION = "/version";
         public static final String METRICS = "/metrics";
-
-        /**
-         * URIs to concept controller endpoints
-         */
-        @Deprecated
-        public static class Concept {
-            @Deprecated
-            public static final String CONCEPT = "/kb/concept/";
-        }
-
-        /**
-         * URIs to dashboard controller endpoints
-         */
-        @Deprecated
-        public static class Dashboard {
-            @Deprecated
-            public static final String EXPLORE = "/dashboard/explore/";
-            @Deprecated
-            public static final String EXPLAIN = "/dashboard/explain";
-        }
     }
 
     /**
@@ -93,35 +78,20 @@ public class REST {
         public static final String LABEL_PARAMETER = ":label";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
-        public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String LIMIT_PARAMETER = "limit";
         public static final String OFFSET_PARAMETER = "offset";
         public static final String FORMAT = "format";
-
-        //Commit Logs
-        public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
-        public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
-        public static final String COMMIT_LOG_CONCEPT_ID = "concept-id";
-        public static final String COMMIT_LOG_SHARDING_COUNT = "sharding-count";
-
-        /**
-         * Concept controller request parameters
-         */
-        public static final class Concept {
-            public static final String LIMIT_EMBEDDED = "limitEmbedded";
-            public static final String OFFSET_EMBEDDED = "offsetEmbedded";
-        }
 
         /**
          * Graql controller request parameters
          */
         public static final class Graql {
             public static final String QUERY = "query";
-            public static final String INFER = "infer";
-            public static final String MULTI = "multi";
+            public static final String EXECUTE_WITH_INFERENCE = "infer";
+            public static final String ALLOW_MULTIPLE_QUERIES = "multi";
             public static final String TX_TYPE = "txType";
-            public static final String LIMIT_EMBEDDED = "limitEmbedded";
             public static final String DEFINE_ALL_VARS = "defineAllVars";
+            public static final String LOADING_DATA = "loading";
         }
     }
 
@@ -140,7 +110,6 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
-        public static final String GET_METHOD = "TASK_ID";
     }
 
     /**
@@ -154,19 +123,9 @@ public class REST {
          * Response content types
          */
         public static class ContentType {
-            public static final String APPLICATION_JSON_GRAQL = "application/graql+json";
-            public static final String APPLICATION_JSON = "application/json";
             public static final String APPLICATION_TEXT = "application/text";
-            public static final String APPLICATION_HAL ="application/hal+json";
+            public static final String APPLICATION_JSON = "application/json";
             public static final String APPLICATION_ALL ="*/*";
-        }
-
-        /**
-         * Graql controller response fields
-         */
-        public static class Graql {
-            public static final String RESPONSE = "response";
-            public static final String ORIGINAL_QUERY = "originalQuery";
         }
 
         /**

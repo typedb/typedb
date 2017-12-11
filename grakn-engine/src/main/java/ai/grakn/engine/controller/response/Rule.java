@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.util.Schema;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
@@ -55,6 +56,6 @@ public abstract class Rule extends SchemaConcept{
             @JsonProperty("subs") Set<Link> subs,
             @Nullable @JsonProperty("when") String when,
             @Nullable @JsonProperty("then") String then){
-        return new AutoValue_Rule(id, selfLink, label, implicit, sup, subs, when, then);
+        return new AutoValue_Rule(Schema.BaseType.RULE.name(), id, selfLink, label, implicit, sup, subs, when, then);
     }
 }

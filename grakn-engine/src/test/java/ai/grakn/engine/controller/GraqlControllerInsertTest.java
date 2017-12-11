@@ -28,8 +28,10 @@ import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
@@ -37,21 +39,21 @@ import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.util.Collections;
 import java.util.Optional;
 
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.exception;
 import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.jsonResponse;
-import static ai.grakn.engine.controller.GraqlControllerReadOnlyTest.stringResponse;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
-import static ai.grakn.util.REST.Request.Graql.INFER;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
+import static ai.grakn.util.REST.Request.Graql.EXECUTE_WITH_INFERENCE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -60,6 +62,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -69,18 +72,21 @@ public class GraqlControllerInsertTest {
     private final GraknTx tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
-    private static TaskManager taskManager = mock(TaskManager.class);
-    private static PostProcessor postProcessor = mock(PostProcessor.class);
-    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
+    private static final TaskManager taskManager = mock(TaskManager.class);
+    private static final PostProcessor postProcessor = mock(PostProcessor.class);
+    private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
+    private static final Printer printer = mock(Printer.class);
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, taskManager, postProcessor, new MetricRegistry());
+        new GraqlController(mockFactory, spark, taskManager, postProcessor, printer, new MetricRegistry());
     });
 
     @Before
     public void setupMock(){
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
+        when(tx.keyspace()).thenReturn(keyspace);
+        when(printer.graqlString(any())).thenReturn(Json.object().toString());
 
         // Describe expected response to a typical query
         Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
@@ -92,6 +98,12 @@ public class GraqlControllerInsertTest {
         when(query.execute()).thenReturn(ImmutableList.of(
                 new QueryAnswer(ImmutableMap.of(var("x"), person))
         ));
+    }
+
+    @After
+    public void clearExceptions(){
+        reset(taskManager);
+        reset(postProcessor);
     }
 
     @Test
@@ -133,7 +145,7 @@ public class GraqlControllerInsertTest {
     @Test
     public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "some-kb"));
+                .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, "somekb"));
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -169,31 +181,16 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseContentTypeIsJson(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON_GRAQL);
+        Response response = sendRequest("insert $x isa person;");
 
-        assertThat(response.contentType(), equalTo(APPLICATION_JSON_GRAQL));
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON));
     }
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_JSON_GRAQL);
-
-        assertThat(jsonResponse(response).asJsonList().size(), equalTo(1));
-    }
-
-    @Test
-    public void POSTGraqlInsertWithTextType_ResponseIsTextType(){
-        Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
-
-        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
-    @Test
-    public void POSTGraqlInsertWithTextType_ResponseIsCorrectText(){
-
-        Response response = sendRequest("insert $x isa person;", APPLICATION_TEXT);
-
-        assertThat(stringResponse(response), containsString("isa person"));
+        when(printer.graqlString(any())).thenReturn(Json.array().toString());
+        Response response = sendRequest("insert $x isa person;");
+        assertThat(jsonResponse(response).asJsonList().size(), equalTo(0));
     }
 
     @Test
@@ -224,7 +221,7 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(taskManager, times(1)).addTask(any(), any());
+        verify(taskManager, times(0)).addTask(any(), any());
     }
 
     @Test
@@ -235,14 +232,15 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(postProcessor, times(1)).updateCounts(any(), any());
+        verify(postProcessor, times(0)).updateCounts(any(), any());
     }
 
     @Test
     public void POSTGraqlInsert_PPTaskIsSubmitted(){
         String query = "insert $x isa person has name 'Alice';";
 
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of("some logs"));
+        CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
+        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of(commitLog));
 
         sendRequest(query);
 
@@ -253,21 +251,17 @@ public class GraqlControllerInsertTest {
     public void POSTGraqlInsert_CountsAreUpdated(){
         String query = "insert $x isa person has name 'Alice';";
 
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of("{}"));
+        CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
+        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of(commitLog));
 
         sendRequest(query);
 
-        verify(postProcessor, times(1)).updateCounts(tx.keyspace(), Json.object());
+        verify(postProcessor, times(1)).updateCounts(tx.keyspace(), commitLog);
     }
 
     private Response sendRequest(String query){
-        return sendRequest(query, APPLICATION_TEXT);
-    }
-
-    private Response sendRequest(String query, String acceptType){
         return RestAssured.with()
-                .accept(acceptType)
-                .queryParam(INFER, false)
+                .queryParam(EXECUTE_WITH_INFERENCE, false)
                 .body(query)
                 .post(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()));
     }

@@ -16,17 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.api;
+package ai.grakn.engine.controller;
 
 
 import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.engine.Jacksonisable;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.engine.controller.response.EmbeddedAttribute;
+import ai.grakn.engine.controller.response.Link;
+import ai.grakn.engine.controller.response.RolePlayer;
 import ai.grakn.engine.controller.response.Things;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -54,7 +58,6 @@ import static ai.grakn.util.REST.Request.LABEL_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAMETER;
 import static ai.grakn.util.REST.Request.OFFSET_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_ALL;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
@@ -90,7 +93,60 @@ public class ConceptController {
         spark.get(WebPath.KEYSPACE_RULE, this::getRules);
         spark.get(WebPath.KEYSPACE_ROLE, this::getRoles);
 
+        spark.get(WebPath.CONCEPT_ATTRIBUTES, this::getAttributes);
+        spark.get(WebPath.CONCEPT_KEYS, this::getKeys);
+        spark.get(WebPath.CONCEPT_RELATIONSHIPS, this::getRelationships);
+
         spark.get(WebPath.TYPE_INSTANCES, this::getTypeInstances);
+    }
+
+    private String getRelationships(Request request, Response response) throws JsonProcessingException {
+        //TODO: Figure out how to incorporate offset and limit
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> thing.plays().flatMap(role -> {
+            Link roleWrapper = Link.create(role);
+            return thing.relationships(role).map(relationship -> {
+                Link relationshipWrapper = Link.create(relationship);
+                return RolePlayer.create(roleWrapper, relationshipWrapper);
+            });
+        });
+        return this.getConceptCollection(request, response, collector);
+    }
+
+    private String getKeys(Request request, Response response) throws JsonProcessingException {
+        return getAttributes(request, response, thing -> thing.keys());
+    }
+
+    private String getAttributes(Request request, Response response) throws JsonProcessingException {
+        return getAttributes(request, response, thing -> thing.attributes());
+    }
+
+    private String getAttributes(Request request, Response response, Function<ai.grakn.concept.Thing,  Stream<Attribute<?>>> attributeFetcher) throws JsonProcessingException {
+        int offset = getOffset(request);
+        int limit = getLimit(request);
+
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing ->
+                attributeFetcher.apply(thing).skip(offset).limit(limit).map(EmbeddedAttribute::create);
+
+        return this.getConceptCollection(request, response, collector);
+    }
+
+    private <X extends ai.grakn.concept.Concept> String getConceptCollection(Request request, Response response, Function<X, Stream<Jacksonisable>> collector) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+
+        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
+        ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
+
+        try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
+            X concept = tx.getConcept(conceptId);
+
+            //If the concept was not found or is not a thing there are no results to return;
+            if(concept == null || !concept.isThing()){
+                response.status(SC_NOT_FOUND);
+                return "[]";
+            }
+
+            return objectMapper.writeValueAsString(collector.apply(concept).collect(Collectors.toList()));
+        }
     }
 
     private String getTypeInstances(Request request, Response response) throws JsonProcessingException {
@@ -99,8 +155,8 @@ public class ConceptController {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
 
-        Optional<String> offset = queryParameter(request, OFFSET_PARAMETER);
-        Optional<String> limit = queryParameter(request, LIMIT_PARAMETER);
+        int offset = getOffset(request);
+        int limit = getLimit(request);
 
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = instancesGetTimer.time()) {
             Type type = tx.getType(label);
@@ -110,45 +166,35 @@ public class ConceptController {
                 return "";
             }
 
-            Stream<? extends Thing> instances = type.instances();
-            int offsetValue = -1;
-            int limitValue = -1;
-            if(offset.isPresent()) {
-                offsetValue = Integer.parseInt(offset.get());
-                instances.skip(offsetValue);
-            }
-
-            if(limit.isPresent()){
-                limitValue = Integer.parseInt(limit.get());
-                instances.limit(limitValue);
-            }
-
             //Get the wrapper
-            Things things;
-            if(offset.isPresent() && limit.isPresent()){
-                things = ConceptBuilder.buildThings(type, offsetValue, limitValue);
-            } else if(offset.isPresent()){
-                things = ConceptBuilder.buildThingsWithOffset(type, offsetValue);
-            } else if(limit.isPresent()){
-                things = ConceptBuilder.buildThingsWithLimit(type, limitValue);
-            } else {
-                things = ConceptBuilder.buildThings(type);
-            }
-
+            Things things = ConceptBuilder.buildThings(type, offset, limit);
             response.status(SC_OK);
             return objectMapper.writeValueAsString(things);
         }
     }
 
+    private int getOffset(Request request){
+        return getIntegerQueryParameter(request, OFFSET_PARAMETER, 0);
+    }
+
+    private int getLimit(Request request){
+        return getIntegerQueryParameter(request, LIMIT_PARAMETER, 100);
+    }
+
+    private int getIntegerQueryParameter(Request request, String parameter, int defaultValue){
+        Optional<String> value = queryParameter(request, parameter);
+        return value.map(Integer::parseInt).orElse(defaultValue);
+    }
+
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
-        Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
+        Requests.validateRequest(request, APPLICATION_ALL);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getSchemaConcept(label));
     }
 
     private String getConceptById(Request request, Response response) throws JsonProcessingException {
-        Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_HAL);
+        Requests.validateRequest(request, APPLICATION_ALL);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getConcept(conceptId));

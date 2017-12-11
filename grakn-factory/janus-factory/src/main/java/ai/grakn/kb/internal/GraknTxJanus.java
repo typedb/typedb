@@ -109,7 +109,7 @@ public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
     }
 
     @Override
-    public boolean validElement(Element element) {
-        return super.validElement(element) && !((JanusGraphElement) element).isRemoved();
+    public boolean isValidElement(Element element) {
+        return super.isValidElement(element) && !((JanusGraphElement) element).isRemoved();
     }
 }
