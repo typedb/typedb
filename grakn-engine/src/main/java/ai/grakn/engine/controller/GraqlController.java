@@ -57,6 +57,7 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -198,7 +199,7 @@ public class GraqlController {
         response.type(APPLICATION_JSON);
 
         //Execute the query and get the results
-        LOG.debug("Executing graql query: {}", queryString.substring(0, 100));
+        LOG.debug("Executing graql query: {}", StringUtils.abbreviate(queryString, 100));
         LOG.trace("Full query: {}", queryString);
 
         return executeFunctionWithRetrying(() -> {
