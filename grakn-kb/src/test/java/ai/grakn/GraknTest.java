@@ -91,9 +91,7 @@ public class GraknTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i =0; i < 50; i ++){
-            futures.add(pool.submit(() -> {
-                sessions.add(Grakn.session(Grakn.DEFAULT_URI, keyspace));
-            }));
+            futures.add(pool.submit(() -> sessions.add(Grakn.session(Grakn.IN_MEMORY, keyspace))));
         }
 
         for (Future future : futures) {
