@@ -24,5 +24,5 @@ package ai.grakn.dist.lock;
  * @author Ganeshwara Herawan Hananda
  */
 public interface Lock {
-    public void withLock(Runnable fn);
+    void withLock(Runnable fn);
 }
