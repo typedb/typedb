@@ -18,7 +18,6 @@
 
 package ai.grakn.dist.mkdirlock;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -29,7 +28,7 @@ import java.nio.file.Paths;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class MkdirBasedLock {
+public class MkdirLock {
     public static final String PROCESS_WIDE_LOCK_PATH = "/tmp/.grakn.lock";
 
     public static void withMkdirLock(Runnable fn) {

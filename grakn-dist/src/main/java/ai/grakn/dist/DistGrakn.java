@@ -20,7 +20,7 @@ package ai.grakn.dist;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.dist.mkdirlock.LockAlreadyAcquiredException;
-import ai.grakn.dist.mkdirlock.MkdirBasedLock;
+import ai.grakn.dist.mkdirlock.MkdirLock;
 import ai.grakn.util.GraknVersion;
 
 import java.io.IOException;
@@ -30,7 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
-import static ai.grakn.dist.mkdirlock.MkdirBasedLock.withMkdirLock;
+import static ai.grakn.dist.mkdirlock.MkdirLock.withMkdirLock;
 
 /**
  * 
@@ -70,7 +70,7 @@ public class DistGrakn {
 
         } catch (LockAlreadyAcquiredException e) {
             System.out.println("grakn server start, stop or clean is already in progress. If this isn't the case, it is possible that it has crashed. " +
-                    "In that case please make sure to remove the directory " + MkdirBasedLock.PROCESS_WIDE_LOCK_PATH + " before re-attempting.");
+                    "In that case please make sure to remove the directory " + MkdirLock.PROCESS_WIDE_LOCK_PATH + " before re-attempting.");
         } catch (RuntimeException ex) {
             System.out.println("Problem with bash script: cannot run Grakn");
         }
