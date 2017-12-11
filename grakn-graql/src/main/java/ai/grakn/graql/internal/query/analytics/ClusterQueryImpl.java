@@ -112,7 +112,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> from(ConceptId conceptId) {
+    public ClusterQuery<T> of(ConceptId conceptId) {
         this.sourceId = Optional.ofNullable(conceptId);
         return this;
     }
@@ -138,7 +138,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     String graqlString() {
         String string = "cluster" + subtypeString();
         if (sourceId.isPresent()) {
-            string += " from " + sourceId.get().getValue() + ";";
+            string += " of " + sourceId.get().getValue() + ";";
         }
         if (members) {
             string += " members;";

@@ -46,10 +46,10 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     /**
      * Return only the cluster containing the given concept after executing the query.
      *
-     * @param conceptId The id of the give concept. conceptId is ignored if it's null.
+     * @param conceptId The id of the given concept. conceptId is ignored if it's null.
      * @return a ClusterQuery
      */
-    ClusterQuery<T> from(ConceptId conceptId);
+    ClusterQuery<T> of(ConceptId conceptId);
 
     /**
      * @param clusterSize the size of the clusters returned and/or persisted
