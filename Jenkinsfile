@@ -177,7 +177,8 @@ Closure createTestJob(split, i, testTimeout) {
                 timeout(testTimeout) {
                     stage('Run Janus test profile') {
                         mvn mavenVerify
-                    archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"}
+                        archiveArtifacts artifacts: graknDist()
+                    }
                 }
             } finally {
                 /* Archive the test results */
@@ -213,6 +214,10 @@ void addJob(Map<String, Closure> jobs, String name, Closure closure) {
             }
         }
     }
+}
+
+String graknDist() {
+    return "grakn-dist/target/grakn-dist-${env.BRANCH_NAME}.tar.gz"
 }
 
 // Main script to run
@@ -252,10 +257,10 @@ def runBuild() {
             stage('Build Grakn') {
                 buildGrakn()
 
-                archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
+                archiveArtifacts artifacts: graknDist()
 
                 // Stash the built distribution so other nodes can access it
-                stash includes: "grakn-dist/target/grakn-dist-${env.BRANCH_NAME}.tar.gz", name: 'dist'
+                stash includes: graknDist(), name: 'dist'
             }
         }
 
@@ -306,7 +311,7 @@ def runBuild() {
 
             stage('Deploy Grakn') {
                 sshagent(credentials: ['jenkins-aws-ssh']) {
-                    sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                    sh "scp -o StrictHostKeyChecking=no ${graknDist()} ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
                     sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
                     ssh "'bash -s' < scripts/start-long-running-instance.sh"
                 }
