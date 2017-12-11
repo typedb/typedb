@@ -629,10 +629,10 @@ div#toc ul li ul li {
     margin: 5px 0px 0px 0px;
 }
 
-.tab-content {
+/* .tab-content {
     padding: 15px;
     background-color: #FAFAFA;
-}
+} */
 
 span.tagTitle {font-weight: 500;}
 
@@ -1160,12 +1160,21 @@ h4.panel-title {
     margin-top: 0px;
 }
 
+.nav-tabs {
+    border-bottom: none;
+}
+.tab-pane > pre {
+    margin: 0 !important;
+    border-radius: 0 5px 5px 5px;
+    border: none;
+}
 pre {
     color: #46cc90;
-    background-color: #2f3543;    
+    background: #2f3543;
 }
 .highlight {
-    background-color: #2f3543;
+    background: #2f3543;
+    border-radius: 5px;
 }
  /* Prism CSS */
 .token.comment,
