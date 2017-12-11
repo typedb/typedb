@@ -10,7 +10,7 @@ import static org.mockito.Mockito.*;
 
 public class DistGraknTest {
     @Rule
-    public ExpectedException exceptionGrabber = ExpectedException.none();
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void graknServerStart_shouldAttemptToStartAllComponents() {
@@ -104,7 +104,7 @@ public class DistGraknTest {
         Lock synchronizedBootupLock = newLock_whichThrowsLockAlreadyAcquiredException();
         DistGrakn distGrakn = new DistGrakn(storageProcess, queueProcess, graknProcess, synchronizedBootupLock);
 
-        exceptionGrabber.expect(LockAlreadyAcquiredException.class);
+        expectedException.expect(LockAlreadyAcquiredException.class);
         distGrakn.run(command);
     }
 
@@ -120,7 +120,7 @@ public class DistGraknTest {
         Lock synchronizedBootupLock = newLock_whichThrowsLockAlreadyAcquiredException();
         DistGrakn distGrakn = new DistGrakn(storageProcess, queueProcess, graknProcess, synchronizedBootupLock);
 
-        exceptionGrabber.expect(LockAlreadyAcquiredException.class);
+        expectedException.expect(LockAlreadyAcquiredException.class);
         distGrakn.run(command);
     }
 
