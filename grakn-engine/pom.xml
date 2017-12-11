@@ -120,5 +120,13 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.fusesource/sigar -->
+        <dependency>
+            <groupId>org.fusesource</groupId>
+            <artifactId>sigar</artifactId>
+            <version>${sigar.version}</version>
+        </dependency>
+
     </dependencies>
 </project>
