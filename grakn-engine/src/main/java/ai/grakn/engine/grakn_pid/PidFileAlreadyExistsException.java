@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.processid;
+package ai.grakn.engine.grakn_pid;
 
 import java.nio.file.Path;
 
