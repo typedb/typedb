@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist.mkdirlock;
+package ai.grakn.dist.lock;
 
 /**
  *

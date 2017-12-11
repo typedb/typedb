@@ -19,8 +19,9 @@
 package ai.grakn.dist;
 
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.dist.mkdirlock.LockAlreadyAcquiredException;
-import ai.grakn.dist.mkdirlock.MkdirLock;
+import ai.grakn.dist.lock.Lock;
+import ai.grakn.dist.lock.LockAlreadyAcquiredException;
+import ai.grakn.dist.lock.MkdirLock;
 import ai.grakn.util.GraknVersion;
 
 import java.io.IOException;
@@ -30,13 +31,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
-import static ai.grakn.dist.mkdirlock.MkdirLock.withMkdirLock;
-
 /**
  * 
  * @author Michele Orsi
  */
 public class DistGrakn {
+    private static final String MKDIR_LOCK_PATH = "/tmp/.grakn.lock";
 
     private static final String GRAKN = "grakn";
     private static final String QUEUE = "queue";
@@ -45,6 +45,8 @@ public class DistGrakn {
     private final StorageProcess storageProcess;
     private final QueueProcess queueProcess;
     private final GraknProcess graknProcess;
+    private final Lock lock;
+
 
     /**
      * Invocation from bash script 'grakn'
@@ -66,20 +68,21 @@ public class DistGrakn {
                 throw new RuntimeException("Cannot find config folder");
             }
 
-            newDistGrakn(homeStatic, configStatic).run(args);
+            Lock lock = new MkdirLock(MKDIR_LOCK_PATH);
+            newDistGrakn(homeStatic, configStatic, lock).run(args);
 
         } catch (LockAlreadyAcquiredException e) {
             System.out.println("grakn server start, stop or clean is already in progress. If this isn't the case, it is possible that it has crashed. " +
-                    "In that case please make sure to remove the directory " + MkdirLock.PROCESS_WIDE_LOCK_PATH + " before re-attempting.");
+                    "In that case please make sure to remove the directory " + MKDIR_LOCK_PATH + " before re-attempting.");
         } catch (RuntimeException ex) {
             System.out.println("Problem with bash script: cannot run Grakn");
         }
     }
 
-    private static DistGrakn newDistGrakn(Path homePathFolder, Path configPath) {
+    private static DistGrakn newDistGrakn(Path homePathFolder, Path configPath, Lock lock) {
         return new DistGrakn(new StorageProcess(homePathFolder),
                 new QueueProcess(homePathFolder),
-                new GraknProcess(homePathFolder, configPath));
+                new GraknProcess(homePathFolder, configPath), lock);
     }
 
     public void run(String[] args) {
@@ -89,7 +92,7 @@ public class DistGrakn {
 
         switch (context) {
             case "server":
-                withMkdirLock(() -> server(action, option));
+                lock.withLock(() -> server(action, option));
                 break;
             case "version":
                 version();
@@ -110,10 +113,11 @@ public class DistGrakn {
         }
     }
 
-    public DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
+    public DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess, Lock lock) {
         this.storageProcess = storageProcess;
         this.queueProcess = queueProcess;
         this.graknProcess = graknProcess;
+        this.lock = lock;
     }
 
     private void version() {

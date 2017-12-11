@@ -16,32 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist.mkdirlock;
+package ai.grakn.dist.lock;
 
-import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 /**
  *
  * @author Ganeshwara Herawan Hananda
  */
-
-public class MkdirLock {
-    public static final String PROCESS_WIDE_LOCK_PATH = "/tmp/.grakn.lock";
-
-    public static void withMkdirLock(Runnable fn) {
-        try {
-            Files.createDirectory(Paths.get(PROCESS_WIDE_LOCK_PATH));
-            fn.run();
-            Files.delete(Paths.get(PROCESS_WIDE_LOCK_PATH));
-        }
-        catch (FileAlreadyExistsException ex) {
-            throw new LockAlreadyAcquiredException();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
+public interface Lock {
+    public void withLock(Runnable fn);
 }
