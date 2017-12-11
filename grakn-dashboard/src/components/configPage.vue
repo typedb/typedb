@@ -79,7 +79,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td>Version</td>
-                        <td>{{configuration['grakn.version']}}</td>
+                        <td>{{version}}</td>
                     </tr>
                 </tbody>
             </table>
@@ -158,12 +158,14 @@ export default {
   data: () => ({
     configuration: undefined,
     errorMessage: undefined,
+    version: undefined,
   }),
 
   created() {},
   mounted() {
     this.$nextTick(function () {
       this.loadConfig();
+      this.loadVersion();
     });
   },
 
@@ -179,6 +181,13 @@ export default {
         this.showError(err);
       });
     },
+    loadVersion(){
+        EngineClient.getVersion().then((resp) => {
+        this.version = resp;
+      }, (err) => {
+        this.showError(err);
+      });
+    }
   },
 
 };

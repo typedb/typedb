@@ -42,6 +42,11 @@ public interface Atomic {
     Atomic copy();
 
     /**
+     * validate wrt transaction the atomic is defined in
+     */
+    void checkValid();
+
+    /**
      * @return true if the atomic corresponds to a atom
      * */
     @CheckReturnValue

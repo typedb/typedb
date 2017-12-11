@@ -31,6 +31,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public abstract class Concept implements Jacksonisable{
 
+    @JsonProperty("base-type")
+    public abstract String baseType();
+
     @JsonProperty("id")
     public abstract ConceptId id();
 

@@ -22,7 +22,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Query;
 
-import static ai.grakn.util.ErrorMessage.AUTHENTICATION_FAILURE;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.ENGINE_ERROR;
 import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
@@ -39,7 +38,6 @@ import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_METHOD_NOT_ALLOWED;
 import static org.apache.http.HttpStatus.SC_NOT_ACCEPTABLE;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
-import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 
 /**
  * <p>
@@ -144,13 +142,6 @@ public class GraknServerException extends GraknBackendException {
      */
     public static GraknServerException invalidQueryExplaination(String query){
         return new GraknServerException(EXPLAIN_ONLY_MATCH.getMessage(query), SC_METHOD_NOT_ALLOWED);
-    }
-
-    /**
-     * Thrown when an incorrect query is used with a REST endpoint
-     */
-    public static GraknServerException authenticationFailure(){
-        return new GraknServerException(AUTHENTICATION_FAILURE.getMessage(), SC_UNAUTHORIZED);
     }
 
     /**

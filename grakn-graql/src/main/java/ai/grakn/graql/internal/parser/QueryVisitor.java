@@ -47,6 +47,7 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
@@ -286,6 +287,17 @@ class QueryVisitor extends GraqlBaseVisitor {
         }
 
         return path;
+    }
+
+    @Override
+    public PathsQuery visitPaths(GraqlParser.PathsContext ctx) {
+        PathsQuery paths = queryBuilder.compute().paths().from(visitId(ctx.id(0))).to(visitId(ctx.id(1)));
+
+        if (ctx.inList() != null) {
+            paths = paths.in(visitInList(ctx.inList()));
+        }
+
+        return paths;
     }
 
     @Override

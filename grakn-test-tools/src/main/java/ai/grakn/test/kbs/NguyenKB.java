@@ -72,17 +72,17 @@ public class NguyenKB extends TestKB {
         RelationshipType p = graph.getRelationshipType("P");
         RelationshipType q = graph.getRelationshipType("Q");
 
-        ConceptId cId = putEntity(graph, "c", entity, key).getId();
-        ConceptId dId = putEntity(graph, "d", entity, key).getId();
-        ConceptId eId = putEntity(graph, "e", entity, key).getId();
+        ConceptId cId = putEntityWithResource(graph, "c", entity, key).getId();
+        ConceptId dId = putEntityWithResource(graph, "d", entity, key).getId();
+        ConceptId eId = putEntityWithResource(graph, "e", entity, key).getId();
 
         ConceptId[] aInstancesIds = new ConceptId[n+2];
         ConceptId[] bInstancesIds = new ConceptId[n+2];
 
-        aInstancesIds[n+1] = putEntity(graph, "a" + (n+1), aEntity, key).getId();
+        aInstancesIds[n+1] = putEntityWithResource(graph, "a" + (n+1), aEntity, key).getId();
         for(int i = 0 ; i <= n ;i++) {
-            aInstancesIds[i] = putEntity(graph, "a" + i, aEntity, key).getId();
-            bInstancesIds[i] = putEntity(graph, "b" + i, bEntity, key).getId();
+            aInstancesIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).getId();
+            bInstancesIds[i] = putEntityWithResource(graph, "b" + i, bEntity, key).getId();
         }
 
 

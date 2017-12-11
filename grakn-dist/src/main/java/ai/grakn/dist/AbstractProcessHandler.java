@@ -33,11 +33,11 @@ import java.util.Optional;
  */
 abstract class AbstractProcessHandler {
 
-    protected final static long WAIT_INTERVAL_S=2;
+    final static long WAIT_INTERVAL_S=2;
 
-    protected OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
+    OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
 
-        StringBuffer outputS = new StringBuffer();
+        StringBuilder outputS = new StringBuilder();
         int exitValue = 1;
 
         Process p;
@@ -49,9 +49,9 @@ abstract class AbstractProcessHandler {
             reader =
                     new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
 
-            String line = "";
+            String line;
             while ((line = reader.readLine()) != null) {
-                outputS.append(line + "\n");
+                outputS.append(line).append("\n");
             }
 
         } catch (InterruptedException | IOException e) {
@@ -65,11 +65,10 @@ abstract class AbstractProcessHandler {
                 }
             }
         }
-        OutputCommand outputCommand = new OutputCommand(outputS.toString().trim(), exitValue);
-        return outputCommand;
+        return new OutputCommand(outputS.toString().trim(), exitValue);
     }
 
-    protected Optional<String> getPidFromFile(Path fileName) {
+    Optional<String> getPidFromFile(Path fileName) {
         String pid=null;
         if (Files.exists(fileName)) {
             try {
@@ -81,7 +80,7 @@ abstract class AbstractProcessHandler {
         return Optional.ofNullable(pid);
     }
 
-    protected String getPidFromPsOf(String processName) {
+    String getPidFromPsOf(String processName) {
         return executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
@@ -89,7 +88,7 @@ abstract class AbstractProcessHandler {
             }, null, null).output;
     }
 
-    protected void kill(int pid) {
+    private void kill(int pid) {
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -97,7 +96,7 @@ abstract class AbstractProcessHandler {
         }, null, null);
     }
 
-    protected OutputCommand kill(int pid, String signal) {
+    private OutputCommand kill(int pid, String signal) {
         return executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -105,7 +104,7 @@ abstract class AbstractProcessHandler {
         }, null, null);
     }
 
-    protected int retrievePid(Path pidFile) {
+    int retrievePid(Path pidFile) {
         if(!Files.exists(pidFile)) {
             return -1;
         }
@@ -118,7 +117,7 @@ abstract class AbstractProcessHandler {
         }
     }
 
-    protected void waitUntilStopped(Path pidFile, int pid) {
+    void waitUntilStopped(Path pidFile, int pid) {
         OutputCommand outputCommand;
         do {
             System.out.print(".");
@@ -142,7 +141,7 @@ abstract class AbstractProcessHandler {
         }
     }
 
-    protected String selectCommand(String osx, String linux) {
+    String selectCommand(String osx, String linux) {
         OutputCommand operatingSystem = executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -151,7 +150,7 @@ abstract class AbstractProcessHandler {
         return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
     }
 
-    protected boolean processIsRunning(Path pidFile) {
+    boolean processIsRunning(Path pidFile) {
         boolean isRunning = false;
         String processPid;
         if (Files.exists(pidFile)) {
@@ -173,7 +172,7 @@ abstract class AbstractProcessHandler {
         return isRunning;
     }
 
-    protected void stopProgram(Path pidFile, String programName) {
+    void stopProgram(Path pidFile, String programName) {
         System.out.print("Stopping "+programName+"...");
         System.out.flush();
         boolean programIsRunning = processIsRunning(pidFile);
@@ -185,14 +184,14 @@ abstract class AbstractProcessHandler {
 
     }
 
-    protected void stopProcess(Path pidFile) {
+    void stopProcess(Path pidFile) {
         int pid = retrievePid(pidFile);
         if (pid <0 ) return;
         kill(pid);
         waitUntilStopped(pidFile, pid);
     }
 
-    protected void processStatus(Path storagePid, String name) {
+    void processStatus(Path storagePid, String name) {
         if (processIsRunning(storagePid)) {
             System.out.println(name+": RUNNING");
         } else {
