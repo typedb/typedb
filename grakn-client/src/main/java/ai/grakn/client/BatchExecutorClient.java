@@ -33,6 +33,7 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
@@ -409,6 +410,8 @@ public class BatchExecutorClient implements Closeable {
     private static class QueriesObservableCollapser extends
             HystrixCollapser<List<QueryResponse>, QueryResponse, QueryRequest> {
 
+        private static final String KEY_FORMAT_STRING = "QueriesObservableCollapser_%s_%s_%s_%s";
+
         private final QueryRequest query;
         private Keyspace keyspace;
         private final GraknClient client;
@@ -420,18 +423,15 @@ public class BatchExecutorClient implements Closeable {
         public QueriesObservableCollapser(QueryRequest query, Keyspace keyspace,
                                           GraknClient client, int delay, int retries, int threadPoolCoreSize, int timeoutMs,
                                           MetricRegistry metricRegistry) {
-            // TODO: There is a likely bug here because the `QueriesObservableCollapser` is keyed by keyspace only.
-            // This means if you make a collapser with retries=10 and then send some queries, then make a new collapser
-            // with retries=5, the OLD collapser will collapse the queries and "override" the new retries parameter.
-            super(Setter.withCollapserKey(
-                    // It split by keyspace since we want to avoid mixing requests for different
-                    // keyspaces together
-                    com.netflix.hystrix.HystrixCollapserKey.Factory
-                            .asKey("QueriesObservableCollapser_" + keyspace))
+            super(Setter
+                    .withCollapserKey(key(keyspace, retries, threadPoolCoreSize, timeoutMs))
                     .andCollapserPropertiesDefaults(
                             HystrixCollapserProperties.Setter()
                                     .withRequestCacheEnabled(false)
-                                    .withTimerDelayInMilliseconds(delay)));
+                                    .withTimerDelayInMilliseconds(delay)
+                    )
+            );
+
             this.query = query;
             this.keyspace = keyspace;
             this.client = client;
@@ -439,6 +439,13 @@ public class BatchExecutorClient implements Closeable {
             this.threadPoolCoreSize = threadPoolCoreSize;
             this.timeoutMs = timeoutMs;
             this.metricRegistry = metricRegistry;
+        }
+
+        private static HystrixCollapserKey key(Keyspace keyspace, int retries, int threadPoolCoreSize, int timeoutMs) {
+            // It split by keyspace and other parameters since we want to avoid mixing requests for different
+            // keyspaces or parameters together
+            String name = String.format(KEY_FORMAT_STRING, keyspace, retries, threadPoolCoreSize, timeoutMs);
+            return HystrixCollapserKey.Factory.asKey(name);
         }
 
         @Override
