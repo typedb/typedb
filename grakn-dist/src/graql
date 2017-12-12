@@ -45,4 +45,6 @@ update_classpath_global_var() {
 
 update_classpath_global_var
 
-java -cp ${CLASSPATH} ai.grakn.dist.DistGraql "$@"
+GRAKN_CONFIG="conf/grakn.properties"
+
+java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.dist.DistGraql "$@"
