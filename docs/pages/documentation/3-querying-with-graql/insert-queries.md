@@ -33,18 +33,20 @@ In the example below, we insert additional (fictional) information for a `person
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell1">
-<pre>
+<pre class="language-graql"> <code>
 match $p has identifier "Mary Guthrie"; insert $p has middlename "Mathilda"; $p has birth-date "1902-01-01"; $p has death-date "1952-01-01"; $p has age 50;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java1">
-<pre>
+<pre class="language-java"> <code>
 qb.match(var("p").has("identifier", "Mary Guthrie"))
     .insert(var("p").has("middlename", "Mathilda"), 
         var("p").has("birth-date", LocalDateTime.of(1902, 1, 1, 0, 0, 0).toString()),
         var("p").has("death-date", LocalDateTime.of(1952, 1, 1, 0, 0, 0).toString()),
         var("p").has("age", 50)
     ).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -63,13 +65,15 @@ Set the type of the inserted concept.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell2">
-<pre>
+<pre class="language-graql"> <code>
 insert has identifier "Titus Groan" isa person;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java2">
-<pre>
+<pre class="language-java"> <code>
 qb.insert(var().has("identifier", "Titus Groan").isa("person")).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -86,15 +90,17 @@ It is not possible to insert a concept with the given id, as this is the job of 
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell3">
-<pre>
+<pre class="language-graql"> <code>
 <!--test-ignore-->
 insert id "1376496" isa person;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java3">
-<pre>
+<pre class="language-java"> <code>
 <!--test-ignore-->
 qb.insert(var().id(ConceptId.of("1376496")).isa("person")).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -110,13 +116,15 @@ Set the value of the concept.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell4">
-<pre>
+<pre class="language-graql"> <code>
 insert val "Ash" isa surname;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java4">
-<pre>
+<pre class="language-java"> <code>
 qb.insert(var().val("Ash").isa("surname")).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -132,13 +140,15 @@ Add an attribute of the given type to the concept.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell5">
-<pre>
+<pre class="language-graql"> <code>
 insert isa person, has identifier "Fuchsia Groan" has gender "female";
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java5">
-<pre>
+<pre class="language-java"> <code>
 qb.insert(var().isa("person").has("identifier", "Fuchsia Groan").has("gender", "female")).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -153,13 +163,15 @@ You can also specify a variable to represent the relationship connecting the thi
 <!-- TODO: Update to final syntax -->
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell6">
-<pre>
-insert isa person has identifier "Fuchsia Groan" via $r;
+<pre class="language-graql"> <code>
+insert isa person has identifier "Fuchsia Groan" as $r;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java6">
-<pre>
+<pre class="language-java"> <code>
 qb.insert(var().isa("person").has(Label.of("identifier"), var().val("Fuchsia Groan"), var("r"))).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -176,12 +188,13 @@ Make the concept a relationship that relates the given role players, playing the
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell7">
-<pre>
+<pre class="language-graql"> <code>
 match $p1 has identifier "Titus Groan"; $p2 has identifier "Fuchsia Groan"; insert (spouse: $p1, spouse: $p2) isa marriage;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java7">
-<pre>
+<pre class="language-java"> <code>
 qb.match(
   var("p1").has("name", "Titus Groan"),
   var("p2").has("name", "Fuchsia Groan")
@@ -191,7 +204,7 @@ qb.match(
     .rel("spouse", "p2")
     .isa("marriage")
 ).execute();
-
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

@@ -55,7 +55,7 @@ function generateData {
     fi
 
     paramFile=${SCRIPTPATH}/tmpParams.ini
-    cp ${LDBC_SNB_DATAGEN_HOME}/ params.ini  ${paramFile}
+    cp ${LDBC_SNB_DATAGEN_HOME}/params.ini ${paramFile}
 
     case "$1" in
         SF*)

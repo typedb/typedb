@@ -87,6 +87,7 @@ def withGrakn(Closure closure) {
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn.log"
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn-postprocessing.log"
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/cassandra.log"
+        sh 'stop-grakn.sh'
     }
 }
 
@@ -177,7 +178,6 @@ Closure createTestJob(split, i, testTimeout) {
                 timeout(testTimeout) {
                     stage('Run Janus test profile') {
                         mvn mavenVerify
-                        archiveArtifacts artifacts: graknDist()
                     }
                 }
             } finally {
@@ -311,7 +311,7 @@ def runBuild() {
 
             stage('Deploy Grakn') {
                 sshagent(credentials: ['jenkins-aws-ssh']) {
-                    sh "scp -o StrictHostKeyChecking=no ${graknDist()} ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                    sh "scp -o StrictHostKeyChecking=no ${graknDist()} ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/grakn-dist.tar.gz"
                     sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
                     ssh "'bash -s' < scripts/start-long-running-instance.sh"
                 }
