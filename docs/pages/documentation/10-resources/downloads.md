@@ -13,7 +13,8 @@ folder: documentation
 
 ## Download Grakn Latest Version
 
-[![download](/images/download.png)](https://grakn.ai/download/latest)
+[Download Grakn](https://grakn.ai/download/latest)
+{: #download-btn }
 
 
 ### Past Versions

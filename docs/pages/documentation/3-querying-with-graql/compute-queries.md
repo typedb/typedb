@@ -12,7 +12,7 @@ folder: documentation
 A compute query executes a [Pregel algorithm](https://www.quora.com/What-are-the-main-concepts-behind-Googles-Pregel) to determine information about the knowledge base in parallel.
 Called within the Graql shell, the general syntax is:
 
-```
+```graql-skip-test
 compute [algorithm] (arguments) (in subgraph); (modifiers;)
 ```
 
@@ -24,7 +24,7 @@ compute [algorithm] (arguments) (in subgraph); (modifiers;)
 The specific algorithms fall into two main categories and more information is given in the sections below.
 The simplest algorithm `count` can be executed using this query:
 
-```
+```graql-skip-test
 compute count;
 ```
 
@@ -36,7 +36,7 @@ Using the `in` keyword followed by a comma separated list of types will restrict
 
 For example,
 
-```
+```graql-skip-test
 compute count in person;
 ```
 
@@ -66,7 +66,7 @@ For further information see the individual sections below.
 The default behaviour of count is to return a single value that gives the number of instances present in the graph. It
 is possible to also count subsets of the instances in the graph using the [subgraph](#subgraph) syntax, as described above.
 
-```
+```graql-skip-test
 compute count in person;
 ```
 
@@ -75,14 +75,14 @@ compute count in person;
 Computes the mean value of a given attribute. This algorithm requires the [subgraph](#subgraph) syntax to be used.
 For example,
 
-```
+```graql-skip-test
 compute mean of age in person;
 ```
 
 would compute the mean value of `age` across all instances of the type `person`.
 It is also possible to provide a set of resources.
 
-```
+```graql-skip-test
 compute mean of attribute-a, attribute-b in person;
 ```
 
@@ -93,7 +93,7 @@ which would compute the mean of the union of the instances of the two resources.
 Computes the median value of a given attribute. This algorithm requires the [subgraph](#subgraph) syntax to be used.
 For example,
 
-```
+```graql-skip-test
 compute median of age in person;
 ```
 
@@ -103,7 +103,7 @@ would compute the median of the value persisted in instances of the attribute `a
 
 Computes the minimum value of a given attribute, similar to [mean](#mean).
 
-```
+```graql-skip-test
 compute min of age in person;
 ```
 
@@ -111,7 +111,7 @@ compute min of age in person;
 
 Computes the maximum value of a given attribute, similar to [mean](#mean).
 
-```
+```graql-skip-test
 compute max of age in person;
 ```
 
@@ -120,7 +120,7 @@ compute max of age in person;
 Computes the standard deviation of a given attribute, similar to [mean](#mean).
 
 
-```
+```graql-skip-test
 compute std of age in person;
 ```
 
@@ -128,7 +128,7 @@ compute std of age in person;
 
 Computes the sum of a given attribute, similar to [mean](#mean).
 
-```
+```graql-skip-test
 compute sum of age in person;
 ```
 
@@ -161,14 +161,14 @@ For further information see the individual sections below.
 
 For example, you can use an aggregate query to filter results by attribute. The following  aggregate query, allows you to match the number of people of a particular name:
 
-```
+```graql-skip-test
 match $x has name 'Bob'; aggregate count;
 ```
 
 Compute queries are computationally intensive and run in parallel on a cluster (so are good for big data).
 
-```
-compute count in person; 
+```graql-skip-test
+compute count of person; 
 ```
 
 Compute queries can be used to calculate the number of people in the graph very fast, but you can't filter the results to determine the number of people with a certain name.
