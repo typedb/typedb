@@ -98,7 +98,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
                 "/bin/sh",
                 "-c",
                 command}, null, null);
-        
+
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(GRAKN_STARTUP_TIMEOUT_S);
 
@@ -126,9 +126,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     }
 
     protected String commandToRun() {
-        String str = "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + GRAKN_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
-        System.out.println(str);
-        return str;
+        return "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + GRAKN_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
     }
 
     private boolean graknCheckIfReady(String host, int port, String path) {
