@@ -51,6 +51,6 @@ update_classpath_global_var
 
 GRAKN_CONFIG="conf/grakn.properties"
 
-java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.dist.DistGrakn $@
+java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dgrakn.pidfile=/tmp/grakn.pid DistGrakn $@
 
 popd > /dev/null

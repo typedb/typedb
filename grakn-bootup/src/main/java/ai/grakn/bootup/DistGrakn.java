@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist;
+package ai.grakn.bootup;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.GraknVersion;

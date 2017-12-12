@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.grakn_pid;
+package ai.grakn.bootup.graknengine.grakn_pid;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,17 +30,16 @@ import java.nio.file.Path;
  * @author Ganeshwara Herawan Hananda
  *
  */
-public class GraknPid {
+public class GraknPidFileStore implements GraknPidStore {
     private final Path pidFilePath;
-    private final long pid;
 
-    public GraknPid(Path pidFilePath, long pid) {
+    public GraknPidFileStore(Path pidFilePath) {
         this.pidFilePath = pidFilePath;
-        this.pid = pid;
     }
 
-    public void createPidFile_deleteOnExit() {
-        attemptToWritePidFile(pid, this.pidFilePath);
+    @Override
+    public void trackGraknPid(long graknPid) {
+        attemptToWritePidFile(graknPid, this.pidFilePath);
         deletePidFileOnExit();
     }
 
@@ -57,7 +56,8 @@ public class GraknPid {
                 throw new RuntimeException(e);
             }
         } else {
-            throw new PidFileAlreadyExistsException(pidFilePath);
+            String message = "pid file already exists: '" + pidFilePath.toString();
+            throw new GraknPidException(message);
         }
     }
 }

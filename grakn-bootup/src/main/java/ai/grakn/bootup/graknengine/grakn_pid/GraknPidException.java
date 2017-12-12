@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.grakn_pid;
+package ai.grakn.bootup.graknengine.grakn_pid;
 
 import java.nio.file.Path;
 
@@ -27,15 +27,8 @@ import java.nio.file.Path;
  * @author Ganeshwara Herawan Hananda
  *
  */
-public class PidFileAlreadyExistsException extends RuntimeException {
-    private Path pidFilePath;
-
-    public PidFileAlreadyExistsException(Path pidFilePath) {
-        super("pid file already exists: '" + pidFilePath.toString());
-        this.pidFilePath = pidFilePath;
-    }
-
-    public Path getPidFilePath() {
-        return pidFilePath;
+public class GraknPidException extends RuntimeException {
+    public GraknPidException(String message) {
+        super(message);
     }
 }

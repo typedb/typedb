@@ -1,0 +1,65 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.bootup.graknengine;
+import ai.grakn.GraknSystemProperty;
+import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManager;
+import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManagerFactory;
+import ai.grakn.engine.GraknCreator;
+import ai.grakn.engine.GraknEngineServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+
+/**
+ *
+ * Main class invoked by bash scripting
+ *
+ * @author Michele Orsi
+ *
+ */
+public class Grakn {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
+
+    /**
+     *
+     * Invocation from class 'GraknProcess' in grakn-dist project
+     *
+     * @param args
+     */
+    public static void main(String[] args) {
+        try {
+            String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
+                    .orElseThrow(() -> new RuntimeException("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"));
+            Path pidfile = Paths.get(graknPidFileProperty);
+            GraknPidManager graknPidManager = GraknPidManagerFactory.newGraknPidManagerForUnixOS(pidfile);
+            graknPidManager.trackGraknPid();
+
+            // Start Engine
+            GraknEngineServer graknEngineServer = new GraknCreator().instantiateGraknEngineServer(Runtime.getRuntime());
+            graknEngineServer.start();
+        } catch (Exception e) {
+            LOG.error("An exception has occurred", e);
+        }
+    }
+}
+
