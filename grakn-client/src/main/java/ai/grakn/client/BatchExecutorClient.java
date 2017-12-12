@@ -195,7 +195,7 @@ public class BatchExecutorClient implements Closeable {
 
     //TODO: Remove this method used only by docs tests
     public static Builder newBuilderforURI(SimpleURI simpleURI) {
-        return new Builder().taskClient(new GraknClient(simpleURI));
+        return new Builder().taskClient(GraknClient.of(simpleURI));
     }
 
     /**

@@ -195,7 +195,7 @@ public class BatchExecutorClientIT {
             nameTag.attribute(nameTagId);
             graph.admin().commitSubmitNoLogs();
 
-            GraknClient graknClient = new GraknClient(engine.uri());
+            GraknClient graknClient = GraknClient.of(engine.uri());
             return spy(
                     BatchExecutorClient.newBuilder().taskClient(graknClient).maxDelay(maxDelay)
                             .build());

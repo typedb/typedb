@@ -113,7 +113,7 @@ public class Migrator {
      * @param data Data being migrated
      */
     public void load(String template, Stream<Map<String, Object>> data) {
-        GraknClient graknClient = new GraknClient(uri);
+        GraknClient graknClient = GraknClient.of(uri);
 
         AtomicInteger queriesExecuted = new AtomicInteger(0);
 
