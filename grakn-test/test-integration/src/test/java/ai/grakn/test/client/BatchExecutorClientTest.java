@@ -27,13 +27,16 @@ import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import mjson.Json;
 import org.junit.Test;
 
+import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
 import static ai.grakn.graql.Graql.insert;
@@ -41,30 +44,14 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class BatchExecutorClientTest {
 
     @Test
     public void whenBatchExecutorClientCloses_AllTasksHaveCompleted() throws GraknClientException {
-        Set<Query<?>> queriesExecuted = Sets.newConcurrentHashSet();
         Keyspace keyspace = Keyspace.of("yes");
 
-        GraknClient graknClient = mock(GraknClient.class);
-
-        when(graknClient.graqlExecute(any(), eq(keyspace))).thenAnswer(args -> {
-            List<Query<?>> queries = args.getArgument(0);
-
-            queriesExecuted.addAll(queries);
-
-            return Lists.transform(queries, query -> {
-                assert query != null;
-                return new QueryResponse(query, Json.object("response", "I ran query " + query));
-            });
-        });
+        GraknClientFake graknClient = new GraknClientFake();
 
         // Make sure there are more queries to execute than are allowed to run at once
         int maxQueries = 10;
@@ -83,10 +70,71 @@ public class BatchExecutorClientTest {
             }
         }
 
-        assertThat(queriesExecuted, containsInAnyOrder(queriesToExecute.toArray()));
+        assertThat(graknClient.queriesExecuted(), containsInAnyOrder(queriesToExecute.toArray()));
+    }
+
+    @Test
+    public void whenQueriesFail_TheBatchExecutorClientStillCompletes() throws GraknClientException {
+        Keyspace keyspace = Keyspace.of("yes");
+
+        GraknClientFake graknClient = new GraknClientFake();
+        graknClient.shouldThrow(new GraknClientException("UH OH"));
+
+        // Make sure there are more queries to execute than are allowed to run at once
+        int maxQueries = 10;
+        int numQueries = 100;
+
+        BatchExecutorClient.Builder clientBuilder =
+                BatchExecutorClient.newBuilder().taskClient(graknClient).maxQueries(maxQueries);
+
+        Set<Query<?>> queriesToExecute =
+                IntStream.range(0, numQueries).mapToObj(this::createInsertQuery).collect(toImmutableSet());
+
+        try (BatchExecutorClient client = clientBuilder.build()) {
+            for (Query<?> query : queriesToExecute) {
+                // If we don't subscribe, the query won't execute
+                client.add(query, keyspace).subscribe(a -> {});
+            }
+        }
+
+        assertThat(graknClient.queriesExecuted(), containsInAnyOrder(queriesToExecute.toArray()));
     }
 
     private InsertQuery createInsertQuery(int i) {
         return insert(var("x").id(ConceptId.of("V" + i)));
+    }
+}
+
+
+class GraknClientFake implements GraknClient {
+
+    private final Set<Query<?>> queriesExecuted = ConcurrentHashMap.newKeySet();
+    private @Nullable GraknClientException exceptionToThrow = null;
+
+    Set<Query<?>> queriesExecuted() {
+        return ImmutableSet.copyOf(queriesExecuted);
+    }
+
+    void shouldThrow(@Nullable GraknClientException exceptionToThrow) {
+        this.exceptionToThrow = exceptionToThrow;
+    }
+
+    @Override
+    public List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace) throws GraknClientException {
+        queriesExecuted.addAll(queryList);
+
+        if (exceptionToThrow != null) {
+            throw exceptionToThrow;
+        }
+
+        return Lists.transform(queryList, query -> {
+            assert query != null;
+            return new QueryResponse(query, Json.object("response", "I ran query " + query));
+        });
+    }
+
+    @Override
+    public Optional<Keyspace> keyspace(String keyspace) throws GraknClientException {
+        return Optional.of(Keyspace.of(keyspace));
     }
 }
