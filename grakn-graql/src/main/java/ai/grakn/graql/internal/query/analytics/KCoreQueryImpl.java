@@ -23,10 +23,9 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.KCoreQuery;
-import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
-import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
+import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
+import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
@@ -45,7 +44,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
 
     @Override
     public Map<String, Set<String>> execute() {
-        LOGGER.info("KCore is called");
+        LOGGER.info("Starting KCore query");
         long startTime = System.currentTimeMillis();
 
         if (k < 2) throw GraqlQueryException.kValueSmallerThanTwo();
@@ -57,10 +56,9 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
 
         Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
 
-        //TODO
         ComputerResult result = getGraphComputer().compute(
-                new DegreeVertexProgram(subLabelIds),
-                new ClusterSizeMapReduce(ConnectedComponentVertexProgram.CLUSTER_LABEL),
+                new KCoreVertexProgram(k),
+                new ClusterMemberMapReduce(KCoreVertexProgram.CLUSTER_LABEL),
                 subLabelIds);
 
         LOGGER.info("KCore is done in " + (System.currentTimeMillis() - startTime) + " ms");
