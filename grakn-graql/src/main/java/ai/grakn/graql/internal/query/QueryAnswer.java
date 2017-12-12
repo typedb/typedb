@@ -208,7 +208,7 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Answer explain(AnswerExplanation exp){
-        return new QueryAnswer(this.entrySet(), exp.withAnswers(getExplanation().getAnswers()));
+        return new QueryAnswer(this.entrySet(), exp.childOf(this));
     }
 
     @Override
