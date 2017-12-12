@@ -125,15 +125,12 @@ public class BatchExecutorClient implements Closeable {
     public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
         QueryWithId<?> queryWithId = new QueryWithId<>(query);
         UUID queryId = queryWithId.id;
-
-        // Acquire permission to execute a query - will block until a permit is available
-        LOG.trace("Acquiring a permit for {} ({} available)", queryId, queryExecutionSemaphore.availablePermits());
-        queryExecutionSemaphore.acquireUninterruptibly();
-        LOG.trace("Acquired a permit for {} ({} available)", queryId, queryExecutionSemaphore.availablePermits());
+        acquirePermit(queryId);
 
         Context context = addTimer.time();
         Observable<QueryResponse> observable = new QueriesObservableCollapser(queryWithId, keyspace,
-                graknClient, maxDelay, maxRetries, threadPoolCoreSize, timeoutMs, metricRegistry)
+                graknClient, maxDelay, maxRetries, threadPoolCoreSize, timeoutMs, queryExecutionSemaphore,
+                metricRegistry)
                 .observe()
                 .doOnError((error) -> failureMeter.mark())
                 .doOnEach(a -> {
@@ -141,20 +138,6 @@ public class BatchExecutorClient implements Closeable {
                         LOG.error("Error while executing statement", a.getThrowable());
                     } else if (a.isOnNext()) {
                         LOG.trace("Executed {}", a.getValue());
-                    }
-
-                    // This represents a query response only if it's not a "completed" message
-                    boolean isQueryResponse = !a.isOnCompleted();
-
-                    // Release a query execution permit, allowing a new query to execute
-                    if (isQueryResponse) {
-                        queryExecutionSemaphore.release();
-
-                        int availablePermits = queryExecutionSemaphore.availablePermits();
-                        LOG.trace("Released a permit for {} ({} available)", queryId, availablePermits);
-
-                        assert queryExecutionSemaphore.availablePermits() <= maxQueries :
-                                "Number of available permits should never exceed max queries";
                     }
                 })
                 .subscribeOn(scheduler)
@@ -170,6 +153,16 @@ public class BatchExecutorClient implements Closeable {
                     return Observable.just(Optional.empty());
                 }).filter(Optional::isPresent).map(Optional::get);
         return observable;
+    }
+
+    private void acquirePermit(UUID queryId) {
+        assert queryExecutionSemaphore.availablePermits() <= maxQueries :
+                "Number of available permits should never exceed max queries";
+
+        // Acquire permission to execute a query - will block until a permit is available
+        LOG.trace("Acquiring a permit for {} ({} available)", queryId, queryExecutionSemaphore.availablePermits());
+        queryExecutionSemaphore.acquireUninterruptibly();
+        LOG.trace("Acquired a permit for {} ({} available)", queryId, queryExecutionSemaphore.availablePermits());
     }
 
     /**
@@ -332,9 +325,10 @@ public class BatchExecutorClient implements Closeable {
         private final Timer graqlExecuteTimer;
         private final Meter attemptMeter;
         private final Retryer<List<QueryResponse>> retryer;
+        private final Semaphore queryExecutionSemaphore;
 
         CommandQueries(List<QueryWithId<?>> queries, Keyspace keyspace, GraknClient client,
-                int retries, int threadPoolCoreSize, int timeoutMs,
+                int retries, int threadPoolCoreSize, int timeoutMs, Semaphore queryExecutionSemaphore,
                 MetricRegistry metricRegistry) {
             super(Setter
                     .withGroupKey(HystrixCommandGroupKey.Factory.asKey("BatchExecutor"))
@@ -352,6 +346,7 @@ public class BatchExecutorClient implements Closeable {
             this.queries = queries;
             this.keyspace = keyspace;
             this.client = client;
+            this.queryExecutionSemaphore = queryExecutionSemaphore;
             this.graqlExecuteTimer = metricRegistry.timer(name(this.getClass(), "execute"));
             this.attemptMeter = metricRegistry.meter(name(this.getClass(), "attempt"));
             this.retryer = RetryerBuilder.<List<QueryResponse>>newBuilder()
@@ -387,7 +382,19 @@ public class BatchExecutorClient implements Closeable {
                 } else {
                     throw new RuntimeException("Unexpected exception while retrying, " + queryList.size() + " queries failed.", e);
                 }
+            } finally {
+                for (QueryWithId<?> query : queries) {
+                    releasePermit(query.id);
+                }
             }
+        }
+
+        private void releasePermit(UUID queryId) {
+            // Release a query execution permit, allowing a new query to execute
+            queryExecutionSemaphore.release();
+
+            int availablePermits = queryExecutionSemaphore.availablePermits();
+            LOG.trace("Released a permit for {} ({} available)", queryId, availablePermits);
         }
     }
 
@@ -407,10 +414,11 @@ public class BatchExecutorClient implements Closeable {
         private int threadPoolCoreSize;
         private int timeoutMs;
         private final MetricRegistry metricRegistry;
+        private final Semaphore queryExecutionSemaphore;
 
         public QueriesObservableCollapser(QueryWithId<?> query, Keyspace keyspace,
                 GraknClient client, int delay, int retries, int threadPoolCoreSize, int timeoutMs,
-                MetricRegistry metricRegistry) {
+                Semaphore queryExecutionSemaphore, MetricRegistry metricRegistry) {
             super(Setter.withCollapserKey(
                     // It split by keyspace since we want to avoid mixing requests for different
                     // keyspaces together
@@ -427,6 +435,7 @@ public class BatchExecutorClient implements Closeable {
             this.threadPoolCoreSize = threadPoolCoreSize;
             this.timeoutMs = timeoutMs;
             this.metricRegistry = metricRegistry;
+            this.queryExecutionSemaphore = queryExecutionSemaphore;
         }
 
         @Override
@@ -445,7 +454,7 @@ public class BatchExecutorClient implements Closeable {
                 Collection<CollapsedRequest<QueryResponse, QueryWithId<?>>> collapsedRequests) {
             return new CommandQueries(collapsedRequests.stream().map(CollapsedRequest::getArgument)
                     .collect(Collectors.toList()), keyspace, client, retries, threadPoolCoreSize,
-                    timeoutMs, metricRegistry);
+                    timeoutMs, queryExecutionSemaphore, metricRegistry);
         }
 
         @Override
