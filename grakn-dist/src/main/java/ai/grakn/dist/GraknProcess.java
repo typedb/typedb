@@ -98,9 +98,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
                 "/bin/sh",
                 "-c",
                 command}, null, null);
-
-        String pid = getPidFromPsOf(graknClass().getName());
-
+        
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(GRAKN_STARTUP_TIMEOUT_S);
 

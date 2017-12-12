@@ -18,8 +18,6 @@
 
 package ai.grakn.bootup;
 
-import ai.grakn.bootup.OutputCommand;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
