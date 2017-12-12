@@ -30,6 +30,12 @@ import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -77,5 +83,22 @@ public class FactoryBuilderTest {
         assertNotEquals(mgf1, mgf3);
 
         assertNotEquals(mgf1.open(GraknTxType.WRITE), mgf3.open(GraknTxType.WRITE));
+    }
+
+    @Test
+    public void whenBuildingFactoriesPointingToTheSameKeyspace_EnsureSingleFactoryIsReturned() throws ExecutionException, InterruptedException {
+        Set<Future> futures = new HashSet<>();
+        Set<TxFactory> factories = new HashSet<>();
+        ExecutorService pool = Executors.newFixedThreadPool(10);
+
+        for(int i =0; i < 20; i ++){
+            futures.add(pool.submit(() -> factories.add(FactoryBuilder.getFactory(session, false))));
+        }
+
+        for (Future future : futures) {
+            future.get();
+        }
+
+        assertEquals(1, factories.size());
     }
 }
