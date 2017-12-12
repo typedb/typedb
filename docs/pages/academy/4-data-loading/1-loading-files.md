@@ -32,7 +32,7 @@ Go ahead and try and load the schema in your VM in a new keyspace.
 
 The command is (to be launched from the home directory: just run `cd` in the VM to be sure you are in it)
 
-```sh
+```bash
 grakn/graql console -k yourkeyspace -f academy/short-training/schema.gql
 ```
 

@@ -21,13 +21,17 @@ To follow along, or experiment further, with the examples given below, please lo
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell1">
-<pre>
+<pre class="language-graql">
+<code>
 match $x isa person; delete $x;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java1">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").isa("person")).delete("x").execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

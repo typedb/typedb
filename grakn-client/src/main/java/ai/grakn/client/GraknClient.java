@@ -65,6 +65,8 @@ public class GraknClient {
 
     public List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace)
             throws GraknClientException {
+        LOG.debug("Sending query list size {} to keyspace {}", queryList.size(), keyspace);
+
         String body = queryList.stream().map(Object::toString).reduce("; ", String::concat).substring(2);
         URI fullURI = UriBuilder.fromUri(uri.toURI())
                 .path(REST.resolveTemplate(REST.WebPath.KEYSPACE_GRAQL, keyspace.getValue()))
