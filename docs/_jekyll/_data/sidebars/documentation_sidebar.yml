@@ -10,188 +10,212 @@ entries:
     folderitems:
       - title: Home
         output: web
-        url: /index.html
+        url: /index
       - title: Setup Guide
         output: web
-        url: /documentation/get-started/setup-guide.html
+        url: /docs/get-started/setup-guide
       - title: Quickstart Tutorial
         output: web
-        url: /documentation/get-started/quickstart-tutorial.html
-  - title: Grakn Fundamentals
+        url: /docs/get-started/quickstart-tutorial
+      - title: Grakn Server
+        output: web
+        url: /docs/get-started/grakn-server
+      - title: Graql Console
+        output: web
+        url: /docs/get-started/graql-console
+  - title: Knowledge Model
     output: web
     folderitems:
-      - title: Grakn Knowledge Model
+      - title: The Model
         output: web
-        url: /documentation/the-fundamentals/grakn-knowledge-model.html
-  - title: Graql Schema
+        url: /docs/knowledge-model/model
+      - title: The Data
+        output: web
+        url: /docs/knowledge-model/data
+      - title: The Inference
+        output: web
+        url: /docs/knowledge-model/inference
+  - title: Building Schema
     output: web
     folderitems:
-      - title: Define a Basic Schema
+      - title: Defining Schema
         output: web
-        url: /documentation/building-a-schema/basic-schema.html
-      - title: Define a Hierarchical Schema
+        url: /docs/building-schema/defining-schema
+      - title: Defining Rules
         output: web
-        url: /documentation/building-a-schema/hierarchical-schema.html
-      - title: Define a Rule-Driven Schema
+        url: /docs/building-schema/defining-rules
+      - title: Querying Schema
         output: web
-        url: /documentation/building-a-schema/rule-driven-schema.html
-  - title: Graql Queries
+        url: /docs/building-schema/querying-schema
+      - title: "Example: Basic Schema"
+        output: web
+        url: /docs/building-schema/basic-schema
+      - title: "Example: Hierarchical Schema"
+        output: web
+        url: /docs/building-schema/hierarchical-schema
+      - title: "Example: Rule-Driven Schema"
+        output: web
+        url: /docs/building-schema/rule-driven-schema
+  - title: Querying Data
     output: web
     folderitems:
       - title: Overview
         output: web
-        url: /documentation/graql/graql-overview.html
-      - title: Graql Queries
+        url: /docs/querying-data/overview
+      - title: Match Clause
         output: web
-        url: /documentation/graql/query.html
-      - title: Data Definition Language
+        url: /docs/querying-data/match-clause
+      - title: Get Queries
         output: web
-        url: /documentation/graql/ddl.html
-      - title: Data Manipulation Language
+        url: /docs/querying-data/get-queries
+      - title: Insert Queries
         output: web
-        url: /documentation/graql/dml.html
-      - title: Graql Shell
+        url: /docs/querying-data/insert-queries
+      - title: Delete Queries
         output: web
-        url: /documentation/graql/graql-shell.html
-      - title: Graql Rules
+        url: /docs/querying-data/delete-queries
+      - title: Aggregate Queries
         output: web
-        url: /documentation/graql/graql-rules.html
+        url: /docs/querying-data/aggregate-queries
+  - title: Distributed Analytics
+    output: web
+    folderitems:
+      - title: Overview
+        output: web
+        url: /docs/distributed-analytics/overview
       - title: Compute Queries
         output: web
-        url: /documentation/graql/compute-queries.html
-      - title: Graql Templating
+        url: /docs/distributed-analytics/compute-queries
+      - title: Statistics
         output: web
-        url: /documentation/graql/graql-templating.html
-      - title: Graql Cheatsheet
+        url: /docs/distributed-analytics/statistics
+      - title: Shortest Path
         output: web
-        url: /documentation/graql/graql-cheatsheet.html
-  - title: Graql Analytics
-    output: web
-    folderitems:
-      - title: Overview
+        url: /docs/distributed-analytics/shortest-path
+      - title: Degrees
         output: web
-        url: /documentation/graql-analytics/analytics-overview.html
-      - title: Analytics Statistics
-        output: web
-        url: /documentation/graql-analytics/analytics-statistics.html
-      - title: Analytics Shortest Path
-        output: web
-        url: /documentation/graql-analytics/analytics-shortest-path.html
-      - title: Analytics Degrees
-        output: web
-        url: /documentation/graql-analytics/analytics-degrees.html
+        url: /docs/distributed-analytics/degrees
       - title: Connected Components
         output: web
-        url: /documentation/graql-analytics/analytics-connected-components.html
-  - title: Migrate to Grakn
+        url: /docs/distributed-analytics/connected-components
+  - title: Migrating Data
     output: web
     folderitems:
       - title: Overview
         output: web
-        url: /documentation/migration/migration-overview.html
-      - title: CSV Migration
+        url: /docs/migrating-data/overview
+      - title: Language
         output: web
-        url: /documentation/migration/CSV-migration.html
-      - title: JSON Migration
+        url: /docs/migrating-data/migration-language
+      - title: Migrating CSV
         output: web
-        url: /documentation/migration/JSON-migration.html
-      - title: XML Migration
+        url: /docs/migrating-data/migrating-csv
+      - title: Migrating JSON
         output: web
-        url: /documentation/migration/XML-migration.html
-      - title: SQL Migration
+        url: /docs/migrating-data/migrating-json
+      - title: Migrating SQL
         output: web
-        url: /documentation/migration/SQL-migration.html
-  - title: Develop with Java
+        url: /docs/migrating-data/migrating-sql
+      - title: Migrating XML
+        output: web
+        url: /docs/migrating-data/migrating-xml
+  - title: Java Library
     output: web
     folderitems:
-      - title: Java Development Overview
+      - title: Setup
         output: web
-        url: /documentation/developing-with-java/java-setup.html
-      - title: Java API
+        url: /docs/java-library/setup
+      - title: Core API
         output: web
-        url: /documentation/developing-with-java/java-api.html
-      - title: Java Graql API
+        url: /docs/java-library/core-api
+      - title: Graql API
         output: web
-        url: /documentation/developing-with-java/java-graql.html
+        url: /docs/java-library/graql-api
       - title: Migration API
         output: web
-        url: /documentation/developing-with-java/migration-api.html
+        url: /docs/java-library/migration-api
       - title: Loader API
         output: web
-        url: /documentation/developing-with-java/loader-api.html
-      - title: Advanced Java Development
+        url: /docs/java-library/loader-api
+      - title: Advanced
         output: web
-        url: /documentation/developing-with-java/advanced-java.html
-  - title: Grakn Dashboard
+        url: /docs/java-library/advanced
+  - title: Visulisation Dashboard
     output: web
     folderitems:
       - title: Grakn Visualiser
         output: web
-        url: /documentation/grakn-dashboard/visualiser.html
-  - title: Deploy Grakn
+        url: /docs/visualisation-dashboard/visualiser
+  - title: API References
     output: web
     folderitems:
-      - title: Deploy Grakn
+      - title: Data Definition Language
         output: web
-        url: /documentation/deploy-grakn/grakn-deployment-guide.html
-  - title: API Reference
-    output: web
-    folderitems:
-      - title: API Reference
+        url: /docs/api-references/ddl
+      - title: Data Manipulation Language
         output: web
-        url: /documentation/api-reference/api-reference.html
+        url: /docs/api-references/dml
+      - title: REST API
+        output: web
+        url: /docs/api-references/rest-api
+      - title: Graql Cheatsheet
+        output: web
+        url: /docs/api-references/graql-cheatsheet
+      - title: Javadocs
+        output: web
+        external_url: //javadoc.io/doc/ai.grakn/grakn
   - title: Resources
     output: web
     folderitems:
       - title: Overview
         output: web
-        url: /documentation/resources/resources-overview.html
+        url: /docs/resources/overview
       - title: Grakn FAQ
         output: web
-        url: /documentation/resources/faq.html
+        url: /docs/resources/faq
       - title: Downloads
         output: web
-        url: /documentation/resources/downloads.html
+        url: /docs/resources/downloads
   - title: Examples
     output: web
     folderitems:
       - title: Overview
         output: web
-        url: /documentation/examples/examples-overview.html
+        url: /docs/examples/examples-overview
       - title: CSV Migration
         output: web
-        url: /documentation/examples/CSV-migration.html
+        url: /docs/examples/CSV-migration
       - title: SQL Migration
         output: web
-        url: /documentation/examples/SQL-migration.html
+        url: /docs/examples/SQL-migration
       - title: Reasoning with Graql
         output: web
-        url: /documentation/examples/graql-reasoning.html
+        url: /docs/examples/graql-reasoning
       - title: Working With Tweets
         output: web
-        url: /documentation/examples/working-with-tweets.html
+        url: /docs/examples/working-with-tweets
       - title: Modern example
         output: web
-        url: /documentation/examples/modern.html
+        url: /docs/examples/modern
       - title: Pokemon example
         output: web
-        url: /documentation/examples/pokemon.html
+        url: /docs/examples/pokemon
       - title: Statistical Analysis
         output: web
-        url: /documentation/examples/analytics.html
+        url: /docs/examples/analytics
       - title: API for Java developers
         output: web
-        url: /documentation/examples/java-api-example.html
+        url: /docs/examples/java-api-example
       - title: Analytics using Java APIs
         output: web
-        url: /documentation/examples/java-analytics.html
+        url: /docs/examples/java-analytics
       - title: Example Projects
         output: web
-        url: /documentation/examples/projects.html
+        url: /docs/examples/projects
   items:
   - title: Contribute to GRAKN.AI
     output: web
-    url: /contributors/index.html
+    url: /contributors/index
   - title: GRAKN Academy
     output: web
-    url: /academy/index.html
+    url: /academy/index

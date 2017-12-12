@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="In this lesson you find out what are the prerequisites for the rest of the Academy and you will have the first taste of GRAKN">
+<meta name="keywords" content="getting-started,  setup, getting started, GRAKN.AI, Grakn Labs, grakn, graql, grakn.ai, Mindmaps Research, Mindmaps Research Ltd, MindmapsDB, mindmaps, mindmaps graph, mindmaps.io, knowledge graph, distributed knowledge graph, development platform, developer tool, data platform, programming langauge, query langauge, database, semantic database, distributed semantic database, distributed database, graph database, semantic search, data exploration, recommendation system, knowledge management, knowledge engineering, real-time analytics, advanced analytics, reasoning engine, inference engine, expert systems, semantic applications, research engines, data management, business intelligence, big data, semantic web, semantic data, knowledge representation, automated reasoning, semantic network, knowledge ontology, semantic graph, ontology engineering, graph based knowledge representation, artificial intelligence,">
+<title>GRAKN.AI - Getting ready</title>
+<link rel="stylesheet" href="/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="/css/modern-business.css">
+<link rel="stylesheet" href="/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="/css/customstyles.css">
+<link rel="stylesheet" href="/css/theme-white.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="/js/toc.js"></script>
+<script src="/js/prism.js"></script>
+<script src="/js/prism-graql.js"></script>
+<script src="/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="/favicon.ico">
+
+<!-- Facebook Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2009892122581066'); // Insert your pixel ID here.
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2009892122581066&ev=PageView&noscript=1" alt="facebook pixel"
+/></noscript>
+<!-- DO NOT MODIFY -->
+<!-- End Facebook Pixel Code -->
+
+
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="display: none;">
+    <symbol id="logo" viewBox="0 0 40 40" aria-labelledby="GRAKN.AI">
+       <value>GRAKN.AI</value>
+       <desc>A Distributed Knowledge Graph</desc>
+       <polygon vector-effect="non-scaling-stroke" fill="transparent" stroke-linejoin="round" points="20,2 38,20 20,38 2,20"/>
+       <polyline vector-effect="non-scaling-stroke" fill="transparent" stroke-linejoin="round" points="7.27,32.73 7.27,7.27 20,20 32.73,7.27 32.73,32.73"/>
+    </symbol>
+    <symbol id="github" viewBox="0 0 16 16" aria-labelledby="GitHub">
+        <value>GitHub</value>
+        <desc>GitHub</desc>
+        <path vector-effect="non-scaling-stroke" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+    </symbol>
+    <symbol id="gitter" viewBox="0 0 28 40" aria-labelledby="Gitter">
+        <value>Gitter</value>
+        <desc>Gitter</desc>
+        <rect vector-effect="non-scaling-stroke" x="15.6" y="6.4" width="3.2" height="33.6"/>
+        <rect vector-effect="non-scaling-stroke" x="22" y="6.4" width="3.2" height="17.6"/>
+        <rect vector-effect="non-scaling-stroke" x="9.2" y="6.4" width="3.2" height="33.6"/>
+        <rect vector-effect="non-scaling-stroke" x="2.8" width="3.2" height="24"/>
+    </symbol>
+    <symbol id="slack" viewBox="0 0 256 256" aria-labelledby="Slack">
+        <path d="M165.963541,15.8384262 C162.07318,3.86308197 149.212328,-2.69009836 137.239082,1.20236066 C125.263738,5.09272131 118.710557,17.9535738 122.603016,29.9268197 L181.550164,211.292328 C185.597902,222.478689 197.682361,228.765377 209.282098,225.426885 C221.381246,221.943607 228.756984,209.093246 224.896,197.21023 C224.749115,196.756984 165.963541,15.8384262 165.963541,15.8384262"></path>
+        <path d="M74.6260984,45.515541 C70.7336393,33.5422951 57.8727869,26.9891148 45.899541,30.8794754 C33.9241967,34.7698361 27.3710164,47.6306885 31.2634754,59.6060328 L90.210623,240.971541 C94.2583607,252.157902 106.34282,258.44459 117.942557,255.104 C130.041705,251.62282 137.417443,238.772459 133.556459,226.887344 C133.409574,226.436197 74.6260984,45.515541 74.6260984,45.515541"></path>
+        <path d="M240.161574,166.045377 C252.136918,162.155016 258.688,149.294164 254.797639,137.31882 C250.907279,125.345574 238.046426,118.792393 226.07318,122.682754 L44.7076721,181.632 C33.5213115,185.677639 27.234623,197.762098 30.5731148,209.361836 C34.0563934,221.460984 46.9067541,228.836721 58.7897705,224.975738 C59.2430164,224.828852 240.161574,166.045377 240.161574,166.045377"></path>
+        <path d="M82.507541,217.270557 C94.312918,213.434754 109.528131,208.491016 125.855475,203.186361 C122.019672,191.380984 117.075934,176.163672 111.76918,159.83423 L68.4191475,173.924721 L82.507541,217.270557"></path>
+        <path d="M173.847082,187.591344 C190.235279,182.267803 205.467279,177.31777 217.195016,173.507148 C213.359213,161.70177 208.413377,146.480262 203.106623,130.146623 L159.75659,144.237115 L173.847082,187.591344"></path>
+        <path d="M210.484459,74.7058361 C222.457705,70.8154754 229.010885,57.954623 225.120525,45.9792787 C221.230164,34.0060328 208.369311,27.4528525 196.393967,31.3432131 L15.028459,90.292459 C3.84209836,94.3380984 -2.44459016,106.422557 0.896,118.022295 C4.37718033,130.121443 17.227541,137.49718 29.1126557,133.636197 C29.5638033,133.489311 210.484459,74.7058361 210.484459,74.7058361"></path>
+        <path d="M52.8220328,125.933115 C64.6274098,122.097311 79.8468197,117.151475 96.1762623,111.84682 C90.8527213,95.4565246 85.9026885,80.2245246 82.0920656,68.4946885 L38.731541,82.5872787 L52.8220328,125.933115"></path>
+        <path d="M144.159475,96.256 C160.551869,90.9303607 175.785967,85.9803279 187.515803,82.1676066 C182.190164,65.7752131 177.240131,50.5390164 173.42741,38.807082 L130.068984,52.8996721 L144.159475,96.256"></path>
+    </symbol>
+</svg>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container topnavlinks">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="https://grakn.ai">
+                    <!-- <svg><use xlink:href="#logo" /></svg>
+                    <span class="projectTitle">GRAKN.AI</span> -->
+                    <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                    viewBox="0 0 166.9 35" style="enable-background:new 0 0 166.9 35;" xml:space="preserve">
+                        <style type="text/css">
+                            .st0{fill:url(#SVGID_1_);}
+                            .st1{fill:#594F95;}
+                            .st2{fill:#594E93;}
+                            .st3{fill:#7F72D0;}
+                        </style>
+                        <linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="-8.111572e-02" y1="17.5" x2="34.7256" y2="17.5" gradientTransform="matrix(1 0 0 -1 0 35)">
+                            <stop  offset="0" style="stop-color:#7F68FC"/>
+                            <stop  offset="0.2771" style="stop-color:#9084FC"/>
+                            <stop  offset="1" style="stop-color:#A197FD"/>
+                        </linearGradient>
+                        <path class="st0" d="M28.2,0c-0.3,0-0.6,0-0.8,0H5.8C5.1,0,4.3,0.1,3.6,0.4C1.5,1.2,0,3.3,0,5.5c0,7.9,0,15.8,0,23.7
+                            c0,1,0.2,2.1,0.7,2.9c0.8,1.4,2.1,2.4,3.6,2.7V17c0-1,0.1-2.1,0.8-2.9c0.7-0.9,1.7-1.5,2.9-1.7V7.7c-0.7-0.4-1.2-1-1.4-1.8
+                            c-0.2-1,0.2-2.1,1.1-2.6c0.9-0.6,2.1-0.5,3,0.1c0.8,0.6,1.2,1.8,0.9,2.8c-0.2,0.7-0.7,1.2-1.3,1.5v4.7h16c1.2,0,2.3,0.4,3.1,1.3
+                            c0.8,0.8,1.2,1.9,1.2,3v5.7c0,1.7-1.1,3.3-2.7,3.9c-0.7,0.3-1.4,0.3-2.1,0.3H13.9V35h15.6c2.3,0,4.5-1.7,5.2-3.9
+                            c0.4-1,0.3-2.1,0.3-3.2V5.8c0.1-2.5-1.6-4.8-4-5.5c-0.7-0.2-1.3-0.2-2-0.2L28.2,0L28.2,0z"/>
+                        <path class="st1" d="M151.1,8.8c-0.3,0.1-0.4,0.4-0.5,0.7c-1.6,5.5-3.3,11-4.9,16.5c0,0.2-0.1,0.4-0.1,0.6c0.1,0.2,0.4,0.2,0.6,0.2
+                            h0.6c0.3,0,0.5,0,0.8,0c0.2,0,0.5-0.2,0.5-0.4l1.2-4.1h5.4c0.4,1.4,0.8,2.7,1.2,4c0.1,0.2,0.2,0.5,0.5,0.5c0.6,0,1.2,0,1.8,0
+                            c0.2,0,0.5-0.1,0.5-0.3c0-0.6-0.3-1.1-0.4-1.6l-4.6-15.5c-0.1-0.3-0.3-0.6-0.6-0.5h-0.7h-0.5C151.6,8.8,151.4,8.8,151.1,8.8z
+                                M151.2,15.9c0.4-1.3,0.6-2.6,0.8-3.9c0.2,1.2,0.4,2.5,0.8,3.8c0.4,1.4,0.9,2.8,1.3,4.2h-2.4h-1.8L151.2,15.9z"/>
+                        <rect x="164.2" y="8.8" width="2.7" height="18"/>
+                        <path class="st2" d="M164.4,8.9c-0.2,0.1-0.2,0.4-0.2,0.5v16.8c0,0.3,0.2,0.6,0.5,0.5c0.6,0,1.2,0,1.8,0c0.3,0,0.4-0.3,0.4-0.5V9.4
+                            c0-0.2,0-0.6-0.3-0.6c-0.4,0-0.8,0-1.2,0C165.1,8.8,164.7,8.8,164.4,8.9z"/>
+                        <path class="st3" d="M12.9,16.5c-1.3,0.4-2.2,1.6-2.3,2.9c-0.1,1.2,0.6,2.4,1.6,3c0.9,0.5,2,0.5,2.9,0.1c1.5-0.7,2.2-2.5,1.6-4
+                            c-0.4-1.2-1.7-2.1-3-2.1C13.4,16.4,13.2,16.4,12.9,16.5z"/>
+                        <path class="st3" d="M22.2,16.5c-1.6,0.5-2.5,2.2-2.1,3.8c0.3,1.6,2.1,2.8,3.8,2.4c1.7-0.3,2.8-2.3,2.4-3.9
+                            c-0.3-1.4-1.7-2.5-3.1-2.5C22.8,16.4,22.5,16.4,22.2,16.5z"/>
+                        <rect x="137.8" y="23.5" width="2.7" height="3.3"/>
+                        <path class="st2" d="M138.2,23.5c-0.3,0-0.4,0.3-0.4,0.5c0,0.8,0,1.5,0,2.3c0,0.2,0.2,0.4,0.5,0.4c0.6,0,1.2,0,1.8,0
+                            c0.2,0,0.5-0.2,0.4-0.4c0-0.8,0-1.5,0-2.2c0-0.3-0.1-0.6-0.4-0.5h-1C138.7,23.5,138.4,23.5,138.2,23.5z"/>
+                        <path class="st2" d="M49.9,9.5c1.5-0.9,3.2-0.9,4.9-0.8c1.4,0.1,2.9,0.4,4,1.4c0.8,0.8,1.1,2,1,3.1c-0.1,0.4,0.2,1-0.2,1.3
+                            c-0.6,0.1-1.2,0-1.9,0c-0.2,0-0.5-0.1-0.5-0.4c-0.1-0.7,0.1-1.4-0.3-2c-0.4-0.8-1.3-1-2.1-1.1c-1-0.1-2.1-0.1-3,0.4
+                            c-0.7,0.3-1,1.1-1,1.8v9.4c0,0.6,0.2,1.2,0.7,1.6c0.7,0.5,1.6,0.5,2.4,0.6c0.8-0.1,1.8-0.1,2.5-0.6c0.5-0.3,0.7-0.9,0.7-1.4
+                            c0-0.9,0-1.7,0-2.6c-1.1,0-2.1,0-3.2,0c-0.3,0-0.4-0.3-0.4-0.5c0-0.5,0-0.9,0-1.4c0-0.3,0.3-0.4,0.5-0.4h5.1c0.2,0,0.5,0.1,0.5,0.4
+                            c0,1.6,0,3.2,0,4.9c0,1.1-0.5,2.3-1.5,3c-1.4,0.9-3.1,1-4.6,1c-1.5-0.1-3.2-0.3-4.4-1.4c-0.8-0.7-1.1-1.7-1.1-2.7c0-3.5,0-7,0-10.5
+                            C48.2,11.2,48.8,10,49.9,9.5z"/>
+                        <path class="st2" d="M68.6,11.1v6.3c1.1,0,2.2,0,3.4,0c1-0.1,2-0.2,2.7-1c0.5-0.7,0.4-1.6,0.4-2.5c0-0.7,0-1.5-0.5-2
+                            c-0.6-0.7-1.6-0.8-2.5-0.8C70.9,11.1,69.7,11.1,68.6,11.1z M65.9,9.4c0-0.3,0.1-0.6,0.4-0.6c2,0,4,0,6,0c1.4,0,2.9,0.3,4,1.2
+                            c0.8,0.6,1.3,1.6,1.3,2.6s0,2,0,3c0,0.9-0.2,1.7-0.8,2.4c-0.6,0.7-1.4,1.1-2.2,1.4c1,2.3,2.1,4.6,3.1,7l-0.1,0.3
+                            c-0.5,0.2-1,0.1-1.5,0.1c-0.4,0-0.9,0.1-1.1-0.3c-1-2.2-2-4.5-3-6.7c-1.2,0-2.3,0-3.5,0c0,2.2,0,4.4,0,6.6c0,0.2-0.2,0.4-0.5,0.4
+                            c-0.6,0-1.2,0-1.8,0c-0.3,0-0.5-0.3-0.5-0.5V9.4H65.9z"/>
+                        <path class="st2" d="M87.7,9.5c0.1-0.3,0.2-0.7,0.6-0.7c0.6,0,1.3,0,1.9,0c0.3,0,0.5,0.3,0.5,0.6c1.6,5.3,3.2,10.6,4.8,15.9
+                            c0.1,0.4,0.3,0.7,0.3,1.1c0,0.3-0.3,0.3-0.5,0.3c-0.6,0-1.2,0-1.8,0c-0.3,0-0.4-0.3-0.5-0.5c-0.6-2.1-1.3-4.3-1.8-6.4
+                            c-0.4-1.5-1.4-5.3-2-8c-0.6,2.5-0.8,3.3-1.9,7.3c-0.5,1.8-0.6,1.9-0.9,3.2l-1.2,3.9c-0.1,0.2-0.3,0.4-0.5,0.4c-0.6,0-1.1,0-1.6,0
+                            c-0.2,0-0.4-0.1-0.4-0.3c0-0.3,0.2-0.7,0.2-1C84.5,20.1,86.1,14.8,87.7,9.5z"/>
+                        <path class="st2" d="M101.4,9c0.2-0.2,0.4-0.1,0.6-0.1c0.6,0,1.1,0,1.7,0c0.3,0,0.3,0.4,0.3,0.6v7.4h0.5l5.4-7.4
+                            c0.2-0.2,0.5-0.6,0.8-0.6c0.6,0,1.2,0,1.8,0c0.2,0,0.3,0,0.4,0.2c0,0.2-0.1,0.4-0.2,0.6l-5.8,8l5.4,6.8c0.5,0.7,1.1,1.2,1.5,2
+                            c-0.1,0.1-0.2,0.3-0.4,0.3c-0.7,0-1.4,0-2.1,0c-0.3,0-0.5-0.2-0.7-0.4c-2-2.5-3.9-5-5.9-7.5h-0.5v7.4c0,0.2-0.1,0.5-0.4,0.5
+                            c-0.6,0-1.2,0-1.9,0c-0.3,0-0.5-0.2-0.5-0.5V9.9C101.3,9.5,101.2,9.2,101.4,9z"/>
+                        <path class="st2" d="M119,9.3c0-0.2,0.2-0.5,0.4-0.5c0.6,0,1.2,0,1.8,0c0.2,0,0.3,0.2,0.4,0.4c1.8,3.2,3.6,6.3,5.4,9.5
+                            c0.5,0.9,1.1,1.8,1.5,2.8c0-4,0-8.1,0-12.1c0-0.7,0.8-0.4,1.3-0.5c0.4,0.1,1.1-0.2,1.3,0.4c0,5.7,0,11.4,0,17.1
+                            c0,0.6-0.7,0.4-1.1,0.4c-0.4-0.1-1.1,0.2-1.4-0.3l-5.5-9.7c-0.5-0.9-1-1.7-1.4-2.7c0,4,0,8.1,0,12.1c0,0.3-0.2,0.5-0.4,0.5
+                            c-0.5,0-1.1,0-1.6,0c-0.3,0-0.5-0.3-0.4-0.5V9.3H119z"/>
+                    </svg>
+                </a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                    <!-- entries without drop-downs appear here -->
+                    
+                    <!-- entries with drop-downs appear here -->
+                    <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                    
+                    
+                    <!-- <li class="dropdown">
+                        <a>Documentation</a>
+                        <ul>
+                            <li><a href="#">Overview</a></li>
+                            <li><a href="#">Core API</a></li>
+                            <li><a href="#">Graql API</a></li>
+                            <li><a href="#">Rest API</a></li>
+                            <li><a href="#">Javadoc</a></li>
+                        </ul>
+                    </li> -->
+                    <li><a href="/overview/index.html">Overview</a></li>
+                    <li><a href="/academy/index.html">Academy</a></li>
+                    <li><a href="/index.html">Docs</a></li>
+                    <li><a rel="me" href="//grakn.ai/community.html">Community</a></li>
+                    <li><a rel="me" href="//discuss.grakn.ai/">Discuss</a></li>
+                    <li><a rel="me" href="//blog.grakn.ai/" target="_blank">Blog</a></li>
+                    <!--comment out this block if you want to hide search-->
+                    <li>
+                        <!--start search-->
+                        <div id="search-demo-container">
+                            <input type="text" id="search-input" placeholder="Search">
+                            <ul id="results-container"></ul>
+                        </div>
+                        <script src="/js/jekyll-search.js" type="text/javascript"></script>
+                        <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                
+                                dataSource: '/search.json',
+                                
+                                searchResultTemplate: '<li><a href="{url}" title="Getting ready">{title}</a></li>',
+                                noResultsText: '<li><a class="empty">No results found</a></li>',
+                                limit: 10,
+                                fuzzy: true
+                            });
+                        </script>
+                        <!--end search-->
+                    </li>
+                    <!--comment out this block if you want to hide github link-->
+                    <li>
+                        <a rel="me" href="//github.com/graknlabs/grakn" target="_blank" class="github">
+                            <svg><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#github"></use></svg>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            </div>
+            <!-- /.container -->
+    </nav>
+<!-- Page Content -->
+<div class="container">
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+<ul id="mysidebar" class="nav">
+    <li class="sidebarTitle">Grakn Academy </li>
+    
+    
+
+        
+        <li>
+            
+            <li><a href="/academy/index.html">Academy home</a></li>
+            
+        </li>
+        
+        
+    
+    
+    <li>
+        <a href="#">1. Welcome to the Academy</a>
+        <ul>
+            
+            
+            
+            <li><a href="/academy/grakn-intro.html">1.1 What is Grakn</a></li>
+            
+            
+            
+            
+            
+            
+            <li class="active"><a href="/academy/setup.html">1.2 Academy Setup</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">2. GRAQL language</a>
+        <ul>
+            
+            
+            
+            <li><a href="/academy/graql-intro.html">2.1 GRAQL introduction</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/get-queries.html">2.2 Get Queries</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/insert-delete-queries.html">2.3 Insert and Delete queries</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/other-queries.html">2.4 Other queries</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/graql-review.html">Module Review</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">3. GRAKN schemas</a>
+        <ul>
+            
+            
+            
+            <li><a href="/academy/schema-elements.html">3.1 Schema elements</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/conceptual-modeling-intro.html">3.2 Conceptual modeling</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/schema-building.html">3.3 Schema building</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/schema-building-continued.html">3.4 Schema building part II</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/schema-review.html">Module Review</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">4. Loading data</a>
+        <ul>
+            
+            
+            
+            <li><a href="/academy/loading-files.html">4.1 Loading files</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/csv-migration.html">4.2 Data migration - CSV</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/xml-migration.html">4.3 Data migration - XML and JSON</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/migration-review.html">Module Review</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">5. Logic inference</a>
+        <ul>
+            
+            
+            
+            <li><a href="/academy/reasoner-intro.html">5.1 Logic inference</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/inference-rules.html">5.2 Inference rules</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/advanced-rules.html">5.3 Advanced reasoning</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/reasoner-review.html">Module Review</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">6. Large scale analytics</a>
+        <ul>
+            
+            
+            
+            <li><a href="/academy/analytics-intro.html">6.1 Distributed analytics</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/statistics-queries.html">6.2 Statistics queries</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/graph-analytics.html">6.3 Graph analytics</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="/academy/analytics-review.html">Module Review</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+
+        
+        
+    
+
+        
+        <li>
+            
+            <li><a href="/index.html">Documentation Portal</a></li>
+            
+        </li>
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+        </div>
+        <!-- Content Column -->
+        <div class="col-md-9">
+            <div class="post-header">
+   <h1 class="post-title-main">Getting ready</h1>
+</div>
+
+
+
+<div class="post-content">
+
+   
+    <div class="summary">In this lesson you find out what are the prerequisites for the rest of the Academy and you will have the first taste of GRAKN</div>
+   
+
+    
+
+    
+
+    
+
+    
+
+  <h2 id="what-you-need-to-know-and-where-to-learn-it">What you need to know (and where to learn it)</h2>
+
+<p>In order to follow the Academy lessons, you will have to have some basic knowledge of the unix shells (Bash or similar). This is out of the scope of this tutorial, but a quick web search will get you all the information you need.</p>
+
+<p>If you do not know where to begin with, try having look at this <a href="http://lifehacker.com/5633909/who-needs-a-mouse-learn-to-use-the-command-line-for-almost-anything">tutorial</a>.</p>
+
+<p>You will also need to have and know how to use a text editor which can save simple, non formatted text files. There are countless alternatives on every platform, just pick your favourite one.</p>
+
+<h2 id="setup-the-academy-virtual-machine-vm">Setup the Academy Virtual Machine (VM)</h2>
+
+<p>To make sure that the GRAKN environment is the same for everyone following this course, we will use a virtual machine (VM from now on) with GRAKN pre-installed and the data we will be using pre-loaded.</p>
+
+<p>To set it up you have to follow some simple steps:</p>
+
+<ol>
+  <li>
+    <p>Install Oracle’s VirtualBox if you have not already installed it. It can be downloaded from <a href="https://www.virtualbox.org/wiki/Downloads">here</a> where you will also find detailed instructions on how to set it up on your favourite OS (it is a fairly simple process).</p>
+  </li>
+  <li>
+    <p>Download the GRAKN virtual machine following <a href="http://grakn.ai/download-academy">this link</a> and unzip the downloaded file</p>
+  </li>
+  <li>
+    <p>Start Virtualbox and from the <code class="highlighter-rouge">File</code> menu select <code class="highlighter-rouge">Import Appliance</code>. Open the <code class="highlighter-rouge">GRAKN.ovf</code> file that you will find in the folder you unzipped in the preceding step. This will import the virtual machine image into VirtualBox</p>
+  </li>
+  <li>
+    <p>You are ready to go: start the Virtual Machine you just imported and you will be presented a login screen to the virtual machine. Input <code class="highlighter-rouge">grakn</code> both as a user name and password and you will be in the shell.</p>
+  </li>
+</ol>
+
+<p><img src="/images/academy/1-welcome/VM-screenshot.png" alt="VM Screenshot" /></p>
+
+<h3 id="exercise">Exercise</h3>
+
+<p>Once you have started the virtual machine, list the content on the home directory, then move yourself into the folder <code class="highlighter-rouge">grakn/</code> from here you will be able to start grakn.</p>
+
+<h2 id="starting-and-using-grakn">Starting and using GRAKN</h2>
+
+<p>With the Virtual Machine up and running, you are ready to start grakn. From the directory <code class="highlighter-rouge">~/grakn/</code> run the command <code class="highlighter-rouge">./grakn server start</code> to start Grakn. As soon as you see the Grakn logo, you will be able to connect to the Grakn.</p>
+
+<p>There are several ways to interact with GRAKN. We will mostly be using 3 of them: the Graph visualiser, the Dashboard Console and the Graql shell.</p>
+
+<h2 id="visualiser">Visualiser</h2>
+
+<p>To access the graph visualiser, with GRAKN running in the virtual machine, simply point your favourite browser (Google Chrome is preferred to use GRAKN) to <code class="highlighter-rouge">localhost:4567</code> and you will be presented with the following screen.</p>
+
+<p><img src="/images/academy/1-welcome/Dashboard.png" alt="Visualiser screenshot" /></p>
+
+<p>This is the Graph visualiser. In this mode, you can query your GRAKN knowledge base and the results will be presented as a graph. To try it do the following:
+In the top right corner click on the <code class="highlighter-rouge">grakn</code> tab (this is the Keyspace selector); a drop-down menu will appear. Click on <code class="highlighter-rouge">academy</code> to select the Keyspace where our knowledge base has been loaded
+In the box on the top of the page (the Graql editor) write <code class="highlighter-rouge">match $x isa company; get;</code> and return. The result of the query will be visualised in the main area of the page.</p>
+
+<h4 id="good-to-know-keyspaces">GOOD TO KNOW: Keyspaces</h4>
+<p>In the GRAKN terminology, a keyspace is an isolated storage layer where you can store a knowledge base. This way you can have several knowledge bases in the same running instance of GRAKN without them interacting and steping on each others’ toes.</p>
+
+<p>The Graph visualiser is a good tool to visualise (you guessed it) the graph structure underlying your knowledge base. It is useful to explore the graph, to find connection and to better understand the result of our reasoning engine thanks to the explanation facility (don’t worry if some of these terms sound obscure: they will become clearer during the rest of the course).</p>
+
+<p>When the results to the query are too many, though, too much information is on your screen and the Graph visualiser becomes less useful. For this reason, there is a way to automatically limit the number of results that appear on your screen when you launch a query in the graph visualiser. You can choose anything you want, but 2 is a good number to start experimenting with.</p>
+
+<p><img src="/images/academy/1-welcome/Dashboard-settings.png" alt="Visualiser screenshot" /></p>
+
+<h4 id="good-to-know-clearing-the-graph">GOOD TO KNOW: Clearing the graph.</h4>
+<p>In order to clear both the graph and the GRAQL editor in the dashboard, just SHIFT+Click on the (X) sign next to the editor.</p>
+
+<h2 id="dashboard-console">Dashboard Console</h2>
+<p>When you have too many results or in general for some type of queries that do not return results in the form of a graph, it is not advisable (or in some case not even possible) to use the graph visualiser. In those cases, you need the Console. To access it click on the “Console” tab on the left of your screen and run again the same query as before to see how the result looks like.</p>
+
+<p><img src="/images/academy/1-welcome/Dashboard-Console.png" alt="Visualiser screenshot" /></p>
+
+<h2 id="graql-console">GRAQL Console</h2>
+
+<p>For security reasons, the dashboard does not allow you to modify the knowledge base, only to query it. In order to be able to add data or remove things, a lower level access point is needed: the GRAQL shell, which  looks very similar to the Dashboard Console, but requires the command line to be launched.</p>
+
+<p>In order to launch the GRAQL shell, from the command line of the VM, in the folder <code class="highlighter-rouge">grakn</code>, run <code class="highlighter-rouge">./graql console -k academy</code>. This will launch the GRAQL shell in the keyspace “academy”, that contains the data we are using during this course.</p>
+
+<p>Once again, type <code class="highlighter-rouge">match $x isa company; get;</code> and hit return to launch the query. As you can see the results looks very similar those in the dashboard console.</p>
+
+<p>To quit the GRAQL shell, just type <code class="highlighter-rouge">exit</code> to return to the command line.</p>
+
+<h2 id="other-entry-points">Other entry points</h2>
+
+<p>The graph visualiser, the console and the GRAQL shell are not the only ways to interact with GRAKN. There are lower level ways to control it programmatically, like the REST endpoints and the Java API, but those are out of the scope of this article. They are treated more in depth in the <a href="/documentation/api-reference/api-reference.html">documentation</a> that I highly encourage you to consult.</p>
+
+<h3 id="what-you-have-learned">What you have learned?</h3>
+
+<p>If you have made it this far, you should have a working distribution of GRAKN running in a virtual machine, and you should know how to access the main entry points to the system: you should know how to access and query GRAKN from the Graph visualiser, the Dashboard console, and the GRAQL shell.</p>
+
+<p>You are now ready to get your hands dirty and start working with GRAKN.</p>
+
+<h2 id="what-next">What next?</h2>
+
+<p>In the <a href="/academy/graql-intro.html">next module</a> you will start learning about GRAQL, the language of knowledge that is used to control the different components of the software stack. As you will see, it is very readable and easy to learn and use. If you want to have a look around before going on, head to the <a href="/index.html">documentation portal</a></p>
+
+
+    <div class="tags">
+        
+        <b>Tags: </b>
+        
+        
+        
+        <a href="/tag_getting-started.html" class="btn btn-default navbar-btn cursorNorm" role="button">getting-started</a>
+        
+        
+        
+    </div>
+
+    
+
+</div>
+
+<!-- <hr class="shaded"/> -->
+
+<footer class="row">
+    <div class="col-lg-4 footer">
+        <span class="footer-header">Get in touch</span>
+        <p>
+            <a class="slack" href="https://grakn.ai/slack.html">
+                <svg><use xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="#slack"></use></svg> Grakn on Slack
+            </a>
+            <br>
+            <a rel="me" class="github" href="https://github.com/graknlabs/grakn" target="_blank">
+                <svg><use xmlns:xlink="https://www.w3.org/1999/xlink" xlink:href="#github"></use></svg> Grakn on GitHub
+            </a>
+            <br><br>
+            <a href="mailto:info@grakn.ai">info@grakn.ai</a><br>
+            Unit 22, 8 Hornsey Street<br>
+            London, UK, N7 8EG
+        </p>
+        <br>
+        <p>© 2017 <a href="https://grakn.ai">Grakn Labs Ltd</a></p>
+        <!-- &copy;2017 GRAKN.AI. All rights reserved. <br />
+        <span>Page last updated:</span> September 2017<br/> Site last generated: Dec 12, 2017 <br />
+        <p><img src="images/company_logo.png" alt="Company logo"/></p> -->
+    </div>
+    <div class="col-lg-2 footer">
+        <span class="footer-header">Get Started</span>
+        <ul>
+            <li><a href="/overview/index.html">Introduction</a></li>
+            <li><a href="/docs/get-started/setup-guide">Install</a></li>
+            <li><a href="/docs/get-started/quickstart-tutorial">Quickstart</a></li>
+        </ul>
+    </div>
+    <div class="col-lg-2 footer">
+        <span class="footer-header">Resources</span>
+        <ul>
+            <li><a href="/index.html">Documentation</a></li>
+            <li><a rel="me" href="https://github.com/graknlabs/grakn" target="_blank">GitHub</a></li>
+            <li><a href="https://grakn.ai/javadocs.html">Javadoc</a></li>
+            <li><a href="https://grakn.ai/community.html">Community</a></li>
+        </ul>
+    </div>
+    <div class="col-lg-2 footer">
+        <span class="footer-header">Community</span>
+        <ul>
+            <li><a rel="me" href="https://discuss.grakn.ai">Discussion</a></li>
+            <li><a rel="me" href="https://stackoverflow.com/questions/tagged/graql+or+grakn" target="_blank">Stack Overflow</a></li>
+            <li><a href="https://grakn.ai/slack.html">Slack</a></li>
+            <li><a rel="me" href="https://twitter.com/graknlabs" target="_blank">Twitter</a></li>
+        </ul>
+    </div>
+    <div class="col-lg-2 footer">
+        <span class="footer-header">Company</span>
+        <ul>
+            <li><a rel="me" href="https://blog.grakn.ai" target="_blank">Blog</a></li>
+            <li><a href="https://grakn.ai/careers.html">Careers</a></li>
+            <li><a href="https://grakn.ai/about.html">About</a></li>
+        </ul>
+    </div>
+</footer>
+
+
+        </div>
+    </div>
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-72414051-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>
