@@ -32,15 +32,19 @@ Whether the given [match](matches.html) has any results.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell-ask">
-<pre>
+<pre class="language-graql">
+<code>
 match divorce sub relationship; aggregate ask;
 match marriage sub relationship; aggregate ask;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java-ask">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(label("divorce").sub("relationship")).aggregate(ask()).execute();
 qb.match(label("marriage").sub("relationship")).aggregate(ask()).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -56,13 +60,17 @@ Count the number of results of the match or aggregate result.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell1">
-<pre>
+<pre class="language-graql">
+<code>
 match $x isa person; aggregate count;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java1">
-<pre>
+<pre class="language-java">
+<code>
 qb.match(var("x").isa("person")).aggregate(count());
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -78,15 +86,19 @@ Sum the given attribute variable.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell2">
-<pre>
+<pre class="language-graql">
+<code>
 match $x isa person, has age $a; aggregate sum $a;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java2">
-<pre>
+<pre class="language-graql">
+<code>
 qb.match(
     var("x").isa("person").has("age", var("a"))
 ).aggregate(sum("a"));
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -102,15 +114,17 @@ Find the maximum of the given attribute variable.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell3">
-<pre>
+<pre class="language-graql"> <code>
 match $x isa person, has age $a; aggregate max $a;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java3">
-<pre>
+<pre class="language-java"> <code>
 qb.match(
     var("x").isa("person").has("age", var("a"))
 ).aggregate(max("a"));
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -126,15 +140,17 @@ Find the minimum of the given attribute variable.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell4">
-<pre>
+<pre class="language-graql"> <code>
 match $x isa person, has firstname $n; aggregate min $n;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java4">
-<pre>
+<pre class="language-java"> <code>
 qb.match(
     var("x").isa("person").has("firstname", var("n"))
 ).aggregate(min("n"));
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -150,15 +166,17 @@ Find the mean (average) of the given attribute variable.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell5">
-<pre>
+<pre class="language-graql"> <code>
 match $x isa person, has age $a; aggregate mean $a;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java5">
-<pre>
+<pre class="language-java"> <code>
 qb.match(
     var("x").isa("person").has("age", var("a"))
 ).aggregate(mean("a"));
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -174,16 +192,17 @@ Find the median of the given attribute variable.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell6">
-<pre>
+<pre class="language-graql"> <code>
 match $x isa person, has age $a; aggregate median $a;
-
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java6">
-<pre>
+<pre class="language-java"> <code>
 qb.match(
     var("x").isa("person").has("age", var("a"))
 ).aggregate(median("a"));
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -202,17 +221,21 @@ aggregate operation, e.g. `count`.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell7">
-<pre>
+<pre class="language-graql"> <code>
 match $x isa person; $y isa person; (parent: $x, child: $y) isa parentship; aggregate group $x;
+</code>
+
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java7">
-<pre>
+<pre class="language-java"> <code>
 qb.match(
     var("x").isa("person"),
     var("y").isa("person"),
     var().rel("parent", "x").rel("child", "y").isa("parentship")
 ).aggregate(group("x"));
+</code>
+
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -228,15 +251,17 @@ Select and name multiple aggregates.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell8">
-<pre>
+<pre class="language-graql"> <code>
 match $x isa person, has age $a, has gender $g; aggregate (min $a as minAge, max $g as maxGender);
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java8">
-<pre>
+<pre class="language-java"> <code>
 qb.match(
     var("x").isa("person").has("age", var("a")).has("gender", var("g")),
 ).aggregate(select(min("a").as("minAge"), max("g").as("maxGender")));
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

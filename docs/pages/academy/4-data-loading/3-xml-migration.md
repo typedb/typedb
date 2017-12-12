@@ -54,7 +54,7 @@ We need a "for" loop.
 
 The syntax of a "for" loop is very similar to that of an "if" statement:
 
-```
+```graql-skip-test
 ...
 for (<NESTED> do {
   $x has <LEVEL3>
