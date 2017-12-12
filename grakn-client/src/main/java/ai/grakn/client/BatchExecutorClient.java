@@ -420,6 +420,9 @@ public class BatchExecutorClient implements Closeable {
         public QueriesObservableCollapser(QueryRequest query, Keyspace keyspace,
                                           GraknClient client, int delay, int retries, int threadPoolCoreSize, int timeoutMs,
                                           MetricRegistry metricRegistry) {
+            // TODO: There is a likely bug here because the `QueriesObservableCollapser` is keyed by keyspace only.
+            // This means if you make a collapser with retries=10 and then send some queries, then make a new collapser
+            // with retries=5, the OLD collapser will collapse the queries and "override" the new retries parameter.
             super(Setter.withCollapserKey(
                     // It split by keyspace since we want to avoid mixing requests for different
                     // keyspaces together
