@@ -89,13 +89,13 @@ This is the Grakn migration representation of the given XML data.
 
 Nodes can be migrated using their tags as the keys in the template. To migrate that the example person has best friend "Charlie" you only need to specify the `BESTFRIEND` node. However, you also need to indicate that you want the inner text of that node using the `textContent` indicator. 
 
-```
+```graql-skip-test
 insert $x isa person has name <PERSON[0].textContent>;
 ```
 
 To refer to the content of a node that is the current context of the template we can use the only the `textContext` indicator. 
 
-```
+```graql-skip-test
 for(<PERSON>) do {
     insert $x isa person has description <textContent>;
 }
@@ -105,7 +105,7 @@ for(<PERSON>) do {
 
 Attributes are prefixed by `~` to differentate them from tags of the same name. 
 
-```
+```graql-skip-test
 insert $x isa person has best-friend <"~BESTFRIEND">;
 ```
 
@@ -113,7 +113,7 @@ Note that any non-alphanumeric key needs to be in quotes.
 
 This also works with nesting. To migrate that this person has a bestfriend "Alice" you can use the `~` and an array accessor:
 
-```
+```graql-skip-test
 insert $x isa person has best-friend <BESTFRIEND[1]."~NAME">;
 ```
 
@@ -225,7 +225,7 @@ This example will migrate a single plant entity, along with various reosurces, f
 
 Our schema contains a single plant entity and various resources that are associated with it:
 
-```gql
+```graql-skip-test
 insert
 
 plant sub entity
@@ -249,7 +249,7 @@ We want to insert one `plant` entity in the knowledge base per `PLANT` tag in th
 
 The XML template will be applied to each of the specified elements:
 
-```
+```graql-skip-test
 insert
 
 $plant isa plant
