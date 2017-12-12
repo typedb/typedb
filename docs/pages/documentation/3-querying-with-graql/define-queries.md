@@ -33,15 +33,17 @@ be modified with further properties.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell3">
-<pre>
+<pre class="language-graql"> <code>
 <!--test-ignore-->
 define id "1376496" plays parent;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java3">
-<pre>
+<pre class="language-java"> <code>
 <!--test-ignore-->
 qb.define(var().id(ConceptId.of("1376496")).plays("parent")).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -57,15 +59,17 @@ Set up a hierarchy.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell8">
-<pre>
+<pre class="language-graql"> <code>
 define man sub person;
 define woman sub person;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java8">
-<pre>
+<pre class="language-java"> <code>
 qb.define(label("man").sub("person")).execute();
 qb.define(label("woman").sub("person")).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -81,16 +85,18 @@ Add a role to a relationship.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell9">
-<pre>
+<pre class="language-graql"> <code>
 define siblings sub relationship, relates sibling, relates sibling;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java9">
-<pre>
+<pre class="language-java"> <code>
 qb.define(
   label("siblings").sub("relationship")
     .relates("sibling").relates("sibling")
 ).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -106,15 +112,17 @@ Allow the concept type to play the given role.
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell10">
-<pre>
+<pre class="language-graql"> <code>
 define person plays sibling;
 define person plays sibling;
+</code>
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java10">
-<pre>
+<pre class="language-java"> <code>
 qb.define(label("person").plays("sibling")).execute();
 qb.define(label("person").plays("sibling")).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -133,14 +141,16 @@ This is done by creating a specific relationship relating the concept and attrib
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell11">
-<pre>
+<pre class="language-graql"> <code>
 define person has nickname;
+</code>
 </pre>
 </div>
 
 <div role="tabpanel" class="tab-pane" id="java11">
-<pre>
+<pre class="language-java"> <code>
 qb.define(label("person").has("nickname")).execute();
+</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
