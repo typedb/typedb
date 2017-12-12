@@ -21,6 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +110,7 @@ public class FactoryBuilder {
      */
     //TODO Should this close each of the factories (and wait for all open transactions to be closed?)
     //TODO Calling this from within the code causes a memory leak
+    @VisibleForTesting
     public static void refresh(){
         openFactories.clear();
     }
