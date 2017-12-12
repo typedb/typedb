@@ -19,14 +19,11 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.bootup.PidRetriever;
 import ai.grakn.engine.grakn_pid.GraknPid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -65,47 +62,8 @@ public class Grakn {
         Path pidfilePath = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
                 .map(Paths::get)
                 .orElseThrow(() -> new RuntimeException("Unable to find the property 'grakn.pidfile'"));
-        long pid = getPid();
+        long pid = new PidRetriever().getPid();
         return new GraknPid(pidfilePath, pid);
-    }
-
-    public static long getPid() {
-        StringBuilder outputS = new StringBuilder();
-        int exitValue = 1;
-
-        Process p;
-        BufferedReader reader = null;
-        try {
-            p = Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "ps -ef | ps -ef | grep \"ai.grakn.engine.Grakn\" | grep -v grep | awk '{print $2}'" }, null, null);
-            p.waitFor();
-            exitValue = p.exitValue();
-            reader =
-                    new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                outputS.append(line).append("\n");
-            }
-
-        } catch (InterruptedException | IOException e) {
-            // DO NOTHING
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    // DO NOTHING
-                }
-            }
-        }
-
-        String pidString = outputS.toString().trim();
-        try {
-            long pid = Long.parseLong(pidString);
-            return pid;
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("Couldn't get PID of Grakn. Received '" + pidString);
-        }
     }
 }
 
