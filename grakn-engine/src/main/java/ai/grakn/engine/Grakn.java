@@ -18,15 +18,10 @@
 
 package ai.grakn.engine;
 
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.bootup.PidRetriever;
 import ai.grakn.engine.grakn_pid.GraknPid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Optional;
 
 /**
  *
@@ -59,11 +54,8 @@ public class Grakn {
     }
 
     private static GraknPid newPidFile_deleteOnExit() {
-        Path pidfilePath = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
-                .map(Paths::get)
-                .orElseThrow(() -> new RuntimeException("Unable to find the property 'grakn.pidfile'"));
         long pid = new PidRetriever().getPid();
-        return new GraknPid(pidfilePath, pid);
+        return new GraknPid(pid);
     }
 }
 

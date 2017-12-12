@@ -23,6 +23,7 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.bootup.AbstractProcessHandler;
 import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.grakn_pid.GraknPid;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 
@@ -51,7 +52,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     private final GraknConfig graknConfig;
 
     private static final long GRAKN_STARTUP_TIMEOUT_S = 120;
-    private static final Path GRAKN_PID = Paths.get(GraknSystemProperty.GRAKN_PID_FILE.value());
+    public static final Path GRAKN_PID = GraknPid.GRAKN_PID_FILE_PATH;
 
     public GraknProcess(Path homePath, Path configPath) {
         this.homePath = homePath;

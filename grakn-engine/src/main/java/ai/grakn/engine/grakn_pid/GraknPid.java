@@ -18,10 +18,12 @@
 
 package ai.grakn.engine.grakn_pid;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  *
@@ -31,21 +33,20 @@ import java.nio.file.Path;
  *
  */
 public class GraknPid {
-    private final Path pidFilePath;
+    public static final Path GRAKN_PID_FILE_PATH = Paths.get(File.separator,"tmp","grakn.pid");
     private final long pid;
 
-    public GraknPid(Path pidFilePath, long pid) {
-        this.pidFilePath = pidFilePath;
+    public GraknPid(long pid) {
         this.pid = pid;
     }
 
     public void createPidFile_deleteOnExit() {
-        attemptToWritePidFile(pid, this.pidFilePath);
+        attemptToWritePidFile(pid, this.GRAKN_PID_FILE_PATH);
         deletePidFileOnExit();
     }
 
     private void deletePidFileOnExit() {
-        this.pidFilePath.toFile().deleteOnExit();
+        this.GRAKN_PID_FILE_PATH.toFile().deleteOnExit();
     }
 
     private void attemptToWritePidFile(long pid, Path pidFilePath) {
