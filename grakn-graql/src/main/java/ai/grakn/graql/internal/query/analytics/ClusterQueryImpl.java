@@ -63,7 +63,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
 
-        GraknVertexProgram vertexProgram;
+        GraknVertexProgram<?> vertexProgram;
         if (sourceId.isPresent()) {
             ConceptId conceptId = sourceId.get();
             if (!verticesExistInSubgraph(conceptId)) {
@@ -74,7 +74,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
             vertexProgram = new ConnectedComponentsVertexProgram();
         }
 
-        GraknMapReduce mapReduce;
+        GraknMapReduce<?> mapReduce;
         if (members) {
             if (anySize) {
                 mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
