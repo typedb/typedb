@@ -20,6 +20,7 @@ package ai.grakn.dist;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.bootup.AbstractProcessHandler;
 import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.REST;
@@ -31,7 +32,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;

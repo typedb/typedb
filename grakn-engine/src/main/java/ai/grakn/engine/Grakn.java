@@ -20,7 +20,6 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.grakn_pid.GraknPid;
-import org.hyperic.sigar.Sigar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
