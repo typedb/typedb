@@ -26,7 +26,7 @@ package ai.grakn.bootup;
  *
  */
 public class PidRetriever extends AbstractProcessHandler {
-    static final String getPidCommand = "ps -ef | ps -ef | grep \"ai.grakn.engine.Grakn\" | grep -v grep | awk '{print $2}'";
+    static final String getPidCommand = "ps -ef | grep \"ai.grakn.engine.Grakn\" | grep -v grep | awk '{print $2}'";
 
     public long getPid() {
         OutputCommand execution = executeAndWait(new String[] { "/bin/sh", "-c", getPidCommand}, null, null);
