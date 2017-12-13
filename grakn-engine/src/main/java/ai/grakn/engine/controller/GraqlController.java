@@ -53,9 +53,6 @@ import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import mjson.Json;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.entity.ContentType;
@@ -137,10 +134,6 @@ public class GraqlController {
 
     @GET
     @Path("/kb/{keyspace}/explain")
-    @ApiOperation(value = "Execute an arbitrary Graql query and get the explanation from the results")
-    @ApiImplicitParams({
-            @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "query"),
-    })
     private String explainGraql(Request request, Response response) throws RetryException, ExecutionException {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         String queryString = mandatoryQueryParameter(request, QUERY);
@@ -157,17 +150,6 @@ public class GraqlController {
 
     @POST
     @Path("/kb/{keyspace}/graql")
-    @ApiOperation(value = "Execute an arbitrary Graql query")
-    @ApiImplicitParams({
-            @ApiImplicitParam(value = "Query to execute", dataType = "string", required = true, paramType = "body"),
-            @ApiImplicitParam(name = EXECUTE_WITH_INFERENCE, value = "Enable inference", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(
-                    name = DEFINE_ALL_VARS,
-                    value = "Define all variables in response", dataType = "boolean", paramType = "query"
-            ),
-            @ApiImplicitParam(name = ALLOW_MULTIPLE_QUERIES, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = TX_TYPE, dataType = "string", paramType = "query")
-    })
     private String executeGraql(Request request, Response response) throws RetryException, ExecutionException {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         String queryString = mandatoryBody(request);

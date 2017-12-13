@@ -72,6 +72,8 @@ public class EngineGraknTxFactory {
         this.systemKeyspace = SystemKeyspaceImpl.create(this, lockProvider, loadSchema);
     }
 
+    //Should only be used for testing
+    @VisibleForTesting
     public synchronized void refreshConnections(){
         FactoryBuilder.refresh();
     }

@@ -32,6 +32,7 @@ import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.util.Collection;
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.graql.Graql.var;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
 public class ExplanationTest {
@@ -91,7 +93,7 @@ public class ExplanationTest {
         Answer answer4 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), europe));
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
+        testExplanation(answers);
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
         Answer queryAnswer2 = findAnswer(answer2, answers);
@@ -109,23 +111,18 @@ public class ExplanationTest {
         assertEquals(queryAnswer4.getPartialAnswers().size(), 7);
 
         assertTrue(queryAnswer1.getExplanation().isLookupExplanation());
-        assertTrue(answerHasConsistentExplanations(queryAnswer1));
 
         assertTrue(queryAnswer2.getExplanation().isRuleExplanation());
         assertEquals(2, getLookupExplanations(queryAnswer2).size());
         assertEquals(2, queryAnswer2.getExplicitPath().size());
-        assertTrue(answerHasConsistentExplanations(queryAnswer2));
 
         assertTrue(queryAnswer3.getExplanation().isRuleExplanation());
         assertEquals(2, getRuleExplanations(queryAnswer3).size());
         assertEquals(3, queryAnswer3.getExplicitPath().size());
-        assertTrue(answerHasConsistentExplanations(queryAnswer3));
-
 
         assertTrue(queryAnswer4.getExplanation().isRuleExplanation());
         assertEquals(3, getRuleExplanations(queryAnswer4).size());
         assertEquals(4, queryAnswer4.getExplicitPath().size());
-        assertTrue(answerHasConsistentExplanations(queryAnswer4));
     }
 
     @Test
@@ -138,7 +135,7 @@ public class ExplanationTest {
         Answer answer2 = new QueryAnswer(ImmutableMap.of(var("x"), uw, var("y"), poland));
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
+        testExplanation(answers);
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
         Answer queryAnswer2 = findAnswer(answer2, answers);
@@ -155,11 +152,9 @@ public class ExplanationTest {
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
         assertEquals(4, queryAnswer1.getExplicitPath().size());
-        assertTrue(answerHasConsistentExplanations(queryAnswer1));
 
         assertEquals(4, getLookupExplanations(queryAnswer2).size());
         assertEquals(4, queryAnswer2.getExplicitPath().size());
-        assertTrue(answerHasConsistentExplanations(queryAnswer2));
     }
 
     @Test
@@ -178,7 +173,7 @@ public class ExplanationTest {
         assertEquals(2, answer.getExplanation().getAnswers().size());
         assertEquals(3, getRuleExplanations(answer).size());
         assertEquals(4, answer.getExplicitPath().size());
-        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
+        testExplanation(answers);
     }
 
     @Test
@@ -193,7 +188,7 @@ public class ExplanationTest {
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
         assertEquals(answers.size(), 1);
-        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
+        testExplanation(answers);
     }
 
     @Test
@@ -246,7 +241,28 @@ public class ExplanationTest {
 
         GetQuery query = eiqb.parse(queryString);
         List<Answer> answers = query.execute();
-        answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
+        testExplanation(answers);
+    }
+
+    @Test
+    public void testExplainingMixedAtomicQueries(){
+        GraknTx expGraph = explanationKB.tx();
+        QueryBuilder eiqb = expGraph.graql().infer(true);
+
+        String queryString = "match " +
+                "$x has value 'high';" +
+                "($x, $y) isa carried-relation;" +
+                "get;";
+
+        GetQuery query = eiqb.parse(queryString);
+        List<Answer> answers = query.execute();
+        testExplanation(answers);
+        Answer inferredAnswer = answers.stream()
+                .filter(ans -> ans.getExplanations().stream().filter(AnswerExplanation::isRuleExplanation).findFirst().isPresent())
+                .findFirst().orElse(null);
+        Set<AnswerExplanation> explanations = inferredAnswer.getExplanations();
+        assertEquals(explanations.stream().filter(AnswerExplanation::isRuleExplanation).count(), 2);
+        assertEquals(explanations.stream().filter(AnswerExplanation::isLookupExplanation).count(), 4);
     }
 
     @Test
@@ -273,22 +289,43 @@ public class ExplanationTest {
         });
     }
 
-    private void testExplanation(Answer answer){
-        AnswerExplanation explanation = answer.getExplanation();
-        if (explanation.isRuleExplanation()) {
-            answerConnectedness(explanation.getAnswers());
-        }
+    private void testExplanation(Collection<Answer> answers){
+        answers.forEach(this::testExplanation);
     }
 
-    private void answerConnectedness(Collection<Answer> answers){
+    private void testExplanation(Answer answer){
+        answerHasConsistentExplanations(answer);
+        checkeExplanationCompleteness(answer);
+        checkAnswerConnectedness(answer);
+    }
+
+    //ensures that each branch ends up with an lookup explanation
+    private void checkeExplanationCompleteness(Answer answer){
+        assertFalse("Non-lookup explanation misses children",
+                answer.getExplanations().stream()
+                .filter(e -> !e.isLookupExplanation())
+                .filter(e -> e.getAnswers().isEmpty()).findFirst().isPresent()
+        );
+    }
+
+    private void checkAnswerConnectedness(Answer answer){
+        ImmutableSet<Answer> answers = answer.getExplanation().getAnswers();
         answers.forEach(a -> {
-            assertTrue(
+            assertTrue("Disconnected answer in explanation",
                     answers.stream()
                             .filter(a2 -> !a2.equals(a))
                             .filter(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
                             .findFirst().isPresent()
             );
         });
+    }
+
+    private void answerHasConsistentExplanations(Answer answer){
+        Set<Answer> answers = answer.getPartialAnswers().stream()
+                .filter(a -> !a.getExplanation().isJoinExplanation())
+                .collect(Collectors.toSet());
+
+        answers.forEach(a -> assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
@@ -310,19 +347,7 @@ public class ExplanationTest {
         return a.getExplanations().stream().filter(AnswerExplanation::isLookupExplanation).collect(Collectors.toSet());
     }
 
-    private boolean answerHasConsistentExplanations(Answer ans){
-        Set<Answer> answers = ans.getPartialAnswers().stream()
-                .filter(a -> !a.getExplanation().isJoinExplanation())
-                .collect(Collectors.toSet());
-        for (Answer a : answers){
-            if (!isExplanationConsistentWithAnswer(a)){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean isExplanationConsistentWithAnswer(Answer ans){
+    private boolean explanationConsistentWithAnswer(Answer ans){
         ReasonerQuery query = ans.getExplanation().getQuery();
         Set<Var> vars = query != null? query.getVarNames() : new HashSet<>();
         return vars.containsAll(ans.map().keySet());
