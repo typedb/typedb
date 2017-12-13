@@ -24,6 +24,7 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
+import ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -58,7 +59,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
 
         ComputerResult result = getGraphComputer().compute(
                 new KCoreVertexProgram(k),
-                new ClusterMemberMapReduce(KCoreVertexProgram.CLUSTER_LABEL),
+                new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL),
                 subLabelIds);
 
         LOGGER.info("KCore is done in " + (System.currentTimeMillis() - startTime) + " ms");

@@ -34,7 +34,7 @@ import java.util.Set;
 import static ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram.CLUSTER_LABEL;
 
 /**
- * The vertex program for connected components in a graph.
+ * The vertex program for computing connected components of a give instance.
  *
  * @author Jason Liu
  */

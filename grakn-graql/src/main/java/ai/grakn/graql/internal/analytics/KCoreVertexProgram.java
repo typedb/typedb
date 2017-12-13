@@ -30,10 +30,12 @@ import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
-import java.util.Iterator;
 import java.util.Set;
+
+import static ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram.CLUSTER_LABEL;
+import static ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram.VOTE_TO_HALT;
+import static ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram.updateClusterLabel;
 
 /**
  * The vertex program for computing k-core.
@@ -44,15 +46,15 @@ import java.util.Set;
 public class KCoreVertexProgram extends GraknVertexProgram<String> {
 
     private static final int MAX_ITERATION = 100;
+    private static final String EMPTY_MESSAGE = "";
 
-    public static final String CLUSTER_LABEL = "kCoreVertexProgram.clusterLabel";
-    private static final String QUALIFIED = "kCoreVertexProgram.qualified";
+    //    public static final String CLUSTER_LABEL = "kCoreVertexProgram.clusterLabel";
     private static final String IMPLICIT_MESSAGE_COUNT = "kCoreVertexProgram.implicitMessageCount";
 
     private static final String K_CORE_STABLE = "kCoreVertexProgram.stable";
     private static final String K_CORE_EXIST = "kCoreVertexProgram.exist";
     private static final String CONNECTED_COMPONENT_STARTED = "kCoreVertexProgram.ccStarted";
-    private static final String VOTE_TO_HALT = "kCoreVertexProgram.voteToHalt";
+    //    private static final String VOTE_TO_HALT = "kCoreVertexProgram.voteToHalt";
     private static final String K = "kCoreVertexProgram.k";
 
     private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS = Sets.newHashSet(
@@ -63,7 +65,6 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
 
     private static final Set<VertexComputeKey> VERTEX_COMPUTE_KEYS = Sets.newHashSet(
             VertexComputeKey.of(CLUSTER_LABEL, false),
-            VertexComputeKey.of(QUALIFIED, true),
             VertexComputeKey.of(IMPLICIT_MESSAGE_COUNT, true));
 
     private int k;
@@ -95,7 +96,8 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     @Override
     public void setup(final Memory memory) {
         LOGGER.debug("KCoreVertexProgram Started !!!!!!!!");
-        memory.set(K_CORE_STABLE, true);
+        // K_CORE_STABLE is true by fault, and we reset it after each odd iteration.
+        memory.set(K_CORE_STABLE, false);
         memory.set(K_CORE_EXIST, false);
         memory.set(VOTE_TO_HALT, true);
         memory.set(CONNECTED_COMPONENT_STARTED, false);
@@ -106,90 +108,99 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         String id;
         switch (memory.getIteration()) {
             case 0:
-                sendMessage(messenger, vertex.value(Schema.VertexProperty.ID.name()));
+                sendMessage(messenger, EMPTY_MESSAGE);
                 break;
 
             case 1: // get degree first, as degree must >= k
                 if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
                         vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
                         Iterators.size(messenger.receiveMessages()) >= k) {
-                    vertex.property(QUALIFIED, true);
+                    id = vertex.value(Schema.VertexProperty.ID.name());
+                    vertex.property(CLUSTER_LABEL, id);
                     memory.add(K_CORE_EXIST, true);
-                    sendMessage(messenger, vertex.value(Schema.VertexProperty.ID.name()));
+                    sendMessage(messenger, EMPTY_MESSAGE);
                 }
                 break;
 
             default:
                 if (memory.<Boolean>get(CONNECTED_COMPONENT_STARTED)) {
-                    //
-
+                    updateClusterLabel(vertex, messenger, memory);
                 } else {
                     if (memory.getIteration() % 2 == 0) {
                         relayOrSaveMessages(vertex, messenger);
-                    } else { // entity iteration
-                        if (vertex.property(QUALIFIED).isPresent()) {
-                            id = vertex.value(Schema.VertexProperty.ID.name());
-                            if (vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) {
-                                int messageCount = getMessageCount(messenger, id);
-                                if (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent()) {
-                                    messageCount += (int) vertex.value(IMPLICIT_MESSAGE_COUNT);
-                                }
-                                updateVertex(vertex, messenger, memory, id, messageCount);
-                            } else if (vertex.label().equals(Schema.BaseType.ENTITY.name())) {
-                                int messageCount = getMessageCount(messenger, id);
-                                updateVertex(vertex, messenger, memory, id, messageCount);
-                            }
-                        }
+                    } else {
+                        updateEntityAndAttribute(vertex, messenger, memory);
                     }
                 }
                 break;
         }
     }
 
+    private void updateEntityAndAttribute(Vertex vertex, Messenger<String> messenger, Memory memory) {
+        if (vertex.property(CLUSTER_LABEL).isPresent()) {
+            int messageCount = vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent() ?
+                    (int) vertex.value(IMPLICIT_MESSAGE_COUNT) : 0;
+            int messageCountFromCurrentIteration = Iterators.size(messenger.receiveMessages());
+            if (messageCountFromCurrentIteration > 0) {
+                messageCountFromCurrentIteration -= 1; // one message is from itself
+            }
+            messageCount += messageCountFromCurrentIteration;
+
+            if (messageCount >= k) {
+                sendMessage(messenger, EMPTY_MESSAGE);
+                memory.add(K_CORE_EXIST, true);
+            } else {
+                vertex.property(CLUSTER_LABEL).remove();
+                memory.add(K_CORE_STABLE, false);
+            }
+        }
+    }
+
     private static void relayOrSaveMessages(Vertex vertex, Messenger<String> messenger) {
-        if (vertex.label().equals(Schema.BaseType.RELATIONSHIP.name())) {
-            // relay the messages
-            messenger.receiveMessages().forEachRemaining(msg -> sendMessage(messenger, msg));
-        } else if (vertex.label().equals(Schema.BaseType.ATTRIBUTE.name()) &&
-                vertex.property(QUALIFIED).isPresent()) {
-            if (messenger.receiveMessages().hasNext()) {
+        if (messenger.receiveMessages().hasNext()) {
+            if (vertex.label().equals(Schema.BaseType.RELATIONSHIP.name())) {
+                // relay the messages
+                sendMessage(messenger, EMPTY_MESSAGE);
+            } else if (vertex.label().equals(Schema.BaseType.ATTRIBUTE.name()) &&
+                    vertex.property(CLUSTER_LABEL).isPresent()) {
                 // messages received via implicit edge, save the count for next iteration
                 vertex.property(IMPLICIT_MESSAGE_COUNT, Iterators.size(messenger.receiveMessages()));
             }
         }
     }
 
-    private void updateVertex(Vertex vertex, Messenger<String> messenger, Memory memory, String id, int messageCount) {
-        if (messageCount >= k) {
-            sendMessage(messenger, id);
-            memory.add(K_CORE_EXIST, true);
-        } else {
-            vertex.property(QUALIFIED).remove();
-            memory.add(K_CORE_STABLE, false);
-        }
-    }
-
-
-    private static int getMessageCount(Messenger<String> messenger, String id) {
-        int messageCount = 0;
-        Iterator<String> messages = messenger.receiveMessages();
-        while (messages.hasNext()) {
-            if (!messages.next().equals(id)) messageCount++;
-        }
-        return messageCount;
-    }
-
-    private void update(Vertex vertex, Messenger<String> messenger, Memory memory) {
-        String currentMax = vertex.value(CLUSTER_LABEL);
-        String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
-                (a, b) -> a.compareTo(b) > 0 ? a : b);
-        if (max.compareTo(currentMax) > 0) {
-            vertex.property(CLUSTER_LABEL, max);
-            messenger.sendMessage(messageScopeIn, max);
-            messenger.sendMessage(messageScopeOut, max);
-            memory.add(VOTE_TO_HALT, false);
-        }
-    }
+//    private void updateVertex(Vertex vertex, Messenger<String> messenger,
+//                              Memory memory, String id, int messageCount) {
+//        if (messageCount >= k) {
+//            sendMessage(messenger, id);
+//            memory.add(K_CORE_EXIST, true);
+//        } else {
+//            vertex.property(CLUSTER_LABEL).remove();
+//            memory.add(K_CORE_STABLE, false);
+//        }
+//    }
+//
+//    // count the messages from relationships, so need to filter its own msg
+//    private static int getMessageCount(Messenger<String> messenger, String id) {
+//        int messageCount = 0;
+//        Iterator<String> messages = messenger.receiveMessages();
+//        while (messages.hasNext()) {
+//            if (!messages.next().equals(id)) messageCount++;
+//        }
+//        return messageCount;
+//    }
+//
+//    private void update(Vertex vertex, Messenger<String> messenger, Memory memory) {
+//        String currentMax = vertex.value(CLUSTER_LABEL);
+//        String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
+//                (a, b) -> a.compareTo(b) > 0 ? a : b);
+//        if (max.compareTo(currentMax) > 0) {
+//            vertex.property(CLUSTER_LABEL, max);
+//            messenger.sendMessage(messageScopeIn, max);
+//            messenger.sendMessage(messageScopeOut, max);
+//            memory.add(VOTE_TO_HALT, false);
+//        }
+//    }
 
     private static void sendMessage(Messenger<String> messenger, String message) {
         messenger.sendMessage(messageScopeIn, message);
@@ -200,6 +211,11 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.isInitialIteration()) return false;
+
+        if (memory.getIteration() == MAX_ITERATION) {
+            LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
+            throw GraqlQueryException.maxIterationsReached(this.getClass());
+        }
 
         if (memory.<Boolean>get(CONNECTED_COMPONENT_STARTED)) {
             if (memory.<Boolean>get(VOTE_TO_HALT)) {
@@ -217,30 +233,31 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                     } else {
                         memory.set(K_CORE_EXIST, false);
                         memory.set(K_CORE_STABLE, true);
-                        return false;
                     }
+                    return false;
                 } else {
                     LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
-                    return true; // no such core areas exist
+                    LOGGER.debug("No Such Core Areas Found !!!!!!!!");
+                    throw new NoResultException();
                 }
             } else {
-                return false; // can only end or start cc in entity iteration
+                return false; // can not end after relayOrSaveMessages
             }
         }
 
 
-        if (memory.getIteration() < 2) return false;
-        if (memory.<Boolean>get(VOTE_TO_HALT)) {
-            LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
-            return true;
-        }
-        if (memory.getIteration() == MAX_ITERATION) {
-            LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
-            throw GraqlQueryException.maxIterationsReached(this.getClass());
-        }
-
-        memory.set(VOTE_TO_HALT, true);
-        return false;
+//        if (memory.getIteration() < 2) return false;
+//        if (memory.<Boolean>get(VOTE_TO_HALT)) {
+//            LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
+//            return true;
+//        }
+//        if (memory.getIteration() == MAX_ITERATION) {
+//            LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
+//            throw GraqlQueryException.maxIterationsReached(this.getClass());
+//        }
+//
+//        memory.set(VOTE_TO_HALT, true);
+//        return false;
     }
 
 }
