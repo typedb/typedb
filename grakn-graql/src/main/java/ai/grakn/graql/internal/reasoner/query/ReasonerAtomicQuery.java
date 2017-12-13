@@ -44,9 +44,7 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
-import ai.grakn.graql.internal.reasoner.state.AtomicState;
 import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
-import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -304,12 +302,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ResolutionState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        //TODO put this behaviour inside AtomicStateProducer
-        if(getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
-
-        return getAtoms(NeqPredicate.class).findFirst().isPresent()?
-                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
-                new AtomicState(this, sub, u, parent, subGoals, cache);
+        return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
     }
 
     @Override
