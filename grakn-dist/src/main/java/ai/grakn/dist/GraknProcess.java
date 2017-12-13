@@ -19,10 +19,8 @@
 package ai.grakn.dist;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.bootup.AbstractProcessHandler;
 import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.grakn_pid.GraknPid;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 
@@ -32,8 +30,10 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.stream.Collectors;
@@ -50,7 +50,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     private final GraknConfig graknConfig;
 
     private static final long GRAKN_STARTUP_TIMEOUT_S = 120;
-    public static final Path GRAKN_PID = GraknPid.GRAKN_PID_FILE_PATH;
+    private static final Path GRAKN_PID = Paths.get(File.separator,"tmp","grakn.pid");
 
     public GraknProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
@@ -91,12 +91,27 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     private void graknStartProcess() {
         System.out.print("Starting "+graknClass().getSimpleName()+"...");
         System.out.flush();
+        if(Files.exists(GRAKN_PID)) {
+            try {
+                Files.delete(GRAKN_PID);
+            } catch (IOException e) {
+                // DO NOTHING
+            }
+        }
 
         String command = commandToRun();
         executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
                 command}, null, null);
+
+        String pid = getPidFromPsOf(graknClass().getName());
+
+        try {
+            Files.write(GRAKN_PID,pid.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            System.out.println("Cannot write "+graknClass().getSimpleName()+" PID on a file");
+        }
 
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(GRAKN_STARTUP_TIMEOUT_S);
@@ -119,13 +134,21 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
             }
         }
 
+        if(Files.exists(GRAKN_PID)) {
+            try {
+                Files.delete(GRAKN_PID);
+            } catch (IOException e) {
+                // DO NOTHING
+            }
+        }
+
         System.out.println("FAILED!");
         System.out.println("Unable to start "+graknClass().getSimpleName());
         throw new ProcessNotStartedException();
     }
 
     protected String commandToRun() {
-        return "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + GRAKN_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
+        return "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath +" "+graknClass().getName()+" > /dev/null 2>&1 &";
     }
 
     private boolean graknCheckIfReady(String host, int port, String path) {

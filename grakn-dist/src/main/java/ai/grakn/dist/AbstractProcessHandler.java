@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.bootup;
+package ai.grakn.dist;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,11 +31,11 @@ import java.util.Optional;
  *
  * @author Michele Orsi
  */
-public abstract class AbstractProcessHandler {
+abstract class AbstractProcessHandler {
 
-    public final static long WAIT_INTERVAL_S=2;
+    final static long WAIT_INTERVAL_S=2;
 
-    public OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
+    OutputCommand executeAndWait(String[] cmdarray, String[] envp, File dir) {
 
         StringBuilder outputS = new StringBuilder();
         int exitValue = 1;
@@ -68,7 +68,7 @@ public abstract class AbstractProcessHandler {
         return new OutputCommand(outputS.toString().trim(), exitValue);
     }
 
-    public Optional<String> getPidFromFile(Path fileName) {
+    Optional<String> getPidFromFile(Path fileName) {
         String pid=null;
         if (Files.exists(fileName)) {
             try {
@@ -80,7 +80,7 @@ public abstract class AbstractProcessHandler {
         return Optional.ofNullable(pid);
     }
 
-    public String getPidFromPsOf(String processName) {
+    String getPidFromPsOf(String processName) {
         return executeAndWait(new String[]{
                     "/bin/sh",
                     "-c",
@@ -104,7 +104,7 @@ public abstract class AbstractProcessHandler {
         }, null, null);
     }
 
-    public int retrievePid(Path pidFile) {
+    int retrievePid(Path pidFile) {
         if(!Files.exists(pidFile)) {
             return -1;
         }
@@ -117,7 +117,7 @@ public abstract class AbstractProcessHandler {
         }
     }
 
-    public void waitUntilStopped(Path pidFile, int pid) {
+    void waitUntilStopped(Path pidFile, int pid) {
         OutputCommand outputCommand;
         do {
             System.out.print(".");
@@ -141,7 +141,7 @@ public abstract class AbstractProcessHandler {
         }
     }
 
-    public String selectCommand(String osx, String linux) {
+    String selectCommand(String osx, String linux) {
         OutputCommand operatingSystem = executeAndWait(new String[]{
                 "/bin/sh",
                 "-c",
@@ -150,7 +150,7 @@ public abstract class AbstractProcessHandler {
         return operatingSystem.output.trim().equals("Darwin") ? osx : linux;
     }
 
-    public boolean processIsRunning(Path pidFile) {
+    boolean processIsRunning(Path pidFile) {
         boolean isRunning = false;
         String processPid;
         if (Files.exists(pidFile)) {
@@ -172,7 +172,7 @@ public abstract class AbstractProcessHandler {
         return isRunning;
     }
 
-    public void stopProgram(Path pidFile, String programName) {
+    void stopProgram(Path pidFile, String programName) {
         System.out.print("Stopping "+programName+"...");
         System.out.flush();
         boolean programIsRunning = processIsRunning(pidFile);
@@ -191,7 +191,7 @@ public abstract class AbstractProcessHandler {
         waitUntilStopped(pidFile, pid);
     }
 
-    public void processStatus(Path storagePid, String name) {
+    void processStatus(Path storagePid, String name) {
         if (processIsRunning(storagePid)) {
             System.out.println(name+": RUNNING");
         } else {
