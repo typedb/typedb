@@ -21,7 +21,7 @@ The data is expressed by instantiating specific types of entities, relationships
 
 {% include note.html content="There are no instances of role types in the data layer." %}
 
-```graql
+```graql-test-ignore
 insert
   $x isa person, has name "Elizabeth Niesz";
   $y isa company, has name "Grakn Labs";
@@ -48,7 +48,7 @@ This validation rule simply checks if an entity (which is a role player in a rel
 
 The following insertion will fail, because it is attempting to form an `employment` relationship between two `person` entities, rather than a `person` and a `company`:
 
-```graql
+```graql-test-ignore
 insert
   $x isa person, has name "Elizabeth Niesz";
   $y isa person, has name "John Niesz";
