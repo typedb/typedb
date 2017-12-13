@@ -197,7 +197,7 @@ public class BatchExecutorClientIT {
 
             GraknClient graknClient = GraknClient.of(engine.uri());
             return spy(
-                    BatchExecutorClient.newBuilder().taskClient(graknClient).maxDelay(maxDelay)
+                    BatchExecutorClient.newBuilder().taskClient(graknClient).maxDelay(maxDelay).requestLogEnabled(true)
                             .build());
         }
     }
