@@ -18,8 +18,6 @@
 
 package ai.grakn.engine;
 
-import ai.grakn.bootup.PidRetriever;
-import ai.grakn.engine.grakn_pid.GraknPid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +40,6 @@ public class Grakn {
      */
     public static void main(String[] args) {
         try {
-            GraknPid pidFile = newPidFile_deleteOnExit();
-            pidFile.createPidFile_deleteOnExit();
-
             // Start Engine
             GraknEngineServer graknEngineServer = new GraknCreator().instantiateGraknEngineServer(Runtime.getRuntime());
             graknEngineServer.start();
@@ -53,9 +48,4 @@ public class Grakn {
         }
     }
 
-    private static GraknPid newPidFile_deleteOnExit() {
-        long pid = new PidRetriever().getPid();
-        return new GraknPid(pid);
-    }
 }
-
