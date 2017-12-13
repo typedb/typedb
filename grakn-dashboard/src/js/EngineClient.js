@@ -81,7 +81,7 @@ export default {
         surname: credentials.surname,
         email: credentials.email,
       }),
-      url: 'https://grakn-community-inviter.herokuapp.com/invite',
+      url: 'https://grakn.ai/invite/all',
     }).always((r) => {
       callbackFn(r);
     });

@@ -103,6 +103,7 @@ export function conceptProperties(object:Object) {
 
 export function parseAttributes(attributes:Object[]) {
   return attributes.map(attr => ({
+    id: attr[KEY_ID],
     href: attr[AT_ID],
     value: attr[KEY_VALUE],
     dataType: attr[KEY_DATATYPE],
