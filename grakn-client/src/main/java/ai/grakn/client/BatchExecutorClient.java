@@ -33,6 +33,7 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.netflix.hystrix.HystrixCollapser;
+import com.netflix.hystrix.HystrixCollapserKey;
 import com.netflix.hystrix.HystrixCollapserProperties;
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
@@ -54,6 +55,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -75,9 +77,13 @@ public class BatchExecutorClient implements Closeable {
     private final GraknClient graknClient;
     private final HystrixRequestContext context;
 
+    // We only allow a certain number of queries to be waiting to execute at once for performance reasons
+    private final Semaphore queryExecutionSemaphore;
+
     // Config
     private final int maxDelay;
     private final int maxRetries;
+    private final int maxQueries;
     private final int threadPoolCoreSize;
     private final int timeoutMs;
 
@@ -93,6 +99,7 @@ public class BatchExecutorClient implements Closeable {
         graknClient = builder.graknClient;
         maxDelay = builder.maxDelay;
         maxRetries = builder.maxRetries;
+        maxQueries = builder.maxQueries;
         metricRegistry = builder.metricRegistry;
         timeoutMs = builder.timeoutMs;
         threadPoolCoreSize = builder.threadPoolCoreSize;
@@ -101,18 +108,29 @@ public class BatchExecutorClient implements Closeable {
         // of the server
         executor = Executors.newFixedThreadPool(threadPoolCoreSize);
         scheduler = Schedulers.from(executor);
+        queryExecutionSemaphore = new Semaphore(maxQueries);
         addTimer = metricRegistry.timer(name(BatchExecutorClient.class, "add"));
         failureMeter = metricRegistry.meter(name(BatchExecutorClient.class, "failure"));
     }
 
+    /**
+     * Will block until there is space for the query to be submitted
+     */
     public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace) {
         return add(query, keyspace, true);
     }
 
+    /**
+     * Will block until there is space for the query to be submitted
+     */
     public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
+        QueryRequest queryRequest = new QueryRequest(query);
+        queryRequest.acquirePermit();
+
         Context context = addTimer.time();
-        Observable<QueryResponse> observable = new QueriesObservableCollapser(query, keyspace,
-                graknClient, maxDelay, maxRetries, threadPoolCoreSize, timeoutMs, metricRegistry)
+        Observable<QueryResponse> observable = new QueriesObservableCollapser(queryRequest, keyspace,
+                maxDelay, maxRetries, threadPoolCoreSize, timeoutMs,
+                metricRegistry)
                 .observe()
                 .doOnError((error) -> failureMeter.mark())
                 .doOnEach(a -> {
@@ -137,8 +155,19 @@ public class BatchExecutorClient implements Closeable {
         return observable;
     }
 
+    /**
+     * Will block until all submitted queries have executed
+     */
     @Override
     public void close() {
+        LOG.debug("Closing BatchExecutorClient");
+
+        // Acquire ALL permits. Only possible when all the permits are released.
+        // This means this method will only return when ALL the queries are completed.
+        LOG.trace("Acquiring all {} permits ({} available)", maxQueries, queryExecutionSemaphore.availablePermits());
+        queryExecutionSemaphore.acquireUninterruptibly(maxQueries);
+        LOG.trace("Acquired all {} permits ({} available)", maxQueries, queryExecutionSemaphore.availablePermits());
+
         context.close();
         executor.shutdownNow();
     }
@@ -149,7 +178,7 @@ public class BatchExecutorClient implements Closeable {
 
     //TODO: Remove this method used only by docs tests
     public static Builder newBuilderforURI(SimpleURI simpleURI) {
-        return new Builder().taskClient(new GraknClient(simpleURI));
+        return new Builder().taskClient(GraknClient.of(simpleURI));
     }
 
     /**
@@ -164,6 +193,7 @@ public class BatchExecutorClient implements Closeable {
         private int maxRetries = 5;
         private int threadPoolCoreSize = 8;
         private int timeoutMs = 60_000;
+        private int maxQueries = 10_000;
         private MetricRegistry metricRegistry = new MetricRegistry();
 
         private Builder() {
@@ -199,19 +229,31 @@ public class BatchExecutorClient implements Closeable {
             return this;
         }
 
+        public Builder maxQueries(int val) {
+            maxQueries = val;
+            return this;
+        }
+
         public BatchExecutorClient build() {
             return new BatchExecutorClient(this);
         }
     }
 
-    // Used to make queries with the same text different
-    // We need this because we don't want to cache inserts
-    private static class QueryWithId<T> {
+    /**
+     * Used to make queries with the same text different.
+     * We need this because we don't want to cache inserts.
+     *
+     * This is a non-static class so it can access all fields of {@link BatchExecutorClient}, such as the
+     * {@link BatchExecutorClient#queryExecutionSemaphore}. This avoids bugs where Hystrix caches certain parameters
+     * or properties like the semaphore: the request is linked directly to the {@link BatchExecutorClient} that
+     * created it.
+     */
+    private class QueryRequest {
 
-        private Query<T> query;
+        private Query<?> query;
         private UUID id;
 
-        public QueryWithId(Query<T> query) {
+        public QueryRequest(Query<?> query) {
             this.query = query;
             this.id = UUID.randomUUID();
         }
@@ -224,7 +266,7 @@ public class BatchExecutorClient implements Closeable {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            QueryWithId<?> that = (QueryWithId<?>) o;
+            QueryRequest that = (QueryRequest) o;
             return (query != null ? query.equals(that.query) : that.query == null) && (id != null
                     ? id.equals(that.id) : that.id == null);
         }
@@ -238,14 +280,36 @@ public class BatchExecutorClient implements Closeable {
 
         @Override
         public String toString() {
-            return "QueryWithId{" +
+            return "QueryRequest{" +
                     "query=" + query +
                     ", id=" + id +
                     '}';
         }
 
-        public Query<T> getQuery() {
+        public Query<?> getQuery() {
             return query;
+        }
+
+        public GraknClient client() {
+            return graknClient;
+        }
+
+        void acquirePermit() {
+            assert queryExecutionSemaphore.availablePermits() <= maxQueries :
+                    "Number of available permits should never exceed max queries";
+
+            // Acquire permission to execute a query - will block until a permit is available
+            LOG.trace("Acquiring a permit for {} ({} available)", id, queryExecutionSemaphore.availablePermits());
+            queryExecutionSemaphore.acquireUninterruptibly();
+            LOG.trace("Acquired a permit for {} ({} available)", id, queryExecutionSemaphore.availablePermits());
+        }
+
+        void releasePermit() {
+            // Release a query execution permit, allowing a new query to execute
+            queryExecutionSemaphore.release();
+
+            int availablePermits = queryExecutionSemaphore.availablePermits();
+            LOG.trace("Released a permit for {} ({} available)", id, availablePermits);
         }
     }
 
@@ -274,16 +338,15 @@ public class BatchExecutorClient implements Closeable {
 
         static final int QUEUE_MULTIPLIER = 1024;
 
-        private final List<QueryWithId<?>> queries;
+        private final List<QueryRequest> queries;
         private final Keyspace keyspace;
-        private final GraknClient client;
         private final Timer graqlExecuteTimer;
         private final Meter attemptMeter;
         private final Retryer<List<QueryResponse>> retryer;
 
-        CommandQueries(List<QueryWithId<?>> queries, Keyspace keyspace, GraknClient client,
-                int retries, int threadPoolCoreSize, int timeoutMs,
-                MetricRegistry metricRegistry) {
+        CommandQueries(List<QueryRequest> queries, Keyspace keyspace,
+                       int retries, int threadPoolCoreSize, int timeoutMs,
+                       MetricRegistry metricRegistry) {
             super(Setter
                     .withGroupKey(HystrixCommandGroupKey.Factory.asKey("BatchExecutor"))
                     .andThreadPoolPropertiesDefaults(
@@ -297,9 +360,10 @@ public class BatchExecutorClient implements Closeable {
                             HystrixCommandProperties.Setter()
                                     .withExecutionTimeoutEnabled(false)
                                     .withExecutionTimeoutInMilliseconds(timeoutMs)));
+
+
             this.queries = queries;
             this.keyspace = keyspace;
-            this.client = client;
             this.graqlExecuteTimer = metricRegistry.timer(name(this.getClass(), "execute"));
             this.attemptMeter = metricRegistry.meter(name(this.getClass(), "attempt"));
             this.retryer = RetryerBuilder.<List<QueryResponse>>newBuilder()
@@ -318,14 +382,21 @@ public class BatchExecutorClient implements Closeable {
                     .build();
         }
 
+        private GraknClient client() {
+            assert queries.stream().map(QueryRequest::client).distinct().limit(2).count() <= 1
+                    : "Client objects for a batch should all be the same";
+
+            return queries.get(0).client();
+        }
+
         @Override
         protected List<QueryResponse> run() throws GraknClientException {
-            List<Query<?>> queryList = queries.stream().map(QueryWithId::getQuery)
+            List<Query<?>> queryList = queries.stream().map(QueryRequest::getQuery)
                     .collect(Collectors.toList());
             try {
                 return retryer.call(() -> {
                     try (Context c = graqlExecuteTimer.time()) {
-                        return client.graqlExecute(queryList, keyspace);
+                        return client().graqlExecute(queryList, keyspace);
                     }
                 });
             } catch (RetryException | ExecutionException e) {
@@ -335,6 +406,8 @@ public class BatchExecutorClient implements Closeable {
                 } else {
                     throw new RuntimeException("Unexpected exception while retrying, " + queryList.size() + " queries failed.", e);
                 }
+            } finally {
+                queries.forEach(QueryRequest::releasePermit);
             }
         }
     }
@@ -346,39 +419,46 @@ public class BatchExecutorClient implements Closeable {
      * @author Domenico Corapi
      */
     private static class QueriesObservableCollapser extends
-            HystrixCollapser<List<QueryResponse>, QueryResponse, QueryWithId<?>> {
+            HystrixCollapser<List<QueryResponse>, QueryResponse, QueryRequest> {
 
-        private final QueryWithId<?> query;
+        private static final String KEY_FORMAT_STRING = "QueriesObservableCollapser_%s_%s_%s_%s";
+
+        private final QueryRequest query;
         private Keyspace keyspace;
-        private final GraknClient client;
         private final int retries;
         private int threadPoolCoreSize;
         private int timeoutMs;
         private final MetricRegistry metricRegistry;
 
-        public QueriesObservableCollapser(Query<?> query, Keyspace keyspace,
-                GraknClient client, int delay, int retries, int threadPoolCoreSize, int timeoutMs,
-                MetricRegistry metricRegistry) {
-            super(Setter.withCollapserKey(
-                    // It split by keyspace since we want to avoid mixing requests for different
-                    // keyspaces together
-                    com.netflix.hystrix.HystrixCollapserKey.Factory
-                            .asKey("QueriesObservableCollapser_" + keyspace))
+        public QueriesObservableCollapser(QueryRequest query, Keyspace keyspace,
+                                          int delay, int retries, int threadPoolCoreSize, int timeoutMs,
+                                          MetricRegistry metricRegistry) {
+            super(Setter
+                    .withCollapserKey(key(keyspace, retries, threadPoolCoreSize, timeoutMs))
                     .andCollapserPropertiesDefaults(
                             HystrixCollapserProperties.Setter()
                                     .withRequestCacheEnabled(false)
-                                    .withTimerDelayInMilliseconds(delay)));
-            this.query = new QueryWithId<>(query);
+                                    .withTimerDelayInMilliseconds(delay)
+                    )
+            );
+
+            this.query = query;
             this.keyspace = keyspace;
-            this.client = client;
             this.retries = retries;
             this.threadPoolCoreSize = threadPoolCoreSize;
             this.timeoutMs = timeoutMs;
             this.metricRegistry = metricRegistry;
         }
 
+        private static HystrixCollapserKey key(Keyspace keyspace, int retries, int threadPoolCoreSize, int timeoutMs) {
+            // It split by keyspace and other parameters since we want to avoid mixing requests for different
+            // keyspaces or parameters together
+            String name = String.format(KEY_FORMAT_STRING, keyspace, retries, threadPoolCoreSize, timeoutMs);
+            return HystrixCollapserKey.Factory.asKey(name);
+        }
+
         @Override
-        public QueryWithId<?> getRequestArgument() {
+        public QueryRequest getRequestArgument() {
             return query;
         }
 
@@ -390,17 +470,17 @@ public class BatchExecutorClient implements Closeable {
          */
         @Override
         protected HystrixCommand<List<QueryResponse>> createCommand(
-                Collection<CollapsedRequest<QueryResponse, QueryWithId<?>>> collapsedRequests) {
+                Collection<CollapsedRequest<QueryResponse, QueryRequest>> collapsedRequests) {
             return new CommandQueries(collapsedRequests.stream().map(CollapsedRequest::getArgument)
-                    .collect(Collectors.toList()), keyspace, client, retries, threadPoolCoreSize,
+                    .collect(Collectors.toList()), keyspace, retries, threadPoolCoreSize,
                     timeoutMs, metricRegistry);
         }
 
         @Override
         protected void mapResponseToRequests(List<QueryResponse> batchResponse,
-                Collection<CollapsedRequest<QueryResponse, QueryWithId<?>>> collapsedRequests) {
+                Collection<CollapsedRequest<QueryResponse, QueryRequest>> collapsedRequests) {
             int count = 0;
-            for (CollapsedRequest<QueryResponse, QueryWithId<?>> request : collapsedRequests) {
+            for (CollapsedRequest<QueryResponse, QueryRequest> request : collapsedRequests) {
                 QueryResponse response = batchResponse.get(count++);
                 request.setResponse(response);
             }

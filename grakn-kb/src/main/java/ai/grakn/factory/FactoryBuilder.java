@@ -21,8 +21,10 @@ package ai.grakn.factory;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
-import org.apache.tinkerpop.shaded.minlog.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
@@ -46,6 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FactoryBuilder {
     static final String IN_MEMORY = "in-memory";
+    private static final Logger LOG = LoggerFactory.getLogger(FactoryBuilder.class);
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
 
     //This is used to map grakn value properties into the underlaying properties
@@ -80,23 +83,16 @@ public class FactoryBuilder {
     */
     private static TxFactory<?> getFactory(String factoryType, GraknSession session){
         String key = factoryType + session.keyspace();
-        Log.debug("Get factory for " + key);
-        TxFactory<?> factory = openFactories.get(key);
-        if (factory != null) {
-            return factory;
-        }
-
-        return newFactory(key, factoryType, session);
+        return openFactories.computeIfAbsent(key, (k) -> newFactory(factoryType, session));
     }
 
     /**
      *
-     * @param key A unique string identifying this factory
      * @param factoryType The type of the factory to initialise. Any factory which implements {@link TxFactory}
      * @param session The {@link GraknSession} creating this factory
      * @return A new factory bound to a specific keyspace
      */
-    private static synchronized TxFactory<?> newFactory(String key, String factoryType, GraknSession session){
+    private static synchronized TxFactory<?> newFactory(String factoryType, GraknSession session){
         TxFactory<?> txFactory;
         try {
             txFactory = (TxFactory<?>) Class.forName(factoryType)
@@ -105,8 +101,7 @@ public class FactoryBuilder {
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
         }
-        openFactories.put(key, txFactory);
-        Log.debug("New factory created " + txFactory);
+        LOG.trace("New factory created " + txFactory);
         return txFactory;
     }
 
@@ -115,6 +110,7 @@ public class FactoryBuilder {
      */
     //TODO Should this close each of the factories (and wait for all open transactions to be closed?)
     //TODO Calling this from within the code causes a memory leak
+    @VisibleForTesting
     public static void refresh(){
         openFactories.clear();
     }
