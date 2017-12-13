@@ -21,7 +21,7 @@ The data is expressed by instantiating specific types of entities, relationships
 
 {% include note.html content="There are no instances of role types in the data layer." %}
 
-```graql
+```graql-skip-test
 insert
   $x isa person, has name "Elizabeth Niesz";
   $y isa company, has name "Grakn Labs";
