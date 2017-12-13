@@ -191,7 +191,7 @@ public class ConceptControllerTest {
     @Test
     public void whenGettingTypesInstances_EnsureInstancesAreReturned() throws JsonProcessingException {
         //TODO: Same as below get jackson to deserialise via a child constructor
-        String request = REST.resolveTemplate(REST.WebPath.TYPE_INSTANCES, keyspace.getValue(), entityTypeWrapper.label().getValue());
+        String request = entityTypeWrapper.instances().id();
         Response response = RestAssured.when().get(request);
         assertEquals(SC_OK, response.getStatusCode());
 

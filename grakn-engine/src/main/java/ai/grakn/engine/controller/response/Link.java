@@ -157,7 +157,7 @@ public abstract class Link implements Jacksonisable{
      * Creates a link to get all the instances of a {@link Type}
      */
     public static Link createInstancesLink(ai.grakn.concept.Type type){
-        return create(REST.resolveTemplate(WebPath.TYPE_KEYS, type.keyspace().getValue(), type.getLabel().getValue()));
+        return create(REST.resolveTemplate(WebPath.TYPE_INSTANCES, type.keyspace().getValue(), type.getLabel().getValue()));
     }
 
 }
