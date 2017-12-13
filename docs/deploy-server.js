@@ -6,6 +6,8 @@ const app = express();
 const port = process.env.PORT ? process.env.PORT : 3000;
 const dist = path.join(__dirname, '_site');
 
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
 app.get('*', (req, res) => {
   let requestedResource = req.path;
   if (requestedResource.match(/^\/(overview|academy|contributors)\/?$/)){
