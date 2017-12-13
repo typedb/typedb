@@ -1,0 +1,617 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+
+
+  
+  
+  <url>
+    <loc>http://localhost:4005/contributors/index.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/overview/index.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/index.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/graql-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/overview/advantages.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/analytics-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/contributors/conduct.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/grakn-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/loading-files.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/reasoner-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/schema-elements.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/overview/applications.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/conceptual-modeling-intro.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/contributors/contributor-faq.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/csv-migration.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/get-queries.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/inference-rules.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/setup.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/statistics-queries.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/advanced-rules.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/overview/comparison.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/graph-analytics.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/insert-delete-queries.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/schema-building.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/xml-migration.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/other-queries.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/schema-building-continued.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/overview/system-properties.html</loc>
+  </url>
+  
+  
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/graql-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/overview/ideology.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/schema-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/overview/faqs.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/overview/use-case.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/CSV-migration</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/JSON-migration</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/SQL-migration</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/java-library/advanced</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/querying-data/aggregate-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/analytics</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/api-references/rest-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/building-schema/basic-schema</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/distributed-analytics/compute-connected-components</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/distributed-analytics/compute-degrees</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/distributed-analytics/compute-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/distributed-analytics/compute-shortest-path</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/distributed-analytics/compute-statistics</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/java-library/core-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/knowledge-model/data</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/api-references/ddl</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/building-schema/defining-rules</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/building-schema/defining-schema</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/querying-data/delete-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/api-references/dml</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/resources/downloads</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/examples-overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/resources/faq</loc>
+  </url>
+  
+  
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/querying-data/get-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/get-started/grakn-server</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/java-library/graql-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/api-references/graql-cheatsheet</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/get-started/graql-console</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/graql-reasoning</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/building-schema/hierarchical-schema</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/index</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/knowledge-model/inference</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/querying-data/insert-queries</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/java-analytics</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/java-api-example</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/java-library/loader-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/querying-data/match-clause</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/migrating-data/migrating-csv</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/migrating-data/migrating-json</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/migrating-data/migrating-sql</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/migrating-data/migrating-xml</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/java-library/migration-api</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/migrating-data/migration-language</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/knowledge-model/model</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/modern</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/migration-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/analytics-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/academy/reasoner-review.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/js/mydoc_scroll.html</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/distributed-analytics/overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/resources/overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/migrating-data/overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/querying-data/overview</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/pokemon</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/projects</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/building-schema/querying-schema</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/get-started/quickstart-tutorial</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/building-schema/rule-driven-schema</loc>
+  </url>
+  
+  
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/get-started/setup-guide</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/java-library/setup</loc>
+  </url>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/visualisation-dashboard/visualiser</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/resources/windows-os</loc>
+  </url>
+  
+  
+  
+  <url>
+    <loc>http://localhost:4005/docs/examples/working-with-tweets</loc>
+  </url>
+  
+  
+</urlset>
