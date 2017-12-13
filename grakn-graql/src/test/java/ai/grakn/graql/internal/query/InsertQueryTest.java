@@ -36,10 +36,12 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -269,13 +271,15 @@ public class InsertQueryTest {
 
     @Test
     public void whenInsertingAResourceWithMultipleValues_Throw() {
+        VarPattern varPattern = var().val("123").val("456").isa("title");
+
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(isOneOf(
-                GraqlQueryException.insertMultipleProperties("val", "123", "456").getMessage(),
-                GraqlQueryException.insertMultipleProperties("val", "456", "123").getMessage()
+                GraqlQueryException.insertMultipleProperties(varPattern, "val", "123", "456").getMessage(),
+                GraqlQueryException.insertMultipleProperties(varPattern, "val", "456", "123").getMessage()
         ));
 
-        qb.insert(var().val("123").val("456").isa("title")).execute();
+        qb.insert(varPattern).execute();
     }
 
     @Test
@@ -562,11 +566,18 @@ public class InsertQueryTest {
         EntityType movie = movieKB.tx().getEntityType("movie");
         EntityType person = movieKB.tx().getEntityType("person");
 
+        // We have to construct it this way because you can't have two `isa`s normally
+        // TODO: less bad way?
+        VarPattern varPattern = Patterns.varPattern(
+                var("x"),
+                ImmutableSet.of(IsaProperty.of(label("movie").admin()), IsaProperty.of(label("person").admin()))
+        );
+
         // We don't know in what order the message will be
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(isOneOf(
-                GraqlQueryException.insertMultipleProperties("isa", movie, person).getMessage(),
-                GraqlQueryException.insertMultipleProperties("isa", person, movie).getMessage()
+                GraqlQueryException.insertMultipleProperties(varPattern, "isa", movie, person).getMessage(),
+                GraqlQueryException.insertMultipleProperties(varPattern, "isa", person, movie).getMessage()
         ));
 
         movieKB.tx().graql().insert(var("x").isa("movie"), var("x").isa("person")).execute();

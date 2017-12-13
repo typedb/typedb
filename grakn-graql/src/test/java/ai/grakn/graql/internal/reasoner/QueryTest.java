@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.test.kbs.SNBKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.util.GraknTestUtil;
@@ -40,6 +41,8 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class QueryTest {
@@ -50,9 +53,36 @@ public class QueryTest {
     @ClassRule
     public static final SampleKBContext genealogySchema = SampleKBContext.load("genealogy/schema.gql");
 
+    @ClassRule
+    public static final SampleKBContext snbGraph = SNBKB.context();
+
     @BeforeClass
     public static void setUpClass() throws Exception {
         assumeTrue(GraknTestUtil.usingTinker());
+    }
+
+    @Test
+    public void testQueryReiterationCondition_CyclicalRuleGraph(){
+        GraknTx graph = geoKB.tx();
+        String patternString = "{($x, $y) isa is-located-in;}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        assertTrue(query.requiresReiteration());
+    }
+
+    @Test
+    public void testQueryReiterationCondition_AcyclicalRuleGraph(){
+        GraknTx graph = snbGraph.tx();
+        String patternString = "{($x, $y) isa recommendation;}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        assertFalse(query.requiresReiteration());
+    }
+
+    @Test
+    public void testQueryReiterationCondition_AnotherCyclicalRuleGraph(){
+        GraknTx graph = snbGraph.tx();
+        String patternString = "{($x, $y);}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
+        assertTrue(query.requiresReiteration());
     }
 
     @Test //simple equality tests between original and a copy of a query

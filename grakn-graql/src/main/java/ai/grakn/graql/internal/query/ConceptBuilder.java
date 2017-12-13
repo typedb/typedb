@@ -31,6 +31,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
@@ -290,7 +291,9 @@ public class ConceptBuilder {
 
     private <T> ConceptBuilder set(BuilderParam<T> param, T value) {
         if (preProvidedParams.containsKey(param) && !preProvidedParams.get(param).equals(value)) {
-            throw GraqlQueryException.insertMultipleProperties(param.name(), value, preProvidedParams.get(param));
+            VarPatternAdmin varPattern = executor.printableRepresentation(var);
+            Object otherValue = preProvidedParams.get(param);
+            throw GraqlQueryException.insertMultipleProperties(varPattern, param.name(), value, otherValue);
         }
         preProvidedParams.put(param, checkNotNull(value));
         return this;

@@ -271,7 +271,7 @@ textarea {
   background-image: none;
 }
 a {
-  color: #248EC2;
+  color: #9685ff;
   text-decoration: none;
 }
 a:hover,
@@ -3468,7 +3468,7 @@ textarea.input-group-sm > .input-group-btn > .btn {
 .navbar {
   position: relative;
   z-index: 1000;
-  min-height: 50px;
+  min-height: 70px;
   margin-bottom: 20px;
   border: 1px solid transparent;
 }
@@ -5895,4 +5895,7 @@ td.visible-print {
   td.hidden-print {
     display: none !important;
   }
+}
+.topnavlinks {
+  padding-top: 1rem;
 }

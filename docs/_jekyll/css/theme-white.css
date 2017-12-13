@@ -229,7 +229,51 @@
     font-style: italic;
 }
 
+@font-face {
+    font-family: 'Titillium';
+    src: url('/fonts/titillium/TitilliumWeb-Light.ttf');
+    font-weight: 300;
+}
+@font-face {
+    font-family: 'Titillium';
+    src: url('/fonts/titillium/TitilliumWeb-LightItalic.ttf');
+    font-weight: 300;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'Titillium';
+    src: url('/fonts/titillium/TitilliumWeb-Regular.ttf');
+    font-weight: 400;
+}
+@font-face {
+    font-family: 'Titillium';
+    src: url('/fonts/titillium/TitilliumWeb-Italic.ttf');
+    font-weight: 400;
+    font-style: italic;
+}
 
+@font-face {
+    font-family: 'Titillium';
+    src: url('/fonts/titillium/TitilliumWeb-SemiBold.ttf');
+    font-weight: 600;
+}
+@font-face {
+    font-family: 'Titillium';
+    src: url('/fonts/titillium/TitilliumWeb-SemiBoldItalic.ttf');
+    font-weight: 600;
+    font-style: italic;    
+}
+@font-face {
+    font-family: 'Titillium';
+    src: url('/fonts/titillium/TitilliumWeb-Bold.ttf');
+    font-weight: 700;
+}
+@font-face {
+    font-family: 'Titillium';
+    src: url('/fonts/titillium/TitilliumWeb-BoldItalic.ttf');
+    font-weight: 700;
+    font-style: italic;    
+}
 /*  */
 
 div#toc > ul > li {
@@ -244,7 +288,8 @@ div#toc li > ul {
 /*  */
 
 body {
-    font-family: 'Geogrotesque', Helvetica, Arial, sans-serif;
+    font-family: 'Titillium';
+    letter-spacing: 0.2px;
     font-weight: 400;
 }
 
@@ -261,7 +306,8 @@ a[href^="https://"]:after {
 
 h1, h2, h3, h4, h5, h6,
 span.projectTitle {
-    font-family: 'Geogrotesque', Helvetica, Arial, sans-serif;
+    font-family: 'Titillium';
+    letter-spacing: 0.2px;
     font-weight: 200;
 }
 
@@ -298,7 +344,8 @@ code {
 }
 
 .navbar-brand svg {
-    height: 30px;
+    width: 160px;
+    height: 33.55px;
     display: inline-block;
     vertical-align: middle;
 }
@@ -333,6 +380,7 @@ code {
 
 .navbar-toggle .icon-bar {
     margin: 0 auto;
+    background-color: #647380 !important;
 }
 
 /*  */
@@ -370,10 +418,8 @@ div[class^="highlighter-"] code{
 /*  */
 
 nav.navbar {
-    background-color: #6aae9b;
-    background: linear-gradient(160deg, #4da5c5 0%, #6aae9b 100%);
-    border: none;
-    box-shadow: 0 1px 2px 0 rgba(56, 56, 56, 0.2);
+    background-color: white;
+    border-bottom: 1px solid #c9c9cb;
 }
 
 div.navbar-collapse .navbar-nav>.open>a,
@@ -437,7 +483,7 @@ nav.navbar .navbar-nav > li > a.github {
 nav.navbar .github svg {
     height: 28px;
     width: 28px;
-    fill: #fff;
+    fill: #000000;
     stroke: transparent;
     stroke-width: 0;
 }
@@ -469,13 +515,14 @@ nav.navbar .github svg {
 /*  */
 
 div.navbar-collapse .navbar-nav input#search-input {
-    border: none;
+    border: 1px solid #c9c9cb;    
     outline: none;
-    border-radius: 2px;
+    border-radius: 3px;
     margin-left: 0;
     margin-bottom: 15px;
     width: 100%;
 }
+
 
 #search-demo-container ul#results-container {
     top: 38px;
@@ -507,7 +554,7 @@ div.navbar-collapse .navbar-nav input#search-input {
 
 @media (min-width: 768px) {
     div.navbar-collapse .navbar-nav input#search-input {
-        margin-right: 20px;
+        margin-right: 15px;
         margin-left: 10px;
         width: 160px;
         margin-bottom: 0;
@@ -598,7 +645,8 @@ body.print h4 {color: #679DCE !important; font-size:14px; font-style: italic !im
 }
 
 li.sidebarTitle {
-    font-family: 'Geogrotesque', Helvetica, Arial, sans-serif;
+    font-family: 'Titillium';
+    letter-spacing: 0.2px;;
     font-weight: 400;
     margin-top: 40px;
     font-size: 1.6em;
@@ -608,9 +656,36 @@ li.sidebarTitle {
 
 a.dropdown-toggle,
 .navbar-inverse .navbar-nav > li > a {
+    color: #647380;
+    font-size: 16px;
     margin-left: 0;
+    width: fit-content;
+    text-decoration: none; 
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 10px;
+    margin-right: 10px;
 }
 
+.navbar-inverse .navbar-nav > li > a:hover {
+    color: #647380;
+}
+.navbar-inverse .navbar-nav > li > a:hover:before {
+    visibility: visible;
+    transform: scaleX(1);
+}
+.navbar-inverse .navbar-nav > li > a:before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #647380;
+    visibility: hidden;
+    transform: scaleX(0);
+    transition: all 0.3s ease-in-out 0s;
+}
 .nav > li li {
     margin: 1px 0;
 }
@@ -620,7 +695,7 @@ a.dropdown-toggle,
 }
 
 .nav li li a {
-    background-color: #D3F7FF;
+    background-color:  #D8D4F3;
     font-size: 1.4rem;
     margin-left:10px;
 }
@@ -636,32 +711,33 @@ a.dropdown-toggle,
 }
 
 .nav li a {
-    font-family: 'Geogrotesque', Helvetica, Arial, sans-serif;
+    font-family: 'Titillium';
+    letter-spacing: 0.2px;
     font-weight: 400;
     padding-top: 5px;
     padding-bottom: 5px;
     font-size: 1.6rem;
     color: #383838;
-    background-color: #B0E3EF;
+    background-color: #BCB5EB;
 }
 
 .nav li a:hover,
 .nav li.active > a:hover,
 .nav li a:focus {
     color: #FFFFFF;
-    background-color: #56A7B9;
+    background-color:  #7B72B8;
 }
 
 .nav li.active > a,
 .nav li.active > a:focus {
     color: #ffffff;
-    background-color: #72BDCE;
+    background-color: #968BE0;
 }
 
 .nav li li.active > a,
 .nav li li.active > a:focus {
     color: #ffffff;
-    background-color: #56A7B9;
+    background-color:  #7B72B8;
 }
 
 .nav li a:hover span,
@@ -675,25 +751,20 @@ a.dropdown-toggle,
 }
 
 @media (min-width: 1600px) {
-    .nav li a {
-        font-size: 1.27em;
-    }
 
     #mysidebar li a{
         padding-top: 7px;
         padding-bottom: 7px;
     }
 
-    .nav li li a {
-        font-size: 1.15em;
-    }
 }
 
 /*  */
 
 .footer {
     text-align: left;
-    font-family: 'Geogrotesque', Helvetica, Arial, sans-serif;
+    font-family: 'Titillium';
+    letter-spacing: 0.2px;
     font-size: 110%;
 }
 
@@ -749,4 +820,17 @@ a.dropdown-toggle,
 .footer a.gitter {
     display: inline-block;
     margin-bottom: 0.25em;
+}
+#download-btn {
+    margin: 20px 0;
+}
+#download-btn > a{
+    height: 50px;
+    background-color: #f75e61;
+    text-decoration: none;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    width: fit-content;
 }
