@@ -15,7 +15,7 @@ comment_issue_id:
 
 This information is correct at time of publication but may be subject to change. 
    
-Please let the [Grakn Community](https://grakn.ai/community.html) know if you have any queries.
+Please let the [Grakn Community](https://grakn.ai/community) know if you have any queries.
 
 <br />
 
@@ -50,5 +50,5 @@ Please let the [Grakn Community](https://grakn.ai/community.html) know if you ha
 This information can also be found on [db-engines.com](http://db-engines.com/en/system/GRAKN.AI).
 
 
-{% include links.html %}
+
 

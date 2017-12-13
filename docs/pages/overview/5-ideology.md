@@ -72,4 +72,4 @@ In this article, we have presented the reasons why we believe GRAKN.AI is simple
 ## Where can I find out more?
 To find out more, take a look at our [documentation](https://grakn.ai/pages/index.html) — the [Knowledge Model documentation](../documentation/the-fundamentals/grakn-knowledge-model.html) is a good place to start for more about the subjects touched upon above.
 
-And if you have any questions, we are always happy to help. A good way to ask questions is via our Slack channel. We also have a [discussion forum](https://discuss.grakn.ai). For news, sign up for our [community newsletter](https://grakn.ai/community.html) and — if you’d like to meet us in person — we run regular [meetups](https://www.meetup.com/graphs/).
+And if you have any questions, we are always happy to help. A good way to ask questions is via our Slack channel. We also have a [discussion forum](https://discuss.grakn.ai). For news, sign up for our [community newsletter](https://grakn.ai/community) and — if you’d like to meet us in person — we run regular [meetups](https://www.meetup.com/graphs/).
