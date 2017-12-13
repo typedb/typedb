@@ -26,9 +26,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -84,13 +81,17 @@ public class ConceptBuilderTest {
         assertEquals(entityType.isImplicit(), entityTypeWrapper.implicit());
 
         //Check Links to other concepts
-        Set<Link> supIds = entityType.subs().map(Link::create).collect(Collectors.toSet());
-        Link supWrapperLink = entityTypeWrapper.subs();
-        assertEquals(supIds, supWrapperLink);
+        Link subsLink = Link.createSubsLink(entityType);
+        Link subsWrapperLink = entityTypeWrapper.subs();
+        assertEquals(subsLink, subsWrapperLink);
 
-        Set<Link> playIds = entityType.plays().map(Link::create).collect(Collectors.toSet());
-        Link playWrapperLink = entityTypeWrapper.plays();
-        assertEquals(playIds, playWrapperLink);
+        Link playsLink = Link.createPlaysLink(entityType);
+        Link playsWrapperLink = entityTypeWrapper.plays();
+        assertEquals(playsLink, playsWrapperLink);
+
+        Link instancesLink = Link.createInstancesLink(entityType);
+        Link instancesWrapperLink = entityTypeWrapper.instances();
+        assertEquals(instancesLink, instancesWrapperLink);
     }
 
     @Test
