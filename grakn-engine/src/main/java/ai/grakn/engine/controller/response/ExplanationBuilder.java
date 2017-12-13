@@ -45,20 +45,19 @@ public class ExplanationBuilder {
         queryAnswer.getExplanation().getAnswers().forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();
             Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
-            ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(atom.rewriteWithRelationVariable());
-            List<ai.grakn.graql.admin.Answer> userDefinedAnswers = ReasonerQueries.atomic(rewrittenQuery, answer).getQuery().execute();
             ai.grakn.graql.admin.Answer inferredAnswer = new QueryAnswer();
 
-            if (!userDefinedAnswers.isEmpty()) {
-                inferredAnswer = userDefinedAnswers.get(0);
+            if (expl.isLookupExplanation()){
+                ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(atom.rewriteWithRelationVariable());
+                inferredAnswer = ReasonerQueries.atomic(rewrittenQuery, answer).getQuery().stream()
+                        .findFirst().orElse(new QueryAnswer());
             } else if (expl.isRuleExplanation()) {
                 Atom headAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
-
+                ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(headAtom.rewriteWithRelationVariable());
                 inferredAnswer = headAtom.getMultiUnifier(atom, UnifierType.RULE).stream()
                         .map(Unifier::inverse)
-                        .flatMap(unifier -> new ReasonerAtomicQuery(headAtom.rewriteWithRelationVariable()).materialise(answer.unify(unifier)))
+                        .flatMap(unifier -> rewrittenQuery.materialise(answer.unify(unifier)))
                         .findFirst().orElse(new QueryAnswer());
-
             }
             explanation.add((Answer) printer.graqlString(false, inferredAnswer));
         });
