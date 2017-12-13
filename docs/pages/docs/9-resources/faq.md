@@ -84,7 +84,7 @@ tail -f logs/grakn.log
 
 
 ### I want to load a large amount of data into a knowledge base - how do I do it?
-Graql is single-threaded and doesn't support batch-loading. You may want to use the Java [loader client](../developing-with-java/loader-api.html), which provides multi-threaded batch loading, or the `-b` flag if you are using the [Graql shell](../get-started/graql-console).
+Graql is single-threaded and doesn't support batch-loading. You may want to use the Java [loader client](../java-library/loader-api), which provides multi-threaded batch loading, or the `-b` flag if you are using the [Graql shell](../get-started/graql-console).
 
 ### What are the differences between a batch load and a normal load?
 

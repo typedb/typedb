@@ -140,7 +140,7 @@ entries:
       - title: Advanced
         output: web
         url: /docs/java-library/advanced
-  - title: Visulisation Dashboard
+  - title: Visualisation Dashboard
     output: web
     folderitems:
       - title: Grakn Visualiser

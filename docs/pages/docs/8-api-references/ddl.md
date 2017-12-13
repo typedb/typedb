@@ -11,18 +11,18 @@ folder: docs
 
 # Define Query
 
-`define` [`<variable patterns>`](./query.html#variable-pattern)
+`define` [`<variable patterns>`](../querying-data/overview#variable-pattern)
 
-The [define query](#define-query) will add the given [variable patterns](./querying-data/overview#variable-pattern) to the schema.
+The [define query](#define-query) will add the given [variable patterns](../querying-data/overview#variable-pattern) to the schema.
 
-After execution, it will return a single [answer](./querying-data/overview#answer) containing bindings for all
-[variables](./querying-data/overview#variable) mentioned in the [variable patterns](./querying-data/overview#variable-pattern).
+After execution, it will return a single [answer](../querying-data/overview#answer) containing bindings for all
+[variables](../querying-data/overview#variable) mentioned in the [variable patterns](../querying-data/overview#variable-pattern).
 
 # Undefine Query
 
-`undefine` [`<variable patterns>`](./querying-data/overview#variable-pattern)
+`undefine` [`<variable patterns>`](../querying-data/overview#variable-pattern)
 
-The [undefine query](#undefine-query) will remove the given [variable patterns](./querying-data/overview#variable-pattern) from the
+The [undefine query](#undefine-query) will remove the given [variable patterns](../querying-data/overview#variable-pattern) from the
 schema.
 
 In order to remove a schema concept entirely, it is sufficient to undefine its [direct super-concept](#sub):
@@ -34,8 +34,8 @@ undefine person sub entity;
 
 # Supported Properties
 
-Within the [variable patterns](./querying-data/overviewl#variable-pattern) of both [define](#define-query) and
-[undefine](#undefine-query) queries, the following [properties](./querying-data/overview#property) are supported:
+Within the [variable patterns](../querying-data/overview#variable-pattern) of both [define](#define-query) and
+[undefine](#undefine-query) queries, the following [properties](../querying-data/overview#property) are supported:
 
 ## id
 
@@ -99,7 +99,7 @@ one will be created.
 ## datatype
 
 `$A datatype <datatype>` defines the _attribute type_ `$A` to have the specified
-[datatype](./querying-data/overview#value).
+[datatype](../querying-data/overview#value).
 
 ## regex
 

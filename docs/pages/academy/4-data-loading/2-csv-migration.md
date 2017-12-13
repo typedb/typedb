@@ -121,4 +121,3 @@ In this lesson, you have learned about GRAQL templating language, macros and how
 
 ## What next?
 [Next lesson](./xml-migration.html) will be about migrating files with a more complex structure than the tabular one of CSV. If you want to delve deeper into the GRAQL templating language and macros, as usual, head to the [docs](../index.html)
-

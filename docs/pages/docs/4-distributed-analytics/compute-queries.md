@@ -141,9 +141,9 @@ A summary of the graph algorithms is given in the table below.
 
 | Algorithm | Description                                   |
 | ----------- | --------------------------------------------- |
-| [`cluster`](../graql-analytics/analytics-connected-components.html)     | Find connected clusters of instances.                        |
-| [`degrees`](../graql-analytics/analytics-degrees.html)    | Find the number of related instances to each instance in the graph. |
-| [`path`](../graql-analytics/analytics-shortest-path.html)    | Find the shortest path between two instances.                           |
+| [`cluster`](./compute-connected-components)     | Find connected clusters of instances.                        |
+| [`degrees`](.././compute-degrees)    | Find the number of related instances to each instance in the graph. |
+| [`path`](./compute-shortest-path)    | Find the shortest path between two instances.                           |
 
 <!--
 For further information see the individual sections below.
@@ -157,7 +157,7 @@ For further information see the individual sections below.
 
 ## When to Use `aggregate` and When to Use `compute`
 
-[Aggregate queries](./querying-data/aggregate-queries) are computationally light and run single-threaded on a single machine, but are more flexible than the equivalent compute queries described above.
+[Aggregate queries](../querying-data/aggregate-queries) are computationally light and run single-threaded on a single machine, but are more flexible than the equivalent compute queries described above.
 
 For example, you can use an aggregate query to filter results by attribute. The following  aggregate query, allows you to match the number of people of a particular name:
 

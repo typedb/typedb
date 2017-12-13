@@ -220,7 +220,7 @@ $x id "254120" isa automatic-car; $y val "Pontiac Firebird" isa model;
 
 ## Where Next?
 
-If you haven't already, we recommend that you review the documentation about [Graql analytics](https://grakn.ai/pages/documentation/graql-analytics/analytics-overview.html), since there is more to `compute` than just statistical analysis. Unfortunately, this example is not a good one to illustrate clusters, degrees or shortest path analytics, which is why it isn't described here. There is also an example of using Graql analytics on the genealogy dataset available [here](../examples/java-analytics.html).
+If you haven't already, we recommend that you review the documentation about [Graql analytics](../distributed-analytics/overview), since there is more to `compute` than just statistical analysis. Unfortunately, this example is not a good one to illustrate clusters, degrees or shortest path analytics, which is why it isn't described here. There is also an example of using Graql analytics on the genealogy dataset available [here](../examples/java-analytics.html).
 
 This example was based on CSV data migrated into Grakn. Having read it, Yyou may want to further study our documentation about [CSV migration](../migrating-data/migrating-csv) and [Graql migration language](../migrating-data/migration-language).  
 

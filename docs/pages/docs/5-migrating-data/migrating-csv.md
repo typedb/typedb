@@ -47,7 +47,7 @@ The steps to migrate the CSV to GRAKN.AI are:
 * create templated Graql to map the data to the schema
 * invoke the Grakn migrator through the shell script or Java API. The CSV migrator will apply the template to each row of data in the CSV file, replacing the sections indicated in the template with provided data: the column header is the key and the content of each row at that column the value.
 
-{% include note.html content="CSV Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
+{% include note.html content="CSV Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [migration langauge documentatino](../migrating-data/migration-language) to find out more." %}
 
 
 ## Example: Cars

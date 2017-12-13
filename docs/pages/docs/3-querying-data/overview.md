@@ -14,7 +14,7 @@ Concepts can be retrieved by specifying the patterns of types and relationships 
 and therefore it handles the optimisation of the knowledge base queries needed to retrieve information.
 
 You can execute Graql in the [Graql Console](../get-started/graql-console) or using [Java
-Graql](../developing-with-java/java-graql.html).
+Graql](../java-library/graql-api).
 
 
 # Query
@@ -24,7 +24,7 @@ Graql](../developing-with-java/java-graql.html).
 [get](./get-queries).
 
 A [query](#query) is comprised of an action (such as `get` or `delete`) with arguments, and preceded by a
-[match](./match-clause). Examples of queries are [define](../buliding-schema/defining-schema),
+[match](./match-clause). Examples of queries are [define](../building-schema/defining-schema),
 [undefine](../building-schema/defining-schema), [get](./get-queries), [insert](./insert-queries) and
 [delete](./delete-queries).
 
@@ -84,11 +84,11 @@ An attribute's [value](#value) is constrained by the datatype of its type:
 There are seven types of queries, which are begun with the following keywords:
 - [get](./get-queries) - for getting concepts from the knowledge base
 - [aggregate](./aggregate-queries) - for transforming data in the knowledge base
-- [define](./defining-schema) - for defining schema concepts
-- [undefine](./ddefining-schema) - for removing schema concepts
+- [define](../building-schema/defining-schema) - for defining schema concepts
+- [undefine](../building-schema/defining-schema) - for removing schema concepts
 - [insert](./insert-queries) - for inserting data
 - [delete](./delete-queries) - for deleting data
-- [compute](./compute-queries.html) - for computing useful information about your knowledge base
+- [compute](../distributed-analytics/compute-queries) - for computing useful information about your knowledge base
 
 ## Reserved keywords
 
@@ -160,6 +160,6 @@ true, false
 ```
 
 ## Cheatsheet reference
-If you are already familiar with Graql, you may find our [cheatsheet reference](./api-references/graql-cheatsheet) a helpful page to bookmark or print out!
+If you are already familiar with Graql, you may find our [cheatsheet reference](../api-references/graql-cheatsheet) a helpful page to bookmark or print out!
 
 

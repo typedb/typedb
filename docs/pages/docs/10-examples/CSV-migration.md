@@ -18,7 +18,7 @@ As the blog post explains, the original data was a [document](http://www.lenzenr
 
 In this example, we will walk through how to migrate the CSV data into Grakn, and confirm that we have succeeded using the Grakn visualiser.
 
-For a detailed overview of CSV migration, we recommend that you take a look at the Grakn documentation on [CSV Migration](https://grakn.ai/pages/documentation/migration/CSV-migration.html) and [Graql migration language](../migrating-data/migration-language).  
+For a detailed overview of CSV migration, we recommend that you take a look at the Grakn documentation on [CSV Migration](../migrating-data/migrating-csv) and [Graql migration language](../migrating-data/migration-language).  
 
 ## Genealogy Data
 
@@ -338,5 +338,3 @@ Exporting data or the schema from Grakn, into Graql, will always redirect to sta
 ## Where Next?
 
 This example has illustrated how to migrate CSV data into Grakn. Having read it, you may want to further study our documentation about [CSV migration](../migrating-data/migrating-csv) and [Graql migration language](../migrating-data/migration-language).  
-
-

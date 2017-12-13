@@ -39,9 +39,9 @@ We cover this topic more in our documentation page on [statistics](./compute-sta
 
 At the moment we have a simple algorithm for determining
 
-* [centrality measure (degree)](./analytics-degrees.html)
-* [paths between nodes (shortest path)](./analytics-shortest-path.html)
-* [clusters or communities (connected components)](./analytics-connected-components.html).
+* [centrality measure (degree)](./compute-degrees)
+* [paths between nodes (shortest path)](./compute-shortest-path)
+* [clusters or communities (connected components)](./compute-connected-components).
 
 ## The Knowledge Graph According to Analytics
 
