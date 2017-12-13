@@ -90,7 +90,7 @@ To quit the GRAQL shell, just type `exit` to return to the command line.
 
 ## Other entry points
 
-The graph visualiser, the console and the GRAQL shell are not the only ways to interact with GRAKN. There are lower level ways to control it programmatically, like the REST endpoints and the Java API, but those are out of the scope of this article. They are treated more in depth in the [documentation](https://docs.grakn.ai) that I highly encourage you to consult.
+The graph visualiser, the console and the GRAQL shell are not the only ways to interact with GRAKN. There are lower level ways to control it programmatically, like the REST endpoints and the Java API, but those are out of the scope of this article. They are treated more in depth in the [documentation](https://dev.grakn.ai) that I highly encourage you to consult.
 
 
 ### What you have learned?

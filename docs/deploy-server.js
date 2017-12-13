@@ -13,6 +13,7 @@ app.get('*', (req, res) => {
   let requestedResource = req.path;
   if (requestedResource.match(/^\/documentation/)) {
     requestedResource = req.path.replace('/documentation', '/docs');
+    res.redirect(301,`${req.protocol}://${req.get('host')}${requestedResource}`); 
   }
   if(requestedResource.match(/^\/(overview|academy|contributors)\/?$/)){
     const indexlink = requestedResource[requestedResource.length - 1] === '/'? 'index.html' : '/index.html';
