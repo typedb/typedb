@@ -87,6 +87,7 @@ def withGrakn(Closure closure) {
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn.log"
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn-postprocessing.log"
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/cassandra.log"
+        sh 'stop-grakn.sh'
     }
 }
 
@@ -177,7 +178,6 @@ Closure createTestJob(split, i, testTimeout) {
                 timeout(testTimeout) {
                     stage('Run Janus test profile') {
                         mvn mavenVerify
-                        archiveArtifacts artifacts: graknDist()
                     }
                 }
             } finally {

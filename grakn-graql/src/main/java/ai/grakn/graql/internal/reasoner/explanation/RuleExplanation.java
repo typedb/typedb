@@ -22,6 +22,8 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.Sets;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -52,8 +54,9 @@ public class RuleExplanation extends Explanation {
     }
 
     @Override
-    public AnswerExplanation withAnswers(Set<Answer> answers) {
-        return new RuleExplanation(getQuery(), answers, getRule());
+    public AnswerExplanation childOf(Answer ans) {
+        AnswerExplanation explanation = ans.getExplanation();
+        return new RuleExplanation(getQuery(), Sets.union(this.getAnswers(), explanation.isLookupExplanation()? Collections.singleton(ans) : explanation.getAnswers()) , getRule());
     }
 
     @Override
