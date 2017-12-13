@@ -156,8 +156,11 @@ public class GraqlQueryException extends GraknException {
      * For example: {@code insert $x isa movie; $x isa person;}
      * </p>
      */
-    public static GraqlQueryException insertMultipleProperties(String property, Object value1, Object value2) {
-        return create("a concept cannot have multiple properties `%s` and `%s` for `%s`", value1, value2, property);
+    public static GraqlQueryException insertMultipleProperties(
+            VarPattern varPattern, String property, Object value1, Object value2
+    ) {
+        String message = "a concept `%s` cannot have multiple properties `%s` and `%s` for `%s`";
+        return create(message, varPattern, value1, value2, property);
     }
 
     /**
