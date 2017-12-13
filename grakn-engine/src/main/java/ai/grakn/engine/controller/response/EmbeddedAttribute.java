@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller.response;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.Jacksonisable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -33,6 +34,8 @@ import com.google.auto.value.AutoValue;
  */
 @AutoValue
 public abstract class EmbeddedAttribute implements Jacksonisable {
+    @JsonProperty
+    public abstract ConceptId id();
 
     @JsonProperty("@id")
     public abstract Link selfLink();
@@ -49,15 +52,16 @@ public abstract class EmbeddedAttribute implements Jacksonisable {
 
     @JsonCreator
     public static EmbeddedAttribute create(
+            @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("type") EmbeddedSchemaConcept type,
             @JsonProperty("value") String value,
             @JsonProperty("data-type") String dataType
     ){
-        return new AutoValue_EmbeddedAttribute(selfLink, type, value, dataType);
+        return new AutoValue_EmbeddedAttribute(id, selfLink, type, value, dataType);
     }
 
     public static EmbeddedAttribute create(ai.grakn.concept.Attribute attribute){
-        return create(Link.create(attribute), EmbeddedSchemaConcept.create(attribute.type()), attribute.getValue().toString(), attribute.dataType().getName());
+        return create(attribute.getId(), Link.create(attribute), EmbeddedSchemaConcept.create(attribute.type()), attribute.getValue().toString(), attribute.dataType().getName());
     }
 }
