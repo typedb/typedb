@@ -20,7 +20,7 @@ package ai.grakn.engine.controller.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * <p>
@@ -34,13 +34,19 @@ public abstract class Type extends SchemaConcept{
     @JsonProperty("abstract")
     public abstract Boolean isAbstract();
 
+    @Nullable
     @JsonProperty
-    public abstract Set<Link> plays();
+    public abstract Link plays();
 
+    @Nullable
     @JsonProperty
-    public abstract Set<Link> attributes();
+    public abstract Link attributes();
 
+    @Nullable
     @JsonProperty
-    public abstract Set<Link> keys();
+    public abstract Link keys();
 
+    @Nullable
+    @JsonProperty
+    public abstract Link instances();
 }

@@ -38,7 +38,7 @@ public abstract class EmbeddedAttribute implements Jacksonisable {
     public abstract Link selfLink();
 
     @JsonProperty
-    public abstract EmbeddedType type();
+    public abstract EmbeddedSchemaConcept type();
 
     @JsonProperty
     public abstract String value();
@@ -50,7 +50,7 @@ public abstract class EmbeddedAttribute implements Jacksonisable {
     @JsonCreator
     public static EmbeddedAttribute create(
             @JsonProperty("@id") Link selfLink,
-            @JsonProperty("type") EmbeddedType type,
+            @JsonProperty("type") EmbeddedSchemaConcept type,
             @JsonProperty("value") String value,
             @JsonProperty("data-type") String dataType
     ){
@@ -58,6 +58,6 @@ public abstract class EmbeddedAttribute implements Jacksonisable {
     }
 
     public static EmbeddedAttribute create(ai.grakn.concept.Attribute attribute){
-        return create(Link.create(attribute), EmbeddedType.create(attribute.type()), attribute.getValue().toString(), attribute.dataType().getName());
+        return create(Link.create(attribute), EmbeddedSchemaConcept.create(attribute.type()), attribute.getValue().toString(), attribute.dataType().getName());
     }
 }

@@ -58,15 +58,15 @@ public class ConceptBuilderTest {
         assertEquals(entity.getId(), entityWrapper.id());
 
         //Check Links to other concepts
-        Link attributes = Link.createAttributeLink(entity);
+        Link attributes = Link.createAttributesLink(entity);
         Link attributeWrappers = entityWrapper.attributes();
         assertEquals(attributes, attributeWrappers);
 
-        Link keyIds = Link.createKeyLink(entity);
+        Link keyIds = Link.createKeysLink(entity);
         Link keyWrapperIds = entityWrapper.keys();
         assertEquals(keyIds, keyWrapperIds);
 
-        Link relationshipLinkExpected = Link.createRelationshipLink(entity);
+        Link relationshipLinkExpected = Link.createRelationshipsLink(entity);
         Link relationshipLink = entityWrapper.relationships();
         assertEquals(relationshipLinkExpected, relationshipLink);
     }
@@ -85,12 +85,12 @@ public class ConceptBuilderTest {
 
         //Check Links to other concepts
         Set<Link> supIds = entityType.subs().map(Link::create).collect(Collectors.toSet());
-        Set<Link> supWrapperIds = entityTypeWrapper.subs();
-        assertEquals(supIds, supWrapperIds);
+        Link supWrapperLink = entityTypeWrapper.subs();
+        assertEquals(supIds, supWrapperLink);
 
         Set<Link> playIds = entityType.plays().map(Link::create).collect(Collectors.toSet());
-        Set<Link> playWrapperIds = entityTypeWrapper.plays();
-        assertEquals(playIds, playWrapperIds);
+        Link playWrapperLink = entityTypeWrapper.plays();
+        assertEquals(playIds, playWrapperLink);
     }
 
     @Test

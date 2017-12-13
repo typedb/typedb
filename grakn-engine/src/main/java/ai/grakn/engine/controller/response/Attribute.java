@@ -46,7 +46,7 @@ public abstract class Attribute extends Thing {
     public static Attribute create(
             @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
-            @JsonProperty("type") EmbeddedType type,
+            @JsonProperty("type") EmbeddedSchemaConcept type,
             @JsonProperty("attributes") Link attributes,
             @JsonProperty("keys") Link keys,
             @JsonProperty("relationships") Link relationships,

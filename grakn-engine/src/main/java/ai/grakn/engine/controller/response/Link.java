@@ -76,21 +76,21 @@ public abstract class Link implements Jacksonisable{
     /**
      * Creates a link to fetch all the {@link EmbeddedAttribute}s of a {@link Thing}
      */
-    public static Link createAttributeLink(ai.grakn.concept.Thing thing){
+    public static Link createAttributesLink(ai.grakn.concept.Thing thing){
         return create(REST.resolveTemplate(WebPath.CONCEPT_ATTRIBUTES, thing.keyspace().getValue(), thing.getId().getValue()));
     }
 
     /**
      * Creates a link to fetch all the {@link EmbeddedAttribute}s of a {@link Thing}
      */
-    public static Link createKeyLink(ai.grakn.concept.Thing thing){
+    public static Link createKeysLink(ai.grakn.concept.Thing thing){
         return create(REST.resolveTemplate(WebPath.CONCEPT_KEYS, thing.keyspace().getValue(), thing.getId().getValue()));
     }
 
     /**
      * Creates a link to fetch all the {@link Relationship)s of a {@link Thing}
      */
-    public static Link createRelationshipLink(ai.grakn.concept.Thing thing){
+    public static Link createRelationshipsLink(ai.grakn.concept.Thing thing){
         return create(REST.resolveTemplate(WebPath.CONCEPT_RELATIONSHIPS, thing.keyspace().getValue(), thing.getId().getValue()));
     }
 
@@ -105,12 +105,59 @@ public abstract class Link implements Jacksonisable{
         return create(id);
     }
 
+    /**
+     * Creates a link to get all the paged instances of a {@link Type}
+     */
     public static Link createInstanceLink(ai.grakn.concept.Type type, int offset, int limit){
         String id = createInstanceLink(type) +
                 "?" + REST.Request.OFFSET_PARAMETER + "=" + offset +
                 "?" + REST.Request.LIMIT_PARAMETER + "=" + limit;
 
         return create(id);
+    }
+
+    /**
+     * Creates a link to get all the subs of a {@link SchemaConcept}
+     */
+    public static Link createSubsLink(ai.grakn.concept.SchemaConcept schemaConcept){
+        String keyspace = schemaConcept.keyspace().getValue();
+        String label = schemaConcept.getLabel().getValue();
+
+        if(schemaConcept.isType()) {
+            return create(REST.resolveTemplate(WebPath.TYPE_SUBS, keyspace, label));
+        } else if (schemaConcept.isRole()){
+            return create(REST.resolveTemplate(WebPath.ROLE_SUBS, keyspace, label));
+        } else {
+            return create(REST.resolveTemplate(WebPath.RULE_SUBS, keyspace, label));
+        }
+    }
+
+    /**
+     * Creates a link to get all the plays of a {@link Type}
+     */
+    public static Link createPlaysLink(ai.grakn.concept.Type type){
+        return create(REST.resolveTemplate(WebPath.TYPE_PLAYS, type.keyspace().getValue(), type.getLabel().getValue()));
+    }
+
+    /**
+     * Creates a link to get all the attributes of a {@link Type}
+     */
+    public static Link createAttributesLink(ai.grakn.concept.Type type){
+        return create(REST.resolveTemplate(WebPath.TYPE_ATTRIBUTES, type.keyspace().getValue(), type.getLabel().getValue()));
+    }
+
+    /**
+     * Creates a link to get all the keys of a {@link Type}
+     */
+    public static Link createKeysLink(ai.grakn.concept.Type type){
+        return create(REST.resolveTemplate(WebPath.TYPE_KEYS, type.keyspace().getValue(), type.getLabel().getValue()));
+    }
+
+    /**
+     * Creates a link to get all the instances of a {@link Type}
+     */
+    public static Link createInstancesLink(ai.grakn.concept.Type type){
+        return create(REST.resolveTemplate(WebPath.TYPE_KEYS, type.keyspace().getValue(), type.getLabel().getValue()));
     }
 
 }
