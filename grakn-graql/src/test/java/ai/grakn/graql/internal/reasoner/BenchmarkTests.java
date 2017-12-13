@@ -20,13 +20,15 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.test.kbs.RandomLinearTransitivityKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.test.kbs.DiagonalKB;
-import ai.grakn.test.kbs.MatrixKBII;
+import ai.grakn.test.kbs.LinearTransitivityMatrixKB;
 import ai.grakn.test.kbs.PathKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
@@ -35,6 +37,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -43,6 +47,37 @@ public class BenchmarkTests {
     //Needed to start cass depending on profile
     @ClassRule
     public static final SessionContext sessionContext = SessionContext.create();
+
+    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkTests.class);
+
+    /**
+     * 2-rule transitive test with transitivity expressed in terms of two linear rules.
+     * Data arranged randomly with N number of db relation instances.
+     */
+    @Test
+    public void testRandomSetLinearTransitivity()  {
+        final int N = 1000;
+        final int limit = 100;
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
+        SampleKBContext kb = RandomLinearTransitivityKB.context(N);
+
+        ConceptId entityId = kb.tx().getEntityType("a-entity").instances().findFirst().get().getId();
+        String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
+        String subbedQueryString = "match (P-from: $x, P-to: $y) isa P;" +
+                "$x id '" + entityId.getValue() + "';" +
+                "get;";
+        String subbedQueryString2 = "match (P-from: $x, P-to: $y) isa P;" +
+                "$y id '" + entityId.getValue() + "';" +
+                "get;";
+        String limitedQueryString = "match (P-from: $x, P-to: $y) isa P;" +
+                "limit " + limit + ";" +
+                "get;";
+
+        executeQuery(queryString, kb.tx(), "full");
+        executeQuery(subbedQueryString, kb.tx(), "first argument bound");
+        executeQuery(subbedQueryString2, kb.tx(), "second argument bound");
+        executeQuery(limitedQueryString, kb.tx(), "limit " + limit);
+    }
 
     /**
      * 2-rule transitive test with transitivity expressed in terms of two linear rules
@@ -70,28 +105,21 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveMatrixLinear()  {
-        final int N = 10;
+        final int N = 20;
+        final int limit = 100;
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
 
         //                         DJ       IC     FO
         //results @N = 15 14400   3-5s
         //results @N = 20 44100    15s     8 s      8s
         //results @N = 25 105625   48s    27 s     31s
         //results @N = 30 216225  132s    65 s
+        SampleKBContext kb = LinearTransitivityMatrixKB.context(N, N);
 
-        long startTime = System.currentTimeMillis();
-        SampleKBContext kb = MatrixKBII.context(N, N);
-        long loadTime = System.currentTimeMillis() - startTime;
-        System.out.println("loadTime: " + loadTime);
-        GraknTx tx = kb.tx();
-
-        QueryBuilder iqb = tx.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
-        GetQuery query = iqb.parse(queryString);
 
-        executeQuery(query, "linear matrix full");
-
-        int limit = 100;
-        executeQuery(query.match().limit(limit).get(), "limit " + limit);
+        executeQuery(queryString, kb.tx(), "full");
+        executeQuery(kb.tx().graql().<GetQuery>parse(queryString).match().limit(limit).get(), "limit " + limit);
     }
 
     /**
@@ -111,15 +139,13 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         final int N = 100;
+        final int limit = 10;
         final int answers = (N+1)*N/2;
-        long startTime = System.currentTimeMillis();
-        SampleKBContext kb = TransitivityChainKB.context(N);
-        long loadTime = System.currentTimeMillis() - startTime;
-        System.out.println("loadTime: " + loadTime);
-        GraknTx tx = kb.tx();
 
-        QueryBuilder iqb = tx.graql().infer(true).materialise(false);
+        SampleKBContext kb = TransitivityChainKB.context(N);
+        QueryBuilder iqb = kb.tx().graql().infer(true).materialise(false);
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
         GetQuery query = iqb.parse(queryString);
@@ -127,10 +153,9 @@ public class BenchmarkTests {
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
         GetQuery query2 = iqb.parse(queryString2);
 
-        assertEquals(executeQuery(query, "chain full").size(), answers);
-        assertEquals(executeQuery(query2, "chain with resource").size(), N);
+        assertEquals(executeQuery(query, "full").size(), answers);
+        assertEquals(executeQuery(query2, "With specific resource").size(), N);
 
-        int limit = 10;
         executeQuery(query.match().limit(limit).get(), "limit " + limit);
         executeQuery(query2.match().limit(limit).get(), "limit " + limit);
     }
@@ -157,7 +182,9 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveMatrix(){
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         final int N = 10;
+        int limit = 100;
 
         //                         DJ       IC     FO
         //results @N = 15 14400     ?
@@ -165,14 +192,8 @@ public class BenchmarkTests {
         //results @N = 25 105625    ?       ?     50s    11 s
         //results @N = 30 216225    ?       ?      ?     30 s
         //results @N = 35 396900   ?        ?      ?     76 s
-
-        long startTime = System.currentTimeMillis();
         SampleKBContext kb = TransitivityMatrixKB.context(N, N);
-        long loadTime = System.currentTimeMillis() - startTime;
-        System.out.println("loadTime: " + loadTime);
-        GraknTx tx = kb.tx();
-
-        QueryBuilder iqb = tx.graql().infer(true).materialise(false);
+        QueryBuilder iqb = kb.tx().graql().infer(true).materialise(false);
 
         //full result
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
@@ -187,10 +208,9 @@ public class BenchmarkTests {
         String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.getId().getValue() + "'; get;";
         GetQuery query3 = iqb.parse(queryString3);
 
-        executeQuery(query, "matrix full");
-        executeQuery(query2, "matrix with resource");
-        executeQuery(query3, "matrix with specific substitution");
-        int limit = 100;
+        executeQuery(query, "full");
+        executeQuery(query2, "With specific resource");
+        executeQuery(query3, "Single argument bound");
         executeQuery(query.match().limit(limit).get(), "limit " + limit);
     }
 
@@ -219,25 +239,20 @@ public class BenchmarkTests {
      */
     @Test
     public void testDiagonal()  {
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         final int N = 10; //9604
+        final int limit = 10;
 
         //results @N = 40  1444  3.5s
         //results @N = 50  2304    8s    / 1s
         //results @N = 100 9604  loading takes ages
-
-        long startTime = System.currentTimeMillis();
         SampleKBContext kb = DiagonalKB.context(N, N);
-        long loadTime = System.currentTimeMillis() - startTime;
-        System.out.println("loadTime: " + loadTime);
-        GraknTx tx = kb.tx();
 
-        QueryBuilder iqb = tx.graql().infer(true).materialise(false);
+        QueryBuilder iqb = kb.tx().graql().infer(true).materialise(false);
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GetQuery query = iqb.parse(queryString);
 
-        executeQuery(query, "diagonal");
-
-        int limit = 10;
+        executeQuery(query, "full");
         executeQuery(query.match().limit(limit).get(), "limit " + limit);
     }
 
@@ -278,6 +293,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testPathTree(){
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         final int N = 5;
         final int linksPerEntity = 4;
         int answers = 0;
@@ -301,7 +317,7 @@ public class BenchmarkTests {
         final long startTime = System.currentTimeMillis();
         List<Answer> results = query.execute();
         final long answerTime = System.currentTimeMillis() - startTime;
-        System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
+        LOG.debug(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;
     }
 }

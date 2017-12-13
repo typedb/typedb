@@ -21,7 +21,7 @@ computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
 
-computeMethod  : min | max | median | mean | std | sum | count | path | cluster | degrees ;
+computeMethod  : min | max | median | mean | std | sum | count | path | paths | cluster | degrees ;
 
 min            : MIN      'of' ofList      ('in' inList)? ';' ;
 max            : MAX      'of' ofList      ('in' inList)? ';' ;
@@ -30,8 +30,9 @@ mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
 degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
-cluster        : CLUSTER                   ('in' inList)? ';' clusterParam* ;
+cluster        : CLUSTER ('of' id    )?    ('in' inList)? ';' clusterParam* ;
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
+paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
 clusterParam   : MEMBERS      ';' # clusterMembers
@@ -122,6 +123,7 @@ STD            : 'std' ;
 SUM            : 'sum' ;
 COUNT          : 'count' ;
 PATH           : 'path' ;
+PATHS          : 'paths' ;
 CLUSTER        : 'cluster' ;
 DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;

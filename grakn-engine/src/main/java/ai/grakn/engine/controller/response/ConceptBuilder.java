@@ -19,6 +19,9 @@
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.internal.reasoner.utils.conversion.ConceptConverter;
+import ai.grakn.util.Schema;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -59,18 +62,6 @@ public class ConceptBuilder {
      * @param type The {@link ai.grakn.concept.Type} to extract the {@link ai.grakn.concept.Thing}s from
      * @return The wrapper of the {@link ai.grakn.concept.Thing}s
      */
-    public static Things buildThings(ai.grakn.concept.Type type){
-        return buildThings(type, 0, 100);
-    }
-
-    public static Things buildThingsWithOffset(ai.grakn.concept.Type type, int offset){
-        return buildThings(type, offset, 100);
-    }
-
-    public static Things buildThingsWithLimit(ai.grakn.concept.Type type, int limit){
-        return buildThings(type, 0, limit);
-    }
-
     public static Things buildThings(ai.grakn.concept.Type type, int offset, int limit){
         Link selfLink = Link.createInstanceLink(type);
         Link next = Link.createInstanceLink(type, offset + limit, limit);
@@ -89,24 +80,20 @@ public class ConceptBuilder {
     //TODO: This will scale poorly with super nodes. Need to introduce some sort of paging maybe?
     private static Thing buildThing(ai.grakn.concept.Thing thing) {
         Link selfLink = Link.create(thing);
-        Set<Link> attributes = thing.attributes().map(Link::create).collect(Collectors.toSet());
-        Set<Link> keys = thing.keys().map(Link::create).collect(Collectors.toSet());
+        EmbeddedType type = EmbeddedType.create(thing.type());
+        Link attributes = Link.createAttributeLink(thing);
+        Link keys = Link.createKeyLink(thing);
+        Link relationships = Link.createRelationshipLink(thing);
 
-        Set<RolePlayer> relationships = new HashSet<>();
-        thing.plays().forEach(role -> {
-            Link roleWrapper = Link.create(role);
-            thing.relationships(role).forEach(relationship -> {
-                Link relationshipWrapper = Link.create(relationship);
-                relationships.add(RolePlayer.create(roleWrapper, relationshipWrapper));
-            });
-        });
+        String explanation = null;
+        if(thing.isInferred()) explanation = Graql.match(ConceptConverter.toPattern(thing)).get().toString();
 
         if(thing.isAttribute()){
-            return buildAttribute(thing.asAttribute(), selfLink, attributes, keys, relationships);
+            return buildAttribute(thing.asAttribute(), selfLink, type, attributes, keys, relationships, explanation);
         } else if (thing.isRelationship()){
-            return buildRelationship(thing.asRelationship(), selfLink, attributes, keys, relationships);
+            return buildRelationship(thing.asRelationship(), selfLink, type, attributes, keys, relationships, explanation);
         } else if (thing.isEntity()){
-            return buildEntity(thing.asEntity(), selfLink, attributes, keys, relationships);
+            return buildEntity(thing.asEntity(), selfLink, type, attributes, keys, relationships, explanation);
         } else {
             throw GraknBackendException.convertingUnknownConcept(thing);
         }
@@ -120,7 +107,9 @@ public class ConceptBuilder {
 
         Set<Link> subs = schemaConcept.subs().map(Link::create).collect(Collectors.toSet());
 
-        if(schemaConcept.isRole()){
+        if(Schema.MetaSchema.THING.getLabel().equals(schemaConcept.getLabel())) {
+            return MetaConcept.create(schemaConcept.getId(), selfLink, schemaConcept.getLabel(),  sup, subs);
+        } else if(schemaConcept.isRole()){
             return buildRole(schemaConcept.asRole(), selfLink, sup, subs);
         } else if(schemaConcept.isRule()){
             return buildRule(schemaConcept.asRule(), selfLink, sup, subs);
@@ -129,22 +118,22 @@ public class ConceptBuilder {
         }
     }
 
-    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
-        return Entity.create(entity.getId(), selfLink, attributes, keys, relationships);
+    private static Entity buildEntity(ai.grakn.concept.Entity entity, Link selfLink, EmbeddedType type, Link attributes, Link keys, Link relationships, String explanation){
+        return Entity.create(entity.getId(), selfLink, type, attributes, keys, relationships, entity.isInferred(), explanation);
     }
 
-    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
-        return Attribute.create(attribute.getId(), selfLink, attributes, keys, relationships, attribute.type().getDataType().getName(), attribute.getValue().toString());
+    private static Attribute buildAttribute(ai.grakn.concept.Attribute attribute, Link selfLink, EmbeddedType type, Link attributes, Link keys, Link relationships, String explanation){
+        return Attribute.create(attribute.getId(), selfLink, type, attributes, keys, relationships, attribute.isInferred(), explanation, attribute.type().getDataType().getName(), attribute.getValue().toString());
     }
 
-    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, Set<Link> attributes, Set<Link> keys, Set<RolePlayer> relationships){
+    private static Relationship buildRelationship(ai.grakn.concept.Relationship relationship, Link selfLink, EmbeddedType type, Link attributes, Link keys, Link relationships, String explanation){
         //Get all the role players and roles part of this relationship
         Set<RolePlayer> roleplayers = new HashSet<>();
         relationship.allRolePlayers().forEach((role, things) -> {
             Link roleLink = Link.create(role);
             things.forEach(thing -> roleplayers.add(RolePlayer.create(roleLink, Link.create(thing))));
         });
-        return Relationship.create(relationship.getId(), selfLink, attributes, keys, relationships, roleplayers);
+        return Relationship.create(relationship.getId(), selfLink, type, attributes, keys, relationships, relationship.isInferred(), explanation, roleplayers);
     }
 
     private static Type buildType(ai.grakn.concept.Type type, Link selfLink, Link sup, Set<Link> subs){

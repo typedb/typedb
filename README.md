@@ -38,7 +38,7 @@ This product includes software developed by [Grakn Labs](http://grakn.ai/).  It'
 Operating System: Unix based systems (Linux and Mac OS X)
 
 Running Grakn requires:
-* Oracle Java 8 (Standard Edition) with the $JAVA_HOME set accordingly
+* Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
 
 Compiling Grakn from source requires:
 * Maven 3

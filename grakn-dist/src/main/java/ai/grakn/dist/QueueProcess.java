@@ -33,7 +33,7 @@ public class QueueProcess extends AbstractProcessHandler implements ProcessHandl
     private static final long QUEUE_STARTUP_TIMEOUT_S = 10;
     private static final String NAME = "Queue";
 
-    private Path homePath;
+    private final Path homePath;
 
     public QueueProcess(Path homePath) {
         this.homePath = homePath;

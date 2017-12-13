@@ -35,7 +35,6 @@ import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -80,12 +79,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     private final Cache<V> cachedType = Cache.createTxCache(this, Cacheable.concept(), () -> {
         Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 map(EdgeElement::target).
-                flatMap(CommonUtil::optionalToStream).
                 flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
                 map(EdgeElement::target).
-                flatMap(CommonUtil::optionalToStream).
                 map(concept -> vertex().tx().factory().<V>buildConcept(concept)).
-                flatMap(CommonUtil::optionalToStream).
                 findAny();
 
         return type.orElseThrow(() -> GraknTxOperationException.noType(this));
@@ -211,8 +207,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 union(shortcutTraversal, attributeEdgeTraversal).toStream().
-                map(vertex -> vertex().tx().<X>buildConcept(vertex)).
-                flatMap(CommonUtil::optionalToStream);
+                map(vertex -> vertex().tx().<X>buildConcept(vertex));
     }
 
     /**
@@ -237,8 +232,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                     has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }
 
-        return traversal.toStream().map(vertex -> vertex().tx().<Relationship>buildConcept(vertex)).
-                flatMap(CommonUtil::optionalToStream);
+        return traversal.toStream().map(vertex -> vertex().tx().<Relationship>buildConcept(vertex));
     }
 
     private Stream<Relationship> edgeRelations(Role... roles){

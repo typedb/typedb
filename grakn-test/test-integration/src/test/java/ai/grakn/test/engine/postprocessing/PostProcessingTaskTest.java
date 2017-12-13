@@ -20,19 +20,18 @@ package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskSubmitter;
-import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;
-import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
-import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -40,14 +39,13 @@ import org.junit.Test;
 import java.util.Set;
 import java.util.UUID;
 
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PostProcessingTaskTest {
-
+    private static final ObjectMapper mapper = new ObjectMapper();
     public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
     @ClassRule
     public static EngineContext engine = EngineContext.createWithInMemoryRedis();
@@ -55,22 +53,20 @@ public class PostProcessingTaskTest {
     private String mockResourceIndex;
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
-    private TaskSubmitter mockTaskSubmitter;
     private PostProcessor postProcessor;
 
     @Before
-    public void mockPostProcessing(){
+    public void mockPostProcessing() throws JsonProcessingException {
         mockResourceIndex = UUID.randomUUID().toString();
-        mockTaskSubmitter = mock(RedisTaskManager.class);
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
         postProcessor = PostProcessor.create(engine.config(), engine.getJedisPool(), engine.server().factory(), engine.server().lockProvider(), METRIC_REGISTRY);
-        String keyspace = "testing";
-        when(mockConfiguration.json()).thenReturn(Json.object(
-                KEYSPACE_PARAM, keyspace,
-                REST.Request.COMMIT_LOG_FIXING, Json.object(
-                        Schema.BaseType.ATTRIBUTE.name(), Json.object(mockResourceIndex, mockResourceSet)
-                )));
+        Keyspace keyspace = Keyspace.of("testing");
+
+        //Configure commit log to be returned
+        CommitLog commitLog = CommitLog.createDefault(keyspace);
+        commitLog.attributes().put(mockResourceIndex, mockResourceSet);
+        when(mockConfiguration.configuration()).thenReturn(mapper.writeValueAsString(commitLog));
 
         //Initialise keyspaces
         Grakn.session(engine.uri(), SystemKeyspace.SYSTEM_KB_KEYSPACE).open(GraknTxType.WRITE).close();
@@ -81,22 +77,22 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+        task.initialize(mockConfiguration, engine.config(), engine.server().factory(),
                 METRIC_REGISTRY, postProcessor);
         task.start();
 
-        verify(mockConfiguration, times(2)).json();
+        verify(mockConfiguration, times(1)).configuration();
     }
 
     @Test
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+        task.initialize(mockConfiguration, engine.config(), engine.server().factory(),
                 METRIC_REGISTRY, postProcessor);
         task.start();
 
-        verify(mockConfiguration, times(2)).json();
+        verify(mockConfiguration, times(1)).configuration();
     }
 
     @Test
@@ -104,9 +100,9 @@ public class PostProcessingTaskTest {
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
-        task1.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+        task1.initialize(mockConfiguration, engine.config(), engine.server().factory(),
                 METRIC_REGISTRY, postProcessor);
-        task2.initialize(mockConfiguration, mockTaskSubmitter, engine.config(), engine.server().factory(),
+        task2.initialize(mockConfiguration, engine.config(), engine.server().factory(),
                 METRIC_REGISTRY, postProcessor);
 
         Thread pp1 = new Thread(task1::start);
@@ -118,6 +114,6 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockConfiguration, times(4)).json();
+        verify(mockConfiguration, times(2)).configuration();
     }
 }

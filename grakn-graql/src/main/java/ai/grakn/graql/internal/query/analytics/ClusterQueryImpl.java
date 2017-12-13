@@ -19,13 +19,18 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
 import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram;
+import ai.grakn.graql.internal.analytics.GraknMapReduce;
+import ai.grakn.graql.internal.analytics.GraknVertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +42,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
     private boolean members = false;
     private boolean anySize = true;
+    private Optional<ConceptId> sourceId = Optional.empty();
     private long clusterSize = -1L;
 
     ClusterQueryImpl(Optional<GraknTx> graph) {
@@ -55,41 +61,38 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
             return (T) Collections.emptyMap();
         }
 
-        ComputerResult result;
-
         Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
 
+        GraknVertexProgram<?> vertexProgram;
+        if (sourceId.isPresent()) {
+            ConceptId conceptId = sourceId.get();
+            if (!verticesExistInSubgraph(conceptId)) {
+                throw GraqlQueryException.instanceDoesNotExist();
+            }
+            vertexProgram = new ConnectedComponentVertexProgram(conceptId);
+        } else {
+            vertexProgram = new ConnectedComponentsVertexProgram();
+        }
+
+        GraknMapReduce<?> mapReduce;
         if (members) {
             if (anySize) {
-                result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(),
-                        new ClusterMemberMapReduce(ConnectedComponentVertexProgram.CLUSTER_LABEL),
-                        subLabelIds);
+                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
             } else {
-                result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(),
-                        new ClusterMemberMapReduce(ConnectedComponentVertexProgram.CLUSTER_LABEL, clusterSize),
-                        subLabelIds);
+                mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
             }
-            LOGGER.info("ConnectedComponentsVertexProgram is done in "
-                    + (System.currentTimeMillis() - startTime) + " ms");
-            return result.memory().get(ClusterMemberMapReduce.class.getName());
         } else {
             if (anySize) {
-                result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(),
-                        new ClusterSizeMapReduce(ConnectedComponentVertexProgram.CLUSTER_LABEL),
-                        subLabelIds);
+                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
             } else {
-                result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(),
-                        new ClusterSizeMapReduce(ConnectedComponentVertexProgram.CLUSTER_LABEL, clusterSize),
-                        subLabelIds);
+                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, clusterSize);
             }
-            LOGGER.info("ConnectedComponentsVertexProgram is done in "
-                    + (System.currentTimeMillis() - startTime) + " ms");
-            return result.memory().get(ClusterSizeMapReduce.class.getName());
         }
+
+        Memory memory = getGraphComputer().compute(vertexProgram, mapReduce, subLabelIds).memory();
+        LOGGER.info("ConnectedComponentsVertexProgram is done in "
+                + (System.currentTimeMillis() - startTime) + " ms");
+        return memory.get(members ? ClusterMemberMapReduce.class.getName() : ClusterSizeMapReduce.class.getName());
     }
 
     @Override
@@ -106,6 +109,12 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     public ClusterQuery<Map<String, Set<String>>> members() {
         this.members = true;
         return (ClusterQuery<Map<String, Set<String>>>) this;
+    }
+
+    @Override
+    public ClusterQuery<T> of(ConceptId conceptId) {
+        this.sourceId = Optional.ofNullable(conceptId);
+        return this;
     }
 
     @Override
@@ -128,6 +137,9 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     @Override
     String graqlString() {
         String string = "cluster" + subtypeString();
+        if (sourceId.isPresent()) {
+            string += " of " + sourceId.get().getValue() + ";";
+        }
         if (members) {
             string += " members;";
         }
@@ -150,12 +162,14 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         ClusterQueryImpl<?> that = (ClusterQueryImpl<?>) o;
 
-        return members == that.members && anySize == that.anySize && clusterSize == that.clusterSize;
+        return sourceId.equals(that.sourceId) && members == that.members &&
+                anySize == that.anySize && clusterSize == that.clusterSize;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
+        result = 31 * result + sourceId.hashCode();
         result = 31 * result + (members ? 1 : 0);
         result = 31 * result + (anySize ? 1 : 0);
         result = 31 * result + (int) (clusterSize ^ (clusterSize >>> 32));

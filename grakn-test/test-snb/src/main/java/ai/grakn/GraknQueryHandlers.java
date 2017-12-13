@@ -40,6 +40,7 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery8Result;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,7 +57,6 @@ import static ai.grakn.SNB.$messageId;
 import static ai.grakn.SNB.$person;
 import static ai.grakn.SNB.BIRTHDAY;
 import static ai.grakn.SNB.BROWSER_USED;
-import static ai.grakn.SNB.by;
 import static ai.grakn.SNB.CLASS_YEAR;
 import static ai.grakn.SNB.CONTENT;
 import static ai.grakn.SNB.CREATION_DATE;
@@ -74,12 +74,13 @@ import static ai.grakn.SNB.NAME;
 import static ai.grakn.SNB.PERSON_ID;
 import static ai.grakn.SNB.REPLY;
 import static ai.grakn.SNB.REPLY_OF;
-import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.SPEAKS;
 import static ai.grakn.SNB.STUDY_AT;
-import static ai.grakn.SNB.toEpoch;
 import static ai.grakn.SNB.WORK_AT;
 import static ai.grakn.SNB.WORK_FROM;
+import static ai.grakn.SNB.by;
+import static ai.grakn.SNB.resource;
+import static ai.grakn.SNB.toEpoch;
 import static ai.grakn.graql.Graql.compute;
 import static ai.grakn.graql.Graql.lte;
 import static ai.grakn.graql.Graql.match;
@@ -349,7 +350,7 @@ public class GraknQueryHandlers {
                 PathQuery pathQuery = compute().path().from(person1.getId()).to(person2.getId())
                         .in("knows", "person");
 
-                List<Concept> path = pathQuery.withTx(graknTx).execute().orElseGet(ArrayList::new);
+                List<Concept> path = pathQuery.withTx(graknTx).execute().orElse(Collections.emptyList());
 
                 // our path is either:
                 //     empty if there is none

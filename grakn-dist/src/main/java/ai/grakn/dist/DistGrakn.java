@@ -34,13 +34,13 @@ import java.util.Scanner;
  */
 public class DistGrakn {
 
-    protected static final String GRAKN = "grakn";
-    protected static final String QUEUE = "queue";
-    protected static final String STORAGE = "storage";
+    private static final String GRAKN = "grakn";
+    private static final String QUEUE = "queue";
+    private static final String STORAGE = "storage";
 
-    protected final StorageProcess storageProcess;
-    protected final QueueProcess queueProcess;
-    protected final GraknProcess graknProcess;
+    private final StorageProcess storageProcess;
+    private final QueueProcess queueProcess;
+    private final GraknProcess graknProcess;
 
     /**
      * Invocation from bash script 'grakn'
@@ -49,37 +49,35 @@ public class DistGrakn {
      * @param args
      */
     public static void main(String[] args) {
-        Path homeStatic;
-        Path configStatic;
-        DistGrakn application;
+        printAscii();
+
         try {
-            homeStatic = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
-            configStatic = Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
+            Path homeStatic = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
+            Path configStatic = Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
 
-            StorageProcess storageProcess = new StorageProcess(homeStatic);
-            QueueProcess queueProcess = new QueueProcess(homeStatic);
-            GraknProcess graknProcess = new GraknProcess(homeStatic, configStatic);
+            if(!Files.exists(homeStatic.resolve("grakn"))) {
+                throw new RuntimeException("Cannot find home folder");
+            }
+            if(!Files.exists(homeStatic)) {
+                throw new RuntimeException("Cannot find config folder");
+            }
 
-            String context = args.length > 0 ? args[0] : "";
-            String action = args.length > 1 ? args[1] : "";
-            String option = args.length > 2 ? args[2] : "";
-
-            application = new DistGrakn(storageProcess,queueProcess,graknProcess);
-            application.run(context,action,option);
+            newDistGrakn(homeStatic, configStatic).run(args);
         } catch (RuntimeException ex) {
             System.out.println("Problem with bash script: cannot run Grakn");
         }
     }
 
-    public void run(String context, String action, String option) {
-        Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
-        if(Files.exists(ascii)) {
-            try {
-                System.out.println(new String(Files.readAllBytes(ascii),StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                // DO NOTHING
-            }
-        }
+    private static DistGrakn newDistGrakn(Path homePathFolder, Path configPath) {
+        return new DistGrakn(new StorageProcess(homePathFolder),
+                new QueueProcess(homePathFolder),
+                new GraknProcess(homePathFolder, configPath));
+    }
+
+    public void run(String[] args) {
+        String context = args.length > 0 ? args[0] : "";
+        String action = args.length > 1 ? args[1] : "";
+        String option = args.length > 2 ? args[2] : "";
 
         switch (context) {
             case "server":
@@ -93,6 +91,17 @@ public class DistGrakn {
         }
     }
 
+    public static void printAscii() {
+        Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
+        if(Files.exists(ascii)) {
+            try {
+                System.out.println(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                // DO NOTHING
+            }
+        }
+    }
+
     public DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
         this.storageProcess = storageProcess;
         this.queueProcess = queueProcess;
@@ -103,7 +112,7 @@ public class DistGrakn {
         System.out.println(GraknVersion.VERSION);
     }
 
-    protected void help() {
+    private void help() {
         System.out.println("Usage: grakn COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
@@ -207,7 +216,7 @@ public class DistGrakn {
         }
     }
 
-    protected void serverHelp() {
+    private void serverHelp() {
         System.out.println("Usage: grakn server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +

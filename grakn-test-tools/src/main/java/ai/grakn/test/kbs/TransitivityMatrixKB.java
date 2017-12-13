@@ -38,7 +38,7 @@ import java.util.function.Consumer;
 public class TransitivityMatrixKB extends TestKB {
 
     private final static Label key = Label.of("index");
-    private final static String gqlFile = "simple-transitivity.gql";
+    private final static String gqlFile = "quadraticTransitivity.gql";
 
     private final int n;
     private final int m;
@@ -66,11 +66,11 @@ public class TransitivityMatrixKB extends TestKB {
 
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationshipType q = graph.getRelationshipType("Q");
-        Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
+        Thing aInst = putEntityWithResource(graph, "a", graph.getEntityType("entity2"), key);
         ConceptId[][] aInstanceIds = new ConceptId[n][m];
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                aInstanceIds[i][j] = putEntity(graph, "a" + i + "," + j, aEntity, key).getId();
+                aInstanceIds[i][j] = putEntityWithResource(graph, "a" + i + "," + j, aEntity, key).getId();
             }
         }
         

@@ -55,8 +55,8 @@ public interface CountQuery extends ComputeQuery<Long> {
     Long execute();
 
     /**
-     * @param tx the graph to execute the query on
-     * @return a CountQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a CountQuery with the transaction set
      */
     @Override
     CountQuery withTx(GraknTx tx);

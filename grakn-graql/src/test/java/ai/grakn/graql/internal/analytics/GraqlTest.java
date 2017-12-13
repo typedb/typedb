@@ -32,6 +32,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
@@ -39,6 +40,7 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.Schema;
@@ -187,6 +189,10 @@ public class GraqlTest {
             Map<String, Set<String>> memberMap =
                     graph.graql().<ClusterQuery<Map<String, Set<String>>>>parse("compute cluster; members;").execute();
             assertTrue(memberMap.isEmpty());
+
+            Query<?> parsed = graph.graql().parse("compute cluster of V123;");
+            Query<?> expected = graph.graql().compute().cluster().of(ConceptId.of("V123"));
+            assertEquals(expected, parsed);
         }
     }
 
@@ -195,13 +201,29 @@ public class GraqlTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            PathQuery query =
-                    graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
+            PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
 
             Optional<List<Concept>> path = query.execute();
-            assert path.isPresent();
             List<String> result =
                     path.get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+
+            List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
+
+            assertEquals(expected, result);
+        }
+    }
+
+    @Test
+    public void testPaths() throws InvalidKBException {
+        addSchemaAndEntities();
+
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            PathsQuery query = graph.graql().parse("compute paths from '" + entityId1 + "' to '" + entityId2 + "';");
+
+            List<List<Concept>> path = query.execute();
+            assertEquals(1, path.size());
+            List<String> result =
+                    path.get(0).stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
 
             List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 

@@ -67,8 +67,8 @@ public interface MeanQuery extends ComputeQuery<Optional<Double>> {
     Optional<Double> execute();
 
     /**
-     * @param tx the graph to execute the query on
-     * @return a MeanQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a MeanQuery with the transaction set
      */
     @Override
     MeanQuery withTx(GraknTx tx);

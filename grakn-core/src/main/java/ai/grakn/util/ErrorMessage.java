@@ -163,7 +163,6 @@ public enum ErrorMessage {
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
-    NO_LABEL_SPECIFIED_FOR_HAS("no label was specified for a resource type in a 'has' property"),
     MULTIPLE_TX("a graph has been specified twice for this query"),
 
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
@@ -201,7 +200,6 @@ public enum ErrorMessage {
     MISSING_TASK_ID("Could not retrieve id %s"),
     TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
     ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s]"),
-    AUTHENTICATION_FAILURE("Authentication parameters are incorrect or invalid"),
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
     //Post processing Errors
@@ -223,12 +221,13 @@ public enum ErrorMessage {
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
     NON_EXISTENT_UNIFIER("Could not proceed with unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal conversion of atom [%s]."),
+    CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
-    INSTANCE_DOES_NOT_EXIST("Thing does not exist in the subgraph."),
+    INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
     ROLE_AND_RULE_DO_NOT_HAVE_INSTANCE("Role and rule do not have instances."),
     NO_PATH_EXIST("There is no path between the two instances."),
     MAX_ITERATION_REACHED("Max iteration of [%s] reached.");

@@ -27,6 +27,7 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 
@@ -94,6 +95,12 @@ public interface ComputeQueryBuilder {
      */
     @CheckReturnValue
     PathQuery path();
+
+    /**
+     * @return a path query that will find all shortest path between two instances
+     */
+    @CheckReturnValue
+    PathsQuery paths();
 
     /**
      * @return a cluster query that will find the clusters in the graph
