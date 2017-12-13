@@ -226,8 +226,12 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                 return false;
             }
         } else {
-            if (memory.getIteration() % 2 == 1) { // entity iteration
+            if (memory.getIteration() % 2 == 0) {
                 if (memory.<Boolean>get(K_CORE_EXIST)) {
+                    LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
+                    LOGGER.debug("No Such Core Areas Found !!!!!!!!");
+                    throw new NoResultException();
+                } else {
                     if (memory.<Boolean>get(K_CORE_STABLE)) {
                         memory.set(CONNECTED_COMPONENT_STARTED, true);
                     } else {
@@ -235,10 +239,6 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                         memory.set(K_CORE_STABLE, true);
                     }
                     return false;
-                } else {
-                    LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
-                    LOGGER.debug("No Such Core Areas Found !!!!!!!!");
-                    throw new NoResultException();
                 }
             } else {
                 return false; // can not end after relayOrSaveMessages
