@@ -47,7 +47,7 @@ public abstract class MetaConcept extends Type{
             @JsonProperty("super") @Nullable EmbeddedSchemaConcept sup,
             @JsonProperty("subs") Link subs,
             @JsonProperty("plays") Link plays,
-            @JsonProperty("plays") Link attributes,
+            @JsonProperty("attributes") Link attributes,
             @JsonProperty("keys") Link keys,
             @JsonProperty("instances") Link instances
     ){
