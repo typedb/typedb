@@ -107,9 +107,7 @@ public class ConceptBuilder {
 
         Link subs = Link.createSubsLink(schemaConcept);
 
-        if(Schema.MetaSchema.THING.getLabel().equals(schemaConcept.getLabel())) {
-            return MetaConcept.create(schemaConcept.getId(), selfLink, schemaConcept.getLabel(),  sup, subs);
-        } else if(schemaConcept.isRole()){
+        if(schemaConcept.isRole()){
             return buildRole(schemaConcept.asRole(), selfLink, sup, subs);
         } else if(schemaConcept.isRule()){
             return buildRule(schemaConcept.asRule(), selfLink, sup, subs);
@@ -137,17 +135,19 @@ public class ConceptBuilder {
     }
 
     private static Type buildType(ai.grakn.concept.Type type, Link selfLink, EmbeddedSchemaConcept sup, Link subs){
-        Link roles = Link.createPlaysLink(type);
+        Link plays = Link.createPlaysLink(type);
         Link attributes = Link.createAttributesLink(type);
         Link keys = Link.createKeysLink(type);
         Link instances = Link.createInstancesLink(type);
 
-        if(type.isAttributeType()){
-            return buildAttributeType(type.asAttributeType(), selfLink, sup, subs, roles, attributes, keys, instances);
+        if(Schema.MetaSchema.THING.getLabel().equals(type.getLabel())) {
+            return MetaConcept.create(type.getId(), selfLink, type.getLabel(),  sup, subs, plays, attributes, keys, instances);
+        } else if(type.isAttributeType()){
+            return buildAttributeType(type.asAttributeType(), selfLink, sup, subs, plays, attributes, keys, instances);
         } else if (type.isEntityType()){
-            return buildEntityType(type.asEntityType(), selfLink, sup, subs, roles, attributes, keys, instances);
+            return buildEntityType(type.asEntityType(), selfLink, sup, subs, plays, attributes, keys, instances);
         } else if (type.isRelationshipType()){
-            return buildRelationshipType(type.asRelationshipType(), selfLink, sup, subs, roles, attributes, keys, instances);
+            return buildRelationshipType(type.asRelationshipType(), selfLink, sup, subs, plays, attributes, keys, instances);
         } else {
             throw GraknBackendException.convertingUnknownConcept(type);
         }
