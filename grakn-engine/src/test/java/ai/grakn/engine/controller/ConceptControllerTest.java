@@ -204,10 +204,8 @@ public class ConceptControllerTest {
         Response response = RestAssured.when().get(entityTypeWrapper.attributes().id());
         assertEquals(SC_OK, response.getStatusCode());
 
-        List<AttributeType> attributeTypes = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<AttributeType>>(){});
-        assertEquals(2, attributeTypes.size());
-        assertTrue(attributeTypes.contains(attributeTypeWrapper));
-        assertTrue(attributeTypes.contains(attributeTypeKeyWrapper));
+        List<AttributeType> attributes = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<AttributeType>>(){});
+        assertThat(attributes, containsInAnyOrder(attributeTypeWrapper, attributeTypeKeyWrapper));
     }
 
     @Test
@@ -216,8 +214,7 @@ public class ConceptControllerTest {
         assertEquals(SC_OK, response.getStatusCode());
 
         List<AttributeType> keys = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<AttributeType>>(){});
-        assertEquals(1, keys.size());
-        assertTrue(keys.contains(attributeTypeKeyWrapper));
+        assertThat(keys, containsInAnyOrder(attributeTypeKeyWrapper));
     }
 
     @Test

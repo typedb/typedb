@@ -98,10 +98,29 @@ public class ConceptController {
         spark.get(WebPath.CONCEPT_RELATIONSHIPS, this::getRelationships);
 
         spark.get(WebPath.TYPE_INSTANCES, this::getTypeInstances);
+        spark.get(WebPath.TYPE_PLAYS, this::getTypePlays);
+        spark.get(WebPath.TYPE_ATTRIBUTES, this::getTypeAttributes);
+        spark.get(WebPath.TYPE_KEYS, this::getTypeKeys);
 
         spark.get(WebPath.TYPE_SUBS, this::getSchemaConceptSubs);
         spark.get(WebPath.ROLE_SUBS, this::getSchemaConceptSubs);
         spark.get(WebPath.RULE_SUBS, this::getSchemaConceptSubs);
+
+    }
+
+    private String getTypeAttributes(Request request, Response response) throws JsonProcessingException {
+        Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.attributes().map(ConceptBuilder::build);
+        return getConceptCollection(request, response, buildTypeGetter(request), collector);
+    }
+
+    private String getTypeKeys(Request request, Response response) throws JsonProcessingException {
+        Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.keys().map(ConceptBuilder::build);
+        return getConceptCollection(request, response, buildTypeGetter(request), collector);
+    }
+
+    private String getTypePlays(Request request, Response response) throws JsonProcessingException {
+        Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.plays().map(ConceptBuilder::build);
+        return getConceptCollection(request, response, buildTypeGetter(request), collector);
     }
 
     private String getRelationships(Request request, Response response) throws JsonProcessingException {
@@ -266,7 +285,7 @@ public class ConceptController {
      * @param request The request which contains the {@link Label}
      * @return a function which can retrieve a {@link ai.grakn.concept.Type} by {@link Label}
      */
-    private static Function<GraknTx, ai.grakn.concept.SchemaConcept> buildTypeGetter(Request request){
+    private static Function<GraknTx, ai.grakn.concept.Type> buildTypeGetter(Request request){
         Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
         return tx -> tx.getType(label);
     }
