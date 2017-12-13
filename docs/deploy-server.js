@@ -6,8 +6,13 @@ const app = express();
 const port = process.env.PORT ? process.env.PORT : 3000;
 const dist = path.join(__dirname, '_site');
 
-app.use('/images', express.static(path.join(__dirname, 'images')));
-app.use('/', express.static(dist));
+app.get('*', (req, res) => {
+  let requestedResource = req.path;
+  if (requestedResource.indexOf('.') === -1 && requestedResource !== '/') {
+    requestedResource = requestedResource.concat('.html');
+  }
+  res.sendFile(path.join(dist, requestedResource));
+});
 
 
 app.listen(port, (error) => {
