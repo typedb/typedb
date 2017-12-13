@@ -142,7 +142,7 @@ A summary of the graph algorithms is given in the table below.
 | Algorithm | Description                                   |
 | ----------- | --------------------------------------------- |
 | [`cluster`](./compute-connected-components)     | Find connected clusters of instances.                        |
-| [`degrees`](.././compute-degrees)    | Find the number of related instances to each instance in the graph. |
+| [`degrees`](./compute-degrees)    | Find the number of related instances to each instance in the graph. |
 | [`path`](./compute-shortest-path)    | Find the shortest path between two instances.                           |
 
 <!--
@@ -172,5 +172,3 @@ compute count of person;
 ```
 
 Compute queries can be used to calculate the number of people in the graph very fast, but you can't filter the results to determine the number of people with a certain name.
-
-
