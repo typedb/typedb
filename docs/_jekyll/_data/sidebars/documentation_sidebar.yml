@@ -88,16 +88,16 @@ entries:
         url: /docs/distributed-analytics/compute-queries
       - title: Statistics
         output: web
-        url: /docs/distributed-analytics/statistics
+        url: /docs/distributed-analytics/compute-statistics
       - title: Shortest Path
         output: web
-        url: /docs/distributed-analytics/shortest-path
+        url: /docs/distributed-analytics/compute-shortest-path
       - title: Degrees
         output: web
-        url: /docs/distributed-analytics/degrees
+        url: /docs/distributed-analytics/compute-degrees
       - title: Connected Components
         output: web
-        url: /docs/distributed-analytics/connected-components
+        url: /docs/distributed-analytics/compute-connected-components
   - title: Migrating Data
     output: web
     folderitems:
