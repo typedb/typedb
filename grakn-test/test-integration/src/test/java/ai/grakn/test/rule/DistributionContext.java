@@ -84,7 +84,7 @@ public class DistributionContext extends CompositeTestRule {
             return false;
         }
 
-        engineProcess.destroyForcibly();
+        engineProcess.destroy();
         engineProcess = newEngineProcess(port, redisPort);
         waitForEngine();
         return true;
@@ -112,7 +112,7 @@ public class DistributionContext extends CompositeTestRule {
 
     @Override
     public void after() {
-        engineProcess.destroyForcibly();
+        engineProcess.destroy();
     }
 
     private void assertPackageBuilt() throws IOException {
