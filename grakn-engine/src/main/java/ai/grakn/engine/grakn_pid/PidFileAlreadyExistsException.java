@@ -14,33 +14,28 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.client;
+package ai.grakn.engine.grakn_pid;
 
-import ai.grakn.Keyspace;
-import ai.grakn.graql.Query;
-import ai.grakn.util.SimpleURI;
-
-import java.util.List;
-import java.util.Optional;
+import java.nio.file.Path;
 
 /**
- * Grakn http client. Extend this for more http endpoint.
  *
- * @author Domenico Corapi
+ * A class which manages grakn engine's PID
+ *
+ * @author Ganeshwara Herawan Hananda
+ *
  */
-public interface GraknClient {
-    int CONNECT_TIMEOUT_MS = 30 * 1000;
-    int DEFAULT_MAX_RETRY = 3;
+public class PidFileAlreadyExistsException extends RuntimeException {
+    private Path pidFilePath;
 
-    static GraknClient of(SimpleURI url) {
-        return new GraknClientImpl(url);
+    public PidFileAlreadyExistsException(Path pidFilePath) {
+        super("pid file already exists: '" + pidFilePath.toString());
+        this.pidFilePath = pidFilePath;
     }
 
-    List<QueryResponse> graqlExecute(List<Query<?>> queryList, Keyspace keyspace)
-            throws GraknClientException;
-
-    Optional<Keyspace> keyspace(String keyspace) throws GraknClientException;
+    public Path getPidFilePath() {
+        return pidFilePath;
+    }
 }
