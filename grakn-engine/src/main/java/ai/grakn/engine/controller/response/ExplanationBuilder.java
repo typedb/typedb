@@ -45,7 +45,8 @@ public class ExplanationBuilder {
         queryAnswer.getExplanation().getAnswers().forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();
             Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
-            List<ai.grakn.graql.admin.Answer> userDefinedAnswers = ReasonerQueries.atomic(atom.rewriteWithRelationVariable()).getQuery().execute();
+            ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(atom.rewriteWithRelationVariable());
+            List<ai.grakn.graql.admin.Answer> userDefinedAnswers = ReasonerQueries.atomic(rewrittenQuery, answer).getQuery().execute();
             ai.grakn.graql.admin.Answer inferredAnswer = new QueryAnswer();
 
             if (!userDefinedAnswers.isEmpty()) {
