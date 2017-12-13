@@ -147,7 +147,6 @@ public class DistributionContext extends CompositeTestRule {
                 "-cp", getClassPath(),
                 "-Dgrakn.dir=" + DIST_DIRECTORY,
                 "-Dgrakn.conf=" + propertiesFile.getAbsolutePath(),
-                "-Dgrakn.pidfile=/tmp/grakn.pid",
                 Grakn.class.getName(), "&"};
 
         // Start process

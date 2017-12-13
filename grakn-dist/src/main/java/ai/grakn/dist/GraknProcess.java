@@ -19,7 +19,6 @@
 package ai.grakn.dist;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.bootup.AbstractProcessHandler;
 import ai.grakn.engine.Grakn;
 import ai.grakn.engine.GraknConfig;
@@ -35,7 +34,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.stream.Collectors;
