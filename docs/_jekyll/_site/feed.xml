@@ -5,8 +5,8 @@
         <description>A Distributed Knowledge Graph</description>
         <link>http://localhost:4005/</link>
         <atom:link href="http://localhost:4005/feed.xml" rel="self" type="application/rss+xml"/>
-        <pubDate>Tue, 12 Dec 2017 23:02:35 +0000</pubDate>
-        <lastBuildDate>Tue, 12 Dec 2017 23:02:35 +0000</lastBuildDate>
+        <pubDate>Wed, 13 Dec 2017 00:07:58 +0000</pubDate>
+        <lastBuildDate>Wed, 13 Dec 2017 00:07:58 +0000</lastBuildDate>
         <generator>Jekyll v3.4.3</generator>
         
     </channel>
