@@ -8,9 +8,13 @@ const dist = path.join(__dirname, '_site');
 
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
+
 app.get('*', (req, res) => {
   let requestedResource = req.path;
-  if (requestedResource.match(/^\/(overview|academy|contributors)\/?$/)){
+  if (requestedResource.match(/^\/documentation/)) {
+    requestedResource = req.path.replace('/documentation', '/docs');
+  }
+  if(requestedResource.match(/^\/(overview|academy|contributors)\/?$/)){
     const indexlink = requestedResource[requestedResource.length - 1] === '/'? 'index.html' : '/index.html';
     requestedResource = requestedResource.concat(indexlink);
   }

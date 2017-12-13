@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
+import static org.junit.Assert.assertEquals;
 
 public class BenchmarkTests {
 
@@ -97,9 +98,8 @@ public class BenchmarkTests {
             ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
                     .map(ans -> ans.get(entityVar).getId())
                     .toArray(ConceptId[]::new);
-
-            System.out.println(instances.length);
-            assert(instances.length == N);
+            
+            assertEquals("not all instances were loaded", instances.length, N);
             Role fromRole = tx.getRole(fromRoleLabel);
             Role toRole = tx.getRole(toRoleLabel);
             RelationshipType relationType = tx.getRelationshipType(relationLabel);
@@ -126,7 +126,7 @@ public class BenchmarkTests {
     }
 
     private void loadJoinData(int N) {
-        final GraknClient graknClient = new GraknClient(engine.uri());
+        final GraknClient graknClient = GraknClient.of(engine.uri());
         final int M = N/5;
         loadOntology("multiJoin.gql", session);
         loadEntities("genericEntity", M, graknClient, keyspace);
@@ -138,7 +138,7 @@ public class BenchmarkTests {
     }
 
     private void loadTransitivityData(int N){
-        final GraknClient graknClient = new GraknClient(engine.uri());
+        final GraknClient graknClient = GraknClient.of(engine.uri());
         loadOntology("linearTransitivity.gql", session);
         loadEntities("a-entity", N, graknClient, keyspace);
         loadRelations("a-entity", "Q-from", "Q-to", "Q", N, session, graknClient, keyspace);
