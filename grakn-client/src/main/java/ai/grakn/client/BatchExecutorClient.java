@@ -58,10 +58,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.codahale.metrics.MetricRegistry.name;
-import static java.util.stream.Collectors.joining;
 
 /**
  * Client to batch load qraql queries into Grakn that mutate the graph.
@@ -96,6 +94,8 @@ public class BatchExecutorClient implements Closeable {
     private final Scheduler scheduler;
     private final ExecutorService executor;
     private boolean requestLogEnabled;
+
+    private final UUID id = UUID.randomUUID();
 
     private BatchExecutorClient(Builder builder) {
         context = HystrixRequestContext.initializeContext();
@@ -421,7 +421,7 @@ public class BatchExecutorClient implements Closeable {
 
         QueriesObservableCollapser(QueryRequest query, Keyspace keyspace) {
             super(Setter
-                    .withCollapserKey(collapserKey(keyspace))
+                    .withCollapserKey(hystrixCollapserKey(keyspace))
                     .andCollapserPropertiesDefaults(
                             HystrixCollapserProperties.Setter()
                                     .withRequestCacheEnabled(false)
@@ -466,13 +466,7 @@ public class BatchExecutorClient implements Closeable {
         }
     }
 
-    private HystrixCollapserKey collapserKey(Keyspace keyspace) {
-        // It split by keyspace and other parameters since we want to avoid mixing requests for different
-        // keyspaces or parameters together
-        Stream<Object> keyParts = Stream.of(
-                "QueriesObservableCollapser", keyspace, maxRetries, threadPoolCoreSize, timeoutMs, requestLogEnabled
-        );
-        String name = keyParts.map(Object::toString).collect(joining("_"));
-        return HystrixCollapserKey.Factory.asKey(name);
+    private HystrixCollapserKey hystrixCollapserKey(Keyspace keyspace) {
+        return HystrixCollapserKey.Factory.asKey(String.format("QueriesObservableCollapser_%s_%s", id, keyspace));
     }
 }
