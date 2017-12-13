@@ -66,6 +66,7 @@ import java.util.stream.Collectors;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -121,7 +122,7 @@ public class ConceptControllerTest {
             ai.grakn.concept.Attribute key = attributeTypeKey.putAttribute("An attribute Key 1");
 
             ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).attribute(attributeType).key(attributeTypeKey);
-            ai.grakn.concept.EntityType entityTypeSub = tx.putEntityType("My Special Sub Entity Type").sub(entityType);
+            ai.grakn.concept.EntityType entityTypeSub = tx.putEntityType("My Special Sub Entity Type").sup(entityType);
             entity = entityType.addEntity().attribute(attribute1).attribute(attribute2).attribute(key);
 
             ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
@@ -184,8 +185,7 @@ public class ConceptControllerTest {
         assertEquals(SC_OK, response.getStatusCode());
 
         List<EntityType> subs = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<EntityType>>(){});
-        assertEquals(1, subs.size());
-        assertTrue(subs.contains(entityTypeSubWrapper));
+        assertThat(subs, containsInAnyOrder(entityTypeWrapper, entityTypeSubWrapper));
     }
 
     @Test

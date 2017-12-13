@@ -98,6 +98,10 @@ public class ConceptController {
         spark.get(WebPath.CONCEPT_RELATIONSHIPS, this::getRelationships);
 
         spark.get(WebPath.TYPE_INSTANCES, this::getTypeInstances);
+
+        spark.get(WebPath.TYPE_SUBS, this::getSchemaConceptSubs);
+        spark.get(WebPath.ROLE_SUBS, this::getSchemaConceptSubs);
+        spark.get(WebPath.RULE_SUBS, this::getSchemaConceptSubs);
     }
 
     private String getRelationships(Request request, Response response) throws JsonProcessingException {
@@ -109,7 +113,7 @@ public class ConceptController {
                 return RolePlayer.create(roleWrapper, relationshipWrapper);
             });
         });
-        return this.getConceptCollection(request, response, collector);
+        return this.getConceptCollection(request, response, buildThingGetter(request), collector);
     }
 
     private String getKeys(Request request, Response response) throws JsonProcessingException {
@@ -127,26 +131,30 @@ public class ConceptController {
         Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing ->
                 attributeFetcher.apply(thing).skip(offset).limit(limit).map(EmbeddedAttribute::create);
 
-        return this.getConceptCollection(request, response, collector);
+        return this.getConceptCollection(request, response, buildThingGetter(request), collector);
     }
 
-    private <X extends ai.grakn.concept.Concept> String getConceptCollection(Request request, Response response, Function<X, Stream<Jacksonisable>> collector) throws JsonProcessingException {
+    private <X extends ai.grakn.concept.Concept> String getConceptCollection(Request request, Response response, Function<GraknTx, X> getter, Function<X, Stream<Jacksonisable>> collector) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
-        ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
 
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
-            X concept = tx.getConcept(conceptId);
+            X concept = getter.apply(tx);
 
-            //If the concept was not found or is not a thing there are no results to return;
-            if(concept == null || !concept.isThing()){
+            //If the concept was not found return;
+            if(concept == null){
                 response.status(SC_NOT_FOUND);
                 return "[]";
             }
 
             return objectMapper.writeValueAsString(collector.apply(concept).collect(Collectors.toList()));
         }
+    }
+
+    private String getSchemaConceptSubs(Request request, Response response) throws JsonProcessingException {
+        Function<ai.grakn.concept.SchemaConcept, Stream<Jacksonisable>> collector = schema -> schema.subs().map(ConceptBuilder::build);
+        return getConceptCollection(request, response, buildSchemaConceptGetter(request), collector);
     }
 
     private String getTypeInstances(Request request, Response response) throws JsonProcessingException {
@@ -239,5 +247,42 @@ public class ConceptController {
             response.status(SC_OK);
             return objectMapper.writeValueAsString(concepts);
         }
+    }
+
+    /**
+     * Helper method used to build a function which will get a {@link ai.grakn.concept.SchemaConcept} by {@link Label}
+     *
+     * @param request The request which contains the {@link Label}
+     * @return a function which can retrieve a {@link ai.grakn.concept.SchemaConcept} by {@link Label}
+     */
+    private static Function<GraknTx, ai.grakn.concept.SchemaConcept> buildSchemaConceptGetter(Request request){
+        Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
+        return tx -> tx.getSchemaConcept(label);
+    }
+
+    /**
+     * Helper method used to build a function which will get a {@link ai.grakn.concept.Type} by {@link Label}
+     *
+     * @param request The request which contains the {@link Label}
+     * @return a function which can retrieve a {@link ai.grakn.concept.Type} by {@link Label}
+     */
+    private static Function<GraknTx, ai.grakn.concept.SchemaConcept> buildTypeGetter(Request request){
+        Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
+        return tx -> tx.getType(label);
+    }
+
+    /**
+     * Helper method used to build a function which will get a {@link ai.grakn.concept.Thing} by {@link ConceptId}
+     *
+     * @param request The request which contains the {@link ConceptId}
+     * @return a function which can retrieve a {@link ai.grakn.concept.Thing} by {@link ConceptId}
+     */
+    private static Function<GraknTx, ai.grakn.concept.Thing> buildThingGetter(Request request){
+        ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
+        return tx -> {
+            ai.grakn.concept.Concept concept = tx.getConcept(conceptId);
+            if(concept == null || !concept.isThing()) return null;
+            return concept.asThing();
+        };
     }
 }
