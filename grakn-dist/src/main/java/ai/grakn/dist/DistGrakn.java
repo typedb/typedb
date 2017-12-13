@@ -19,6 +19,9 @@
 package ai.grakn.dist;
 
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.dist.lock.Lock;
+import ai.grakn.dist.lock.LockAlreadyAcquiredException;
+import ai.grakn.dist.lock.MkdirLock;
 import ai.grakn.util.GraknVersion;
 
 import java.io.IOException;
@@ -33,6 +36,7 @@ import java.util.Scanner;
  * @author Michele Orsi
  */
 public class DistGrakn {
+    private static final String SYNCHRONIZED_BOOTUP_LOCK_PATH = "/tmp/grakn-synchronized-bootup.lock";
 
     private static final String GRAKN = "grakn";
     private static final String QUEUE = "queue";
@@ -41,6 +45,8 @@ public class DistGrakn {
     private final StorageProcess storageProcess;
     private final QueueProcess queueProcess;
     private final GraknProcess graknProcess;
+    private final Lock synchronizedBootupLock;
+
 
     /**
      * Invocation from bash script 'grakn'
@@ -63,6 +69,10 @@ public class DistGrakn {
             }
 
             newDistGrakn(homeStatic, configStatic).run(args);
+
+        } catch (LockAlreadyAcquiredException e) {
+            System.out.println("grakn server start, stop or clean is already in progress. If this isn't the case, it is possible that it has crashed. " +
+                    "In that case please make sure to remove the directory " + SYNCHRONIZED_BOOTUP_LOCK_PATH + " before re-attempting.");
         } catch (RuntimeException ex) {
             System.out.println("Problem with bash script: cannot run Grakn");
         }
@@ -71,7 +81,8 @@ public class DistGrakn {
     private static DistGrakn newDistGrakn(Path homePathFolder, Path configPath) {
         return new DistGrakn(new StorageProcess(homePathFolder),
                 new QueueProcess(homePathFolder),
-                new GraknProcess(homePathFolder, configPath));
+                new GraknProcess(homePathFolder, configPath),
+                new MkdirLock(SYNCHRONIZED_BOOTUP_LOCK_PATH));
     }
 
     public void run(String[] args) {
@@ -81,7 +92,7 @@ public class DistGrakn {
 
         switch (context) {
             case "server":
-                server(action, option);
+                synchronizedBootupLock.withLock(() -> server(action, option));
                 break;
             case "version":
                 version();
@@ -102,10 +113,11 @@ public class DistGrakn {
         }
     }
 
-    public DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
+    public DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess, Lock synchronizedBootupLock) {
         this.storageProcess = storageProcess;
         this.queueProcess = queueProcess;
         this.graknProcess = graknProcess;
+        this.synchronizedBootupLock = synchronizedBootupLock;
     }
 
     private void version() {
