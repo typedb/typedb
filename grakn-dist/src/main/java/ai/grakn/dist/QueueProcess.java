@@ -18,6 +18,8 @@
 
 package ai.grakn.dist;
 
+import ai.grakn.bootup.AbstractProcessHandler;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
