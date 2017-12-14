@@ -59,25 +59,7 @@ function onGraphResponseAnalytics(resp: string) {
   EventHub.$emit('analytics-string-response', responseObject);
 }
 
-function flatten<T>(array: T[][]): T[] {
-  return array.reduce((x, y) => x.concat(y), []);
-}
-
 function filterNodes(nodes) { return nodes.filter(x => !x.implicit).filter(x => !x.abstract); }
-function filterEdges(edges) {
-  // Hide implicit relationship that links TYPES to ATTRIBUTE_TYPES and instead draw edge with label 'has'
-
-  // (Helper map {ImplicitRelationshipID: AttributeTypeID})
-  const toAttrTypeMap = edges
-    .filter(edge => visualiser.getNode(edge.to) && visualiser.getNode(edge.to).baseType === 'ATTRIBUTE_TYPE')
-    .reduce((map, current) => Object.assign(map, { [current.from]: current.to }), {});
-  // Set with all attribute types IDs
-  const attrTypeSet = new Set(Object.values(toAttrTypeMap));
-  // If an edge points to an ImplicitRelationshipID, change label to 'has' and cut edge
-  return edges
-    .filter(edge => !attrTypeSet.has(edge.to))
-    .map(edge => ((edge.from in toAttrTypeMap) ? { from: edge.to, to: toAttrTypeMap[edge.from], label: 'has' } : edge));
-}
 
 function initialise(graphElement: Object) {
   EventHub.$on('clear-page', () => clearGraph());
@@ -99,7 +81,6 @@ function linkNodeToExplicitAttributeNodes(nodeId, attributes) {
 // Lazy load attributes and generate label on the nodes that display attributes values
 function lazyLoadAttributes(nodes) {
   nodes
-    .filter(x => !x.inferred)
     .filter(x => !Array.isArray(x.attributes)) // filter out nodes with empty array ad 'attributes'
     .forEach((node) => {
       EngineClient
@@ -113,6 +94,26 @@ function lazyLoadAttributes(nodes) {
     });
 }
 
+function linkRelationshipTypesToRoles(nodes) {
+  nodes
+    .filter(x => x.baseType === 'RELATIONSHIP_TYPE')
+    .forEach((relType) => {
+      relType.relates.forEach((roleURI) => {
+        EngineClient.request({ url: roleURI })
+          .then((resp) => {
+            const role = JSON.parse(resp);
+            role.roleplayers.forEach((uri) => {
+              EngineClient.request({ url: uri })
+                .then((roleresp) => {
+                  const player = JSON.parse(roleresp);
+                  visualiser.addEdge({ from: relType.id, to: player.id, label: role.label });
+                });
+            });
+          });
+      });
+    });
+}
+
 function onGraphResponse(resp: string) {
   const responseObject = JSON.parse(resp);
   const parsedResponse = Parser.parseResponse(responseObject);
@@ -123,11 +124,14 @@ function onGraphResponse(resp: string) {
   }
 
   // Add nodes and edges to canvas
-  filterNodes(parsedResponse.nodes).forEach(node => visualiser.addNode(node));
-  filterEdges(parsedResponse.edges).forEach(edge => visualiser.addEdge(edge));
+  const filteredNodes = filterNodes(parsedResponse.nodes);
+  filteredNodes.forEach(node => visualiser.addNode(node));
 
   // Lazy load attributes once nodes are in the graph
-  lazyLoadAttributes(parsedResponse.nodes);
+  lazyLoadAttributes(filteredNodes);
+
+  // Load relationship types' roles
+  linkRelationshipTypesToRoles(filteredNodes);
 
   // Never visualise relationships without roleplayers
   filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
