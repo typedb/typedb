@@ -34,19 +34,18 @@ import ai.grakn.graql.internal.antlr.GraqlParser.PatternContext;
 import ai.grakn.graql.internal.antlr.GraqlParser.PatternsContext;
 import ai.grakn.graql.internal.antlr.GraqlParser.QueryContext;
 import ai.grakn.graql.internal.antlr.GraqlParser.QueryEOFContext;
+import ai.grakn.graql.internal.antlr.GraqlParser.QueryListContext;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.template.TemplateParser;
 import ai.grakn.graql.macro.Macro;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
-import org.antlr.v4.runtime.ANTLRErrorStrategy;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenFactory;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.DefaultErrorStrategy;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.UnbufferedCharStream;
@@ -150,11 +149,11 @@ public class QueryParserImpl implements QueryParser {
         return (T) QUERY_EOF.parse(queryString);
     }
 
-    @Override
     /**
      * @param reader a reader representing several queries
      * @return a list of queries
      */
+    @Override
     public <T extends Query<?>> Stream<T> parseList(Reader reader) {
         UnbufferedCharStream charStream = new UnbufferedCharStream(reader);
         GraqlErrorListener errorListener = GraqlErrorListener.withoutQueryString();
@@ -168,6 +167,11 @@ public class QueryParserImpl implements QueryParser {
             copy over the text into each `Token`, s.t. that `Token#getText` will just look up the copied text field.
         */
         lexer.setTokenFactory(new CommonTokenFactory(true));
+
+        // Use an unbuffered token stream so we can handle extremely large input strings
+        UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(ChannelTokenSource.of(lexer));
+
+        GraqlParser parser = createParser(tokenStream, errorListener);
 
         /*
             The "bail" error strategy prevents us reading all the way to the end of the input, e.g.
@@ -186,25 +190,7 @@ public class QueryParserImpl implements QueryParser {
             This causes memory issues for very large queries, so we use the simpler "bail" strategy that will
             immediately stop when it hits `match`.
         */
-        return parseList(lexer, errorListener, new BailErrorStrategy());
-    }
-
-    @Override
-    public <T extends Query<?>> Stream<T> parseList(String queryString) {
-        ANTLRInputStream inputStream = new ANTLRInputStream(queryString);
-        GraqlErrorListener errorListener = GraqlErrorListener.of(queryString);
-        GraqlLexer lexer = createLexer(inputStream, errorListener);
-        return parseList(lexer, errorListener, new DefaultErrorStrategy());
-    }
-
-    private <T extends Query<?>> Stream<T> parseList(
-            GraqlLexer lexer, GraqlErrorListener errorListener, ANTLRErrorStrategy errorStrategy
-    ) {
-        // Use an unbuffered token stream so we can handle extremely large input strings
-        UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(ChannelTokenSource.of(lexer));
-
-        GraqlParser parser = createParser(tokenStream, errorListener);
-        parser.setErrorHandler(errorStrategy);
+        parser.setErrorHandler(new BailErrorStrategy());
 
         // This is a lazy iterator that will only consume a single query at a time, without parsing any further.
         // This means it can pass arbitrarily long streams of queries in constant memory!
@@ -225,6 +211,11 @@ public class QueryParserImpl implements QueryParser {
         };
 
         return StreamSupport.stream(queryIterator.spliterator(), false);
+    }
+
+    @Override
+    public <T extends Query<?>> Stream<T> parseList(String queryString) {
+        return (Stream<T>) QUERY_LIST.parse(queryString);
     }
 
     @Override
@@ -283,6 +274,9 @@ public class QueryParserImpl implements QueryParser {
             }
         });
     }
+
+    private final QueryPart<QueryListContext, Stream<? extends Query<?>>> QUERY_LIST =
+            createQueryPart(GraqlParser::queryList, QueryVisitor::visitQueryList);
 
     private final QueryPart<QueryEOFContext, Query<?>> QUERY_EOF =
             createQueryPart(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF);

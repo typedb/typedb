@@ -59,6 +59,7 @@ import org.junit.rules.Timeout;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -69,7 +70,29 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.*;
+import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.ask;
+import static ai.grakn.graql.Graql.contains;
+import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.define;
+import static ai.grakn.graql.Graql.eq;
+import static ai.grakn.graql.Graql.group;
+import static ai.grakn.graql.Graql.gt;
+import static ai.grakn.graql.Graql.gte;
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.lt;
+import static ai.grakn.graql.Graql.lte;
+import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.neq;
+import static ai.grakn.graql.Graql.or;
+import static ai.grakn.graql.Graql.parse;
+import static ai.grakn.graql.Graql.regex;
+import static ai.grakn.graql.Graql.select;
+import static ai.grakn.graql.Graql.std;
+import static ai.grakn.graql.Graql.undefine;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
@@ -841,7 +864,7 @@ public class QueryParserTest {
 
         final int[] count = {0, 0};
 
-        Graql.parser().parseList(massiveQuery).forEach(q -> {
+        Graql.parser().parseList(new StringReader(massiveQuery)).forEach(q -> {
             if (q.equals(query1)) {
                 count[0] ++;
             } else if (q.equals(query2)) {
