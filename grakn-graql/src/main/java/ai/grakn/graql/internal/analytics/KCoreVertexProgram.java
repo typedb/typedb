@@ -80,9 +80,15 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     }
 
     @Override
+    public void storeState(final Configuration configuration) {
+        super.storeState(configuration);
+        persistentProperties.put(K, k);
+    }
+
+    @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
-        k = (int) persistentProperties.get(K_CORE_STABLE);
+        k = (int) persistentProperties.get(K);
     }
 
     @Override
@@ -194,7 +200,8 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     }
 
     private static void relayClusterLabel(Messenger<String> messenger, Memory memory) {
-        String max = IteratorUtils.reduce(messenger.receiveMessages(), messenger.receiveMessages().next(),
+        String firstMessage = messenger.receiveMessages().next();
+        String max = IteratorUtils.reduce(messenger.receiveMessages(), firstMessage,
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
         sendMessage(messenger, max);
         memory.add(VOTE_TO_HALT, false);

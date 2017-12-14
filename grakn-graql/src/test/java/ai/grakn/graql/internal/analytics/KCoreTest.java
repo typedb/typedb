@@ -137,19 +137,6 @@ public class KCoreTest {
     }
 
     @Test
-    public void testOnGraphWithFourEntitiesAndFourRelationships() {
-        addSchemaAndEntities();
-
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<String, Set<String>> result = graph.graql().compute().kCore().kValue(2).execute();
-            assertEquals(1, result.size());
-            assertEquals(4, result.values().iterator().next().size());
-            result = graph.graql().compute().kCore().kValue(3).execute();
-            assertTrue(result.isEmpty());
-        }
-    }
-
-    @Test
     public void testOnGraphWithFourEntitiesAndSixRelationships() {
         addSchemaAndEntities();
 
