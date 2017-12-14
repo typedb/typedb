@@ -59,12 +59,12 @@ def runIntegrationTest(String workspace, String moduleName) {
     stage(moduleName) {
         withPath("${modulePath}:${modulePath}/src/main/bash") {
             withGrakn {
-                timeout(180) {
+                timeout(60) {
                     stage('Load') {
                         sh "load.sh"
                     }
                 }
-                timeout(360) {
+                timeout(60) {
                     stage('Validate') {
                         sh "validate.sh"
                     }

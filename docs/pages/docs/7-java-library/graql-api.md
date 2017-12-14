@@ -135,6 +135,7 @@ qb.parse("insert isa person, has firstname 'Alice';").execute();
 qb.parse("match $x isa person; delete $x;").execute();
 ```
 
+<<<<<<< HEAD:docs/pages/docs/7-java-library/graql-api.md
 ## Reasoning
 
 Reasoning can be configured using `QueryBuilder` objects in the following way:
@@ -153,3 +154,5 @@ The table below summarises the available reasoning configuration options togethe
 | Option       | Description | Default
 | -------------------- |:--|:--|
 | `QueryBuilder::infer(boolean)` | controls whether reasoning should be turned on | False=Off |
+=======
+>>>>>>> c4f3e63f155dfd0e569d8141496c0dfbc4b1b7b8:docs/pages/docs/7-java-library/graql-api.md

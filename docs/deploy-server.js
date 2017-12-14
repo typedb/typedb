@@ -17,7 +17,11 @@ app.get('*', (req, res) => {
   }
   else if (requestedResource.match(/^\/documentation/)) {
     requestedResource = req.path.replace('/documentation', '/docs');
+<<<<<<< HEAD
     res.redirect(302,`${req.protocol}://${req.get('host')}${requestedResource}`);
+=======
+    res.redirect(301,`${req.protocol}://${req.get('host')}${requestedResource}`); 
+>>>>>>> c4f3e63f155dfd0e569d8141496c0dfbc4b1b7b8
   }
   if(requestedResource.match(/^\/(docs|overview|academy|contributors)\/?$/)){
     const indexlink = requestedResource[requestedResource.length - 1] === '/'? 'index.html' : '/index.html';
