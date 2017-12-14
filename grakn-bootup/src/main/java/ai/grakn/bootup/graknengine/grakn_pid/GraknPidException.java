@@ -18,8 +18,6 @@
 
 package ai.grakn.bootup.graknengine.grakn_pid;
 
-import java.nio.file.Path;
-
 /**
  *
  * A class which manages grakn engine's PID

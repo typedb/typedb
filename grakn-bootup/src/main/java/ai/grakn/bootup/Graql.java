@@ -32,7 +32,7 @@ import java.util.Arrays;
  *
  * @author Michele Orsi
  */
-public class DistGraql {
+public class Graql {
 
     /**
      *
@@ -41,7 +41,7 @@ public class DistGraql {
      * @param args
      */
     public static void main(String[] args) {
-        new DistGraql().run(args);
+        new Graql().run(args);
     }
 
     public void run(String[] args) {

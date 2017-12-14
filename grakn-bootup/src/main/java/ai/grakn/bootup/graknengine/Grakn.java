@@ -31,7 +31,9 @@ import java.util.Optional;
 
 /**
  *
- * Main class invoked by bash scripting
+ * Main class invoked by bash scripting.
+ *
+ * NOTE: The class name is shown when a user is running the 'jps' command. Therefore please keep the class name "Grakn".
  *
  * @author Michele Orsi
  *
