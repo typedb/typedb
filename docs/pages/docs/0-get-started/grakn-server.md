@@ -1,7 +1,6 @@
 ---
 title: Grakn Deployment Guide
 keywords: setup, getting started, download
-last_updated: December 15th 2016
 tags: [getting-started]
 summary: "A guide to setting up a production deployment of GRAKN.AI."
 sidebar: documentation_sidebar
@@ -74,5 +73,3 @@ Upgrading Grakn in a distributed setup is very simple:
 - start new Grakn Engine (`grakn server start grakn`)
 
 You can perform a rolling deployment in this fashion with minimum impact on your services.
-
-

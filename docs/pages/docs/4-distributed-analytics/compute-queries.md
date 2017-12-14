@@ -1,7 +1,6 @@
 ---
 title: Compute Queries
 keywords: graql, compute, match
-last_updated: September 28, 2016
 tags: [graql]
 summary: "Graql Compute Queries"
 sidebar: documentation_sidebar

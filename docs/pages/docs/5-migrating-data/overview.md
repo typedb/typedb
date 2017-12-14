@@ -1,7 +1,6 @@
 ---
 title: Migration Overview
 keywords: setup, getting started
-last_updated: February 2017
 tags: [getting-started, graql, migration]
 summary: "Overview of migrating data into Grakn from various data sources"
 sidebar: documentation_sidebar
@@ -52,5 +51,3 @@ Exporting data or the schema from Grakn, into Graql, will always redirect to sta
 
 ## Where Next?
 You can find further documentation about the [migration language](./migration-language).
-
-

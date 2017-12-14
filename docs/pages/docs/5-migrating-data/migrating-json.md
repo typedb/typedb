@@ -1,7 +1,6 @@
 ---
 title: Migrating JSON data to Grakn
 keywords: setup, getting started
-last_updated: February 2017
 tags: [migration]
 summary: "This document will teach you how to migrate JSON data into Grakn."
 sidebar: documentation_sidebar
@@ -175,5 +174,3 @@ $p2 isa pokemon has weight 905 has height 17 has pokedex-no 6 has description "C
 
 ## Where Next?
 You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](http://javadoc.io/doc/ai.grakn/grakn). An example of JSON migration using the Java API can be found on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-giphy).
-
-

@@ -1,7 +1,6 @@
 ---
 title: Define a Basic Schema
 keywords: schema
-last_updated: December, 2016
 tags: [java-api, java, advanced-grakn]
 summary: "Example of building a basic schema"
 sidebar: documentation_sidebar

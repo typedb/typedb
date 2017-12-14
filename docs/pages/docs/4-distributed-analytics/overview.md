@@ -1,6 +1,5 @@
 ---
 title: Analytics Overview
-last_updated: February 2017
 tags: [analytics]
 summary: "This page provides an overview of the Graql analytics capabilities."
 sidebar: documentation_sidebar
@@ -100,5 +99,3 @@ This knowledge base also happens to include the parentship relationship, but we 
 {% include note.html content="The degree is the simplest measure of the importance (centrality) of a node in a graph.
 Graql is very flexible and allows us to define the subgraph in which we want to compute the degree, and therefore determine
 importance according to various structures in the graph." %}
-
-

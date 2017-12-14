@@ -1,7 +1,6 @@
 ---
 title: Graql Overview
 keywords: graql, overview
-last_updated: March 2017
 tags: [graql]
 summary: "An introduction to Graql"
 sidebar: documentation_sidebar
@@ -161,5 +160,3 @@ true, false
 
 ## Cheatsheet reference
 If you are already familiar with Graql, you may find our [cheatsheet reference](../api-references/graql-cheatsheet) a helpful page to bookmark or print out!
-
-

@@ -1,7 +1,6 @@
 ---
 title: Match Clause
 keywords: graql, query, match
-last_updated: April 2017
 tags: [graql]
 summary: "Graql Match Clause"
 sidebar: documentation_sidebar

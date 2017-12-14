@@ -1,7 +1,6 @@
 ---
 title: GRAKN.AI FAQs
 keywords: overview
-last_updated: April 2017
 tags: [overview, faq]
 sidebar: overview_sidebar
 permalink: /overview/faqs.html

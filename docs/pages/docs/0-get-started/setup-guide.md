@@ -1,7 +1,6 @@
 ---
 title: Grakn Setup Guide
 keywords: setup, getting started
-last_updated: August 10, 2016
 tags: [getting-started, graql]
 summary: "This document will teach you how to set up a Grakn environment, start it up and load a simple example."
 sidebar: documentation_sidebar

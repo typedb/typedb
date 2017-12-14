@@ -1,7 +1,6 @@
 ---
 title: GRAKN.AI Ideology - Simplicity and Maintainability
 keywords: overview
-last_updated: April 2017
 tags: [overview, faq]
 sidebar: overview_sidebar
 permalink: /overview/ideology.html

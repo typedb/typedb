@@ -1,7 +1,6 @@
 ---
 title: Migrating CSV data to Grakn
 keywords: setup, getting started
-last_updated: February 2017
 tags: [migration]
 summary: "This document will teach you how to migrate CSV data into Grakn."
 sidebar: documentation_sidebar
@@ -137,5 +136,3 @@ This file would be migrated in the same way as the previous example when you spe
 We have an additional, more extensive, example that [migrates genealogy data from CSV](../examples/CSV-migration). Our [sample-projects repository on Github](https://github.com/graknlabs/sample-projects) also contains [an example that migrates a simple CSV pets dataset](https://github.com/graknlabs/sample-projects/tree/master/example-csv-migration-pets), and another [example for video games](https://github.com/graknlabs/sample-projects/tree/master/example-csv-migration-games), was described in a separate [blog post](https://blog.grakn.ai/twenty-years-of-games-in-grakn-14faa974b16e#.do8tq0dm8).
 
 You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](http://javadoc.io/doc/ai.grakn/grakn).
-
-

@@ -1,7 +1,6 @@
 ---
 title: Migrating SQL data to Grakn
 keywords: setup, getting started
-last_updated: December 2016
 tags: [migration]
 summary: "This document will teach you how to migrate SQL data into Grakn."
 sidebar: documentation_sidebar
@@ -272,5 +271,3 @@ You can find an example of how to use the Java API for SQL migration [here](../e
 
 ## Where Next?
 You can find further documentation about migration in our API reference documentation (which is in the *docs* directory of the distribution zip file, and also online [here](http://javadoc.io/doc/ai.grakn/grakn).
-
-

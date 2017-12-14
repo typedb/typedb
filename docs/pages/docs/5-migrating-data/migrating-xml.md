@@ -1,7 +1,6 @@
 ---
 title: XML Migration to Grakn
 keywords: setup, getting started
-last_updated: February 2017
 tags: [migration]
 summary: "This document will teach you how to migrate XML data into Grakn."
 sidebar: documentation_sidebar
