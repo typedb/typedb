@@ -24,9 +24,8 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
-import ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
+import ai.grakn.graql.internal.analytics.NoResultException;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.Collection;
@@ -45,7 +44,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
 
     @Override
     public Map<String, Set<String>> execute() {
-        LOGGER.info("Starting KCore query");
+        LOGGER.info("KCore query is started");
         long startTime = System.currentTimeMillis();
 
         if (k < 2) throw GraqlQueryException.kValueSmallerThanTwo();
@@ -53,17 +52,25 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
         initSubGraph();
         getAllSubTypes();
 
-        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
+        if (!selectedTypesHaveInstance()) {
+            LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
+            return Collections.emptyMap();
+        }
 
+        ComputerResult result;
         Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+        try {
+            result = getGraphComputer().compute(
+                    new KCoreVertexProgram(k),
+                    new ClusterMemberMapReduce(KCoreVertexProgram.CLUSTER_LABEL),
+                    subLabelIds);
+        } catch (NoResultException e) {
+            LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
+            return Collections.emptyMap();
+        }
 
-        ComputerResult result = getGraphComputer().compute(
-                new KCoreVertexProgram(k),
-                new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL),
-                subLabelIds);
-
-        LOGGER.info("KCore is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return result.memory().get(DegreeDistributionMapReduce.class.getName());
+        LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
+        return result.memory().get(ClusterMemberMapReduce.class.getName());
     }
 
     @Override
@@ -82,10 +89,10 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
         return (KCoreQuery) super.in(subLabels);
     }
 
-    //TODO
     @Override
     String graqlString() {
-        String string = "kcore";
+        String string = "kcore ";
+        string += k;
         string += subtypeString();
         return string;
     }

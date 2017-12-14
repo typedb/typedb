@@ -42,7 +42,7 @@ public class ConnectedComponentsVertexProgram extends GraknVertexProgram<String>
     private static final int MAX_ITERATION = 100;
 
     public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
-    static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
+    private static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
 
     private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS =
             Collections.singleton(MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true));
@@ -78,7 +78,7 @@ public class ConnectedComponentsVertexProgram extends GraknVertexProgram<String>
         }
     }
 
-    static void updateClusterLabel(Vertex vertex, Messenger<String> messenger, Memory memory) {
+    private static void updateClusterLabel(Vertex vertex, Messenger<String> messenger, Memory memory) {
         String currentMax = vertex.value(CLUSTER_LABEL);
         String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
