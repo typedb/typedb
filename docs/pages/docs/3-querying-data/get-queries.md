@@ -1,7 +1,6 @@
 ---
 title: Get Queries
 keywords: graql, query, get
-last_updated: April 2017
 tags: [graql]
 summary: "Graql Get Queries"
 sidebar: documentation_sidebar
@@ -62,5 +61,3 @@ qb.match(
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
-
-

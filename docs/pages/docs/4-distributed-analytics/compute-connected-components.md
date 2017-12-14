@@ -1,6 +1,5 @@
 ---
 title: Connected Components
-last_updated: February 2017
 tags: [analytics]
 summary: "This page introduces the connected components algorithm and explains how to use it."
 sidebar: documentation_sidebar
@@ -29,6 +28,3 @@ compute cluster in person, relatives; members;
 ```
 
 Here, the [subgraph](./overview) functionality has been used to get more meaningful results, because executing the cluster algorithm without specifying a subgraph will not result in meaningful information.
-
-
-

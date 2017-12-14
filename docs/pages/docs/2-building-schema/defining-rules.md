@@ -1,7 +1,6 @@
 ---
 title: Defining Rules
 keywords: graql, reasoner
-last_updated: March 2017
 tags: [graql, reasoning]
 summary: "Graql Rules"
 sidebar: documentation_sidebar
@@ -27,13 +26,13 @@ In this section we shall briefly describe the logics behind the rules as well as
 Graql rules assume the following general form:
 
 ```
-if [rule-body] then [rule-head]
+when {rule-body} then {rule-head}
 ```
 
 People familiar with Prolog/Datalog, may recognise it as similar:
 
 ```
-[rule-head] :- [rule-body].
+{rule-head} :- {rule-body}.
 ```
 
 In logical terms, we restrict the rules to be definite Horn clauses. These can be defined either in terms of a disjunction with at most one unnegated atom or an implication with the consequent consisting of a single atom. Atoms are considered atomic first-order predicates - ones that cannot be decomposed to simpler constructs.
@@ -159,5 +158,3 @@ If the reasoning is not turned on, the rules will not be triggered and no knowle
 ## Where Next?
 
 There is a complete [example of how to work with Graql rules](../examples/graql-reasoning) available, and reasoning is also discussed in our [quick start tutorial](../get-started/quickstart-tutorial).
-
-

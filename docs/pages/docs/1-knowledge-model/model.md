@@ -1,7 +1,6 @@
 ---
 title: The Model
 keywords: setup, getting started, basics
-last_updated: January 2017
 tags: [getting-started, reasoning, graql]
 summary: "Introduction to Grakn's knowledge model"
 sidebar: documentation_sidebar
@@ -27,7 +26,6 @@ In Grakn, the [schema](https://en.wikipedia.org/wiki/Database_schema) is the for
 
 - Datatype - Indicates the datatype of the attribute. For example if the attribute type is age the datatype would be long.
 - Regex - Optional. Can be used to constrain string data types to specific regex patterns.
-- Unique - A boolean which indicates if the attribute should be unique across the knowledge base.
 
 <br /> <img src="/images/knowledge-model1.png" style="width: 600px;" alt="
 Image showing a schema where an entity 'person' has an attribute 'name' and plays the roles 'wife' and 'husband' in

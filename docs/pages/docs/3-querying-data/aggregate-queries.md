@@ -1,7 +1,6 @@
 ---
 title: Aggregate Queries
 keywords: graql, query, aggregate
-last_updated: Tuesday 6, 2016
 tags: [graql]
 summary: "Graql Aggregate Queries"
 sidebar: documentation_sidebar
@@ -283,5 +282,3 @@ compute count in person;
 ```
 
 Can be used to calculate the number of people in the knowledge base very fast, but you can't filter the results to determine the number of people with a certain name.
-
-

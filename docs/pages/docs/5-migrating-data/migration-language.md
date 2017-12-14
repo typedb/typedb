@@ -1,7 +1,6 @@
 ---
 title: Graql Migration Language
 keywords: graql, java
-last_updated: November 4, 2016
 tags: [graql]
 summary: "How to write Graql migration scripts"
 sidebar: documentation_sidebar
@@ -351,5 +350,3 @@ The following is a list of the reserved keywords in the Graql templating languag
 * `<`
 * `<=`
 *`"`
-
-

@@ -1,7 +1,6 @@
 ---
 title: Insert Queries
 keywords: graql, query, insert
-last_updated: August 10, 2016
 tags: [graql]
 summary: "Graql Insert Queries"
 sidebar: documentation_sidebar
@@ -208,5 +207,3 @@ qb.match(
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
-
-

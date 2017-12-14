@@ -1,7 +1,6 @@
 ---
 title: Define a Hierarchical Schema
 keywords: overview
-last_updated: February 2017
 tags: [graql, java, java-api]
 summary: "How to build a hierarchical schema"
 sidebar: documentation_sidebar
@@ -307,4 +306,4 @@ define
 
 We will continue to explore the development of a schema in the next section on defining a [rule-driven schema](./rule-driven-schema).
 
-You can find the complete schema for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base).
+You can find the complete schema for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in the [examples](https://github.com/graknlabs/grakn/tree/master/grakn-dist/src/examples) part of the distribution.

@@ -1,7 +1,6 @@
 ---
 title: Migrating JSON data to Grakn
 keywords: setup, getting started
-last_updated: February 2017
 tags: [migration]
 summary: "This document will teach you how to migrate JSON data into Grakn."
 sidebar: documentation_sidebar
@@ -46,7 +45,7 @@ The steps to migrate the CSV to GRAKN.AI are:
 * create templated Graql to map the data to the schema. Approach each JSON file as though you were inserting a single query, taking care that there are not more than one `match` or `insert` commands in your template.
 * invoke the Grakn migrator through the shell script or Java API.
 
-{% include note.html content="JSON Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
+{% include note.html content="JSON Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [migration langauge documentatino](../migrating-data/migration-language) to find out more." %}
 
 ### Looping over a JSON array   
 
@@ -175,5 +174,3 @@ $p2 isa pokemon has weight 905 has height 17 has pokedex-no 6 has description "C
 
 ## Where Next?
 You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](http://javadoc.io/doc/ai.grakn/grakn). An example of JSON migration using the Java API can be found on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-giphy).
-
-

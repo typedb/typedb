@@ -1,6 +1,5 @@
 ---
 title: Statistics
-last_updated: February 2017
 tags: [analytics]
 summary: "This page introduces the statistics functionality of analytics."
 sidebar: documentation_sidebar
@@ -31,6 +30,3 @@ compute mean of age in person;
 ```
 
 The [Compute Queries](./compute-queries) documentation covers the usage of `compute` in more detail.
-
-
-
