@@ -107,7 +107,7 @@ export function parseAttributes(attributes:Object[]) {
     href: attr[AT_ID],
     value: attr[KEY_VALUE],
     dataType: attr[KEY_DATATYPE],
-    type: attr[KEY_TYPE].label,
+    type: (attr[KEY_TYPE]) ? attr[KEY_TYPE].label : attr[KEY_LABEL],
   }))
     .reduce((array, current) => array.concat(current), []);
 }

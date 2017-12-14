@@ -32,7 +32,10 @@ export default {
      * Required attributes of @requestData are:
      *  - url
      * Optional attributes with defaults:
-     *  - cache
+     *  - requestType
+     *  - accepts
+     *  - contentType
+     *  - data
      * @param requestData
      */
   request(requestData:Object) {
