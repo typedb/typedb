@@ -25,8 +25,6 @@ By using rules, common patterns in the knowledge base can be defined and associa
 
 Graql rules assume the following general form:
 
-<<<<<<< HEAD
-=======
 ```
 when {rule-body} then {rule-head}
 ```
@@ -188,5 +186,4 @@ Alice and Charlie will be recognised as siblings and Daisy and Eva as cousins on
 
 ## Where Next?
 
->>>>>>> c4f3e63f155dfd0e569d8141496c0dfbc4b1b7b8
 Further information about the syntax of Graql rules can be found in the documentation on [defining rules](../building-schema/defining-rules).
