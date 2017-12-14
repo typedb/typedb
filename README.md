@@ -41,16 +41,8 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 
 ## System Requirements
 
-Operating System: Unix based systems (Linux and Mac OS X)
-
-Running Grakn requires:
+- Unix-based Operating Systems (Linux and Mac OSX)
 - Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
-
-Compiling Grakn from source requires:
-- Maven 3
-- nodejs
-- yarn installed and configured correctly
-- ability to install packages globally for your user via npm without needing sudo
 
 ## Licensing
 
