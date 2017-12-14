@@ -891,6 +891,49 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenParsingAnInfiniteListOfQueriesWithASyntaxError_Throw() {
+        String queryText1 = "match $x isa movie; insert ($x, $x) isa has-genre;";
+        String queryText2 = "match $x isa person insert ($x, $x) isa has-genre;";
+        Query query1 = Graql.parse(queryText1);
+
+        char[] queryChars = (queryText1 + queryText2).toCharArray();
+
+        InputStream infStream = new InputStream() {
+            int pos = 0;
+
+            @Override
+            public int read() throws IOException {
+                char c = queryChars[pos];
+                pos += 1;
+                if (pos >= queryChars.length) {
+                    pos -= queryChars.length;
+                }
+                return c;
+            }
+        };
+
+        Stream<Query<?>> queries = Graql.parser().parseList(new InputStreamReader(infStream));
+
+        Iterator<Query<?>> iterator = queries.iterator();
+
+        assertEquals(query1, iterator.next());
+
+        exception.expect(GraqlSyntaxException.class);
+        iterator.next();
+    }
+
+    @Test
+    public void whenParsingAListOfQueriesWithASyntaxError_ReportError() {
+        String queryText = "define person has name"; // note no semicolon
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage("define person has name"); // Message should refer to line
+
+        //noinspection ResultOfMethodCallIgnored
+        Graql.parser().parseList(queryText).collect(toList());
+    }
+
+    @Test
     public void whenParsingAQueryWithReifiedAttributeRelationshipSyntax_ItIsEquivalentToJavaGraql() {
         assertParseEquivalence("match $x has name $z via $x; get $x;");
     }

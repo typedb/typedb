@@ -40,11 +40,13 @@ import ai.grakn.graql.macro.Macro;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
+import org.antlr.v4.runtime.ANTLRErrorStrategy;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenFactory;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DefaultErrorStrategy;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.UnbufferedCharStream;
@@ -167,23 +169,6 @@ public class QueryParserImpl implements QueryParser {
         */
         lexer.setTokenFactory(new CommonTokenFactory(true));
 
-        return parseList(lexer, errorListener);
-    }
-
-    @Override
-    public <T extends Query<?>> Stream<T> parseList(String queryString) {
-        ANTLRInputStream inputStream = new ANTLRInputStream(queryString);
-        GraqlErrorListener errorListener = GraqlErrorListener.of(queryString);
-        GraqlLexer lexer = createLexer(inputStream, errorListener);
-        return parseList(lexer, errorListener);
-    }
-
-    private <T extends Query<?>> Stream<T> parseList(GraqlLexer lexer, GraqlErrorListener errorListener) {
-        // Use an unbuffered token stream so we can handle extremely large input strings
-        UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(ChannelTokenSource.of(lexer));
-
-        GraqlParser parser = createParser(tokenStream, errorListener);
-
         /*
             The "bail" error strategy prevents us reading all the way to the end of the input, e.g.
 
@@ -201,7 +186,25 @@ public class QueryParserImpl implements QueryParser {
             This causes memory issues for very large queries, so we use the simpler "bail" strategy that will
             immediately stop when it hits `match`.
         */
-        parser.setErrorHandler(new BailErrorStrategy());
+        return parseList(lexer, errorListener, new BailErrorStrategy());
+    }
+
+    @Override
+    public <T extends Query<?>> Stream<T> parseList(String queryString) {
+        ANTLRInputStream inputStream = new ANTLRInputStream(queryString);
+        GraqlErrorListener errorListener = GraqlErrorListener.of(queryString);
+        GraqlLexer lexer = createLexer(inputStream, errorListener);
+        return parseList(lexer, errorListener, new DefaultErrorStrategy());
+    }
+
+    private <T extends Query<?>> Stream<T> parseList(
+            GraqlLexer lexer, GraqlErrorListener errorListener, ANTLRErrorStrategy errorStrategy
+    ) {
+        // Use an unbuffered token stream so we can handle extremely large input strings
+        UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(ChannelTokenSource.of(lexer));
+
+        GraqlParser parser = createParser(tokenStream, errorListener);
+        parser.setErrorHandler(errorStrategy);
 
         // This is a lazy iterator that will only consume a single query at a time, without parsing any further.
         // This means it can pass arbitrarily long streams of queries in constant memory!
@@ -318,7 +321,7 @@ public class QueryParserImpl implements QueryParser {
         /**
          * Get a {@link ParseTree} from a {@link GraqlParser}.
          */
-        abstract S parseTree(GraqlParser parser);
+        abstract S parseTree(GraqlParser parser) throws ParseCancellationException;
 
         /**
          * Parse the {@link ParseTree} into a Java object using a {@link QueryVisitor}.
@@ -345,20 +348,19 @@ public class QueryParserImpl implements QueryParser {
          * {@link GraqlErrorListener}.
          */
         final T parse(GraqlParser parser, GraqlErrorListener errorListener) {
-            S tree = null;
+            S tree;
 
             try {
                 tree = parseTree(parser);
             } catch (ParseCancellationException e) {
-                // ignore because we report errors right after this
+                // If we're using the BailErrorStrategy, we will throw here
+                // This strategy is designed for parsing very large files and cannot provide useful error information
+                throw GraqlSyntaxException.parsingError("syntax error");
             }
 
             if (errorListener.hasErrors()) {
                 throw GraqlSyntaxException.parsingError(errorListener.toString());
             }
-
-            // This should always be the case because if there is an error we throw
-            assert tree != null;
 
             return visit(getQueryVisitor(), tree);
         }
