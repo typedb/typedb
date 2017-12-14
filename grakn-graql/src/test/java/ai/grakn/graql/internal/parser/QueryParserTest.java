@@ -59,6 +59,7 @@ import org.junit.rules.Timeout;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -69,7 +70,29 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.*;
+import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.ask;
+import static ai.grakn.graql.Graql.contains;
+import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.define;
+import static ai.grakn.graql.Graql.eq;
+import static ai.grakn.graql.Graql.group;
+import static ai.grakn.graql.Graql.gt;
+import static ai.grakn.graql.Graql.gte;
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.lt;
+import static ai.grakn.graql.Graql.lte;
+import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.neq;
+import static ai.grakn.graql.Graql.or;
+import static ai.grakn.graql.Graql.parse;
+import static ai.grakn.graql.Graql.regex;
+import static ai.grakn.graql.Graql.select;
+import static ai.grakn.graql.Graql.std;
+import static ai.grakn.graql.Graql.undefine;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
@@ -841,7 +864,7 @@ public class QueryParserTest {
 
         final int[] count = {0, 0};
 
-        Graql.parser().parseList(massiveQuery).forEach(q -> {
+        Graql.parser().parseList(new StringReader(massiveQuery)).forEach(q -> {
             if (q.equals(query1)) {
                 count[0] ++;
             } else if (q.equals(query2)) {
@@ -888,6 +911,49 @@ public class QueryParserTest {
         assertEquals(query2, iterator.next());
 
         assertTrue(iterator.hasNext());
+    }
+
+    @Test
+    public void whenParsingAnInfiniteListOfQueriesWithASyntaxError_Throw() {
+        String queryText1 = "match $x isa movie; insert ($x, $x) isa has-genre;";
+        String queryText2 = "match $x isa person insert ($x, $x) isa has-genre;";
+        Query query1 = Graql.parse(queryText1);
+
+        char[] queryChars = (queryText1 + queryText2).toCharArray();
+
+        InputStream infStream = new InputStream() {
+            int pos = 0;
+
+            @Override
+            public int read() throws IOException {
+                char c = queryChars[pos];
+                pos += 1;
+                if (pos >= queryChars.length) {
+                    pos -= queryChars.length;
+                }
+                return c;
+            }
+        };
+
+        Stream<Query<?>> queries = Graql.parser().parseList(new InputStreamReader(infStream));
+
+        Iterator<Query<?>> iterator = queries.iterator();
+
+        assertEquals(query1, iterator.next());
+
+        exception.expect(GraqlSyntaxException.class);
+        iterator.next();
+    }
+
+    @Test
+    public void whenParsingAListOfQueriesWithASyntaxError_ReportError() {
+        String queryText = "define person has name"; // note no semicolon
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage("define person has name"); // Message should refer to line
+
+        //noinspection ResultOfMethodCallIgnored
+        Graql.parser().parseList(queryText).collect(toList());
     }
 
     @Test
