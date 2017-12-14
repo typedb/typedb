@@ -88,6 +88,15 @@ function initialise(graphElement: Object) {
   visualiser.render(graphElement);
 }
 
+// Once all the attributes of a node are loaded, check if one of these attrs is drawn on the graph
+// If that's the case, draw edge between concept and attributes nodes.
+function linkNodeToExplicitAttributeNodes(nodeId, attributes) {
+  const explicitAttributes = attributes.filter(attr => visualiser.getNode(attr.id));
+  explicitAttributes.forEach((attr) => { visualiser.addEdge({ from: nodeId, to: attr.id, label: 'has' }); });
+}
+
+
+// Lazy load attributes and generate label on the nodes that display attributes values
 function lazyLoadAttributes(nodes) {
   nodes
     .filter(x => !x.inferred)
@@ -97,7 +106,8 @@ function lazyLoadAttributes(nodes) {
         .request({ url: node.attributes })
         .then((resp) => {
           const attributes = Parser.parseAttributes(resp);
-          const label = Visualiser.generateLabel(node.type, attributes, node.label, node.baseType);          
+          linkNodeToExplicitAttributeNodes(node.id, attributes);
+          const label = Visualiser.generateLabel(node.type, attributes, node.label, node.baseType);
           visualiser.updateNode({ id: node.id, attributes, label });
         });
     });

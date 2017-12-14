@@ -32,7 +32,7 @@ import com.google.auto.value.AutoValue;
  * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
-public abstract class EmbeddedType {
+public abstract class EmbeddedSchemaConcept {
 
     @JsonProperty("@id")
     public abstract Link selfLink();
@@ -41,11 +41,11 @@ public abstract class EmbeddedType {
     public abstract Label label();
 
     @JsonCreator
-    public static EmbeddedType create(@JsonProperty("@id") Link selfLink, @JsonProperty("label") Label label){
-        return new AutoValue_EmbeddedType(selfLink, label);
+    public static EmbeddedSchemaConcept create(@JsonProperty("@id") Link selfLink, @JsonProperty("label") Label label){
+        return new AutoValue_EmbeddedSchemaConcept(selfLink, label);
     }
 
-    public static EmbeddedType create(ai.grakn.concept.Type type){
-        return create(Link.create(type), type.getLabel());
+    public static EmbeddedSchemaConcept create(ai.grakn.concept.SchemaConcept schemaConcept){
+        return create(Link.create(schemaConcept), schemaConcept.getLabel());
     }
 }

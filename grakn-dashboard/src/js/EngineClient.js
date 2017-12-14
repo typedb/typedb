@@ -48,7 +48,7 @@ export default {
           } else {
             reject(Error(req.response));
           }
-          spinner.style.visibility = 'hidden';
+          if (spinner) spinner.style.visibility = 'hidden';
         };
 
         // Handle network errors
@@ -58,7 +58,7 @@ export default {
 
         // Make the request
         req.send(requestData.data);
-        spinner.style.visibility = 'visible';
+        if (spinner) spinner.style.visibility = 'visible';
       } catch (exception) {
         reject(exception);
       }
@@ -81,7 +81,7 @@ export default {
         surname: credentials.surname,
         email: credentials.email,
       }),
-      url: 'https://grakn-community-inviter.herokuapp.com/invite',
+      url: 'https://grakn.ai/invite/all',
     }).always((r) => {
       callbackFn(r);
     });

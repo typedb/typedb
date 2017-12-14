@@ -26,9 +26,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -58,15 +55,15 @@ public class ConceptBuilderTest {
         assertEquals(entity.getId(), entityWrapper.id());
 
         //Check Links to other concepts
-        Link attributes = Link.createAttributeLink(entity);
+        Link attributes = Link.createAttributesLink(entity);
         Link attributeWrappers = entityWrapper.attributes();
         assertEquals(attributes, attributeWrappers);
 
-        Link keyIds = Link.createKeyLink(entity);
+        Link keyIds = Link.createKeysLink(entity);
         Link keyWrapperIds = entityWrapper.keys();
         assertEquals(keyIds, keyWrapperIds);
 
-        Link relationshipLinkExpected = Link.createRelationshipLink(entity);
+        Link relationshipLinkExpected = Link.createRelationshipsLink(entity);
         Link relationshipLink = entityWrapper.relationships();
         assertEquals(relationshipLinkExpected, relationshipLink);
     }
@@ -84,13 +81,17 @@ public class ConceptBuilderTest {
         assertEquals(entityType.isImplicit(), entityTypeWrapper.implicit());
 
         //Check Links to other concepts
-        Set<Link> supIds = entityType.subs().map(Link::create).collect(Collectors.toSet());
-        Set<Link> supWrapperIds = entityTypeWrapper.subs();
-        assertEquals(supIds, supWrapperIds);
+        Link subsLink = Link.createSubsLink(entityType);
+        Link subsWrapperLink = entityTypeWrapper.subs();
+        assertEquals(subsLink, subsWrapperLink);
 
-        Set<Link> playIds = entityType.plays().map(Link::create).collect(Collectors.toSet());
-        Set<Link> playWrapperIds = entityTypeWrapper.plays();
-        assertEquals(playIds, playWrapperIds);
+        Link playsLink = Link.createPlaysLink(entityType);
+        Link playsWrapperLink = entityTypeWrapper.plays();
+        assertEquals(playsLink, playsWrapperLink);
+
+        Link instancesLink = Link.createInstancesLink(entityType);
+        Link instancesWrapperLink = entityTypeWrapper.instances();
+        assertEquals(instancesLink, instancesWrapperLink);
     }
 
     @Test
