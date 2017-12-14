@@ -1,7 +1,6 @@
 ---
 title: Defining Rules
 keywords: graql, reasoner
-last_updated: March 2017
 tags: [graql, reasoning]
 summary: "Graql Rules"
 sidebar: documentation_sidebar
@@ -159,5 +158,3 @@ If the reasoning is not turned on, the rules will not be triggered and no knowle
 ## Where Next?
 
 There is a complete [example of how to work with Graql rules](../examples/graql-reasoning) available, and reasoning is also discussed in our [quick start tutorial](../get-started/quickstart-tutorial).
-
-

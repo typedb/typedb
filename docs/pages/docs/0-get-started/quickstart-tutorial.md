@@ -1,7 +1,6 @@
 ---
 title: Quickstart Tutorial
 keywords: setup, getting started
-last_updated: February 2017
 tags: [getting-started, graql]
 summary: "This document will work through a simple example using the Graql shell to show how to get started with GRAKN.AI."
 sidebar: documentation_sidebar

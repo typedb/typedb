@@ -1,7 +1,6 @@
 ---
 title: Define a Hierarchical Schema
 keywords: overview
-last_updated: February 2017
 tags: [graql, java, java-api]
 summary: "How to build a hierarchical schema"
 sidebar: documentation_sidebar

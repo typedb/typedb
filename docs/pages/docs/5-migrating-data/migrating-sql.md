@@ -1,7 +1,6 @@
 ---
 title: Migrating SQL data to Grakn
 keywords: setup, getting started
-last_updated: December 2016
 tags: [migration]
 summary: "This document will teach you how to migrate SQL data into Grakn."
 sidebar: documentation_sidebar
@@ -48,7 +47,7 @@ The steps to migrate the CSV to GRAKN.AI are:
 * create templated Graql to map the data to the schema by instructing the migrator on how the results of a SQL query can be mapped to your schema. The SQL migrator will apply the template to each row of data in the table, replacing the indicated sections in the template with provided data. In this migrator, the column header is the key, while the content of each row at that column is the value.
 * invoke the Grakn migrator through the shell script or Java API.
 
-{% include note.html content="SQL Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
+{% include note.html content="SQL Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [migration langauge documentatino](../migrating-data/migration-language) to find out more." %}
 
 ### SQL Schema Migration
 
@@ -272,5 +271,3 @@ You can find an example of how to use the Java API for SQL migration [here](../e
 
 ## Where Next?
 You can find further documentation about migration in our API reference documentation (which is in the *docs* directory of the distribution zip file, and also online [here](http://javadoc.io/doc/ai.grakn/grakn).
-
-

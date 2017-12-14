@@ -119,6 +119,12 @@ entries:
       - title: Migrating XML
         output: web
         url: /docs/migrating-data/migrating-xml
+  - title: Visualisation Dashboard
+    output: web
+    folderitems:
+      - title: Grakn Visualiser
+        output: web
+        url: /docs/visualisation-dashboard/visualiser
   - title: Java Library
     output: web
     folderitems:
@@ -140,12 +146,6 @@ entries:
       - title: Advanced
         output: web
         url: /docs/java-library/advanced
-  - title: Visulisation Dashboard
-    output: web
-    folderitems:
-      - title: Grakn Visualiser
-        output: web
-        url: /docs/visualisation-dashboard/visualiser
   - title: API References
     output: web
     folderitems:

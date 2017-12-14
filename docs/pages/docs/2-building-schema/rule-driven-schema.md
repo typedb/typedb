@@ -1,7 +1,6 @@
 ---
 title: Define a Rule-Driven Schema
 keywords: schema
-last_updated: December, 2016
 tags: [java, java-api]
 summary: "Demonstrates how to create a rule-driven schema for Grakn."
 sidebar: documentation_sidebar
@@ -190,5 +189,3 @@ Alice and Charlie will be recognised as siblings and Daisy and Eva as cousins on
 ## Where Next?
 
 Further information about the syntax of Graql rules can be found in the documentation on [defining rules](../building-schema/defining-rules).
-
-

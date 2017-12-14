@@ -1,7 +1,6 @@
 ---
 title: XML Migration to Grakn
 keywords: setup, getting started
-last_updated: February 2017
 tags: [migration]
 summary: "This document will teach you how to migrate XML data into Grakn."
 sidebar: documentation_sidebar
@@ -48,7 +47,7 @@ The steps to migrate XML data to GRAKN.AI are:
 * create templated Graql to map the XML data to the schema
 * invoke the Grakn migrator through the shell script or Java API. The XML migrator will apply the template to each instance of the specified element `-element`, replacing the sections indicated in the template with provided data: the XML tags are the key to be used in the brackets `<>` and the content of each tag are the value of that key.
 
-{% include note.html content="XML Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
+{% include note.html content="XML Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [migration langauge documentatino](../migrating-data/migration-language) to find out more." %}
 
 ## XML Migration Details
 
@@ -135,7 +134,7 @@ There are three supported types that can be extracted from an XML schema.
 
 Without a schema all values are considered as strings in the Grakn representation. By specifying the type of the data in the XML schema, you can avoid doing manual conversions in the templates.
 
-We do not currently support the common `date` type. To convert a string value into a Grakn date, see the templating [date macro](../graql/graql-templating.html).
+We do not currently support the common `date` type. To convert a string value into a Grakn date, see the migration language [date macro](../migrating-data/migration-language).
 
 #### Arrays
 
@@ -287,5 +286,3 @@ insert $plant0 isa plant has common "Marsh Marigold" has botanical "Caltha palus
 
 ## Where Next?
 You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](http://javadoc.io/doc/ai.grakn/grakn). An example of JSON migration using the Java API can be found on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-giphy).
-
-
