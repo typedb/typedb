@@ -27,13 +27,13 @@ In this section we shall briefly describe the logics behind the rules as well as
 Graql rules assume the following general form:
 
 ```
-if [rule-body] then [rule-head]
+when {rule-body} then {rule-head}
 ```
 
 People familiar with Prolog/Datalog, may recognise it as similar:
 
 ```
-[rule-head] :- [rule-body].
+{rule-head} :- {rule-body}.
 ```
 
 In logical terms, we restrict the rules to be definite Horn clauses. These can be defined either in terms of a disjunction with at most one unnegated atom or an implication with the consequent consisting of a single atom. Atoms are considered atomic first-order predicates - ones that cannot be decomposed to simpler constructs.
