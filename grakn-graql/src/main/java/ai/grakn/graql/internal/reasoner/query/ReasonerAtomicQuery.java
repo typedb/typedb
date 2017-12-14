@@ -96,7 +96,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
-    ReasonerAtomicQuery(Atom at) {
+    public ReasonerAtomicQuery(Atom at) {
         super(at);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
