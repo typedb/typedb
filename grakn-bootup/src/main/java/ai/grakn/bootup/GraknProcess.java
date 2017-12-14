@@ -19,9 +19,10 @@
 package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
-import ai.grakn.engine.Grakn;
+
+import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.grakn_pid.GraknPid;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 
@@ -33,7 +34,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.stream.Collectors;
@@ -50,7 +50,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     private final GraknConfig graknConfig;
 
     private static final long GRAKN_STARTUP_TIMEOUT_S = 120;
-    private static final Path GRAKN_PID = Paths.get(GraknSystemProperty.GRAKN_PID_FILE.value());
+    public static final Path GRAKN_PID = GraknPid.GRAKN_PID_FILE_PATH;
 
     public GraknProcess(Path homePath, Path configPath) {
         this.homePath = homePath;
@@ -98,8 +98,6 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
                 "-c",
                 command}, null, null);
 
-        String pid = getPidFromPsOf(graknClass().getName());
-
         LocalDateTime init = LocalDateTime.now();
         LocalDateTime timeout = init.plusSeconds(GRAKN_STARTUP_TIMEOUT_S);
 
@@ -127,9 +125,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     }
 
     protected String commandToRun() {
-        String str = "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + GRAKN_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
-        System.out.println(str);
-        return str;
+        return "java -cp " + getClassPathFrom(homePath) + " -Dgrakn.dir=" + homePath + " -Dgrakn.conf="+ configPath + " -Dgrakn.pidfile=" + GRAKN_PID.toString() + " " + graknClass().getName() + " > /dev/null 2>&1 &";
     }
 
     private boolean graknCheckIfReady(String host, int port, String path) {

@@ -36,7 +36,7 @@ If you want to find the minimum value of the risk you would just substitute `get
 
   ![Aggregate example](/images/academy/2-graql/aggregate-query.png)
 
-With aggregate queries you can find means, standard deviations, counts and many other useful things. You can find the complete list in the [documentation](../aggregate-queries.html).
+With aggregate queries you can find means, standard deviations, counts and many other useful things. You can find the complete list in the [documentation](..//docs/querying-data/aggregate-queries).
 
 How would you find the standard deviation of risk of all bonds?
 
