@@ -5,6 +5,7 @@ keywords: sample homepage
 tags: [getting-started, graql, java, core-api]
 sidebar: documentation_sidebar
 permalink: /docs/index
+folder: docs
 toc: false
 ---
 
