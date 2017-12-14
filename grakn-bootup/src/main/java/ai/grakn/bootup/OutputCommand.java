@@ -16,23 +16,22 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist;
+package ai.grakn.bootup;
 
 /**
  *
  * @author Michele Orsi
  */
-class OutputCommand {
-    final String output;
-    final int exitStatus;
+public class OutputCommand {
+    public final String output;
+    public final int exitStatus;
 
-    OutputCommand(String output, int exitStatus) {
+    public OutputCommand(String output, int exitStatus) {
         this.output = output;
         this.exitStatus = exitStatus;
     }
 
-    boolean succes() {
+    public boolean succes() {
         return exitStatus==0;
     }
-
 }

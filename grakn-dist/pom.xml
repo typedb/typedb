@@ -61,6 +61,11 @@
             <artifactId>grakn-graql-shell</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-bootup</artifactId>
+        </dependency>
+
         <!--Migrations-->
         <dependency>
             <groupId>ai.grakn</groupId>
