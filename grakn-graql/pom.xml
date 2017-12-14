@@ -56,10 +56,6 @@
             <artifactId>javatuples</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.theoryinpractise</groupId>
-            <artifactId>halbuilder-standard</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <scope>test</scope>

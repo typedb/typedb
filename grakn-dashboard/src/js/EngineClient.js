@@ -18,7 +18,7 @@
 /* @flow */
 import User from './User';
 
-let spinner = { style: {} };
+let spinner;
 $(document).ready(() => {
   spinner = document.getElementById('loading-spinner');
 });
