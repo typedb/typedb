@@ -1,47 +1,9 @@
 ---
 title: Grakn Developer Hub
-summary: Welcome to Grakn Developer Hub, where you can find everything you need to get up to speed.
+summary: Welcome to Grakn Developer Hub, this page is under development and you should go to <a href="/docs/index">Docs</a>.
 keywords: sample homepage
 tags: [getting-started, graql, java, core-api]
 sidebar: documentation_sidebar
-permalink: index
+permalink: /index
 toc: false
-
 ---
-
-<br />
-<ul id="profileTabs" class="nav nav-tabs">
-    <li class="active"><a href="#getstarted" data-toggle="tab">Get Started</a></li>
-    <li><a href="#apireference" data-toggle="tab">API Reference</a></li>
-    <li><a href="#contribute" data-toggle="tab">Contribute</a></li>
-    <li><a href="#gethelp" data-toggle="tab">Get Help</a></li>
-</ul>
-
-<div class="tab-content">
-
-  <div role="tabpanel" class="tab-pane active" id="getstarted">
-    <h2>Get Started</h2>
-    <p>Check out our guide to <b><a href="./docs/get-started/setup-guide">download and set up Grakn</a></b>.</p>
-    <p>When you're set up, there's an <a href="./docs/get-started/quickstart-tutorial">introductory tutorial</a> to show the basics of Graql and how to use the Java API.</p>
-  </div>
-
-  <div role="tabpanel" class="tab-pane" id="contribute">
-    <h2>Contribute</h2>
-    <p>We have a set of pages about <a href="./contributors/index.html">Contributing to GRAKN.AI</a>.</p>
-  </div>
-
-  <div role="tabpanel" class="tab-pane" id="apireference">
-    <h2>API Reference</h2>
-    <a href="https://javadoc.io/doc/ai.grakn/grakn"><img src="https://javadoc.io/badge/ai.grakn/grakn.svg" alt="Javadocs"></a>
-
-    <br /> <br />
-    <p>The API reference is also available in the Grakn distribution that you can download from <a href="./docs/get-started/setup-guide">here</a>, in the <code>docs</code> directory.</p>
-      <p>Additional API reference documents can be found <a href="./docs/api-references/rest-api">here</a>. </p>
-  </div>
-
-  <div role="tabpanel" class="tab-pane" id="gethelp">
-    <h2>Get Help</h2>
-    <p>We are here to help! If you need more information, please don't hesitate to contact us using our <a href="http://discuss.grakn.ai">discussion forums</a> or through our <a href="https://grakn.ai/slack">Slack channel</a>.</p>
-    <p>If there's anything you want to improve, you can leave us a comment using the link at the bottom of each page, or even contribute to them directly via <a target="_blank" href="https://github.com/graknlabs/grakn/tree/master/docs">Github</a>.</p>
-  </div>
-</div>

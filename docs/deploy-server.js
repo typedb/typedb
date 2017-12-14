@@ -11,11 +11,15 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 
 app.get('*', (req, res) => {
   let requestedResource = req.path;
-  if (requestedResource.match(/^\/documentation/)) {
-    requestedResource = req.path.replace('/documentation', '/docs');
-    res.redirect(301,`${req.protocol}://${req.get('host')}${requestedResource}`); 
+  if (requestedResource.match(/^\/(index)?(.html)?$/)) {
+    requestedResource = '/docs';
+    res.redirect(301,`${req.protocol}://${req.get('host')}${requestedResource}`);
   }
-  if(requestedResource.match(/^\/(overview|academy|contributors)\/?$/)){
+  else if (requestedResource.match(/^\/documentation/)) {
+    requestedResource = req.path.replace('/documentation', '/docs');
+    res.redirect(302,`${req.protocol}://${req.get('host')}${requestedResource}`);
+  }
+  if(requestedResource.match(/^\/(docs|overview|academy|contributors)\/?$/)){
     const indexlink = requestedResource[requestedResource.length - 1] === '/'? 'index.html' : '/index.html';
     requestedResource = requestedResource.concat(indexlink);
   }

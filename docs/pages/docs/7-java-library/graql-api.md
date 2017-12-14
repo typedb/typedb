@@ -134,4 +134,3 @@ qb.parse("insert isa person, has firstname 'Alice';").execute();
 
 qb.parse("match $x isa person; delete $x;").execute();
 ```
-
