@@ -118,9 +118,69 @@ paths:
         200:
           description: ''
           schema:
-            $ref: '#/definitions/Concept'
+            $ref: '#/definitions/AnyConcept'
         404:
           description: ''
+  /kb/{keyspace}/concept/{id}/relationships:
+    get:
+      summary: Get Relationships
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/parameters/keyspace'
+      - name: id
+        in: path
+        required: true
+        type: string
+        x-example: V123
+#       For OpenAPI 3.0
+#       schema:
+#         $ref: '#/definitions/ConceptID'
+      produces: [application/json]
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/Relationships'
+  /kb/{keyspace}/concept/{id}/attributes:
+    get:
+      summary: Get Attributes
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/parameters/keyspace'
+      - name: id
+        in: path
+        required: true
+        type: string
+        x-example: V123
+#       For OpenAPI 3.0
+#       schema:
+#         $ref: '#/definitions/ConceptID'
+      produces: [application/json]
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/Attributes'
+  /kb/{keyspace}/concept/{id}/keys:
+    get:
+      summary: Get Keys
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/parameters/keyspace'
+      - name: id
+        in: path
+        required: true
+        type: string
+        x-example: V123
+#       For OpenAPI 3.0
+#       schema:
+#         $ref: '#/definitions/ConceptID'
+      produces: [application/json]
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/Keys'
   /kb/{keyspace}/type:
     get:
       summary: Get Types
@@ -148,7 +208,7 @@ paths:
             $ref: '#/definitions/Type'
         404:
           description: ''
-  /kb/{keyspace}/type/{label}/instance:
+  /kb/{keyspace}/type/{label}/instances:
     get:
       summary: Get Instances
       tags: [Concepts]
@@ -167,6 +227,21 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/Instances'
+        404:
+          description: ''
+  /kb/{keyspace}/type/{label}/subs:
+    get:
+      summary: Get Sub-Types
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/parameters/keyspace'
+      - $ref: '#/parameters/label'
+      produces: [application/json]
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/SubTypes'
         404:
           description: ''
   /kb/{keyspace}/role:
@@ -196,6 +271,21 @@ paths:
             $ref: '#/definitions/Role'
         404:
           description: ''
+  /kb/{keyspace}/role/{label}/subs:
+    get:
+      summary: Get Sub-Roles
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/parameters/keyspace'
+      - $ref: '#/parameters/label'
+      produces: [application/json]
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/SubRoles'
+        404:
+          description: ''
   /kb/{keyspace}/rule:
     get:
       summary: Get Rules
@@ -221,6 +311,21 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/Rule'
+        404:
+          description: ''
+  /kb/{keyspace}/rule/{label}/subs:
+    get:
+      summary: Get Sub-Rules
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/parameters/keyspace'
+      - $ref: '#/parameters/label'
+      produces: [application/json]
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/SubRules'
         404:
           description: ''
   /configuration:
@@ -341,6 +446,14 @@ definitions:
     format: uri
     example: /kb/genealogy/concept/V123
   Concept:
+    required: [id, 'base-type']
+    type: object
+    properties:
+      id:
+        $ref: '#/definitions/ConceptID'
+      'base-type':
+        type: string
+  AnyConcept:
     $ref: '#/definitions/Thing'
 #   For OpenAPI 3.0
 #   oneOf:
@@ -369,46 +482,38 @@ definitions:
 #         label: person-id
 #       value: 808
   Thing:
-    required: ['@id', type, relationships, attributes, keys]
-    type: object
-    properties:
-      '@id':
-        $ref: '#/definitions/ConceptLink'
-      type:
-        $ref: '#/definitions/TypeSummary'
-      relationships:
-        type: array
-        items:
-          $ref: '#/definitions/Relationships'
-      attributes:
-        type: array
-        items:
-          $ref: '#/definitions/AttributeSummary'
-      keys:
-        type: array
-        items:
-          $ref: '#/definitions/AttributeSummary'
-      rolePlayers:
-        type: array
-        items:
-          $ref: '#/definitions/RolePlayers'
-      value:
-        $ref: '#/definitions/Value'
-  Relationships:
-    required: [role, relationship]
-    type: object
-    properties:
-      role:
-        $ref: '#/definitions/RoleLink'
-      relationship:
-        $ref: '#/definitions/ConceptLink'
+    allOf:
+      - $ref: '#/definitions/Concept'
+      - type: object
+      - required: ['@id', type, relationships, attributes, keys, inferred]
+        properties:
+          '@id':
+            $ref: '#/definitions/ConceptLink'
+          type:
+            $ref: '#/definitions/TypeSummary'
+          relationships:
+            $ref: '#/definitions/RelationshipsLink'
+          attributes:
+            $ref: '#/definitions/AttributesLink'
+          keys:
+            $ref: '#/definitions/KeysLink'
+          roleplayers:
+            type: array
+            items:
+              $ref: '#/definitions/RolePlayers'
+          value:
+            $ref: '#/definitions/Value'
+          inferred:
+            type: boolean
+          'base-type':
+            enum: ['ENTITY', 'RELATIONSHIP', 'ATTRIBUTE']
   RolePlayers:
-    required: [role, player]
+    required: [role, thing]
     type: object
     properties:
       role:
         $ref: '#/definitions/RoleLink'
-      player:
+      thing:
         $ref: '#/definitions/ConceptLink'
   AttributeSummary:
     type: object
@@ -427,6 +532,69 @@ definitions:
 #     - type: string
 #     - type: number
 #     - type: boolean
+  RelationshipsLink:
+    type: string
+    format: uri
+    example: /kb/genealogy/concept/V123/relationships
+  Relationships:
+    required: ['@id', relationships]
+    type: object
+    properties:
+      '@id':
+        allOf: [$ref: '#/definitions/RelationshipsLink']
+        example: /kb/genealogy/concept/V123/relationships?limit=100&offset=100
+      relationships:
+        type: array
+        items:
+          $ref: '#/definitions/RolePlayers'
+      next:
+        allOf: [$ref: '#/definitions/RelationshipsLink']
+        example: /kb/genealogy/concept/V123/relationships?limit=100&offset=200
+      previous:
+        allOf: [$ref: '#/definitions/RelationshipsLink']
+        example: /kb/genealogy/concept/V123/relationships?limit=100&offset=0
+  KeysLink:
+    type: string
+    format: uri
+    example: /kb/genealogy/concept/V123/keys
+  Keys:
+    required: ['@id', keys]
+    type: object
+    properties:
+      '@id':
+        allOf: [$ref: '#/definitions/KeysLink']
+        example: /kb/genealogy/concept/V123/keys?limit=100&offset=100
+      keys:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeSummary'
+      next:
+        allOf: [$ref: '#/definitions/KeysLink']
+        example: /kb/genealogy/concept/V123/keys?limit=100&offset=200
+      previous:
+        allOf: [$ref: '#/definitions/KeysLink']
+        example: /kb/genealogy/concept/V123/keys?limit=100&offset=0
+  AttributesLink:
+    type: string
+    format: uri
+    example: /kb/genealogy/concept/V123/attributes
+  Attributes:
+    required: ['@id', attributes]
+    type: object
+    properties:
+      '@id':
+        allOf: [$ref: '#/definitions/AttributesLink']
+        example: /kb/genealogy/concept/V123/attributes?limit=100&offset=100
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeSummary'
+      next:
+        allOf: [$ref: '#/definitions/AttributesLink']
+        example: /kb/genealogy/concept/V123/attributes?limit=100&offset=200
+      previous:
+        allOf: [$ref: '#/definitions/AttributesLink']
+        example: /kb/genealogy/concept/V123/attributes?limit=100&offset=0
   TypesLink:
     type: string
     format: uri
@@ -456,12 +624,11 @@ definitions:
   Type:
     allOf:
       - $ref: '#/definitions/TypeSummary'
-      - required: [abstract, implicit, plays, attributes, keys, subs]
+      - $ref: '#/definitions/SchemaConcept'
+      - required: [abstract, plays, attributes, keys, subs]
         type: object
         properties:
           abstract:
-            type: boolean
-          implicit:
             type: boolean
           plays:
             type: array
@@ -476,39 +643,55 @@ definitions:
             items:
               $ref: '#/definitions/TypeLink'
           subs:
-            type: array
-            items:
-              $ref: '#/definitions/TypeLink'
+            $ref: '#/definitions/SubTypesLink'
           relates:
             type: array
             items:
               $ref: '#/definitions/RoleLink'
           super:
-            allOf: [$ref: '#/definitions/TypeLink']
-            example: /kb/genealogy/type/entity
+            allOf: [$ref: '#/definitions/TypeSummary']
+            example:
+              '@id': /kb/genealogy/type/entity
+              label: entity
           instances:
             $ref: '#/definitions/InstancesLink'
+          'base-type':
+            enum: ['ENTITY_TYPE', 'RELATIONSHIP_TYPE', 'ATTRIBUTE_TYPE']
   InstancesLink:
     type: string
     format: uri
-    example: /kb/genealogy/type/person/instance
+    example: /kb/genealogy/type/person/instances
   Instances:
-    required: ['@id', concepts]
+    required: ['@id', instances]
     type: object
     properties:
       '@id':
         allOf: [$ref: '#/definitions/InstancesLink']
-        example: /kb/genealogy/type/person/instance?limit=100&offset=100
-      concepts:
+        example: /kb/genealogy/type/person/instances?limit=100&offset=100
+      instances:
         type: array
         items:
           $ref: '#/definitions/Concept'
       next:
         allOf: [$ref: '#/definitions/InstancesLink']
-        example: /kb/genealogy/type/person/instance?limit=100&offset=200
+        example: /kb/genealogy/type/person/instances?limit=100&offset=200
       previous:
         allOf: [$ref: '#/definitions/InstancesLink']
-        example: /kb/genealogy/type/person/instance?limit=100&offset=0
+        example: /kb/genealogy/type/person/instances?limit=100&offset=0
+  SubTypesLink:
+    type: string
+    format: uri
+    example: /kb/genealogy/type/person/subs
+  SubTypes:
+    type: object
+    required: ['@id', subs]
+    properties:
+      '@id':
+        $ref: '#/definitions/SubTypesLink'
+      subs:
+        type: array
+        items:
+          $ref: '#/definitions/Type'
   RoleLink:
     type: string
     format: uri
@@ -517,6 +700,14 @@ definitions:
     type: string
     format: uri
     example: /kb/genealogy/role
+  RoleSummary:
+    required: ['@id', label]
+    type: object
+    properties:
+      '@id':
+        $ref: '#/definitions/RoleLink'
+      label:
+        $ref: '#/definitions/Label'
   Roles:
     type: object
     required: ['@id', roles]
@@ -528,33 +719,44 @@ definitions:
         items:
           $ref: '#/definitions/Role'
   Role:
-    required: ['@id', label, relationships, implicit, rolePlayers, subs]
+    allOf:
+      - $ref: '#/definitions/TypeSummary'
+      - $ref: '#/definitions/SchemaConcept'
+      - type: object
+        required: [relationships, roleplayers, subs]
+        properties:
+          relationships:
+            type: array
+            items:
+              $ref: '#/definitions/TypeLink'
+          roleplayers:
+            type: array
+            items:
+              allOf: [$ref: '#/definitions/TypeLink']
+              example: /kb/genealogy/type/marriage
+          subs:
+            $ref: '#/definitions/SubRolesLink'
+          super:
+            allOf: [$ref: '#/definitions/RoleSummary']
+            example:
+              '@id': /kb/genealogy/role/spouse
+              label: spouse
+          'base-type':
+            enum: ['ROLE']
+  SubRolesLink:
+    type: string
+    format: uri
+    example: /kb/genealogy/role/husband/subs
+  SubRoles:
     type: object
+    required: ['@id', subs]
     properties:
       '@id':
-        $ref: '#/definitions/RoleLink'
-      label:
-        allOf: [$ref: '#/definitions/Label']
-        example: husband
-      relationships:
-        type: array
-        items:
-          $ref: '#/definitions/TypeLink'
-      implicit:
-        type: boolean
-      rolePlayers:
-        type: array
-        items:
-          allOf: [$ref: '#/definitions/TypeLink']
-          example: /kb/genealogy/type/marriage
+        $ref: '#/definitions/SubRolesLink'
       subs:
         type: array
         items:
-          allOf: [$ref: '#/definitions/RoleLink']
-          example: /kb/genealogy/role/husband
-      super:
-        allOf: [$ref: '#/definitions/RoleLink']
-        example: /kb/genealogy/role/spouse
+          $ref: '#/definitions/Role'
   RuleLink:
     type: string
     format: uri
@@ -563,6 +765,14 @@ definitions:
     type: string
     format: uri
     example: /kb/genealogy/rule
+  RuleSummary:
+    required: ['@id', label]
+    type: object
+    properties:
+      '@id':
+        $ref: '#/definitions/RuleLink'
+      label:
+        $ref: '#/definitions/Label'
   Rules:
     type: object
     required: ['@id', rules]
@@ -574,28 +784,52 @@ definitions:
         items:
           $ref: '#/definitions/Rule'
   Rule:
+    allOf:
+      - $ref: '#/definitions/RuleSummary'
+      - $ref: '#/definitions/SchemaConcept'
+      - type: object
+        required: [id, label, when, then]
+        properties:
+          subs:
+            $ref: '#/definitions/SubRulesLink'
+          super:
+            allOf: [$ref: '#/definitions/RuleSummary']
+            example:
+              '@id': /kb/genealogy/rule/rule
+              label: rule
+          label:
+            allOf: [$ref: '#/definitions/Label']
+            example: grandparent-rule
+          when:
+            type: string
+            example: '(parent: $x, child: $y); (parent: $y, child: $z);'
+          then:
+            type: string
+            example: '(grandparent: $x, grandchild: $y) isa grandparentship;'
+          'base-type':
+            enum: ['RULE']
+  SubRulesLink:
+    type: string
+    format: uri
+    example: /kb/genealogy/rule/grandparent-rule/subs
+  SubRules:
     type: object
+    required: ['@id', subs]
     properties:
       '@id':
-        $ref: '#/definitions/RuleLink'
-      implicit:
-        type: boolean
+        $ref: '#/definitions/SubRulesLink'
       subs:
         type: array
         items:
-          $ref: '#/definitions/RuleLink'
-      super:
-        allOf: [$ref: '#/definitions/RuleLink']
-        example: /kb/genealogy/rule/rule
-      label:
-        allOf: [$ref: '#/definitions/Label']
-        example: grandparent-rule
-      when:
-        type: string
-        example: '(parent: $x, child: $y); (parent: $y, child: $z);'
-      then:
-        type: string
-        example: '(grandparent: $x, grandchild: $y) isa grandparentship;'
+          $ref: '#/definitions/Rule'
+  SchemaConcept:
+    allOf:
+      - $ref: '#/definitions/Concept'
+      - type: object
+        required: [implicit]
+        properties:
+          implicit:
+            type: boolean
   Answer:
     type: object
     additionalProperties:
@@ -681,3 +915,4 @@ definitions:
     type: array
     items:
       $ref: '#/definitions/Answer'
+
