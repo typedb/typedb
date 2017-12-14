@@ -13,9 +13,7 @@
 [stackoverflow-shield]: https://img.shields.io/badge/stackoverflow-grakn-blue.svg
 [stackoverflow-link]: https://stackoverflow.com/questions/tagged/grakn
 
-Grakn is a **hyper-relational** database for **knowledge engineering**, 
-
-# Grakn and Graql
+# Meet Grakn and Graql
 
 Grakn is a hyper-relational database for [knowledge engineering](https://en.wikipedia.org/wiki/Knowledge_engineering). Rooted in [Knowledge Representation and Automated Reasoning](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning), Grakn provides the [knowledge base](https://en.wikipedia.org/wiki/Knowledge_base) foundation for [intelligent/cognitive systems](https://en.wikipedia.org/wiki/Knowledge-based_systems). Being a distributed system, Grakn is design to be sharded and replicated over a network of computers. Under the hood, Grakn has built an expressive knowledge representation system based on [hypergraph theory](https://en.wikipedia.org/wiki/Hypergraph) (a subfield in mathematics that generalises an edge to be a set of vertices) with a transactional query interface, Graql. Graql is Grakn’s reasoning (through OLTP) and analytics (through OLAP) declarative query language. 
 
