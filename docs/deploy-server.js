@@ -22,7 +22,11 @@ app.get('*', (req, res) => {
   else if (!requestedResource.match(/\.(svg|pdf|png|jpg|jpeg|ico|ttf|otf|woff|woff2|eot|css|js|html|json|xml)$/) && requestedResource !== '/') {
     requestedResource = requestedResource.concat('.html');
   }
-  res.sendFile(path.join(dist, requestedResource));
+  res.sendFile(path.join(dist, requestedResource), (error) => {
+    if(error && error.statusCode === 404 && error.path.match(/\.html$/)) {
+      res.sendFile(path.join(dist, '/404.html'));
+    }
+  });
 });
 
 
