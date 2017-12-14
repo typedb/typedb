@@ -15,13 +15,13 @@
 
 Grakn is a hyper-relational database for knowledge engineering. Rooted in Knowledge Representation and  Automated Reasoning, Grakn provides the knowledge base foundation for intelligent/cognitive systems.
 
-| Get Started | Documentation | Discussion | _Join the Academey!_ |
+| Get Started | Documentation | Discussion | _Join the Academy!_ |
 |:------------|:--------------|:-----------|:---------------------|
 | Whether you are new to programming or an experienced developer, it’s easy to learn and use Grakn. Get set up quickly with [quickstart tutorial](https://dev.grakn.ai/docs/get-started/quickstart-tutorial). | Documentation for Grakn’s development library and Graql language API, along with tutorials and guides, are available online. Visit our [documentation portal](https://dev.grakn.ai/). | When you’re stuck on a problem, collaborating helps. Ask your question on [StackOverflow](https://stackoverflow.com/questions/tagged/graql+or+grakn) or discuss it in our [Discussion Forum](https://discuss.grakn.ai/). | _Learn everything from the basic foundations to advanced topics of knowledge engineering and be an expert. Join [Grakn Academy](https://dev.grakn.ai/academy)._|
 
 # Meet Grakn and Graql
 
-Grakn is a hyper-relational database for [knowledge engineering](https://en.wikipedia.org/wiki/Knowledge_engineering). Rooted in [Knowledge Representation and Automated Reasoning](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning), Grakn provides the [knowledge base](https://en.wikipedia.org/wiki/Knowledge_base) foundation for [intelligent/cognitive systems](https://en.wikipedia.org/wiki/Knowledge-based_systems). Being a distributed system, Grakn is design to be sharded and replicated over a network of computers. Under the hood, Grakn has built an expressive knowledge representation system based on [hypergraph theory](https://en.wikipedia.org/wiki/Hypergraph) (a subfield in mathematics that generalises an edge to be a set of vertices) with a transactional query interface, Graql. Graql is Grakn’s reasoning (through OLTP) and analytics (through OLAP) declarative query language. 
+Grakn is a hyper-relational database for [knowledge engineering](https://en.wikipedia.org/wiki/Knowledge_engineering). Rooted in [Knowledge Representation and Automated Reasoning](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning), Grakn provides the [knowledge base](https://en.wikipedia.org/wiki/Knowledge_base) foundation for [intelligent/cognitive systems](https://en.wikipedia.org/wiki/Knowledge-based_systems). Being a distributed system, Grakn is designed to be sharded and replicated over a network of computers. Under the hood, Grakn has built an expressive knowledge representation system based on [hypergraph theory](https://en.wikipedia.org/wiki/Hypergraph) (a subfield in mathematics that generalises an edge to be a set of vertices) with a transactional query interface, Graql. Graql is Grakn’s reasoning (through OLTP) and analytics (through OLAP) declarative query language. 
 
 ## Knowledge Schema
 
@@ -29,7 +29,7 @@ Grakn provides an enhanced [entity-relationship](https://en.wikipedia.org/wiki/E
 
 ## Logical Inference
 
-Grakn’s query language performs logical inference through [deductive reasoning](https://en.wikipedia.org/wiki/Deductive_reasoning) of entity types and relationships, in order to infer implicit facts, associations and conclusions in real-time, during runtime of OLTP queries. The inference is performed through entity and relationship type reasoning, as well as rule-based reasoning. This allows the discovery of facts that would otherwise be too hard to find, the abstraction of complex relationships into its simper conclusion, as well as translation of higher level queries into lower level and more complex data representation.
+Grakn’s query language performs logical inference through [deductive reasoning](https://en.wikipedia.org/wiki/Deductive_reasoning) of entity types and relationships, to infer implicit facts, associations and conclusions in real-time, during runtime of OLTP queries. The inference is performed through entity and relationship type reasoning, as well as rule-based reasoning. This allows the discovery of facts that would otherwise be too hard to find, the abstraction of complex relationships into its simpler conclusion, as well as translation of higher level queries into the lower level and more complex data representation.
 
 ## Distributed Analytics
 
@@ -46,6 +46,6 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 
 ## Licensing
 
-This product includes software developed by [Grakn Labs Ltd](http://grakn.ai/).  It's released under the GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For licence information, please see [LICENCE.txt](https://github.com/graknlabs/grakn/blob/master/LICENSE.txt). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KBMS - get in touch with our team at enterprise@grakn.ai.
+This product includes software developed by [Grakn Labs Ltd](http://grakn.ai/).  It's released under the GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE.txt](https://github.com/graknlabs/grakn/blob/master/LICENSE.txt). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KBMS - get in touch with our team at enterprise@grakn.ai.
 
 Copyright (C) 2016-2017  Grakn Labs Limited.
