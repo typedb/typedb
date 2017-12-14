@@ -244,6 +244,51 @@ paths:
             $ref: '#/definitions/SubTypes'
         404:
           description: ''
+  /kb/{keyspace}/type/{label}/plays:
+    get:
+      summary: Get Roles Played
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/parameters/keyspace'
+      - $ref: '#/parameters/label'
+      produces: [application/json]
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/Plays'
+        404:
+          description: ''
+  /kb/{keyspace}/type/{label}/atributes:
+    get:
+      summary: Get Attributes
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/parameters/keyspace'
+      - $ref: '#/parameters/label'
+      produces: [application/json]
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/AttributeTypes'
+        404:
+          description: ''
+  /kb/{keyspace}/type/{label}/keys:
+    get:
+      summary: Get Keys
+      tags: [Concepts]
+      parameters:
+      - $ref: '#/parameters/keyspace'
+      - $ref: '#/parameters/label'
+      produces: [application/json]
+      responses:
+        200:
+          description: ''
+          schema:
+            $ref: '#/definitions/KeyTypes'
+        404:
+          description: ''
   /kb/{keyspace}/role:
     get:
       summary: Get Roles
@@ -631,17 +676,11 @@ definitions:
           abstract:
             type: boolean
           plays:
-            type: array
-            items:
-              $ref: '#/definitions/RoleLink'
+            $ref: '#/definitions/PlaysLink'
           attributes:
-            type: array
-            items:
-              $ref: '#/definitions/TypeLink'
+            $ref: '#/definitions/AttributeTypesLink'
           keys:
-            type: array
-            items:
-              $ref: '#/definitions/TypeLink'
+            $ref: '#/definitions/KeyTypesLink'
           subs:
             $ref: '#/definitions/SubTypesLink'
           relates:
@@ -692,6 +731,58 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/Type'
+  PlaysLink:
+    type: string
+    format: uri
+    example: /kb/genealogy/type/person/plays
+  Plays:
+    type: object
+    required: ['@id', plays]
+    properties:
+      '@id':
+        $ref: '#/definitions/PlaysLink'
+      plays:
+        type: array
+        items:
+          $ref: '#/definitions/Role'
+  AttributeTypesLink:
+    type: string
+    format: uri
+    example: /kb/genealogy/type/person/attributes
+  AttributeTypes:
+    type: object
+    required: ['@id', attributes]
+    properties:
+      '@id':
+        $ref: '#/definitions/AttributeTypesLink'
+      attributes:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeType'
+  KeyTypesLink:
+    type: string
+    format: uri
+    example: /kb/genealogy/type/person/keys
+  KeyTypes:
+    type: object
+    required: ['@id', keys]
+    properties:
+      '@id':
+        $ref: '#/definitions/KeyTypesLink'
+      keys:
+        type: array
+        items:
+          $ref: '#/definitions/AttributeType'
+  AttributeType:
+    allOf:
+      - $ref: '#/definitions/Type'
+      - properties:
+          '@id':
+            example: /kb/genealogy/type/name
+          label:
+            example: name
+          'base-type':
+            enum: ['ATTRIBUTE_TYPE']
   RoleLink:
     type: string
     format: uri
@@ -725,6 +816,10 @@ definitions:
       - type: object
         required: [relationships, roleplayers, subs]
         properties:
+          '@id':
+            example: /kb/genealogy/role/husband
+          label:
+            example: husband
           relationships:
             type: array
             items:
@@ -875,36 +970,22 @@ definitions:
           - READY
           - INITIALIZING
   CommitLogRequest:
-    required:
-    - types-with-new-counts
-    - concepts-to-fix
     type: object
+    required: [instance-count, new-attributes]
     properties:
-      types-with-new-counts:
-        type: array
-        items:
-          $ref: '#/definitions/TypesWithNewCounts'
-      concepts-to-fix:
-        $ref: '#/definitions/ConceptsToFix'
-  TypesWithNewCounts:
-    type: object
-    required: [concept-id, sharding-count]
-    properties:
-      concept-id:
-        $ref: '#/definitions/ConceptID'
-      sharding-count:
-        type: number
-  ConceptsToFix:
-    type: object
-    additionalProperties:
-      type: object
-      additionalProperties:
-        type: array
-        items:
-          $ref: '#/definitions/ConceptID'
-    example:
-      ATTRIBUTE:
-        ATTRIBUTE-name-Bob: [V123, V456, V789]
+      instance-count:
+        additionalProperties:
+          type: number
+        example:
+          V123: 100
+          V456: 3
+      new-attributes:
+        additionalProperties:
+          type: array
+          items:
+            $ref: '#/definitions/ConceptID'
+        example:
+          AttributeIndex-name-Bob: [V789, V987]
   ConceptID:
     type: string
     example: V123
