@@ -201,7 +201,6 @@ main() {
   if [[ ! -z $redis_pid ]]; then
     echo "Force killing Redis (pid=$redis_pid)"
     kill -9 $redis_pid
-    rm -f "${QUEUE_PID}"
   else
     echo "no dangling Redis process found."
   fi
