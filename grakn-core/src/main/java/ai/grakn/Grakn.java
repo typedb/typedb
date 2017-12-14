@@ -22,8 +22,8 @@ import ai.grakn.util.SimpleURI;
 
 import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 //Docs to do @Filipe
 /*
@@ -98,7 +98,7 @@ public class Grakn {
      */
     public static final String IN_MEMORY = "in-memory";
 
-    private static final Map<String, GraknSession> clients = new HashMap<>();
+    private static final Map<String, GraknSession> clients = new ConcurrentHashMap<>();
 
     private static <F extends GraknSession> F loadImplementation(String className,
                                                                  String location,

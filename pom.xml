@@ -44,6 +44,7 @@
         <module>grakn-client</module>
         <module>grakn-test-tools</module>
         <module>grakn-module-sdk</module>
+        <module>grakn-bootup</module>
     </modules>
 
     <properties>
@@ -70,7 +71,6 @@
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
-        <swagger.version>1.5.16</swagger.version>
         <websocket.version>1.1</websocket.version>
         <jetty.version>9.3.6.v20151106</jetty.version>
         <mjson.version>1.4.0</mjson.version>
@@ -707,25 +707,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.swagger</groupId>
-                <artifactId>swagger-jersey2-jaxrs</artifactId>
-                <version>${swagger.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-annotations</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>joda-time</groupId>
-                        <artifactId>joda-time</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.datatype</groupId>
-                        <artifactId>jackson-datatype-joda</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
                 <groupId>com.sun.jersey</groupId>
                 <artifactId>jersey-client</artifactId>
                 <version>${jersey.version}</version>
@@ -957,6 +938,12 @@
                 <version>${systen-rules.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>ai.grakn</groupId>
+                <artifactId>grakn-bootup</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
     <dependencies>

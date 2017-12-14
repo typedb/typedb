@@ -22,7 +22,7 @@ First up, you need to load the schema and dataset (which are all in one file) as
 
 Here are the queries. Type each one in a separate line and see what happens. Comments are marked with a #, so you can ignore them.
 
-```
+```graql-skip-test
 match $x isa pokemon;
 match $x has name "Articuno";
 match $x val contains "lightning";

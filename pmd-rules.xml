@@ -34,16 +34,6 @@ http://pmd.sourceforge.net/ruleset/2.0.0 ">
     <rule ref="rulesets/java/unusedcode.xml"/>
 
     <!-- Avoid unused parameters in most cases-->
-    <rule ref="rulesets/java/unusedcode.xml/UnusedFormalParameter">
-
-        <!-- Ignore unused parameter rule for REST API
-        This is because REST API methods always accept a request and a response,
-        even if one of those is not used.
-        -->
-        <properties>
-            <property name="violationSuppressXPath" value="./../../../../../Annotation/NormalAnnotation/Name[@Image='ApiOperation']"/>
-        </properties>
-
-    </rule>
+    <rule ref="rulesets/java/unusedcode.xml/UnusedFormalParameter"/>
 
 </ruleset>

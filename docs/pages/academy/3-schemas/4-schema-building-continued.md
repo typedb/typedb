@@ -40,7 +40,7 @@ There are three steps into defining roles. Let’s examine them one by one.
 The first step is to look at our relationships one by one and think about what they need to link together. Take `owns`, for example: in our domain, it is used to indicate the connection between an oil-platform and the company it belongs to. There are thus two roles in the "owns" relationship (but there could be also only one or more than two): we will call them `owner` and `owned` (because the author and has no fantasy :) ). In order to specify the relation in this way, we will use the keyword `relate` and the definition of "owns" will then look like this:
 
 
-```
+```graql-skip-test
 "owns" sub relationship relates owner relates owns;
 ```
 
@@ -51,14 +51,14 @@ The second step is super easy: the role concepts related to our relationships ne
 ## Who does what?
 The final step is to define which concept are allowed to play which role. To do this, we use the keyword `plays`. Every role must be played by at least one concept type, but there is no upper limit to it. To decide which type can play which role refer back to the conceptual model. For example, we know that we want companies to play the role of owner and oil platforms to play the role of owned. The type definitions will then look like this:
 
-```
+```graql-skip-test
 "company" sub entity plays owner;
 "oil-platform" sub entity has distance-from-coast plays owned;
 ```
 
 You should know at this point that there is no specific reason to put the whole type definition on one single line, so the definition above could also be rewritten as
 
-```
+```graql-skip-test
 "company" sub entity
    plays owner;
 "oil-platform" sub entity
@@ -75,7 +75,7 @@ You are almost there: go ahead and add the relevant roles for the remaining rela
 Your schema file should at this point look more or less like the following:
 
 
-```
+```graql-skip-test
 define
 "bond" sub entity
     plays issued;
