@@ -301,11 +301,10 @@ public class KCoreTest {
     }
 
     @Test
-    public void testConnectedComponentConcurrency() {
+    public void testConcurrency() {
         assumeFalse(GraknTestUtil.usingTinker());
 
         addSchemaAndEntities();
-        addResourceRelations();
 
         List<Long> list = new ArrayList<>(4);
         long workerNumber = 4L;
@@ -313,14 +312,14 @@ public class KCoreTest {
             list.add(i);
         }
 
-        Set<Map<String, Long>> result = list.parallelStream().map(i -> {
+        Set<Map<String, Set<String>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return Graql.compute().withTx(graph).cluster().execute();
+                return Graql.compute().withTx(graph).kCore().kValue(3).execute();
             }
         }).collect(Collectors.toSet());
         result.forEach(map -> {
             assertEquals(1, map.size());
-            assertEquals(7L, map.values().iterator().next().longValue());
+            assertEquals(4, map.values().iterator().next().size());
         });
     }
 
