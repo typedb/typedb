@@ -1,7 +1,6 @@
 ---
 title: Migrating CSV data to Grakn
 keywords: setup, getting started
-last_updated: February 2017
 tags: [migration]
 summary: "This document will teach you how to migrate CSV data into Grakn."
 sidebar: documentation_sidebar
@@ -47,7 +46,7 @@ The steps to migrate the CSV to GRAKN.AI are:
 * create templated Graql to map the data to the schema
 * invoke the Grakn migrator through the shell script or Java API. The CSV migrator will apply the template to each row of data in the CSV file, replacing the sections indicated in the template with provided data: the column header is the key and the content of each row at that column the value.
 
-{% include note.html content="CSV Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
+{% include note.html content="CSV Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [migration langauge documentatino](../migrating-data/migration-language) to find out more." %}
 
 
 ## Example: Cars
@@ -137,5 +136,3 @@ This file would be migrated in the same way as the previous example when you spe
 We have an additional, more extensive, example that [migrates genealogy data from CSV](../examples/CSV-migration). Our [sample-projects repository on Github](https://github.com/graknlabs/sample-projects) also contains [an example that migrates a simple CSV pets dataset](https://github.com/graknlabs/sample-projects/tree/master/example-csv-migration-pets), and another [example for video games](https://github.com/graknlabs/sample-projects/tree/master/example-csv-migration-games), was described in a separate [blog post](https://blog.grakn.ai/twenty-years-of-games-in-grakn-14faa974b16e#.do8tq0dm8).
 
 You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](http://javadoc.io/doc/ai.grakn/grakn).
-
-

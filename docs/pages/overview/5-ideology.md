@@ -1,7 +1,6 @@
 ---
 title: GRAKN.AI Ideology - Simplicity and Maintainability
 keywords: overview
-last_updated: April 2017
 tags: [overview, faq]
 sidebar: overview_sidebar
 permalink: /overview/ideology.html
@@ -26,7 +25,7 @@ This time we thought to dive in a little deeper and discuss the practicality of 
 GRAKN.AI has an intuitive schema language, Graql, which is the same language used to query the knowledge base. It has a simple syntax that is not burdened with URIs or complex serialisation of OWL axioms in RDF/XML, Turtle, or N3 formats.
 
 ### A smaller set of higher level modelling constructs
-Compared to OWL, Graql has a smaller set of [schema modelling constructs](../documentation/the-fundamentals/grakn-knowledge-model.html), but can express all the core use cases of complex domain modelling. Graql’s schema language contains higher level constructs that defines [N-ary] hyper-relationships and hyper-objects as basic concepts in the building blocks.    
+Compared to OWL, Graql has a smaller set of [schema modelling constructs](../docs/knowledge-model/model), but can express all the core use cases of complex domain modelling. Graql’s schema language contains higher level constructs that defines [N-ary] hyper-relationships and hyper-objects as basic concepts in the building blocks.    
 
 This is contrasted with modelling each OWL (data/object) property separately and then combining them into N-ary relationship patterns using auxiliary class names and property restrictions. Although OWL offers potentially higher expressivity, it comes at the cost of increased complexity. Crucially, our goal here with GRAKN.AI is to model the real world in a straightforward way, and not to burden engineers with additional complexity. Additionally, OWL lacks essential facilities for meta-knowledge and higher-level modelling (nested relationships, information about relationships, etc.) which consequently makes it more complicated to work with.
 
@@ -70,6 +69,6 @@ In this article, we have presented the reasons why we believe GRAKN.AI is simple
 * real-time validation and native reasoning
 
 ## Where can I find out more?
-To find out more, take a look at our [documentation](https://grakn.ai/pages/index.html) — the [Knowledge Model documentation](../documentation/the-fundamentals/grakn-knowledge-model.html) is a good place to start for more about the subjects touched upon above.
+To find out more, take a look at our [documentation](https://grakn.ai/pages/index.html) — the [Knowledge Model documentation](../docs/knowledge-model/model) is a good place to start for more about the subjects touched upon above.
 
 And if you have any questions, we are always happy to help. A good way to ask questions is via our Slack channel. We also have a [discussion forum](https://discuss.grakn.ai). For news, sign up for our [community newsletter](https://grakn.ai/community) and — if you’d like to meet us in person — we run regular [meetups](https://www.meetup.com/graphs/).

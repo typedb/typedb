@@ -1,7 +1,6 @@
 ---
 title: GRAKN.AI FAQs
 keywords: overview
-last_updated: April 2017
 tags: [overview, faq]
 sidebar: overview_sidebar
 permalink: /overview/faqs.html
@@ -27,7 +26,7 @@ In combination, Grakn and Graql are what makes GRAKN.AI, the knowledge base for 
 
 ### Can you explain GRAKN.AI’s “schema-first” model?
 
-In Grakn, the schema is the formal specification of all the relevant concepts and their meaningful associations in a given domain. It allows objects and relationships to be categorised into distinct types, and for generic properties of those types to be expressed. Specifying the schema enables [automated reasoning](https://en.wikipedia.org/wiki/Inference_engine) over the [represented knowledge](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning), such as the extraction of implicit information from explicit data ([inference](https://grakn.ai/pages/documentation/the-fundamentals/grakn-knowledge-model.html#rule-and-sub-type-inference)) or discovery of inconsistencies in the data ([validation](https://grakn.ai/pages/documentation/the-fundamentals/grakn-knowledge-model.html#data-validation)). For this reason, the schema must be clearly defined before loading data into the knowledge base.
+In Grakn, the schema is the formal specification of all the relevant concepts and their meaningful associations in a given domain. It allows objects and relationships to be categorised into distinct types, and for generic properties of those types to be expressed. Specifying the schema enables [automated reasoning](https://en.wikipedia.org/wiki/Inference_engine) over the [represented knowledge](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning), such as the extraction of implicit information from explicit data ([inference](../docs/knowledge-model/model#rule-and-sub-type-inference)) or discovery of inconsistencies in the data ([validation](../docs/knowledge-model/model#data-validation)). For this reason, the schema must be clearly defined before loading data into the knowledge base.
 
 ### Won’t that cause extra complexity?
 
@@ -68,7 +67,7 @@ And yes, you could just use a graph database, but with GRAKN.AI, your data sits 
 
 ### How can I visualise my data?
 
-[GRAKN.AI’s UI](../documentation/grakn-dashboard/visualiser.html) is a relatively new addition to our platform, and has only been in development for several months. It allows you to view a portion of your dataset, by filtering it using Graql queries.  
+[GRAKN.AI’s UI](../docs/visualisation-dashboard/visualiser) is a relatively new addition to our platform, and has only been in development for several months. It allows you to view a portion of your dataset, by filtering it using Graql queries.  
 
 We’re committed to extending our UI over the years to come. This year alone, we plan to collaborating with other technologies in the industry on building a WebGL-based graph visualiser, which uses the GPU to render tens of thousands of nodes on the screen.  
 

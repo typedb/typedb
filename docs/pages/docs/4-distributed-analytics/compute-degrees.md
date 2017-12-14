@@ -1,6 +1,5 @@
 ---
 title: Degrees
-last_updated: February 2017
 tags: [analytics]
 summary: "This page introduces the computation of degrees in a graph."
 sidebar: documentation_sidebar
@@ -50,5 +49,3 @@ The result will now be:
 * **Jacob Young**: 1
 * **Mary Young**: 0
 * **John Newman**: 1
-
-

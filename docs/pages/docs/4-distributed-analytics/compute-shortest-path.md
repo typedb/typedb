@@ -1,6 +1,5 @@
 ---
 title: Shortest Path
-last_updated: February 2017
 tags: [analytics]
 summary: "This page introduces the shortest path functionality of analytics."
 sidebar: documentation_sidebar
@@ -44,5 +43,3 @@ compute path from "id1" to "id2" in person, parentship;
 ```
 
 ![Shortest path between people](/images/analytics_path_parentship.png)
-
-

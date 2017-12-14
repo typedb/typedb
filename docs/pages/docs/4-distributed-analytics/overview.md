@@ -1,6 +1,5 @@
 ---
 title: Analytics Overview
-last_updated: February 2017
 tags: [analytics]
 summary: "This page provides an overview of the Graql analytics capabilities."
 sidebar: documentation_sidebar
@@ -39,9 +38,9 @@ We cover this topic more in our documentation page on [statistics](./compute-sta
 
 At the moment we have a simple algorithm for determining
 
-* [centrality measure (degree)](./analytics-degrees.html)
-* [paths between nodes (shortest path)](./analytics-shortest-path.html)
-* [clusters or communities (connected components)](./analytics-connected-components.html).
+* [centrality measure (degree)](./compute-degrees)
+* [paths between nodes (shortest path)](./compute-shortest-path)
+* [clusters or communities (connected components)](./compute-connected-components).
 
 ## The Knowledge Graph According to Analytics
 
@@ -100,5 +99,3 @@ This knowledge base also happens to include the parentship relationship, but we 
 {% include note.html content="The degree is the simplest measure of the importance (centrality) of a node in a graph.
 Graql is very flexible and allows us to define the subgraph in which we want to compute the degree, and therefore determine
 importance according to various structures in the graph." %}
-
-

@@ -1,7 +1,6 @@
 ---
 title: Graql Console
 keywords: graql, shell
-last_updated: January 2017
 tags: [graql]
 summary: "
 The Graql Console is used to execute Graql queries from the command line, or to let Graql be invoked from other applications."
@@ -68,5 +67,3 @@ While working in the shell, the following special commands can be used:
 | `clean`      | Cleans the entire keyspace, removing everything in the graph. |
 
 {% include tip.html content="Graql shell maintains a history of past commands with the 'up' and 'down' arrows. You can also autocomplete keywords, type and variable names using tab!" %}
-
-

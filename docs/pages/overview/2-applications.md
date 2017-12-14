@@ -1,7 +1,6 @@
 ---
 title: What can you build with GRAKN.AI?
 keywords: applications
-last_updated: September 13, 2016
 summary: GRAKN.AI makes building intelligent systems for complex data easy.
 tags: [overview]
 sidebar: overview_sidebar

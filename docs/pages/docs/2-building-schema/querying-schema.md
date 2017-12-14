@@ -1,7 +1,6 @@
 ---
 title: Querying Schema
 keywords: graql, query, define
-last_updated: August 10, 2016
 tags: [graql]
 summary: "Querying Grakn Schema using Graql"
 sidebar: documentation_sidebar

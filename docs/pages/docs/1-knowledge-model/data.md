@@ -1,7 +1,6 @@
 ---
 title: The Data
 keywords: setup, getting started, basics
-last_updated: January 2017
 tags: [getting-started, reasoning, graql]
 summary: "Introduction to what data looks like in Grakn"
 sidebar: documentation_sidebar
