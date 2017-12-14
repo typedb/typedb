@@ -47,6 +47,11 @@
         </dependency>
 
         <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-bootup</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>ro.fortsoft.pf4j</groupId>
             <artifactId>pf4j</artifactId>
         </dependency>

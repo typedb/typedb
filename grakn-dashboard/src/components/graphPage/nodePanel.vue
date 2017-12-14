@@ -33,9 +33,12 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         </div>
         <div class="dd-header" v-show="Object.keys(nodeAttributes).length">Attributes:</div>
         <div class="dd-item" v-for="(value,key) in nodeAttributes">
-            <div class="dd-handle noselect" @dblclick="addAttributeNodeWithOwners(value.link)"><span class="list-key">{{value.type}}:</span>
-                <a v-if="value.externalRef" :href="value.label" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.type}}</a>
-                <span v-else> {{value.value}}</span>
+            <div class="dd-handle noselect">
+                <span v-if="value.value" class="list-key">{{value.type}}:</span>
+                <span v-else class="list-key">{{value.type}}</span>
+                <!-- <a v-if="value.externalRef" :href="value.label" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.type}}</a> -->
+                <span v-if="value.value">{{value.value}}</span>
+                <span v-else>{{value.dataType.split('.').pop()}}</span>
             </div>
         </div>
         <div class="dd-header" v-show="Object.keys(nodeLinks).length">Links:</div>

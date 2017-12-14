@@ -44,6 +44,7 @@
         <module>grakn-client</module>
         <module>grakn-test-tools</module>
         <module>grakn-module-sdk</module>
+        <module>grakn-bootup</module>
     </modules>
 
     <properties>
@@ -937,6 +938,12 @@
                 <version>${systen-rules.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>ai.grakn</groupId>
+                <artifactId>grakn-bootup</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
     <dependencies>

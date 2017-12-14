@@ -9,12 +9,12 @@ const DEFAULT_QUERY_LIMIT = '30';
 
 export default {
 
-    // -------------- Reasoner toggles ------------ //
+  // -------------- Reasoner toggles ------------ //
   setReasonerStatus(status) {
     localStorage.setItem('use_reasoner', status);
   },
 
-    // @return boolean
+  // @return boolean
   getReasonerStatus() {
     const useReasoner = localStorage.getItem('use_reasoner');
     if (useReasoner == null) {
@@ -37,7 +37,7 @@ export default {
     localStorage.setItem('freeze_nodes', status);
   },
 
-    // ---- Current Keyspace -----//
+  // ---- Current Keyspace -----//
   setCurrentKeySpace(keyspace) {
     localStorage.setItem('current_keyspace', keyspace);
   },
@@ -48,7 +48,7 @@ export default {
     }
     return localStorage.getItem('current_keyspace');
   },
-    // ------ Join-community modal setter and getter (has it already be shown to the user) ----//
+  // ------ Join-community modal setter and getter (has it already be shown to the user) ----//
   setModalShown(shown) {
     localStorage.setItem('community_modal', shown);
   },

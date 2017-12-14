@@ -135,21 +135,3 @@ qb.parse("insert isa person, has firstname 'Alice';").execute();
 qb.parse("match $x isa person; delete $x;").execute();
 ```
 
-## Reasoning
-
-Reasoning can be configured using `QueryBuilder` objects in the following way:
-
-### Switching reasoning on
-
-```java
-//tx is a GraknTx instance
-qb = tx.graql().infer(true);
-```
-
-Once the `QueryBuilder` has been defined, the constructed queries will obey the specified reasoning variants.
-
-The table below summarises the available reasoning configuration options together with their defaults.
-
-| Option       | Description | Default
-| -------------------- |:--|:--|
-| `QueryBuilder::infer(boolean)` | controls whether reasoning should be turned on | False=Off |

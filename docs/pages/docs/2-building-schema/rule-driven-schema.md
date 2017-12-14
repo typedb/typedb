@@ -20,19 +20,17 @@ supported constructs-->
 
 ## Introduction
 In this section we are going to further push the schema we defined in the [Hierarchical Schema](./hierarchical-schema.html) section by complementing it with suitably defined rules.
-Defining rules as a part of the knowledge base gives rise to rule-based reasoning permitting automated capture and evolution of patterns within the knowledge base. 
-By using rules, common patterns in the knowledge base can be defined and associated with existing schema elements. 
-This not only allows you to compress and simplify typical queries, but offers the ability to derive new non-trivial information by combining defined patterns.
+Defining rules as a part of the knowledge base gives rise to rule-based reasoning permitting automated capture and evolution of patterns within the knowledge base.
+By using rules, common patterns in the knowledge base can be defined and associated with existing schema elements as well as their instances. This not only allows you to compress and simplify typical queries, but offers the ability to derive new, non-trivial information by combining defined patterns.
 
 Graql rules assume the following general form:
 
 ```
 when {rule-body} then {rule-head}
 ```
-where `rule-body` and `rule-head` are Graql patterns. Rules are defined as a part of the schema by subbing the `rule` concept. 
+where `rule-body` and `rule-head` are Graql patterns. Rules are defined as a part of the schema by subbing the `rule` concept.
 
-Intuitively, rules can be regarded as pattern matching constructs. By defining a rule we are telling the system that if we can find an instantiation of the body pattern 
-(set of concepts satisfying the pattern) then the corresponding instantiation of head pattern is treated as if it existed in the knowledge base.
+Intuitively, rules can be regarded as pattern matching constructs. By defining a rule we are telling the system that if we can find an instantiation of the body pattern (set of concepts satisfying the pattern) then the corresponding instantiation of head pattern is treated as if it existed in the knowledge base.
 
 In the following subsection we will show examples of how to augment the schema by using the rule facility.
 
@@ -48,7 +46,7 @@ parentship sub relatives
   relates child
   relates son
   relates daughter;
-    
+
 parent sub role;
 mother sub parent;
 father sub parent;
@@ -58,7 +56,7 @@ son sub child;
 daughter sub child;
 ````
 
-Now instead of specifying all relationship combinations for a given parentship pair. We can define a basic `(parent, child)` relationship and let rules do the genderisation for us. One way to accomplish that is to define the following rules: 
+Now instead of specifying all relationship combinations for a given parentship pair. We can define a basic `(parent, child)` relationship and let rules do the genderisation for us. One way to accomplish that is to define the following rules:
 
 ```graql-test-ignore
 define
