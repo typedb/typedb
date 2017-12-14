@@ -3,14 +3,14 @@
 entries:
 - title: Sidebar
   product: Documentation
+  url: /docs
   folders:
-
   - title: Get Started
     output: web
     folderitems:
       - title: Home
         output: web
-        url: /index
+        url: /docs/index
       - title: Setup Guide
         output: web
         url: /docs/get-started/setup-guide

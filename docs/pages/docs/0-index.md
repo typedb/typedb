@@ -1,12 +1,11 @@
 ---
-title: Grakn Developer Hub
-summary: Welcome to Grakn Developer Hub, where you can find everything you need to get up to speed.
+title: Grakn Documentation Portal
+summary: Welcome to Grakn Documentation Portal, where you can find everything you need to get up to speed.
 keywords: sample homepage
 tags: [getting-started, graql, java, core-api]
 sidebar: documentation_sidebar
-permalink: index
+permalink: /docs/index
 toc: false
-
 ---
 
 <br />
