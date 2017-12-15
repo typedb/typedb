@@ -130,6 +130,15 @@ public class QueryErrorTest {
     }
 
     @Test
+    public void whenSpecifyingMultipleSubs_ThrowIncludingInformationAboutTheConceptAndBothSupers() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(
+                containsString("abc"), containsString("sub"), containsString("person"), containsString("has-cast")
+        ));
+        qb.define(label("abc").sub("person"), label("abc").sub("has-cast")).execute();
+    }
+
+    @Test
     public void testErrorHasGenreQuery() {
         // 'has genre' is not allowed because genre is an entity type
         exception.expect(GraqlQueryException.class);

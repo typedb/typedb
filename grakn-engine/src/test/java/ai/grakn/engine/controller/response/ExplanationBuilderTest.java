@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller.response;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.graql.GetQuery;
@@ -26,6 +27,8 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -39,6 +42,7 @@ public class ExplanationBuilderTest {
     @ClassRule
     public static SampleKBContext genealogyKB = GenealogyKB.context();
 
+    //NOTE: This test ix expected to be slower than average.
     @Test
     public void whenExplainInferred_returnsLinkedExplanation() {
         Label person = Label.of("person");
@@ -47,8 +51,8 @@ public class ExplanationBuilderTest {
 
         Printer printer = new JacksonPrinter();
         String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
-        List<ai.grakn.graql.admin.Answer> answers = genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery).execute();
-        answers.forEach(answer -> {
+        genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery)
+                .forEach(answer -> {
             String cousin1 = answer.get("x").getId().getValue();
             String cousin2 = answer.get("y").getId().getValue();
 
@@ -60,7 +64,21 @@ public class ExplanationBuilderTest {
             GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
             ai.grakn.graql.admin.Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
 
+            Set<ConceptId> originalEntityIds = specificAnswer.getExplanation().getAnswers().stream()
+                    .flatMap(ans -> ans.concepts().stream())
+                    .map(ai.grakn.concept.Concept::getId)
+                    .collect(Collectors.toSet());
+
             List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer, printer);
+
+            Set<ConceptId> entityIds = explanation.stream()
+                    .flatMap(exp -> exp.conceptMap().values().stream())
+                    .filter(c -> c.baseType().equals("ENTITY"))
+                    .map(Concept::id)
+                    .collect(Collectors.toSet());
+
+            //ensure we deal with the same entities
+            assertEquals(originalEntityIds, entityIds);
 
             assertEquals(3, explanation.size());
             explanation.forEach(explanationAnswer -> {

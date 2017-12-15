@@ -16,7 +16,7 @@ In the last lesson you have learned about the differences between OLTP and OLAP 
 All the analytics query in GRAQL begin with the keyword `compute` and, for this reason, are called "compute queries" as well. Statistics compute queries have all the following structure:
 
 
-```
+```graql-skip-test
 compute <STATISTIC> in <TYPES>;
 ```
 
@@ -28,7 +28,7 @@ An example will clear up things. Let’s us do some counting.
 If it’s not already running, launch the GRAKN instance in your VM and open the dashboard in the "training" keyspace. Let’s say we want to count the number of oil platforms in our knowledge base.
 
 Launch this query:
-```
+```graql-skip-test
 compute count in oil-platform;
 ```
 
@@ -43,24 +43,24 @@ Try it yourself now: write and launch a compute query to count how many companie
 ## Statistics query
 If you want to find out something a bit more complicated than the number of instances of a few types, you need proper statistics. The query, in this case looks like this:
 
-```
+```graql-skip-test
 compute <STATISTIC> of <ATTRIBUTE> in <TYPES>;
 ```
 Statistics like mean, standard deviation, median etc. can only be computed on numerical attributes, so that is what the `of <ATTRIBUTE>` part of the query is for. If the attribute is shared by several types, then you might want to restrict to the computation to only some of those with the `in <TYPES>` part. Imagine you have a knowledge base of people, cats and dogs, for example, and both types have an "age" attribute. If you wanted to compute the median age of the dogs in the knowledge base, you would do:
 
-```
+```graql-skip-test
 compute median of age in dog;
 ```
 
 On the other hand, if you wanted to find the median age of the pets you would need
 
-```
+```graql-skip-test
 compute median of age in dog, cats;
 ```
 
 Finally, if you wanted to find the median age tout-court, you would simply do
 
-```
+```graql-skip-test
 compute median of age;
 ```
 

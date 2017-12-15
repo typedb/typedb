@@ -126,7 +126,7 @@ public class BenchmarkTests {
     }
 
     private void loadJoinData(int N) {
-        final GraknClient graknClient = new GraknClient(engine.uri());
+        final GraknClient graknClient = GraknClient.of(engine.uri());
         final int M = N/5;
         loadOntology("multiJoin.gql", session);
         loadEntities("genericEntity", M, graknClient, keyspace);
@@ -138,7 +138,7 @@ public class BenchmarkTests {
     }
 
     private void loadTransitivityData(int N){
-        final GraknClient graknClient = new GraknClient(engine.uri());
+        final GraknClient graknClient = GraknClient.of(engine.uri());
         loadOntology("linearTransitivity.gql", session);
         loadEntities("a-entity", N, graknClient, keyspace);
         loadRelations("a-entity", "Q-from", "Q-to", "Q", N, session, graknClient, keyspace);

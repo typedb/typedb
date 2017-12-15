@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.antlr.GraqlParser.PatternContext;
 import ai.grakn.graql.internal.antlr.GraqlParser.PatternsContext;
 import ai.grakn.graql.internal.antlr.GraqlParser.QueryContext;
 import ai.grakn.graql.internal.antlr.GraqlParser.QueryEOFContext;
+import ai.grakn.graql.internal.antlr.GraqlParser.QueryListContext;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.template.TemplateParser;
 import ai.grakn.graql.macro.Macro;
@@ -148,11 +149,11 @@ public class QueryParserImpl implements QueryParser {
         return (T) QUERY_EOF.parse(queryString);
     }
 
-    @Override
     /**
      * @param reader a reader representing several queries
      * @return a list of queries
      */
+    @Override
     public <T extends Query<?>> Stream<T> parseList(Reader reader) {
         UnbufferedCharStream charStream = new UnbufferedCharStream(reader);
         GraqlErrorListener errorListener = GraqlErrorListener.withoutQueryString();
@@ -167,18 +168,6 @@ public class QueryParserImpl implements QueryParser {
         */
         lexer.setTokenFactory(new CommonTokenFactory(true));
 
-        return parseList(lexer, errorListener);
-    }
-
-    @Override
-    public <T extends Query<?>> Stream<T> parseList(String queryString) {
-        ANTLRInputStream inputStream = new ANTLRInputStream(queryString);
-        GraqlErrorListener errorListener = GraqlErrorListener.of(queryString);
-        GraqlLexer lexer = createLexer(inputStream, errorListener);
-        return parseList(lexer, errorListener);
-    }
-
-    private <T extends Query<?>> Stream<T> parseList(GraqlLexer lexer, GraqlErrorListener errorListener) {
         // Use an unbuffered token stream so we can handle extremely large input strings
         UnbufferedTokenStream tokenStream = new UnbufferedTokenStream(ChannelTokenSource.of(lexer));
 
@@ -222,6 +211,11 @@ public class QueryParserImpl implements QueryParser {
         };
 
         return StreamSupport.stream(queryIterator.spliterator(), false);
+    }
+
+    @Override
+    public <T extends Query<?>> Stream<T> parseList(String queryString) {
+        return (Stream<T>) QUERY_LIST.parse(queryString);
     }
 
     @Override
@@ -281,6 +275,9 @@ public class QueryParserImpl implements QueryParser {
         });
     }
 
+    private final QueryPart<QueryListContext, Stream<? extends Query<?>>> QUERY_LIST =
+            createQueryPart(GraqlParser::queryList, QueryVisitor::visitQueryList);
+
     private final QueryPart<QueryEOFContext, Query<?>> QUERY_EOF =
             createQueryPart(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF);
 
@@ -318,7 +315,7 @@ public class QueryParserImpl implements QueryParser {
         /**
          * Get a {@link ParseTree} from a {@link GraqlParser}.
          */
-        abstract S parseTree(GraqlParser parser);
+        abstract S parseTree(GraqlParser parser) throws ParseCancellationException;
 
         /**
          * Parse the {@link ParseTree} into a Java object using a {@link QueryVisitor}.
@@ -345,20 +342,19 @@ public class QueryParserImpl implements QueryParser {
          * {@link GraqlErrorListener}.
          */
         final T parse(GraqlParser parser, GraqlErrorListener errorListener) {
-            S tree = null;
+            S tree;
 
             try {
                 tree = parseTree(parser);
             } catch (ParseCancellationException e) {
-                // ignore because we report errors right after this
+                // If we're using the BailErrorStrategy, we will throw here
+                // This strategy is designed for parsing very large files and cannot provide useful error information
+                throw GraqlSyntaxException.parsingError("syntax error");
             }
 
             if (errorListener.hasErrors()) {
                 throw GraqlSyntaxException.parsingError(errorListener.toString());
             }
-
-            // This should always be the case because if there is an error we throw
-            assert tree != null;
 
             return visit(getQueryVisitor(), tree);
         }

@@ -20,8 +20,6 @@ package ai.grakn.engine.controller.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Set;
-
 /**
  * <p>
  *     Wrapper class for {@link ai.grakn.concept.Type}
@@ -35,12 +33,14 @@ public abstract class Type extends SchemaConcept{
     public abstract Boolean isAbstract();
 
     @JsonProperty
-    public abstract Set<Link> plays();
+    public abstract Link plays();
 
     @JsonProperty
-    public abstract Set<Link> attributes();
+    public abstract Link attributes();
 
     @JsonProperty
-    public abstract Set<Link> keys();
+    public abstract Link keys();
 
+    @JsonProperty
+    public abstract Link instances();
 }

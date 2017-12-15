@@ -59,12 +59,12 @@ def runIntegrationTest(String workspace, String moduleName) {
     stage(moduleName) {
         withPath("${modulePath}:${modulePath}/src/main/bash") {
             withGrakn {
-                timeout(180) {
+                timeout(60) {
                     stage('Load') {
                         sh "load.sh"
                     }
                 }
-                timeout(360) {
+                timeout(60) {
                     stage('Validate') {
                         sh "validate.sh"
                     }
@@ -87,6 +87,7 @@ def withGrakn(Closure closure) {
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn.log"
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/grakn-postprocessing.log"
         archiveArtifacts artifacts: "${env.PACKAGE}/logs/cassandra.log"
+        sh 'stop-grakn.sh'
     }
 }
 
@@ -177,7 +178,7 @@ Closure createTestJob(split, i, testTimeout) {
                 timeout(testTimeout) {
                     stage('Run Janus test profile') {
                         mvn mavenVerify
-                    archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"}
+                    }
                 }
             } finally {
                 /* Archive the test results */
@@ -213,6 +214,10 @@ void addJob(Map<String, Closure> jobs, String name, Closure closure) {
             }
         }
     }
+}
+
+String graknDist() {
+    return "grakn-dist/target/grakn-dist-${env.BRANCH_NAME}.tar.gz"
 }
 
 // Main script to run
@@ -252,10 +257,10 @@ def runBuild() {
             stage('Build Grakn') {
                 buildGrakn()
 
-                archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
+                archiveArtifacts artifacts: graknDist()
 
                 // Stash the built distribution so other nodes can access it
-                stash includes: "grakn-dist/target/grakn-dist-${env.BRANCH_NAME}.tar.gz", name: 'dist'
+                stash includes: graknDist(), name: 'dist'
             }
         }
 
@@ -306,7 +311,7 @@ def runBuild() {
 
             stage('Deploy Grakn') {
                 sshagent(credentials: ['jenkins-aws-ssh']) {
-                    sh "scp -o StrictHostKeyChecking=no grakn-dist/target/grakn-dist*.tar.gz ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
+                    sh "scp -o StrictHostKeyChecking=no ${graknDist()} ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/grakn-dist.tar.gz"
                     sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"
                     ssh "'bash -s' < scripts/start-long-running-instance.sh"
                 }

@@ -22,7 +22,6 @@ import ai.grakn.concept.Label;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.annotation.Nullable;
-import java.util.Set;
 
 /**
  * <p>
@@ -41,10 +40,10 @@ public abstract class SchemaConcept extends Concept{
 
     @Nullable
     @JsonProperty("super")
-    public abstract Link sup();
+    public abstract EmbeddedSchemaConcept sup();
 
     @JsonProperty
-    public abstract Set<Link> subs();
+    public abstract Link subs();
 
 }
 

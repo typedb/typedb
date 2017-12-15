@@ -27,8 +27,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.Set;
 
 /**
  * <p>
@@ -46,9 +44,13 @@ public abstract class MetaConcept extends Type{
             @JsonProperty("id") ConceptId id,
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("label") Label label,
-            @JsonProperty("super") @Nullable Link sup,
-            @JsonProperty("subs") Set<Link> subs
+            @JsonProperty("super") @Nullable EmbeddedSchemaConcept sup,
+            @JsonProperty("subs") Link subs,
+            @JsonProperty("plays") Link plays,
+            @JsonProperty("attributes") Link attributes,
+            @JsonProperty("keys") Link keys,
+            @JsonProperty("instances") Link instances
     ){
-        return new AutoValue_MetaConcept(Schema.BaseType.TYPE.name(), id, selfLink, label, false, sup, subs, true, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
+        return new AutoValue_MetaConcept(Schema.BaseType.TYPE.name(), id, selfLink, label, false, sup, subs, true, plays, attributes, keys, instances);
     }
 }
