@@ -18,6 +18,9 @@
 
 package ai.grakn.dist;
 
+import ai.grakn.bootup.AbstractProcessHandler;
+import ai.grakn.bootup.OutputCommand;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

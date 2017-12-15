@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 public abstract class Thing extends Concept {
 
     @JsonProperty
-    public abstract EmbeddedType type();
+    public abstract EmbeddedSchemaConcept type();
 
     @JsonProperty
     public abstract Link attributes();

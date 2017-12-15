@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
-import java.util.Set;
 
 /**
  * <p>
@@ -52,14 +51,15 @@ public abstract class AttributeType extends Type{
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("label") Label label,
             @JsonProperty("implicit") Boolean implicit,
-            @JsonProperty("super") Link sup,
-            @JsonProperty("subs") Set<Link> subs,
+            @JsonProperty("super") EmbeddedSchemaConcept sup,
+            @JsonProperty("subs") Link subs,
             @JsonProperty("abstract") Boolean isAbstract,
-            @JsonProperty("plays") Set<Link> plays,
-            @JsonProperty("attributes") Set<Link> attributes,
-            @JsonProperty("keys") Set<Link> keys,
+            @JsonProperty("plays") Link plays,
+            @JsonProperty("attributes") Link attributes,
+            @JsonProperty("keys") Link keys,
+            @JsonProperty("instances") Link instances,
             @Nullable @JsonProperty("data-type") String dataType,
             @Nullable @JsonProperty("regex") String regex){
-        return new AutoValue_AttributeType(Schema.BaseType.ATTRIBUTE_TYPE.name(),id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys, dataType, regex);
+        return new AutoValue_AttributeType(Schema.BaseType.ATTRIBUTE_TYPE.name(),id, selfLink, label, implicit, sup, subs, isAbstract, plays, attributes, keys, instances, dataType, regex);
     }
 }

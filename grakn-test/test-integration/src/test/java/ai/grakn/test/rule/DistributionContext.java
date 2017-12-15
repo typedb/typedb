@@ -103,7 +103,7 @@ public class DistributionContext extends CompositeTestRule {
 
     @Override
     public void after() {
-        engineProcess.destroyForcibly();
+        engineProcess.destroy();
     }
 
     private void assertPackageBuilt() throws IOException {
