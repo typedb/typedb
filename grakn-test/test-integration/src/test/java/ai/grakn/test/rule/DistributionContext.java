@@ -28,12 +28,17 @@ import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
+import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.rules.TestRule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -50,6 +55,8 @@ import static java.util.stream.Collectors.joining;
  */
 public class DistributionContext extends CompositeTestRule {
 
+    public static final Logger LOG = LoggerFactory.getLogger(DistributionContext.class);
+
     private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
     private static final String ZIP = "grakn-dist-" + GraknVersion.VERSION + ".zip";
     private static final String CURRENT_DIRECTORY = GraknSystemProperty.PROJECT_RELATIVE_DIR.value();
@@ -61,33 +68,17 @@ public class DistributionContext extends CompositeTestRule {
     private boolean inheritIO = true;
     private int redisPort = 6379;
 
-    private DistributionContext(){
+    // prevent initialization with the default constructor
+    private DistributionContext() {
     }
 
     public static DistributionContext create(){
         return new DistributionContext();
     }
 
-    public DistributionContext port(int port) {
-        this.port = port;
-        return this;
-    }
-
     public DistributionContext inheritIO(boolean inheritIO) {
         this.inheritIO = inheritIO;
         return this;
-    }
-
-    public boolean restart() throws IOException {
-        boolean isStarted = engineProcess != null && engineProcess.isAlive();
-        if(!isStarted){
-            return false;
-        }
-
-        engineProcess.destroyForcibly();
-        engineProcess = newEngineProcess(port, redisPort);
-        waitForEngine();
-        return true;
     }
 
     public SimpleURI uri(){
@@ -180,14 +171,23 @@ public class DistributionContext extends CompositeTestRule {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOG.error("Thread sleep interrupted. ", e);
             }
         }
+
+        LOG.error("Engine stdout = '" + inputStreamToString(engineProcess.getInputStream()) + "'");
+        LOG.error("Engine stderr = '" + inputStreamToString(engineProcess.getErrorStream()) + "'");
         throw new RuntimeException("Could not start engine within expected time");
     }
 
-    public DistributionContext redisPort(int port) {
-        this.redisPort = port;
-        return this;
+    private String inputStreamToString(InputStream output) {
+        String engineStdout;
+        try {
+            engineStdout = IOUtils.toString(output, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            engineStdout = "Unable to get output from Engine: " + e.getMessage();
+        }
+
+        return engineStdout;
     }
 }
