@@ -158,9 +158,11 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                             (int) vertex.value(IMPLICIT_MESSAGE_COUNT) : 0);
 
             if (messageCount >= k) {
+                LOGGER.trace("Sending msg from " + id);
                 sendMessage(messenger, id);
                 memory.add(K_CORE_EXIST, true);
             } else {
+                LOGGER.trace("Removing label of " + id);
                 vertex.property(CLUSTER_LABEL).remove();
                 memory.add(K_CORE_STABLE, false);
             }
@@ -172,7 +174,8 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
             if (vertex.label().equals(Schema.BaseType.RELATIONSHIP.name())) {
                 // relay the messages
                 messenger.receiveMessages().forEachRemaining(msg -> sendMessage(messenger, msg));
-            } else if (vertex.label().equals(Schema.BaseType.ATTRIBUTE.name()) &&
+            } else if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
+                    vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
                     vertex.property(CLUSTER_LABEL).isPresent()) {
                 // messages received via implicit edge, save the count for next iteration
                 vertex.property(IMPLICIT_MESSAGE_COUNT, Iterators.size(messenger.receiveMessages()));
@@ -185,9 +188,12 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
         if (!max.equals(currentMax)) {
+            LOGGER.trace("Cluster label of " + vertex + " changed from " + currentMax + " to " + max);
             vertex.property(CLUSTER_LABEL, max);
             sendMessage(messenger, max);
             memory.add(VOTE_TO_HALT, false);
+        } else {
+            LOGGER.trace("Cluster label of " + vertex + " is still " + currentMax);
         }
     }
 
@@ -215,15 +221,6 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
         if (memory.isInitialIteration()) return false;
-        if (memory.getIteration() == 1) {
-            if (!memory.<Boolean>get(K_CORE_EXIST)) {
-                LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
-                LOGGER.debug("No Such Core Areas Found !!!!!!!!");
-                throw new NoResultException();
-            } else {
-                return false;
-            }
-        }
 
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
@@ -239,7 +236,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                 return false;
             }
         } else {
-            if (memory.getIteration() % 2 == 0) {
+            if (memory.getIteration() % 2 != 0) {
                 if (!memory.<Boolean>get(K_CORE_EXIST)) {
                     LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
                     LOGGER.debug("No Such Core Areas Found !!!!!!!!");
