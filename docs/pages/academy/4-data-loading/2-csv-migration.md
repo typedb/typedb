@@ -41,7 +41,7 @@ For example, if the line currently being scanned reads
 
 Our template will be produce the statement
 
-```
+```graql-skip-test
 insert $x isa oil-platform has platform-id "13"
 has distance-from-coast "24";
 ```
@@ -78,7 +78,7 @@ Notice that the last semicolon is out of the curly braces, so it gets added ever
 There is one more thing to add to our template before we can actually use it.
 If you read back, you will notice that the example of GRAQL statement into which the template gets translated looks like
 
-```
+```graql-skip-test
 insert $x isa oil-platform has platform-id "13"
 has distance-from-coast "24";
 ```
@@ -121,4 +121,3 @@ In this lesson, you have learned about GRAQL templating language, macros and how
 
 ## What next?
 [Next lesson](./xml-migration.html) will be about migrating files with a more complex structure than the tabular one of CSV. If you want to delve deeper into the GRAQL templating language and macros, as usual, head to the [docs](../index.html)
-

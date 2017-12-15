@@ -249,11 +249,11 @@ export default {
       this.showMessagePanel = true;
       this.showTypeInstances = false;
       if(typeof error === "object"){
-        this.message = error.message;
+        this.message = JSON.parse(error.message).exception;
         console.log(error.stack);
       }
       else{
-        this.message = JSON.parse(error).message;
+        this.message = JSON.parse(error).exception;
       }
     },
     onWarningMessage(message) {

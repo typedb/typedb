@@ -18,7 +18,7 @@
 /* @flow */
 import User from './User';
 
-let spinner = { style: {} };
+let spinner;
 $(document).ready(() => {
   spinner = document.getElementById('loading-spinner');
 });
@@ -32,7 +32,10 @@ export default {
      * Required attributes of @requestData are:
      *  - url
      * Optional attributes with defaults:
-     *  - cache
+     *  - requestType
+     *  - accepts
+     *  - contentType
+     *  - data
      * @param requestData
      */
   request(requestData:Object) {
@@ -48,7 +51,7 @@ export default {
           } else {
             reject(Error(req.response));
           }
-          spinner.style.visibility = 'hidden';
+          if (spinner) spinner.style.visibility = 'hidden';
         };
 
         // Handle network errors
@@ -58,7 +61,7 @@ export default {
 
         // Make the request
         req.send(requestData.data);
-        spinner.style.visibility = 'visible';
+        if (spinner) spinner.style.visibility = 'visible';
       } catch (exception) {
         reject(exception);
       }
@@ -81,7 +84,7 @@ export default {
         surname: credentials.surname,
         email: credentials.email,
       }),
-      url: 'https://grakn-community-inviter.herokuapp.com/invite',
+      url: 'https://grakn.ai/invite/all',
     }).always((r) => {
       callbackFn(r);
     });

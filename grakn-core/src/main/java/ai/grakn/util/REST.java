@@ -56,10 +56,20 @@ public class REST {
         public static final String CONCEPT_ATTRIBUTES = "/kb/:keyspace/concept/:id/attributes";
         public static final String CONCEPT_KEYS = "/kb/:keyspace/concept/:id/keys";
         public static final String CONCEPT_RELATIONSHIPS = "/kb/:keyspace/concept/:id/relationships";
+
         public static final String TYPE_LABEL = "/kb/:keyspace/type/:label";
+        public static final String TYPE_SUBS = "/kb/:keyspace/type/:label/subs";
+        public static final String TYPE_PLAYS = "/kb/:keyspace/type/:label/plays";
+        public static final String TYPE_ATTRIBUTES = "/kb/:keyspace/type/:label/attributes";
+        public static final String TYPE_KEYS = "/kb/:keyspace/type/:label/keys";
         public static final String TYPE_INSTANCES = "/kb/:keyspace/type/:label/instances";
+
         public static final String RULE_LABEL = "/kb/:keyspace/rule/:label";
+        public static final String RULE_SUBS = "/kb/:keyspace/rule/:label/subs";
+
         public static final String ROLE_LABEL = "/kb/:keyspace/role/:label";
+        public static final String ROLE_SUBS = "/kb/:keyspace/role/:label/subs";
+
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
         /**

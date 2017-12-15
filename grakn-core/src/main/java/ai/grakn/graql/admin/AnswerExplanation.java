@@ -20,7 +20,6 @@ package ai.grakn.graql.admin;
 
 import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;
-import java.util.Set;
 
 /**
  *
@@ -42,12 +41,12 @@ public interface AnswerExplanation {
     AnswerExplanation setQuery(ReasonerQuery q);
 
     /**
-     * produce a new explanation with dependent answers provided
-     * @param answers dependent answers
+     * produce a new explanation with a provided parent answer
+     * @param ans parent answer
      * @return new explanation with dependent answers
      */
     @CheckReturnValue
-    AnswerExplanation withAnswers(Set<Answer> answers);
+    AnswerExplanation childOf(Answer ans);
 
     /**
      * @return query associated with this explanation
