@@ -53,9 +53,9 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 
-public class BenchmarkTests {
+public class BenchmarkIT {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkTests.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkIT.class);
 
     @ClassRule
     public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
