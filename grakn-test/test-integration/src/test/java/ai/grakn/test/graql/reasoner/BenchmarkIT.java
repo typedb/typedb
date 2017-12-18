@@ -90,8 +90,8 @@ public class BenchmarkIT {
         }
     }
 
-    private void loadRelations(String entityLabel, String fromRoleLabel, String toRoleLabel, String relationLabel, int N,
-                               GraknSession session, GraknClient graknClient, Keyspace keyspace){
+    private void loadRandomisedRelationInstances(String entityLabel, String fromRoleLabel, String toRoleLabel, String relationLabel, int N,
+                                                 GraknSession session, GraknClient graknClient, Keyspace keyspace){
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()) {
             GraknTx tx = session.open(GraknTxType.READ);
             Var entityVar = var().asUserDefined();
@@ -130,18 +130,18 @@ public class BenchmarkIT {
         final int M = N/5;
         loadOntology("multiJoin.gql", session);
         loadEntities("genericEntity", M, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "C2", M, session, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "C3", M, session, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "C4", M, session, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "D1", M, session, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "D2", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "C2", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "C3", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "C4", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "D1", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "D2", M, session, graknClient, keyspace);
     }
 
     private void loadTransitivityData(int N){
         final GraknClient graknClient = GraknClient.of(engine.uri());
         loadOntology("linearTransitivity.gql", session);
         loadEntities("a-entity", N, graknClient, keyspace);
-        loadRelations("a-entity", "Q-from", "Q-to", "Q", N, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("a-entity", "Q-from", "Q-to", "Q", N, session, graknClient, keyspace);
     }
 
     /**
@@ -180,6 +180,19 @@ public class BenchmarkIT {
         }
     }
 
+    /**
+     * Scalable multi-join test defined as a non-recursive tree of binary joins,
+     * which is expressed using the following inference rules:
+     *
+     * a(X,Y) :- b1(X,Z), b2(Z,Y).
+     * b1(X,Y) :- c1(X,Z), c2(Z,Y).
+     * b2(X,Y) :- c3(X,Z), c4(Z,Y).
+     * c1(X,Y) :- d1(X,Z), d2(Z,Y).
+     *
+     * The base relations, c2, c3, c4, d1 and d2 are randomly generated
+     * with 1/5 * N instances (reaching a total of N instances) each defined over 1/5 * N entities.
+     * The query is based on the final derived predicate.
+     */
     @Test
     public void testMultiJoin()  {
         final int N = 10000;
