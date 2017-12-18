@@ -227,7 +227,7 @@ public enum ErrorMessage {
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
-    INSTANCE_DOES_NOT_EXIST("Thing does not exist in the subgraph."),
+    INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
     ROLE_AND_RULE_DO_NOT_HAVE_INSTANCE("Role and rule do not have instances."),
     NO_PATH_EXIST("There is no path between the two instances."),
     MAX_ITERATION_REACHED("Max iteration of [%s] reached.");

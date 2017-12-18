@@ -32,6 +32,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
@@ -188,6 +189,10 @@ public class GraqlTest {
             Map<String, Set<String>> memberMap =
                     graph.graql().<ClusterQuery<Map<String, Set<String>>>>parse("compute cluster; members;").execute();
             assertTrue(memberMap.isEmpty());
+
+            Query<?> parsed = graph.graql().parse("compute cluster of V123;");
+            Query<?> expected = graph.graql().compute().cluster().of(ConceptId.of("V123"));
+            assertEquals(expected, parsed);
         }
     }
 
