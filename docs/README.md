@@ -38,10 +38,15 @@ You need to install the following dependencies to be able to build HTML pages in
     $ gem install rake
     ```
 
-With `rake` installed you can now install all other dependencies:
-```
-$ rake dependencies
-```
+    With `rake` installed you can now install all other dependencies:
+    ```
+    $ rake dependencies
+    ```
+
+3. NPM Modules; These are used to run the deployment server tests.
+    ```
+    $ npm i
+    ```
 
 ## Environment variables
 
@@ -95,8 +100,13 @@ $
 
 You can now view the documentation by navigating your web browser to `http://127.0.0.1:4005/`
 
-## Deployment
-Run the `deploy.sh` script after making changes. Deploys the application to our heroku server. Make sure you have the correct git credentials.
+## Deployment & Final Testing
+After you are done making changes, run the deployment server with ```node ./deploy-server.js``` to test how everything is going to look on releasing.
+You can access the site on `http://127.0.0.1:3003/`
+
+Run ```source ./deploy.sh``` from your __stable__ branch after the above testing step. The Script Deploys the application to our heroku server. Make sure you have the correct git credentials.
+
+If deploying from some other branch make sure to edit `deploy.sh` file to branch off accordingly.
 
 ## Tests
 
