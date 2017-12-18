@@ -26,12 +26,16 @@ and then searched for relationships joining two of them using:
 compute path from "id1" to "id2";
 ```
 
+There is an easier way to do this in dashboard: simply selecting the two entities, right-click on either of them, select `Shortest path`, then hit `Enter`.
+
+![Shortest path between people](/images/analytics_path_selecting_persons.png)
+
 You can see below that the two people selected are married.
 The path query uses a scalable shortest path algorithm to determine the smallest number of relationships required to get from once concept to the other.
 
 ![Shortest path between people](/images/analytics_path_marriage.png)
 
-### Subgraph
+## Subgraph
 
 If you are looking for more specific connections you can of course use the [subgraph](./overview) functionality.
 In the following query only the blood relationships (parent/child relationships) are investigated and the resulting knowledge base is shown below.
@@ -43,3 +47,16 @@ compute path from "id1" to "id2" in person, parentship;
 ```
 
 ![Shortest path between people](/images/analytics_path_parentship.png)
+
+## Finding all paths
+
+If you are looking for all the shortest paths between two entities, simply change `compute path` to `compute paths`.
+
+<!-- Ignoring because uses made-up IDs -->
+```graql-test-ignore
+compute paths from "id1" to "id2" in person, parentship;
+```
+
+Result:
+
+![Shortest path between people](/images/analytics_path_parentships.png)
