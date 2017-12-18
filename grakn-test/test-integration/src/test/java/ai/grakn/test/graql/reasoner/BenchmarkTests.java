@@ -90,8 +90,8 @@ public class BenchmarkTests {
         }
     }
 
-    private void loadRelations(String entityLabel, String fromRoleLabel, String toRoleLabel, String relationLabel, int N,
-                               GraknSession session, GraknClient graknClient, Keyspace keyspace){
+    private void loadRandomisedRelationInstances(String entityLabel, String fromRoleLabel, String toRoleLabel, String relationLabel, int N,
+                                                 GraknSession session, GraknClient graknClient, Keyspace keyspace){
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()) {
             GraknTx tx = session.open(GraknTxType.READ);
             Var entityVar = var().asUserDefined();
@@ -130,18 +130,18 @@ public class BenchmarkTests {
         final int M = N/5;
         loadOntology("multiJoin.gql", session);
         loadEntities("genericEntity", M, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "C2", M, session, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "C3", M, session, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "C4", M, session, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "D1", M, session, graknClient, keyspace);
-        loadRelations("genericEntity", "fromRole", "toRole", "D2", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "C2", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "C3", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "C4", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "D1", M, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "D2", M, session, graknClient, keyspace);
     }
 
     private void loadTransitivityData(int N){
         final GraknClient graknClient = new GraknClient(engine.uri());
         loadOntology("linearTransitivity.gql", session);
         loadEntities("a-entity", N, graknClient, keyspace);
-        loadRelations("a-entity", "Q-from", "Q-to", "Q", N, session, graknClient, keyspace);
+        loadRandomisedRelationInstances("a-entity", "Q-from", "Q-to", "Q", N, session, graknClient, keyspace);
     }
 
     /**
@@ -188,7 +188,6 @@ public class BenchmarkTests {
         loadJoinData(N);
 
         try(GraknTx tx = session.open(GraknTxType.READ)) {
-
             ConceptId entityId = tx.getEntityType("genericEntity").instances().findFirst().get().getId();
             String queryPattern = "(fromRole: $x, toRole: $y) isa A;";
             String queryString = "match " + queryPattern + " get;";
