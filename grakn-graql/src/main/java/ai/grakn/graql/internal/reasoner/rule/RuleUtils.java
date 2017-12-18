@@ -29,6 +29,7 @@ import ai.grakn.util.Schema;
 
 import com.google.common.base.Equivalence;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Stream;
@@ -81,31 +82,28 @@ public class RuleUtils {
      * @param graph of interest
      * @return true if the rule subgraph formed from provided rules contains loops
      */
-    public static boolean subGraphHasLoops(Set<InferenceRule> rules, GraknTx graph){
-        return rules.stream()
+    public static boolean subGraphIsCyclical(Set<InferenceRule> rules, GraknTx graph){
+        Iterator<Rule> ruleIterator = rules.stream()
                 .map(r -> graph.<Rule>getConcept(r.getRuleId()))
-                .flatMap(Rule::getConclusionTypes)
-                .distinct()
-                .filter(type -> type.getRulesOfHypothesis().findFirst().isPresent())
-                .findFirst().isPresent();
-    }
-
-    /**
-     * @param rules set of rules of interest forming a rule subgraph
-     * @param graph of interest
-     * @return true if the rule subgraph formed from provided rules contains loops with negative net flux (appears in more rule heads than bodies)
-     */
-    public static boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules, GraknTx graph){
-        return rules.stream()
-                .map(r -> graph.<Rule>getConcept(r.getRuleId()))
-                .flatMap(Rule::getConclusionTypes)
-                .distinct()
-                .filter(type -> {
-                    long outflux = type.getRulesOfHypothesis().count();
-                    long influx = type.getRulesOfConclusion().count();
-                    return outflux > 0 && influx > outflux;
-                })
-                .findFirst().isPresent();
+                .iterator();
+        boolean cyclical = false;
+        while (ruleIterator.hasNext() && !cyclical){
+            Set<Rule> visitedRules = new HashSet<>();
+            Stack<Rule> rulesToVisit = new Stack<>();
+            rulesToVisit.push(ruleIterator.next());
+            while(!rulesToVisit.isEmpty() && !cyclical) {
+                Rule rule = rulesToVisit.pop();
+                if (!visitedRules.contains(rule)){
+                    rule.getConclusionTypes()
+                            .flatMap(SchemaConcept::getRulesOfHypothesis)
+                            .forEach(rulesToVisit::add);
+                    visitedRules.add(rule);
+                } else {
+                    cyclical = true;
+                }
+            }
+        }
+        return cyclical;
     }
 
     /**

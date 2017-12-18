@@ -1,7 +1,6 @@
 ---
 title: Why use GRAKN.AI?
 keywords: advantages
-last_updated: January 2017
 summary: GRAKN.AI provides a flexible and rich data model, logical integrity, optimized and intelligent querying capabilities, and distributed analytics out-of-the-box.
 tags: [overview]
 sidebar: overview_sidebar
@@ -49,5 +48,5 @@ When you’re writing queries to execute on highly interconnected data, you usua
 
 > Grakn allows you to spend more time analysing your data and less time coding algorithms for analysis.
 
-Graql is also capable of performing distributed 
+Graql is also capable of performing distributed
 analytics as part of the language, which allows you to perform analytics over distributed data out of the box. These types of analytics are usually not possible without developing custom distributed algorithms that are unique to individual use cases. With Grakn, you can spend more time analysing your data, and less time coding the algorithm for analysis.

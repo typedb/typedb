@@ -18,7 +18,7 @@
 
 /* @flow */
 
-import { KEY_BASE_TYPE, RELATIONSHIP_TYPE, RELATIONSHIP, AT_ID, KEY_ID, conceptProperties, parseAttributes } from './APIUtils';
+import { KEY_BASE_TYPE, RELATIONSHIP, AT_ID, KEY_ID, conceptProperties, parseAttributes } from './APIUtils';
 
 
 /**
@@ -44,23 +44,13 @@ function flat(array) {
 function newNode(nodeObj:Object) {
   const properties = conceptProperties(nodeObj);
   // TODO: decide whether list attributes also on meta type node for now we just set empty array
-  const attributes = (('label' in nodeObj) || nodeObj.inferred) ? [] : nodeObj.attributes;
+  const attributes = (nodeObj.inferred) ? [] : nodeObj.attributes;
   const relationships = nodeObj.relationships || [];
   const roleplayers = nodeObj.roleplayers || [];
   const relates = nodeObj.relates || [];
   return Object.assign({}, properties, {
     attributes, relationships, roleplayers, relates,
   });
-}
-
-function populateRolesMap(nodes) {
-  const rolesMap = {};
-  nodes.forEach((node) => {
-    node.plays.forEach((roleUri) => {
-      rolesMap[roleUri] = ((rolesMap[roleUri]) ? rolesMap[roleUri] : []).concat(node.id);
-    });
-  });
-  return rolesMap;
 }
 
 function populateInstancesMap(nodes) {
@@ -73,13 +63,6 @@ function relationshipEdges(relationObj, instancesMap) {
   return relationObj.roleplayers
     .filter(player => (player.thing in instancesMap))
     .map(player => ({ from: relationObj.id, to: instancesMap[player.thing], label: player.role.split('/').pop() }))
-    .reduce(collect, []);
-}
-
-function relationshipTypeEdges(relationObj, rolesMap) {
-  return relationObj.relates
-    .filter(uri => (uri in rolesMap))
-    .flatMap(uri => rolesMap[uri].map(to => ({ from: relationObj.id, to, label: uri.split('/').pop() })))
     .reduce(collect, []);
 }
 
@@ -107,25 +90,16 @@ export default {
     // COMPUTE NODES
     const nodes = dataArray.map(x => newNode(x)).reduce(collect, []);
 
-    // COMPUTE EDGES IN SCHEMA: Relationship types have roles in the field 'relates'
-
-    // ( Helper map {roleURI:[nodeId..]} )
-    const rolesMap = populateRolesMap(dataArray.filter(node => node.plays));
-    const schemaEdges = dataArray
-      .filter(x => x[KEY_BASE_TYPE] === RELATIONSHIP_TYPE)
-      .map(x => relationshipTypeEdges(x, rolesMap))
-      .reduce(collect, []);
-
     // COMPUTE EDGES IN INSTANCES: Relationship instances have roles in the field 'roleplayers'
 
     // ( Helper map {nodeURI: nodeId} )
     const instancesMap = populateInstancesMap(dataArray);
-    const instanceEdges = dataArray
+    const edges = dataArray
       .filter(x => x[KEY_BASE_TYPE] === RELATIONSHIP)
       .map(x => relationshipEdges(x, instancesMap))
       .reduce(collect, []);
 
-    return { nodes, edges: schemaEdges.concat(instanceEdges) };
+    return { nodes, edges };
   },
   parseAttributes(data) { return parseAttributes(JSON.parse(data)); },
 };

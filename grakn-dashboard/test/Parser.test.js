@@ -232,5 +232,5 @@ test('Parse edges from Schema response', () => {
       },
     }];
   const parsed = Parser.parseResponse(schemaResponse);
-  expect(parsed.edges.length).toBe(4);
+  expect(parsed.nodes.length).toBe(2);
 });

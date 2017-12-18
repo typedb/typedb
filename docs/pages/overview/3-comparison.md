@@ -1,7 +1,6 @@
 ---
 title: Comparison with other Databases
 keywords: comparison
-last_updated: September 13, 2016
 summary: false
 tags: [overview]
 sidebar: overview_sidebar

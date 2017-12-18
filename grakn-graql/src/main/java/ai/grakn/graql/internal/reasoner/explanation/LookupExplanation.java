@@ -45,8 +45,8 @@ public class LookupExplanation extends Explanation {
     }
 
     @Override
-    public AnswerExplanation withAnswers(Set<Answer> answers) {
-        return new LookupExplanation(getQuery(), answers);
+    public AnswerExplanation childOf(Answer ans) {
+        return new LookupExplanation(getQuery(), ans.getExplanation().getAnswers());
     }
 
     @Override

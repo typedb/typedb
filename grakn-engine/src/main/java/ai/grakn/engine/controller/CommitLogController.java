@@ -27,11 +27,7 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import spark.Request;
-import spark.Response;
 import spark.Service;
 
 import javax.ws.rs.POST;
@@ -56,16 +52,12 @@ public class CommitLogController {
         this.manager = manager;
         this.postProcessor = postProcessor;
 
-        spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
+        spark.post(REST.WebPath.COMMIT_LOG_URI, (req, res) -> submitConcepts(req));
     }
 
     @POST
     @Path("/kb/{keyspace}/commit_log")
-    @ApiOperation(value = "Submits post processing jobs for a specific keyspace")
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = REST.Request.KEYSPACE_PARAM, value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path"),
-    })
-    private String submitConcepts(Request req, Response res) throws IOException {
+    private String submitConcepts(Request req) throws IOException {
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, REST.Request.KEYSPACE_PARAM));
 
         //TODO: Is this really necessary? Will it add that much overhead?
