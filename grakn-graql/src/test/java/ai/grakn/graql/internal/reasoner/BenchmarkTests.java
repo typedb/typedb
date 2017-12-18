@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.test.kbs.SimpleRuleChainKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.test.kbs.DiagonalKB;
@@ -46,6 +47,31 @@ public class BenchmarkTests {
     public static final SessionContext sessionContext = SessionContext.create();
 
     private static final Logger LOG = LoggerFactory.getLogger(BenchmarkTests.class);
+
+    /**
+     * Executes a scalability test defined in terms of number of rules in the system. Creates a simple rule chain:
+     *
+     * R_i(x, y) := R_{i-1}(x, y);     i e [1, N]
+     *
+     * with a single initial relation instance R_0(a ,b)
+     *
+     */
+    @Test
+    public void nonRecursiveChainOfRules() {
+        final int N = 100;
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
+        GraknTx tx = SimpleRuleChainKB.context(N).tx();
+
+        String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
+        String queryString = "match " + queryPattern + " get;";
+        String limitedQueryString = "match " +
+                queryPattern +
+                "limit 1;" +
+                "get;";
+
+        assertEquals(executeQuery(queryString, tx, "full").size(), 1);
+        assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), 1);
+    }
 
     /**
      * 2-rule transitive test with transitivity expressed in terms of two linear rules
