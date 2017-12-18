@@ -203,8 +203,6 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
     }
 
-    //TODO unrelated problem, will fix in another PR
-    @Ignore
     @Test //Expected result: The query should return 3 results: one for meta type, one for db, one for inferred type.
     public void queryingForGenericType_ruleDefinesNewType() {
         QueryBuilder qb = testSet2.tx().graql().infer(true);

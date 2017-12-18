@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary.type;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -39,9 +40,12 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -107,10 +111,24 @@ public class IsaAtom extends TypeAtom {
         return this;
     }
 
+    private ImmutableList<Type> inferPossibleEntityTypes(Answer sub){
+        if (getSchemaConcept() != null) return ImmutableList.of(this.getSchemaConcept().asType());
+        if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
+        return ImmutableList.copyOf(tx().admin().getMetaConcept().subs().iterator());
+    }
+
     @Override
     public IsaAtom inferTypes(Answer sub) {
         return this
                 .inferEntityType(sub);
+    }
+
+    @Override
+    public List<Atom> atomOptions(Answer sub) {
+        return this.inferPossibleEntityTypes(sub).stream()
+                .map(this::addType)
+                .sorted(Comparator.comparing(Atom::isRuleResolvable))
+                .collect(Collectors.toList());
     }
 
     @Override
