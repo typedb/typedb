@@ -30,4 +30,4 @@ Start GRAKN and open the graph visualiser (you do not remember how? Head back to
   ![Academy Schema](/images/academy/3-schema/academy-schema.png)
 
 ## What you have learned so far and where to go next
-In this module you have learned how to model and write a GRAKN schema. Give yourself a pat on the back, because you are now well equipped to design a GRAKN knowledge base. [Next step](./loading-file.html) is to add some meat, i.e. learn to load the file you have composed and add data to the knowledge base. If you want to know about GRAKN data model or GRAKN schemas, as always, head to the [docs](../index.html).
+In this module you have learned how to model and write a GRAKN schema. Give yourself a pat on the back, because you are now well equipped to design a GRAKN knowledge base. [Next step](./loading-files.html) is to add some meat, i.e. learn to load the file you have composed and add data to the knowledge base. If you want to know about GRAKN data model or GRAKN schemas, as always, head to the [docs](../index.html).

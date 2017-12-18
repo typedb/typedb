@@ -56,7 +56,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testRandomSetLinearTransitivity()  {
-        final int N = 1000;
+        final int N = 200;
         final int limit = 100;
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         SampleKBContext kb = RandomLinearTransitivityKB.context(N);
@@ -105,7 +105,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveMatrixLinear()  {
-        final int N = 20;
+        final int N = 10;
         final int limit = 100;
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
 

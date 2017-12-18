@@ -1,7 +1,7 @@
 ---
 title: Contribute to GRAKN.AI
 keywords: contributors, developers
-last_updated: March 2017
+
 summary: This is an area for documentation specific to contributors working on the GRAKN.AI platform, documentation or examples.
 tags: [overview]
 sidebar: contributors_sidebar

@@ -66,6 +66,7 @@ import java.util.stream.Collectors;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -84,8 +85,10 @@ public class ConceptControllerTest {
     private static RelationshipType relationshipTypeWrapper;
     private static Relationship relationshipWrapper;
     private static EntityType entityTypeWrapper;
+    private static EntityType entityTypeSubWrapper;
     private static Entity entityWrapper;
     private static AttributeType attributeTypeWrapper;
+    private static AttributeType attributeTypeKeyWrapper;
     private static Attribute attributeWrapper1;
     private static Attribute attributeWrapper2;
     private static Rule ruleWrapper;
@@ -115,8 +118,12 @@ public class ConceptControllerTest {
             ai.grakn.concept.Attribute attribute1 = attributeType.putAttribute("An attribute 1");
             ai.grakn.concept.Attribute attribute2 = attributeType.putAttribute("An attribute 2");
 
-            ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).attribute(attributeType);
-            entity = entityType.addEntity().attribute(attribute1).attribute(attribute2);
+            ai.grakn.concept.AttributeType attributeTypeKey = tx.putAttributeType("My Key Attribute Type", ai.grakn.concept.AttributeType.DataType.STRING);
+            ai.grakn.concept.Attribute key = attributeTypeKey.putAttribute("An attribute Key 1");
+
+            ai.grakn.concept.EntityType entityType = tx.putEntityType("My Special Entity Type").plays(role1).plays(role2).attribute(attributeType).key(attributeTypeKey);
+            ai.grakn.concept.EntityType entityTypeSub = tx.putEntityType("My Special Sub Entity Type").sup(entityType);
+            entity = entityType.addEntity().attribute(attribute1).attribute(attribute2).attribute(key);
 
             ai.grakn.concept.RelationshipType relationshipType = tx.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
             ai.grakn.concept.Relationship relationship = relationshipType.addRelationship().addRolePlayer(role1, entity).addRolePlayer(role2, entity);
@@ -133,9 +140,11 @@ public class ConceptControllerTest {
             relationshipWrapper = ConceptBuilder.build(relationship);
 
             entityTypeWrapper = ConceptBuilder.build(entityType);
+            entityTypeSubWrapper = ConceptBuilder.build(entityTypeSub);
             entityWrapper = ConceptBuilder.build(entity);
 
             attributeTypeWrapper = ConceptBuilder.build(attributeType);
+            attributeTypeKeyWrapper = ConceptBuilder.build(attributeTypeKey);
             attributeWrapper1 = ConceptBuilder.build(attribute1);
             attributeWrapper2 = ConceptBuilder.build(attribute2);
 
@@ -171,6 +180,44 @@ public class ConceptControllerTest {
     }
 
     @Test
+    public void whenGettingSubsOfSchemaConcept_EnsureSubsAreReturned() throws IOException {
+        Response response = RestAssured.when().get(entityTypeWrapper.subs().id());
+        assertEquals(SC_OK, response.getStatusCode());
+
+        List<EntityType> subs = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<EntityType>>(){});
+        assertThat(subs, containsInAnyOrder(entityTypeWrapper, entityTypeSubWrapper));
+    }
+
+    @Test
+    public void whenGettingPlaysOfType_EnsurePlaysAreReturned() throws IOException {
+        Response response = RestAssured.when().get(entityTypeWrapper.plays().id());
+        assertEquals(SC_OK, response.getStatusCode());
+
+        List<Role> plays = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<Role>>(){});
+        assertEquals(4, plays.size());
+        assertTrue(plays.contains(roleWrapper1));
+        assertTrue(plays.contains(roleWrapper2));
+    }
+
+    @Test
+    public void whenGettingAttributesOfType_EnsureAttributesAreReturned() throws IOException {
+        Response response = RestAssured.when().get(entityTypeWrapper.attributes().id());
+        assertEquals(SC_OK, response.getStatusCode());
+
+        List<AttributeType> attributes = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<AttributeType>>(){});
+        assertThat(attributes, containsInAnyOrder(attributeTypeWrapper, attributeTypeKeyWrapper));
+    }
+
+    @Test
+    public void whenGettingKeysOfType_EnsureAttributesAreReturned()throws IOException {
+        Response response = RestAssured.when().get(entityTypeWrapper.keys().id());
+        assertEquals(SC_OK, response.getStatusCode());
+
+        List<AttributeType> keys = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<AttributeType>>(){});
+        assertThat(keys, containsInAnyOrder(attributeTypeKeyWrapper));
+    }
+
+    @Test
     public void whenGettingAttributesOfConcept_EnsureEmbeddedAttributesAreReturned() throws IOException {
         //Get the attributes we expect
         List<EmbeddedAttribute> expectedAttributes;
@@ -191,7 +238,7 @@ public class ConceptControllerTest {
     @Test
     public void whenGettingTypesInstances_EnsureInstancesAreReturned() throws JsonProcessingException {
         //TODO: Same as below get jackson to deserialise via a child constructor
-        String request = REST.resolveTemplate(REST.WebPath.TYPE_INSTANCES, keyspace.getValue(), entityTypeWrapper.label().getValue());
+        String request = entityTypeWrapper.instances().id();
         Response response = RestAssured.when().get(request);
         assertEquals(SC_OK, response.getStatusCode());
 
