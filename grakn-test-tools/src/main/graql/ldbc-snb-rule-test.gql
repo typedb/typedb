@@ -1,4 +1,4 @@
-insert
+define
 
 rule-1 sub rule,
 when {$x isa person;
@@ -8,20 +8,20 @@ $y isa product;$y has name 'Nocturnes';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-2 sub rule,
-#when {$x isa person;
-#$t isa tag;$t has name 'Roger Waters';
-#($x, $t) isa tagging;
-#$y isa tag;$y has name 'Pink Floyd';
-#},
-#then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
+rule-2 sub rule,
+when {$x isa person;
+$t isa tag;$t has name 'Roger Waters';
+($x, $t) isa tagging;
+$y isa tag;$y has name 'Pink Floyd';
+},
+then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#rule-3 sub rule,
-#when {$x isa person;
-#$x has gender 'male';$x has age >=18;
-#$y isa product;$y has min-age >=18;
-#$z isa country;$z has name 'Italy';
-#($y, $z) isa made-in;
-#},
-#then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
+rule-3 sub rule,
+when {$x isa person;
+$x has gender 'male';$x has age >=18;
+$y isa product;$y has min-age >=18;
+$z isa country;$z has name 'Italy';
+($y, $z) isa made-in;
+},
+then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 

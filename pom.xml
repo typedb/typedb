@@ -25,7 +25,7 @@
     <groupId>ai.grakn</groupId>
     <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <name>Grakn</name>
     <description>A distributed semantic graph database.</description>
     <url>https://grakn.ai/pages/platform/index.html</url>
@@ -44,6 +44,7 @@
         <module>grakn-client</module>
         <module>grakn-test-tools</module>
         <module>grakn-module-sdk</module>
+        <module>grakn-bootup</module>
     </modules>
 
     <properties>
@@ -68,7 +69,6 @@
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
-        <swagger.version>1.5.16</swagger.version>
         <websocket.version>1.1</websocket.version>
         <jetty.version>9.3.6.v20151106</jetty.version>
         <mjson.version>1.4.0</mjson.version>
@@ -210,12 +210,12 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-core</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-kb</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>javax.servlet</artifactId>
@@ -230,7 +230,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>slf4j-api</artifactId>
@@ -241,7 +241,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>janus-factory</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -265,12 +265,12 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-module-sdk</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-client</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -281,7 +281,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-engine</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -292,37 +292,37 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql-shell</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-base</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-sql</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-xml</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-csv</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-json</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-export</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -511,7 +511,6 @@
                 <artifactId>jooq</artifactId>
                 <version>${jool.version}</version>
             </dependency>
-
             <dependency>
                 <artifactId>jackson-databind</artifactId>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -695,25 +694,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.swagger</groupId>
-                <artifactId>swagger-jersey2-jaxrs</artifactId>
-                <version>${swagger.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-annotations</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>joda-time</groupId>
-                        <artifactId>joda-time</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.datatype</groupId>
-                        <artifactId>jackson-datatype-joda</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
                 <groupId>com.sun.jersey</groupId>
                 <artifactId>jersey-client</artifactId>
                 <version>${jersey.version}</version>
@@ -880,7 +860,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-test-tools</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
                 <scope>test</scope>
             </dependency>
 
@@ -945,6 +925,12 @@
                 <version>${systen-rules.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>ai.grakn</groupId>
+                <artifactId>grakn-bootup</artifactId>
+                <version>1.1.0-SNAPSHOT</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
     <dependencies>

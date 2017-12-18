@@ -59,8 +59,8 @@ public class Explanation implements AnswerExplanation {
     }
 
     @Override
-    public AnswerExplanation withAnswers(Set<Answer> answers) {
-        return new Explanation(getQuery(), answers);
+    public AnswerExplanation childOf(Answer ans) {
+        return new Explanation(getQuery(), ans.getExplanation().getAnswers());
     }
 
     @Override

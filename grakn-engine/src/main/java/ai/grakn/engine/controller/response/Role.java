@@ -50,8 +50,8 @@ public abstract class Role extends SchemaConcept{
             @JsonProperty("@id") Link selfLink,
             @JsonProperty("label") Label label,
             @JsonProperty("implicit") Boolean implicit,
-            @JsonProperty("super") @Nullable Link sup,
-            @JsonProperty("subs") Set<Link> subs,
+            @JsonProperty("super") @Nullable EmbeddedSchemaConcept sup,
+            @JsonProperty("subs") Link subs,
             @JsonProperty("relationships") Set<Link> relationships,
             @JsonProperty("roleplayers") Set<Link> roleplayers){
         return new AutoValue_Role(Schema.BaseType.ROLE.name(), id, selfLink, label, implicit, sup, subs, relationships, roleplayers);

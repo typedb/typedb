@@ -1,7 +1,7 @@
 ---
 title: Code of Conduct
 keywords: contributors
-last_updated: March 2017
+
 summary: This is the code of conduct for everyone working with GRAKN.AI
 tags: [overview]
 sidebar: contributors_sidebar

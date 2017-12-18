@@ -1,7 +1,7 @@
 ---
 title: Contributor FAQ
 keywords: contributors
-last_updated: March 2017
+
 summary: This is an FAQ for developers working on the GRAKN.AI platform
 tags: [overview]
 sidebar: contributors_sidebar
