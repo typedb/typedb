@@ -62,7 +62,6 @@ import static org.mockito.Mockito.mock;
  * @author Felix Chapman
  */
 public class SystemControllerTest {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
@@ -133,9 +132,7 @@ public class SystemControllerTest {
 
     @Test
     public void whenInitiallyCallingKBEndpoint_GetEmptyList() throws IOException {
-        String content = when().get("/kb").thenReturn().body().asString();
-        Keyspaces keyspaces = objectMapper.readValue(content, Keyspaces.class);
-        assertThat(keyspaces.keyspaces(), empty());
+        when().get("/kb").then().body("keyspaces", empty());
     }
 
     @Test
