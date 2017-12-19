@@ -31,7 +31,7 @@ There is an easier way to do this in dashboard: simply selecting the two entitie
 ![Shortest path between people](/images/analytics_path_selecting_persons.png)
 
 You can see below that the two people selected are married.
-The path query uses a scalable shortest path algorithm to determine the smallest number of relationships required to get from once concept to the other.
+The path query uses a scalable shortest path algorithm to determine the smallest number of relationships required to get from one concept to the other.
 
 ![Shortest path between people](/images/analytics_path_marriage.png)
 
@@ -57,6 +57,6 @@ If you are looking for all the shortest paths between two entities, simply chang
 compute paths from "id1" to "id2" in person, parentship;
 ```
 
-Result:
+You can see below that there are two paths.
 
 ![Shortest path between people](/images/analytics_path_parentships.png)
