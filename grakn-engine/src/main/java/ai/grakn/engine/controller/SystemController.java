@@ -25,6 +25,7 @@ import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.response.Keyspace;
 import ai.grakn.engine.controller.response.Keyspaces;
+import ai.grakn.engine.controller.response.Root;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.GraknVersion;
@@ -101,6 +102,10 @@ public class SystemController {
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
 
+        // Handle root here for JSON, otherwise redirect to HTML page
+        spark.get(REST.WebPath.ROOT, APPLICATION_JSON, this::getRoot);
+        spark.redirect.any(REST.WebPath.ROOT, "/page.html");
+
         spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
         spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
         spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
@@ -119,6 +124,14 @@ public class SystemController {
                         durationUnit,
                         showSamples,
                         filter));
+    }
+
+    @GET
+    @Path(REST.WebPath.ROOT)
+    private String getRoot(Request request, Response response) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+        Root root = Root.create();
+        return objectMapper.writeValueAsString(root);
     }
 
     @GET

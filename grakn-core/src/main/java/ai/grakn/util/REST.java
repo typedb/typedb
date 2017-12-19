@@ -36,6 +36,8 @@ public class REST {
      */
     public static class WebPath{
 
+        public static final String ROOT = "/";
+
         /**
          * Keyspace Specific Operations
          */
