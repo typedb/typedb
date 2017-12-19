@@ -304,6 +304,10 @@ class QueryVisitor extends GraqlBaseVisitor {
     public ClusterQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
         ClusterQuery<?> cluster = queryBuilder.compute().cluster();
 
+        if (ctx.id() != null) {
+            cluster = cluster.of(visitId(ctx.id()));
+        }
+
         if (ctx.inList() != null) {
             cluster = cluster.in(visitInList(ctx.inList()));
         }
