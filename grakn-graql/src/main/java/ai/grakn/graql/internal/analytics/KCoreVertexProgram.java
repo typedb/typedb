@@ -102,7 +102,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     public void setup(final Memory memory) {
         LOGGER.debug("KCoreVertexProgram Started !!!!!!!!");
 
-        // K_CORE_STABLE is true by fault, and we reset it after each odd iteration.
+        // K_CORE_STABLE is true by default, and we reset it after each odd iteration.
         memory.set(K_CORE_STABLE, false);
         memory.set(K_CORE_EXIST, false);
         memory.set(VOTE_TO_HALT, true);
@@ -140,6 +140,8 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                         }
                     }
                 } else {
+                    // relay message through relationship vertices in even iterations
+                    // send message from regular entities in odd iterations
                     if (memory.getIteration() % 2 == 0) {
                         relayOrSaveMessages(vertex, messenger);
                     } else {
