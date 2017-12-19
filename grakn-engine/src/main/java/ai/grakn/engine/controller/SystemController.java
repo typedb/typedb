@@ -171,6 +171,7 @@ public class SystemController {
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         systemKeyspace.openKeyspace(keyspace);
         response.status(HttpServletResponse.SC_OK);
+        response.type(APPLICATION_JSON);
         return objectMapper.writeValueAsString(config);
     }
 

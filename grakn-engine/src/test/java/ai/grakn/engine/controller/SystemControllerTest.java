@@ -145,7 +145,10 @@ public class SystemControllerTest {
 
     @Test
     public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() throws JsonProcessingException {
-        when().put("/kb/myks").then().statusCode(SC_OK).body(is(new ObjectMapper().writeValueAsString(config)));
+        when().put("/kb/myks").then()
+                .statusCode(SC_OK)
+                .contentType(ContentType.JSON)
+                .body(is(new ObjectMapper().writeValueAsString(config)));
     }
 
     @Test
