@@ -16,11 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist;
+package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.bootup.AbstractProcessHandler;
-import ai.grakn.engine.Grakn;
+
+import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.grakn_pid.GraknPid;
 import ai.grakn.util.REST;

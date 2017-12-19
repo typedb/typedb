@@ -16,23 +16,15 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist;
+package ai.grakn.bootup.graknengine.grakn_pid;
 
 /**
  *
- * @author Michele Orsi
+ * An interface to be implemented by class who is responsible for retrieving the process id of Grakn
+ *
+ * @author Ganeshwara Herawan Hananda
+ *
  */
-interface ProcessHandler {
-
-    void start();
-
-    void stop();
-
-    void status();
-
-    void statusVerbose();
-
-    void clean();
-
-    boolean isRunning();
+public interface GraknPidRetriever {
+    long getPid();
 }

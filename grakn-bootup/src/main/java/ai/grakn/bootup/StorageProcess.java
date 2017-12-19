@@ -16,10 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist;
-
-import ai.grakn.bootup.AbstractProcessHandler;
-import ai.grakn.bootup.OutputCommand;
+package ai.grakn.bootup;
 
 import java.io.File;
 import java.io.IOException;
