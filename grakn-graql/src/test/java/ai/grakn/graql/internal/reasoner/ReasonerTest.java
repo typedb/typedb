@@ -482,6 +482,7 @@ public class ReasonerTest {
         GetQuery query = qb.infer(true).parse(queryString);
         GetQuery query2 = qb.infer(true).materialise(true).parse(queryString);
         GetQuery query3 = qb.infer(false).parse(queryString2);
+
         assertQueriesEqual(query, query2);
         assertQueriesEqual(query2, query3);
     }

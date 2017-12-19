@@ -33,6 +33,10 @@
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
+            <artifactId>grakn-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
             <artifactId>grakn-kb</artifactId>
         </dependency>
         <dependency>
@@ -44,17 +48,8 @@
             <artifactId>annotations</artifactId>
         </dependency>
         <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math3</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
