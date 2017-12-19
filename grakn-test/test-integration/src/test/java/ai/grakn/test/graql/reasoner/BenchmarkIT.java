@@ -53,9 +53,9 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 
-public class BenchmarkTests {
+public class BenchmarkIT {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkTests.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkIT.class);
 
     @ClassRule
     public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
@@ -180,6 +180,19 @@ public class BenchmarkTests {
         }
     }
 
+    /**
+     * Scalable multi-join test defined as a non-recursive tree of binary joins,
+     * which is expressed using the following inference rules:
+     *
+     * a(X,Y) :- b1(X,Z), b2(Z,Y).
+     * b1(X,Y) :- c1(X,Z), c2(Z,Y).
+     * b2(X,Y) :- c3(X,Z), c4(Z,Y).
+     * c1(X,Y) :- d1(X,Z), d2(Z,Y).
+     *
+     * The base relations, c2, c3, c4, d1 and d2 are randomly generated
+     * with 1/5 * N instances (reaching a total of N instances) each defined over 1/5 * N entities.
+     * The query is based on the final derived predicate.
+     */
     @Test
     public void testMultiJoin()  {
         final int N = 10000;
@@ -188,6 +201,7 @@ public class BenchmarkTests {
         loadJoinData(N);
 
         try(GraknTx tx = session.open(GraknTxType.READ)) {
+
             ConceptId entityId = tx.getEntityType("genericEntity").instances().findFirst().get().getId();
             String queryPattern = "(fromRole: $x, toRole: $y) isa A;";
             String queryString = "match " + queryPattern + " get;";

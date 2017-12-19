@@ -1,3 +1,21 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
@@ -11,6 +29,16 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.test.rule.SampleKBContext;
 import java.util.function.Consumer;
 
+/**
+ * Defines a scalability test defined in terms of number of rules in the system. Creates a simple rule chain:
+ *
+ * R_i(x, y) := R_{i-1}(x, y);     i e [1, N]
+ *
+ * with a single initial relation instance R_0(a ,b).
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class SimpleRuleChainKB extends TestKB {
     private final int N;
 
