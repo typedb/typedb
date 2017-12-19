@@ -122,6 +122,16 @@ public class SystemControllerTest {
     }
 
     @Test
+    public void whenCallingKbEndpoint_ReturnIdLinkToSelf() {
+        when().get("/kb").then().body("@id", is("/kb"));
+    }
+
+    @Test
+    public void whenCallingKbEndpoint_ReturnLinkToPutANewKeyspace() {
+        when().get("/kb").then().body("keyspace", is("/kb/{keyspace}"));
+    }
+
+    @Test
     public void whenInitiallyCallingKBEndpoint_GetEmptyList() throws IOException {
         String content = when().get("/kb").thenReturn().body().asString();
         Keyspaces keyspaces = objectMapper.readValue(content, Keyspaces.class);
