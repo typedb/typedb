@@ -18,12 +18,20 @@
 
 package ai.grakn.graql.internal.reasoner;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.kbs.SimpleRuleChainKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.test.kbs.DiagonalKB;
@@ -58,19 +66,74 @@ public class BenchmarkTests {
      */
     @Test
     public void nonRecursiveChainOfRules() {
-        final int N = 100;
+        final int N = 200;
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
-        GraknTx tx = SimpleRuleChainKB.context(N).tx();
 
-        String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
-        String queryString = "match " + queryPattern + " get;";
-        String limitedQueryString = "match " +
-                queryPattern +
-                "limit 1;" +
-                "get;";
+        GraknSession graknSession = sessionContext.newSession();
 
-        assertEquals(executeQuery(queryString, tx, "full").size(), 1);
-        assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), 1);
+        //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
+        try(GraknTx tx = graknSession.open(GraknTxType.WRITE)) {
+            Role fromRole = tx.putRole("fromRole");
+            Role toRole = tx.putRole("toRole");
+
+            RelationshipType relation0 = tx.putRelationshipType("relation0")
+                    .relates(fromRole)
+                    .relates(toRole);
+
+            for (int i = 1; i <= N; i++) {
+                tx.putRelationshipType("relation" + i)
+                        .relates(fromRole)
+                        .relates(toRole);
+            }
+            EntityType genericEntity = tx.putEntityType("genericEntity")
+                    .plays(fromRole)
+                    .plays(toRole);
+
+            Entity fromEntity = genericEntity.addEntity();
+            Entity toEntity = genericEntity.addEntity();
+
+            relation0.addRelationship()
+                    .addRolePlayer(fromRole, fromEntity)
+                    .addRolePlayer(toRole, toEntity);
+
+            for (int i = 1; i <= N; i++) {
+                Var fromVar = Graql.var().asUserDefined();
+                Var toVar = Graql.var().asUserDefined();
+                VarPattern rulePattern = Graql
+                        .label("rule" + i)
+                        .sub("rule")
+                        .when(
+                                Graql.and(
+                                        Graql.var()
+                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
+                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .isa("relation" + (i - 1))
+                                )
+                        )
+                        .then(
+                                Graql.and(
+                                        Graql.var()
+                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
+                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .isa("relation" + i)
+                                )
+                        );
+                tx.graql().define(rulePattern).execute();
+            }
+            tx.commit();
+        }
+
+        try( GraknTx tx = graknSession.open(GraknTxType.READ)) {
+            String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
+            String queryString = "match " + queryPattern + " get;";
+            String limitedQueryString = "match " +
+                    queryPattern +
+                    "limit 1;" +
+                    "get;";
+
+            assertEquals(executeQuery(queryString, tx, "full").size(), 1);
+            assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), 1);
+        }
     }
 
     /**
