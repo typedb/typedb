@@ -439,8 +439,12 @@ parameters:
 definitions:
   Root:
     type: object
-    required: [keyspaces]
+    required: ['@id', keyspaces]
     properties:
+      '@id':
+        type: string
+        format: uri
+        example: /
       keyspaces:
         $ref: '#/definitions/KnowledgeBasesLink'
   KnowledgeBasesLink:
