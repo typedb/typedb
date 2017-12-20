@@ -33,12 +33,15 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Common utility methods used within Grakn.
@@ -69,6 +72,10 @@ public class CommonUtil {
      */
     public static <T> Stream<T> optionalToStream(Optional<T> optional) {
         return optional.map(Stream::of).orElseGet(Stream::empty);
+    }
+
+    public static <T> Stream<T> stream(Iterator<T> iterator) {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
     }
 
     @SafeVarargs

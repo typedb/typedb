@@ -30,6 +30,7 @@ import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.response.EmbeddedAttribute;
 import ai.grakn.engine.controller.response.Link;
+import ai.grakn.engine.controller.response.ListResource;
 import ai.grakn.engine.controller.response.RolePlayer;
 import ai.grakn.engine.controller.response.Things;
 import ai.grakn.engine.controller.util.Requests;
@@ -43,8 +44,8 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -214,14 +215,14 @@ public class ConceptController {
     }
 
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
-        Requests.validateRequest(request, APPLICATION_ALL);
+        Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getSchemaConcept(label));
     }
 
     private String getConceptById(Request request, Response response) throws JsonProcessingException {
-        Requests.validateRequest(request, APPLICATION_ALL);
+        Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getConcept(conceptId));
@@ -245,26 +246,30 @@ public class ConceptController {
     }
 
     private String getTypes(Request request, Response response) throws JsonProcessingException {
-        return getConcepts(request, response, (tx) -> tx.admin().getMetaConcept().subs());
+        return getConcepts(request, response, "types", (tx) -> tx.admin().getMetaConcept().subs());
     }
 
     private String getRules(Request request, Response response) throws JsonProcessingException {
-        return getConcepts(request, response, (tx) -> tx.admin().getMetaRule().subs());
+        return getConcepts(request, response, "rules", (tx) -> tx.admin().getMetaRule().subs());
     }
 
     private String getRoles(Request request, Response response) throws JsonProcessingException {
-        return getConcepts(request, response, (tx) -> tx.admin().getMetaRole().subs());
+        return getConcepts(request, response, "roles", (tx) -> tx.admin().getMetaRole().subs());
     }
 
-    private String getConcepts(Request request, Response response, Function<GraknTx, Stream<? extends ai.grakn.concept.Concept>>getter) throws JsonProcessingException {
+    private String getConcepts(
+            Request request, Response response, String key,
+            Function<GraknTx, Stream<? extends ai.grakn.concept.Concept>> getter
+    ) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
 
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
-            Set<Concept> concepts = getter.apply(tx).map(ConceptBuilder::<Concept>build).collect(Collectors.toSet());
+            List<Concept> concepts = getter.apply(tx).map(ConceptBuilder::<Concept>build).collect(Collectors.toList());
+            ListResource list = ListResource.create(Requests.selfLink(request), key, concepts);
             response.status(SC_OK);
-            return objectMapper.writeValueAsString(concepts);
+            return objectMapper.writeValueAsString(list);
         }
     }
 
