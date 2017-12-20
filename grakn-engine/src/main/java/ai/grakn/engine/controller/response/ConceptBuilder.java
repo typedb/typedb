@@ -64,7 +64,7 @@ public class ConceptBuilder {
      * @return The wrapper of the {@link ai.grakn.concept.Thing}s
      */
     public static Things buildThings(ai.grakn.concept.Type type, int offset, int limit){
-        Link selfLink = Link.createInstanceLink(type);
+        Link selfLink = Link.createInstanceLink(type, offset, limit);
 
         Link previous = null;
 

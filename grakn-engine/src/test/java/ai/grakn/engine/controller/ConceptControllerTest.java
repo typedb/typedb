@@ -473,6 +473,16 @@ public class ConceptControllerTest {
         RestAssured.when().get(instancesLink).then().body("$", not(hasKey("next")));
     }
 
+    @Test
+    public void whenCallingInstancesEndpoint_ReturnIdLinkToSelf() {
+        String link =
+                "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.THING.getLabel().getValue() + "/instances";
+
+        RestAssured
+                .given().param("limit", 100).param("offset", 150).get(link)
+                .then().body("@id", anyOf(is(link + "?limit=100&offset=150"), is(link + "?offset=150&limit=100")));
+    }
+
     //We can't use the class of the wrapper because it will be an AutoValue class
     private static void assertExists(Concept wrapper, Class clazz) throws IOException {
         String request = wrapper.selfLink().id();
