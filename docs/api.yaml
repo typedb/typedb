@@ -255,7 +255,7 @@ paths:
             $ref: '#/definitions/Plays'
         404:
           description: ''
-  /kb/{keyspace}/type/{label}/atributes:
+  /kb/{keyspace}/type/{label}/attributes:
     get:
       summary: Get Attributes
       tags: [Concepts]
@@ -369,16 +369,6 @@ paths:
             $ref: '#/definitions/SubRules'
         404:
           description: ''
-  /configuration:
-    get:
-      summary: Get Configuration
-      tags: [Internal]
-      produces: [application/json]
-      responses:
-        200:
-          description: ''
-          schema:
-            $ref: '#/definitions/Configuration'
   /status:
     get:
       summary: Get Status
@@ -703,7 +693,7 @@ definitions:
           instances:
             $ref: '#/definitions/InstancesLink'
           'base-type':
-            enum: ['ENTITY_TYPE', 'RELATIONSHIP_TYPE', 'ATTRIBUTE_TYPE']
+            enum: ['TYPE', 'ENTITY_TYPE', 'RELATIONSHIP_TYPE', 'ATTRIBUTE_TYPE']
   InstancesLink:
     type: string
     format: uri
