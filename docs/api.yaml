@@ -215,12 +215,8 @@ paths:
       parameters:
       - $ref: '#/parameters/keyspace'
       - $ref: '#/parameters/label'
-      - name: limit
-        in: query
-        type: number
-      - name: offset
-        in: query
-        type: number
+      - $ref: '#/parameters/limit'
+      - $ref: '#/parameters/offset'
       produces: [application/json]
       responses:
         200:
@@ -436,6 +432,14 @@ parameters:
 #   For OpenAPI 3.0
 #   schema:
 #     $ref: '#/definitions/Label'
+  limit:
+    name: limit
+    in: query
+    type: number
+  offset:
+    name: offset
+    in: query
+    type: number
 definitions:
   Root:
     type: object
