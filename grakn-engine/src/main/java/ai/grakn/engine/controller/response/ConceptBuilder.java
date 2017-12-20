@@ -24,6 +24,7 @@ import ai.grakn.graql.internal.reasoner.utils.conversion.ConceptConverter;
 import ai.grakn.util.Schema;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -64,15 +65,23 @@ public class ConceptBuilder {
      */
     public static Things buildThings(ai.grakn.concept.Type type, int offset, int limit){
         Link selfLink = Link.createInstanceLink(type);
-        Link next = Link.createInstanceLink(type, offset + limit, limit);
 
-        int previousIndex = offset - limit;
-        if(previousIndex < 0) previousIndex = 0;
-        Link previous = Link.createInstanceLink(type, previousIndex, limit);
+        Link previous = null;
+
+        if (offset != 0) {
+            int previousIndex = offset - limit;
+            if (previousIndex < 0) previousIndex = 0;
+            previous = Link.createInstanceLink(type, previousIndex, limit);
+        }
 
         //TODO: This does not actually scale. The DB is still read in this instance
-        Set<Thing> things = type.instances().skip(offset).limit(limit).
-                map(ConceptBuilder::buildThing).collect(Collectors.toSet());
+        List<Thing> things = type.instances().skip(offset).limit(limit + 1).
+                map(ConceptBuilder::buildThing).collect(Collectors.toList());
+
+        // We get one extra instance and then remove it so we can sneakily check if there is a next page
+        boolean hasNextPage = things.size() == limit + 1;
+        Link next = hasNextPage ? Link.createInstanceLink(type, offset + limit, limit) : null;
+        if (things.size() == limit + 1) things.remove(things.size() - 1);
 
         return Things.create(selfLink, things, next, previous);
     }

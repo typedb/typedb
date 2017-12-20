@@ -70,9 +70,12 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -233,7 +236,7 @@ public class ConceptControllerTest {
 
         //Ask the controller for the attributes
         String request = entityWrapper.attributes().id();
-        Response response = RestAssured.when().get(request).prettyPeek();
+        Response response = RestAssured.when().get(request);
         assertEquals(SC_OK, response.getStatusCode());
 
         EmbeddedAttribute[] attributes = response.jsonPath().getObject("attributes", EmbeddedAttribute[].class);
@@ -249,7 +252,7 @@ public class ConceptControllerTest {
 
         //Hacky way to check if instance is embedded
         String instance = new ObjectMapper().writeValueAsString(entityWrapper);
-        assertTrue(response.body().asString().contains(instance));
+        response.then().body(containsString(instance));
     }
 
     @Test
@@ -436,10 +439,10 @@ public class ConceptControllerTest {
         String instancesLink =
                 "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.THING.getLabel().getValue() + "/instances";
 
-        String nextLink = RestAssured.get(instancesLink).jsonPath().getString("next");
+        String nextLink = RestAssured.given().param("limit", 2).get(instancesLink).jsonPath().getString("next");
 
         assertThat(nextLink, startsWith(instancesLink));
-        assertThat(nextLink, anyOf(endsWith("?limit=100&offset=100"), endsWith("?offset=100&limit=100")));
+        assertThat(nextLink, anyOf(endsWith("?limit=2&offset=2"), endsWith("?offset=2&limit=2")));
     }
 
     @Test
@@ -448,10 +451,26 @@ public class ConceptControllerTest {
                 "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.THING.getLabel().getValue() + "/instances";
 
         String prevLink = RestAssured.given().param("limit", 100).param("offset", 150)
-                .get(instancesLink).prettyPeek().jsonPath().getString("previous");
+                .get(instancesLink).jsonPath().getString("previous");
 
         assertThat(prevLink, startsWith(instancesLink));
         assertThat(prevLink, anyOf(endsWith("?limit=100&offset=50"), endsWith("?offset=50&limit=100")));
+    }
+
+    @Test
+    public void whenCallingInstancesEndpointOnFirstPage_DontReturnPreviousLink() {
+        String instancesLink =
+                "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.THING.getLabel().getValue() + "/instances";
+
+        RestAssured.when().get(instancesLink).then().body("$", not(hasKey("previous")));
+    }
+
+    @Test
+    public void whenCallingInstancesEndpointOnLastPage_DontReturnNextLink() {
+        String instancesLink =
+                "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.THING.getLabel().getValue() + "/instances";
+
+        RestAssured.when().get(instancesLink).then().body("$", not(hasKey("next")));
     }
 
     //We can't use the class of the wrapper because it will be an AutoValue class
