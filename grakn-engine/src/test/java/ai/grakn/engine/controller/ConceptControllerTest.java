@@ -68,9 +68,12 @@ import java.util.stream.Collectors;
 import static com.jayway.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -426,6 +429,29 @@ public class ConceptControllerTest {
 
         RestAssured.when().get(keysLink)
                 .then().statusCode(SC_OK).contentType(ContentType.JSON).body("@id", is(keysLink));
+    }
+
+    @Test
+    public void whenCallingInstancesEndpoint_ReturnNextLink() {
+        String instancesLink =
+                "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.THING.getLabel().getValue() + "/instances";
+
+        String nextLink = RestAssured.get(instancesLink).jsonPath().getString("next");
+
+        assertThat(nextLink, startsWith(instancesLink));
+        assertThat(nextLink, anyOf(endsWith("?limit=100&offset=100"), endsWith("?offset=100&limit=100")));
+    }
+
+    @Test
+    public void whenCallingInstancesEndpoint_ReturnPreviousLink() {
+        String instancesLink =
+                "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.THING.getLabel().getValue() + "/instances";
+
+        String prevLink = RestAssured.given().param("limit", 100).param("offset", 150)
+                .get(instancesLink).prettyPeek().jsonPath().getString("previous");
+
+        assertThat(prevLink, startsWith(instancesLink));
+        assertThat(prevLink, anyOf(endsWith("?limit=100&offset=50"), endsWith("?offset=50&limit=100")));
     }
 
     //We can't use the class of the wrapper because it will be an AutoValue class
