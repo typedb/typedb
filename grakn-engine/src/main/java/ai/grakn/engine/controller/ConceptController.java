@@ -111,17 +111,17 @@ public class ConceptController {
 
     private String getTypeAttributes(Request request, Response response) throws JsonProcessingException {
         Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.attributes().map(ConceptBuilder::build);
-        return getConceptCollection(request, response, buildTypeGetter(request), collector);
+        return getConceptCollection(request, response, "attributes", buildTypeGetter(request), collector);
     }
 
     private String getTypeKeys(Request request, Response response) throws JsonProcessingException {
         Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.keys().map(ConceptBuilder::build);
-        return getConceptCollection(request, response, buildTypeGetter(request), collector);
+        return getConceptCollection(request, response, "keys", buildTypeGetter(request), collector);
     }
 
     private String getTypePlays(Request request, Response response) throws JsonProcessingException {
         Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.plays().map(ConceptBuilder::build);
-        return getConceptCollection(request, response, buildTypeGetter(request), collector);
+        return getConceptCollection(request, response, "plays", buildTypeGetter(request), collector);
     }
 
     private String getRelationships(Request request, Response response) throws JsonProcessingException {
@@ -133,7 +133,7 @@ public class ConceptController {
                 return RolePlayer.create(roleWrapper, relationshipWrapper);
             });
         });
-        return this.getConceptCollection(request, response, buildThingGetter(request), collector);
+        return this.getConceptCollection(request, response, "relationships", buildThingGetter(request), collector);
     }
 
     private String getKeys(Request request, Response response) throws JsonProcessingException {
@@ -151,10 +151,13 @@ public class ConceptController {
         Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing ->
                 attributeFetcher.apply(thing).skip(offset).limit(limit).map(EmbeddedAttribute::create);
 
-        return this.getConceptCollection(request, response, buildThingGetter(request), collector);
+        return this.getConceptCollection(request, response, "attributes", buildThingGetter(request), collector);
     }
 
-    private <X extends ai.grakn.concept.Concept> String getConceptCollection(Request request, Response response, Function<GraknTx, X> getter, Function<X, Stream<Jacksonisable>> collector) throws JsonProcessingException {
+    private <X extends ai.grakn.concept.Concept> String getConceptCollection(
+            Request request, Response response, String key,
+            Function<GraknTx, X> getter, Function<X, Stream<Jacksonisable>> collector
+    ) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
@@ -168,13 +171,18 @@ public class ConceptController {
                 return "[]";
             }
 
-            return objectMapper.writeValueAsString(collector.apply(concept).collect(Collectors.toList()));
+            List<Jacksonisable> list = collector.apply(concept).collect(Collectors.toList());
+            Link link = Link.create(request.pathInfo());
+
+            ListResource<Jacksonisable> listResource = ListResource.create(link, key, list);
+
+            return objectMapper.writeValueAsString(listResource);
         }
     }
 
     private String getSchemaConceptSubs(Request request, Response response) throws JsonProcessingException {
         Function<ai.grakn.concept.SchemaConcept, Stream<Jacksonisable>> collector = schema -> schema.subs().map(ConceptBuilder::build);
-        return getConceptCollection(request, response, buildSchemaConceptGetter(request), collector);
+        return getConceptCollection(request, response, "subs", buildSchemaConceptGetter(request), collector);
     }
 
     private String getTypeInstances(Request request, Response response) throws JsonProcessingException {

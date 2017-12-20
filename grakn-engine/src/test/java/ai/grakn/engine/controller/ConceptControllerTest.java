@@ -44,10 +44,9 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.SampleKBLoader;
-import ai.grakn.util.Schema;
+import ai.grakn.util.Schema.MetaSchema;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
@@ -69,7 +68,7 @@ import java.util.stream.Collectors;
 import static com.jayway.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -179,9 +178,8 @@ public class ConceptControllerTest {
         assertEquals(SC_OK, response.getStatusCode());
 
         //Check relationships are embedded
-        List<RolePlayer> relationships = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<RolePlayer>>(){});
-        assertEquals(relationshipsExpected.size(), relationships.size());
-        assertTrue(relationships.containsAll(relationshipsExpected));
+        RolePlayer[] relationships = response.jsonPath().getObject("relationships", RolePlayer[].class);
+        assertThat(relationships, arrayContainingInAnyOrder(relationshipsExpected.toArray()));
     }
 
     @Test
@@ -189,8 +187,8 @@ public class ConceptControllerTest {
         Response response = RestAssured.when().get(entityTypeWrapper.subs().id());
         assertEquals(SC_OK, response.getStatusCode());
 
-        List<EntityType> subs = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<EntityType>>(){});
-        assertThat(subs, containsInAnyOrder(entityTypeWrapper, entityTypeSubWrapper));
+        EntityType[] subs = response.jsonPath().getObject("subs", EntityType[].class);
+        assertThat(subs, arrayContainingInAnyOrder(entityTypeWrapper, entityTypeSubWrapper));
     }
 
     @Test
@@ -198,7 +196,7 @@ public class ConceptControllerTest {
         Response response = RestAssured.when().get(entityTypeWrapper.plays().id());
         assertEquals(SC_OK, response.getStatusCode());
 
-        List<Role> plays = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<Role>>(){});
+        List<Role> plays = Arrays.asList(response.jsonPath().getObject("plays", Role[].class));
         assertEquals(4, plays.size());
         assertTrue(plays.contains(roleWrapper1));
         assertTrue(plays.contains(roleWrapper2));
@@ -209,8 +207,8 @@ public class ConceptControllerTest {
         Response response = RestAssured.when().get(entityTypeWrapper.attributes().id());
         assertEquals(SC_OK, response.getStatusCode());
 
-        List<AttributeType> attributes = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<AttributeType>>(){});
-        assertThat(attributes, containsInAnyOrder(attributeTypeWrapper, attributeTypeKeyWrapper));
+        AttributeType[] attributes = response.jsonPath().getObject("attributes", AttributeType[].class);
+        assertThat(attributes, arrayContainingInAnyOrder(attributeTypeWrapper, attributeTypeKeyWrapper));
     }
 
     @Test
@@ -218,26 +216,25 @@ public class ConceptControllerTest {
         Response response = RestAssured.when().get(entityTypeWrapper.keys().id());
         assertEquals(SC_OK, response.getStatusCode());
 
-        List<AttributeType> keys = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<AttributeType>>(){});
-        assertThat(keys, containsInAnyOrder(attributeTypeKeyWrapper));
+        AttributeType[] keys = response.jsonPath().getObject("keys", AttributeType[].class);
+        assertThat(keys, arrayContainingInAnyOrder(attributeTypeKeyWrapper));
     }
 
     @Test
     public void whenGettingAttributesOfConcept_EnsureEmbeddedAttributesAreReturned() throws IOException {
         //Get the attributes we expect
-        List<EmbeddedAttribute> expectedAttributes;
+        EmbeddedAttribute[] expectedAttributes;
         try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
-            expectedAttributes = entity.attributes().map(EmbeddedAttribute::create).collect(Collectors.toList());
+            expectedAttributes = entity.attributes().map(EmbeddedAttribute::create).toArray(EmbeddedAttribute[]::new);
         }
 
         //Ask the controller for the attributes
         String request = entityWrapper.attributes().id();
-        Response response = RestAssured.when().get(request);
+        Response response = RestAssured.when().get(request).prettyPeek();
         assertEquals(SC_OK, response.getStatusCode());
 
-        List<EmbeddedAttribute> attributes = new ObjectMapper().readValue(response.body().asString(), new TypeReference<List<EmbeddedAttribute>>(){});
-        assertEquals(expectedAttributes.size(), attributes.size());
-        assertTrue(attributes.containsAll(expectedAttributes));
+        EmbeddedAttribute[] attributes = response.jsonPath().getObject("attributes", EmbeddedAttribute[].class);
+        assertThat(attributes, arrayContainingInAnyOrder(expectedAttributes));
     }
 
     @Test
@@ -313,7 +310,7 @@ public class ConceptControllerTest {
 
     @Test
     public void whenCallingTypeEndpointAndRequestingJSON_ReturnJSON() {
-        Label label = Schema.MetaSchema.ENTITY.getLabel();
+        Label label = MetaSchema.ENTITY.getLabel();
 
         given().accept(ContentType.JSON).pathParam("keyspace", keyspace.getValue()).pathParam("label", label.getValue())
                 .when().get("/kb/{keyspace}/type/{label}")
@@ -322,7 +319,7 @@ public class ConceptControllerTest {
 
     @Test
     public void whenCallingRoleEndpointAndRequestingJSON_ReturnJSON() {
-        Label label = Schema.MetaSchema.ROLE.getLabel();
+        Label label = MetaSchema.ROLE.getLabel();
 
         given().accept(ContentType.JSON).pathParam("keyspace", keyspace.getValue()).pathParam("label", label.getValue())
                 .when().get("/kb/{keyspace}/role/{label}")
@@ -331,7 +328,7 @@ public class ConceptControllerTest {
 
     @Test
     public void whenCallingRuleEndpointAndRequestingJSON_ReturnJSON() {
-        Label label = Schema.MetaSchema.RULE.getLabel();
+        Label label = MetaSchema.RULE.getLabel();
 
         given().accept(ContentType.JSON).pathParam("keyspace", keyspace.getValue()).pathParam("label", label.getValue())
                 .when().get("/kb/{keyspace}/rule/{label}")
@@ -357,6 +354,78 @@ public class ConceptControllerTest {
         String rulesLink = "/kb/" + keyspace.getValue() + "/rule";
         RestAssured.when().get(rulesLink)
                 .then().statusCode(SC_OK).contentType(ContentType.JSON).body("@id", is(rulesLink));
+    }
+
+    @Test
+    public void whenCallingRelationshipsEndpoint_ReturnIdLinkToSelf() {
+        ConceptId id;
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
+            id = tx.admin().getMetaConcept().instances().findAny().get().getId();
+        }
+
+        String relationshipsLink = "/kb/" + keyspace.getValue() + "/concept/" + id + "/relationships";
+        RestAssured.when().get(relationshipsLink)
+                .then().statusCode(SC_OK).contentType(ContentType.JSON).body("@id", is(relationshipsLink));
+    }
+
+    @Test
+    public void whenCallingAttributesEndpoint_ReturnIdLinkToSelf() {
+        ConceptId id;
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
+            id = tx.admin().getMetaConcept().instances().findAny().get().getId();
+        }
+
+        String attributesLink = "/kb/" + keyspace.getValue() + "/concept/" + id + "/relationships";
+        RestAssured.when().get(attributesLink)
+                .then().statusCode(SC_OK).contentType(ContentType.JSON).body("@id", is(attributesLink));
+    }
+
+    @Test
+    public void whenCallingKeysEndpoint_ReturnIdLinkToSelf() {
+        ConceptId id;
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.READ)){
+            id = tx.admin().getMetaConcept().instances().findAny().get().getId();
+        }
+
+        String keysLink = "/kb/" + keyspace.getValue() + "/concept/" + id + "/relationships";
+        RestAssured.when().get(keysLink)
+                .then().statusCode(SC_OK).contentType(ContentType.JSON).body("@id", is(keysLink));
+    }
+
+    @Test
+    public void whenCallingPlaysEndpoint_ReturnIdLinkToSelf() {
+        String playsLink =
+                "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.ENTITY.getLabel().getValue() + "/plays";
+
+        RestAssured.when().get(playsLink)
+                .then().statusCode(SC_OK).contentType(ContentType.JSON).body("@id", is(playsLink));
+    }
+
+    @Test
+    public void whenCallingSubsEndpoint_ReturnIdLinkToSelf() {
+        String subsLink =
+                "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.ENTITY.getLabel().getValue() + "/subs";
+
+        RestAssured.when().get(subsLink)
+                .then().statusCode(SC_OK).contentType(ContentType.JSON).body("@id", is(subsLink));
+    }
+
+    @Test
+    public void whenCallingAttributeTypesEndpoint_ReturnIdLinkToSelf() {
+        String attributesLink =
+                "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.ENTITY.getLabel().getValue() + "/attributes";
+
+        RestAssured.when().get(attributesLink)
+                .then().statusCode(SC_OK).contentType(ContentType.JSON).body("@id", is(attributesLink));
+    }
+
+    @Test
+    public void whenCallingKeyTypesEndpoint_ReturnIdLinkToSelf() {
+        String keysLink =
+                "/kb/" + keyspace.getValue() + "/type/" + MetaSchema.ENTITY.getLabel().getValue() + "/keys";
+
+        RestAssured.when().get(keysLink)
+                .then().statusCode(SC_OK).contentType(ContentType.JSON).body("@id", is(keysLink));
     }
 
     //We can't use the class of the wrapper because it will be an AutoValue class
