@@ -49,7 +49,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     protected final Path configPath;
     private final GraknConfig graknConfig;
 
-    private static final long GRAKN_STARTUP_TIMEOUT_S = 120;
+    private static final long GRAKN_STARTUP_TIMEOUT_S = 300;
     public static final Path GRAKN_PID = GraknPid.GRAKN_PID_FILE_PATH;
 
     public GraknProcess(Path homePath, Path configPath) {
