@@ -153,6 +153,12 @@ def shouldDeployLongRunningInstance() {
     return env.BRANCH_NAME == 'stable'
 }
 
+def shouldDeployMaven() {
+    // TODO: this isn't working for some reason
+    // return isMainBranch()
+    return false
+}
+
 def mvn(String args) {
     sh "mvn --batch-mode ${args}"
 }
@@ -296,7 +302,7 @@ def runBuild() {
         checkout scm
 
         // Push to Grakn Maven if tests pass
-        if (isMainBranch()) {
+        if (shouldDeployMaven()) {
             stage('Deploy Maven') {
                 withMaven(
                         options: [artifactsPublisher(disabled: true)],
