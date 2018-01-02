@@ -103,7 +103,7 @@ public class SystemController {
         prometheusRegistry.register(prometheusMetricWrapper);
 
         // Handle root here for JSON, otherwise redirect to HTML page
-        spark.get(REST.WebPath.ROOT, APPLICATION_JSON, this::getRoot);
+        spark.get(REST.WebPath.ROOT, APPLICATION_JSON, (req, res) -> getRoot(res));
         spark.redirect.any(REST.WebPath.ROOT, "/page.html");
 
         spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
@@ -128,7 +128,7 @@ public class SystemController {
 
     @GET
     @Path(REST.WebPath.ROOT)
-    private String getRoot(Request request, Response response) throws JsonProcessingException {
+    private String getRoot(Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
         Root root = Root.create();
         return objectMapper.writeValueAsString(root);
