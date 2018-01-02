@@ -133,8 +133,8 @@ public class ConceptBuilder {
         return set(SUPER_CONCEPT, superConcept);
     }
 
-    public ConceptBuilder usedInRelates() {
-        return set(USED_IN_RELATES, Unit.INSTANCE);
+    public ConceptBuilder isRole() {
+        return set(IS_ROLE, Unit.INSTANCE);
     }
 
     public ConceptBuilder label(Label label) {
@@ -214,8 +214,8 @@ public class ConceptBuilder {
 
         Concept concept;
 
-        if (has(USED_IN_RELATES)) {
-            use(USED_IN_RELATES);
+        if (has(IS_ROLE)) {
+            use(IS_ROLE);
 
             Label label = use(LABEL);
             Role role = executor.tx().putRole(label);
@@ -282,10 +282,15 @@ public class ConceptBuilder {
     private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(DataTypeProperty.NAME);
     private static final BuilderParam<Pattern> WHEN = BuilderParam.of(WhenProperty.NAME);
     private static final BuilderParam<Pattern> THEN = BuilderParam.of(ThenProperty.NAME);
-    private static final BuilderParam<Unit> USED_IN_RELATES = BuilderParam.of("related");
+    private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role");
 
     /**
-     * Marker class with no fields and exactly one instance.
+     * Class with no fields and exactly one instance.
+     *
+     * Similar in use to {@link Void}, but the single instance is {@link Unit#INSTANCE} instead of {@code null}. Useful
+     * when {@code null} is not allowed.
+     *
+     * @see <a href=https://en.wikipedia.org/wiki/Unit_type>Wikipedia</a>
      */
     private static final class Unit {
         private Unit() {}

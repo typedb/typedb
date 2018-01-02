@@ -86,13 +86,17 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
 
     @Override
     public PropertyExecutor define(Var var) throws GraqlQueryException {
+        Var roleVar = role().var();
+
         PropertyExecutor.Method method = executor -> {
-            executor.tryBuilder(role().var()).ifPresent(ConceptBuilder::usedInRelates);
-            Role role = executor.get(role().var()).asRole();
+            // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
+            executor.tryBuilder(roleVar).ifPresent(ConceptBuilder::isRole);
+
+            Role role = executor.get(roleVar).asRole();
             executor.get(var).asRelationshipType().relates(role);
         };
 
-        return PropertyExecutor.builder(method).requires(var, role().var()).build();
+        return PropertyExecutor.builder(method).requires(var, roleVar).build();
     }
 
     @Override
