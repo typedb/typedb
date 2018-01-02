@@ -23,6 +23,7 @@ import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
@@ -37,10 +38,8 @@ import java.util.Optional;
 
 /**
  * This class implements ComputeQueryBuilder.
- * <p>
  *
  * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
@@ -105,6 +104,11 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     @Override
     public ClusterQuery<Map<String, Long>> cluster() {
         return new ClusterQueryImpl<>(tx);
+    }
+
+    @Override
+    public KCoreQuery kCore() {
+        return new KCoreQueryImpl(tx);
     }
 
     @Override

@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * The vertex program for connected components in a graph.
+ * The vertex program for computing connected components.
  *
  * @author Jason Liu
  */
@@ -74,11 +74,11 @@ public class ConnectedComponentsVertexProgram extends GraknVertexProgram<String>
             messenger.sendMessage(messageScopeIn, id);
             messenger.sendMessage(messageScopeOut, id);
         } else {
-            update(vertex, messenger, memory);
+            updateClusterLabel(vertex, messenger, memory);
         }
     }
 
-    private void update(Vertex vertex, Messenger<String> messenger, Memory memory) {
+    private static void updateClusterLabel(Vertex vertex, Messenger<String> messenger, Memory memory) {
         String currentMax = vertex.value(CLUSTER_LABEL);
         String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
