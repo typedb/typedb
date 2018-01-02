@@ -53,13 +53,13 @@ public class HttpHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpHandler.class);
 
-    private final GraknConfig prop;
-    private final Service spark;
-    private final EngineGraknTxFactory factory;
-    private final MetricRegistry metricRegistry;
-    private final GraknEngineStatus graknEngineStatus;
-    private final TaskManager taskManager;
-    private final PostProcessor postProcessor;
+    protected final GraknConfig prop;
+    protected final Service spark;
+    protected final EngineGraknTxFactory factory;
+    protected final MetricRegistry metricRegistry;
+    protected final GraknEngineStatus graknEngineStatus;
+    protected final TaskManager taskManager;
+    protected final PostProcessor postProcessor;
 
     public HttpHandler(GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, TaskManager taskManager, PostProcessor postProcessor) {
         this.prop = prop;
@@ -154,7 +154,7 @@ public class HttpHandler {
      * @param exception exception thrown by the server
      * @param response response to the client
      */
-    private static void handleGraknServerError(GraknServerException exception, Response response){
+    protected static void handleGraknServerError(GraknServerException exception, Response response){
         LOG.error("REST error", exception);
         response.status(exception.getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
@@ -166,7 +166,7 @@ public class HttpHandler {
      * @param exception Exception by the server
      * @param response response to the client
      */
-    private static void handleInternalError(Exception exception, Response response){
+    protected static void handleInternalError(Exception exception, Response response){
         LOG.error("REST error", exception);
         response.status(500);
         response.body(Json.object("exception", exception.getMessage()).toString());
