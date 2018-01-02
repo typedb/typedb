@@ -24,6 +24,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
@@ -132,6 +133,10 @@ public class ConceptBuilder {
         return set(SUPER_CONCEPT, superConcept);
     }
 
+    public ConceptBuilder usedInRelates() {
+        return set(USED_IN_RELATES, Unit.INSTANCE);
+    }
+
     public ConceptBuilder label(Label label) {
         return set(LABEL, label);
     }
@@ -209,7 +214,18 @@ public class ConceptBuilder {
 
         Concept concept;
 
-        if (has(SUPER_CONCEPT)) {
+        if (has(USED_IN_RELATES)) {
+            use(USED_IN_RELATES);
+
+            Label label = use(LABEL);
+            Role role = executor.tx().putRole(label);
+
+            if (has(SUPER_CONCEPT)) {
+                setSuper(role, use(SUPER_CONCEPT));
+            }
+
+            concept = role;
+        } else if (has(SUPER_CONCEPT)) {
             concept = putSchemaConcept();
         } else if (has(TYPE)) {
             concept = putInstance();
@@ -237,19 +253,50 @@ public class ConceptBuilder {
      */
     // The generic is technically unused, but is useful to constrain the values of the parameter
     @SuppressWarnings("unused")
-    @FunctionalInterface
-    private interface BuilderParam<T> {
-        String name();
+    private static final class BuilderParam<T> {
+        private final String name;
+
+        private BuilderParam(String name) {
+            this.name = name;
+        }
+
+        final String name() {
+            return name;
+        }
+
+        @Override
+        public final String toString() {
+            return name;
+        }
+
+        static <T> BuilderParam<T> of(String name) {
+            return new BuilderParam<>(name);
+        }
     }
 
-    private static final BuilderParam<Type> TYPE = () -> IsaProperty.NAME;
-    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = () -> SubProperty.NAME;
-    private static final BuilderParam<Label> LABEL = () -> LabelProperty.NAME;
-    private static final BuilderParam<ConceptId> ID = () -> IdProperty.NAME;
-    private static final BuilderParam<Object> VALUE = () -> ValueProperty.NAME;
-    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = () -> DataTypeProperty.NAME;
-    private static final BuilderParam<Pattern> WHEN = () -> WhenProperty.NAME;
-    private static final BuilderParam<Pattern> THEN = () -> ThenProperty.NAME;
+    private static final BuilderParam<Type> TYPE = BuilderParam.of(IsaProperty.NAME);
+    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(SubProperty.NAME);
+    private static final BuilderParam<Label> LABEL = BuilderParam.of(LabelProperty.NAME);
+    private static final BuilderParam<ConceptId> ID = BuilderParam.of(IdProperty.NAME);
+    private static final BuilderParam<Object> VALUE = BuilderParam.of(ValueProperty.NAME);
+    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(DataTypeProperty.NAME);
+    private static final BuilderParam<Pattern> WHEN = BuilderParam.of(WhenProperty.NAME);
+    private static final BuilderParam<Pattern> THEN = BuilderParam.of(ThenProperty.NAME);
+    private static final BuilderParam<Unit> USED_IN_RELATES = BuilderParam.of("related");
+
+    /**
+     * Marker class with no fields and exactly one instance.
+     */
+    private static final class Unit {
+        private Unit() {}
+
+        private static Unit INSTANCE = new Unit();
+
+        @Override
+        public final String toString() {
+            return "";
+        }
+    }
 
     private ConceptBuilder(QueryOperationExecutor executor, Var var) {
         this.executor = executor;
