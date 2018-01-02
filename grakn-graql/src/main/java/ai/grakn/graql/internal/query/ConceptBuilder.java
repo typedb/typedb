@@ -260,12 +260,12 @@ public class ConceptBuilder {
             this.name = name;
         }
 
-        final String name() {
+        String name() {
             return name;
         }
 
         @Override
-        public final String toString() {
+        public String toString() {
             return name;
         }
 
@@ -298,7 +298,7 @@ public class ConceptBuilder {
         private static Unit INSTANCE = new Unit();
 
         @Override
-        public final String toString() {
+        public String toString() {
             return "";
         }
     }
