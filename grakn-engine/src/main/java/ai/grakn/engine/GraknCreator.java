@@ -32,7 +32,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.google.common.annotations.VisibleForTesting;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 import spark.Service;
@@ -185,7 +184,7 @@ public class GraknCreator {
         return PostProcessor.create(config, jedisPool, factory, lockProvider, metricRegistry);
     }
 
-    private TaskManager taskManager(GraknConfig config, EngineGraknTxFactory factory, Pool<Jedis> jedisPool, EngineID engineId, MetricRegistry metricRegistry, PostProcessor postProcessor) {
+    private static TaskManager taskManager(GraknConfig config, EngineGraknTxFactory factory, Pool<Jedis> jedisPool, EngineID engineId, MetricRegistry metricRegistry, PostProcessor postProcessor) {
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "idle"), (Gauge<Integer>) jedisPool::getNumIdle);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "active"), (Gauge<Integer>) jedisPool::getNumActive);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
@@ -200,15 +199,4 @@ public class GraknCreator {
         return new RedisTaskManager(engineId, config, jedisPool, consumers, factory, metricRegistry, postProcessor);
     }
 
-    @VisibleForTesting
-    public static synchronized GraknEngineServer cleanGraknEngineServer(GraknConfig config) {
-        return cleanGraknEngineServer(config, RedisWrapper.create(config));
-    }
-
-    @VisibleForTesting
-    public static synchronized GraknEngineServer cleanGraknEngineServer(GraknConfig config, RedisWrapper redisWrapper) {
-        return GraknCreator.create(
-                engineId(), sparkService(), graknEngineStatus(), metricRegistry(), config, redisWrapper
-        ).instantiateGraknEngineServer(Runtime.getRuntime());
-    }
 }

@@ -21,11 +21,13 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.data.RedisWrapper;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -36,6 +38,7 @@ import org.junit.rules.ExpectedException;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.util.Pool;
+import spark.Service;
 
 import java.io.IOException;
 
@@ -65,6 +68,12 @@ public class GraknEngineServerTest {
 
     private final GraknConfig conf = GraknConfig.create();
     private final RedisWrapper redisWrapper = mock(RedisWrapper.class);
+    private final EngineID id = EngineID.me();
+    private final GraknEngineStatus status = new GraknEngineStatus();
+    private final Service spark = Service.ignite();
+    private final MetricRegistry metrics = new MetricRegistry();
+    private final GraknCreator creator = GraknCreator.create(id, spark, status, metrics, conf, redisWrapper);
+
     private final Jedis jedis = mock(Jedis.class);
 
     @Before
@@ -79,9 +88,9 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
         RedisServer redisServer = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(conf.getProperty(GraknConfigKey.REDIS_HOST))).getPort()).server();
         redisServer.start();
+        GraknCreator creator = GraknCreator.create(id, spark, status, metrics, conf, RedisWrapper.create(conf));
 
-
-        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf)) {
+        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
             server.start();
             assertNotNull(server.factory().systemKeyspace());
 
@@ -99,7 +108,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() {
         when(jedis.get(VERSION_KEY)).thenReturn(null);
 
-        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
             server.start();
         }
 
@@ -110,7 +119,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() {
         when(jedis.get(VERSION_KEY)).thenReturn(GraknVersion.VERSION);
 
-        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
             server.start();
         }
 
@@ -123,7 +132,7 @@ public class GraknEngineServerTest {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
         stdout.enableLog();
 
-        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
             server.start();
         }
 
@@ -135,7 +144,7 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
 
-        try (GraknEngineServer server = GraknCreator.cleanGraknEngineServer(conf, redisWrapper)) {
+        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
             server.start();
         }
 
