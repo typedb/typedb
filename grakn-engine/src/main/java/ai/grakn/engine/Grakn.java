@@ -46,7 +46,7 @@ public class Grakn {
             pidFile.createPidFile_deleteOnExit();
 
             // Start Engine
-            GraknEngineServer graknEngineServer = new GraknCreator().instantiateGraknEngineServer(Runtime.getRuntime());
+            GraknEngineServer graknEngineServer = GraknCreator.create().instantiateGraknEngineServer(Runtime.getRuntime());
             graknEngineServer.start();
         } catch (Exception e) {
             LOG.error("An exception has occurred", e);
