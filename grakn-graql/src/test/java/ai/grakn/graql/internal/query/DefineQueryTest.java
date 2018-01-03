@@ -445,6 +445,21 @@ public class DefineQueryTest {
     }
 
     @Test
+    public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped_EvenWhenRoleInReferredToInOtherContexts() {
+        qb.define(
+                label("marriage").sub(label(RELATIONSHIP.getLabel())).relates("husband").relates("wife"),
+                label("person").plays("husband").plays("wife")
+        ).execute();
+
+        RelationshipType marriage = movies.tx().getRelationshipType("marriage");
+        EntityType person = movies.tx().getEntityType("person");
+        Role husband = movies.tx().getRole("husband");
+        Role wife = movies.tx().getRole("wife");
+        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(husband, wife));
+        assertThat(person.plays().toArray(), arrayContainingInAnyOrder(husband, wife));
+    }
+
+    @Test
     public void whenDefiningARelationshipWithNonRoles_Throw() {
         exception.expect(GraknException.class);
 
