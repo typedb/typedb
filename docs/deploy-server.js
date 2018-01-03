@@ -3,7 +3,7 @@ const express = require('express');
 
 const app = express();
 
-const port = process.env.PORT ? process.env.PORT : 3000;
+const port = process.env.PORT ? process.env.PORT : 3003;
 const dist = path.join(__dirname, '_site');
 
 app.use('/images', express.static(path.join(__dirname, 'images')));
@@ -19,7 +19,7 @@ app.get('*', (req, res) => {
     requestedResource = req.path.replace('/documentation', '/docs');
     res.redirect(302,`${req.protocol}://${req.get('host')}${requestedResource}`);
   }
-  if(requestedResource.match(/^\/(docs|overview|academy|contributors)\/?$/)){
+  else if(requestedResource.match(/^\/(docs|overview|academy|contributors)\/?$/)){
     const indexlink = requestedResource[requestedResource.length - 1] === '/'? 'index.html' : '/index.html';
     requestedResource = requestedResource.concat(indexlink);
   }
