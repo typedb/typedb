@@ -36,9 +36,6 @@ public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
     @CheckReturnValue
     Set<T> getPatterns();
 
-    @Override
-    Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm();
-
     /**
      * @return the corresponding reasoner query
      */
