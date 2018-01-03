@@ -444,14 +444,19 @@ public class QueryOperationExecutor {
         abstract VarPropertyInternal property();
         abstract PropertyExecutor executor();
 
-        static VarAndProperty of(Var var, VarProperty property, ExecutionType executionType) {
+        private static VarAndProperty of(Var var, VarProperty property, PropertyExecutor executor) {
             VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
-            PropertyExecutor executor = executionType.executor(propertyInternal, var);
             return new AutoValue_QueryOperationExecutor_VarAndProperty(var, propertyInternal, executor);
         }
 
+        private static Stream<VarAndProperty> all(Var var, VarProperty property, ExecutionType executionType) {
+            VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
+            return executionType.executors(propertyInternal, var).stream()
+                    .map(executor -> VarAndProperty.of(var, property, executor));
+        }
+
         static Stream<VarAndProperty> fromPattern(VarPatternAdmin pattern, ExecutionType executionType) {
-            return pattern.getProperties().map(prop -> VarAndProperty.of(pattern.var(), prop, executionType));
+            return pattern.getProperties().flatMap(prop -> VarAndProperty.all(pattern.var(), prop, executionType));
         }
 
         boolean uniquelyIdentifiesConcept() {
@@ -461,21 +466,21 @@ public class QueryOperationExecutor {
 
     private enum ExecutionType {
         INSERT {
-            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
                 return property.insert(var);
             }
         },
         DEFINE {
-            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
                 return property.define(var);
             }
         },
         UNDEFINE {
-            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
                 return property.undefine(var);
             }
         };
 
-        abstract PropertyExecutor executor(VarPropertyInternal property, Var var);
+        abstract Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var);
     }
 }
