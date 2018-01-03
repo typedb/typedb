@@ -38,7 +38,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTy
 public enum UnifierType implements UnifierComparison {
 
     /**
-     * Exact unifier, requires type and id predicate bindings to match.
+     * Exact unifier, requires type and id predicate bindings to match
      */
     EXACT {
         @Override
