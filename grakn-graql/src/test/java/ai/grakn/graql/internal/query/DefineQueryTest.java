@@ -71,6 +71,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -456,7 +457,8 @@ public class DefineQueryTest {
         Role husband = movies.tx().getRole("husband");
         Role wife = movies.tx().getRole("wife");
         assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(husband, wife));
-        assertThat(person.plays().toArray(), arrayContainingInAnyOrder(husband, wife));
+        assertThat(person.plays().toArray(), hasItemInArray(wife));
+        assertThat(person.plays().toArray(), hasItemInArray(husband));
     }
 
     @Test

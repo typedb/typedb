@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.ConceptBuilder;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.RelatesAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
@@ -88,15 +87,21 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         Var roleVar = role().var();
 
-        PropertyExecutor.Method method = executor -> {
-            // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
-            executor.tryBuilder(roleVar).ifPresent(ConceptBuilder::isRole);
-
+        PropertyExecutor.Method relatesMethod = executor -> {
             Role role = executor.get(roleVar).asRole();
             executor.get(var).asRelationshipType().relates(role);
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, roleVar).build());
+        PropertyExecutor relatesExecutor = PropertyExecutor.builder(relatesMethod).requires(var, roleVar).build();
+
+        // This allows users to skip stating `$roleVar sub role` when they say `$var relates $roleVar`
+        PropertyExecutor.Method isRoleMethod = executor -> {
+            executor.builder(roleVar).isRole();
+        };
+
+        PropertyExecutor isRoleExecutor = PropertyExecutor.builder(isRoleMethod).produces(roleVar).build();
+
+        return ImmutableSet.of(relatesExecutor, isRoleExecutor);
     }
 
     @Override
