@@ -107,7 +107,7 @@ public class SystemController {
 
         // Handle root here for JSON, otherwise redirect to HTML page
         spark.get(REST.WebPath.ROOT, APPLICATION_JSON, (req, res) -> getRoot(res));
-        spark.get(REST.WebPath.ROOT, (req, res) -> getIndexPage(res));
+        spark.get(REST.WebPath.ROOT, (req, res) -> getIndexPage());
 
         spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
         spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
@@ -139,7 +139,7 @@ public class SystemController {
 
     @GET
     @Path(REST.WebPath.ROOT)
-    private String getIndexPage(Response response) {
+    private String getIndexPage() {
         try {
             return new String(Files.readAllBytes(dashboardHtml()), Charsets.UTF_8);
         } catch (IOException e) {
