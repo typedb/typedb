@@ -1,7 +1,8 @@
 # Description
-The `test-snb` project perform tests with the [SNB data](ldbcouncil.org/developer/snb). In principle, there are two major steps involved:
-1. Generating an initial dataset and loading them into Grakn
-2. Performing a verification if the data has been inserted correctly
+The `test-snb` project perform tests with the [SNB data](ldbcouncil.org/developer/snb). In principle, there are three major steps involved:
+1. Generating an initial dataset (with the help of the SNB LDBC Datagen)
+2. Loading the schema and the generated data into Grakn (with the help of `graql migrate`)
+3. Validating if the data has been inserted correctly (done with the `GraknDB` client implementation located under `grakn-test/test-snb/src/main/java/ai/grakn/GraknDB.java`)
 
 ## Prerequisites
 ### Hadoop
@@ -14,6 +15,10 @@ The `test-snb` project perform tests with the [SNB data](ldbcouncil.org/develope
 3. Compile and generate a fat-JAR using Maven: `cd /path/to/snb-ldbc-datagen && mvn clean compile assembly:single`
 
 ## Running The Validation
-1. Load the validation data set and perform data verification: `cd $GRAKN_HOME && ./scripts/jenkins.sh test-snb`
-2. Load the `SF1` dataset: `cd $GRAKN_HOME && ./scripts/load.sh test-snb gen SF1`
-3. Perform validation only: `cd $GRAKN_HOME && ./scripts/validate.sh test-snb`
+The following steps outlines generating, loading, and validating data with the "validation dataset". Currently, it is not possible to validate other datasets such as the `SF*` dataset.
+1. If you want to do all the steps (generate an initial dataset, loading the data into Grakn, and performing the validation)at once: `cd $GRAKN_HOME && ./scripts/jenkins.sh test-snb`
+2. If you want to load the validation dataset only: `cd $GRAKN_HOME && ./scripts/load.sh test-snb`
+3. If you want to perform only the validation step on the validation dataset: `cd $GRAKN_HOME && ./scripts/validate.sh test-snb`
+
+The following steps outlines generating the `SF*` dataset:
+1. `cd $GRAKN_HOME && ./scripts/load.sh test-snb gen SF1`
