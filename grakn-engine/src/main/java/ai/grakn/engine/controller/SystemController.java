@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
@@ -39,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
+import org.apache.commons.io.Charsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -54,6 +56,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.file.Files;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -104,7 +107,7 @@ public class SystemController {
 
         // Handle root here for JSON, otherwise redirect to HTML page
         spark.get(REST.WebPath.ROOT, APPLICATION_JSON, (req, res) -> getRoot(res));
-        spark.redirect.any(REST.WebPath.ROOT, "/page.html");
+        spark.get(REST.WebPath.ROOT, (req, res) -> getIndexPage(res));
 
         spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
         spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
@@ -132,6 +135,20 @@ public class SystemController {
         response.type(APPLICATION_JSON);
         Root root = Root.create();
         return objectMapper.writeValueAsString(root);
+    }
+
+    @GET
+    @Path(REST.WebPath.ROOT)
+    private String getIndexPage(Response response) {
+        try {
+            return new String(Files.readAllBytes(dashboardHtml()), Charsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private java.nio.file.Path dashboardHtml() {
+        return config.getPath(GraknConfigKey.STATIC_FILES_PATH).resolve("dashboard.html");
     }
 
     @GET
@@ -221,5 +238,4 @@ public class SystemController {
                 throw GraknServerException.requestInvalidParameter(FORMAT, dFormat);
         }
     }
-
 }

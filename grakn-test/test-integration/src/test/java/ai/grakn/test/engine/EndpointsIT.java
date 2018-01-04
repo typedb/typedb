@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.containsString;
 
 /**
  * @author Felix Chapman
@@ -37,7 +38,7 @@ public class EndpointsIT {
 
     @Test
     public void whenGettingRootWithoutAcceptType_ReturnHTML() {
-        when().get("/").then().contentType(ContentType.HTML);
+        when().get("/").then().contentType(ContentType.HTML).body(containsString("<html>"));
     }
 
     @Test
