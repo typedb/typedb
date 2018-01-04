@@ -19,13 +19,17 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
@@ -36,6 +40,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Comparator;
@@ -144,7 +149,7 @@ public final class ResolutionPlan {
 
     public ResolutionPlan(ReasonerQueryImpl query){
         this.tx =  query.tx();
-        this.plan = planFromTraversal(query);
+        this.plan = refinedPlan(query);
         if (!isValid()) {
             throw GraqlQueryException.nonGroundNeqPredicate(query);
         }
@@ -160,10 +165,92 @@ public final class ResolutionPlan {
      */
     public ImmutableList<Atom> plan(){ return plan;}
 
+    private ImmutableList<Atom> refinedPlan(ReasonerQueryImpl query) {
+        List<Atom> startCandidates = query.getAtoms(Atom.class)
+                .filter(Atomic::isSelectable)
+                .collect(Collectors.toList());
+        Set<IdPredicate> subs = query.getAtoms(IdPredicate.class).collect(Collectors.toSet());
+        return ImmutableList.copyOf(refinedPlan(query, startCandidates, subs));
+    }
+
+    /**
+     * @param query
+     * @param atoms
+     * @param subs
+     * @return
+     */
+    private List<Atom> refinedPlan(ReasonerQueryImpl query, List<Atom> atoms, Set<IdPredicate> subs){
+        List<Atom> candidates = subs.isEmpty()?
+                atoms :
+                atoms.stream()
+                    .filter(at -> at.getPredicates(IdPredicate.class).findFirst().isPresent())
+                    .collect(Collectors.toList());
+
+        ImmutableList<Atom> initialPlan = planFromTraversal(atoms, subs);
+        if (candidates.contains(initialPlan.get(0)) || candidates.isEmpty()) {
+            return initialPlan;
+        } else {
+            Atom first = candidates.stream()
+                    .sorted(Comparator.comparing(at -> !at.isGround()))
+                    .sorted(Comparator.comparing(at -> -at.getPredicates().count()))
+                    .findFirst().orElse(null);
+
+            List<Atom> atomsToPlan = new ArrayList<>(atoms);
+            atomsToPlan.remove(first);
+
+            Set<IdPredicate> extraSubs = first.getVarNames().stream()
+                    .filter(v -> !subs.stream().anyMatch(s -> s.getVarName().equals(v)))
+                    .map(v -> new IdPredicate(v, ConceptId.of("placeholderId"), query))
+                    .collect(Collectors.toSet());
+            return Stream.concat(
+                        Stream.of(first),
+                        refinedPlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
+                    ).collect(Collectors.toList());
+        }
+    }
+
+    @SuppressFBWarnings("UPM_UNCALLED_PRIVATE_METHOD")
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
+    private Conjunction<PatternAdmin> atomSetToPattern(Set<Atomic> atoms){
+        return Patterns.conjunction(
+                atoms.stream()
+                        .map(Atomic::getCombinedPattern)
+                        .flatMap(p -> p.admin().varPatterns().stream())
+                        .collect(Collectors.toSet())
+        );
+    }
+
+    private ImmutableList<Atom> planFromTraversal(List<Atom> atoms, Set<IdPredicate> subs){
+        Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
+        atoms.stream()
+                .filter(at -> !(at instanceof OntologicalAtom))
+                .forEach(at -> at.getVarProperties().forEach(p -> propertyMap.put(p, at)));
+        Set<VarProperty> properties = propertyMap.keySet();
+
+        ReasonerQueryImpl query = ReasonerQueries.create(Stream.concat(atoms.stream(), subs.stream()).collect(Collectors.toSet()), tx);
+        //Conjunction<PatternAdmin> queryPattern = atomSetToPattern(Stream.concat(atoms.stream(), subs.stream()).collect(Collectors.toSet()));
+        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), tx);
+        ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
+
+        ImmutableList.Builder<Atom> builder = ImmutableList.builder();
+        builder.addAll(atoms.stream().filter(at -> at instanceof OntologicalAtom).iterator());
+        builder.addAll(fragments.stream()
+                .map(Fragment::varProperty)
+                .filter(Objects::nonNull)
+                .filter(properties::contains)
+                .distinct()
+                .flatMap(p -> propertyMap.get(p).stream())
+                .distinct()
+                .iterator());
+        return builder.build();
+    }
+
     /**
      * @param query for which the plan should be constructed
      * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
      */
+    @SuppressFBWarnings("UPM_UNCALLED_PRIVATE_METHOD")
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private ImmutableList<Atom> planFromTraversal(ReasonerQueryImpl query){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         query.getAtoms(Atom.class)
@@ -173,11 +260,10 @@ public final class ResolutionPlan {
         Set<VarProperty> properties = propertyMap.keySet();
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), tx);
-
         ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
 
-        //TODO: need to double check correctness of this
         ImmutableList.Builder<Atom> builder = ImmutableList.builder();
+        //TODO: need to double check correctness of this
         builder.addAll(query.getAtoms(OntologicalAtom.class).iterator());
         builder.addAll(fragments.stream()
                 .map(Fragment::varProperty)

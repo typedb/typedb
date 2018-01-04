@@ -100,6 +100,19 @@ public abstract class Atom extends AtomicBase {
                 .findFirst().isPresent();
     }
 
+    /**
+     *
+     * @return
+     */
+    public boolean isGround(){
+        Set<Var> varNames = getVarNames();
+        return Stream.concat(
+                getPredicates(),
+                getInnerPredicates())
+                .map(AtomicBase::getVarName)
+                .allMatch(varNames::contains);
+    }
+
     public abstract Class<? extends VarProperty> getVarPropertyClass();
 
     @Override
