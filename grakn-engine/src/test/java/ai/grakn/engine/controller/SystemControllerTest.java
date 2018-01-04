@@ -62,21 +62,23 @@ import static org.mockito.Mockito.mock;
  * @author Felix Chapman
  */
 public class SystemControllerTest {
-    private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
 
     private static final String INDEX_CONTENTS = "<html>hello world!</html>";
 
+    private static GraknConfig config;
+
     @ClassRule
-    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
+    public static final SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
+        SystemControllerTest.config = config;
         new SystemController(spark, config, systemKeyspace, status, metricRegistry);
     });
 
     @BeforeClass
     public static void createIndex() throws IOException {
-        File index = sparkContext.staticFiles().newFile("page.html");
+        File index = sparkContext.staticFiles().newFile("dashboard.html");
         Files.write(index.toPath(), ImmutableList.of(INDEX_CONTENTS), StandardCharsets.UTF_8);
     }
 
