@@ -309,12 +309,20 @@ span.projectTitle {
     font-family: 'Titillium';
     letter-spacing: 0.2px;
     font-weight: 200;
+    color: #4a4c52;
+    font-weight: 600;
 }
 
 .summary {
-    color: #808080;
-    border-left: 5px solid #ff7878;
+	color: #8c8d92;
+    border-left: 3px solid #f75e62;
     font-size: 16px;
+}
+
+.summary:before {
+    font-weight: 600;
+    font-size: 18px;
+    color: #f75e62;
 }
 
 h3 {
@@ -700,16 +708,6 @@ a.dropdown-toggle,
     margin-left:10px;
 }
 
-.nav li > a span{
-    margin-top: 0.45em;
-    width: 0;
-    height: 0;
-    border-top: 4px solid #000000;
-    border-right: 4px solid transparent;
-    border-left: 4px solid transparent;
-    border-bottom: none;
-}
-
 .nav li a {
     font-family: 'Titillium';
     letter-spacing: 0.2px;
@@ -821,16 +819,28 @@ a.dropdown-toggle,
     display: inline-block;
     margin-bottom: 0.25em;
 }
+
 #download-btn {
     margin: 20px 0;
 }
+
 #download-btn > a{
     height: 50px;
-    background-color: #f75e61;
+    background-color: white;
     text-decoration: none;
-    color: white;
-    padding: 5px 10px;
+    color: #f75e62;
+    padding: 10px 20px;
     border-radius: 5px;
-    margin: 10px 0;
-    width: fit-content;
+    width: 200px;
+    border: 1px solid #f75e62;
+    display: block;
+    text-align: center;
+    font-size: 16px;
+}
+
+#download-btn > a:after {
+    content: "\f019";
+    color: #f75e62;
+    font-size: 16px;
+    padding-left: 10px;
 }

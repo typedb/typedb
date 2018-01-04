@@ -95,6 +95,8 @@ body h1 {margin-top:40px;}
 
 .post-content ol li, .post-content ul li {
     margin: 10px 0px;
+    color: #8c8d92;
+    line-height: 1.8;
 }
 
 .pageSummary {
@@ -140,11 +142,12 @@ table > tfoot > tr > th,
 table > thead > tr > td,
 table > tbody > tr > td,
 table > tfoot > tr > td {
-    padding: 8px;
-    line-height: 1.42857143;
+    padding: 10px;
+    line-height: 1.59;
     vertical-align: top;
-    border-top: 1px solid #ddd;
+    color: #4a4c52;
 }
+
 table > thead > tr > th {
     vertical-align: bottom;
     border-bottom: 2px solid #ddd;
@@ -259,10 +262,14 @@ ul#results-container a: hover {
 div#toc ul li {
     margin: 8px 0px 8px 22px;
     font-size: 90%;
-    list-style: square;
+    list-style: disc;
+    line-height: 2.1;
+    font-size: 16px;
+    font-weight: 600;
 }
+
+
 div#toc ul {
-    background-color: whitesmoke;
     padding: 5px;
     border-radius: 5px;
     max-width: 300px;
@@ -1165,13 +1172,16 @@ h4.panel-title {
 }
 .tab-pane > pre {
     margin: 0 !important;
-    border-radius: 0 5px 5px 5px;
+    border-radius: 0 0 6px 6px;
     border: none;
 }
 pre {
     color: #46cc90;
     background: #2f3543;
+    padding: 25px 30px;
+    border-radius: 6px;
 }
+
 .highlight {
     background: #2f3543;
     border-radius: 5px;
@@ -1262,4 +1272,186 @@ pre {
 
 .token.entity {
     cursor: help;
+}
+
+
+/* Custom Styles */
+body {
+    background: linear-gradient(to right, #f3f4fa 0%, #f3f4fa 50%,#f3f4fa 50%,white 50%,white 100%); /* W3C */
+    background-color: transparent;
+    color: #8c8d92 !important;
+}
+
+@media screen and (max-width: 990px) {
+    body {
+        background: none;
+        background-color: #f3f4fa;
+    }
+}
+
+img, video {
+    border-radius: 6px;
+}
+
+.col-content {
+    background-color: white !important;
+    padding: 50px !important;
+    min-height: 100vh;
+    height: 100%;
+    /* margin-left: 25%; */
+}
+
+
+/* @media screen and (max-width: 990px) {
+    .col-content {
+        margin-left: 0;
+    }
+} */
+
+#mysidebar {
+    background-color: #f3f4fa;
+    margin: 50px 0;
+    height: calc(90vh - 100px);
+    overflow-y: scroll;
+}
+
+@media screen and (max-width: 990px) {
+    #mysidebar {
+        height: fit-content;
+    }
+}
+
+#mysidebar > li > a {
+    background-color: #f3f4fa !important;
+    color: #9685ff;
+    padding: 14px 20px;
+}
+
+#mysidebar > li, 
+#mysidebar > li > ul > li  {
+    margin: 0 0 1px 0 !important;
+}
+
+#mysidebar > .active > a  {
+	border-radius: 22.5px;
+    background-color: #796de3 !important;
+    color: white;
+    font-size: 16px;
+}
+
+#mysidebar > li > ul {
+    padding: 10px 20px !important;
+}
+
+#mysidebar > li > ul > li  {
+    border-left: 1px solid #dcdeea;
+    position: relative;
+}
+
+#mysidebar > li > ul > li > a {
+    background-color: transparent;
+    color: #4f5157;
+    font-size: 16px;
+    color: #4f5157;
+    line-height: 1.53;
+}
+
+#mysidebar > li > ul > .active > a:before {
+    content: "\f111";
+    font-family: FontAwesome;
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    text-decoration: none;
+    color: #796de3;
+    position: absolute;
+    left: -7px;
+}
+
+.sidebarTitle {
+    padding: 0 0 20px 20px !important;
+    color: #4a4c52;
+}
+
+.post-title-main {
+    margin: 0 !important;
+}
+
+/* Table Styles */
+table {
+    border-radius: 6px;
+}
+
+table > thead > tr > th {
+    background-color: #2f3544;
+    font-size: 16px;
+    color: #ffff;
+    line-height: 1.59;
+    padding: 14px;
+    font-weight: 400;
+}
+
+table > tbody > tr {
+    line-height: 1.59;
+}
+
+table > tbody > tr:nth-of-type(odd) {
+    background-color: white;
+}
+
+table > tbody > tr:nth-of-type(even) {
+    background-color: #f6f5fb;
+}
+
+.alert > b, .alert > strong {
+    color: #4a4c52;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+#profileTabs {
+    display: flex;
+    flex-direction: row;
+}
+
+#profileTabs > li {
+    flex-basis: 0;
+    flex-grow: 1;
+    height: 50px;
+}
+
+#profileTabs > .active > a {
+    color: white;
+    background-color: #796de3 !important; 
+}
+
+#profileTabs > li > a {
+    height: inherit;
+    font-size: 20px;
+    line-height: 2;
+    text-align: center;
+	color: #878e9d;
+    background-color: #2f3543;
+    width: 100%;
+    border-radius: 0;
+}
+
+#profileTabs > li:nth-child(1) > a {
+    border-radius: 5px 0 0 0;
+}
+
+#profileTabs > li:last-child > a {
+    border-radius: 0 5px 0 0;
+}
+
+.nav-tabs--intro > li > a  {
+	background-color: #d4d1e8 !important;
+    border: solid 1px #e6e8f4 !important;
+    color: white !important;
+}
+
+.tab-content--intro {
+    background-color: #f6f5fb;
+    border: solid 1px #e6e8f4;
+    padding: 30px 50px !important;
 }
