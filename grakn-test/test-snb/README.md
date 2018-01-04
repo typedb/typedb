@@ -10,7 +10,7 @@ The `test-snb` project perform tests with the [SNB data](ldbcouncil.org/develope
 2. Add an environment variable pointing to where it was extracted: `export HADOOP_HOME=/path/to/hadoop`
 
 ### SNB Data generator
-1. Clone the [SNB LDDBC Datagen](https://github.com/ldbc/ldbc_snb_datagen) repository.
+1. Clone the [SNB LDBC Datagen](https://github.com/ldbc/ldbc_snb_datagen) repository.
 2. Add an environment variable pointing to where it was extracted: `export LDBC_SNB_DATAGEN_HOME=/path/to/snb-ldbc-datagen`
 3. Compile and generate a fat-JAR using Maven: `cd /path/to/snb-ldbc-datagen && mvn clean compile assembly:single`
 
