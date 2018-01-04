@@ -187,7 +187,6 @@ public class GraqlController {
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
 
-                System.out.println("RUNNING: " + queryString);
                 QueryBuilder builder = tx.graql();
 
                 infer.ifPresent(builder::infer);
