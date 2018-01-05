@@ -15,28 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+
 package ai.grakn.graql.internal.reasoner.utils.conversion;
 
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import com.google.common.collect.Multimap;
+import java.util.stream.Stream;
 
 /**
  * <p>
- * TypeConverter interface for conversion between compatible types.
+ * Basic {@link SchemaConceptConverter} implementation for conversion between compatible types.
  * </p>
- * @param <T> type to convert from
  *
  * @author Kasper Piskorski
  */
-public interface TypeConverter<T extends Type>{
-    /**
-     * convert a given type to a map of relation types in which it can play roles
-     * and the corresponding role types including entity type hierarchy
-     * @param type to be converted
-     * @return map of relation types in which it can play roles and the corresponding role types
-     */
-    Multimap<RelationType, RoleType> toRelationMultimap(T type);
-}
+public class TypeConverter implements SchemaConceptConverter<Type> {
 
+    @Override
+    public Stream<Role> toCompatibleRoles(Type entryType) {
+        return entryType.subs().flatMap(Type::plays);
+    }
+}

@@ -19,7 +19,9 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
+import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -43,36 +45,38 @@ public interface Answer {
     Answer copy();
 
     @CheckReturnValue
-    Set<Var> keySet();
+    Set<Var> vars();
 
     @CheckReturnValue
-    Collection<Concept> values();
-
-    @CheckReturnValue
-    Set<Concept> concepts();
+    Collection<Concept> concepts();
 
     @CheckReturnValue
     Set<Map.Entry<Var, Concept>> entrySet();
 
+    /**
+     * Return the {@link Concept} bound to the given variable name.
+     *
+     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
+     */
     @CheckReturnValue
     Concept get(String var);
 
+    /**
+     * Return the {@link Concept} bound to the given {@link Var}.
+     *
+     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
+     */
     @CheckReturnValue
     Concept get(Var var);
 
-    Concept put(Var var, Concept con);
-
-    Concept remove(Var var);
+    @CheckReturnValue
+    ImmutableMap<Var, Concept> map();
 
     @CheckReturnValue
-    Map<Var, Concept> map();
-
-    void putAll(Answer a);
-
-    void putAll(Map<Var, Concept> m2);
+    boolean containsVar(Var var);
 
     @CheckReturnValue
-    boolean containsKey(Var var);
+    boolean containsAll(Answer ans);
 
     @CheckReturnValue
     boolean isEmpty();
@@ -104,6 +108,13 @@ public interface Answer {
     Answer merge(Answer a2, boolean explanation);
 
     /**
+     * @param a2 answer with which explanation of this answer should be merged
+     * @return merged explanation of this and provided answer
+     */
+    @CheckReturnValue
+    AnswerExplanation mergeExplanation(Answer a2);
+
+    /**
      * explain this answer by providing explanation with preserving the structure of dependent answers
      *
      * @param exp explanation for this answer
@@ -112,11 +123,11 @@ public interface Answer {
     Answer explain(AnswerExplanation exp);
 
     /**
-     * @param vars variables to be retained
-     * @return answer with filtered variables
+     * @param vars variables defining the projection
+     * @return project the answer retaining the requested variables
      */
     @CheckReturnValue
-    Answer filterVars(Set<Var> vars);
+    Answer project(Set<Var> vars);
 
     /**
      * @param unifier set of mappings between variables
@@ -126,23 +137,24 @@ public interface Answer {
     Answer unify(Unifier unifier);
 
     /**
-     * @param unifierSet set of permutation mappings
-     * @return stream of permuted answers
+     * @param multiUnifier set of unifiers defining variable mappings
+     * @return stream of unified answers
      */
     @CheckReturnValue
-    Stream<Answer> permute(Set<Unifier> unifierSet);
+    Stream<Answer> unify(MultiUnifier multiUnifier);
+
+    /**
+     * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
+     * @return stream of answers with expanded role hierarchy
+     */
+    @CheckReturnValue
+    Stream<Answer> expandHierarchies(Set<Var> toExpand);
 
     /**
      * @return an explanation object indicating how this answer was obtained
      */
     @CheckReturnValue
     AnswerExplanation getExplanation();
-
-    /**
-     * @param e explanation to be set for this answer
-     * @return answer with provided explanation
-     */
-    Answer setExplanation(AnswerExplanation e);
 
     /**
      * @return set of answers corresponding to the explicit path
@@ -154,11 +166,19 @@ public interface Answer {
      * @return set of all answers taking part in the derivation of this answer
      */
     @CheckReturnValue
-    Set<Answer> getAnswers();
+    Set<Answer> getPartialAnswers();
 
     /**
      * @return all explanations taking part in the derivation of this answer
      */
     @CheckReturnValue
     Set<AnswerExplanation> getExplanations();
+
+    /**
+     * @param parent query context
+     * @return (partial) set of predicates corresponding to this answer
+     */
+    @CheckReturnValue
+    Set<Atomic> toPredicates(ReasonerQuery parent);
+
 }

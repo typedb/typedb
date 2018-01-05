@@ -25,115 +25,90 @@ package ai.grakn.util;
  */
 public class REST {
 
+    public static String resolveTemplate(String pathTemplate, String... pathParams) {
+        // e.g. `/kb/:keyspace/commit_log` -> `/kb/%s/commit_log`
+        String format = pathTemplate.replaceAll(":[^/]+", "%s");
+        return String.format(format, (Object[]) pathParams);
+    }
+
     /**
      * Class containing URIs to REST endpoints.
      */
     public static class WebPath{
 
-        public static final String COMMIT_LOG_URI = "/commit_log";
+        /**
+         * Keyspace Specific Operations
+         */
+        public static final String KB = "/kb";
+        public static final String KB_KEYSPACE = "/kb/:keyspace";
+        public static final String KEYSPACE_TYPE = "/kb/:keyspace/type";
+        public static final String KEYSPACE_ROLE = "/kb/:keyspace/role";
+        public static final String KEYSPACE_RULE = "/kb/:keyspace/rule";
+        public static final String KEYSPACE_GRAQL = "/kb/:keyspace/graql";
+        public static final String KEYSPACE_EXPLAIN = "/kb/:keyspace/explain";
+        public static final String COMMIT_LOG_URI = "/kb/:keyspace/commit_log";
+
+        /**
+         * Concept Specific operations
+         */
+        public static final String CONCEPT_LINK = "/kb/:keyspace/:base-type/:id";
+        public static final String CONCEPT_ID = "/kb/:keyspace/concept/:id";
+        public static final String CONCEPT_ATTRIBUTES = "/kb/:keyspace/concept/:id/attributes";
+        public static final String CONCEPT_KEYS = "/kb/:keyspace/concept/:id/keys";
+        public static final String CONCEPT_RELATIONSHIPS = "/kb/:keyspace/concept/:id/relationships";
+
+        public static final String TYPE_LABEL = "/kb/:keyspace/type/:label";
+        public static final String TYPE_SUBS = "/kb/:keyspace/type/:label/subs";
+        public static final String TYPE_PLAYS = "/kb/:keyspace/type/:label/plays";
+        public static final String TYPE_ATTRIBUTES = "/kb/:keyspace/type/:label/attributes";
+        public static final String TYPE_KEYS = "/kb/:keyspace/type/:label/keys";
+        public static final String TYPE_INSTANCES = "/kb/:keyspace/type/:label/instances";
+
+        public static final String RULE_LABEL = "/kb/:keyspace/rule/:label";
+        public static final String RULE_SUBS = "/kb/:keyspace/rule/:label/subs";
+
+        public static final String ROLE_LABEL = "/kb/:keyspace/role/:label";
+        public static final String ROLE_SUBS = "/kb/:keyspace/role/:label/subs";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
         /**
-         * URIs to visualiser controller
-         */
-        public static class Graph {
-            public static final String GRAQL = "/graph/graql";
-        }
-
-        /**
-         * URIs to Tasks Controller endpoints
-         */
-        public static class Tasks {
-            public static final String TASKS = "/tasks";
-            public static final String GET = "/tasks/:id";
-            public static final String STOP = "/tasks/:id/stop";
-        }
-
-        /**
          * URIs to System Controller endpoints
          */
-        public static class System {
-            public static final String CONFIGURATION = "/configuration";
-            public static final String KEYSPACES = "/keyspaces";
-        }
-
-        /**
-         * URIs to concept controller endpoints
-         */
-        public static class Concept {
-            public static final String CONCEPT = "/graph/concept/";
-            public static final String ONTOLOGY = "/graph/ontology";
-        }
-
-        /**
-         * URIs to dashboard controller endpoints
-         */
-        public static class Dashboard {
-            public static final String TYPES = "/dashboard/types/";
-            public static final String EXPLORE = "/dashboard/explore/";
-            public static final String EXPLAIN = "/dashboard/explain/";
-            public static final String PRECOMPUTE = "/dashboard/precomputeInferences";
-        }
-
-        public static final String NEW_SESSION_URI="/auth/session/";
-        public static final String IS_PASSWORD_PROTECTED_URI="/auth/enabled/";
-
-        public static final String ALL_USERS = "/user/all";
-        public static final String ONE_USER = "/user/one";
+        public static final String STATUS = "/status";
+        public static final String VERSION = "/version";
+        public static final String METRICS = "/metrics";
     }
 
     /**
      * Class containing request fields and content types.
      */
     public static class Request {
-        // Attributes set and used on the server-side
-        public static final String USER_ATTR = "user";
-        
         // Request parameters
+        public static final String LABEL_PARAMETER = ":label";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
-        public static final String GRAPH_CONFIG_PARAM = "graphConfig";
-        public static final String TASK_STATUS_PARAMETER = "status";
-        public static final String TASK_CLASS_NAME_PARAMETER = "className";
-        public static final String TASK_CREATOR_PARAMETER = "creator";
-        public static final String TASK_RUN_AT_PARAMETER = "runAt";
-        public static final String TASK_PRIORITY_PARAMETER = "priority";
-        public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
-        public static final String TASK_LOADER_MUTATIONS = "mutations";
-        public static final String LIMIT_PARAM = "limit";
-        public static final String OFFSET_PARAM = "offset";
-        public static final String KEYSPACE = "keyspace";
-
-        //Commit Logs
-        public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
-        public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
-        public static final String COMMIT_LOG_CONCEPT_ID = "concept-id";
-        public static final String COMMIT_LOG_SHARDING_COUNT = "sharding-count";
-
-        /**
-         * Concept controller request parameters
-         */
-        public static final class Concept {
-            public static final String LIMIT_EMBEDDED = "limitEmbedded";
-            public static final String OFFSET_EMBEDDED = "offsetEmbedded";
-        }
+        public static final String LIMIT_PARAMETER = "limit";
+        public static final String OFFSET_PARAMETER = "offset";
+        public static final String FORMAT = "format";
 
         /**
          * Graql controller request parameters
          */
         public static final class Graql {
             public static final String QUERY = "query";
-            public static final String INFER = "infer";
-            public static final String MATERIALISE = "materialise";
-            public static final String LIMIT_EMBEDDED = "limitEmbedded";
+            public static final String EXECUTE_WITH_INFERENCE = "infer";
+            public static final String ALLOW_MULTIPLE_QUERIES = "multi";
+            public static final String TX_TYPE = "txType";
+            public static final String DEFINE_ALL_VARS = "defineAllVars";
+            public static final String LOADING_DATA = "loading";
         }
     }
 
     /**
-     * Class listing possible graph configuration options.
+     * Class listing possible knowledge base configuration options.
      */
-    public static class GraphConfig{
+    public static class KBConfig {
         public static final String DEFAULT = "default";
         public static final String COMPUTER = "computer";
     }
@@ -142,14 +117,9 @@ public class REST {
      * Class listing various HTTP connection strings.
      */
     public static class HttpConn{
-        public static final int OK = 200;
-        public static final String UTF8 = "UTF8";
-        public static final String CONTENT_LENGTH = "Content-Length";
-        public static final String CONTENT_TYPE = "Content-Type";
         public static final String POST_METHOD = "POST";
+        public static final String PUT_METHOD = "PUT";
         public static final String DELETE_METHOD = "DELETE";
-        public static final String GET_METHOD = "GET";
-        public static final String APPLICATION_POST_TYPE = "application/POST";
     }
 
     /**
@@ -163,30 +133,17 @@ public class REST {
          * Response content types
          */
         public static class ContentType {
-            public static final String APPLICATION_JSON_GRAQL = "application/graql+json";
-            public static final String APPLICATION_JSON = "application/json";
             public static final String APPLICATION_TEXT = "application/text";
-            public static final String APPLICATION_HAL ="application/hal+json";
+            public static final String APPLICATION_JSON = "application/json";
+            public static final String APPLICATION_ALL ="*/*";
         }
 
         /**
-         * Graql controller response fields
+         * Json fields used to describe tasks
          */
-        public static class Graql {
-            public static final String RESPONSE = "response";
-            public static final String IDENTIFIER = "identifier";
-            public static final String ORIGINAL_QUERY = "originalQuery";
-        }
-
-        /**
-         *  Metatypes Json object fields
-         */
-
-        public static class Json {
-            public static final String ENTITIES_JSON_FIELD = "entities";
-            public static final String ROLES_JSON_FIELD = "roles";
-            public static final String RELATIONS_JSON_FIELD = "relations";
-            public static final String RESOURCES_JSON_FIELD = "resources";
+        public static class Task {
+            public static final String STACK_TRACE = "stackTrace";
+            public static final String ID = "id";
         }
     }
 
@@ -206,13 +163,9 @@ public class REST {
         public static final String ACTION_TYPES = "types";
         public static final String ACTION_DISPLAY = "display";
 
-        public static final String USERNAME = "username";
-        public static final String PASSWORD = "password";
         public static final String KEYSPACE = "keyspace";
         public static final String OUTPUT_FORMAT = "outputFormat";
-        public static final String IMPLICIT = "implicit";
         public static final String INFER = "infer";
-        public static final String MATERIALISE = "materialise";
         public static final String QUERY = "query";
         public static final String QUERY_RESULT = "result";
         public static final String ERROR = "error";

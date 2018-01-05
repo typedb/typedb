@@ -18,28 +18,28 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
+import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.Schema.BaseType.CASTING;
-import static ai.grakn.util.Schema.ConceptProperty.IS_SHARD;
+import java.util.Collection;
 
-class NotInternalFragment extends AbstractFragment {
+@AutoValue
+abstract class NotInternalFragment extends Fragment {
 
-    NotInternalFragment(Var start) {
-        super(start);
+    @Override
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+        return traversal.not(__.hasLabel(Schema.BaseType.SHARD.name()));
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.not(__.hasLabel(CASTING.name())).not(__.has(IS_SHARD.name(), true));
-    }
-
-    @Override
-    public String getName() {
+    public String name() {
         return "[not-internal]";
     }
 
@@ -49,7 +49,7 @@ class NotInternalFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost;
+    public double internalFragmentCost() {
+        return COST_NODE_NOT_INTERNAL;
     }
 }

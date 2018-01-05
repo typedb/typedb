@@ -20,8 +20,6 @@ package ai.grakn.migration.csv;
 
 import ai.grakn.migration.base.MigrationOptions;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
-
 /**
  * Configure the default CSV migration options and access arguments passed by the user
  * @author alexandraorth
@@ -40,16 +38,13 @@ public class CSVMigrationOptions extends MigrationOptions {
         options.addOption("s", "separator", true, "Separator of columns in input file.");
         options.addOption("q", "quote", true, "Character used to encapsulate values containing special characters.");
         options.addOption("l", "null", true, "String that will be evaluated as null.");
-        options.addOption("b", "batch", true, "Number of rows to execute in one Grakn transaction. Default 25.");
-        options.addOption("a", "active", true, "Number of tasks (batches) running on the server at any one time. Default 25.");
-
         parse(args);
     }
 
     public char getSeparator() {
         String sep = command.getOptionValue("s", separator);
         if (sep.toCharArray().length != 1) {
-            die("Wrong number of characters in quote " + sep);
+            throw new IllegalArgumentException("Wrong number of characters in quote " + sep);
         }
 
         return sep.charAt(0);
@@ -58,7 +53,7 @@ public class CSVMigrationOptions extends MigrationOptions {
     public char getQuote() {
         String quo = command.getOptionValue("q", quote);
         if (quo.toCharArray().length != 1) {
-            die("Wrong number of characters in quote " + quo);
+            throw new IllegalArgumentException("Wrong number of characters in quote " + quo);
         }
 
         return quo.charAt(0);

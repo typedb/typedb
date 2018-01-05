@@ -18,11 +18,12 @@
 
 package ai.grakn;
 
+import ai.grakn.util.SimpleURI;
+
 import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 //Docs to do @Filipe
 /*
@@ -35,42 +36,42 @@ import java.util.Map;
 
 /**
  <p>
- Grakn is the main entry point to connect to a Grakn Knowledge Graph.
+ Grakn is the main entry point to connect to a Grakn Knowledge Base.
 
  To connect to a knowledge graph, first make sure you have a Grakn Engine server running by starting it from the shell using:
- <pre>{@code grakn.sh start}</pre>
+ <pre>{@code grakn server start}</pre>
 
  To establish a connection, you first need to obtain a {@link GraknSession} by calling
  the {@link #session(String, String)} method. A {@link GraknSession} connects to a given physical
  location and specific database instance within that location.
 
  Once you've instantiated a session, you can obtain multiple concurrent graph connections,
- represented by the {@link GraknGraph} interface.
+ represented by the {@link GraknTx} interface.
 
  If you are running the Grakn server locally then you can initialise a graph with:
 
- <pre>{@code GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, "keyspace").getGraph();}</pre>
+ <pre>{@code GraknTx graph = Grakn.session(Grakn.DEFAULT_URI, "keyspace").getGraph();}</pre>
  If you are running the Grakn server remotely you must initialise the graph by providing the IP address of your server:
 
- <pre>{@code GraknGraph graph = Grakn.session("127.6.21.2", "keyspace").getGraph();}</pre>
+ <pre>{@code GraknTx graph = Grakn.session("127.6.21.2", "keyspace").getGraph();}</pre>
  The string “keyspace” uniquely identifies the graph and allows you to create different graphs.
 
  Please note that graph keyspaces are not case sensitive so the following two graphs are actually the same graph:
 
- <pre>{@code GraknGraph graph1 = Grakn.session("127.6.21.2", "keyspace").getGraph();
- GraknGraph graph2 = Grakn.session("127.6.21.2", "KeYsPaCe").getGraph();}</pre>
+ <pre>{@code GraknTx graph1 = Grakn.session("127.6.21.2", "keyspace").getGraph();
+ GraknTx graph2 = Grakn.session("127.6.21.2", "KeYsPaCe").getGraph();}</pre>
  All graphs are also singletons specific to their keyspaces so be aware that in the following case:
 
- <pre>{@code GraknGraph graph1 = Grakn.session("127.6.21.2", "keyspace").getGraph();
- GraknGraph graph2 = Grakn.session("127.6.21.2", "keyspace").getGraph();
- GraknGraph graph3 = Grakn.session("127.6.21.2", "keyspace").getGraph();}</pre>
+ <pre>{@code GraknTx graph1 = Grakn.session("127.6.21.2", "keyspace").getGraph();
+ GraknTx graph2 = Grakn.session("127.6.21.2", "keyspace").getGraph();
+ GraknTx graph3 = Grakn.session("127.6.21.2", "keyspace").getGraph();}</pre>
 
  any changes to <code>graph1</code>, <code>graph2</code>, or <code>graph3</code> will all be persisted to the same graph.
 
  You can alternatively instantiate a 'toy' knowledge graph (which runs in-memory) for experimentation purposes.
  You can initialise an in memory graph without having the Grakn server running:
 
- <pre>{@code GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "keyspace").getGraph();}</pre>
+ <pre>{@code GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "keyspace").getGraph();}</pre>
  This in memory graph serves as a toy graph for you to become accustomed to the API without needing to setup a
  Grakn Server. It is also useful for testing purposes.
  </p>
@@ -81,30 +82,32 @@ import java.util.Map;
 
 
 public class Grakn {
+
     /**
      * Constant to be passed to {@link #session(String, String)} to specify the default localhost Grakn Engine location.
      * This default constant, which is set to localhost: 4567 cannot be changed in development"
      */
-    public static final String DEFAULT_URI = "localhost:4567";
+    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost", 4567);
 
-    private static final String GRAKN_GRAPH_SESSION_IMPLEMENTATION = "ai.grakn.factory.GraknSessionImpl";
+    private static final String SESSION_CLASS = "ai.grakn.factory.GraknSessionImpl";
+
+    private static final String SESSION_BUILDER = "create";
 
     /**
      * Constant to be passed to {@link #session(String, String)} to specify an in-memory graph.
      */
     public static final String IN_MEMORY = "in-memory";
 
-    private static final Map<String, GraknSession> clients = new HashMap<>();
+    private static final Map<String, GraknSession> clients = new ConcurrentHashMap<>();
 
     private static <F extends GraknSession> F loadImplementation(String className,
                                                                  String location,
-                                                                 String keyspace) {
+                                                                 Keyspace keyspace) {
         try {
             @SuppressWarnings("unchecked")
-            Class<F> cl = (Class<F>)Class.forName(className);
-            return cl.getConstructor(String.class, String.class).newInstance(keyspace, location);
-        } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException
-                | ClassNotFoundException e) {
+            Class cl = Class.forName(className);
+            return (F) cl.getMethod(SESSION_BUILDER, Keyspace.class, String.class).invoke(null, keyspace, location);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
@@ -127,8 +130,22 @@ public class Grakn {
      */
     @CheckReturnValue
     public static GraknSession session(String location, String keyspace) {
-        String finalKeyspace = keyspace.toLowerCase(Locale.getDefault());
-        String key = location + finalKeyspace;
-        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_GRAPH_SESSION_IMPLEMENTATION, location, finalKeyspace));
+        return session(location, Keyspace.of(keyspace));
+    }
+
+    @CheckReturnValue
+    public static GraknSession session(SimpleURI location, String keyspace) {
+        return session(location.toString(), Keyspace.of(keyspace));
+    }
+
+    @CheckReturnValue
+    public static GraknSession session(SimpleURI location, Keyspace keyspace) {
+        return session(location.toString(), keyspace);
+    }
+
+    @CheckReturnValue
+    public static GraknSession session(String location, Keyspace keyspace) {
+        String key = location + keyspace.getValue();
+        return clients.computeIfAbsent(key, (k) -> loadImplementation(SESSION_CLASS, location, keyspace));
     }
 }

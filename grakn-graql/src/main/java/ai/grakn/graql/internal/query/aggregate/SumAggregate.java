@@ -18,13 +18,14 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
 import java.util.stream.Stream;
 
 /**
- * Aggregate that sums results of a match query.
+ * Aggregate that sums results of a {@link Match}.
  */
 class SumAggregate extends AbstractAggregate<Answer, Number> {
 
@@ -36,7 +37,7 @@ class SumAggregate extends AbstractAggregate<Answer, Number> {
 
     @Override
     public Number apply(Stream<? extends Answer> stream) {
-        return stream.map(result -> (Number) result.get(varName).asResource().getValue()).reduce(0, this::add);
+        return stream.map(result -> (Number) result.get(varName).asAttribute().getValue()).reduce(0, this::add);
     }
 
     private Number add(Number x, Number y) {

@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -39,10 +39,10 @@ public interface SumQuery extends ComputeQuery<Optional<Number>> {
     SumQuery of(String... resourceTypeLabels);
 
     /**
-     * @param resourceTypeLabels a collection of types of resources to execute the query on
+     * @param resourceLabels a collection of types of resources to execute the query on
      * @return a SumQuery with the subTypeLabels set
      */
-    SumQuery of(Collection<TypeLabel> resourceTypeLabels);
+    SumQuery of(Collection<Label> resourceLabels);
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph
@@ -52,11 +52,11 @@ public interface SumQuery extends ComputeQuery<Optional<Number>> {
     SumQuery in(String... subTypeLabels);
 
     /**
-     * @param subTypeLabels a collection of types to include in the subgraph
-     * @return a SumQuery with the subTypeLabels set
+     * @param subLabels a collection of types to include in the subgraph
+     * @return a SumQuery with the subLabels set
      */
     @Override
-    SumQuery in(Collection<TypeLabel> subTypeLabels);
+    SumQuery in(Collection<Label> subLabels);
 
     /**
      * Execute the query.
@@ -67,9 +67,9 @@ public interface SumQuery extends ComputeQuery<Optional<Number>> {
     Optional<Number> execute();
 
     /**
-     * @param graph the graph to execute the query on
-     * @return a SumQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a SumQuery with the transaction set
      */
     @Override
-    SumQuery withGraph(GraknGraph graph);
+    SumQuery withTx(GraknTx tx);
 }

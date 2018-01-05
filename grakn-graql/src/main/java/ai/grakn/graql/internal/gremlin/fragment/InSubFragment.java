@@ -18,29 +18,57 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-class InSubFragment extends AbstractFragment {
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
-    InSubFragment(Var start, Var end) {
-        super(start, end);
+/**
+ * Fragment following in sub edges
+ *
+ * @author Felix Chapman
+ */
+
+@AutoValue
+public abstract class InSubFragment extends Fragment {
+
+    @Override
+    public abstract Var end();
+
+    @Override
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+        return Fragments.inSubs(Fragments.isVertex(traversal));
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        Fragments.inSubs(traversal);
-    }
-
-    @Override
-    public String getName() {
+    public String name() {
         return "<-[sub]-";
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost * NUM_SUBTYPES_PER_TYPE;
+    public double internalFragmentCost() {
+        return COST_SUBTYPES_PER_TYPE;
+    }
+
+    @Override
+    public Fragment getInverse() {
+        return Fragments.outSub(varProperty(), end(), start());
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
+        return directedEdges(NodeId.NodeType.SUB, nodes, edges);
     }
 }

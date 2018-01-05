@@ -1,33 +1,27 @@
 grammar Graql;
 
-queryList : queryListElem* ;
-
-// This rule exists so query lists never parse "match...insert" style queries,
-// because it is ambiguous.
-// TODO: Fix this by changing the syntax
-queryListElem : matchQuery | insertOnly | simpleQuery ;
+queryList : query* EOF ;
 
 queryEOF       : query EOF ;
-query          : matchQuery | insertQuery | simpleQuery ;
-simpleQuery    : askQuery | deleteQuery | aggregateQuery | computeQuery ;
+query          : getQuery | insertQuery | defineQuery | undefineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
-matchQuery     : MATCH patterns                                   # matchBase
-               | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
-               | matchQuery 'limit' INTEGER                   ';' # matchLimit
-               | matchQuery 'offset' INTEGER                  ';' # matchOffset
-               | matchQuery 'distinct'                        ';' # matchDistinct
-               | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
+matchPart      : MATCH patterns                             # matchBase
+               | matchPart 'limit' INTEGER              ';' # matchLimit
+               | matchPart 'offset' INTEGER             ';' # matchOffset
+               | matchPart 'order' 'by' VARIABLE ORDER? ';' # matchOrderBy
                ;
 
-askQuery       : matchQuery 'ask' ';' ;
-insertQuery    : matchInsert | insertOnly ;
-insertOnly     : INSERT varPatterns ;
-matchInsert    : matchQuery INSERT varPatterns ;
-deleteQuery    : matchQuery 'delete' varPatterns ;
-aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
+getQuery       : matchPart 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
+insertQuery    : matchPart? INSERT varPatterns ;
+defineQuery    : DEFINE varPatterns ;
+undefineQuery  : UNDEFINE varPatterns ;
+deleteQuery    : matchPart 'delete' variables? ';' ;
+aggregateQuery : matchPart 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
 
-computeMethod  : min | max | median | mean | std | sum | count | path | cluster | degrees ;
+variables      : VARIABLE (',' VARIABLE)* ;
+
+computeMethod  : min | max | median | mean | std | sum | count | path | paths | cluster | degrees ;
 
 min            : MIN      'of' ofList      ('in' inList)? ';' ;
 max            : MAX      'of' ofList      ('in' inList)? ';' ;
@@ -36,8 +30,9 @@ mean           : MEAN     'of' ofList      ('in' inList)? ';' ;
 std            : STD      'of' ofList      ('in' inList)? ';' ;
 sum            : SUM      'of' ofList      ('in' inList)? ';' ;
 degrees        : DEGREES ('of' ofList)?    ('in' inList)? ';' ;
-cluster        : CLUSTER                   ('in' inList)? ';' clusterParam* ;
+cluster        : CLUSTER ('of' id    )?    ('in' inList)? ';' clusterParam* ;
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
+paths          : PATHS   'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
 clusterParam   : MEMBERS      ';' # clusterMembers
@@ -69,13 +64,12 @@ property       : 'isa' variable                     # isa
                | 'sub' variable                     # sub
                | 'relates' variable                 # relates
                | 'plays' variable                   # plays
-               | 'has-scope' VARIABLE               # hasScope
                | 'id' id                            # propId
                | 'label' label                      # propLabel
                | 'val' predicate                    # propValue
-               | 'lhs' '{' patterns '}'             # propLhs
-               | 'rhs' '{' varPatterns '}'          # propRhs
-               | 'has' label (VARIABLE | predicate) # propHas
+               | 'when' '{' patterns '}'            # propWhen
+               | 'then' '{' varPatterns '}'         # propThen
+               | 'has' label (resource=VARIABLE | predicate) ('via' relation=VARIABLE)?# propHas
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey
                | '(' casting (',' casting)* ')'     # propRel
@@ -90,15 +84,15 @@ casting        : variable (':' VARIABLE)?
 
 variable       : label | VARIABLE ;
 
-predicate      : '='? value        # predicateEq
-               | '=' VARIABLE      # predicateVariable
-               | '!=' valueOrVar   # predicateNeq
-               | '>' valueOrVar    # predicateGt
-               | '>=' valueOrVar   # predicateGte
-               | '<' valueOrVar    # predicateLt
-               | '<=' valueOrVar   # predicateLte
-               | 'contains' STRING # predicateContains
-               | REGEX             # predicateRegex
+predicate      : '='? value                     # predicateEq
+               | '=' VARIABLE                   # predicateVariable
+               | '!=' valueOrVar                # predicateNeq
+               | '>' valueOrVar                 # predicateGt
+               | '>=' valueOrVar                # predicateGte
+               | '<' valueOrVar                 # predicateLt
+               | '<=' valueOrVar                # predicateLte
+               | 'contains' (STRING | VARIABLE) # predicateContains
+               | REGEX                          # predicateRegex
                ;
 valueOrVar     : VARIABLE # valueVariable
                | value    # valuePrimitive
@@ -111,7 +105,7 @@ value          : STRING   # valueString
                | DATETIME # valueDateTime
                ;
 
-label          : identifier ;
+label          : identifier | IMPLICIT_IDENTIFIER;
 id             : identifier ;
 
 // Some keywords can also be used as identifiers
@@ -129,12 +123,15 @@ STD            : 'std' ;
 SUM            : 'sum' ;
 COUNT          : 'count' ;
 PATH           : 'path' ;
+PATHS          : 'paths' ;
 CLUSTER        : 'cluster' ;
 DEGREES        : 'degrees' ;
 MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
+DEFINE         : 'define' ;
+UNDEFINE       : 'undefine' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;
@@ -160,6 +157,8 @@ fragment SECOND        : [0-6][0-9] ('.' [0-9]+)? ;
 fragment ESCAPE_SEQ : '\\' . ;
 
 COMMENT : '#' .*? '\r'? ('\n' | EOF) -> channel(HIDDEN) ;
+
+IMPLICIT_IDENTIFIER : '@' [a-zA-Z0-9_-]+ ;
 
 WS : [ \t\r\n]+ -> channel(HIDDEN) ;
 

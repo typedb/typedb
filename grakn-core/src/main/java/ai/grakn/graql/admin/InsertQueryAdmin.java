@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Type;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -36,26 +36,26 @@ import java.util.Set;
 public interface InsertQueryAdmin extends InsertQuery {
 
     /**
-     * @return the match query that this insert query is using, if it was provided one
+     * @return the {@link Match} that this insert query is using, if it was provided one
      */
     @CheckReturnValue
-    Optional<? extends MatchQuery> getMatchQuery();
+    Optional<? extends Match> match();
 
     /**
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<Type> getTypes();
+    Set<SchemaConcept> getSchemaConcepts();
 
     /**
      * @return the variables to insert in the insert query
      */
     @CheckReturnValue
-    Collection<VarPatternAdmin> getVars();
+    Collection<VarPatternAdmin> varPatterns();
 
     /**
      * @return the graph set on this query, if it was provided one
      */
     @CheckReturnValue
-    Optional<GraknGraph> getGraph();
+    Optional<GraknTx> getTx();
 }

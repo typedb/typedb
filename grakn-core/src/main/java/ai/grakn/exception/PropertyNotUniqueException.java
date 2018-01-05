@@ -19,8 +19,12 @@
 package ai.grakn.exception;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.util.ErrorMessage.INVALID_UNIQUE_PROPERTY_MUTATION;
 import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
@@ -32,13 +36,13 @@ import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
  *
  * <p>
  *     This occurs when attempting to add a globally unique property to a concept.
- *     For example when creating a {@link ai.grakn.concept.EntityType} and {@link ai.grakn.concept.RelationType} using
- *     the same {@link ai.grakn.concept.TypeLabel}
+ *     For example when creating a {@link ai.grakn.concept.EntityType} and {@link RelationshipType} using
+ *     the same {@link Label}
  * </p>
  *
  * @author fppt
  */
-public class PropertyNotUniqueException extends GraphOperationException{
+public class PropertyNotUniqueException extends GraknTxOperationException {
     private PropertyNotUniqueException(String error) {
         super(error);
     }
@@ -47,15 +51,15 @@ public class PropertyNotUniqueException extends GraphOperationException{
      * Thrown when trying to set the property of concept {@code mutatingConcept} to a {@code value} which is already
      * taken by concept {@code conceptWithValue}
      */
-    public static PropertyNotUniqueException cannotChangeProperty(Concept mutatingConcept, Concept conceptWithValue, Schema.ConceptProperty property, Object value){
+    public static PropertyNotUniqueException cannotChangeProperty(Element mutatingConcept, Vertex conceptWithValue, Enum property, Object value){
         return new PropertyNotUniqueException(INVALID_UNIQUE_PROPERTY_MUTATION.getMessage(property, mutatingConcept, value, conceptWithValue));
     }
 
     /**
-     * Thrown when trying to create a concept using a unique property which is already taken.
-     * For example this happens when using an already taken {@link TypeLabel}
+     * Thrown when trying to create a {@link SchemaConcept} using a unique property which is already taken.
+     * For example this happens when using an already taken {@link Label}
      */
-    public static PropertyNotUniqueException cannotCreateProperty(Concept conceptWithValue, Schema.ConceptProperty property, Object value){
-        return new PropertyNotUniqueException(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, conceptWithValue));
+    public static PropertyNotUniqueException cannotCreateProperty(Concept concept, Schema.VertexProperty property, Object value){
+        return new PropertyNotUniqueException(UNIQUE_PROPERTY_TAKEN.getMessage(property.name(), value, concept));
     }
 }

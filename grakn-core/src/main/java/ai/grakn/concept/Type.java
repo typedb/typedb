@@ -18,10 +18,11 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
+import javax.annotation.Nullable;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -29,120 +30,102 @@ import java.util.Collection;
  * </p>
  *
  * <p>
- *     Types are used to model the behaviour of {@link Instance} and how they relate to each other.
- *     They also aid in categorising {@link Instance} to different types.
+ *     Types are used to model the behaviour of {@link Thing} and how they relate to each other.
+ *     They also aid in categorising {@link Thing} to different types.
  * </p>
  *
  * @see EntityType
- * @see RoleType
- * @see RelationType
- * @see ResourceType
- * @see RuleType
+ * @see Role
+ * @see RelationshipType
+ * @see AttributeType
  *
  * @author fppt
  *
  */
-public interface Type extends Concept {
+public interface Type extends SchemaConcept {
     //------------------------------------- Modifiers ----------------------------------
-    // TODO: Describe behaviour when setting a type with direct instances as abstract
+    /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    Type setLabel(Label label);
+
     /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
      *
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type setAbstract(Boolean isAbstract) throws GraphOperationException;
+    Type setAbstract(Boolean isAbstract) throws GraknTxOperationException;
 
     /**
      *
-     * @param roleType The Role Type which the instances of this Type are allowed to play.
+     * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type plays(RoleType roleType) throws GraphOperationException;
+    Type plays(Role role) throws GraknTxOperationException;
 
     /**
-     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type key(ResourceType resourceType) throws GraphOperationException;
+    Type key(AttributeType attributeType) throws GraknTxOperationException;
 
     /**
-     * Creates a RelationType which allows this type and a resource type to be linked.
+     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType}  to be linked.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-     Type resource(ResourceType resourceType) throws GraphOperationException;
-
-    /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
-     *
-     * @param scope The category of this Type
-     * @return The Type itself.
-     */
-    Type scope(Instance scope);
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    Type deleteScope(Instance scope);
+     Type attribute(AttributeType attributeType) throws GraknTxOperationException;
 
     //------------------------------------- Accessors ---------------------------------
-    /**
-     * Returns the unique id of this Type.
-     *
-     * @return The unique id of this type
-     */
-    @CheckReturnValue
-    TypeId getTypeId();
-
-    /**
-     * Returns the unique label of this Type.
-     *
-     * @return The unique label of this type
-     */
-    @CheckReturnValue
-    TypeLabel getLabel();
 
     /**
      *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
-    Collection<RoleType> plays();
+    Stream<Role> plays();
 
     /**
      *
-     * @return The resource types which this type is linked with.
+     * @return The {@link AttributeType}s which this {@link Type} is linked with.
      */
     @CheckReturnValue
-    Collection<ResourceType> resources();
+    Stream<AttributeType> attributes();
 
     /**
      *
-     * @return The resource types which this type is linked with as a key.
+     * @return The {@link AttributeType}s which this {@link Type} is linked with as a key.
      */
     @CheckReturnValue
-    Collection<ResourceType> keys();
+    Stream<AttributeType> keys();
 
     /**
      *
      * @return The direct super of this Type
      */
     @CheckReturnValue
-    Type superType();
+    @Nullable
+    Type sup();
+
+    /**
+     *
+     * @return All the the super-types of this {@link Type}
+     */
+    @Override
+    Stream<? extends Type> sups();
 
     /**
      * Get all indirect sub-types of this type.
@@ -152,7 +135,7 @@ public interface Type extends Concept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Collection<? extends Type> subTypes();
+    Stream<? extends Type> subs();
 
     /**
      * Get all indirect instances of this type.
@@ -162,7 +145,7 @@ public interface Type extends Concept {
      * @return All the indirect instances of this type.
      */
     @CheckReturnValue
-    Collection<? extends Instance> instances();
+    Stream<? extends Thing> instances();
 
     /**
      * Return if the type is set to abstract.
@@ -174,47 +157,42 @@ public interface Type extends Concept {
     @CheckReturnValue
     Boolean isAbstract();
 
-    /**
-     * Return whether the Type was created implicitly.
-     *
-     * By default, types are not implicit.
-     *
-     * @return returns true if the type was created implicitly through {@link #resource}
-     */
-    @CheckReturnValue
-    Boolean isImplicit();
-
-    /**
-     * Return the collection of Rules for which this Type serves as a hypothesis.
-     * @see Rule
-     *
-     * @return A collection of Rules for which this Type serves as a hypothesis
-     */
-    @CheckReturnValue
-    Collection<Rule> getRulesOfHypothesis();
-
-    /**
-     * Return the collection of Rules for which this Type serves as a conclusion.
-     * @see Rule
-     *
-     * @return A collection of Rules for which this Type serves as a conclusion
-     */
-    @CheckReturnValue
-    Collection<Rule> getRulesOfConclusion();
-
-    /**
-     * Retrieve a list of the Instances that scope this Type.
-     *
-     * @return A list of the Instances that scope this Type.
-     */
-    @CheckReturnValue
-    Collection<Instance> scopes();
-
     //------------------------------------- Other ----------------------------------
     /**
+     * Removes the ability of this {@link Type} to play a specific {@link Role}
      *
-     * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Type itself.
+     * @param role The {@link Role} which the {@link Thing}s of this {@link Type} should no longer be allowed to play.
+     * @return The {@link Type} itself.
      */
-    Type deletePlays(RoleType roleType);
+    Type deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link Type} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have
+     * @return The {@link Type} itself.
+     */
+    Type deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link Type}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have as a key
+     * @return The {@link Type} itself.
+     */
+    Type deleteKey(AttributeType attributeType);
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Type asType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isType(){
+        return true;
+    }
 }

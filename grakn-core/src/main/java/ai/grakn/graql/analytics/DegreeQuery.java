@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -41,30 +41,36 @@ public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
     DegreeQuery in(String... subTypeLabels);
 
     /**
-     * @param subTypeLabels a collection of types to include in the subgraph
-     * @return a DegreeQuery with the subTypeLabels set
+     * @param subLabels a collection of types to include in the subgraph
+     * @return a DegreeQuery with the subLabels set
      */
     @Override
-    DegreeQuery in(Collection<TypeLabel> subTypeLabels);
+    DegreeQuery in(Collection<Label> subLabels);
 
     /**
      * @param ofTypeLabels an array of types in the subgraph to compute degree of. By default the degrees of all the
-     *                    types in the graph will be computed
+     *                     types in the graph will be computed
      * @return a DegreeQuery with the subTypeLabels set
      */
     DegreeQuery of(String... ofTypeLabels);
 
     /**
-     * @param ofTypeLabels a collection of types in the subgraph to compute degree of. By default the degrees of all the
-     *                    types in the graph will be computed
+     * @param ofLabels a collection of types in the subgraph to compute degree of. By default the degrees of all the
+     *                 types in the graph will be computed
      * @return a DegreeQuery with the subTypeLabels set
      */
-    DegreeQuery of(Collection<TypeLabel> ofTypeLabels);
+    DegreeQuery of(Collection<Label> ofLabels);
 
     /**
-     * @param graph the graph to execute the query on
-     * @return a DegreeQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a DegreeQuery with the transaction set
      */
     @Override
-    DegreeQuery withGraph(GraknGraph graph);
+    DegreeQuery withTx(GraknTx tx);
+
+    /**
+     * Allow attributes and their relationships to be included.
+     */
+    @Override
+    DegreeQuery includeAttribute();
 }

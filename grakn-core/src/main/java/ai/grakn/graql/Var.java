@@ -19,14 +19,12 @@
 
 package ai.grakn.graql;
 
-import java.util.function.Function;
-
 /**
  * A variable in a Graql query
  *
  * @author Felix Chapman
  */
-public interface Var extends VarPatternBuilder {
+public interface Var extends VarPattern {
 
     /**
      * Get the string name of the variable (without prefixed "$")
@@ -34,11 +32,9 @@ public interface Var extends VarPatternBuilder {
     String getValue();
 
     /**
-     * Rename a variable (does not modify the original {@link Var})
-     * @param mapper a function to apply to the underlying variable name
-     * @return the new variable name
+     * The {@link Kind} of the {@link Var}, such as whether it is user-defined.
      */
-    Var map(Function<String, String> mapper);
+    Kind kind();
 
     /**
      * Whether the variable has been manually defined or automatically generated.
@@ -56,6 +52,11 @@ public interface Var extends VarPatternBuilder {
     Var asUserDefined();
 
     /**
+     * Get a unique name identifying the variable, differentiating user-defined variables from generated ones.
+     */
+    String name();
+
+    /**
      * Get a shorter representation of the variable (with prefixed "$")
      */
     String shortName();
@@ -67,4 +68,33 @@ public interface Var extends VarPatternBuilder {
 
     @Override
     int hashCode();
+
+    /**
+     * The {@link Kind} of a {@link Var}, such as whether it is user-defined.
+     */
+    enum Kind {
+
+        UserDefined {
+            @Override
+            public char prefix() {
+                return '§';
+            }
+        },
+
+        Generated {
+            @Override
+            public char prefix() {
+                return '#';
+            }
+        },
+
+        Reserved {
+            @Override
+            public char prefix() {
+                return '!';
+            }
+        };
+
+        public abstract char prefix();
+    }
 }

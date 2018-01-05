@@ -18,32 +18,32 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
-import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
-class RegexPredicate implements ValuePredicateAdmin {
+@AutoValue
+abstract class RegexPredicate implements ValuePredicate {
 
-    private final String pattern;
+    abstract String pattern();
 
     /**
      * @param pattern the regex pattern that this predicate is testing against
      */
-    RegexPredicate(String pattern) {
-        this.pattern = pattern;
+    static RegexPredicate of(String pattern) {
+        return new AutoValue_RegexPredicate(pattern);
     }
 
     private P<Object> regexPredicate() {
         BiPredicate<Object, Object> predicate = (value, p) -> Pattern.matches((String) p, (String) value);
-        return new P<>(predicate, pattern);
+        return new P<>(predicate, pattern());
     }
 
     @Override
@@ -57,33 +57,17 @@ class RegexPredicate implements ValuePredicateAdmin {
     }
 
     @Override
-    public void applyPredicate(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.has(Schema.ConceptProperty.VALUE_STRING.name(), regexPredicate());
+    public <S, E> GraphTraversal<S, E> applyPredicate(GraphTraversal<S, E> traversal) {
+        return traversal.has(Schema.VertexProperty.VALUE_STRING.name(), regexPredicate());
     }
 
     @Override
     public String toString() {
-        return "/" + StringConverter.escapeString(pattern) + "/";
+        return "/" + pattern().replaceAll("/", "\\\\/") + "/";
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RegexPredicate that = (RegexPredicate) o;
-
-        return pattern != null ? pattern.equals(that.pattern) : that.pattern == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        return pattern != null ? pattern.hashCode() : 0;
-    }
-
-    @Override
-    public boolean isCompatibleWith(ValuePredicateAdmin predicate){
+    public boolean isCompatibleWith(ValuePredicate predicate){
         if (!(predicate instanceof EqPredicate)) return false;
         EqPredicate p = (EqPredicate) predicate;
         Object pVal = p.equalsValue().orElse(null);

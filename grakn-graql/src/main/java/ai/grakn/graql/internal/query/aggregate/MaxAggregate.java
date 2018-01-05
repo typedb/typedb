@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
@@ -27,7 +28,7 @@ import java.util.stream.Stream;
 import static java.util.Comparator.naturalOrder;
 
 /**
- * Aggregate that finds maximum of a match query.
+ * Aggregate that finds maximum of a {@link Match}.
  */
 class MaxAggregate<T extends Comparable<T>> extends AbstractAggregate<Answer, Optional<T>> {
 
@@ -48,7 +49,7 @@ class MaxAggregate<T extends Comparable<T>> extends AbstractAggregate<Answer, Op
     }
 
     private T getValue(Answer result) {
-        return result.get(varName).<T>asResource().getValue();
+        return result.get(varName).<T>asAttribute().getValue();
     }
 
     @Override

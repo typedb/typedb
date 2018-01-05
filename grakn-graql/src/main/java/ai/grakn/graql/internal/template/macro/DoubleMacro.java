@@ -18,10 +18,6 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-import ai.grakn.graql.macro.Macro;
-
-import java.util.List;
-
 /**
  * <p>
  * Convert the given value into a boolean (true/false). Only accepts one argument.
@@ -33,16 +29,11 @@ import java.util.List;
  *
  * @author alexandraorth
  */
-public class DoubleMacro implements Macro<Double> {
-
-    private static final int numberArguments = 1;
+public class DoubleMacro extends AbstractNumericMacro<Double> {
 
     @Override
-    public Double apply(List<Object> values) {
-        if(values.size() != numberArguments){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
-        }
-        return Double.parseDouble(values.get(0).toString());
+    Double convertNumeric(String value) {
+        return Double.parseDouble(value);
     }
 
     @Override

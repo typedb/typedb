@@ -30,7 +30,7 @@ export default {
     for (let i = 0; i < arrayLength; i++) {
       queryString += `($${alphabet[i]},$x);`;
     }
-    queryString += '\nselect $x;';
+    queryString += '\nget $x;';
     return queryString;
   },
 
@@ -38,8 +38,8 @@ export default {
     return `compute path from "${nodeIds[0]}" to "${nodeIds[1]}";`;
   },
 
-  exploreRelationsBuilder(nodeIds) {
-    return `match $x id "${nodeIds[0]}"; $y id "${nodeIds[1]}"; $r ($x, $y);`;
+  exploreRelationshipsBuilder(nodeIds) {
+    return `match $x id "${nodeIds[0]}"; $y id "${nodeIds[1]}"; $r ($x, $y); get;`;
   },
 
 };

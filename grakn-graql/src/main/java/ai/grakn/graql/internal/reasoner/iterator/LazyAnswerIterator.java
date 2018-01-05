@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.iterator;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.Iterators;
 import java.util.Iterator;
@@ -48,15 +49,19 @@ public class LazyAnswerIterator extends LazyIterator<Answer> {
         return new LazyAnswerIterator(transform);
     }
 
+    public LazyAnswerIterator unify(MultiUnifier unifier){
+        if (unifier.isEmpty()) return this;
+        return new LazyAnswerIterator(stream().flatMap(a -> a.unify(unifier)).iterator());
+    }
+
     public LazyAnswerIterator explain(AnswerExplanation exp){
         Iterator<Answer> transform = Iterators.transform(iterator(), input -> {
             if (input == null) return null;
             if (input.getExplanation() == null || input.getExplanation().isLookupExplanation()){
-                input.explain(exp);
+                return input.explain(exp);
             } else {
-                input.getExplanation().setQuery(exp.getQuery());
+                return input.explain(input.getExplanation().setQuery(exp.getQuery()));
             }
-            return input;
         });
         return new LazyAnswerIterator(transform);
     }

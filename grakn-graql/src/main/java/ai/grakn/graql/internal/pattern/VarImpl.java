@@ -19,262 +19,89 @@
 
 package ai.grakn.graql.internal.pattern;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
+import ai.grakn.graql.admin.VarProperty;
+import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.function.Function;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Default implementation of {@link Var}.
  *
  * @author Felix Chapman
  */
-final class VarImpl implements Var {
+@AutoValue
+abstract class VarImpl extends AbstractVarPattern implements Var {
 
-    private final String value;
+    private static final Pattern VALID_VAR = Pattern.compile("[a-zA-Z0-9_-]+");
 
-    private final boolean userDefinedName;
+    static VarImpl of(String value, Kind kind) {
+        Preconditions.checkArgument(
+                VALID_VAR.matcher(value).matches(), "Var value [%s] is invalid. Must match regex %s", value, VALID_VAR
+        );
 
-    VarImpl(String value, boolean userDefinedName) {
-        this.value = value;
-        this.userDefinedName = userDefinedName;
-    }
-
-    @Override
-    public String getValue() {
-        return value;
-    }
-
-    @Override
-    public Var map(Function<String, String> mapper) {
-        return Graql.var(mapper.apply(value));
+        return new AutoValue_VarImpl(value, kind);
     }
 
     @Override
     public boolean isUserDefinedName() {
-        return userDefinedName;
+        return kind() == Kind.UserDefined;
     }
 
     @Override
     public Var asUserDefined() {
-        if (userDefinedName) {
+        if (isUserDefinedName()) {
             return this;
         } else {
-            return new VarImpl(value, true);
+            return VarImpl.of(getValue(), Kind.UserDefined);
         }
     }
 
+    @Memoized
     @Override
-    public VarPattern pattern() {
-        return new VarPatternImpl(this, ImmutableSet.of());
+    public String name() {
+        return kind().prefix() + getValue();
     }
 
     @Override
     public String shortName() {
-        return "$" + StringUtils.left(value, 3);
+        return kind().prefix() + StringUtils.right(getValue(), 3);
+    }
+
+    @Override
+    public Var var() {
+        return this;
+    }
+
+    @Override
+    protected Set<VarProperty> properties() {
+        return ImmutableSet.of();
     }
 
     @Override
     public String toString() {
-        return "$" + value;
+        return "$" + getValue();
     }
 
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
+        // This equals implementation is special: it ignores whether a variable is user-defined
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
         VarImpl varName = (VarImpl) o;
 
-        return value.equals(varName.value);
+        return getValue().equals(varName.getValue());
     }
 
     @Override
-    public int hashCode() {
-        return value.hashCode();
-    }
-
-    @Override
-    public VarPattern id(ConceptId id) {
-        return pattern().id(id);
-    }
-
-    @Override
-    public VarPattern label(String label) {
-        return pattern().label(label);
-    }
-
-    @Override
-    public VarPattern label(TypeLabel label) {
-        return pattern().label(label);
-    }
-
-    @Override
-    public VarPattern val(Object value) {
-        return pattern().val(value);
-    }
-
-    @Override
-    public VarPattern val(ValuePredicate predicate) {
-        return pattern().val(predicate);
-    }
-
-    @Override
-    public VarPattern has(String type, Object value) {
-        return pattern().has(type, value);
-    }
-
-    @Override
-    public VarPattern has(String type, ValuePredicate predicate) {
-        return pattern().has(type, predicate);
-    }
-
-    @Override
-    public VarPattern has(String type, VarPatternBuilder varPattern) {
-        return pattern().has(type, varPattern);
-    }
-
-    @Override
-    public VarPattern has(TypeLabel type, VarPatternBuilder varPattern) {
-        return pattern().has(type, varPattern);
-    }
-
-    @Override
-    public VarPattern isa(String type) {
-        return pattern().isa(type);
-    }
-
-    @Override
-    public VarPattern isa(VarPatternBuilder type) {
-        return pattern().isa(type);
-    }
-
-    @Override
-    public VarPattern sub(String type) {
-        return pattern().sub(type);
-    }
-
-    @Override
-    public VarPattern sub(VarPatternBuilder type) {
-        return pattern().sub(type);
-    }
-
-    @Override
-    public VarPattern relates(String type) {
-        return pattern().relates(type);
-    }
-
-    @Override
-    public VarPattern relates(VarPatternBuilder type) {
-        return pattern().relates(type);
-    }
-
-    @Override
-    public VarPattern plays(String type) {
-        return pattern().plays(type);
-    }
-
-    @Override
-    public VarPattern plays(VarPatternBuilder type) {
-        return pattern().plays(type);
-    }
-
-    @Override
-    public VarPattern hasScope(VarPatternBuilder type) {
-        return pattern().hasScope(type);
-    }
-
-    @Override
-    public VarPattern has(String type) {
-        return pattern().has(type);
-    }
-
-    @Override
-    public VarPattern has(VarPatternBuilder type) {
-        return pattern().has(type);
-    }
-
-    @Override
-    public VarPattern key(String type) {
-        return pattern().key(type);
-    }
-
-    @Override
-    public VarPattern key(VarPatternBuilder type) {
-        return pattern().key(type);
-    }
-
-    @Override
-    public VarPattern rel(String roleplayer) {
-        return pattern().rel(roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(VarPatternBuilder roleplayer) {
-        return pattern().rel(roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(String roletype, String roleplayer) {
-        return pattern().rel(roletype, roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(VarPatternBuilder roletype, String roleplayer) {
-        return pattern().rel(roletype, roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(String roletype, VarPatternBuilder roleplayer) {
-        return pattern().rel(roletype, roleplayer);
-    }
-
-    @Override
-    public VarPattern rel(VarPatternBuilder roletype, VarPatternBuilder roleplayer) {
-        return pattern().rel(roletype, roleplayer);
-    }
-
-    @Override
-    public VarPattern isAbstract() {
-        return pattern().isAbstract();
-    }
-
-    @Override
-    public VarPattern datatype(ResourceType.DataType<?> datatype) {
-        return pattern().datatype(datatype);
-    }
-
-    @Override
-    public VarPattern regex(String regex) {
-        return pattern().regex(regex);
-    }
-
-    @Override
-    public VarPattern lhs(Pattern lhs) {
-        return pattern().lhs(lhs);
-    }
-
-    @Override
-    public VarPattern rhs(Pattern rhs) {
-        return pattern().rhs(rhs);
-    }
-
-    @Override
-    public VarPattern neq(String var) {
-        return pattern().neq(var);
-    }
-
-    @Override
-    public VarPattern neq(VarPatternBuilder varPattern) {
-        return pattern().neq(varPattern);
-    }
+    public final int hashCode() {
+        // This hashCode implementation is special: it ignores whether a variable is user-defined
+        return getValue().hashCode();
+     }
 }

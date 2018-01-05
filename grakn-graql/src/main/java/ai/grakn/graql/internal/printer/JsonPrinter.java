@@ -19,9 +19,11 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
+import ai.grakn.util.CommonUtil;
 import mjson.Json;
 
 import java.util.Collection;
@@ -41,21 +43,29 @@ class JsonPrinter implements Printer<Json> {
     public Json graqlString(boolean inner, Concept concept) {
         Json json = Json.object("id", concept.getId().getValue());
 
-        if (concept.isType()) {
-            json.set("name", concept.asType().getLabel().getValue());
-            Type superType = concept.asType().superType();
-            if (superType != null) json.set("sub", superType.getLabel().getValue());
+        if (concept.isSchemaConcept()) {
+            json.set("name", concept.asSchemaConcept().getLabel().getValue());
+            SchemaConcept superConcept = concept.asSchemaConcept().sup();
+            if (superConcept != null) json.set("sub", superConcept.getLabel().getValue());
+        } else if (concept.isThing()) {
+            json.set("isa", concept.asThing().type().getLabel().getValue());
         } else {
-            json.set("isa", concept.asInstance().type().getLabel().getValue());
+            throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
 
-        if (concept.isResource()) {
-            json.set("value", concept.asResource().getValue());
+        if (concept.isAttribute()) {
+            json.set("value", concept.asAttribute().getValue());
         }
 
         if (concept.isRule()) {
-            json.set("lhs", concept.asRule().getLHS().toString());
-            json.set("rhs", concept.asRule().getRHS().toString());
+            Pattern when = concept.asRule().getWhen();
+            if (when != null) {
+                json.set("when", when.toString());
+            }
+            Pattern then = concept.asRule().getThen();
+            if (then != null) {
+                json.set("then", then.toString());
+            }
         }
 
         return json;

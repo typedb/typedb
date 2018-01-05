@@ -18,10 +18,6 @@
 
 package ai.grakn.graql.internal.template.macro;
 
-import ai.grakn.graql.macro.Macro;
-
-import java.util.List;
-
 /**
  * <p>
  * Convert the given value into a long. Only accepts one argument.
@@ -32,22 +28,11 @@ import java.util.List;
  *
  * @author alexandraorth
  */
-public class LongMacro implements Macro<Long> {
-
-    private static final int numberArguments = 1;
+public class LongMacro extends AbstractNumericMacro<Long> {
 
     @Override
-    public Long apply(List<Object> values) {
-        if(values.size() != numberArguments){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
-        }
-
-        String longValue = values.get(0).toString();
-        try {
-            return Long.parseLong(longValue);
-        } catch (NumberFormatException e){
-            throw new IllegalArgumentException("Value [" + longValue + "] is not a long in macro " + name());
-        }
+    Long convertNumeric(String value) {
+        return Long.parseLong(value);
     }
 
     @Override

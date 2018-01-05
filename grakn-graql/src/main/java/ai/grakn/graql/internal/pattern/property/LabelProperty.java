@@ -18,7 +18,9 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -28,6 +30,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -41,51 +44,62 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final TypeLabel label;
+    public static final String NAME = "label";
 
-    public LabelProperty(TypeLabel label) {
-        this.label = label;
+    public static LabelProperty of(Label label) {
+        return new AutoValue_LabelProperty(label);
     }
 
-    public TypeLabel getLabelValue() {
-        return label;
-    }
+    public abstract Label label();
 
     @Override
     public String getName() {
-        return "label";
+        return NAME;
     }
 
     @Override
     public String getProperty() {
-        return StringConverter.typeLabelToString(label);
+        return StringConverter.typeLabelToString(label());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.label(start, label));
+        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, ImmutableSet.of(label())));
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        LabelProperty that = (LabelProperty) o;
-
-        return label.equals(that.label);
-
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        // This is supported in insert queries in order to allow looking up schema concepts by label
+        return define(var);
     }
 
     @Override
-    public int hashCode() {
-        return label.hashCode();
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).label(label());
+        };
+
+        return PropertyExecutor.builder(method).produces(var).build();
+    }
+
+    @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        // This is supported in undefine queries in order to allow looking up schema concepts by label
+        return define(var);
+    }
+
+    @Override
+    public boolean uniquelyIdentifiesConcept() {
+        return true;
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new IdPredicate(var.getVarName(), this, parent);
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label());
+        if (schemaConcept == null)  throw GraqlQueryException.labelNotFound(label());
+        return new IdPredicate(var.var().asUserDefined(), label(), parent);
     }
 }

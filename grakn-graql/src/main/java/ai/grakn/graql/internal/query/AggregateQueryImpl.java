@@ -18,12 +18,12 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.MatchAdmin;
 
 import java.util.stream.Stream;
 
@@ -33,22 +33,22 @@ import java.util.stream.Stream;
  */
 class AggregateQueryImpl<T> implements AggregateQuery<T> {
 
-    private final MatchQueryAdmin matchQuery;
+    private final MatchAdmin match;
     private final Aggregate<? super Answer, T> aggregate;
 
-    AggregateQueryImpl(MatchQueryAdmin matchQuery, Aggregate<? super Answer, T> aggregate) {
-        this.matchQuery = matchQuery;
+    AggregateQueryImpl(MatchAdmin match, Aggregate<? super Answer, T> aggregate) {
+        this.match = match;
         this.aggregate = aggregate;
     }
 
     @Override
-    public AggregateQuery<T> withGraph(GraknGraph graph) {
-        return new AggregateQueryImpl<>(matchQuery.withGraph(graph).admin(), aggregate);
+    public AggregateQuery<T> withTx(GraknTx tx) {
+        return new AggregateQueryImpl<>(match.withTx(tx).admin(), aggregate);
     }
 
     @Override
     public T execute() {
-        return aggregate.apply(matchQuery.stream());
+        return aggregate.apply(match.stream());
     }
 
     @Override
@@ -64,7 +64,7 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
 
     @Override
     public String toString() {
-        return matchQuery.toString() + " aggregate " + aggregate.toString() + ";";
+        return match.toString() + " aggregate " + aggregate.toString() + ";";
     }
 
     @Override
@@ -74,13 +74,13 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
 
         AggregateQueryImpl<?> that = (AggregateQueryImpl<?>) o;
 
-        if (!matchQuery.equals(that.matchQuery)) return false;
+        if (!match.equals(that.match)) return false;
         return aggregate.equals(that.aggregate);
     }
 
     @Override
     public int hashCode() {
-        int result = matchQuery.hashCode();
+        int result = match.hashCode();
         result = 31 * result + aggregate.hashCode();
         return result;
     }

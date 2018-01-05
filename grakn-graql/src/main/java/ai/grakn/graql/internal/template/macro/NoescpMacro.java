@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
@@ -39,7 +40,7 @@ public class NoescpMacro implements Macro<Unescaped> {
     @Override
     public Unescaped apply(List<Object> values) {
         if(values.size() != numberArguments){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
+            throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
         return Unescaped.of(values.get(0).toString());

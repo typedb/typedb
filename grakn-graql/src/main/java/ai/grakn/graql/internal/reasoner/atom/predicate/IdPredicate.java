@@ -18,17 +18,17 @@
 
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.pattern.property.LabelProperty;
-import ai.grakn.util.ErrorMessage;
 
 /**
  *
@@ -41,19 +41,24 @@ import ai.grakn.util.ErrorMessage;
  */
 public class IdPredicate extends Predicate<ConceptId>{
 
-    public IdPredicate(VarPatternAdmin pattern, ReasonerQuery par) {
+    public IdPredicate(VarPattern pattern, ReasonerQuery par) {
         super(pattern, par);
     }
-    public IdPredicate(Var varName, IdProperty prop, ReasonerQuery par){
-        this(createIdVar(varName, prop.getId()), par);
+    public IdPredicate(Var varName, Label label, ReasonerQuery par) { super(createIdVar(varName.asUserDefined(), label, par.tx()), par);}
+    public IdPredicate(Var varName, ConceptId id, ReasonerQuery par) {
+        super(createIdVar(varName.asUserDefined(), id), par);
     }
-    public IdPredicate(Var varName, LabelProperty prop, ReasonerQuery par){
-        this(createIdVar(varName, prop, par.graph()), par);
+    public IdPredicate(Var varName, Concept con, ReasonerQuery par) {
+        super(createIdVar(varName.asUserDefined(), con.getId()), par);
     }
     private IdPredicate(IdPredicate a) { super(a);}
 
-    public IdPredicate(Var varName, Concept con, ReasonerQuery par) {
-        super(createIdVar(varName, con.getId()), par);
+    @Override
+    public void checkValid() {
+        ConceptId conceptId = getPredicate();
+        if (tx().getConcept(conceptId) == null){
+            throw GraqlQueryException.idNotFound(conceptId);
+        }
     }
 
     @Override
@@ -67,21 +72,20 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     @Override
-    public boolean isIdPredicate(){ return true;}
-
-    @Override
     public String getPredicateValue() { return getPredicate().getValue();}
 
     @Override
-    protected ConceptId extractPredicate(VarPatternAdmin var){ return var.admin().getId().orElse(null);}
-
-    private static VarPatternAdmin createIdVar(Var varName, ConceptId typeId){
-        return varName.id(typeId).admin();
+    protected ConceptId extractPredicate(VarPattern var){
+        return var.admin().getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
     }
 
-    private static VarPatternAdmin createIdVar(Var varName, LabelProperty prop, GraknGraph graph){
-        Type type = graph.getType(prop.getLabelValue());
-        if (type == null) throw new IllegalArgumentException(ErrorMessage.CANNOT_CREATE_IDPREDICATE.getMessage(prop.getLabelValue()));
-        return varName.id(type.getId()).admin();
+    private static VarPattern createIdVar(Var varName, ConceptId typeId){
+        return varName.id(typeId);
+    }
+
+    private static VarPattern createIdVar(Var varName, Label label, GraknTx graph){
+        SchemaConcept schemaConcept = graph.getSchemaConcept(label);
+        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
+        return varName.id(schemaConcept.getId());
     }
 }

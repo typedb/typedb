@@ -61,6 +61,7 @@ public class JsonSession {
     private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = Executors.defaultThreadFactory().newThread(runnable);
         thread.setDaemon(true);
+        thread.setName("json-session");
         return thread;
     });
 
@@ -115,7 +116,7 @@ public class JsonSession {
 
     private Json getMessage() {
         try {
-            return messages.poll(timeout, TimeUnit.MINUTES);
+            return messages.poll(timeout, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

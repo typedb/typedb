@@ -18,10 +18,12 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Match;
+
 import java.util.stream.Stream;
 
 /**
- * Aggregate that counts results of a match query.
+ * Aggregate that counts results of a {@link Match}.
  */
 class CountAggregate extends AbstractAggregate<Object, Long> {
     @Override

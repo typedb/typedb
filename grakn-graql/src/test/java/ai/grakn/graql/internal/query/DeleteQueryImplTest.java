@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.Match;
+import ai.grakn.graql.Var;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
@@ -34,33 +34,33 @@ import static org.junit.Assert.assertNotEquals;
 
 public class DeleteQueryImplTest {
 
-    private final MatchQuery match1 = Graql.match(var("x").isa("movie"));
-    private final MatchQuery match2 = Graql.match(var("y").isa("movie"));
+    private final Match match1 = Graql.match(var("x").isa("movie"));
+    private final Match match2 = Graql.match(var("y").isa("movie"));
 
-    private final Collection<VarPatternAdmin> deleters1 = Sets.newHashSet(var("x").pattern().admin());
-    private final Collection<VarPatternAdmin> deleters2 = Sets.newHashSet(var("y").pattern().admin());
+    private final Collection<Var> vars1 = Sets.newHashSet(var("x"));
+    private final Collection<Var> vars2 = Sets.newHashSet(var("y"));
 
     @Test
-    public void deleteQueriesWithTheSameMatchQueryAndDeletersAreEqual() {
-        DeleteQuery query1 = new DeleteQueryImpl(deleters1, match1);
-        DeleteQuery query2 = new DeleteQueryImpl(deleters1, match1);
+    public void deleteQueriesWithTheSameMatchAndVarsAreEqual() {
+        DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
+        DeleteQuery query2 = DeleteQueryImpl.of(vars1, match1);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
     }
 
     @Test
-    public void deleteQueriesWithDifferentMatchQueriesAreDifferent() {
-        DeleteQuery query1 = new DeleteQueryImpl(deleters1, match1);
-        DeleteQuery query2 = new DeleteQueryImpl(deleters1, match2);
+    public void deleteQueriesWithDifferentMatchesAreDifferent() {
+        DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
+        DeleteQuery query2 = DeleteQueryImpl.of(vars1, match2);
 
         assertNotEquals(query1, query2);
     }
 
     @Test
-    public void deleteQueriesWithDifferentDeletersAreDifferent() {
-        DeleteQuery query1 = new DeleteQueryImpl(deleters1, match1);
-        DeleteQuery query2 = new DeleteQueryImpl(deleters2, match1);
+    public void deleteQueriesWithDifferentVarsAreDifferent() {
+        DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
+        DeleteQuery query2 = DeleteQueryImpl.of(vars2, match1);
 
         assertNotEquals(query1, query2);
     }

@@ -18,13 +18,18 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.client.BatchMutatorClient;
-import ai.grakn.engine.TaskStatus;
+import ai.grakn.Grakn;
+import ai.grakn.Keyspace;
+import ai.grakn.client.BatchExecutorClient;
+import ai.grakn.client.QueryResponse;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.GraknVersion;
+import ai.grakn.util.SimpleURI;
 import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -38,13 +43,20 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.Charsets;
+import rx.Observable;
 
+import javax.annotation.Nullable;
+import javax.ws.rs.core.UriBuilder;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -73,21 +85,15 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
-import static ai.grakn.util.REST.RemoteShell.IMPLICIT;
 import static ai.grakn.util.REST.RemoteShell.INFER;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
-import static ai.grakn.util.REST.RemoteShell.MATERIALISE;
 import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
-import static ai.grakn.util.REST.RemoteShell.PASSWORD;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
-import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static ai.grakn.util.Schema.BaseType.TYPE;
-import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
-import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
@@ -107,7 +113,6 @@ public class GraqlShell {
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
     public static final String DEFAULT_KEYSPACE = "grakn";
-    private static final String DEFAULT_URI = "localhost:4567";
     private static final String DEFAULT_OUTPUT_FORMAT = "graql";
 
     private static final String PROMPT = ">>> ";
@@ -122,10 +127,10 @@ public class GraqlShell {
     private static final String LICENSE_COMMAND = "license";
     private static final String CLEAN_COMMAND = "clean";
     private static final String HI_POP_COMMAND =
-            HAS.name().substring(0, 1) + INFERENCE_RULE.name().substring(0, 1) +
-            Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
+            HAS.name().substring(0, 1) + Integer.class.getSimpleName().substring(0, 1) +
+                    Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
 
-    private static final int QUERY_CHUNK_SIZE = 1000;
+    private static final int QUERY_CHUNK_SIZE = 50000;
 
     /**
      * Array of available commands in shell
@@ -136,11 +141,11 @@ public class GraqlShell {
     );
 
     private static final String TEMP_FILENAME = "/graql-tmp.gql";
-    private static final String HISTORY_FILENAME = System.getProperty("user.home") + "/.graql-history";
+    private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
     private static final String DEFAULT_EDITOR = "vim";
 
-    private final File tempFile = new File(System.getProperty("java.io.tmpdir") + TEMP_FILENAME);
+    private final File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + TEMP_FILENAME);
     private ConsoleReader console;
 
     private final String historyFilename;
@@ -149,19 +154,24 @@ public class GraqlShell {
 
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
 
+    private boolean errorOccurred = false;
+
     /**
      * Run a Graql REPL
-     * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
+     *
+     * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql console --help}
      */
     public static void main(String[] args) {
-        runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, new GraqlClient());
+        int exitCode = runShell(args, GraknVersion.VERSION, HISTORY_FILENAME);
+        System.exit(exitCode);
     }
 
-    public static void runShell(String[] args, String version, String historyFilename) {
-        runShell(args, version, historyFilename, new GraqlClient());
+    public static int runShell(String[] args, String version, String historyFilename) {
+        boolean success = runShell(args, version, historyFilename, new GraqlClient());
+        return success ? 0 : 1;
     }
 
-    public static void runShell(String[] args, String version, String historyFilename, GraqlClient client) {
+    public static boolean runShell(String[] args, String version, String historyFilename, GraqlClient client) {
 
         Options options = new Options();
         options.addOption("k", "keyspace", true, "keyspace of the graph");
@@ -172,11 +182,7 @@ public class GraqlShell {
         options.addOption("s", "size", true, "the size of the batches (must be used with -b)");
         options.addOption("a", "active", true, "the number of active tasks (must be used with -b)");
         options.addOption("o", "output", true, "output format for results");
-        options.addOption("u", "user", true, "username to sign in");
-        options.addOption("p", "pass", true, "password to sign in");
-        options.addOption("i", "implicit", false, "show implicit types");
-        options.addOption("n", "infer", false, "perform inference on results");
-        options.addOption("m", "materialise", false, "materialise inferred results");
+        options.addOption("n", "no_infer", false, "do not perform inference on results");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -187,56 +193,60 @@ public class GraqlShell {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
             System.err.println(e.getMessage());
-            return;
+            return false;
         }
 
         Optional<List<String>> queries = Optional.ofNullable(cmd.getOptionValue("e")).map(Lists::newArrayList);
+
+        if (queries.isPresent()) {
+            for (String query : queries.get()) {
+                // This is a best-effort guess as to whether the user has made a mistake, without parsing the query
+                if (!query.contains("$") && query.trim().startsWith("match")) {
+                    System.err.println(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage());
+                    break;
+                }
+            }
+        }
+
         String[] filePaths = cmd.getOptionValues("f");
 
         // Print usage message if requested or if invalid arguments provided
         if (cmd.hasOption("h") || !cmd.getArgList().isEmpty()) {
             printUsage(options, null);
-            return;
+            return true;
         }
 
         if (cmd.hasOption("v")) {
             System.out.println(version);
-            return;
+            return true;
         }
 
-        String keyspace = cmd.getOptionValue("k", DEFAULT_KEYSPACE);
-        String uriString = cmd.getOptionValue("r", DEFAULT_URI);
+        Keyspace keyspace = Keyspace.of(cmd.getOptionValue("k", DEFAULT_KEYSPACE));
+        SimpleURI location = Optional.ofNullable(cmd.getOptionValue("r")).map(SimpleURI::new).orElse(Grakn.DEFAULT_URI);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
-        Optional<String> username = Optional.ofNullable(cmd.getOptionValue("u"));
-        Optional<String> password = Optional.ofNullable(cmd.getOptionValue("p"));
 
-        boolean showImplicitTypes = cmd.hasOption("i");
-        boolean infer = cmd.hasOption("n");
-        boolean materialise = cmd.hasOption("m");
+        if (!client.serverIsRunning(location)) {
+            System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+            return false;
+        }
+
+        boolean infer = !cmd.hasOption("n");
 
         if (cmd.hasOption("b")) {
             try {
-                Optional<Integer> activeTasks = Optional.empty();
-                Optional<Integer> batchSize = Optional.empty();
-                if (cmd.hasOption("a")) {
-                    activeTasks = Optional.of(Integer.parseInt(cmd.getOptionValue("a")));
-                }
-                if (cmd.hasOption("s")) {
-                    batchSize = Optional.of(Integer.parseInt(cmd.getOptionValue("s")));
-                }
-                try {
-                    sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"),
-                            activeTasks, batchSize);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                sendBatchRequest(client.loaderClient(location), cmd.getOptionValue("b"), keyspace);
             } catch (NumberFormatException e) {
-                printUsage(options, "Cannot cast argument to an integer "+e.getMessage());
+                printUsage(options, "Cannot cast argument to an integer " + e.getMessage());
+                return false;
+            } catch (Exception e) {
+                System.out.println("Batch failed \n" + CommonUtil
+                        .simplifyExceptionMessage(e));
+                return false;
             }
-            return;
+            return true;
         } else if (cmd.hasOption("a") || cmd.hasOption("s")) {
             printUsage(options, "The active or size option has been specified without batch.");
-            return;
+            return false;
         }
 
 
@@ -245,27 +255,35 @@ public class GraqlShell {
                 queries = Optional.of(loadQueries(filePaths));
             }
 
-            URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
+            URI uri = UriBuilder.fromUri(location.toURI()).scheme("ws").path(REMOTE_SHELL_URI).build();
 
-            new GraqlShell(
-                    historyFilename, keyspace, username, password, client, uri, queries, outputFormat,
-                    showImplicitTypes, infer, materialise
+            GraqlShell shell = new GraqlShell(
+                    historyFilename, keyspace, client, uri, outputFormat,
+                    infer
             );
+
+            // Start shell
+            shell.start(queries);
+            return !shell.errorOccurred;
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+            return false;
         } catch (Throwable e) {
             System.err.println(getFullStackTrace(e));
+            return false;
+        } finally {
+            client.close();
         }
     }
 
-    private static void printUsage(Options options, String footer) {
+    private static void printUsage(Options options, @Nullable String footer) {
         HelpFormatter helpFormatter = new HelpFormatter();
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
         PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();
         int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "graql.sh", null, options, leftPadding, descPadding, footer);
+        helpFormatter.printHelp(printWriter, width, "graql console", null, options, leftPadding, descPadding, footer);
         printWriter.flush();
     }
 
@@ -280,91 +298,79 @@ public class GraqlShell {
     }
 
     private static String loadQuery(String filePath) throws IOException {
-            List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
-            return lines.stream().collect(joining("\n"));
+        List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
+        return lines.stream().collect(joining("\n"));
     }
 
-    private static void sendBatchRequest(BatchMutatorClient batchMutatorClient, String graqlPath, Optional<Integer> activeTasks, Optional<Integer> batchSize) throws IOException {
-        AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
+    private static void sendBatchRequest(BatchExecutorClient batchExecutorClient, String graqlPath, Keyspace keyspace) throws IOException {
+        AtomicInteger queriesExecuted = new AtomicInteger(0);
 
-        activeTasks.ifPresent(batchMutatorClient::setNumberActiveTasks);
-        batchSize.ifPresent(batchMutatorClient::setBatchSize);
+        FileInputStream inputStream = new FileInputStream(Paths.get(graqlPath).toFile());
 
-        batchMutatorClient.setTaskCompletionConsumer((json) -> {
-            TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
+        try (Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
+            Graql.parser().parseList(queryReader).forEach(query -> {
+                Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
 
-            numberBatchesCompleted.incrementAndGet();
-            System.out.println(format("Status of batch: %s", status));
-            System.out.println(format("Number batches completed: %s", numberBatchesCompleted.get()));
-            System.out.println(format("Approximate queries executed: %s", numberBatchesCompleted.get() * batchMutatorClient.getBatchSize()));
-        });
+                observable.subscribe(
+                    /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),
+                    /* On error:   */ System.err::println
+                );
+            });
+        }
 
-        String queries = loadQuery(graqlPath);
+        batchExecutorClient.close();
 
-        Graql.parseList(queries).forEach(batchMutatorClient::add);
-
-        batchMutatorClient.waitToFinish();
+        System.out.println("Statements executed: " + queriesExecuted.get());
     }
 
     /**
      * Create a new Graql shell
      */
     GraqlShell(
-            String historyFilename, String keyspace, Optional<String> username, Optional<String> password,
-            GraqlClient client, URI uri, Optional<List<String>> queryStrings, String outputFormat,
-            boolean showImplicitTypes, boolean infer, boolean materialise
+            String historyFilename, Keyspace keyspace,
+            GraqlClient client, URI uri, String outputFormat, boolean infer
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
+        console = new ConsoleReader(System.in, System.out);
+        session = new JsonSession(client, uri);
 
-        try {
-            console = new ConsoleReader(System.in, System.out);
-            session = new JsonSession(client, uri);
+        // Send the requested keyspace and output format to the server once connected
+        Json initJson = Json.object(
+                ACTION, ACTION_INIT,
+                KEYSPACE, keyspace.getValue(),
+                OUTPUT_FORMAT, outputFormat,
+                INFER, infer
+        );
+        session.sendJson(initJson);
 
-            // Send the requested keyspace and output format to the server once connected
-            Json initJson = Json.object(
-                    ACTION, ACTION_INIT,
-                    KEYSPACE, keyspace,
-                    OUTPUT_FORMAT, outputFormat,
-                    IMPLICIT, showImplicitTypes,
-                    INFER, infer,
-                    MATERIALISE, materialise
-            );
-            username.ifPresent(u -> initJson.set(USERNAME, u));
-            password.ifPresent(p -> initJson.set(PASSWORD, p));
-            session.sendJson(initJson);
-
-            // Wait to receive confirmation
-            handleMessagesFromServer();
-
-            // If session has closed, then we couldn't authorise
-            if (!session.isOpen()) {
-                return;
-            }
-
-            // Start shell
-            start(queryStrings);
-
-        } finally {
-            client.close();
-            console.flush();
-        }
+        // Wait to receive confirmation
+        handleMessagesFromServer();
     }
 
     private void start(Optional<List<String>> queryStrings) throws IOException {
-
-        // Begin sending pings
-        Thread thread = new Thread(() -> WebSocketPing.ping(session), "graql-shell-ping");
-        thread.setDaemon(true);
-        thread.start();
-
-        if (queryStrings.isPresent()) {
-            for (String queryString : queryStrings.get()) {
-                executeQuery(queryString);
-                commit();
+        try {
+            // If session has closed, then we couldn't authorise
+            if (!session.isOpen()) {
+                errorOccurred = true;
+                return;
             }
-        } else {
-            executeRepl();
+
+            // Begin sending pings
+            Thread thread = new Thread(() -> WebSocketPing.ping(session), "graql-shell-ping");
+            thread.setDaemon(true);
+            thread.start();
+
+            if (queryStrings.isPresent()) {
+                for (String queryString : queryStrings.get()) {
+                    executeQuery(queryString);
+                    commit();
+                }
+            } else {
+                executeRepl();
+            }
+        } finally {
+            console.flush();
         }
     }
 
@@ -439,6 +445,7 @@ public class GraqlShell {
                     queryString = loadQuery(path);
                 } catch (IOException e) {
                     System.err.println(e.toString());
+                    errorOccurred = true;
                     continue;
                 }
             }
@@ -480,7 +487,7 @@ public class GraqlShell {
         return fileCreated;
     }
 
-    private void printLicense(){
+    private void printLicense() {
         StringBuilder result = new StringBuilder("");
 
         //Get file from resources folder
@@ -498,15 +505,16 @@ public class GraqlShell {
         this.print(result.toString());
     }
 
-    private void executeQuery(String queryString) throws IOException {
+    private boolean executeQuery(String queryString) throws IOException {
         // Split query into chunks
         Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
 
         for (String queryChunk : splitQuery) {
-            session.sendJson(Json.object(
+            Json jsonObject = Json.object(
                     ACTION, ACTION_QUERY,
                     QUERY, queryChunk
-            ));
+            );
+            session.sendJson(jsonObject);
         }
 
         session.sendJson(Json.object(ACTION, ACTION_END));
@@ -514,6 +522,8 @@ public class GraqlShell {
 
         // Flush the console so the output is all displayed before the next command
         console.flush();
+
+        return true;
     }
 
     private void handleMessagesFromServer() {
@@ -522,6 +532,7 @@ public class GraqlShell {
 
     /**
      * Handle the given server message
+     *
      * @param message the message to handle
      */
     private void handleMessage(Json message) {
@@ -536,6 +547,7 @@ public class GraqlShell {
                 break;
             case ACTION_ERROR:
                 System.err.print(message.at(ERROR).asString());
+                errorOccurred = true;
                 break;
             case ACTION_PING:
                 // Ignore
@@ -576,6 +588,7 @@ public class GraqlShell {
 
     /**
      * load the user's preferred editor to edit a query
+     *
      * @return the string written to the editor
      */
     private String runEditor() throws IOException {

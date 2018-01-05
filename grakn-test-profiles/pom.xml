@@ -5,7 +5,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.14.0-SNAPSHOT</version>
+        <version>1.1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,27 +13,29 @@
 
     <packaging>pom</packaging>
 
-    <properties>
-        <main.basedir>${project.parent.parent.basedir}</main.basedir>
-        <skip-docker-tests>true</skip-docker-tests>
-    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-test-tools</artifactId>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
 
                 <configuration>
                     <systemPropertyVariables>
-                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
+                        <grakn.conf>${user.dir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
-                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
+                        <logback.configurationFile>${user.dir}/conf/test/logback-test.xml</logback.configurationFile>
+                        <main.basedir>${user.dir}</main.basedir>
                     </systemPropertyVariables>
                     <!-- uncomment the following to be able to run only specific packages with
                         for example -DtestGroup=ai/grakn/test/migration/sql
-					<includes>
+    				<includes>
                     	<include>**/${testGroup}/*Test.java</include>
                 	</includes>
                 -->
@@ -41,18 +43,21 @@
                     don't contain stack traces! -->
                     <trimStackTrace>false</trimStackTrace>
                     <argLine>-XX:+HeapDumpOnOutOfMemoryError</argLine>
+
+                    <!-- Added this config to try and help sort out flaky tests -->
+                    <runOrder>random</runOrder>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.19.1</version>
 
                 <configuration>
                     <systemPropertyVariables>
-                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
+                        <grakn.conf>${user.dir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
-                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
+                        <logback.configurationFile>${user.dir}/conf/test/logback-test.xml</logback.configurationFile>
+                        <main.basedir>${user.dir}</main.basedir>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -71,136 +76,17 @@
         </profile>
 
         <profile>
-            <id>titan</id>
+            <id>janus</id>
             <properties>
-                <grakn.test-profile>titan</grakn.test-profile>
+                <grakn.test-profile>janus</grakn.test-profile>
             </properties>
             <dependencies>
                 <dependency>
                     <groupId>ai.grakn</groupId>
-                    <artifactId>titan-factory</artifactId>
-                    <version>${project.version}</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.slf4j</groupId>
-                            <artifactId>slf4j-log4j12</artifactId>
-                        </exclusion>
-                        <exclusion>
-                            <groupId>ch.qos.logback</groupId>
-                            <artifactId>logback-classic</artifactId>
-                        </exclusion>
-                        <!--Excluded because we provide logback logger-->
-                        <exclusion>
-                            <groupId>org.slf4j</groupId>
-                            <artifactId>slf4j-nop</artifactId>
-                        </exclusion>
-                    </exclusions>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.cassandraunit</groupId>
-                    <artifactId>cassandra-unit</artifactId>
-                    <version>${cassandra-unit.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>com.datastax.cassandra</groupId>
-                    <artifactId>cassandra-driver-core</artifactId>
-                    <version>3.1.2</version>
+                    <artifactId>janus-factory</artifactId>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
-        </profile>
-
-        <profile>
-            <id>docker</id>
-            <properties>
-                <skip-docker-tests>false</skip-docker-tests>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.19.1</version>
-                        <configuration>
-                          <excludes>
-                            <exclude>**/**</exclude>
-                          </excludes>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>2.19.1</version>
-                        <configuration>
-                          <excludes>
-                            <exclude>**/**</exclude>
-                          </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>orientdb</id>
-            <properties>
-                <grakn.test-profile>orientdb</grakn.test-profile>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>ai.grakn</groupId>
-                    <artifactId>orientdb-factory</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>scaling</id>
-            <properties>
-                <grakn.test-profile>titan</grakn.test-profile>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>ai.grakn</groupId>
-                    <artifactId>titan-factory</artifactId>
-                    <version>${project.version}</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.slf4j</groupId>
-                            <artifactId>slf4j-log4j12</artifactId>
-                        </exclusion>
-                        <exclusion>
-                            <groupId>ch.qos.logback</groupId>
-                            <artifactId>logback-classic</artifactId>
-                        </exclusion>
-                        <!--Excluded because we provide logback logger-->
-                        <exclusion>
-                            <groupId>org.slf4j</groupId>
-                            <artifactId>slf4j-nop</artifactId>
-                        </exclusion>
-                    </exclusions>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine>-Xmx16g</argLine>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
-
-
-
-
 </project>

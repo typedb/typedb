@@ -18,37 +18,55 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.util.StringConverter;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
-import static ai.grakn.util.Schema.ConceptProperty.TYPE_ID;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
 
-class LabelFragment extends AbstractFragment {
+import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 
-    private final TypeLabel label;
+@AutoValue
+abstract class LabelFragment extends Fragment {
 
-    LabelFragment(Var start, TypeLabel label) {
-        super(start);
-        this.label = label;
+    abstract ImmutableSet<Label> labels();
+
+    @Override
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+
+        Set<Integer> labelIds =
+                labels().stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
+
+        if (labelIds.size() == 1) {
+            int labelId = Iterables.getOnlyElement(labelIds);
+            return traversal.has(LABEL_ID.name(), labelId);
+        } else {
+            return traversal.has(LABEL_ID.name(), P.within(labelIds));
+        }
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(TYPE_ID.name(), graph.admin().convertToId(label).getValue());
+    public String name() {
+        return "[label:" + labels().stream().map(StringConverter::typeLabelToString).collect(joining(",")) + "]";
     }
 
     @Override
-    public String getName() {
-        return "[label:" + typeLabelToString(label) + "]";
-    }
-
-    @Override
-    public double fragmentCost(double previousCost) {
-        return 1;
+    public double internalFragmentCost() {
+        return COST_NODE_INDEX;
     }
 
     @Override
@@ -57,21 +75,12 @@ class LabelFragment extends AbstractFragment {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        LabelFragment that = (LabelFragment) o;
-
-        return label != null ? label.equals(that.label) : that.label == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (label != null ? label.hashCode() : 0);
-        return result;
+    public Optional<Long> getShardCount(GraknTx tx) {
+        return Optional.of(labels().stream()
+                .map(tx::<SchemaConcept>getSchemaConcept)
+                .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
+                .flatMap(SchemaConcept::subs)
+                .mapToLong(schemaConcept -> tx.admin().getShardCount(schemaConcept.asType()))
+                .sum());
     }
 }

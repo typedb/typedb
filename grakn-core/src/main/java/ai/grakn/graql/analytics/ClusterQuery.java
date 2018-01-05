@@ -18,8 +18,9 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -27,10 +28,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Compute the connected components in the subgraph.
+ * Compute the connected components in the sub graph.
  *
  * @param <T> the type of result this query will return
- *
  * @author Jason Liu
  */
 public interface ClusterQuery<T> extends ComputeQuery<T> {
@@ -44,29 +44,43 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     ClusterQuery<Map<String, Set<String>>> members();
 
     /**
+     * Return only the cluster containing the given concept after executing the query.
+     *
+     * @param conceptId The id of the given concept. conceptId is ignored if it's null.
+     * @return a ClusterQuery
+     */
+    ClusterQuery<T> of(ConceptId conceptId);
+
+    /**
      * @param clusterSize the size of the clusters returned and/or persisted
      * @return a ClusterQuery with cluster set
      */
     ClusterQuery<T> clusterSize(long clusterSize);
 
     /**
-     * @param subTypeLabels an array of types to include in the subgraph
+     * @param subTypeLabels an array of types to include in the sub graph
      * @return a ClusterQuery with the subTypeLabels set
      */
     @Override
     ClusterQuery<T> in(String... subTypeLabels);
 
     /**
-     * @param subTypeLabels a collection of types to include in the subgraph
-     * @return a ClusterQuery with the subTypeLabels set
+     * @param subLabels a collection of types to include in the sub graph
+     * @return a ClusterQuery with the subLabels set
      */
     @Override
-    ClusterQuery<T> in(Collection<TypeLabel> subTypeLabels);
+    ClusterQuery<T> in(Collection<Label> subLabels);
 
     /**
-     * @param graph the graph to execute the query on
-     * @return a ClusterQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a ClusterQuery with the transaction set
      */
     @Override
-    ClusterQuery<T> withGraph(GraknGraph graph);
+    ClusterQuery<T> withTx(GraknTx tx);
+
+    /**
+     * Allow attributes and their relationships to be included.
+     */
+    @Override
+    ClusterQuery<T> includeAttribute();
 }

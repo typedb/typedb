@@ -19,10 +19,6 @@
 package ai.grakn.migration.csv;
 
 import ai.grakn.migration.base.MigrationCLI;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,12 +30,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import static java.util.stream.Collectors.toMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static ai.grakn.migration.base.MigrationCLI.die;
-import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
-import static java.util.stream.Collectors.toMap;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 /**
  * The CSV migrator will migrate all of the data in a CSV file into Grakn Graql var patters, to be
@@ -48,9 +44,9 @@ import static java.util.stream.Collectors.toMap;
  */
 public class CSVMigrator implements AutoCloseable {
 
-    public static final char SEPARATOR = ',';
-    public static final char QUOTE = '\"';
-    public static final String NULL_STRING = null;
+    static final char SEPARATOR = ',';
+    static final char QUOTE = '\"';
+    static final String NULL_STRING = null;
 
     private char separator = SEPARATOR;
     private char quote = QUOTE;
@@ -59,26 +55,27 @@ public class CSVMigrator implements AutoCloseable {
     private final Reader reader;
 
     public static void main(String[] args) {
-        MigrationCLI.init(args, CSVMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(CSVMigrator::runCSV);
+        try{
+            MigrationCLI.init(args, CSVMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(CSVMigrator::runCSV);
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
+        }
     }
 
     private static void runCSV(CSVMigrationOptions options){
-        // get files
         File csvDataFile = new File(options.getInput());
         File csvTemplate = new File(options.getTemplate());
 
         if (!csvTemplate.exists()) {
-            die("Cannot find file: " + options.getTemplate());
+            throw new IllegalArgumentException("Cannot find file: " + options.getTemplate());
         }
 
         if (!csvDataFile.exists()) {
-            die("Cannot find file: " + options.getInput());
+            throw new IllegalArgumentException("Cannot find file: " + options.getInput());
         }
-
-        printInitMessage(options, csvDataFile.getPath());
 
         try (
                 CSVMigrator csvMigrator =
@@ -88,8 +85,6 @@ public class CSVMigrator implements AutoCloseable {
                                 .setNullString(options.getNullString())
         ) {
             MigrationCLI.loadOrPrint(csvTemplate, csvMigrator.convert(), options);
-        } catch (Throwable throwable) {
-            die(throwable);
         }
     }
 
@@ -205,6 +200,6 @@ public class CSVMigrator implements AutoCloseable {
      * @param value object to check
      * @return if the value is valid
      */
-    protected boolean validValue(Object value){
+    private boolean validValue(Object value){
         return value != null;
     }}

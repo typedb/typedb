@@ -38,8 +38,8 @@ public class RegexAtom extends AtomicBase {
     private final String regex;
 
     public RegexAtom(Var varName, RegexProperty prop, ReasonerQuery parent){
-        super(varName.regex(prop.getRegex()).admin(), parent);
-        this.regex = prop.getRegex();
+        super(varName.regex(prop.regex()).admin(), parent);
+        this.regex = prop.regex();
     }
 
     private RegexAtom(RegexAtom a) {
@@ -58,13 +58,13 @@ public class RegexAtom extends AtomicBase {
 
     @Override
     public int hashCode(){
-        int hashCode = equivalenceHashCode();
+        int hashCode = alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
 
     @Override
-    public boolean isEquivalent(Object obj) {
+    public boolean isAlphaEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RegexAtom a2 = (RegexAtom) obj;
@@ -72,11 +72,19 @@ public class RegexAtom extends AtomicBase {
     }
 
     @Override
-    public int equivalenceHashCode() {
+    public int alphaEquivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.regex.hashCode();
         return hashCode;
     }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        return isAlphaEquivalent(obj);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() { return alphaEquivalenceHashCode();}
 
     @Override
     public Atomic copy() { return new RegexAtom(this);}

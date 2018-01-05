@@ -26,7 +26,8 @@ package ai.grakn.graql.internal.shell;
 public enum ErrorMessage {
 
     COULD_NOT_CREATE_TEMP_FILE("WARNING: could not create temporary file for editing queries"),
-    COULD_NOT_CONNECT("Could not connect to Grakn Engine. Have you run 'grakn.sh start'?");
+    COULD_NOT_CONNECT("Could not connect to Grakn. Have you run 'grakn server start'?"),
+    NO_VARIABLE_IN_QUERY("There was no variable specified in the query. Perhaps you forgot to escape `\\` a `$`?");
 
     private final String message;
 

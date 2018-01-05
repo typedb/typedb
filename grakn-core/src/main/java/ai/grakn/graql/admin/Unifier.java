@@ -20,6 +20,7 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Var;
 
+import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Map;
@@ -50,21 +51,10 @@ public interface Unifier{
     Collection<Var> get(Var key);
 
     /**
-     * add a new mapping
-     * @param key variable
-     * @param value term
-     * @return previous value associated with key, or null if there was no mapping for key
-     */
-    boolean addMapping(Var key, Var value);
-
-    /**
      * @return true if the set of mappings is empty
      */
     @CheckReturnValue
     boolean isEmpty();
-
-    @CheckReturnValue
-    Map<Var, Collection<Var>> map();
 
     /**
      * @return variables present in this unifier
@@ -82,7 +72,7 @@ public interface Unifier{
      * @return set of mappings constituting this unifier
      */
     @CheckReturnValue
-    Collection<Map.Entry<Var, Var>> mappings();
+    ImmutableSet<Map.Entry<Var, Var>> mappings();
 
     /**
      * @param key variable to be inspected for presence
@@ -99,7 +89,7 @@ public interface Unifier{
     boolean containsValue(Var value);
 
     /**
-     * @param u unifier to compare with
+     * @param u unifier to be compared with
      * @return true if this unifier contains all mappings of u
      */
     @CheckReturnValue
@@ -113,16 +103,15 @@ public interface Unifier{
     Unifier merge(Unifier u);
 
     /**
-     * unifier combination by joining mappings
+     * Setting v = this unifier, produces a unifier u' that applied to an expression E has the following properties:
+     *
+     *  u'E = u x E' = u x (v E)
+     *
      * @param u unifier to be combined with this unifier
      * @return combined unifier
      */
+    @CheckReturnValue
     Unifier combine(Unifier u);
-
-    /**
-     * @return this
-     */
-    Unifier removeTrivialMappings();
 
     /**
      * @return unifier inverse - new unifier with inverted mappings

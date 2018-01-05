@@ -81,9 +81,7 @@ export default {
   data() {
     return {
       graqlResponse: undefined,
-      halParser: {},
-      useReasoner: User.getReasonerStatus(),
-      materialiseReasoner: User.getMaterialiseStatus(),
+      parser: {},
       typeInstances: false,
       typeKeys: [],
       state: ConsolePageState,
@@ -94,21 +92,14 @@ export default {
   created() {
         // Register listened on State events
     this.state.eventHub.$on('click-submit', this.onClickSubmit);
-    this.state.eventHub.$on('load-ontology', this.onLoadOntology);
+    this.state.eventHub.$on('load-schema', this.onLoadSchema);
     this.state.eventHub.$on('clear-page', this.onClear);
   },
   beforeDestroy() {
     this.state.eventHub.$off('click-submit', this.onClickSubmit);
-    this.state.eventHub.$off('load-ontology', this.onLoadOntology);
+    this.state.eventHub.$off('load-schema', this.onLoadSchema);
     this.state.eventHub.$off('clear-page', this.onClear);
   },
-
-  mounted() {
-    this.$nextTick(() => {
-            // code for previous attach() method.
-    });
-  },
-
   methods: {
         /*
          * Listener methods on emit from GraqlEditor
@@ -117,15 +108,15 @@ export default {
       this.errorMessage = undefined;
       this.queryEngine(query);
     },
-    onLoadOntology(type) {
-      const querySub = `match $x sub ${type};`;
+    onLoadSchema(type) {
+      const querySub = `match $x sub ${type}; get;`;
       EngineClient.graqlShell(querySub).then(this.shellResponse, (err) => {
-        this.state.eventHub.$emit('error-message', err.message);
+        this.state.eventHub.$emit('error-message', err);
       });
     },
     queryEngine(query) {
       EngineClient.graqlShell(query).then(this.shellResponse, (err) => {
-        this.state.eventHub.$emit('error-message', err.message);
+        this.state.eventHub.$emit('error-message', err);
       });
     },
     onClear() {
@@ -142,7 +133,7 @@ export default {
       if (resp.length === 0) {
         this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
       } else {
-        this.graqlResponse = Prism.highlight(JSON.parse(resp).response, PLang);
+        this.graqlResponse = Prism.highlight(resp, PLang);
       }
     },
 

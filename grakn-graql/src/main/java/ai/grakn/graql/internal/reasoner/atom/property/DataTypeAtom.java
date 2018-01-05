@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom.property;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -36,11 +36,11 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
  */
 public class DataTypeAtom extends AtomicBase {
 
-    private final ResourceType.DataType<?> datatype;
+    private final AttributeType.DataType<?> datatype;
 
     public DataTypeAtom(Var varName, DataTypeProperty prop, ReasonerQuery parent){
-        super(varName.datatype(prop.getDataType()).admin(), parent);
-        this.datatype = prop.getDataType();
+        super(varName.datatype(prop.dataType()).admin(), parent);
+        this.datatype = prop.dataType();
     }
 
     private DataTypeAtom(DataTypeAtom a) {
@@ -59,13 +59,13 @@ public class DataTypeAtom extends AtomicBase {
 
     @Override
     public int hashCode(){
-        int hashCode = equivalenceHashCode();
+        int hashCode = alphaEquivalenceHashCode();
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         return hashCode;
     }
 
     @Override
-    public boolean isEquivalent(Object obj) {
+    public boolean isAlphaEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         DataTypeAtom a2 = (DataTypeAtom) obj;
@@ -73,14 +73,24 @@ public class DataTypeAtom extends AtomicBase {
     }
 
     @Override
-    public int equivalenceHashCode() {
+    public int alphaEquivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.datatype.hashCode();
         return hashCode;
     }
 
     @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        return isAlphaEquivalent(obj);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
+    }
+
+    @Override
     public Atomic copy() { return new DataTypeAtom(this);}
 
-    public ResourceType.DataType<?> getDataType(){ return datatype;}
+    public AttributeType.DataType<?> getDataType(){ return datatype;}
 }

@@ -18,13 +18,20 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.Keyspace;
+import ai.grakn.concept.Concept;
 import ai.grakn.engine.TaskId;
+import ai.grakn.util.SimpleURI;
 import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.IOException;
+import java.net.URI;
 
 import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.COULD_NOT_REACH_ENGINE;
+import static ai.grakn.util.ErrorMessage.ENGINE_STARTUP_ERROR;
 import static ai.grakn.util.ErrorMessage.ENGINE_UNAVAILABLE;
+import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.MISSING_TASK_ID;
 import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
 import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
@@ -36,7 +43,6 @@ import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
  *
  * <p>
  *     Failures which occur server side are wrapped in this exception. This can include but is not limited to:
- *     - Kafka timeouts
  *     - Cassandra Timeouts
  *     - Malformed Requests
  * </p>
@@ -44,6 +50,7 @@ import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
  * @author fppt
  */
 public class GraknBackendException extends GraknException {
+
     protected GraknBackendException(String error, Exception e) {
         super(error, e);
     }
@@ -61,17 +68,28 @@ public class GraknBackendException extends GraknException {
     }
 
     /**
-     * Thrown when the task state storage cannot be accessed.
+     * Thrown when engine cannot be reached.
      */
-    public static GraknBackendException stateStorage(Exception error){
-        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage(), error);
+    public static GraknBackendException cannotReach(URI uri){
+        return new GraknBackendException(COULD_NOT_REACH_ENGINE.getMessage(uri));
+    }
+
+    public static GraknBackendException serverStartupException(String message, Exception e){
+        return new GraknBackendException(ENGINE_STARTUP_ERROR.getMessage(message), e);
+    }
+
+    /**
+     * Thrown when trying to convert a {@link Concept} into a response object and failing to do so.
+     */
+    public static GraknBackendException convertingUnknownConcept(Concept concept){
+        return new GraknBackendException(String.format("Cannot convert concept {%s} into response object due to it being of an unknown base type", concept));
     }
 
     /**
      * Thrown when the task state storage cannot be accessed.
      */
-    public static GraknBackendException stateStorage(String error){
-        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage() + error);
+    public static GraknBackendException stateStorage(){
+        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage());
     }
 
     /**
@@ -91,7 +109,22 @@ public class GraknBackendException extends GraknException {
     /**
      * Thrown when the task client cannot reach engine
      */
-    public static GraknBackendException engineUnavailable(String host, int port, IOException e){
-        return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(host, port), e);
+    public static GraknBackendException engineUnavailable(SimpleURI uri, IOException e){
+        return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(uri), e);
+    }
+
+    public static GraknBackendException initializationException(Keyspace keyspace) {
+        return new GraknBackendException(INITIALIZATION_EXCEPTION.getMessage(keyspace));
+    }
+
+    public static GraknBackendException noSuchKeyspace(Keyspace keyspace) {
+        return new GraknBackendException("No such keyspace " + keyspace);
+    }
+
+    /**
+     * Thrown when there is a migration failure due to a backend failure
+     */
+    public static GraknBackendException migrationFailure(String exception){
+        return new GraknBackendException("Error on backend has stopped migration: " + exception);
     }
 }

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -48,16 +48,21 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
 
     static final Logger LOGGER = LoggerFactory.getLogger(GraknVertexProgram.class);
 
-    static final MessageScope.Local<?> messageScopeShortcutIn = MessageScope.Local.of(() -> __.inE(
-            Schema.EdgeLabel.SHORTCUT.getLabel()));
-    static final MessageScope.Local<?> messageScopeShortcutOut = MessageScope.Local.of(() -> __.outE(
-            Schema.EdgeLabel.SHORTCUT.getLabel()));
-    static final Set<MessageScope> messageScopeSetShortcut =
-            Sets.newHashSet(messageScopeShortcutIn, messageScopeShortcutOut);
+    static final MessageScope.Local<?> messageScopeIn = MessageScope.Local.of(__::inE);
+    static final MessageScope.Local<?> messageScopeOut = MessageScope.Local.of(__::outE);
+    static final Set<MessageScope> messageScopeSetInAndOut =
+            Sets.newHashSet(messageScopeIn, messageScopeOut);
+
+    static final MessageScope.Local<?> messageScopeShortcutIn = MessageScope.Local.of(
+            () -> __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
+    static final MessageScope.Local<?> messageScopeShortcutOut = MessageScope.Local.of(
+            () -> __.outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()));
+    static final MessageScope.Local<?> messageScopeResourceOut = MessageScope.Local.of(
+            () -> __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return messageScopeSetShortcut;
+        return messageScopeSetInAndOut;
     }
 
     @Override
@@ -106,8 +111,7 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
         try {
             return (GraknVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(
-                    ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
+            throw CommonUtil.unreachableStatement(e);
         }
     }
 

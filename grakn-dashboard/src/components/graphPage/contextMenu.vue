@@ -26,8 +26,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div v-bind:class="[selectedNodes.length!==2 ? 'dd-item' : 'dd-item active']" @click="emitShortestPath">
             <span class="list-key">Shortest path</span>
         </div>
-        <div v-bind:class="[selectedNodes.length!==2 ? 'dd-item' : 'dd-item active']" @click="emitExploreRelations">
-            <span class="list-key">Explore relations</span>
+        <div v-bind:class="[selectedNodes.length!==2 ? 'dd-item' : 'dd-item active']" @click="emitExploreRelationships">
+            <span class="list-key">Explore relationships</span>
         </div>
         <div class="dd-header">Align nodes</div>
         <div class="dd-item active" @click="alignHorizontally">
@@ -36,12 +36,12 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div class="dd-item active" @click="alignVertically">
             <span class="list-key">Vertically</span>
         </div>
-        <div class="dd-header" v-show="singleNodeType==='ENTITY'">Relations</div>
-        <div class="filters">
+        <!-- <div class="dd-header" v-show="singleNodeType==='ENTITY'">Relationships</div> -->
+        <!-- <div class="filters">
             <div v-bind:class="[selectedNodes.length===1 ? 'dd-item active' : 'dd-item']" v-for="(type, key) in filterTypes">
-                <span class="list-key" @click="fetchFilteredRelations(type.href)">{{type.value}}</span>
+                <span class="list-key" @click="fetchFilteredRelationships(type.href)">{{type.value}}</span>
             </div>
-        </div>
+        </div> -->
     </div>
 </div>
 </template>
@@ -111,7 +111,6 @@ ul{
 <script>
 import QueryBuilder from './modules/QueryBuilder';
 import EngineClient from '../../js/EngineClient';
-import * as API from '../../js/util/HALTerms';
 
 export default {
   name: 'ContextMenu',
@@ -119,7 +118,7 @@ export default {
   data() {
     return {
       selectedNodes: [],
-            // filterTypes only contains relations for now, later change this to object instead of array
+            // filterTypes only contains relationships for now, later change this to object instead of array
       filterTypes: [],
       singleNodeType: undefined,
       nodeOnMousePosition: null,
@@ -136,10 +135,11 @@ export default {
         // Set the node type used in the html to decide wether to show the filter section.
         if (this.nodeOnMousePosition !== undefined) this.singleNodeType = visualiser.getNode(this.nodeOnMousePosition).baseType;
         this.checkNodesSelection();
-        // If the user right clicked on an Entity node, fetch all the relation filters
-        if (this.singleNodeType === API.ENTITY) {
-          EngineClient.getConceptTypes(this.nodeOnMousePosition).then(resp => this.populateRelationFiltersList(resp));
-        }
+        // If the user right clicked on an Entity node, fetch all the relationship filters
+        //TODO: re-discuss and re-implement
+        // if (this.singleNodeType === API.ENTITY) {
+        //   EngineClient.getConceptTypes(this.nodeOnMousePosition).then(resp => this.populateRelationshipFiltersList(resp));
+        // }
       } else {
         this.filterTypes = [];
         this.singleNodeType = undefined;
@@ -163,8 +163,8 @@ export default {
         this.selectedNodes = [this.nodeOnMousePosition];
       }
     },
-    populateRelationFiltersList(resp) {
-      const respObj = JSON.parse(resp).response;
+    populateRelationshipFiltersList(resp) {
+      const respObj = JSON.parse(resp);
       this.filterTypes = respObj.entities;
     },
     positionContextMenu() {
@@ -172,8 +172,8 @@ export default {
       contextMenu.style.left = `${this.mouseEvent.clientX}px`;
       contextMenu.style.top = `${this.mouseEvent.clientY - this.graphOffsetTop}px`;
     },
-    fetchFilteredRelations(href) {
-      this.$emit('fetch-relations', href);
+    fetchFilteredRelationships(href) {
+      this.$emit('fetch-relationships', href);
     },
     emitCommonConcepts() {
       if (this.selectedNodes.length >= 2) { this.$emit('type-query', QueryBuilder.commonConceptsBuilder(this.selectedNodes)); }
@@ -181,8 +181,8 @@ export default {
     emitShortestPath() {
       if (this.selectedNodes.length === 2) { this.$emit('type-query', QueryBuilder.shortestPathBuilder(this.selectedNodes)); }
     },
-    emitExploreRelations() {
-      if (this.selectedNodes.length === 2) { this.$emit('type-query', QueryBuilder.exploreRelationsBuilder(this.selectedNodes)); }
+    emitExploreRelationships() {
+      if (this.selectedNodes.length === 2) { this.$emit('type-query', QueryBuilder.exploreRelationshipsBuilder(this.selectedNodes)); }
     },
     alignHorizontally() {
       this.$emit('close-context');

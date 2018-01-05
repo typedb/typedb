@@ -18,123 +18,157 @@
 
 package ai.grakn.migration.base;
 
-import ai.grakn.client.BatchMutatorClient;
-import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.Keyspace;
+import ai.grakn.client.BatchExecutorClient;
+import ai.grakn.client.GraknClient;
+import ai.grakn.client.GraknClientException;
+import ai.grakn.client.QueryResponse;
+import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.internal.query.QueryBuilderImpl;
-import ai.grakn.graql.macro.Macro;
-import mjson.Json;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryParser;
+import ai.grakn.util.SimpleURI;
+import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
+import static com.codahale.metrics.MetricRegistry.name;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * <p>
- *     Abstract migrator class containing methods and functionality needed by
- *     all extending migrator classes.
+ * Abstract migrator class containing methods and functionality needed by
+ * all extending migrator classes.
  * </p>
  *
  * @author alexandraorth
+ * @author Domenico Corapi
  */
 public class Migrator {
 
-    private final static AtomicInteger numberQueriesSubmitted = new AtomicInteger(0);
-    private final static AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
-
     private final static Logger LOG = LoggerFactory.getLogger(Migrator.class);
-    private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
-    public static final int BATCH_SIZE = 25;
-    public static final int ACTIVE_TASKS = 25;
-    public static final boolean RETRY = false;
 
-    private final String uri;
-    private final String keyspace;
-    private int batchSize;
-    private long startTime;
+    public static final int OBSERVABLE_TIMEOUT_MINUTES = 2;
+
+    private final QueryParser queryParser = Graql.withoutGraph().infer(false).parser();
+    private final SimpleURI uri;
+    private final Keyspace keyspace;
+    private final int retries;
+    private final boolean failFast;
+    private final int maxDelayMs;
+    private final int maxLines;
+    private final MetricRegistry metricRegistry;
+    private final ConsoleReporter reporter;
+    private final Meter totalMeter;
+    private final Meter successMeter;
+    private final Timer parseTemplate;
 
     /**
-     *
      * @param uri Uri where one instance of Grakn Engine is running
-     * @param keyspace The name of the keyspace where the data should be persisted
+     * @param keyspace The {@link Keyspace} where the data should be persisted
      */
-    private Migrator(String uri, String keyspace){
+    public Migrator(SimpleURI uri, Keyspace keyspace, int retries, boolean failFast, int maxDelayMs, int maxLines) {
         this.uri = uri;
         this.keyspace = keyspace;
-    }
-
-    public static Migrator to(String uri, String keyspace){
-        return new Migrator(uri, keyspace);
+        this.retries = retries;
+        this.failFast = failFast;
+        this.maxDelayMs = maxDelayMs;
+        this.maxLines = maxLines;
+        this.metricRegistry = new MetricRegistry();
+        this.totalMeter = metricRegistry.meter(name(this.getClass(), "total"));
+        this.successMeter = metricRegistry.meter(name(this.getClass(), "success"));
+        this.parseTemplate = metricRegistry.timer(name(this.getClass(), "parse", "template"));
+        this.reporter = ConsoleReporter.forRegistry(metricRegistry)
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(MILLISECONDS)
+                .build();
     }
 
     /**
-     * Register a macro to use in templating
+     * Print data passed in data parameter using the given template
+     *
+     * @param template Used to transform the data
+     * @param data Data being migrated
      */
-    public Migrator registerMacro(Macro macro){
-        queryBuilder.registerMacro(macro);
-        return this;
+    public void print(String template, Stream<Map<String, Object>> data) {
+        data.flatMap(d -> template(template, d, false)).forEach(System.out::println);
     }
 
     /**
      * Migrate data constrained by this migrator using a loader configured
      * by the provided parameters.
      *
-     * Uses the default batch size and number of active tasks.
-     *
-     * @param template
-     * @param converter
+     * @param template Template used to extract the data
+     * @param data Data being migrated
      */
-    public void load(String template, Stream<Map<String, Object>> converter) {
-        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.RETRY);
+    public void load(String template, Stream<Map<String, Object>> data) {
+        GraknClient graknClient = GraknClient.of(uri);
+
+        AtomicInteger queriesExecuted = new AtomicInteger(0);
+
+        try (BatchExecutorClient loader =
+                BatchExecutorClient.newBuilder()
+                        .taskClient(graknClient)
+                        .maxRetries(retries)
+                        .maxDelay(maxDelayMs)
+                        .metricRegistry(metricRegistry)
+                        .build()) {
+            checkKeyspace(graknClient);
+            Stream<Query> queryStream = data.flatMap(d -> template(template, d, failFast));
+            if (maxLines > -1) {
+                queryStream = queryStream.limit(maxLines);
+            }
+            queryStream
+                    .forEach(q -> {
+                        LOG.trace("Adding query {}", q);
+                        totalMeter.mark();
+                        // We add get a hot observable. It starts immediately
+                        Observable<QueryResponse> observable = loader.add(q, keyspace, failFast);
+                        subscribeToReportOutcome(failFast, observable, queriesExecuted);
+                    });
+        }
+
+        System.out.println("Loaded " + queriesExecuted + " statements");
     }
 
-    /**
-     * Template the data and print to standard out.
-     * @param template
-     * @param converter
-     */
-    public void print(String template, Stream<Map<String, Object>> converter){
-        converter.flatMap(d -> template(template, d).stream())
-                 .forEach(System.out::println);
+    private void subscribeToReportOutcome(
+            boolean failFast, Observable<QueryResponse> addObservable, AtomicInteger queriesExecuted
+    ) {
+        addObservable.subscribe(
+                taskResult -> {
+                    LOG.trace("Successfully executed: {}", taskResult);
+                    queriesExecuted.incrementAndGet();
+                    successMeter.mark();
+                },
+                error -> {
+                    LOG.debug("Error in execution", error);
+                    if (failFast) {
+                        throw GraknBackendException
+                                .migrationFailure(error.getMessage());
+                    }
+                }
+        );
     }
 
-    /**
-     * Migrate data constrained by this migrator using a loader configured
-     * by the provided parameters.
-     *
-     * @param template
-     * @param converter
-     * @param batchSize The number of queries to execute in one transaction. Default is 25.
-     * @param numberActiveTasks Number of tasks running on the server at any one time. Consider this a safeguard
-     *                  to bot the system load. Default is 25.
-     * @param retry If the Loader should continue attempt to send tasks when Engine is not available
-     */
-    public void load(String template, Stream<Map<String, Object>> converter,
-                     int batchSize, int numberActiveTasks, boolean retry){
-        this.startTime = System.currentTimeMillis();
-        this.batchSize = batchSize;
-
-        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates());
-        loader.setBatchSize(batchSize);
-        loader.setNumberActiveTasks(numberActiveTasks);
-        loader.setRetryPolicy(retry);
-
-        converter
-                .flatMap(d -> template(template, d).stream())
-                .forEach(q -> {
-                    numberQueriesSubmitted.incrementAndGet();
-                    loader.add(q);
-                });
-        loader.waitToFinish();
+    private void checkKeyspace(GraknClient graknClient) {
+        try {
+            if (!graknClient.keyspace(keyspace.getValue()).isPresent()) {
+                throw GraknBackendException.noSuchKeyspace(keyspace);
+            }
+        } catch (GraknClientException e) {
+            throw GraknServerException.internalError(e.getMessage());
+        }
     }
 
     /**
@@ -142,36 +176,19 @@ public class Migrator {
      * @param data data used in the template
      * @return an insert query
      */
-    protected List<InsertQuery> template(String template, Map<String, Object> data){
-        try {
-            return queryBuilder.<InsertQuery>parseTemplate(template, data).collect(toList());
-
-            //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
-        } catch (GraqlSyntaxException | IllegalArgumentException e){
-            LOG.warn("Query was not sent to loader- " + e.getMessage());
-            LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces");
+    protected Stream<Query> template(String template, Map<String, Object> data, boolean failFast) {
+        try (Context c = parseTemplate.time()){
+            return queryParser.parseTemplate(template, data);
+        } catch (Exception e) {
+            System.out.println("Query not sent to server: " + e.getMessage());
+            if (failFast) {
+                throw e;
+            }
         }
-
-        return Collections.emptyList();
+        return Stream.empty();
     }
 
-    /**
-     * Consumer function which will operate on the results of the loader
-     * and print the current status of the migrator.
-     *
-     * @return function that operates on completion of a task
-     */
-    private Consumer<Json> recordMigrationStates(){
-        return (Json json) -> {
-            numberBatchesCompleted.incrementAndGet();
-
-            long timeElapsedSeconds = (System.currentTimeMillis() - startTime)/1000;
-            long numberQueriesCompleted = numberBatchesCompleted.get() * batchSize;
-
-            LOG.info(format("Number queries submitted: %s", numberQueriesSubmitted.get()));
-            LOG.info(format("Number batches completed: %s", numberBatchesCompleted.get()));
-            LOG.info(format("~Number queries completed: %s", numberQueriesCompleted));
-            LOG.info(format("~Rate of completion (queries/second): %s", numberQueriesCompleted / timeElapsedSeconds));
-        };
+    ConsoleReporter getReporter() {
+        return reporter;
     }
 }

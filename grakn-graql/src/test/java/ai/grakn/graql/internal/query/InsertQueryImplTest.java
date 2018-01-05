@@ -19,10 +19,10 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
@@ -37,14 +37,14 @@ import static org.mockito.Mockito.mock;
 
 public class InsertQueryImplTest {
 
-    private final Optional<MatchQueryAdmin> match1 = Optional.of(Graql.match(var("x").isa("movie")).admin());
-    private final Optional<MatchQueryAdmin> match2 = Optional.of(Graql.match(var("y").isa("movie")).admin());
+    private final Optional<MatchAdmin> match1 = Optional.of(Graql.match(var("x").isa("movie")).admin());
+    private final Optional<MatchAdmin> match2 = Optional.of(Graql.match(var("y").isa("movie")).admin());
 
-    private final ImmutableCollection<VarPatternAdmin> vars1 = ImmutableSet.of(var("x").pattern().admin());
-    private final ImmutableCollection<VarPatternAdmin> vars2 = ImmutableSet.of(var("y").pattern().admin());
+    private final ImmutableCollection<VarPatternAdmin> vars1 = ImmutableSet.of(var("x").admin());
+    private final ImmutableCollection<VarPatternAdmin> vars2 = ImmutableSet.of(var("y").admin());
 
     @Test
-    public void insertQueriesWithTheSameVarsAndMatchQueryAreEqual() {
+    public void insertQueriesWithTheSameVarsAndQueryAreEqual() {
         InsertQuery query1 = new InsertQueryImpl(vars1, match1, Optional.empty());
         InsertQuery query2 = new InsertQueryImpl(vars1, match1, Optional.empty());
 
@@ -54,7 +54,7 @@ public class InsertQueryImplTest {
 
     @Test
     public void insertQueriesWithTheSameVarsAndGraphAreEqual() {
-        GraknGraph graph = mock(GraknGraph.class);
+        GraknTx graph = mock(GraknTx.class);
 
         InsertQuery query1 = new InsertQueryImpl(vars1, Optional.empty(), Optional.of(graph));
         InsertQuery query2 = new InsertQueryImpl(vars1, Optional.empty(), Optional.of(graph));
@@ -64,7 +64,7 @@ public class InsertQueryImplTest {
     }
 
     @Test
-    public void insertQueriesWithDifferentMatchQueriesAreDifferent() {
+    public void insertQueriesWithDifferentMatchesAreDifferent() {
         InsertQuery query1 = new InsertQueryImpl(vars1, match1, Optional.empty());
         InsertQuery query2 = new InsertQueryImpl(vars1, match2, Optional.empty());
 
@@ -73,8 +73,8 @@ public class InsertQueryImplTest {
 
     @Test
     public void insertQueriesWithDifferentGraphsAreDifferent() {
-        GraknGraph graph1 = mock(GraknGraph.class);
-        GraknGraph graph2 = mock(GraknGraph.class);
+        GraknTx graph1 = mock(GraknTx.class);
+        GraknTx graph2 = mock(GraknTx.class);
 
         InsertQuery query1 = new InsertQueryImpl(vars1, Optional.empty(), Optional.of(graph1));
         InsertQuery query2 = new InsertQueryImpl(vars2, Optional.empty(), Optional.of(graph2));

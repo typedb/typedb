@@ -19,6 +19,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.Grakn;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -43,7 +44,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,7 +55,7 @@ public class JsonSessionTest {
     public final ExpectedException exception = ExpectedException.none();
     private GraqlClient client;
     private RemoteEndpoint remote;
-    private final URI uri = URI.create("localhost:4567");
+    private final URI uri = Grakn.DEFAULT_URI.toURI();
 
     @Before
     public void setUp() {

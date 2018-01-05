@@ -18,7 +18,10 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.client.BatchExecutorClient;
+import ai.grakn.client.Client;
+import ai.grakn.client.GraknClient;
+import ai.grakn.util.SimpleURI;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
@@ -30,7 +33,7 @@ import java.util.concurrent.Future;
  * Connects a Graql websocket to a remote URI
  */
 class GraqlClient {
-
+    private static final int DEFAULT_MAX_RETRY = 1;
     private static final long TIMEOUT = 3_600_000;
 
     private WebSocketClient client = null;
@@ -63,7 +66,15 @@ class GraqlClient {
         }
     }
 
-    public BatchMutatorClient loaderClient(String keyspace, String uriString) {
-        return new BatchMutatorClient(keyspace, uriString).setRetryPolicy(true);
+    public BatchExecutorClient loaderClient(SimpleURI uri) {
+        return BatchExecutorClient.newBuilder()
+                .threadPoolCoreSize(Runtime.getRuntime().availableProcessors() * 8)
+                .taskClient(GraknClient.of(uri))
+                .maxRetries(DEFAULT_MAX_RETRY)
+                .build();
+    }
+
+    public boolean serverIsRunning(SimpleURI uri) {
+        return Client.serverIsRunning(uri);
     }
 }

@@ -18,23 +18,23 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -59,26 +59,34 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
-    Optional<GraknGraph> graph = Optional.empty();
-    GraknComputer graknComputer = null;
-    String keySpace;
-    Set<TypeLabel> subTypeLabels = new HashSet<>();
+    Optional<GraknTx> tx = Optional.empty();
+    private GraknComputer graknComputer = null;
+    boolean includeAttribute = false;
+
+    Set<Label> subLabels = new HashSet<>();
+    Set<Type> subTypes = new HashSet<>();
 
     @Override
-    public ComputeQuery<T> withGraph(GraknGraph graph) {
-        this.graph = Optional.of(graph);
+    public ComputeQuery<T> withTx(GraknTx tx) {
+        this.tx = Optional.of(tx);
         return this;
     }
 
     @Override
     public ComputeQuery<T> in(String... subTypeLabels) {
-        this.subTypeLabels = Arrays.stream(subTypeLabels).map(TypeLabel::of).collect(Collectors.toSet());
+        this.subLabels = Arrays.stream(subTypeLabels).map(Label::of).collect(Collectors.toSet());
         return this;
     }
 
     @Override
-    public ComputeQuery<T> in(Collection<TypeLabel> subTypeLabels) {
-        this.subTypeLabels = Sets.newHashSet(subTypeLabels);
+    public ComputeQuery<T> in(Collection<Label> subLabels) {
+        this.subLabels = Sets.newHashSet(subLabels);
+        return this;
+    }
+
+    @Override
+    public ComputeQuery<T> includeAttribute() {
+        this.includeAttribute = true;
         return this;
     }
 
@@ -107,62 +115,76 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 });
             }
         }
-
         return Stream.of(printer.graqlString(computeResult));
     }
 
     void initSubGraph() {
-        GraknGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
-        keySpace = theGraph.getKeyspace();
-
-        getAllSubTypes(theGraph);
+        if (this.isStatisticsQuery()) {
+            includeAttribute = true;
+        }
     }
 
-    private void getAllSubTypes(GraknGraph graph) {
-        // fetch all the types in the subGraph
-        Set<Type> subGraph = subTypeLabels.stream().map((label) -> {
-            Type type = graph.getType(label);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
-            return type;
-        }).collect(Collectors.toSet());
-
+    void getAllSubTypes() {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
-        if (subGraph.isEmpty()) {
-            EntityType metaEntityType = graph.admin().getMetaEntityType();
-            metaEntityType.subTypes().forEach(type -> this.subTypeLabels.add(type.asType().getLabel()));
-            ResourceType<?> metaResourceType = graph.admin().getMetaResourceType(); //Yay for losing the type
-            metaResourceType.subTypes().forEach(type -> this.subTypeLabels.add(type.asType().getLabel()));
-            RelationType metaRelationType = graph.admin().getMetaRelationType();
-            metaRelationType.subTypes().forEach(type -> this.subTypeLabels.add(type.asType().getLabel()));
-            subTypeLabels.remove(metaEntityType.getLabel());
-            subTypeLabels.remove(metaResourceType.getLabel());
-            subTypeLabels.remove(metaRelationType.getLabel());
+        // only include attributes and implicit "has-xxx" relationships when user specifically asked for them
+        GraknTx graknTx = tx.get();
+        if (subLabels.isEmpty()) {
+            if (includeAttribute) {
+                graknTx.admin().getMetaConcept().subs().forEach(subTypes::add);
+            } else {
+                graknTx.admin().getMetaEntityType().subs().forEach(subTypes::add);
+                graknTx.admin().getMetaRelationType().subs()
+                        .filter(relationshipType -> !relationshipType.isImplicit()).forEach(subTypes::add);
+            }
         } else {
-            for (Type type : subGraph) {
-                type.subTypes().forEach(subType -> this.subTypeLabels.add(subType.getLabel()));
+            subTypes = subLabels.stream().map(label -> {
+                SchemaConcept type = graknTx.getSchemaConcept(label);
+                if (type == null) throw GraqlQueryException.labelNotFound(label);
+                if (!type.isType()) {
+                    throw GraqlQueryException.cannotGetInstancesOfNonType(type.getLabel());
+                }
+                if (!includeAttribute && (type.isAttributeType() || type.isImplicit())) {
+                    includeAttribute = true;
+                }
+                return type.asType();
+            }).collect(Collectors.toSet());
+
+            if (includeAttribute) {
+                subTypes = subTypes.stream().flatMap(Type::subs).collect(Collectors.toSet());
+            } else {
+                subTypes = subTypes.stream().flatMap(Type::subs)
+                        .filter(relationshipType -> !relationshipType.isImplicit()).collect(Collectors.toSet());
             }
         }
+        subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
     }
 
     GraknComputer getGraphComputer() {
         if (graknComputer == null) {
-            graknComputer = Grakn.session(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
+            if(tx.isPresent()){
+                graknComputer = tx.get().session().getGraphComputer();
+            } else {
+                throw new IllegalStateException("Transaction has not been provided. Cannot initialise graph computer");
+            }
         }
         return graknComputer;
     }
 
     boolean selectedTypesHaveInstance() {
-        if (subTypeLabels.isEmpty()) return false;
+        if (subLabels.isEmpty()) {
+            LOGGER.info("No types found while looking for instances");
+            return false;
+        }
 
-        List<Pattern> checkSubtypes = subTypeLabels.stream()
+        List<Pattern> checkSubtypes = subLabels.stream()
                 .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
-        return this.graph.get().graql().infer(false).match(or(checkSubtypes)).ask().execute();
+        return this.tx.get().graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
     }
 
     boolean verticesExistInSubgraph(ConceptId... ids) {
         for (ConceptId id : ids) {
-            Instance instance = this.graph.get().getConcept(id);
-            if (instance == null || !subTypeLabels.contains(instance.type().getLabel())) return false;
+            Thing thing = this.tx.get().getConcept(id);
+            if (thing == null || !subLabels.contains(thing.type().getLabel())) return false;
         }
         return true;
     }
@@ -170,8 +192,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     abstract String graqlString();
 
     final String subtypeString() {
-        return subTypeLabels.isEmpty() ? ";" : " in "
-                + subTypeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
+        return subLabels.isEmpty() ? ";" : " in "
+                + subLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
     }
 
     @Override
@@ -179,10 +201,15 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return "compute " + graqlString();
     }
 
-    Set<TypeLabel> getHasResourceRelationTypes() {
-        return subTypeLabels.stream()
-                .filter(type -> graph.get().getType(type).isResourceType())
-                .map(Schema.ImplicitType.HAS::getLabel)
+    Set<LabelId> getRolePlayerLabelIds() {
+        return subTypes.stream()
+                .filter(Concept::isRelationshipType)
+                .map(Concept::asRelationshipType)
+                .filter(RelationshipType::isImplicit)
+                .flatMap(RelationshipType::relates)
+                .flatMap(Role::playedByTypes)
+                .map(type -> tx.get().admin().convertToId(type.getLabel()))
+                .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }
 
@@ -193,18 +220,29 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
 
-        return graph.equals(that.graph) && subTypeLabels.equals(that.subTypeLabels);
+        return tx.equals(that.tx) && includeAttribute == that.includeAttribute && subLabels.equals(that.subLabels);
     }
 
     @Override
     public int hashCode() {
-        int result = graph.hashCode();
-        result = 31 * result + subTypeLabels.hashCode();
+        int result = tx.hashCode();
+        result = 31 * result + Boolean.hashCode(includeAttribute);
+        result = 31 * result + subLabels.hashCode();
         return result;
     }
 
-    Set<TypeId> convertLabelsToIds(Set<TypeLabel> TypeLabelSet) {
-        return TypeLabelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+    Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
+        return labelSet.stream()
+                .map(tx.get().admin()::convertToId)
+                .filter(LabelId::isValid)
+                .collect(Collectors.toSet());
+    }
+
+    static Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
+        return subTypes.stream()
+                .filter(Concept::isAttributeType)
+                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
+                .collect(Collectors.toSet());
     }
 
     static String getRandomJobId() {

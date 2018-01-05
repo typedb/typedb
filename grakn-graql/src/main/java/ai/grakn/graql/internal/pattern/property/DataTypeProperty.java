@@ -18,77 +18,83 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import ai.grakn.graql.internal.parser.QueryParserImpl;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.dataType;
-
 /**
- * Represents the {@code datatype} property on a {@link ResourceType}.
+ * Represents the {@code datatype} property on a {@link AttributeType}.
  *
  * This property can be queried or inserted.
  *
- * The insertion behaviour is not implemented here, but instead in
- * {@link ai.grakn.graql.internal.query.InsertQueryExecutor}.
- *
  * @author Felix Chapman
  */
-public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final ResourceType.DataType<?> datatype;
+    public static final String NAME = "datatype";
 
-    public DataTypeProperty(ResourceType.DataType<?> datatype) {
-        this.datatype = datatype;
+    public static DataTypeProperty of(AttributeType.DataType<?> datatype) {
+        return new AutoValue_DataTypeProperty(datatype);
     }
 
-    public ResourceType.DataType<?> getDataType() {
-        return datatype;
-    }
+    public abstract AttributeType.DataType<?> dataType();
 
     @Override
     public String getName() {
-        return "datatype";
+        return NAME;
     }
 
     @Override
     public String getProperty() {
-        return QueryParser.DATA_TYPES.inverse().get(datatype);
+        return QueryParserImpl.DATA_TYPES.inverse().get(dataType());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(dataType(start, datatype));
+        return ImmutableSet.of(EquivalentFragmentSets.dataType(this, start, dataType()));
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).dataType(dataType());
+        };
 
-        DataTypeProperty that = (DataTypeProperty) o;
-
-        return datatype.equals(that.datatype);
-
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
-    public int hashCode() {
-        return datatype.hashCode();
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        // TODO: resolve the below issue correctly
+        // undefine for datatype must be supported, because it is supported in define.
+        // However, making it do the right thing is difficult. Ideally we want the same as define:
+        //
+        //    undefine name datatype string, sub attribute; <- Remove `name`
+        //    undefine first-name sub name;                 <- Remove `first-name`
+        //    undefine name datatype string;                <- FAIL
+        //    undefine name sub attribute;                  <- FAIL
+        //
+        // Doing this is tough because it means the `datatype` property needs to be aware of the context somehow.
+        // As a compromise, we make all the cases succeed (where some do nothing)
+        return PropertyExecutor.builder(executor -> {}).build();
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new DataTypeAtom(var.getVarName(), this, parent);
+        return new DataTypeAtom(var.var(), this, parent);
     }
 }

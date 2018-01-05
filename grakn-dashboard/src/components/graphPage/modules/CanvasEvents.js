@@ -18,7 +18,6 @@
 
 
 import EngineClient from '../../../js/EngineClient';
-import * as API from '../../../js/util/HALTerms';
 import { EventHub } from '../../../js/state/graphPageState';
 import CanvasHandler from './CanvasHandler';
 
@@ -29,7 +28,7 @@ function holdOnNode(param) {
   visualiser.network.unselectAll();
   const node = visualiser.getNodeOnCoordinates(param.pointer.canvas);
   if (node === null) return;
-  EventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node), node);
+  EventHub.$emit('show-label-panel', node);
 }
 
 function doubleClick(param) {
@@ -43,16 +42,11 @@ function doubleClick(param) {
   const nodeObj = visualiser.getNode(node);
 
   if (eventKeys.shiftKey) {
-    requestExplore(nodeObj);
+    CanvasHandler.showAttributes(nodeObj);
+  } else if (!nodeObj.inferred) {
+    CanvasHandler.showNeighbours(nodeObj);
   } else {
-    EngineClient.request({
-      url: nodeObj.href,
-    }).then(resp => CanvasHandler.onGraphResponse(resp, false, false, node), (err) => {
-      EventHub.$emit('error-message', err.message);
-    });
-    if (nodeObj.baseType === API.GENERATED_RELATION_TYPE) {
-      visualiser.deleteNode(node);
-    }
+    CanvasHandler.explainConcept(nodeObj);
   }
 }
 
@@ -74,12 +68,15 @@ function blurNode() {
 }
 
 function requestExplore(nodeObj) {
+  // This function should only show attributes nodes now.
   if (nodeObj.explore) {
     EngineClient.request({
       url: nodeObj.explore,
-    }).then(resp => CanvasHandler.onGraphResponse(resp, false, true, nodeObj.id), (err) => {
-      EventHub.$emit('error-message', err.message);
-    });
+    })
+      .then(resp => CanvasHandler.onGraphResponse(resp))
+      .catch((err) => {
+        EventHub.$emit('error-message', err);
+      });
   }
 }
 
@@ -88,12 +85,12 @@ function leftClick(param) {
   const eventKeys = param.event.srcEvent;
   const clickType = param.event.type;
 
-      // If it is a long press on node: return and onHold() method will handle the event.
+  // If it is a long press on node: return and onHold() method will handle the event.
   if (clickType !== 'tap') {
     return;
   }
 
-      // Check if we need to start or stop drawing the selection rectangle
+  // Check if we need to start or stop drawing the selection rectangle
   visualiser.checkSelectionRectangleStatus(node, eventKeys, param);
 
   if (node === undefined) {
@@ -110,13 +107,13 @@ function leftClick(param) {
 }
 
 function singleClick(param) {
-      // Everytime the user clicks on canvas we clear the context-menu and tooltip
+  // Everytime the user clicks on canvas we clear the context-menu and tooltip
   EventHub.$emit('close-context');
   EventHub.$emit('close-tooltip');
 
   const t0 = new Date();
   const threshold = 200;
-      // all this fun to be able to distinguish a single click from a double click
+  // all this fun to be able to distinguish a single click from a double click
   if (t0 - doubleClickTime > threshold) {
     setTimeout(() => {
       if (t0 - doubleClickTime > threshold) {
@@ -130,7 +127,7 @@ function onDragStart(params) {
   const eventKeys = params.event.srcEvent;
   visualiser.draggingNode = true;
   EventHub.$emit('close-tooltip');
-      // If ctrl key is pressed while dragging node/nodes we also unlock and drag the connected nodes
+  // If ctrl key is pressed while dragging node/nodes we also unlock and drag the connected nodes
   if (eventKeys.ctrlKey) {
     const neighbours = [];
     params.nodes.forEach((node) => {

@@ -18,15 +18,16 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
@@ -44,50 +45,66 @@ import static java.util.stream.Collectors.joining;
 class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> implements DegreeQuery {
 
     private boolean ofTypeLabelsSet = false;
-    private Set<TypeLabel> ofTypeLabels = new HashSet<>();
+    private Set<Label> ofLabels = new HashSet<>();
 
-    DegreeQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    DegreeQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
     public Map<Long, Set<String>> execute() {
         LOGGER.info("DegreeVertexProgram is called");
         long startTime = System.currentTimeMillis();
+
         initSubGraph();
-        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
-        ofTypeLabels.forEach(type -> {
-            if (!subTypeLabels.contains(type)) {
-                throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                        .getMessage(type));
-            }
-        });
+        getAllSubTypes();
 
-        ComputerResult result;
-
-        if (ofTypeLabels.isEmpty()) {
-            ofTypeLabels.addAll(subTypeLabels);
+        // Check if ofType is valid before returning emptyMap
+        if (ofLabels.isEmpty()) {
+            ofLabels.addAll(subLabels);
         } else {
-            ofTypeLabels = ofTypeLabels.stream()
-                    .flatMap(typeLabel -> graph.get().getType(typeLabel).subTypes().stream())
-                    .map(Type::getLabel)
+            ofLabels = ofLabels.stream()
+                    .flatMap(typeLabel -> {
+                        Type type = tx.get().getSchemaConcept(typeLabel);
+                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+                        return type.subs();
+                    })
+                    .map(SchemaConcept::getLabel)
                     .collect(Collectors.toSet());
-            subTypeLabels.addAll(ofTypeLabels);
+            subLabels.addAll(ofLabels);
         }
 
-        Set<TypeLabel> withResourceRelationTypes = getHasResourceRelationTypes();
-        withResourceRelationTypes.addAll(subTypeLabels);
+        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
 
-        Set<TypeId> withResourceRelationTypeIds = convertLabelsToIds(withResourceRelationTypes);
-        Set<TypeId> ofTypeIds = convertLabelsToIds(ofTypeLabels);
+        Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
-        String randomId = getRandomJobId();
-
-        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypeIds, ofTypeIds, randomId),
-                new DegreeDistributionMapReduce(ofTypeIds, DegreeVertexProgram.DEGREE + randomId));
+        ComputerResult result = getGraphComputer().compute(
+                new DegreeVertexProgram(ofLabelIds),
+                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
+                subLabelIds);
 
         LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());
+    }
+
+    @Override
+    void getAllSubTypes() {
+        if (!includeAttribute) {
+            if (subLabels.isEmpty()) {
+                for (Label ofLabel : ofLabels) {
+                    Type type = tx.get().getSchemaConcept(ofLabel);
+                    if (type == null) throw GraqlQueryException.labelNotFound(ofLabel);
+                    if (type.isRelationshipType()) {
+                        includeAttribute = true;
+                        break;
+                    }
+                }
+            } else {
+                subLabels.addAll(ofLabels);
+            }
+        }
+        super.getAllSubTypes();
     }
 
     @Override
@@ -101,24 +118,24 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     }
 
     @Override
-    public DegreeQuery in(Collection<TypeLabel> subTypeLabels) {
-        return (DegreeQuery) super.in(subTypeLabels);
+    public DegreeQuery in(Collection<Label> subLabels) {
+        return (DegreeQuery) super.in(subLabels);
     }
 
     @Override
     public DegreeQuery of(String... ofTypeLabels) {
         if (ofTypeLabels.length > 0) {
             ofTypeLabelsSet = true;
-            this.ofTypeLabels = Arrays.stream(ofTypeLabels).map(TypeLabel::of).collect(Collectors.toSet());
+            this.ofLabels = Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet());
         }
         return this;
     }
 
     @Override
-    public DegreeQuery of(Collection<TypeLabel> ofTypeLabels) {
-        if (!ofTypeLabels.isEmpty()) {
+    public DegreeQuery of(Collection<Label> ofLabels) {
+        if (!ofLabels.isEmpty()) {
             ofTypeLabelsSet = true;
-            this.ofTypeLabels = Sets.newHashSet(ofTypeLabels);
+            this.ofLabels = Sets.newHashSet(ofLabels);
         }
         return this;
     }
@@ -127,7 +144,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     String graqlString() {
         String string = "degrees";
         if (ofTypeLabelsSet) {
-            string += " of " + ofTypeLabels.stream()
+            string += " of " + ofLabels.stream()
                     .map(StringConverter::typeLabelToString)
                     .collect(joining(", "));
         }
@@ -136,8 +153,13 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     }
 
     @Override
-    public DegreeQuery withGraph(GraknGraph graph) {
-        return (DegreeQuery) super.withGraph(graph);
+    public DegreeQuery withTx(GraknTx tx) {
+        return (DegreeQuery) super.withTx(tx);
+    }
+
+    @Override
+    public DegreeQuery includeAttribute() {
+        return (DegreeQuery) super.includeAttribute();
     }
 
     @Override
@@ -148,14 +170,14 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         DegreeQueryImpl that = (DegreeQueryImpl) o;
 
-        return ofTypeLabelsSet == that.ofTypeLabelsSet && ofTypeLabels.equals(that.ofTypeLabels);
+        return ofTypeLabelsSet == that.ofTypeLabelsSet && ofLabels.equals(that.ofLabels);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (ofTypeLabelsSet ? 1 : 0);
-        result = 31 * result + ofTypeLabels.hashCode();
+        result = 31 * result + ofLabels.hashCode();
         return result;
     }
 }

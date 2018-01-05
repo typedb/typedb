@@ -18,17 +18,15 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.io.Serializable;
 import java.util.Iterator;
-import java.util.Set;
 
 /**
- * The MapReduce program for counting the number of instances in a graph
- * <p>
+ * The MapReduce program for counting the number of instances excluding attributes and implicit relationships
  *
  * @author Jason Liu
  * @author Sheldon Hall
@@ -40,19 +38,9 @@ public class CountMapReduce extends GraknMapReduce<Long> {
     public CountMapReduce() {
     }
 
-    public CountMapReduce(Set<TypeId> typeIds) {
-        super(typeIds);
-    }
-
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
-        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-            emitter.emit(NullObject.instance(), 1L);
-            return;
-        }
-
-        // TODO: this is a bug with hasNext implementation - must send a message
-        emitter.emit(NullObject.instance(), 0L);
+        emitter.emit(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()), 1L);
     }
 
     @Override

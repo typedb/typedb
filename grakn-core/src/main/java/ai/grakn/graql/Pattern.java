@@ -35,7 +35,7 @@ import javax.annotation.CheckReturnValue;
  *
  * @author Felix Chapman
  */
-public interface Pattern extends PatternBuilder {
+public interface Pattern {
 
     /**
      * @return an Admin class that allows inspecting or manipulating this pattern
@@ -43,4 +43,15 @@ public interface Pattern extends PatternBuilder {
     @CheckReturnValue
     PatternAdmin admin();
 
+    /**
+     * Join patterns in a conjunction
+     */
+    @CheckReturnValue
+    Pattern and(Pattern pattern);
+
+    /**
+     * Join patterns in a disjunction
+     */
+    @CheckReturnValue
+    Pattern or(Pattern pattern);
 }

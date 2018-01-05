@@ -23,7 +23,7 @@ import vis from 'vis';
 import Style from './Style';
 import User from '../User';
 import NodeSettings from '../NodeSettings';
-import * as API from '../util/HALTerms';
+import * as API from '../Parser/APIUtils';
 
 
 /*
@@ -35,18 +35,16 @@ import * as API from '../util/HALTerms';
 export default class Visualiser {
   constructor(graphOffsetTop) {
     this.graphOffsetTop = graphOffsetTop;
-    this.nodes = new vis.DataSet([], {
-      queue: { delay: 800 },
-    });
+    this.nodes = new vis.DataSet([]);
     this.edges = new vis.DataSet([]);
 
     this.callbacks = {};
     this.style = new Style();
 
-        // vis.js network, instantiated on render.
+    // vis.js network, instantiated on render.
     this.network = {};
 
-        // vis.js default config
+    // vis.js default config
     this.networkConfig = {
       autoResize: true,
       nodes: {
@@ -87,13 +85,13 @@ export default class Visualiser {
       },
     };
 
-        // Additional properties to show in node label by type.
+    // Additional properties to show in node label by type.
     this.displayProperties = {};
     this.alreadyFittedToWindow = false;
     // Structure to hold colour preferences on nodes
     this.nodeColourProperies = {};
 
-        // working on stopping nodes from moving
+    // working on stopping nodes from moving
     this.lastFixTime = 0; // this is needed to stop a redraw loop due to the update of the vis dataset
     this.draggingNode = false;
 
@@ -104,18 +102,19 @@ export default class Visualiser {
   setCallbackOnEvent(eventName, callback) {
     this.callbacks[eventName] = callback;
   }
-    /**
+  /**
      * Start visualisation and render graph.
      * This needs to be called only once, but all callbacks should be configured
      * prior.
      */
   render(container) {
     this.network = new vis.Network(
-            container, {
-              nodes: this.nodes,
-              edges: this.edges,
-            },
-            this.networkConfig);
+      container, {
+        nodes: this.nodes,
+        edges: this.edges,
+      },
+      this.networkConfig,
+    );
 
     for (const eventName in this.callbacks) {
       this.network.on(eventName, this.callbacks[eventName]);
@@ -139,7 +138,7 @@ export default class Visualiser {
       }
     });
 
-        // Variables used to draw selection rectangle.
+    // Variables used to draw selection rectangle.
     this.canvas = this.network.canvas.frame.canvas;
     this.ctx = this.canvas.getContext('2d');
     this.rect = {};
@@ -148,7 +147,7 @@ export default class Visualiser {
     return this;
   }
 
-    // Methods used to draw a selection rectangle on the canvas and select multiple nodes
+  // Methods used to draw a selection rectangle on the canvas and select multiple nodes
   resetRectangle() {
     this.draggingRect = false;
     this.selectNodesFromHighlight();
@@ -169,7 +168,7 @@ export default class Visualiser {
       });
       this.rect.w = canvasPosition.x - this.rect.startX;
       this.rect.h = canvasPosition.y - this.rect.startY;
-            // Force redraw the canvas which will also draw the rectangle with new size.
+      // Force redraw the canvas which will also draw the rectangle with new size.
       this.network.redraw();
     }
   }
@@ -211,7 +210,7 @@ export default class Visualiser {
     };
   }
 
-    //  ----------------------------------------------  //
+  //  ----------------------------------------------  //
 
   fixAllNodes() {
     this.fixNodes(this.nodes.getIds());
@@ -221,7 +220,7 @@ export default class Visualiser {
     this.releaseNodes(this.nodes.getIds());
   }
 
-    // Methods used to fix and release nodes when one or more are dragged /
+  // Methods used to fix and release nodes when one or more are dragged /
 
   fixNodes(nodeIds) {
     if (new Date() - this.lastFixTime > 100) {
@@ -258,95 +257,67 @@ export default class Visualiser {
     }));
   }
 
-    // --------------------------  //
+  // --------------------------  //
 
 
-    // Fit the graph to the window size only on the first ajax call,
-    // then leave zoom control to the user
+  // Fit the graph to the window size only on the first ajax call,
+  // then leave zoom control to the user
   fitGraphToWindow() {
     if (!this.alreadyFittedToWindow) {
       this.network.fit();
       this.alreadyFittedToWindow = true;
     }
   }
-    /**
+  /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
-  addNode(nodeBaseProperties, nodeResources, nodeLinks, clickedNodeId) {
-    if (!this.nodeExists(nodeBaseProperties.id)) {
-      const colorObj = this.style.getNodeColour(nodeBaseProperties.type, nodeBaseProperties.baseType);
-      const highlightObj = {
-        highlight: Object.assign(colorObj.highlight, {
-          border: colorObj.highlight.background,
-        }),
-      };
-      const hoverObj = {
-        hover: highlightObj.highlight,
-      };
-      this.nodes.add({
-        id: nodeBaseProperties.id,
-        href: nodeBaseProperties.href,
-        label: this.generateLabel(nodeBaseProperties.type, nodeResources, nodeBaseProperties.label, nodeBaseProperties.baseType),
-        baseLabel: nodeBaseProperties.label,
-        type: nodeBaseProperties.type,
-        baseType: nodeBaseProperties.baseType,
-        color: Object.assign(colorObj, {
-          border: colorObj.background,
-        }, highlightObj, hoverObj),
-        font: this.style.getNodeFont(nodeBaseProperties.type, nodeBaseProperties.baseType),
-        shape: this.style.getNodeShape(nodeBaseProperties.baseType),
-        size: this.style.getNodeSize(nodeBaseProperties.baseType),
-        explore: nodeBaseProperties.explore,
-        properties: nodeResources,
-        links: nodeLinks,
-      });
-      this.nodes.flush();
-    } else if (nodeBaseProperties.id !== clickedNodeId && User.getFreezeNodes()) { // If node already in graph and it's not the node clicked by user, unlock it
-      this.updateNode({
-        id: nodeBaseProperties.id,
-        fixed: {
-          x: false,
-          y: false,
-        },
-      });
-    }
+  addNode(node) {
+    if (this.nodeExists(node.id)) return this;
+    const colorObj = this.style.getNodeColour(node.type, node.baseType);
+    const highlightObj = {
+      highlight: Object.assign(colorObj.highlight, {
+        border: colorObj.highlight.background,
+      }),
+    };
+    const hoverObj = {
+      hover: highlightObj.highlight,
+    };
+    this.nodes.add(Object.assign(node, {
+      label: node.label,
+      baseLabel: node.label,
+      color: Object.assign(colorObj, {
+        border: colorObj.background,
+      }, highlightObj, hoverObj),
+      font: this.style.getNodeFont(node.type, node.baseType),
+      shape: this.style.getNodeShape(node.baseType),
+      size: this.style.getNodeSize(node.baseType),
+    }));
     return this;
   }
 
-  // Given an array of instances(nodes) refresh all their labels with new resources
-  refreshLabels(instances) {
-    instances.forEach((instance) => {
-      const node = this.getNode(instance.id);
-      this.updateNode({
-        id: node.id,
-        label: this.generateLabel(node.type, node.properties, node.baseLabel, node.baseType),
-      });
-    });
-  }
-
-  updateNodeResources(id, properties) {
+  updateNodeAttributes(id, properties) {
     this.updateNode({
       id,
       properties,
     });
   }
-    /**
+  /**
      * Add edge between two nodes with @label, only if both nodes exist in the graph and they are not alreay connected.
      * This can be called at any time *after* render().
      */
-  addEdge(fromNode:string, toNode:string, label:string) {
-    if (this.nodeExists(fromNode) && this.nodeExists(toNode) && !this.alreadyConnected(fromNode, toNode, label)) {
+  addEdge(edge) {
+    if (this.nodeExists(edge.from) && this.nodeExists(edge.to) && !this.alreadyConnected(edge)) {
       this.edges.add({
-        from: fromNode,
-        to: toNode,
-        label,
-        color: this.style.getEdgeColour(label),
-        font: this.style.getEdgeFont(label),
+        from: edge.from,
+        to: edge.to,
+        label: edge.label,
+        color: this.style.getEdgeColour(edge.label),
+        font: this.style.getEdgeFont(edge.label),
         arrows: {
-          to: (label !== 'relates'),
+          to: true,
         },
       });
-      const connectingEdge = this.edgesBetweenTwoNodes(fromNode, toNode);
+      const connectingEdge = this.edgesBetweenTwoNodes(edge.from, edge.to);
       // If there are multiple edges connecting the same 2 nodes make the edges smooth so that the labels are visible
       if (connectingEdge.length > 1) {
         connectingEdge.forEach((edgeId) => {
@@ -357,19 +328,18 @@ export default class Visualiser {
     return this;
   }
 
-    /**
+  /**
      * Delete a node and its edges
      */
   deleteNode(id:string) {
     if (this.nodeExists(id)) {
       this.deleteEdges(id);
       this.nodes.remove(id);
-      this.flushUpdates();
     }
     return this;
   }
 
-    /**
+  /**
      * Removes all nodes and edges from graph
      */
   clearGraph() {
@@ -382,23 +352,8 @@ export default class Visualiser {
     return this;
   }
 
-
-  getNodeType(id) {
-    if (id in this.nodes._data) {
-      return this.nodes._data[id].type;
-    }
-    return undefined;
-  }
-
   getNode(id) {
     return this.nodes.get(id);
-  }
-
-  getAllNodeProperties(id) {
-    if (id in this.nodes._data) {
-      return Object.keys(this.nodes._data[id].properties).sort();
-    }
-    return [];
   }
 
   getNodeLabel(id) {
@@ -450,7 +405,8 @@ export default class Visualiser {
         background: colourString,
         highlight: {
           background: colourString,
-        } });
+        },
+      });
       this.nodes.get().forEach((v) => {
         if (v.type === nodeType) {
           this.updateNode({
@@ -475,8 +431,9 @@ export default class Visualiser {
         background: colourString,
         highlight: {
           background: colourString,
-        } });
-      // If it's an ontology node
+        },
+      });
+      // If it's a schema node
       this.nodes.get().forEach((v) => {
         if (v.baseType === baseType) {
           this.updateNode({
@@ -516,47 +473,49 @@ export default class Visualiser {
     return null;
   }
 
-    /*
+  /*
     Internal methods
     */
 
-    /**
+  /**
      * Check if node has already been added to graph.
      */
   nodeExists(id) {
     return (id in this.nodes._data);
   }
 
-    /**
+  /**
      * Check if (a,b) match (x,y) in either combination.
      */
   static matching(a, b, x, y) {
     return ((a === x && b === y) || (a === y && b === x));
   }
 
-    /**
+  /**
      * Check if two nodes (a,b) exist and if they are already connected by an edge.
      */
-  alreadyConnected(a, b, label) {
-    if (!(this.nodes.get(a) && this.nodes.get(b))) {
+  alreadyConnected(edge) {
+    if (!(this.nodes.get(edge.from) && this.nodes.get(edge.to))) {
       return false;
     }
 
-    const intersection = this.edgesBetweenTwoNodes(a, b);
+    const intersection = this.edgesBetweenTwoNodes(edge.from, edge.to);
 
-    return _.contains(_.values(intersection)
-            .map((x) => {
-              const edge = this.edges.get(x);
-              return Visualiser.matching(a, b, edge.to, edge.from) && label === edge.label;
-            }),
-            true);
+    return _.contains(
+      _.values(intersection)
+        .map((x) => {
+          const localEdge = this.edges.get(x);
+          return Visualiser.matching(edge.from, edge.to, localEdge.to, localEdge.from) && edge.label === localEdge.label;
+        }),
+      true,
+    );
   }
 
   edgesBetweenTwoNodes(a, b) {
     return _.intersection(this.network.getConnectedEdges(a), this.network.getConnectedEdges(b));
   }
 
-    /**
+  /**
      * Delete all edges connected to node id
      */
   deleteEdges(id) {
@@ -565,8 +524,8 @@ export default class Visualiser {
     });
   }
 
-  generateLabel(type, properties, label, baseType) {
-    if (baseType === API.RELATION || baseType === API.GENERATED_RELATION_TYPE || baseType === API.INFERRED_RELATION_TYPE) return '';
+  static generateLabel(type, attributes, label, baseType) {
+    if (baseType === API.RELATIONSHIP || baseType === API.INFERRED_RELATIONSHIP_TYPE) return '';
     if (NodeSettings.getLabelProperties(type).length) {
       return NodeSettings.getLabelProperties(type).reduce((l, x) => {
         let value;
@@ -574,8 +533,11 @@ export default class Visualiser {
           value = type;
           return `${(l.length ? `${l}\n` : l) + value}`;
         }
-        value = (properties[x] === undefined) ? '' : properties[x].label;
-        if (value.length > 40) value = `${value.substring(0, 40)}...`;
+        value = attributes.filter(attr => attr.type === x).map(a => a.value);
+        if (!value) value = '';
+        if (Array.isArray(value)) {
+          value = value.join(', ');
+        } else if (value.length > 40) value = `${value.substring(0, 40)}...`;
         return `${(l.length ? `${l}\n` : l) + x}: ${value}`;
       }, '');
     }
@@ -587,24 +549,20 @@ export default class Visualiser {
       if (v.type === type) {
         this.updateNode({
           id: k,
-          label: this.generateLabel(type, v.properties, v.baseLabel, v.baseType),
+          label: Visualiser.generateLabel(type, v.attributes, v.baseLabel, v.baseType),
         });
       }
       return v;
     });
   }
 
-  flushUpdates() {
-    this.nodes.flush();
-  }
 
   updateNode(obj) {
     this.nodes.update(obj);
-    this.nodes.flush();
   }
 
   checkSelectionRectangleStatus(node, eventKeys, param) {
-      // If we were drawing rectangle and we click again we stop the drawing and compute selected nodes
+    // If we were drawing rectangle and we click again we stop the drawing and compute selected nodes
     if (this.draggingRect) {
       this.draggingRect = false;
       this.resetRectangle();
@@ -614,5 +572,4 @@ export default class Visualiser {
       this.startRectangle(param.pointer.canvas.x, param.pointer.canvas.y - this.graphOffsetTop);
     }
   }
-
 }

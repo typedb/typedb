@@ -18,10 +18,7 @@
 
 package ai.grakn.migration.json;
 
-import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigrationOptions;
-
-import static java.lang.Integer.parseInt;
 
 /**
  * Configure the default JSON migration options and access arguments passed by the user
@@ -29,25 +26,10 @@ import static java.lang.Integer.parseInt;
  */
 public class JsonMigrationOptions extends MigrationOptions {
 
-    private final String batch = Integer.toString(Migrator.BATCH_SIZE);
-    private final String active = Integer.toString(Migrator.ACTIVE_TASKS);
-
     public JsonMigrationOptions(String[] args){
         super();
-
         options.addOption("i", "input", true, "Input json data file or directory.");
         options.addOption("t", "template", true, "Graql template to apply to the data.");
-        options.addOption("b", "batch", true, "Number of rows to execute in one Grakn transaction. Default 25.");
-        options.addOption("a", "active", true, "Number of tasks (batches) running on the server at any one time. Default 25.");
-
         parse(args);
-    }
-
-    public int getBatch() {
-        return parseInt(command.getOptionValue("b", batch));
-    }
-
-    public int getNumberActiveTasks() {
-        return parseInt(command.getOptionValue("a", active));
     }
 }

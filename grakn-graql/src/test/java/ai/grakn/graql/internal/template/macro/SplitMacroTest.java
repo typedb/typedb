@@ -18,12 +18,14 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
-import java.util.Collections;
-import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.Collections;
+import java.util.List;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static junit.framework.Assert.assertEquals;
@@ -38,21 +40,21 @@ public class SplitMacroTest {
 
     @Test
     public void applySplitMacroToNoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
 
         splitMacro.apply(Collections.emptyList());
     }
 
     @Test
     public void applySplitMacroThanOneArgument_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
 
         splitMacro.apply(ImmutableList.of("a"));
     }
 
     @Test
     public void applySplitMacroToMoreThanTwo_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
 
         splitMacro.apply(ImmutableList.of("a", "b", "c"));
     }

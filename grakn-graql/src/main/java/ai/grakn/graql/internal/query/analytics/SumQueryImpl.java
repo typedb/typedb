@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -37,8 +37,8 @@ import java.util.Set;
 
 class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements SumQuery {
 
-    SumQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    SumQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -47,16 +47,18 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
-        Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
+        getAllSubTypes();
 
-        String randomId = getRandomJobId();
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
-                new SumMapReduce(statisticsResourceTypeIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
+                new SumMapReduce(statisticsResourceLabelIds, dataType,
+                        DegreeVertexProgram.DEGREE),
+                allSubLabelIds);
         Map<Serializable, Number> sum = result.memory().get(SumMapReduce.class.getName());
 
         Number finalResult = sum.get(MapReduce.NullObject.instance());
@@ -72,8 +74,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery of(Collection<TypeLabel> resourceTypeLabels) {
-        return (SumQuery) setStatisticsResourceType(resourceTypeLabels);
+    public SumQuery of(Collection<Label> resourceLabels) {
+        return (SumQuery) setStatisticsResourceType(resourceLabels);
     }
 
     @Override
@@ -82,13 +84,13 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery in(Collection<TypeLabel> subTypeLabels) {
-        return (SumQuery) super.in(subTypeLabels);
+    public SumQuery in(Collection<Label> subLabels) {
+        return (SumQuery) super.in(subLabels);
     }
 
     @Override
-    public SumQuery withGraph(GraknGraph graph) {
-        return (SumQuery) super.withGraph(graph);
+    public SumQuery withTx(GraknTx tx) {
+        return (SumQuery) super.withTx(tx);
     }
 
     @Override

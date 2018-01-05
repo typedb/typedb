@@ -19,185 +19,399 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.common.collect.Lists;
+import ai.grakn.graql.internal.gremlin.fragment.InIsaFragment;
+import ai.grakn.graql.internal.gremlin.fragment.InSubFragment;
+import ai.grakn.graql.internal.gremlin.spanningtree.Arborescence;
+import ai.grakn.graql.internal.gremlin.spanningtree.ChuLiuEdmonds;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
  * Class for generating greedy traversal plans
  *
  * @author Felix Chapman
+ * @author Jason Liu
  */
 public class GreedyTraversalPlan {
 
-    private static final long MAX_TRAVERSAL_ATTEMPTS = 15_000;
-
-    // The degree to prune plans - 0.0 means never prune plans, 1.0 means always prune everything except the fastest
-    // estimated plan (this is equivalent to a naive greedy algorithm that does not look ahead).
-    private static final double PRUNE_FACTOR = 0.1;
+    protected static final Logger LOG = LoggerFactory.getLogger(GreedyTraversalPlan.class);
 
     /**
-     * Create a traversal plan using the default maxTraersalAttempts.
-     * @see GreedyTraversalPlan#createTraversal(PatternAdmin, GraknGraph, long)
-     * @param pattern a pattern to find a query plan for
-     * @return a semi-optimal traversal plan
-     */
-    public static GraqlTraversal createTraversal(PatternAdmin pattern, GraknGraph graph) {
-        return createTraversal(pattern, graph, MAX_TRAVERSAL_ATTEMPTS);
-    }
-
-    /**
-     * Create a semi-optimal traversal plan using a greedy approach
-     * <p>
-     * We can interpret building a plan as a decision tree, where each branch represents selecting a fragment to
-     * traverse next. A path from the root to a leaf of the tree represents a traversal plan.
-     * <p>
-     * Under this definition, this traversal optimisation plan takes a brute-force approach. It traverses a certain
-     * number of branches (defined in MAX_TRAVERSAL_ATTEMPTS) and calculates the estimated complexity of each partial
-     * plan produced. The lowest complexity partial plan is chosen, then the brute-force search is re-started from that
-     * position until a full plan is produced.
-     * <p>
-     * With fixed MAX_TRAVERSAL_ATTEMPTS, this method is O(n) where n is the size of the query. In general, it produces
-     * optimal or nearly-optimal results, so a 'smarter' method may not be necessary.
+     * Create a traversal plan.
      *
      * @param pattern a pattern to find a query plan for
-     * @param maxTraversalAttempts number of traversal plans to test
      * @return a semi-optimal traversal plan
      */
-    public static GraqlTraversal createTraversal(
-            PatternAdmin pattern, GraknGraph graph, long maxTraversalAttempts) {
+    public static GraqlTraversal createTraversal(PatternAdmin pattern, GraknTx tx) {
         Collection<Conjunction<VarPatternAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
-        // Find a semi-optimal way to execute each conjunction
         Set<? extends List<Fragment>> fragments = patterns.stream()
-                .map(conjunction -> new ConjunctionQuery(conjunction, graph))
-                .map(query -> semiOptimalConjunction(query, maxTraversalAttempts))
+                .map(conjunction -> new ConjunctionQuery(conjunction, tx))
+                .map((ConjunctionQuery query) -> planForConjunction(query, tx))
                 .collect(toImmutableSet());
 
         return GraqlTraversal.create(fragments);
     }
 
     /**
-     * Create a semi-optimal plan using a greedy approach to execute a single conjunction
+     * Create a plan using Edmonds' algorithm with greedy approach to execute a single conjunction
+     *
      * @param query the conjunction query to find a traversal plan
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
-    private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query, long maxTraversalAttempts) {
-        Plan initialPlan = Plan.base();
+    private static List<Fragment> planForConjunction(ConjunctionQuery query, GraknTx tx) {
 
-        // Should always start with fragments with fixed cost
-        // So remove them from fragmentSets and add them to the plan
-        Set<EquivalentFragmentSet> fragmentSets = query.getEquivalentFragmentSets().stream().filter(fragmentSet -> {
-            if (fragmentSet.fragments().size() == 1) {
-                Fragment fragment = fragmentSet.fragments().iterator().next();
-                if (fragment.hasFixedFragmentCost()) {
-                    return !initialPlan.tryPush(fragment);
+        final List<Fragment> plan = new ArrayList<>();
+        final Map<NodeId, Node> allNodes = new HashMap<>();
+
+        final Set<Node> connectedNodes = new HashSet<>();
+        final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
+
+        getConnectedFragmentSets(plan, query, allNodes, connectedNodes, nodesWithFixedCost, tx).forEach(fragmentSet -> {
+
+            final Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
+
+            final Set<Node> startingNodeSet = new HashSet<>();
+            final Set<Fragment> edgeFragmentSet = new HashSet<>();
+
+            fragmentSet.forEach(fragment -> {
+                if (fragment.end() != null) {
+                    edgeFragmentSet.add(fragment);
+                    updateFragmentCost(allNodes, nodesWithFixedCost, fragment);
+
+                } else if (fragment.hasFixedFragmentCost()) {
+                    startingNodeSet.add(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes));
+                }
+            });
+
+            Set<Weighted<DirectedEdge<Node>>> weightedGraph = buildWeightedGraph(
+                    allNodes, connectedNodes, edges, edgeFragmentSet);
+
+            if (!weightedGraph.isEmpty()) {
+                SparseWeightedGraph<Node> sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
+
+                final Collection<Node> startingNodes = !startingNodeSet.isEmpty() ? startingNodeSet :
+                        sparseWeightedGraph.getNodes().stream()
+                                .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
+
+                Arborescence<Node> arborescence = startingNodes.stream()
+                        .map(node -> ChuLiuEdmonds.getMaxArborescence(sparseWeightedGraph, node))
+                        .max(Comparator.comparingDouble(tree -> tree.weight))
+                        .map(arborescenceInside -> arborescenceInside.val).orElse(Arborescence.empty());
+                greedyTraversal(plan, arborescence, allNodes, edges);
+            }
+            addUnvisitedNodeFragments(plan, allNodes, connectedNodes);
+        });
+
+        addUnvisitedNodeFragments(plan, allNodes, allNodes.values());
+        LOG.trace("Greedy Plan = " + plan);
+        return plan;
+    }
+
+    private static void addUnvisitedNodeFragments(List<Fragment> plan,
+                                                  Map<NodeId, Node> allNodes,
+                                                  Collection<Node> connectedNodes) {
+
+        Set<Node> nodeWithFragment = connectedNodes.stream()
+                .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
+                        !node.getFragmentsWithDependencyVisited().isEmpty())
+                .collect(Collectors.toSet());
+        while (!nodeWithFragment.isEmpty()) {
+            nodeWithFragment.forEach(node -> addNodeFragmentToPlan(node, plan, allNodes, false));
+            nodeWithFragment = connectedNodes.stream()
+                    .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
+                            !node.getFragmentsWithDependencyVisited().isEmpty())
+                    .collect(Collectors.toSet());
+        }
+    }
+
+    private static Collection<Set<Fragment>> getConnectedFragmentSets(List<Fragment> plan,
+                                                                      ConjunctionQuery query,
+                                                                      Map<NodeId, Node> allNodes,
+                                                                      Set<Node> connectedNodes,
+                                                                      Map<Node, Double> nodesWithFixedCost,
+                                                                      GraknTx tx) {
+
+        final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
+                .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
+
+        allFragments.forEach(fragment -> {
+            if (fragment.end() == null) {
+                processFragmentWithFixedCost(plan, allNodes, connectedNodes, nodesWithFixedCost, tx, fragment);
+            }
+
+            if (!fragment.dependencies().isEmpty()) {
+                processFragmentWithDependencies(allNodes, fragment);
+            }
+        });
+
+        // process sub fragments here as we probably need to break the query tree
+        processSubFragment(allNodes, nodesWithFixedCost, allFragments);
+
+        final Map<Integer, Set<Var>> varSetMap = new HashMap<>();
+        final Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
+        final int[] index = {0};
+        allFragments.forEach(fragment -> {
+            Set<Var> fragmentVarNameSet = Sets.newHashSet(fragment.vars());
+            List<Integer> setsWithVarInCommon = new ArrayList<>();
+            varSetMap.forEach((setIndex, varNameSet) -> {
+                if (!Collections.disjoint(varNameSet, fragmentVarNameSet)) {
+                    setsWithVarInCommon.add(setIndex);
+                }
+            });
+
+            if (setsWithVarInCommon.isEmpty()) {
+                index[0] += 1;
+                varSetMap.put(index[0], fragmentVarNameSet);
+                fragmentSetMap.put(index[0], Sets.newHashSet(fragment));
+            } else {
+                Iterator<Integer> iterator = setsWithVarInCommon.iterator();
+                Integer firstSet = iterator.next();
+                varSetMap.get(firstSet).addAll(fragmentVarNameSet);
+                fragmentSetMap.get(firstSet).add(fragment);
+                while (iterator.hasNext()) {
+                    Integer nextSet = iterator.next();
+                    varSetMap.get(firstSet).addAll(varSetMap.remove(nextSet));
+                    fragmentSetMap.get(firstSet).addAll(fragmentSetMap.remove(nextSet));
                 }
             }
-            return true;
+        });
+        return fragmentSetMap.values();
+    }
+
+    private static void processFragmentWithFixedCost(List<Fragment> plan,
+                                                     Map<NodeId, Node> allNodes,
+                                                     Set<Node> connectedNodes,
+                                                     Map<Node, Double> nodesWithFixedCost,
+                                                     GraknTx tx, Fragment fragment) {
+
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
+        connectedNodes.add(start);
+
+        if (fragment.hasFixedFragmentCost()) {
+            // fragments that should be done right away
+            plan.add(fragment);
+            double logInstanceCount = -1D;
+            if (fragment.getShardCount(tx).isPresent()) {
+                long shardCount = fragment.getShardCount(tx).get();
+                if (shardCount > 0) {
+                    logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
+                            Math.log(tx.admin().shardingThreshold());
+                }
+            }
+            nodesWithFixedCost.put(start, logInstanceCount);
+            start.setFixedFragmentCost(fragment.fragmentCost());
+
+        } else if (fragment.dependencies().isEmpty()) {
+            //fragments that should be done when a node has been visited
+            start.getFragmentsWithoutDependency().add(fragment);
+        }
+    }
+
+    private static void processFragmentWithDependencies(Map<NodeId, Node> allNodes, Fragment fragment) {
+        // it's either neq or value fragment
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
+        Node other = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.dependencies().iterator().next(),
+                allNodes);
+
+        start.getFragmentsWithDependency().add(fragment);
+        other.getDependants().add(fragment);
+
+        // check whether it's value fragment
+        if (fragment.varProperty() instanceof ValueProperty) {
+            // as value fragment is not symmetric, we need to add it again
+            other.getFragmentsWithDependency().add(fragment);
+            start.getDependants().add(fragment);
+        }
+    }
+
+    // if in-sub starts from an indexed supertype, update the fragment cost of in-isa starting from the subtypes
+    private static void processSubFragment(Map<NodeId, Node> allNodes,
+                                           Map<Node, Double> nodesWithFixedCost,
+                                           Set<Fragment> allFragments) {
+
+        Set<Fragment> validSubFragments = allFragments.stream().filter(fragment -> {
+            if (fragment instanceof InSubFragment) {
+                Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
+                if (nodesWithFixedCost.containsKey(superType) && nodesWithFixedCost.get(superType) > 0D) {
+                    Node subType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes);
+                    if (!nodesWithFixedCost.containsKey(subType)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }).collect(Collectors.toSet());
 
-        long numFragments = fragments(fragmentSets).count();
-        long depth = 0;
-        long numTraversalAttempts = numFragments;
-
-        // Calculate the depth to descend in the tree, based on how many plans we want to evaluate
-        while (numFragments > 0 && numTraversalAttempts < maxTraversalAttempts) {
-            depth += 1;
-            numTraversalAttempts *= numFragments;
-            numFragments -= 1;
-        }
-
-        Plan plan = initialPlan.copy();
-
-        while (!fragmentSets.isEmpty()) {
-            List<Plan> allPlans = Lists.newArrayList();
-            extendPlan(plan, allPlans, fragmentSets, depth);
-
-            Plan newPlan = Collections.min(allPlans);
-
-            // Only retain one new fragment
-            // TODO: Find a more elegant way to do this?
-            while (newPlan.size() > plan.size() + 1) {
-                newPlan.pop();
-            }
-
-            plan = newPlan;
-
-            plan.fragments().forEach(fragment -> fragmentSets.remove(fragment.getEquivalentFragmentSet()));
-        }
-
-        return plan.fragments();
-    }
-
-    /**
-     * Find a traversal plan that will satisfy the given equivalent fragment sets
-     * @param plan the plan so far
-     * @param fragmentSets a set of equivalent fragment sets that must all be covered by the plan
-     * @param depth the maximum depth the plan is allowed to descend in the tree
-     * @return a new plan that extends the given plan
-     */
-    private static void extendPlan(Plan plan, List<Plan> allPlans, Set<EquivalentFragmentSet> fragmentSets, long depth) {
-
-        // Base case
-        if (depth == 0) {
-            allPlans.add(plan.copy());
-            return;
-        }
-
-        // The minimum cost of all plan with only one additional fragment. Used for deciding which branches to prune.
-        double minPartialPlanCost = Double.MAX_VALUE;
-
-        for (EquivalentFragmentSet fragmentSet : fragmentSets) {
-            for (Fragment fragment : fragmentSet.fragments()) {
-
-                if (plan.tryPush(fragment)) {
-                    minPartialPlanCost = Math.min(plan.cost(), minPartialPlanCost);
-                    plan.pop();
-                }
-            }
-        }
-
-        boolean addedPlan = false;
-
-        for (EquivalentFragmentSet fragmentSet : fragmentSets) {
-            for (Fragment fragment : fragmentSet.fragments()) {
-
-                // Skip fragments that don't have their dependencies met or are in sets that have already been visited
-                if (!plan.tryPush(fragment)) {
-                    continue;
-                }
-
-                // Prune any plans that are much more expensive than the cheapest partial plan
-                if (plan.cost() * PRUNE_FACTOR <= minPartialPlanCost) {
-                    addedPlan = true;
-
-                    // Recursively find a plan
-                    extendPlan(plan, allPlans, fragmentSets, depth - 1);
-                }
-
-                plan.pop();
-            }
-        }
-
-        if (!addedPlan) {
-            allPlans.add(plan.copy());
+        if (!validSubFragments.isEmpty()) {
+            validSubFragments.forEach(fragment -> {
+                // TODO: should decrease the weight of sub type after each level
+                nodesWithFixedCost.put(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
+                        nodesWithFixedCost.get(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes)));
+            });
+            processSubFragment(allNodes, nodesWithFixedCost, allFragments);
         }
     }
 
-    private static Stream<Fragment> fragments(Set<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSets.stream().flatMap(EquivalentFragmentSet::stream);
+    private static void updateFragmentCost(Map<NodeId, Node> allNodes,
+                                           Map<Node, Double> nodesWithFixedCost,
+                                           Fragment fragment) {
+
+        if (fragment instanceof InIsaFragment) {
+            Node type = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
+            if (nodesWithFixedCost.containsKey(type) && nodesWithFixedCost.get(type) > 0) {
+                fragment.setAccurateFragmentCost(nodesWithFixedCost.get(type));
+            }
+        }
+    }
+
+    private static Set<Weighted<DirectedEdge<Node>>> buildWeightedGraph(Map<NodeId, Node> allNodes,
+                                                                        Set<Node> connectedNodes,
+                                                                        Map<Node, Map<Node, Fragment>> edges,
+                                                                        Set<Fragment> edgeFragmentSet) {
+
+        final Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
+        edgeFragmentSet.stream()
+                .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
+                .forEach(weightedDirectedEdge -> {
+                    weightedGraph.add(weightedDirectedEdge);
+                    connectedNodes.add(weightedDirectedEdge.val.destination);
+                    connectedNodes.add(weightedDirectedEdge.val.source);
+                });
+        return weightedGraph;
+    }
+
+    private static void greedyTraversal(List<Fragment> plan, Arborescence<Node> arborescence,
+                                        Map<NodeId, Node> nodes,
+                                        Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
+
+        Map<Node, Set<Node>> edgesParentToChild = new HashMap<>();
+        arborescence.getParents().forEach((child, parent) -> {
+            if (!edgesParentToChild.containsKey(parent)) {
+                edgesParentToChild.put(parent, new HashSet<>());
+            }
+            edgesParentToChild.get(parent).add(child);
+        });
+
+        Node root = arborescence.getRoot();
+
+        Set<Node> reachableNodes = Sets.newHashSet(root);
+        while (!reachableNodes.isEmpty()) {
+            Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
+                    branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).get();
+
+            // add edge fragment first, then node fragments
+            getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent).ifPresent(plan::add);
+            addNodeFragmentToPlan(nodeWithMinCost, plan, nodes, true);
+
+            reachableNodes.remove(nodeWithMinCost);
+            if (edgesParentToChild.containsKey(nodeWithMinCost)) {
+                reachableNodes.addAll(edgesParentToChild.get(nodeWithMinCost));
+            }
+        }
+    }
+
+    private static double branchWeight(Node node, Arborescence<Node> arborescence,
+                                       Map<Node, Set<Node>> edgesParentToChild,
+                                       Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
+
+        if (!node.getNodeWeight().isPresent()) {
+            node.setNodeWeight(Optional.of(
+                    getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent) + nodeFragmentWeight(node)));
+        }
+        if (!node.getBranchWeight().isPresent()) {
+            final double[] weight = {node.getNodeWeight().get()};
+            if (edgesParentToChild.containsKey(node)) {
+                edgesParentToChild.get(node).forEach(child ->
+                        weight[0] += branchWeight(child, arborescence, edgesParentToChild, edgeFragmentChildToParent));
+            }
+            node.setBranchWeight(Optional.of(weight[0]));
+        }
+        return node.getBranchWeight().get();
+    }
+
+    private static double nodeFragmentWeight(Node node) {
+        double costFragmentsWithoutDependency = node.getFragmentsWithoutDependency().stream()
+                .mapToDouble(Fragment::fragmentCost).sum();
+        double costFragmentsWithDependencyVisited = node.getFragmentsWithDependencyVisited().stream()
+                .mapToDouble(Fragment::fragmentCost).sum();
+        double costFragmentsWithDependency = node.getFragmentsWithDependency().stream()
+                .mapToDouble(Fragment::fragmentCost).sum();
+        return costFragmentsWithoutDependency + node.getFixedFragmentCost() +
+                (costFragmentsWithDependencyVisited + costFragmentsWithDependency) / 2D;
+    }
+
+    private static void addNodeFragmentToPlan(Node node, List<Fragment> plan, Map<NodeId, Node> nodes,
+                                              boolean visited) {
+        if (!visited) {
+            node.getFragmentsWithoutDependency().stream()
+                    .min(Comparator.comparingDouble(Fragment::fragmentCost))
+                    .ifPresent(firstNodeFragment -> {
+                        plan.add(firstNodeFragment);
+                        node.getFragmentsWithoutDependency().remove(firstNodeFragment);
+                    });
+        }
+        node.getFragmentsWithoutDependency().addAll(node.getFragmentsWithDependencyVisited());
+        plan.addAll(node.getFragmentsWithoutDependency().stream()
+                .sorted(Comparator.comparingDouble(Fragment::fragmentCost))
+                .collect(Collectors.toList()));
+
+        node.getFragmentsWithoutDependency().clear();
+        node.getFragmentsWithDependencyVisited().clear();
+
+        node.getDependants().forEach(fragment -> {
+            Node otherNode = nodes.get(new NodeId(NodeId.NodeType.VAR, fragment.start()));
+            if (node.equals(otherNode)) {
+                otherNode = nodes.get(new NodeId(NodeId.NodeType.VAR, fragment.dependencies().iterator().next()));
+            }
+            otherNode.getDependants().remove(fragment.getInverse());
+            otherNode.getFragmentsWithDependencyVisited().add(fragment);
+
+        });
+        node.getDependants().clear();
+    }
+
+    private static double getEdgeFragmentCost(Node node, Arborescence<Node> arborescence,
+                                              Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        Optional<Fragment> fragment = getEdgeFragment(node, arborescence, edgeToFragment);
+        return fragment.map(Fragment::fragmentCost).orElse(0D);
+    }
+
+    private static Optional<Fragment> getEdgeFragment(Node node, Arborescence<Node> arborescence,
+                                                      Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        if (edgeToFragment.containsKey(node) &&
+                edgeToFragment.get(node).containsKey(arborescence.getParents().get(node))) {
+            return Optional.of(edgeToFragment.get(node).get(arborescence.getParents().get(node)));
+        }
+        return Optional.empty();
     }
 }

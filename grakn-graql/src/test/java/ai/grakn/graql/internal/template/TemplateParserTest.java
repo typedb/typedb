@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.template;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -44,7 +45,7 @@ public class TemplateParserTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void oneValueOneLineTest(){
+    public void templateReplacesOneValuedOnOneLine_ValuesReplacedCorrectly(){
         String template = "insert $x isa person has name <name>;    ";
         String expected = "insert $x0 has name \"Phil Collins\" isa person;";
 
@@ -55,19 +56,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void concatenateValuesTest(){
-        String template = "insert $x isa @noescp(<first>)-@noescp(<last>);";
-        String expected = "insert $x0 isa one-two;";
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("first", "one");
-        data.put("last", "two");
-
-        assertParseEquals(template, data, expected);
-    }
-
-    @Test
-    public void multiValueOneLineTest(){
+    public void templateReplacesMultipleValuesOnOneLine_ValuesReplacedCorrectly(){
         String template = "insert $x isa person has name <name> , has feet <numFeet>;";
         String expected = "insert $x0 has name \"Phil Collins\" isa person has feet 3;";
 
@@ -78,8 +67,8 @@ public class TemplateParserTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void dataMissingTest() {
+    @Test
+    public void templateExecutedWithMissingData_ThrowsGraqlSyntaxException() {
         String template = "insert $x isa person has name <name> , has feet <numFeet> ";
         String expected = "insert $x0 has name \"Phil Collins\" isa person has feet 3;";
 
@@ -87,23 +76,19 @@ public class TemplateParserTest {
         data.put("name", "Phil Collins");
         data.put("feet", 3);
 
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(GraqlSyntaxException.parsingTemplateMissingKey("<numFeet>", data).getMessage());
         assertParseEquals(template, data, expected);
     }
 
     @Test
-    public void quotingWhenReplacementInVariableTest(){
-        String template =
-                "insert \n" +
-                        "for (address in <addresses>) do { \n" +
-                        "   $<address> has address <address>;\n" +
-                        "}";
-
-        String expected = "insert $22--Hornsey has address \"22. Hornsey\";\n" +
-                "$Something has address \"Something\";";
+    public void templateReplacesValueWithSpacedAsVariable_ReplacementHasDashesWhereSpacesWere(){
+        String template = "insert $<address> has address <address>;";
+        String expected = "insert $22--Hornsey has address \"22. Hornsey\";";
 
 
         Map<String, Object> data = new HashMap<>();
-        data.put("addresses", Arrays.asList("22. Hornsey", "Something"));
+        data.put("address", "22. Hornsey");
 
         assertParseEquals(template, data, expected);
     }
@@ -126,42 +111,52 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void multipleDataTypesTest(){
-        String template = "insert $x isa y; $x val <string>; $x val <long>; $x val <double>; $x val <bool>;";
-        String expected =
-                "insert $x0 isa y;\n" +
-                        "$x0 val \"string\";\n" +
-                        "$x0 val 40;\n" +
-                        "$x0 val 0.001;\n" +
-                        "$x0 val false;";
+    public void templateDataContainsInt_ReplacedIntNotQuoted(){
+        String template = "insert $x isa y val <value>;";
+        String expected = "insert $x0 isa y val 40;";
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("string", "string");
-        data.put("long", 40);
-        data.put("double", 0.001);
-        data.put("bool", false);
-
-        assertParseEquals(template, data, expected);
+        assertParseEquals(template, ImmutableMap.of("value", 40), expected);
     }
 
     @Test
-    public void forLoopOverArrayTest(){
+    public void templateDataContainsString_ReplacedStringIsQuoted(){
+        String template = "insert $x isa y val <value>;";
+        String expected = "insert $x0 isa y val \"string\";";
+
+        assertParseEquals(template, ImmutableMap.of("value", "string"), expected);
+    }
+
+    @Test
+    public void templateDataContainsDouble_ReplacedDoubleNotQuoted(){
+        String template = "insert $x isa y val <value>;";
+        String expected = "insert $x0 isa y val 0.001;";
+
+        assertParseEquals(template, ImmutableMap.of("value", 0.001), expected);
+    }
+
+    @Test
+    public void templateDataContainsBoolean_ReplacedBooleanNotQuoted(){
+        String template = "insert $x isa y val <value>;";
+        String expected = "insert $x0 isa y val true;";
+
+        assertParseEquals(template, ImmutableMap.of("value", true), expected);
+    }
+
+    @Test
+    public void templateLoopsOverArrayWithForInSyntax_LoopIsExecutedForEachElementInArray(){
         String template = "insert " +
                 "for (whale in <whales> ) do {" +
                 "$x isa whale has name <whale>;\n}";
 
-        String expected =
-                "insert $x0 isa whale has name \"shamu\";\n" +
-                        "$x1 isa whale has name \"dory\";";
+        String expected = "insert $x0 isa whale has name \"shamu\";\n" +
+                                 "$x1 isa whale has name \"dory\";";
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("whales", Arrays.asList("shamu", "dory"));
-
-        assertParseEquals(template, data, expected);
+        assertParseEquals(template, ImmutableMap.of("whales",
+                Arrays.asList("shamu", "dory")), expected);
     }
 
     @Test
-    public void forLoopOverObjectsWithEnhancedForSyntaxTest(){
+    public void templateLoopsOverArrayOfMapsWithForEachSyntax_LoopIsExecutedForEachElementInArray(){
         String template = "insert\n" +
                 "    $x isa person;\n" +
                 "    for ( <addresses> ) do {\n" +
@@ -197,7 +192,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void forLoopOverObjectsWithNormalForSyntaxTest(){
+    public void templateLoopsOverArrayOfMapsWithForInSyntax_LoopIsExecutedForEachElementInArray(){
         String template = "insert\n" +
                 "    $x isa person;\n" +
                 "    for ( address in <addresses> ) do {\n" +
@@ -232,7 +227,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void doubleNestedForTest(){
+    public void templateLoopsOverArrayOfArraysWithForEachSyntax_LoopIsExecutedForEachElementInArray(){
 
         String template =
                 "insert " +
@@ -290,7 +285,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void reusingVariablesAfterBlockScopingTest(){
+    public void templateReusesVariablesAfterExitingInitialScope_VariableCounterIncremented(){
         String template =
                 "insert $x isa person has name <name>;\n" +
                         "    \n" +
@@ -332,7 +327,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void dotNotationTest(){
+    public void templateUsesDotNotationToAccessMapElements_ElementsAreCorrectlyReplaced(){
         String template = "insert " +
                 "$x isa person has name <name>;\n" +
                 "$y isa address;\n" +
@@ -358,7 +353,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void doubleDotTest(){
+    public void templateUsesDoubleDotNotationToAccessMapElements_ElementsAreCorrectlyReplaced(){
         String template = "insert $x isa person has name <person.name.firstName>;\n";
         String expected = "insert $x0 isa person has name \"Phil\";";
 
@@ -369,7 +364,18 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void comboVarDotTest(){
+    public void templateUsesQuotedKeysInDotNotationToAccessMapElements_ElementsAreCorrectlyReplaced(){
+        String template = "insert $x isa person has name <\"person\".\"name\".\"firstName\">;";
+        String expected = "insert $x0 isa person has name \"Phil\";";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("person", singletonMap("name", singletonMap("firstName", "Phil")));
+
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void templateUsesDotNotationForReplacementInVariable_ElementsAreCorrectlyReplaced(){
         String template = "insert $<person.name> isa person;";
         String expected = "insert $Phil-Collins isa person;";
 
@@ -379,36 +385,48 @@ public class TemplateParserTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void wrongDataTest(){
-        String template = "$<person.namefhwablfewqhbfli> isa person";
+    @Test
+    public void templateAccessesNonExistingDataElement_GraqlSyntaxExceptionThrown(){
+        String template = "$<namefhwablfewqhbfli> isa person";
         String expected = "$Phil-Collins isa person";
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("person", singletonMap("name", "Phil Collins"));
+        exception.expect(GraqlSyntaxException.class);
 
-        assertParseEquals(template, data, expected);
+        assertParseEquals(template, ImmutableMap.of("this", "that"), expected);
     }
 
     @Test
-    public void ifElseIfTest(){
+    public void templateIfEvaluatesTrue_IfBlockAppearsInResult(){
         String template =
                 "if(<firstName> = true) do { insert $person has hasName <firstName>; }\n" +
                         "elseif(<firstName> = false) do { insert $person isa person; }\n" +
                         "else { insert $nothing isa nothing; }";
         String expected = "insert $person0 has hasName true;";
-
         assertParseEquals(template, singletonMap("firstName", true), expected);
+    }
 
-        expected = "insert $person0 isa person;";
-        assertParseEquals(template, singletonMap("firstName", false), expected);
-
-        expected = "insert $nothing0 isa nothing;";
+    @Test
+    public void templateElseIfEvaluatesTrue_ElseIfBlockAppearsInResult(){
+        String template =
+                "if(<firstName> = true)      do { insert $person isa if; }\n" +
+                        "elseif(<firstName> = false) do { insert $person isa elseif; }\n" +
+                        "else                           { insert $nothing isa else; }";
+        String expected = "insert $nothing0 isa else;";
         assertParseEquals(template, singletonMap("firstName", "bleep"), expected);
     }
 
     @Test
-    public void equalityWithStringTest(){
+    public void templateElseEvaluatesTrue_ElseBlockAppearsInResult(){
+        String template =
+                        "if(<firstName> = true)      do { insert $person isa if; }\n" +
+                        "elseif(<firstName> = false) do { insert $person isa elseif; }\n" +
+                        "else                           { insert $nothing isa else; }";
+        String expected = "insert $nothing0 isa else;";
+        assertParseEquals(template, singletonMap("firstName", "bleep"), expected);
+    }
+
+    @Test
+    public void templateEvaluatesEqualityOverSameStrings_EqualityEvaluatesToTrue(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", "one");
         assertParseEquals("if(<first> = \"one\") do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
@@ -416,25 +434,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void ifElseTest(){
-        String template =
-                "if (<firstName> != null) do {\n" +
-                        "    insert $person has name <firstName>;" +
-                        "}\n" +
-                        "else {\n" +
-                        "    insert $person;" +
-                        "}\n";
-        String expected = "insert $person0 has name \"Phil\";";
-
-        assertParseEquals(template, singletonMap("firstName", "Phil"), expected);
-
-        expected = "insert $person0 ;";
-
-        assertParseEquals(template, new HashMap<>(), expected);
-    }
-
-    @Test
-    public void andExpressionTest(){
+    public void templateEvaluatesAndExpressionOverTwoTrueBooleans_ExpressionEvaluatesToTrue(){
         String template = "if(<this> and <that>) do { insert $x isa t; } else { insert $x isa f; }";
         String expected = "insert $x0 isa t;";
 
@@ -443,32 +443,45 @@ public class TemplateParserTest {
         data.put("that", true);
 
         assertParseEquals(template, data, expected);
+    }
 
-        expected = "insert $x0 isa f;";
-        data = new HashMap<>();
+    @Test
+    public void templateEvaluatesAndExpressionOverTrueAndFalseBooleans_ExpressionEvaluatesToFalse(){
+        String template = "if(<this> and <that>) do { insert $x isa t; } else { insert $x isa f; }";
+        String expected =  "insert $x0 isa f;";
+
+        Map<String, Object> data = new HashMap<>();
         data.put("this", false);
         data.put("that", true);
 
         assertParseEquals(template, data, expected);
+    }
 
-        expected = "insert $x0 isa f;";
-        data = new HashMap<>();
+    @Test
+    public void templateEvaluatesAndExpressionOverTwoFalseBooleans_ExpressionEvaluatesToFalse(){
+        String template = "if(<this> and <that>) do { insert $x isa t; } else { insert $x isa f; }";
+        String expected =  "insert $x0 isa f;";
+
+        Map<String, Object> data = new HashMap<>();
         data.put("this", false);
         data.put("that", false);
 
         assertParseEquals(template, data, expected);
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void andExpressionWrongTypeTest(){
+    @Test
+    public void templateDataContainsWrongTypeForAndExpression_GraqlSyntaxExceptionThrown(){
         Map<String, Object> data = new HashMap<>();
         data.put("this", true);
         data.put("that", 2);
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(GraqlSyntaxException.parsingIncorrectValueType(2, Boolean.class, data).getMessage());
         assertParseEquals("if(<this> and <that>) do { something }", data, " something");
     }
 
     @Test
-    public void orExpressionTest(){
+    public void templateEvaluatesOrExpressionOverTrueAndFalseBooleans_ExpressionEvaluatesToTrue(){
         String template = "if(<this> or <that>) do { insert $x isa t; } else { insert $x isa f; }";
         String expected = "insert $x0 isa t;";
 
@@ -477,48 +490,69 @@ public class TemplateParserTest {
         data.put("that", true);
 
         assertParseEquals(template, data, expected);
+    }
 
-        expected = "insert $x0 isa t;";
-        data = new HashMap<>();
+    @Test
+    public void templateEvaluatesOrExpressionOverTwoTrueBooleans_ExpressionEvaluatesToTrue(){
+        String template = "if(<this> or <that>) do { insert $x isa t; } else { insert $x isa f; }";
+        String expected = "insert $x0 isa t;";
+
+        Map<String, Object> data = new HashMap<>();
         data.put("this", true);
         data.put("that", true);
 
         assertParseEquals(template, data, expected);
+    }
 
-        expected = "insert $x0 isa f;";
-        data = new HashMap<>();
+    @Test
+    public void templateEvaluatesOrExpressionOverTwoFalseBooleans_ExpressionEvaluatesToTrue(){
+        String template = "if(<this> or <that>) do { insert $x isa t; } else { insert $x isa f; }";
+        String expected = "insert $x0 isa f;";
+
+        Map<String, Object> data = new HashMap<>();
         data.put("this", false);
         data.put("that", false);
 
         assertParseEquals(template, data, expected);
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void orExpressionWrongTypeTest(){
+    @Test
+    public void templateDataContainsWrongTypeForOfExpression_GraqlSyntaxExceptionThrown(){
         Map<String, Object> data = new HashMap<>();
         data.put("this", true);
         data.put("that", 2);
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(GraqlSyntaxException.parsingIncorrectValueType(2, Boolean.class, data).getMessage());
         assertParseEquals("if(<this> or <that>) do { something }", data, " something");
     }
 
     @Test
-    public void notExpressionTest(){
+    public void templateEvaluatesOrExpressionOverFalseBoolean_ExpressionEvaluatesToTrue(){
         String template = "if(not <this>) do { insert $something isa something; } else { insert $something isa nothing; }";
         String expected = "insert $something0 isa something;";
-
         assertParseEquals(template, singletonMap("this", false), expected);
-
-        expected = "insert $something0 isa nothing;";
-        assertParseEquals(template, singletonMap("this", true), expected);
-    }
-
-    @Test(expected = GraqlSyntaxException.class)
-    public void notExpressionWrongTypeTest(){
-        assertParseEquals("if(not <this>) do {insert isa y;} else {insert isa z;}", singletonMap("this", "string"), "");
     }
 
     @Test
-    public void greaterExpressionTest(){
+    public void templateEvaluatesOrExpressionOverTrueBoolean_ExpressionEvaluatesToFalse(){
+        String template = "if(not <this>) do { insert $something isa something; } else { insert $something isa nothing; }";
+        String expected = "insert $something0 isa nothing;";
+        assertParseEquals(template, singletonMap("this", true), expected);
+    }
+
+    @Test
+    public void templateDataContainsWrongTypeForNotExpression_GraqlSyntaxExceptionThrown(){
+        Map data = singletonMap("this", "string");
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(GraqlSyntaxException.parsingIncorrectValueType("string", Boolean.class, data).getMessage());
+
+        assertParseEquals("if(not <this>) do {insert isa y;} else {insert isa z;}", data, "");
+    }
+
+    @Test
+    public void templateEvaluatesGreaterExpressionOverNumbers_ExpressionEvaluatesCorrectly(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", 2);
@@ -527,16 +561,19 @@ public class TemplateParserTest {
         assertParseEquals("if(<second> > <first>) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void greaterExpressionWrongTypeTest(){
+    @Test
+    public void templateDataContainsWrongTypeForGreaterExpression_GraqlSyntaxExceptionThrown(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(GraqlSyntaxException.parsingIncorrectValueType("string", Number.class, data).getMessage());
         assertParseEquals("if(<first> > <second>) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
-    public void greaterEqualsExpressionTest(){
+    public void templateEvaluatesGreaterEqualsExpressionOverNumbers_ExpressionEvaluatesCorrectly(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", 2);
@@ -551,16 +588,19 @@ public class TemplateParserTest {
         assertParseEquals("if(<first> >= <second>) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void greaterEqualsExpressionWrongTypeTest(){
+    @Test
+    public void templateDataContainsWrongTypeForGreaterEqualsExpression_GraqlSyntaxExceptionThrown(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(GraqlSyntaxException.parsingIncorrectValueType("string", Number.class, data).getMessage());
         assertParseEquals("if(<first> >= <second>) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
-    public void lessExpressionTest(){
+    public void templateEvaluatesLessExpressionOverNumbers_ExpressionEvaluatesCorrectly(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", 2);
@@ -572,16 +612,19 @@ public class TemplateParserTest {
         assertParseEquals("if(<second> < <first>) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void lessExpressionWrongTypeTest(){
+    @Test
+    public void templateDataContainsWrongTypeForLessExpression_GraqlSyntaxExceptionThrown(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(GraqlSyntaxException.parsingIncorrectValueType("string", Number.class, data).getMessage());
         assertParseEquals("if(<first> < <second>) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
-    public void lessEqualsExpressionTest(){
+    public void templateEvaluatesLessEqualsExpressionOverNumbers_ExpressionEvaluatesCorrectly(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", 2);
@@ -596,28 +639,19 @@ public class TemplateParserTest {
         assertParseEquals("if(<first> <= <second>) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
     }
 
-    @Test(expected = GraqlSyntaxException.class)
-    public void lessEqualsExpressionWrongTypeTest(){
+    @Test
+    public void templateDataContainsWrongTypeForLessEqualsExpression_GraqlSyntaxExceptionThrown(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", "string");
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(GraqlSyntaxException.parsingIncorrectValueType("string", Number.class, data).getMessage());
         assertParseEquals("if(<first> <= <second>) do {insert isa y;} else {insert isa z;}", data, "insert isa z;");
     }
 
     @Test
-    public void concatReplaceTest(){
-        String template = "insert $@noescp(<pokemon_id>)-pokemon isa pokemon;\n$@noescp(<type_id>)-type isa pokemon-type;";
-        String expected = "insert $124-pokemon isa pokemon;\n$124-type isa pokemon-type;";
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("pokemon_id", 124);
-        data.put("type_id", 124);
-
-        assertParseEquals(template, data, expected);
-    }
-
-    @Test
-    public void andGroupExpressionTest(){
+    public void templateGroupsAndExpressions_ExpressionEvaluatesCorrectly(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", 2);
@@ -628,7 +662,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void orGroupExpressionTest(){
+    public void templateGroupsOrExpressions_ExpressionEvaluatesCorrectly(){
         Map<String, Object> data = new HashMap<>();
         data.put("first", 1);
         data.put("second", 2);
@@ -640,7 +674,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void complicatedGroupExpressionTest(){
+    public void templateGroupsAndOrExpressions_ExpressionEvaluatesCorrectly(){
         String template = "if (((false) and (false)) or (not ((true) and (false))))" +
                 "do {insert isa y;} else {insert isa z;}";
 
@@ -648,18 +682,8 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void macroGroupExpressionTest(){
-        Map<String, Object> data = new HashMap<>();
-        data.put("first", 1);
-        data.put("second", 2);
-        data.put("third", 3);
-
-        assertParseEquals("if((not @equals(<first>, <second>)) and @equals(<third>, <third>)) do {insert isa y;} else {insert isa z;}", data, "insert isa y;");
-    }
-
-    @Test
-    public void keyWithSpacesFailsTest(){
-        exception.expect(IllegalArgumentException.class);
+    public void templateHasNonAlphanumericSymbolInReplaceKey_ThrowsGraqlSyntaxException(){
+        exception.expect(GraqlSyntaxException.class);
 
         String template = "insert $x isa person has name <First Name>;    ";
         String expected = "insert $x0 has name \"Phil Collins\" isa person;";
@@ -668,9 +692,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void keyWithSpacesInQuotesTest(){
-
-
+    public void templateHasQuotedNonAlphanumericSymbolInReplaceKey_TemplateEvaluatesCorrectly(){
         String template = "insert $x isa person has name <\"First Name\">;    ";
         String expected = "insert $x0 has name \"Phil Collins\" isa person;";
 
@@ -678,35 +700,35 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void testGraqlParsingException(){
-        exception.expect(IllegalArgumentException.class);
+    public void templateIsInvalid_ThrowsGraqlSyntaxException(){
+        exception.expect(GraqlSyntaxException.class);
         String template = "<<<<<<<";
-        Graql.parseTemplate(template, new HashMap<>()).forEach(q -> {});
+        Graql.parser().parseTemplate(template, new HashMap<>()).forEach(q -> {});
     }
 
     @Test
-    public void quotesTest(){
+    public void templateContainsStringInInDoubleQuotes_TemplateIsParsable(){
         String template = "insert $thing has quotes \"in quotes\";";
         String expected = "insert $thing0 has quotes \"in quotes\";";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
-    public void doubleQuotesInSingleQuotesTest(){
+    public void templateContainsSingleQuotesInDoubleQuotes_TemplateIsParsable(){
         String template = "insert thing has quotes \"'in' quotes\";";
         String expected = "insert label thing has quotes \"\\'in\\' quotes\";";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
-    public void singleQuotesInSingleQuotesTest(){
+    public void templateContainsSingleQuotesInSingleQuotes_TemplateIsParsable(){
         String template = "insert thing has quotes '\"in\" quotes';";
         String expected = "insert has quotes \"\\\"in\\\" quotes\" label thing;";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
-    public void escapedDoubleQuotesInDoubleQuotesTest(){
+    public void templateContainsEscapedDoubleQuotesInDoubleQuotes_TemplateIsParsable(){
         String template = "insert thing has quotes \"\\\"in\\\" quotes\";";
         String expected = "insert has quotes \"\\\"in\\\" quotes\" label thing;";
         assertParseEquals(template, new HashMap<>(), expected);
@@ -728,15 +750,44 @@ public class TemplateParserTest {
         assertParseContains(template, data, expected);
     }
 
+    @Test
+    public void whenGettingFirstItemInList_TemplateContainsFirstItem(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", Arrays.asList("Alex", "Louise"));
+
+        String template = "insert $this has name <name[0]>;";
+        String expected = "insert $this0 has name \"Alex\";";
+        assertParseEquals(template, data, expected);
+
+        template = "insert $this has name <name[1]>;";
+        expected = "insert $this0 has name \"Louise\";";
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void whenGettingIndexOutOfBoundsInList_ExceptionIsThrown(){
+        List<String> list = Arrays.asList("Alex", "Louise");
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", list);
+
+        exception.expect(GraqlSyntaxException.class);
+        exception.expectMessage(GraqlSyntaxException.parsingError("Index [2] out of bounds for list "  + list).getMessage());
+
+        String template = "insert $this has name <name[2]>;";
+        String expected = "insert $this0 has name \"Alex\";";
+        assertParseEquals(template, data, expected);
+    }
+
     private void assertParseContains(String template, Map<String, Object> data, String... expected){
-        List<String> result = Graql.parseTemplate(template, data).map(Query::toString).collect(toList());
+        List<String> result = Graql.parser().parseTemplate(template, data).map(Query::toString).collect(toList());
         for(String e:expected){
             assertThat(result, hasItem(e));
         }
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        List<Query> result = Graql.parseTemplate(template, data).collect(toList());
+        List<Query> result = Graql.parser().parseTemplate(template, data).collect(toList());
         assertEquals(parse(expected), result.get(0));
     }
 }

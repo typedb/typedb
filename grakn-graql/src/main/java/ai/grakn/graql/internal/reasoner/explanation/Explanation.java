@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.explanation;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
+import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,31 +36,35 @@ import java.util.Set;
  */
 public class Explanation implements AnswerExplanation {
 
-    private ReasonerQuery query;
-    private final Set<Answer> answers;
+    private final ReasonerQuery query;
+    private final ImmutableSet<Answer> answers;
 
-    public Explanation(){ answers = new HashSet<>();}
-    Explanation(ReasonerQuery q){
-        this.query = q;
-        answers = new HashSet<>();
-    }
+    public Explanation(){
+        this.query = null;
+        this.answers = ImmutableSet.of();}
     Explanation(ReasonerQuery q, Set<Answer> ans){
         this.query = q;
-        this.answers = ans;
+        this.answers = ImmutableSet.copyOf(ans);
     }
-    Explanation(Explanation e){
-        this.answers = e.answers;
-        this.query = e.getQuery();
+    Explanation(ReasonerQuery q){
+        this(q, new HashSet<>());
+    }
+    Explanation(Set<Answer> ans){
+        this(null, ans);
     }
 
     @Override
-    public AnswerExplanation copy(){ return new Explanation(this);}
+    public AnswerExplanation setQuery(ReasonerQuery q){
+        return new Explanation(q);
+    }
 
     @Override
-    public boolean addAnswer(Answer a){ return answers.add(a);}
+    public AnswerExplanation childOf(Answer ans) {
+        return new Explanation(getQuery(), ans.getExplanation().getAnswers());
+    }
 
     @Override
-    public Set<Answer> getAnswers(){ return answers;}
+    public ImmutableSet<Answer> getAnswers(){ return answers;}
 
     @Override
     public boolean isLookupExplanation(){ return false;}
@@ -68,24 +73,11 @@ public class Explanation implements AnswerExplanation {
     public boolean isRuleExplanation(){ return false;}
 
     @Override
-    public boolean isJoinExplanation(){ return !isLookupExplanation() && !isRuleExplanation();}
+    public boolean isJoinExplanation(){ return false;}
 
     @Override
     public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}
 
     @Override
     public ReasonerQuery getQuery(){ return query;}
-
-    @Override
-    public AnswerExplanation setQuery(ReasonerQuery q){
-        return new Explanation(q);
-    }
-
-    @Override
-    public AnswerExplanation merge(AnswerExplanation a2) {
-        AnswerExplanation exp = new Explanation();
-        if (this.isJoinExplanation()) this.getAnswers().forEach(exp::addAnswer);
-        if (a2.isJoinExplanation()) a2.getAnswers().forEach(exp::addAnswer);
-        return exp;
-    }
 }

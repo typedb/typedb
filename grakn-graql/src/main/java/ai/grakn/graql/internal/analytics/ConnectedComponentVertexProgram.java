@@ -18,62 +18,54 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
-import ai.grakn.util.ErrorMessage;
-import org.apache.commons.configuration.Configuration;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
-import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
+import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Collections;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram.CLUSTER_LABEL;
+
 /**
  * The vertex program for connected components in a graph.
- * <p>
  *
  * @author Jason Liu
- * @author Sheldon Hall
  */
 
-public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> {
+public class ConnectedComponentVertexProgram extends GraknVertexProgram<Boolean> {
 
     private static final int MAX_ITERATION = 100;
-    // element key
-    public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
 
-    // memory key
     private static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
+    private static final String SOURCE = "connectedComponentVertexProgram.source";
 
-    private static final Set<String> MEMORY_COMPUTE_KEYS = Collections.singleton(VOTE_TO_HALT);
+    private static final Boolean MESSAGE = true; // just a random message
 
-    private String clusterLabel;
+    private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS =
+            Collections.singleton(MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true));
 
+    // for internal use
     public ConnectedComponentVertexProgram() {
     }
 
-    public ConnectedComponentVertexProgram(Set<TypeId> selectedTypes, String randomId) {
-        this.selectedTypes = selectedTypes;
-
-        clusterLabel = CLUSTER_LABEL + randomId;
-        this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
+    public ConnectedComponentVertexProgram(ConceptId sourceId) {
+        this.persistentProperties.put(SOURCE, sourceId.getValue());
     }
 
     @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        this.clusterLabel = (String) this.persistentProperties.get(CLUSTER_LABEL);
+    public Set<VertexComputeKey> getVertexComputeKeys() {
+        return Collections.singleton(VertexComputeKey.of(CLUSTER_LABEL, false));
     }
 
     @Override
-    public Set<String> getElementComputeKeys() {
-        return Collections.singleton(clusterLabel);
-    }
-
-    @Override
-    public Set<String> getMemoryComputeKeys() {
+    public Set<MemoryComputeKey> getMemoryComputeKeys() {
         return MEMORY_COMPUTE_KEYS;
     }
 
@@ -84,50 +76,39 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     }
 
     @Override
-    public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
-        switch (memory.getIteration()) {
-            case 0:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    String id = vertex.id().toString();
-                    vertex.property(clusterLabel, id);
-                    messenger.sendMessage(messageScopeShortcutIn, id);
-                    messenger.sendMessage(messageScopeShortcutOut, id);
-                }
-                break;
-            default:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    update(vertex, messenger, memory);
-                }
-                break;
+    public void safeExecute(final Vertex vertex, Messenger<Boolean> messenger, final Memory memory) {
+        if (memory.isInitialIteration()) {
+            if (vertex.<String>value(Schema.VertexProperty.ID.name()).equals(persistentProperties.get(SOURCE))) {
+                update(vertex, messenger, memory, (String) persistentProperties.get(SOURCE));
+            }
+        } else {
+            if (messenger.receiveMessages().hasNext() && !vertex.property(CLUSTER_LABEL).isPresent()) {
+                update(vertex, messenger, memory, (String) persistentProperties.get(SOURCE));
+            }
         }
     }
 
-    private void update(Vertex vertex, Messenger<String> messenger, Memory memory) {
-        String currentMax = vertex.value(clusterLabel);
-        String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
-                (a, b) -> a.compareTo(b) > 0 ? a : b);
-        if (max.compareTo(currentMax) > 0) {
-            vertex.property(clusterLabel, max);
-            messenger.sendMessage(messageScopeShortcutIn, max);
-            messenger.sendMessage(messageScopeShortcutOut, max);
-            memory.and(VOTE_TO_HALT, false);
-        }
+    private static void update(Vertex vertex, Messenger<Boolean> messenger, Memory memory, String label) {
+        messenger.sendMessage(messageScopeIn, MESSAGE);
+        messenger.sendMessage(messageScopeOut, MESSAGE);
+        vertex.property(CLUSTER_LABEL, label);
+        memory.add(VOTE_TO_HALT, false);
     }
 
     @Override
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
-        if (memory.getIteration() < 2) return false;
+        if (memory.isInitialIteration()) return false;
         if (memory.<Boolean>get(VOTE_TO_HALT)) {
             return true;
         }
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
-            throw new IllegalStateException(ErrorMessage.MAX_ITERATION_REACHED
-                    .getMessage(this.getClass().toString()));
+            throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 
-        memory.or(VOTE_TO_HALT, true);
+        memory.set(VOTE_TO_HALT, true);
         return false;
     }
+
 }

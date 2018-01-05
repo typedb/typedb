@@ -18,10 +18,10 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 
 /**
- * An aggregate query produced from a {@link MatchQuery}.
+ * An aggregate query produced from a {@link Match}.
  *
  * @param <T> the type of the result of the aggregate query
  *
@@ -30,5 +30,5 @@ import ai.grakn.GraknGraph;
 public interface AggregateQuery<T> extends Query<T> {
 
     @Override
-    AggregateQuery<T> withGraph(GraknGraph graph);
+    AggregateQuery<T> withTx(GraknTx tx);
 }

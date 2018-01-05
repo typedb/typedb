@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
@@ -39,7 +40,7 @@ public class EqualsMacro implements Macro<Boolean> {
     @Override
     public Boolean apply(List<Object> values) {
         if(values.size() < 2){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
+            throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
         Object first = values.get(0);

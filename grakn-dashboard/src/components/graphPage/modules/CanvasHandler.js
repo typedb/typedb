@@ -17,14 +17,11 @@
  */
 /* @flow */
 
-import HALParser from '../../../js/HAL/HALParser';
-import * as Utils from '../../../js/HAL/APIUtils';
+import Parser from '../../../js/Parser/Parser';
 import EngineClient from '../../../js/EngineClient';
-import User from '../../../js/User';
-import * as API from '../../../js/util/HALTerms';
 import { EventHub } from '../../../js/state/graphPageState';
 import CanvasEvents from './CanvasEvents';
-
+import Visualiser from '../../../js/visualiser/Visualiser';
 
 function clearGraph() {
   visualiser.clearGraph();
@@ -32,177 +29,219 @@ function clearGraph() {
 
 
 function onClickSubmit(query:string) {
-  if (query.includes('aggregate')) {
-          // Error message until we will not properly support aggregate queries in graph page.
-    EventHub.$emit('error-message', '{"exception":"Invalid query: \'aggregate\' queries are not allowed from the Graph page. \\nPlease use the Console page."}');
+  if (query.includes('aggregate')
+          || (query.includes('compute') && query.includes('degrees'))
+      || (query.includes('compute') && query.includes('cluster'))) { // Error message until we will not properly support aggregate queries in graph page.
+    EventHub.$emit('error-message', '{"exception":"Invalid query: \\n \'aggregate\' queries \\n \'compute degrees\' \\n \'compute cluster\' \\nare not allowed from the Graph page. \\n \\nPlease use the Console page."}');
     return;
   }
 
-  if (query.startsWith('compute')) {
-      // If analytics query contains path we execute a HAL request
-    if (query.includes('path')) {
-      EngineClient.graqlHAL(query).then(resp => onGraphResponse(resp, false, false), (err) => {
-        EventHub.$emit('error-message', err.message);
-      });
-    } else {
-      EngineClient.graqlAnalytics(query).then(resp => onGraphResponseAnalytics(resp), (err) => {
-        EventHub.$emit('error-message', err.message);
-      });
-    }
+  if (query.startsWith('compute') && !query.includes('path')) {
+    EngineClient.graqlAnalytics(query)
+      .then(resp => onGraphResponseAnalytics(resp))
+      .catch((err) => { EventHub.$emit('error-message', err); });
   } else {
-    let queryToExecute = query.trim();
-
-    if (!(query.includes('offset')) && !(query.includes('delete'))) { queryToExecute = `${queryToExecute} offset 0;`; }
-    if (!(query.includes('limit')) && !(query.includes('delete'))) { queryToExecute = `${queryToExecute} limit ${User.getQueryLimit()};`; }
-    EventHub.$emit('inject-query', queryToExecute);
-    EngineClient.graqlHAL(queryToExecute).then((resp, nodeId) => onGraphResponse(resp, false, false, nodeId), (err) => {
-      EventHub.$emit('error-message', err.message);
-    });
+    EngineClient.graqlQuery(query)
+      .then((resp, nodeId) => onGraphResponse(resp))
+      .catch((err) => { EventHub.$emit('error-message', err); });
   }
 }
 
-function onLoadOntology(type:string) {
-  const querySub = `match $x sub ${type};`;
-  EngineClient.graqlHAL(querySub).then(resp => onGraphResponse(resp, false, false), (err) => {
-    EventHub.$emit('error-message', err.message);
-  });
+function onLoadSchema(type: string) {
+  const querySub = `match $x sub ${type}; get;`;
+  EngineClient.graqlQuery(querySub)
+    .then(resp => onGraphResponse(resp))
+    .catch((err) => { EventHub.$emit('error-message', err); });
 }
 
-function onGraphResponseAnalytics(resp:string) {
-  const responseObject = JSON.parse(resp).response;
+function onGraphResponseAnalytics(resp: string) {
+  const responseObject = JSON.parse(resp);
   EventHub.$emit('analytics-string-response', responseObject);
 }
 
-function filterNodesToRender(responseObject:Object|Object[], parsedResponse:Object, showResources:boolean) {
-  const dataArray = (Array.isArray(responseObject)) ? responseObject : [responseObject];
-    // Populate map containing all the first level objects returned in the response, they MUST be added to the graph.
-  const firstLevelNodes = dataArray.reduce((accumulator, current) => Object.assign(accumulator, { [current._id]: true }), {});
+function filterNodes(nodes) { return nodes.filter(x => !x.implicit).filter(x => !x.abstract); }
 
-    // Add embedded object to the graph only if one of the following is satisfied:
-    // - the current node is not a RESOURCE_TYPE || showResources is set to true
-    // - the current node is already drawn in the graph
-    // - the current node is contained in the response as first level object (not embdedded)
-    //    if it's contained in firstLevelNodes it means it MUST be drawn and so all the edges pointing to it.
-
-  return parsedResponse.nodes.filter(node => (((node.properties.baseType !== API.RESOURCE_TYPE)
-          && (node.properties.baseType !== API.RESOURCE)
-          || showResources)
-          || (firstLevelNodes[node.properties.id])
-          || visualiser.nodeExists(node.properties.id)));
-}
-
-function updateNodeHref(nodeId:string, responseObject:Object) {
-     // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
-      // which will contain a new value for offset
-      // Check if the node still in the Dataset, if not (generated relation), don't update href
-  if (visualiser.getNode(nodeId) && ('_links' in responseObject)) {
-    visualiser.updateNode({
-      id: nodeId,
-      href: responseObject._links.self.href,
-    });
-  }
-}
-
-function loadInstancesResources(start:number, instances:Object[]) {
-  const batchSize = 50;
-  const promises = [];
-
-    // Add a batchSize number of requests to the promises array
-  for (let i = start; i < start + batchSize; i++) {
-    if (i >= instances.length) {
-        // When all the requests are loaded in promises flush the remaining ones and update labels on nodes
-      flushPromises(promises).then(() => visualiser.refreshLabels(instances));
-      return;
-    }
-    promises.push(EngineClient.request({
-      url: instances[i].explore,
-    }));
-  }
-  flushPromises(promises).then(() => loadInstancesResources(start + batchSize, instances));
-}
-
-function flushPromises(promises:Object[]) {
-  return Promise.all(promises).then((responses) => {
-    responses.forEach((resp) => {
-      const respObj = JSON.parse(resp).response;
-      // Check if some of the resources attached to this node are already drawn in the graph:
-      // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
-      // we need to draw the edges connecting this node to the resource node.
-      onGraphResponse(resp, false, false);
-      visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
-    });
-    visualiser.flushUpdates();
-  });
-}
-
-function linkResourceOwners(instances) {
-  instances.forEach((resource) => {
-    EngineClient.request({
-      url: resource.properties.href,
-    }).then((resp) => {
-      const responseObject = JSON.parse(resp).response;
-      const parsedResponse = HALParser.parseResponse(responseObject, false);
-      parsedResponse.edges.forEach(edge => visualiser.addEdge(edge.from, edge.to, edge.label));
-    });
-  });
-}
-
-
-/*
-* Public functions
-*/
-
-function initialise(graphElement:Object) {
+function initialise(graphElement: Object) {
   EventHub.$on('clear-page', () => clearGraph());
   EventHub.$on('click-submit', query => onClickSubmit(query));
-  EventHub.$on('load-ontology', type => onLoadOntology(type));
+  EventHub.$on('load-schema', type => onLoadSchema(type));
   CanvasEvents.registerCanvasEvents();
   // Render visualiser only after having registered all the events handlers.
   visualiser.render(graphElement);
 }
 
-function onGraphResponse(resp:string, showIsa:boolean, showResources:boolean, nodeId:?string) {
-  const responseObject = JSON.parse(resp).response;
-  const parsedResponse = HALParser.parseResponse(responseObject, showIsa);
+// Once all the attributes of a node are loaded, check if one of these attrs is drawn on the graph
+// If that's the case, draw edge between concept and attributes nodes.
+function linkNodeToExplicitAttributeNodes(nodeId, attributes) {
+  const explicitAttributes = attributes.filter(attr => visualiser.getNode(attr.id));
+  explicitAttributes.forEach((attr) => { visualiser.addEdge({ from: nodeId, to: attr.id, label: 'has' }); });
+}
+
+
+// Lazy load attributes and generate label on the nodes that display attributes values
+function lazyLoadAttributes(nodes) {
+  nodes
+    .filter(x => !Array.isArray(x.attributes)) // filter out nodes with empty array ad 'attributes'
+    .forEach((node) => {
+      EngineClient
+        .request({ url: node.attributes })
+        .then((resp) => {
+          const attributes = Parser.parseAttributes(resp);
+          linkNodeToExplicitAttributeNodes(node.id, attributes);
+          const label = Visualiser.generateLabel(node.type, attributes, node.label, node.baseType);
+          visualiser.updateNode({ id: node.id, attributes, label });
+        });
+    });
+}
+
+function linkRelationshipTypesToRoles(nodes) {
+  nodes
+    .filter(x => x.baseType === 'RELATIONSHIP_TYPE')
+    .forEach((relType) => {
+      relType.relates.forEach((roleURI) => {
+        EngineClient.request({ url: roleURI })
+          .then((resp) => {
+            const role = JSON.parse(resp);
+            role.roleplayers.forEach((uri) => {
+              EngineClient.request({ url: uri })
+                .then((roleresp) => {
+                  const player = JSON.parse(roleresp);
+                  visualiser.addEdge({ from: relType.id, to: player.id, label: role.label });
+                });
+            });
+          });
+      });
+    });
+}
+
+function onGraphResponse(resp: string) {
+  const responseObject = JSON.parse(resp);
+  const parsedResponse = Parser.parseResponse(responseObject);
 
   if (!parsedResponse.nodes.length) {
     EventHub.$emit('warning-message', 'No results were found for your query.');
     return;
   }
 
-  const filteredNodes = filterNodesToRender(responseObject, parsedResponse, showResources);
+  // Add nodes and edges to canvas
+  const filteredNodes = filterNodes(parsedResponse.nodes);
+  filteredNodes.forEach(node => visualiser.addNode(node));
 
-    // Collect instances from filteredNodes to lazy load their resources.
-  const instances = filteredNodes
-                    .map(x => x.properties)
-                    .filter(node => ((node.baseType === API.ENTITY || node.baseType === API.RELATION || node.baseType === API.RULE) && (!visualiser.nodeExists(node.id))));
+  // Lazy load attributes once nodes are in the graph
+  lazyLoadAttributes(filteredNodes);
 
-  filteredNodes.forEach(node => visualiser.addNode(node.properties, node.resources, node.links, nodeId));
-  parsedResponse.edges.forEach(edge => visualiser.addEdge(edge.from, edge.to, edge.label));
+  // Load relationship types' roles
+  linkRelationshipTypesToRoles(filteredNodes);
 
-  loadInstancesResources(0, instances);
-
-  // Check if there are resources and make sure they are linked to their owners (if any already drawn in the graph)
-  linkResourceOwners(filteredNodes.filter(node => ((node.properties.baseType === API.RESOURCE))));
-
-  if (nodeId) updateNodeHref(nodeId, responseObject);
+  // Never visualise relationships without roleplayers
+  filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
+    .forEach((rel) => { loadRelationshipRolePlayers(rel); });
 
   visualiser.fitGraphToWindow();
 }
 
-function fetchFilteredRelations(href:string) {
+function fetchFilteredRelationships(href: string) {
   EngineClient.request({
     url: href,
-  }).then(resp => onGraphResponse(resp, false, false), (err) => {
-    EventHub.$emit('error-message', err.message);
-  });
+  }).then(resp => onGraphResponse(resp))
+    .catch((err) => { EventHub.$emit('error-message', err); });
 }
 
-function loadResourceOwners(resourceId:string) {
+function loadAttributeOwners(attributeId: string) {
   EngineClient.request({
-    url: resourceId,
-  }).then(resp => onGraphResponse(resp, false, true));
+    url: attributeId,
+  }).then(resp => onGraphResponse(resp));
+}
+
+function getId(str) {
+  return str.split('/').pop();
+}
+
+function loadRelationshipRolePlayers(rel) {
+  const promises = rel.roleplayers.map(x => EngineClient.request({ url: x.thing }));
+  Promise.all(promises)
+    .then((resps) => { resps.forEach((res) => { onGraphResponse(res); }); })
+    .then(() => {
+      rel.roleplayers
+        .forEach((player) => { visualiser.addEdge({ from: rel.id, to: getId(player.thing), label: getId(player.role) }); });
+    });
+}
+
+function explainConcept(node) {
+  EngineClient.getExplanation(node.explanationQuery)
+    .then(onGraphResponse);
+}
+
+function loadRelationshipTypeRolePlayers(rel) {
+  const promises = rel.relates.map(x => EngineClient.request({ url: x }));
+  Promise.all(promises)
+    .then((resps) => {
+      resps.forEach((res) => {
+        // Fetched all roles - dont show them - load all entities that play every role and
+        // draw them on canvas
+        const role = JSON.parse(res);
+        loadRoleRolePlayers(role, rel.id);
+      });
+    });
+}
+
+// load entities that play a given role
+function loadRoleRolePlayers(role, relId) {
+  role.roleplayers
+    .forEach((x) => {
+      EngineClient.request({ url: x })
+        .then((res) => {
+          const entity = JSON.parse(res);
+          onGraphResponse(res);
+          visualiser.addEdge({ from: relId, to: entity.id, label: role.label });
+        });
+    });
 }
 
 
-export default { initialise, onGraphResponse, fetchFilteredRelations, loadResourceOwners };
+function addAttributeAndEdgeToInstance(instanceId, res) {
+  onGraphResponse(res);
+  visualiser.addEdge({ from: instanceId, to: JSON.parse(res).id, label: 'has' });
+}
+
+function loadEntityRelationships(node) {
+  EngineClient.request({ url: node.relationships })
+    .then((relationships) => {
+      JSON.parse(relationships).map(rel => EngineClient.request({ url: rel.thing }))
+        .forEach((promise) => { promise.then(onGraphResponse); });
+    });
+}
+
+function showNeighbours(node: Object) {
+  const baseType = node.baseType;
+  switch (baseType) {
+    case 'INFERRED_RELATIONSHIP':
+    case 'RELATIONSHIP':
+      loadRelationshipRolePlayers(node);
+      break;
+    case 'ENTITY':
+      loadEntityRelationships(node);
+      break;
+    case 'RELATIONSHIP_TYPE':
+      loadRelationshipTypeRolePlayers(node);
+      break;
+    case 'ENTITY_TYPE':
+      // TODO: show nothing as we are not showing roles for now
+      break;
+    default:
+      console.log('ERROR: Basetype not recognised');
+      break;
+  }
+}
+function showAttributes(node: Object) {
+  node.attributes
+    .map(attr => EngineClient.request({ url: attr.href }))
+    .forEach((promise) => {
+      promise.then(res => addAttributeAndEdgeToInstance(node.id, res));
+    });
+}
+
+
+export default {
+  initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners, showNeighbours, showAttributes, explainConcept,
+};

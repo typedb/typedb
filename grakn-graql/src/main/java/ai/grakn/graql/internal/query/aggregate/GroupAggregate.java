@@ -19,7 +19,9 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
@@ -28,13 +30,12 @@ import java.util.Map;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Aggregate that groups results of a match query by variable name, applying an aggregate to each group.
+ * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
  * @param <T> the type of each group
  */
 class GroupAggregate<T> extends AbstractAggregate<Answer, Map<Concept, T>> {
@@ -58,7 +59,7 @@ class GroupAggregate<T> extends AbstractAggregate<Answer, Map<Concept, T>> {
     private @Nonnull Concept getConcept(Answer result) {
         Concept concept = result.get(varName);
         if (concept == null) {
-            throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(varName));
+            throw GraqlQueryException.varNotInQuery(varName);
         }
         return concept;
     }

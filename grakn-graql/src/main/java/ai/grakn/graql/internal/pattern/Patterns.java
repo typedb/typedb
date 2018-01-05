@@ -25,11 +25,9 @@ import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import com.google.common.collect.ImmutableSet;
 
-import java.util.Collection;
 import java.util.Set;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Factory for instances of {@link ai.grakn.graql.Pattern}.
@@ -40,38 +38,38 @@ import java.util.UUID;
  */
 public class Patterns {
 
+    private static final AtomicLong counter = new AtomicLong(System.currentTimeMillis() * 1000);
+
+    public static final Var RELATION_EDGE = reservedVar("RELATION_EDGE");
+    public static final Var RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
+
     private Patterns() {}
 
     public static <T extends PatternAdmin> Conjunction<T> conjunction(Set<T> patterns) {
-        return new ConjunctionImpl<>(patterns);
+        return new AutoValue_ConjunctionImpl<>(patterns);
     }
 
     public static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
-        return new DisjunctionImpl<>(patterns);
-    }
-
-    public static VarPatternAdmin mergeVars(Collection<VarPatternAdmin> vars) {
-        VarPatternAdmin first = vars.iterator().next();
-        Var name = first.getVarName();
-        ImmutableSet.Builder<VarProperty> properties = ImmutableSet.builder();
-
-        for (VarPatternAdmin var : vars) {
-            if (var.getVarName().isUserDefinedName()) {
-                name = var.getVarName();
-            }
-
-            properties.addAll(var.getProperties().iterator());
-        }
-
-        return new VarPatternImpl(name, properties.build());
+        return new AutoValue_DisjunctionImpl<>(patterns);
     }
 
     public static Var var() {
-        return new VarImpl(UUID.randomUUID().toString(), false);
+        return VarImpl.of(Long.toString(counter.getAndIncrement()), Var.Kind.Generated);
     }
 
     public static Var var(String value) {
-        return new VarImpl(value, true);
+        return VarImpl.of(value, Var.Kind.UserDefined);
     }
 
+    public static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
+        if (properties.isEmpty()) {
+            return name.admin();
+        } else {
+            return new AutoValue_VarPatternImpl(name, properties);
+        }
+    }
+
+    private static Var reservedVar(String value) {
+        return VarImpl.of(value, Var.Kind.Reserved);
+    }
 }

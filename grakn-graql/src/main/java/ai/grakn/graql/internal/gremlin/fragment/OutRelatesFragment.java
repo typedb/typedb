@@ -18,31 +18,49 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
 
-class OutRelatesFragment extends AbstractFragment {
+@AutoValue
+abstract class OutRelatesFragment extends Fragment {
 
-    OutRelatesFragment(Var start, Var end) {
-        super(start, end);
+    @Override
+    public abstract Var end();
+
+    @Override
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+
+        return Fragments.isVertex(traversal).out(RELATES.getLabel());
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.out(RELATES.getLabel());
-    }
-
-    @Override
-    public String getName() {
+    public String name() {
         return "-[relates]->";
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost * NUM_ROLE_PLAYERS_PER_RELATION;
+    public double internalFragmentCost() {
+        return COST_ROLE_PLAYERS_PER_RELATION;
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
+        return directedEdges(NodeId.NodeType.RELATES, nodes, edges);
     }
 }

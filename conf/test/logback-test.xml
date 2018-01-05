@@ -36,6 +36,11 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
+    <!-- Disable for tests so logs do not become overwhelmed -->
+    <logger name="ai.grakn.redismock.Response" level="ERROR">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
     <!--Set the SingleQueueTaskRunner log level to WARN so it does not overwhelm travis and jenkins-->
     <logger name="ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner" level="WARN">
         <appender-ref ref="STDOUT"/>

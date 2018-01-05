@@ -19,11 +19,14 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.Streamable;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * a pattern to match in the graph. comprised of {@code Fragments}, each describing one way to represent the traversal,
@@ -36,43 +39,21 @@ import java.util.stream.Stream;
  */
 public abstract class EquivalentFragmentSet implements Streamable<Fragment> {
 
-    private final ImmutableSet<Fragment> fragments;
-
-    /**
-     * @param fragments an array of Fragments that this EquivalentFragmentSet contains
-     */
-    protected EquivalentFragmentSet(Fragment... fragments) {
-        for (Fragment fragment : fragments) {
-            fragment.setEquivalentFragmentSet(this);
-        }
-        this.fragments = ImmutableSet.copyOf(fragments);
-    }
-
     /**
      * @return a set of fragments that this EquivalentFragmentSet contains
      */
-    public final Set<Fragment> fragments() {
-        return fragments;
-    }
+    public abstract Set<Fragment> fragments();
+
+    @Nullable
+    public abstract VarProperty varProperty();
 
     @Override
-    public final boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        EquivalentFragmentSet that = (EquivalentFragmentSet) o;
-
-        return fragments != null ? fragments.equals(that.fragments) : that.fragments == null;
-
-    }
-
-    @Override
-    public final int hashCode() {
-        return fragments != null ? fragments.hashCode() : 0;
+    public String toString() {
+        return fragments().stream().map(Object::toString).collect(joining(", ", "{", "}"));
     }
 
     @Override
     public final Stream<Fragment> stream() {
-        return fragments.stream();
+        return fragments().stream();
     }
 }

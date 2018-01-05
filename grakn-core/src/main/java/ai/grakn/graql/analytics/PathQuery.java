@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -55,24 +55,30 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
     PathQuery in(String... subTypeLabels);
 
     /**
-     * @param subTypeLabels a collection of types to include in the subgraph
-     * @return a PathQuery with the subTypeLabels set
+     * @param subLabels a collection of types to include in the subgraph
+     * @return a PathQuery with the subLabels set
      */
     @Override
-    PathQuery in(Collection<TypeLabel> subTypeLabels);
+    PathQuery in(Collection<Label> subLabels);
 
     /**
      * Execute the query.
      *
-     * @return the list of instances along the path if a path exists, otherwise an empty Optional instance
+     * @return the list of shortest paths
      */
     @Override
     Optional<List<Concept>> execute();
 
     /**
-     * @param graph the graph to execute the query on
-     * @return a PathQuery with the graph set
+     * @param tx the transaction to execute the query on
+     * @return a PathQuery with the transaction set
      */
     @Override
-    PathQuery withGraph(GraknGraph graph);
+    PathQuery withTx(GraknTx tx);
+
+    /**
+     * Allow attributes and their relationships to be included.
+     */
+    @Override
+    PathQuery includeAttribute();
 }

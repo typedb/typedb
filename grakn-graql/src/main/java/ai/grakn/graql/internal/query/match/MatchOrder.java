@@ -18,22 +18,31 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.graql.Var;
+import ai.grakn.GraknTx;
 
 import ai.grakn.graql.admin.Answer;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * An interface for handling ordering match queries.
- *
- * @author Felix Chapman
+ * "Order" modify that orders the underlying {@link Match}
  */
-public interface MatchOrder {
-    Var getVar();
+class MatchOrder extends MatchModifier {
 
-    /**
-     * Order the stream
-     * @param stream the stream to order
-     */
-    Stream<Answer> orderStream(Stream<Answer> stream);
+    private final Ordering order;
+
+    MatchOrder(AbstractMatch inner, Ordering order) {
+        super(inner);
+        this.order = order;
+    }
+
+    @Override
+    public Stream<Answer> stream(Optional<GraknTx> graph) {
+        return order.orderStream(inner.stream(graph));
+    }
+
+    @Override
+    protected String modifierString() {
+        return " " + order.toString() + ";";
+    }
 }

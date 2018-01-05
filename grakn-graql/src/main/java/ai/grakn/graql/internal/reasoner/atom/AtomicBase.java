@@ -18,15 +18,20 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.graql.Pattern;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
 
+import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -41,23 +46,32 @@ import java.util.Set;
 public abstract class AtomicBase implements Atomic {
 
     private final Var varName;
-    protected PatternAdmin atomPattern;
+    private final VarPattern atomPattern;
+    private Pattern combinedPattern = null;
     private ReasonerQuery parent = null;
 
-    protected AtomicBase(VarPatternAdmin pattern, ReasonerQuery par) {
+    protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
-        this.varName = pattern.getVarName();
+        this.varName = pattern.admin().var();
         this.parent = par;
     }
 
     protected AtomicBase(AtomicBase a) {
         this.atomPattern = a.atomPattern;
-        this.varName = atomPattern.asVar().getVarName();
+        this.varName = atomPattern.admin().var();
         this.parent = a.getParentQuery();
     }
 
     @Override
     public abstract Atomic copy();
+
+    @Override
+    public void checkValid(){}
+
+    @Override
+    public Set<String> validateAsRuleHead(Rule rule) {
+        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
+    }
 
     @Override
     public String toString(){ return atomPattern.toString(); }
@@ -66,31 +80,42 @@ public abstract class AtomicBase implements Atomic {
     public boolean containsVar(Var name){ return getVarNames().contains(name);}
 
     @Override
-    public boolean isUserDefinedName(){ return atomPattern.asVar().getVarName().isUserDefinedName();}
+    public boolean isUserDefined(){ return varName.isUserDefinedName();}
     
     @Override
     public Var getVarName(){ return varName;}
 
     @Override
     public Set<Var> getVarNames(){
-        return Sets.newHashSet(varName);
+        return varName.isUserDefinedName()? Sets.newHashSet(varName) : Collections.emptySet();
     }
 
-    /**
-     * @return pattern corresponding to this atom
-     */
-    public PatternAdmin getPattern(){ return atomPattern;}
-    public PatternAdmin getCombinedPattern(){ return getPattern();}
+    @Override
+    public VarPattern getPattern(){ return atomPattern;}
 
-    /**
-     * @return the query the atom is contained in
-     */
+    protected Pattern createCombinedPattern(){ return atomPattern;}
+
+    @Override
+    public Pattern getCombinedPattern(){
+        if (combinedPattern == null) combinedPattern = createCombinedPattern();
+        return combinedPattern;
+    }
+
+    @Override
     public ReasonerQuery getParentQuery(){ return parent;}
 
-    /**
-     * @param q query this atom is supposed to belong to
-     */
+    @Override
     public void setParentQuery(ReasonerQuery q){ parent = q;}
-    protected GraknGraph graph(){ return getParentQuery().graph();}
+
+    @Override
+    public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }
+
+    @Override
+    public Atomic inferTypes(Answer sub){ return this; }
+
+    /**
+     * @return GraknTx this atomic is defined in
+     */
+    protected GraknTx tx(){ return getParentQuery().tx();}
 }
 

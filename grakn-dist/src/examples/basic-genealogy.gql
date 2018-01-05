@@ -1,48 +1,50 @@
-insert
+define
 
 # Entities
 
 person sub entity
-	plays parent
-	plays child
-	plays spouse1
-	plays spouse2
+    plays parent
+    plays child
+    plays spouse1
+    plays spouse2
+    plays sibling
+    plays cousin
 
-	has identifier
-	has firstname
-	has surname
-	has middlename
-	has picture
-	has age
-	has birth-date
-	has death-date
-	has gender;
+    has identifier
+    has firstname
+    has surname
+    has middlename
+    has picture
+    has age
+    has birth-date
+    has death-date
+    has gender;
 
 # Resources
 
-identifier sub resource datatype string;
-firstname sub resource datatype string;
-surname sub resource datatype string;
-middlename sub resource datatype string;
-picture sub resource datatype string;
-age sub resource datatype long;
-birth-date sub resource datatype string;
-death-date sub resource datatype string;
-gender sub resource datatype string;
+identifier sub attribute datatype string;
+firstname sub attribute datatype string;
+surname sub attribute datatype string;
+middlename sub attribute datatype string;
+picture sub attribute datatype string;
+age sub attribute datatype long;
+birth-date sub attribute datatype string;
+death-date sub attribute datatype string;
+gender sub attribute datatype string;
 
 # Roles and Relations
 
-marriage sub relation
-	relates spouse1
-	relates spouse2
-	has picture;
+marriage sub relationship
+    relates spouse1
+    relates spouse2
+    has picture;
 
 spouse1 sub role;
 spouse2 sub role;
 
-parentship sub relation
-	relates parent
-	relates child;
+parentship sub relationship
+    relates parent
+    relates child;
 
 parent sub role;
 child sub role;
@@ -50,62 +52,55 @@ child sub role;
 ## INFERRED
 
 person 
-	plays wife
-	plays husband
-	plays granddaughter
-	plays grandson
-	plays father-in-law
-	plays mother-in-law
-	plays daughter-in-law
-	plays son-in-law
-	plays son
-	plays daughter
-	plays sibling1
-	plays sibling2
-	plays grandparent
-	plays grandchild
-	plays cousin1
-	plays cousin2
-	plays child-in-law
-	plays parent-in-law
-	plays mother
-	plays father
-	plays grandmother
-	plays grandfather;
+    plays wife
+    plays husband
+    plays granddaughter
+    plays grandson
+    plays father-in-law
+    plays mother-in-law
+    plays daughter-in-law
+    plays son-in-law
+    plays son
+    plays daughter
+    plays grandparent
+    plays grandchild
+    plays child-in-law
+    plays parent-in-law
+    plays mother
+    plays father
+    plays grandmother
+    plays grandfather;
 
-marriage sub relation
-	relates husband
-	relates wife;
+marriage sub relationship
+    relates husband
+    relates wife;
 
 husband sub role;
 wife sub role;
 
-parentship sub relation
-	relates mother
-	relates father
-	relates son
-	relates daughter;
+parentship sub relationship
+    relates mother
+    relates father
+    relates son
+    relates daughter;
 
 mother sub parent;
 father sub parent;
 son sub child;
 daughter sub child;
 
-siblings sub relation
-	relates sibling1
-	relates sibling2;
+siblings sub relationship
+    relates sibling;
 
-sibling sub role is-abstract;
-sibling1 sub sibling;
-sibling2 sub sibling;
+sibling sub role;
 
-grandparentship sub relation
-	relates grandparent
-	relates grandfather
-	relates grandmother
-	relates grandchild
-	relates granddaughter
-	relates grandson;
+grandparentship sub relationship
+    relates grandparent
+    relates grandfather
+    relates grandmother
+    relates grandchild
+    relates granddaughter
+    relates grandson;
 
 grandparent sub role;
 grandfather sub grandparent;
@@ -114,21 +109,18 @@ grandchild sub role;
 grandson sub grandchild;
 granddaughter sub grandchild;
 
-cousins sub relation
-	relates cousin1
-	relates cousin2;
+cousins sub relationship
+    relates cousin;
 
-cousin sub role is-abstract;
-cousin1 sub cousin;
-cousin2 sub cousin;
+cousin sub role;
 
-in-laws sub relation
-	relates child-in-law
-	relates son-in-law
-	relates daughter-in-law
-	relates parent-in-law
-	relates mother-in-law
-	relates father-in-law;
+in-laws sub relationship
+    relates child-in-law
+    relates son-in-law
+    relates daughter-in-law
+    relates parent-in-law
+    relates mother-in-law
+    relates father-in-law;
 
 child-in-law sub role;
 son-in-law sub child-in-law;
@@ -138,6 +130,7 @@ mother-in-law sub parent-in-law;
 father-in-law sub parent-in-law;
 
 
+insert
 
 # DATA
 
@@ -304,6 +297,8 @@ $81936440 (spouse2: $41209936, spouse1: $282848) isa marriage;
 
 $81940536 (spouse2: $233568, spouse1: $41361488) has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" isa marriage;
 
+define
+
 ## RULES
 #############################################################################
 #                                                                           #
@@ -311,57 +306,57 @@ $81940536 (spouse2: $233568, spouse1: $41361488) has picture "http:\/\/1.bp.blog
 #                                                                           # 
 #############################################################################
 
-$genderizeMarriages isa inference-rule
-lhs
+genderizeMarriages sub rule
+when
 {(spouse1: $s1, spouse2: $s2) isa marriage;
 $s1 has gender "male";
 }
-rhs
+then
 {(husband: $s1, wife: $s2) isa marriage;};
 
-$genderizeMarriages2 isa inference-rule
-lhs
+genderizeMarriages2 sub rule
+when
 {(spouse1: $s1, spouse2: $s2) isa marriage;
 $s1 has gender "female";
 }
-rhs
+then
 {(husband: $s2, wife: $s1) isa marriage;};
 
 
-$genderizeParentships1 isa inference-rule
-lhs
+genderizeParentships1 sub rule
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
 $c has gender "male";
 }
-rhs
+then
 {(father: $p, son: $c) isa parentship;};
 
-$genderizeParentships2 isa inference-rule
-lhs
+genderizeParentships2 sub rule
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
 $c has gender "female";
 }
-rhs
+then
 {(father: $p, daughter: $c) isa parentship;};
 
-$genderizeParentships3 isa inference-rule
-lhs
+genderizeParentships3 sub rule
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
 $c has gender "male";
 }
-rhs
+then
 {(mother: $p, son: $c) isa parentship;};
 
-$genderizeParentships4 isa inference-rule
-lhs
+genderizeParentships4 sub rule
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
 $c has gender "female";
 }
-rhs
+then
 {(mother: $p, daughter: $c) isa parentship;};
 
 
@@ -372,84 +367,84 @@ rhs
 #############################################################################
 
 
-$grandParents1 isa inference-rule
-lhs
+grandParents1 sub rule
+when
 {($p, son: $gc) isa parentship;
 (father: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandfather: $gp, grandson: $gc) isa grandparentship;};
 
-$grandParents2 isa inference-rule
-lhs
+grandParents2 sub rule
+when
 {($p, daughter: $gc) isa parentship;
 (father: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandfather: $gp, granddaughter: $gc) isa grandparentship;};
 
-$grandParents3 isa inference-rule
-lhs
+grandParents3 sub rule
+when
 {($p, daughter: $gc) isa parentship;
 (mother: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandmother: $gp, granddaughter: $gc) isa grandparentship;};
 
-$grandParents4 isa inference-rule
-lhs
+grandParents4 sub rule
+when
 {($p, son: $gc) isa parentship;
 (mother: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandmother: $gp, grandson: $gc) isa grandparentship;};
 
 
-$peopleWithSameParentsAreSiblings isa inference-rule
-lhs
+peopleWithSameParentsAreSiblings sub rule
+when
 {(mother: $m, $x) isa parentship;
 (mother: $m, $y) isa parentship;
 (father: $f, $x) isa parentship;
 (father: $f, $y) isa parentship;
 $x != $y;
 }
-rhs
-{(sibling1: $x, sibling2: $y) isa siblings;};
+then
+{(sibling: $x, sibling: $y) isa siblings;};
 
-$peopleWithSiblingsParentsAreCousins isa inference-rule
-lhs
+peopleWithSiblingsParentsAreCousins sub rule
+when
 {
 (parent: $p, child: $c1) isa parentship;
 ($p, $p2) isa siblings;
 (parent: $p2, child: $c2) isa parentship;
 }
-rhs
-{(cousin1: $c1, cousin2: $c2) isa cousins;};
+then
+{(cousin: $c1, cousin: $c2) isa cousins;};
 
-$inLaws1 isa inference-rule
-lhs
+inLaws1 sub rule
+when
 {(husband: $x, wife: $y) isa marriage;
 (mother: $il, $y) isa parentship;}
-rhs
+then
 {(mother-in-law: $il, son-in-law: $x) isa in-laws;};
 
-$inLaws2 isa inference-rule
-lhs
+inLaws2 sub rule
+when
 {(husband: $x, wife: $y) isa marriage;
 (father: $il, $y) isa parentship;}
-rhs
+then
 {(father-in-law: $il, son-in-law: $x) isa in-laws;};
 
-$inLaws3 isa inference-rule
-lhs
+inLaws3 sub rule
+when
 {(husband: $x, wife: $y) isa marriage;
 (father: $il, child: $y) isa parentship;}
-rhs
+then
 {(father-in-law: $il, daughter-in-law: $y) isa in-laws;};
 
-$inLaws4 isa inference-rule
-lhs
+inLaws4 sub rule
+when
 {(husband: $x, wife: $y) isa marriage;
 (mother: $il, child: $y) isa parentship;}
-rhs
+then
 {(mother-in-law: $il, daughter-in-law: $y) isa in-laws;};

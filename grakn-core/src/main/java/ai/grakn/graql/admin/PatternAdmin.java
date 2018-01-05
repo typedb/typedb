@@ -49,7 +49,7 @@ public interface PatternAdmin extends Pattern {
      * Get all common, user-defined variable names in the pattern.
      */
     @CheckReturnValue
-    Set<Var> commonVarNames();
+    Set<Var> commonVars();
 
     /**
      * @return true if this Pattern.Admin is a Conjunction
@@ -71,7 +71,7 @@ public interface PatternAdmin extends Pattern {
      * @return true if this {@link PatternAdmin} is a {@link VarPatternAdmin}
      */
     @CheckReturnValue
-    default boolean isVar() {
+    default boolean isVarPattern() {
         return false;
     }
 
@@ -95,15 +95,14 @@ public interface PatternAdmin extends Pattern {
      * @return this {@link PatternAdmin} as a {@link VarPatternAdmin}, if it is one.
      */
     @CheckReturnValue
-    default VarPatternAdmin asVar() {
+    default VarPatternAdmin asVarPattern() {
         throw new UnsupportedOperationException();
     }
-
     /**
      * @return all variables referenced in the pattern
      */
     @CheckReturnValue
-    default Set<VarPatternAdmin> getVars() {
+    default Set<VarPatternAdmin> varPatterns() {
         return getDisjunctiveNormalForm().getPatterns().stream()
                 .flatMap(conj -> conj.getPatterns().stream())
                 .collect(toSet());

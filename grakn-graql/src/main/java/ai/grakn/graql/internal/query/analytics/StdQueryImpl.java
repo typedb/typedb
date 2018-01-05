@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -37,8 +37,8 @@ import java.util.Set;
 
 class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
 
-    StdQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    StdQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -47,17 +47,19 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
+        getAllSubTypes();
 
-        Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
 
-        String randomId = getRandomJobId();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
-                new StdMapReduce(statisticsResourceTypeIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
+                new StdMapReduce(statisticsResourceLabelIds, dataType,
+                        DegreeVertexProgram.DEGREE),
+                allSubLabelIds);
         Map<Serializable, Map<String, Double>> std = result.memory().get(StdMapReduce.class.getName());
         Map<String, Double> stdTuple = std.get(MapReduce.NullObject.instance());
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
@@ -77,8 +79,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery of(Collection<TypeLabel> resourceTypeLabels) {
-        return (StdQuery) setStatisticsResourceType(resourceTypeLabels);
+    public StdQuery of(Collection<Label> resourceLabels) {
+        return (StdQuery) setStatisticsResourceType(resourceLabels);
     }
 
     @Override
@@ -87,13 +89,13 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery in(Collection<TypeLabel> subTypeLabels) {
-        return (StdQuery) super.in(subTypeLabels);
+    public StdQuery in(Collection<Label> subLabels) {
+        return (StdQuery) super.in(subLabels);
     }
 
     @Override
-    public StdQuery withGraph(GraknGraph graph) {
-        return (StdQuery) super.withGraph(graph);
+    public StdQuery withTx(GraknTx tx) {
+        return (StdQuery) super.withTx(tx);
     }
 
     @Override

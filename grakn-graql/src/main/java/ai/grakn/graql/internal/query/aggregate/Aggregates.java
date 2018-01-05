@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.NamedAggregate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -39,21 +40,28 @@ public class Aggregates {
     private Aggregates() {}
 
     /**
-     * Aggregate that finds mean of a match query.
+     * Aggregate that finds mean of a {@link Match}.
      */
     public static Aggregate<Answer, Optional<Double>> mean(Var varName) {
         return new MeanAggregate(varName);
     }
 
     /**
-     * Aggregate that counts results of a match query.
+     * Aggregate that counts results of a {@link Match}.
      */
     public static Aggregate<Object, Long> count() {
         return new CountAggregate();
     }
 
     /**
-     * Aggregate that groups results of a match query by variable name
+     * Aggregate that checks if there are any results
+     */
+    public static Aggregate<Object,Boolean> ask() {
+        return AskAggregate.get();
+    }
+
+    /**
+     * Aggregate that groups results of a {@link Match} by variable name
      * @param varName the variable name to group results by
      */
     public static Aggregate<Answer, Map<Concept, List<Answer>>> group(Var varName) {
@@ -61,7 +69,7 @@ public class Aggregates {
     }
 
     /**
-     * Aggregate that groups results of a match query by variable name, applying an aggregate to each group.
+     * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
      * @param <T> the type of each group
      */
     public static <T> Aggregate<Answer, Map<Concept, T>> group(
@@ -71,36 +79,36 @@ public class Aggregates {
     }
 
     /**
-     * An aggregate that changes match query results into a list.
-     * @param <T> the type of the results of the match query
+     * An aggregate that changes {@link Match} results into a list.
+     * @param <T> the type of the results of the {@link Match}
      */
     public static <T> Aggregate<T, List<T>> list() {
         return new ListAggregate<>();
     }
 
     /**
-     * Aggregate that finds maximum of a match query.
+     * Aggregate that finds maximum of a {@link Match}.
      */
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(Var varName) {
         return new MaxAggregate<>(varName);
     }
 
     /**
-     * Aggregate that finds median of a match query.
+     * Aggregate that finds median of a {@link Match}.
      */
     public static Aggregate<Answer, Optional<Number>> median(Var varName) {
         return new MedianAggregate(varName);
     }
 
     /**
-     * Aggregate that finds the unbiased sample standard deviation of a match query
+     * Aggregate that finds the unbiased sample standard deviation of a {@link Match}
      */
     public static Aggregate<Answer, Optional<Double>> std(Var varName) {
         return new StdAggregate(varName);
     }
 
     /**
-     * Aggregate that finds minimum of a match query.
+     * Aggregate that finds minimum of a {@link Match}.
      */
     public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(Var varName) {
         return new MinAggregate<>(varName);
@@ -108,7 +116,7 @@ public class Aggregates {
 
     /**
      * An aggregate that combines several aggregates together into a map (where keys are the names of the aggregates)
-     * @param <S> the type of the match query results
+     * @param <S> the type of the {@link Match} results
      * @param <T> the type of the aggregate results
      */
     public static <S, T> Aggregate<S, Map<String, T>> select(
@@ -118,7 +126,7 @@ public class Aggregates {
     }
 
     /**
-     * Aggregate that sums results of a match query.
+     * Aggregate that sums results of a {@link Match}.
      */
     public static Aggregate<Answer, Number> sum(Var varName) {
         return new SumAggregate(varName);

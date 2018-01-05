@@ -19,6 +19,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
@@ -28,7 +29,7 @@ import java.util.stream.Stream;
 import static java.lang.Math.sqrt;
 
 /**
- * Aggregate that finds the unbiased sample standard deviation of a match query.
+ * Aggregate that finds the unbiased sample standard deviation of a {@link Match}.
  */
 class StdAggregate extends AbstractAggregate<Answer, Optional<Double>> {
 
@@ -40,7 +41,7 @@ class StdAggregate extends AbstractAggregate<Answer, Optional<Double>> {
 
     @Override
     public Optional<Double> apply(Stream<? extends Answer> stream) {
-        Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asResource().getValue().doubleValue());
+        Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asAttribute().getValue().doubleValue());
 
         Iterable<Double> data = numStream::iterator;
 

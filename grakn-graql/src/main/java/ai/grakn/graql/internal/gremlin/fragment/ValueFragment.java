@@ -18,73 +18,55 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Collection;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.util.CommonUtil.optionalToStream;
+import static ai.grakn.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.toSet;
 
-class ValueFragment extends AbstractFragment {
+@AutoValue
+abstract class ValueFragment extends Fragment {
 
-    private final ValuePredicateAdmin predicate;
+    abstract ValuePredicate predicate();
 
-    ValueFragment(Var start, ValuePredicateAdmin predicate) {
-        super(start);
-        this.predicate = predicate;
+    @Override
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
+
+        return predicate().applyPredicate(traversal);
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        predicate.applyPredicate(traversal);
+    public String name() {
+        return "[value:" + predicate() + "]";
     }
 
     @Override
-    public String getName() {
-        return "[value:" + predicate + "]";
-    }
-
-    @Override
-    public double fragmentCost(double previousCost) {
-        if (predicate.isSpecific()) {
-            return NUM_RESOURCES_PER_VALUE;
+    public double internalFragmentCost() {
+        if (predicate().isSpecific()) {
+            return COST_NODE_INDEX_VALUE;
         } else {
             // Assume approximately half of values will satisfy a filter
-            return previousCost / 2.0;
+            return COST_NODE_UNSPECIFIC_PREDICATE;
         }
     }
 
     @Override
     public boolean hasFixedFragmentCost() {
-        return predicate.isSpecific();
+        return predicate().isSpecific() && dependencies().isEmpty();
     }
 
     @Override
-    public Set<Var> getDependencies() {
-        return optionalToStream(predicate.getInnerVar()).map(VarPatternAdmin::getVarName).collect(toSet());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        ValueFragment that = (ValueFragment) o;
-
-        return predicate != null ? predicate.equals(that.predicate) : that.predicate == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (predicate != null ? predicate.hashCode() : 0);
-        return result;
+    public Set<Var> dependencies() {
+        return optionalToStream(predicate().getInnerVar()).map(VarPatternAdmin::var).collect(toSet());
     }
 }

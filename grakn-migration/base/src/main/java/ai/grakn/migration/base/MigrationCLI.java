@@ -19,15 +19,14 @@
 package ai.grakn.migration.base;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.util.Schema;
+import ai.grakn.util.CommonUtil;
 import com.google.common.io.Files;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.BufferedWriter;
@@ -41,17 +40,22 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
-import static java.util.Collections.singletonList;
+import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
+import static ai.grakn.util.Schema.MetaSchema.ENTITY;
+import static ai.grakn.util.Schema.MetaSchema.RELATIONSHIP;
+import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 /**
  *
@@ -59,63 +63,72 @@ import static java.util.stream.Collectors.toList;
  */
 public class MigrationCLI {
 
-    private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'grakn.sh start'?";
+    private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'grakn server start'?";
 
     public static <T extends MigrationOptions> List<Optional<T>> init(String[] args, Function<String[], T> constructor) {
-
         // get the options from the command line
         T baseOptions = constructor.apply(args);
 
-        // if there is configuration, create multiple options objects from the config
-        if(baseOptions.getConfiguration() != null){
+        // If there is configuration, create multiple options objects from the config
+        if (baseOptions.getConfiguration() != null) {
             return extractOptionsFromConfiguration(baseOptions.getConfiguration(), args).stream()
                     .map(constructor)
                     .map(MigrationCLI::validate)
-                    .collect(toList());
+                    .collect(Collectors.toList());
+        } else { // Otherwise, create options from the base options
+            return Collections.singletonList(validate(baseOptions));
         }
-
-        return singletonList(validate(baseOptions));
     }
 
-    public static <T extends MigrationOptions> Optional<T> validate(T options){
-        try {
-            if (options.isHelp()) {
-                printHelpMessage(options);
-            }
-
-            if(options.getNumberOptions() == 0){
-                printHelpMessage(options);
-                throw new IllegalArgumentException("Helping");
-            } else if(options.getNumberOptions() == 1 && options.isHelp()){
-                throw new IllegalArgumentException("Helping");
-            }
-
-            if(!Client.serverIsRunning(options.getUri())){
-                System.out.println(COULD_NOT_CONNECT);
-            }
-
-            //noinspection unchecked
-            return Optional.of(options);
-        } catch (Throwable e){
+    private static <T extends MigrationOptions> Optional<T> validate(T options){
+        // Print the help message
+        if (options.isHelp()) {
+            printHelpMessage(options);
             return Optional.empty();
         }
+
+        // Check that options were provided
+        if(options.getNumberOptions() == 0){
+            printHelpMessage(options);
+            return Optional.empty();
+        }
+
+        // Check that engine is running
+        if(!Client.serverIsRunning(options.getUri())){
+            System.err.println(COULD_NOT_CONNECT);
+            return Optional.empty();
+        }
+
+        return Optional.of(options);
     }
 
     public static void loadOrPrint(File templateFile, Stream<Map<String, Object>> data, MigrationOptions options){
         String template = fileAsString(templateFile);
-        Migrator migrator = Migrator.to(options.getUri(), options.getKeyspace());
-
+        Migrator migrator = new MigratorBuilder()
+                .setUri(options.getUri())
+                .setMigrationOptions(options)
+                .setKeyspace(options.getKeyspace())
+                .build();
         if(options.isNo()){
             migrator.print(template, data);
         } else {
-            migrator.load(template, data,
-                    options.getBatch(), options.getNumberActiveTasks(), options.getRetry());
+            printInitMessage(options);
+            migrator.getReporter().start(1, TimeUnit.MINUTES);
+            try {
+                migrator.load(template, data);
+            } catch (Throwable e) {
+                // This is to catch migration exceptions and return intelligible output messages
+                StringBuilder message = CommonUtil.simplifyExceptionMessage(e);
+                System.out.println("ERROR: Exception while loading data (disabling debug mode might skip and continue): " + message.toString());
+            } finally {
+                migrator.getReporter().stop();
+            }
             printWholeCompletionMessage(options);
         }
     }
 
-    public static void printInitMessage(MigrationOptions options, String dataToMigrate){
-        System.out.println("Migrating data " + dataToMigrate +
+    public static void printInitMessage(MigrationOptions options){
+        System.out.println("Migrating data " + (options.hasInput() ? options.getInput() : "") +
                 " using Grakn Engine " + options.getUri() +
                 " into graph " + options.getKeyspace());
     }
@@ -126,22 +139,22 @@ public class MigrationCLI {
         if(options.isVerbose()) {
             System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-            GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE);
+            GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE);
             QueryBuilder qb = graph.graql();
 
             StringBuilder builder = new StringBuilder();
-            builder.append("Graph ontology contains:\n");
-            builder.append("\t ").append(graph.admin().getMetaEntityType().instances().size()).append(" entity types\n");
-            builder.append("\t ").append(graph.admin().getMetaRelationType().instances().size()).append(" relation types\n");
-            builder.append("\t ").append(graph.admin().getMetaRoleType().instances().size()).append(" role types\n");
-            builder.append("\t ").append(graph.admin().getMetaResourceType().instances().size()).append(" resource types\n");
-            builder.append("\t ").append(graph.admin().getMetaRuleType().instances().size()).append(" rule types\n\n");
+            builder.append("Graph schema contains:\n");
+            builder.append("\t ").append(graph.admin().getMetaEntityType().instances().count()).append(" entity types\n");
+            builder.append("\t ").append(graph.admin().getMetaRelationType().instances().count()).append(" relation types\n");
+            builder.append("\t ").append(graph.admin().getMetaRole().subs().count()).append(" roles\n\n");
+            builder.append("\t ").append(graph.admin().getMetaAttributeType().instances().count()).append(" resource types\n");
+            builder.append("\t ").append(graph.admin().getMetaRule().subs().count()).append(" rules\n\n");
 
             builder.append("Graph data contains:\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.ENTITY.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RELATION.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RESOURCE.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RULE.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
+            builder.append("\t ").append(qb.match(var("x").isa(label(ENTITY.getLabel()))).aggregate(count()).execute()).append(" entities\n");
+            builder.append("\t ").append(qb.match(var("x").isa(label(RELATIONSHIP.getLabel()))).aggregate(count()).execute()).append(" relations\n");
+            builder.append("\t ").append(qb.match(var("x").isa(label(ATTRIBUTE.getLabel()))).aggregate(count()).execute()).append(" resources\n");
+            builder.append("\t ").append(qb.match(var("x").isa(label(RULE.getLabel()))).aggregate(count()).execute()).append(" rules\n\n");
 
             System.out.println(builder);
 
@@ -153,17 +166,8 @@ public class MigrationCLI {
         try {
             return Files.readLines(file, StandardCharsets.UTF_8).stream().collect(joining("\n"));
         } catch (IOException e) {
-            die("Could not read file " + file.getPath());
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException("Could not read file " + file.getPath(), e);
         }
-    }
-
-    public static RuntimeException die(Throwable throwable){
-        return die(ExceptionUtils.getFullStackTrace(throwable));
-    }
-
-    public static RuntimeException die(String errorMsg) {
-        throw new RuntimeException(errorMsg);
     }
 
     private static void printHelpMessage(MigrationOptions options){
@@ -173,7 +177,7 @@ public class MigrationCLI {
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();
         int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "migration.sh", null, options.getOptions(), leftPadding, descPadding, null);
+        helpFormatter.printHelp(printWriter, width, "graql migrate", null, options.getOptions(), leftPadding, descPadding, null);
         printWriter.flush();
     }
 
@@ -181,7 +185,7 @@ public class MigrationCLI {
         // check file exists
         File configuration = new File(path);
         if(!configuration.exists()){
-            throw new RuntimeException("Could not find configuration file "+ path);
+            throw new IllegalArgumentException("Could not find configuration file "+ path);
         }
 
         try (InputStreamReader reader = new InputStreamReader(new FileInputStream(configuration), Charset.defaultCharset())){

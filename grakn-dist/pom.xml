@@ -24,114 +24,88 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>0.14.0-SNAPSHOT</version>
+        <version>1.1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grakn-dist</artifactId>
+
+    <properties>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
 
     <dependencies>
         <!--Logging dependencies: Compile scope needed to override parent test scope-->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-            <scope>compile</scope>
+        </dependency>
+        <!--Jaino used for conditionals in log files-->
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
         </dependency>
 
         <!--Core dependencies-->
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-engine</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql-shell</artifactId>
-            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-bootup</artifactId>
         </dependency>
 
         <!--Migrations-->
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-sql</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-xml</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-csv</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-json</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>migration-owl</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-export</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- Factories -->
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>titan-factory</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.jetty.orbit</groupId>
-                    <artifactId>javax.servlet</artifactId>
-                </exclusion>
-                <!--Excluded because we provide logback logger-->
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-nop</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>janus-factory</artifactId>
         </dependency>
 
         <!-- Cassandra uses airline for command line parsing -->
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>airline</artifactId>
-            <version>${airline.version}</version>
-
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
         </dependency>
     </dependencies>
 
@@ -139,7 +113,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.6</version>
                 <executions>
                     <execution>
                         <id>copy-bin</id>
@@ -158,9 +131,15 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <configuration>
+                    <skipNexusStagingDeployMojo>${skip.deploy.dist}</skipNexusStagingDeployMojo>
+              </configuration>
+            </plugin>
+            <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>1.2.1</version>
                 <executions>
                     <execution><!-- Get redis and package into the distribution -->
                         <id>download-redis</id>
@@ -171,7 +150,7 @@
                         <configuration>
                             <url>https://github.com/burukuru/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
                             <unpack>true</unpack>
-                            <outputDirectory>${main.basedir}/grakn-dist/target</outputDirectory>
+                            <outputDirectory>${project.basedir}/target</outputDirectory>
                         </configuration>
                     </execution>
                     <execution>
@@ -183,7 +162,7 @@
                         <configuration>
                             <url>https://github.com/burukuru/shunit2/archive/master.zip</url>
                             <unpack>true</unpack>
-                            <outputDirectory>${main.basedir}/grakn-dist/target/lib</outputDirectory>
+                            <outputDirectory>${project.basedir}/target/lib</outputDirectory>
                             <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
@@ -192,7 +171,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.5.0</version>
                 <executions>
                     <execution>
                         <id>bash-tests</id>
@@ -202,8 +180,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipTests}</skip>
-                            <workingDirectory>${main.basedir}/grakn-dist/src/test/bash</workingDirectory>
-                            <executable>${main.basedir}/grakn-dist/src/test/bash/bash-startup-test.sh</executable>
+                            <workingDirectory>${project.basedir}/src/test/bash</workingDirectory>
+                            <executable>${project.basedir}/src/test/bash/distribution-test.sh</executable>
                         </configuration>
                     </execution>
                 </executions>

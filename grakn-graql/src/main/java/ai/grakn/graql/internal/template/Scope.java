@@ -18,15 +18,12 @@
 
 package ai.grakn.graql.internal.template;
 
+import ai.grakn.graql.Var;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang.ObjectUtils;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Represents a scope (association of name to a value) and corresponds to a block
@@ -41,18 +38,17 @@ public class Scope {
 
     private final Scope parent;
     private final Map<String, Object> values;
-    private final Set<String> variablesEncountered;
+    private final Set<Var> variablesEncountered;
 
     public Scope(Map<String, Object> data){
-        parent = null;
-        this.values = new HashMap<>();
+        this.parent = null;
+        this.values = data;
         this.variablesEncountered = new HashSet<>();
-        assign("", data);
     }
 
-    public Scope(Scope parent){
+    public Scope(Scope parent, Map<String, Object> data){
         this.parent = parent;
-        this.values = new HashMap<>();
+        this.values = data;
         this.variablesEncountered = Sets.newHashSet(parent.variablesEncountered);
     }
 
@@ -65,70 +61,20 @@ public class Scope {
     }
 
     /**
-     * Associate a value with the given key. If the given value is a map, recurse through it and concatenate
-     * the given prefix with the keys in the map separated by ".".
-     *
-     * @param prefix key to use in the map of values.
-     * @param value value to associate.
-     */
-    @SuppressWarnings("unchecked")
-    public void assign(String prefix, Object value){
-        if(value instanceof Map){
-            Map<String, Object> map = (Map) value;
-
-            if(!prefix.isEmpty()){
-                prefix = prefix + ".";
-            }
-
-            for(Map.Entry<String, Object> entry: map.entrySet()) {
-                assign(prefix + entry.getKey(), entry.getValue());
-            }
-        }
-        else {
-            values.put(prefix, value == null ? null : value);
-        }
-    }
-
-    /**
-     * Remove a key/value pair from this scope
-     * @param prefix key to remove from the scope
-     */
-    public void unassign(String prefix){
-        Set<String> removed = values.keySet().stream()
-                .filter(s -> s.startsWith(prefix))
-                .collect(toSet());
-
-        removed.forEach(values::remove);
-    }
-
-    /**
-     * Retrieve the value of a key from this scope, or the parent scope if it is not present in the current one.
+     * Retrieve the value of a key from this scope
      * @param var key to retrieve
      * @return value associated with the provided key
      */
     public Object resolve(String var) {
-        Object value = values.get(var);
-
-        if(value != null) {
-            // The variable resides in this scope
-            return value;
-        }
-        else if(!isGlobalScope()) {
-            // Let the parent scope look for the variable
-            return parent.resolve(var);
-        }
-        else {
-            // Unknown variable
-            return ObjectUtils.NULL;
-        }
+        return values.get(var);
     }
 
     /**
-     * Check if this scope is "global", i.e. has no parent
-     * @return true if this is the "root" scope
+     * Retrieve the data in the current scope
+     * @return data in this scope
      */
-    public boolean isGlobalScope() {
-        return parent == null;
+    public Map data(){
+        return this.values;
     }
 
     /**
@@ -136,7 +82,7 @@ public class Scope {
      * @param variable variable to check the presence of
      * @return true if the variable has been seen, false otherwise
      */
-    public boolean hasSeen(String variable){
+    boolean hasSeen(Var variable){
         return variablesEncountered.contains(variable);
     }
 
@@ -144,7 +90,7 @@ public class Scope {
      * Mark a variable as seen within this scope
      * @param variable variable to mark as seen
      */
-    public void markAsSeen(String variable){
+    void markAsSeen(Var variable){
         variablesEncountered.add(variable);
     }
 }

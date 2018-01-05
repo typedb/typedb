@@ -18,17 +18,13 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.query.QueryAnswer;
-import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -77,18 +73,7 @@ public class QueryAnswers implements Iterable<Answer>{
     public boolean isEmpty(){ return set.isEmpty();}
 
     /**
-     * filter answers by constraining the variable set to the provided one
-     * @param vars set of variable names
-     * @return filtered answers
-     */
-    public QueryAnswers filterVars(Set<Var> vars) {
-        return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result.map(), vars::contains))
-                .map(QueryAnswer::new)
-                .collect(Collectors.toSet()));
-    }
-
-    /**
-     * unify the answers by applying unifiers to variable set
+     * unify the answers by applying unifier to variable set
      * @param unifier map of [key: from/value: to] unifiers
      * @return unified query answers
      */
@@ -103,12 +88,26 @@ public class QueryAnswers implements Iterable<Answer>{
     }
 
     /**
+     * unify the answers by applying multiunifier to variable set
+     * @param multiUnifier multiunifier to be applied to the query answers
+     * @return unified query answers
+     */
+    public QueryAnswers unify(MultiUnifier multiUnifier){
+        QueryAnswers unifiedAnswers = new QueryAnswers();
+        this.stream()
+                .flatMap(a -> a.unify(multiUnifier))
+                .filter(a -> !a.isEmpty())
+                .forEach(unifiedAnswers::add);
+        return unifiedAnswers;
+    }
+
+    /**
      * unify answers of childQuery with parentQuery
      * @param parentQuery parent atomic query containing target variables
      * @return unified answers
      */
     public static <T extends ReasonerQuery> QueryAnswers getUnifiedAnswers(T parentQuery, T childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        return answers.unify(childQuery.getUnifier(parentQuery));
+        return answers.unify(childQuery.getMultiUnifier(parentQuery));
     }
 }

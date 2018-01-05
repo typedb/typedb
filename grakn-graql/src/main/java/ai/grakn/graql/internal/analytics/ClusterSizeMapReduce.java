@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -26,7 +25,6 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * The MapReduce program for collecting the result of a clustering query.
@@ -47,19 +45,18 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
     public ClusterSizeMapReduce() {
     }
 
-    public ClusterSizeMapReduce(Set<TypeId> selectedTypeIds, String clusterLabel) {
-        super(selectedTypeIds);
+    public ClusterSizeMapReduce(String clusterLabel) {
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
 
-    public ClusterSizeMapReduce(Set<TypeId> selectedTypeIds, String clusterLabel, Long clusterSize) {
-        this(selectedTypeIds, clusterLabel);
+    public ClusterSizeMapReduce(String clusterLabel, Long clusterSize) {
+        this(clusterLabel);
         this.persistentProperties.put(CLUSTER_SIZE, clusterSize);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
-        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+        if (vertex.property((String) persistentProperties.get(CLUSTER_LABEL)).isPresent()) {
             emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)), 1L);
         } else {
             emitter.emit(NullObject.instance(), 0L);

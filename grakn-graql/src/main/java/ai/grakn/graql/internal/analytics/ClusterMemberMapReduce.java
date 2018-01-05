@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -51,23 +51,20 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
     public ClusterMemberMapReduce() {
     }
 
-    public ClusterMemberMapReduce(Set<TypeId> selectedTypeIds, String clusterLabel) {
-        super(selectedTypeIds);
+    public ClusterMemberMapReduce(String clusterLabel) {
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
 
-    public ClusterMemberMapReduce(Set<TypeId> selectedTypeIds, String clusterLabel, Long clusterSize) {
-        this(selectedTypeIds, clusterLabel);
+    public ClusterMemberMapReduce(String clusterLabel, Long clusterSize) {
+        this(clusterLabel);
         this.persistentProperties.put(CLUSTER_SIZE, clusterSize);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
         if (vertex.property((String) persistentProperties.get(CLUSTER_LABEL)).isPresent()) {
-            if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)),
-                        Collections.singleton(vertex.id().toString()));
-            }
+            emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)),
+                    Collections.singleton(vertex.value(Schema.VertexProperty.ID.name())));
         } else {
             emitter.emit(NullObject.instance(), Collections.emptySet());
         }

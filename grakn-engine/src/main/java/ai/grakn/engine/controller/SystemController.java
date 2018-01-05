@@ -19,119 +19,193 @@
 package ai.grakn.engine.controller;
 
 
-import ai.grakn.GraknGraph;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.GraknTx;
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.GraknEngineStatus;
+import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.controller.response.Keyspace;
+import ai.grakn.engine.controller.response.Keyspaces;
+import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.util.ErrorMessage;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiOperation;
-import mjson.Json;
+import ai.grakn.util.GraknVersion;
+import ai.grakn.util.REST;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.json.MetricsModule;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.common.TextFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import java.util.Collection;
-import java.util.Properties;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
-import static ai.grakn.util.REST.GraphConfig.COMPUTER;
-import static ai.grakn.util.REST.GraphConfig.DEFAULT;
-import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
-import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
-import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
+import static ai.grakn.util.REST.Request.FORMAT;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static org.apache.http.HttpHeaders.CACHE_CONTROL;
 
 
 /**
- * <p>
- *     Controller Providing Configs for building Grakn Graphs
- * </p>
+ * <p> Controller Providing Configs for building Grakn Graphs </p>
  *
- * <p>
- *     When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location this controller
- *     is accessed. The controller provides the necessary config needed in order to build a {@link ai.grakn.GraknGraph}.
+ * <p> When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location
+ * this controller is accessed. The controller provides the necessary config needed in order to
+ * build a {@link GraknTx}.
  *
- *     This controller also allows the retrieval of all keyspaces opened so far.
- * </p>
+ * This controller also allows the retrieval of all {@link ai.grakn.Keyspace}s opened so far. </p>
  *
- * @author fppt
+ * @author Filipe Peliz Pinto Teixeira
  */
 public class SystemController {
+
+    private static final String PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4";
+    private static final String PROMETHEUS = "prometheus";
+    private static final String JSON = "json";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
-    private final EngineGraknGraphFactory factory;
+    private final GraknEngineStatus graknEngineStatus;
+    private final MetricRegistry metricRegistry;
+    private final ObjectMapper mapper;
+    private final CollectorRegistry prometheusRegistry;
+    private final SystemKeyspace systemKeyspace;
+    private final GraknConfig config;
 
-    public SystemController(EngineGraknGraphFactory factory, Service spark) {
-        this.factory = factory;
-        spark.get(KEYSPACES,     this::getKeyspaces);
-        spark.get(CONFIGURATION, this::getConfiguration);
+    public SystemController(Service spark, GraknConfig config, SystemKeyspace systemKeyspace,
+                            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
+        this.systemKeyspace = systemKeyspace;
+        this.config = config;
+
+        this.graknEngineStatus = graknEngineStatus;
+        this.metricRegistry = metricRegistry;
+        DropwizardExports prometheusMetricWrapper = new DropwizardExports(metricRegistry);
+        this.prometheusRegistry = new CollectorRegistry();
+        prometheusRegistry.register(prometheusMetricWrapper);
+
+        spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
+        spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
+        spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
+        spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
+        spark.get(REST.WebPath.METRICS, this::getMetrics);
+        spark.get(REST.WebPath.STATUS, (req, res) -> getStatus());
+        spark.get(REST.WebPath.VERSION, (req, res) -> getVersion());
+
+        final TimeUnit rateUnit = TimeUnit.SECONDS;
+        final TimeUnit durationUnit = TimeUnit.SECONDS;
+        final boolean showSamples = false;
+        MetricFilter filter = MetricFilter.ALL;
+
+        this.mapper = new ObjectMapper().registerModule(
+                new MetricsModule(rateUnit,
+                        durationUnit,
+                        showSamples,
+                        filter));
     }
 
     @GET
-    @Path("/configuration")
-    @ApiOperation(value = "Get config which is used to build graphs")
-    @ApiImplicitParam(name = "graphConfig", value = "The type of graph config to return", required = true, dataType = "string", paramType = "path")
-    private String getConfiguration(Request request, Response response) {
-        String graphConfig = request.queryParams(GRAPH_CONFIG_PARAM);
-
-        // Make a copy of the properties object
-        Properties properties = new Properties();
-        properties.putAll(factory.properties());
-
-        // Get the correct factory based on the request
-        switch ((graphConfig != null) ? graphConfig : DEFAULT) {
-            case DEFAULT:
-                break; // Factory is already correctly set
-            case COMPUTER:
-                properties.setProperty(FACTORY_INTERNAL, properties.get(FACTORY_ANALYTICS).toString());
-                break;
-            default:
-                throw GraknServerException.internalError("Unrecognised graph config: " + graphConfig);
-        }
-
-        // Turn the properties into a Json object
-        Json config = Json.make(properties);
-
-        // Remove the JWT Secret
-        if(config.has(GraknEngineConfig.JWT_SECRET_PROPERTY)) {
-            config.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
-        }
-
-        return config.toString();
+    @Path(REST.WebPath.VERSION)
+    private String getVersion() {
+        return GraknVersion.VERSION;
     }
 
     @GET
-    @Path("/keyspaces")
-    @ApiOperation(value = "Get all the key spaces that have been opened")
-    private String getKeyspaces(Request request, Response response) {
-        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            ResourceType<String> keyspaceName = graph.getType(SystemKeyspace.KEYSPACE_RESOURCE);
-            Json result = Json.array();
-            if (graph.getType(SystemKeyspace.KEYSPACE_ENTITY) == null) {
-                LOG.warn("No system ontology in system keyspace, possibly a bug!");
-                return result.toString();
-            }
-            for (Entity keyspace : graph.<EntityType>getType(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
-                Collection<Resource<?>> names = keyspace.resources(keyspaceName);
-                if (names.size() != 1) {
-                    throw GraknServerException.internalError(ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
+    @Path(REST.WebPath.KB)
+    private String getKeyspaces(Response response) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+        Set<Keyspace> keyspaces = systemKeyspace.keyspaces().stream().
+                map(Keyspace::of).
+                collect(Collectors.toSet());
+        return objectMapper.writeValueAsString(Keyspaces.of(keyspaces));
+    }
+
+    @GET
+    @Path("/kb/{keyspace}")
+    private String getKeyspace(Request request, Response response) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
+
+        if (systemKeyspace.containsKeyspace(keyspace)) {
+            response.status(HttpServletResponse.SC_OK);
+            return objectMapper.writeValueAsString(Keyspace.of(keyspace));
+        } else {
+            response.status(HttpServletResponse.SC_NOT_FOUND);
+            return "";
+        }
+    }
+
+    @PUT
+    @Path("/kb/{keyspace}")
+    private String putKeyspace(Request request, Response response) throws JsonProcessingException {
+        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
+        systemKeyspace.openKeyspace(keyspace);
+        response.status(HttpServletResponse.SC_OK);
+        return objectMapper.writeValueAsString(config);
+    }
+
+    @DELETE
+    @Path("/kb/{keyspace}")
+    private boolean deleteKeyspace(Request request, Response response) {
+        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
+        boolean deletionComplete = systemKeyspace.deleteKeyspace(keyspace);
+        if (deletionComplete) {
+            LOG.info("Keyspace {} deleted", keyspace);
+            response.status(HttpServletResponse.SC_NO_CONTENT);
+            return true;
+        } else {
+            throw GraknServerException.couldNotDelete(keyspace);
+        }
+    }
+
+    @GET
+    @Path("/status")
+    private String getStatus() {
+        return graknEngineStatus.isReady() ? "READY" : "INITIALIZING";
+    }
+
+    @GET
+    @Path("/metrics")
+    private String getMetrics(Request request, Response response) throws IOException {
+        response.header(CACHE_CONTROL, "must-revalidate,no-cache,no-store");
+        response.status(HttpServletResponse.SC_OK);
+        Optional<String> format = Optional.ofNullable(request.queryParams(FORMAT));
+        String dFormat = format.orElse(JSON);
+        switch (dFormat) {
+            case PROMETHEUS:
+                // Prometheus format for the metrics
+                response.type(PROMETHEUS_CONTENT_TYPE);
+                final Writer writer1 = new StringWriter();
+                TextFormat.write004(writer1, this.prometheusRegistry.metricFamilySamples());
+                return writer1.toString();
+            case JSON:
+                // Json/Dropwizard format
+                response.type(APPLICATION_JSON);
+                final ObjectWriter writer = mapper.writer();
+                try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                    writer.writeValue(output, this.metricRegistry);
+                    return new String(output.toByteArray(), "UTF-8");
                 }
-                result.add(names.iterator().next().getValue());
-            }
-            return result.toString();
-        } catch (Exception e) {
-            LOG.error("While retrieving keyspace list:", e);
-            throw GraknServerException.serverException(500, e);
+            default:
+                throw GraknServerException.requestInvalidParameter(FORMAT, dFormat);
         }
     }
+
 }

@@ -18,11 +18,13 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
-import java.util.Collections;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.Collections;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.junit.Assert.assertFalse;
@@ -38,14 +40,14 @@ public class BooleanMacroTest {
 
     @Test
     public void applyBooleanMacroToNoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
 
         booleanMacro.apply(Collections.emptyList());
     }
 
     @Test
     public void applyBooleanMacroToMoreThanOneArgument_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
 
         booleanMacro.apply(ImmutableList.of(true, true));
     }
@@ -57,7 +59,7 @@ public class BooleanMacroTest {
 
     @Test
     public void applyBooleanMacroToInvalidValue_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
 
         booleanMacro.apply(ImmutableList.of("invalid"));
     }

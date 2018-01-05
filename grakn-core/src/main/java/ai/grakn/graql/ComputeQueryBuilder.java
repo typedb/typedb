@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -27,6 +27,7 @@ import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
+import ai.grakn.graql.analytics.PathsQuery;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 
@@ -41,11 +42,11 @@ import java.util.Map;
 public interface ComputeQueryBuilder {
 
     /**
-     * @param graph the graph to execute the compute query on
+     * @param tx the {@link GraknTx} to execute the compute query on
      * @return a compute query builder with the graph set
      */
     @CheckReturnValue
-    ComputeQueryBuilder withGraph(GraknGraph graph);
+    ComputeQueryBuilder withTx(GraknTx tx);
 
     /**
      * @return a count query that will count the number of instances
@@ -94,6 +95,12 @@ public interface ComputeQueryBuilder {
      */
     @CheckReturnValue
     PathQuery path();
+
+    /**
+     * @return a path query that will find all shortest path between two instances
+     */
+    @CheckReturnValue
+    PathsQuery paths();
 
     /**
      * @return a cluster query that will find the clusters in the graph

@@ -18,53 +18,75 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
+import ai.grakn.graql.internal.reasoner.ResolutionIterator;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.NotEquals;
-import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
+import ai.grakn.graql.internal.reasoner.state.AnswerState;
+import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
+import ai.grakn.graql.internal.reasoner.state.CumulativeState;
+import ai.grakn.graql.internal.reasoner.state.QueryState;
+import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
+import ai.grakn.graql.internal.reasoner.state.ResolutionState;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
+import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import java.util.Comparator;
+import java.util.Collection;
+import java.util.LinkedList;
+import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.function.Function;
+
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
@@ -80,35 +102,98 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEquals
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
-    private final GraknGraph graph;
-    private final Set<Atomic> atomSet = new HashSet<>();
-    private int priority = Integer.MAX_VALUE;
+    private final GraknTx tx;
+    private final ImmutableSet<Atomic> atomSet;
+    private Answer substitution = null;
+    private ImmutableMap<Var, Type> varTypeMap = null;
 
-    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
-        this.graph = graph;
-        atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
-        inferTypes();
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
+
+    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
+        this.tx = tx;
+        this.atomSet = ImmutableSet.<Atomic>builder()
+                .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
+                .build();
     }
 
-    ReasonerQueryImpl(ReasonerQueryImpl q) {
-        this.graph = q.graph;
-        q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
-        inferTypes();
+    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
+        this.tx = tx;
+        this.atomSet = ImmutableSet.<Atomic>builder()
+                .addAll(atoms.stream().map(at -> AtomicFactory.create(at, this)).iterator())
+                .build();
+    }
+
+    ReasonerQueryImpl(List<Atom> atoms, GraknTx tx){
+        this.tx = tx;
+        this.atomSet =  ImmutableSet.<Atomic>builder()
+                .addAll(atoms.stream()
+                        .flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints()))
+                        .map(at -> AtomicFactory.create(at, this)).iterator())
+                .build();
     }
 
     ReasonerQueryImpl(Atom atom) {
-        if (atom.getParentQuery() == null) {
-            throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
-        }
-        this.graph = atom.getParentQuery().graph();
-        addAtomic(AtomicFactory.create(atom, this));
-        addAtomConstraints(atom.getNonSelectableConstraints());
-        inferTypes();
+        this(Collections.singletonList(atom), atom.getParentQuery().tx());
+    }
+
+    ReasonerQueryImpl(ReasonerQueryImpl q) {
+        this.tx = q.tx;
+        this.atomSet =  ImmutableSet.<Atomic>builder()
+                .addAll(q.getAtoms().stream().map(at -> AtomicFactory.create(at, this)).iterator())
+                .build();
+    }
+
+    @Override
+    public ReasonerQuery conjunction(ReasonerQuery q) {
+        return new ReasonerQueryImpl(
+                Sets.union(getAtoms(), q.getAtoms()),
+                this.tx()
+        );
+    }
+
+    /**
+     * @param sub substitution to be inserted into the query
+     * @return corresponding query with additional substitution
+     */
+    public ReasonerQueryImpl withSubstitution(Answer sub){
+        return new ReasonerQueryImpl(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
+    }
+
+    /**
+     * @return corresponding reasoner query with inferred types
+     */
+    public ReasonerQueryImpl inferTypes() {
+        return new ReasonerQueryImpl(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), tx());
+    }
+
+    /**
+     * @return corresponding positive query (with neq predicates removed)
+     */
+    public ReasonerQueryImpl positive(){
+        return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
+    }
+
+    /**
+     * @param transform map defining id transform: var -> new id
+     * @return new query with id predicates transformed according to the transform
+     */
+    public ReasonerQueryImpl transformIds(Map<Var, ConceptId> transform){
+        Set<Atomic> atoms = this.getAtoms(IdPredicate.class).map(p -> {
+            ConceptId conceptId = transform.get(p.getVarName());
+            if (conceptId != null) return new IdPredicate(p.getVarName(), conceptId, p.getParentQuery());
+            return p;
+        }).collect(Collectors.toSet());
+        getAtoms().stream().filter(at -> !(at instanceof IdPredicate)).forEach(atoms::add);
+        return new ReasonerQueryImpl(atoms, tx());
     }
 
     @Override
     public String toString(){
-        return atomSet.stream().filter(Atomic::isAtom).map(Atomic::toString).collect(Collectors.joining(", "));
+        return "{\n\t" +
+                getAtoms(Atom.class)
+                        .map(Atomic::toString)
+                        .collect(Collectors.joining(";\n\t")) +
+                "\n}\n";
     }
 
     @Override
@@ -121,288 +206,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        ReasonerQueryImpl a2 = (ReasonerQueryImpl) obj;
-        return this.isEquivalent(a2);
+        ReasonerQueryImpl q2 = (ReasonerQueryImpl) obj;
+        return this.isEquivalent(q2);
     }
 
     @Override
     public int hashCode() {
-        int hashCode = 1;
-        SortedSet<Integer> hashes = new TreeSet<>();
-        atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
-        for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
-        return hashCode;
-    }
-
-    /**
-     * @return the normalised priority of this query based on its atom content
-     */
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            Set<Atom> selectableAtoms = selectAtoms();
-            int totalPriority = selectableAtoms.stream().mapToInt(Atom::baseResolutionPriority).sum();
-            priority = totalPriority/selectableAtoms.size();
-        }
-        return priority;
-    }
-
-    private void inferTypes() {
-        atomSet.stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .forEach(Atom::inferTypes);
-    }
-
-    public GraknGraph graph() {
-        return graph;
-    }
-
-    public Conjunction<PatternAdmin> getPattern() {
-        Set<PatternAdmin> patterns = new HashSet<>();
-        atomSet.stream()
-                .map(Atomic::getCombinedPattern)
-                .flatMap(p -> p.getVars().stream())
-                .forEach(patterns::add);
-        return Patterns.conjunction(patterns);
-    }
-
-    /**
-     * @return true if any of the atoms constituting the query can be resolved through a rule
-     */
-    @Override
-    public boolean isRuleResolvable() {
-        Iterator<Atom> it = atomSet.stream().filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
-        while (it.hasNext()) {
-            if (it.next().isRuleResolvable()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean isTransitive() {
-        return atomSet.stream().filter(this::containsEquivalentAtom).count() == 2;
-    }
-
-    boolean isAtomic() {
-        return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
-    }
-
-    /**
-     * @return atom set constituting this query
-     */
-    @Override
-    public Set<Atomic> getAtoms() { return atomSet;}
-
-    /**
-     * compute the resolution plan - list of atomic queries ordered by their resolution priority
-     * @return list of prioritised atomic queries
-     */
-    LinkedList<ReasonerAtomicQuery> getResolutionPlan(){
-        LinkedList<ReasonerAtomicQuery> queries = new LinkedList<>();
-
-        LinkedList<Atom> atoms = selectAtoms().stream()
-                .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
-                .collect(Collectors.toCollection(LinkedList::new));
-
-        Atom top = atoms.getFirst();
-
-        while (!atoms.isEmpty()) {
-            queries.add(new ReasonerAtomicQuery(top));
-            atoms.remove(top);
-
-            Set<Var> subbedVars = Sets.difference(
-                    top.getVarNames(),
-                    top.getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet())
-            );
-
-            top = atoms.stream()
-                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                    .findFirst().orElse(null);
-        }
-        return queries;
-    }
-
-    /**
-     * @return set of id predicates contained in this query
-     */
-    public Set<IdPredicate> getIdPredicates() {
-        return atomSet.stream()
-                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
-                .filter(Predicate::isIdPredicate).map(predicate -> (IdPredicate) predicate)
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * @return set of value predicates contained in this query
-     */
-    public Set<ValuePredicate> getValuePredicates() {
-        return atomSet.stream()
-                .filter(Atomic::isPredicate).map(at -> (Predicate) at)
-                .filter(Predicate::isValuePredicate).map(at -> (ValuePredicate) at)
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * @return set of atoms constituting constraints (by means of types) for this query
-     */
-    public Set<TypeAtom> getTypeConstraints() {
-        return getAtoms().stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .filter(Atom::isType).map(at -> (TypeAtom) at)
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * @return set of filter atoms (currently only NotEquals) contained in this query
-     */
-    public Set<NotEquals> getFilters() {
-        return atomSet.stream()
-                .filter(at -> at.getClass() == NotEquals.class)
-                .map(at -> (NotEquals) at)
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * @return set of variables appearing in this query
-     */
-    @Override
-    public Set<Var> getVarNames() {
-        Set<Var> vars = new HashSet<>();
-        atomSet.forEach(atom -> vars.addAll(atom.getVarNames()));
-        return vars;
-    }
-
-    /**
-     * @param atom in question
-     * @return true if query contains an equivalent atom
-     */
-    private boolean containsEquivalentAtom(Atomic atom) {
-        return !getEquivalentAtoms(atom).isEmpty();
-    }
-
-    Set<Atomic> getEquivalentAtoms(Atomic atom) {
-        return atomSet.stream().filter(at -> at.isEquivalent(atom)).collect(Collectors.toSet());
-    }
-
-    @Override
-    public Unifier getUnifier(ReasonerQuery parent) {
-        throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
-    }
-
-    /**
-     * @return corresponding MatchQuery
-     */
-    @Override
-    public MatchQuery getMatchQuery() {
-        return graph.graql().infer(false).match(getPattern());
-    }
-
-    /**
-     * @return map of variable name - type pairs
-     */
-    @Override
-    public Map<Var, Type> getVarTypeMap() {
-        Map<Var, Type> typeMap = new HashMap<>();
-        getTypeConstraints().stream()
-                .filter(at -> Objects.nonNull(at.getType()))
-                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getType()));
-        return typeMap;
-    }
-
-    /**
-     * @param var variable name
-     * @return id predicate for the specified var name if any
-     */
-    public IdPredicate getIdPredicate(Var var) {
-        Set<IdPredicate> relevantSubs = getIdPredicates().stream()
-                .filter(sub -> sub.getVarName().equals(var))
-                .collect(Collectors.toSet());
-        return relevantSubs.isEmpty() ? null : relevantSubs.iterator().next();
-    }
-
-    /**
-     * @param atom to be added
-     * @return true if the atom set did not already contain the specified atom
-     */
-    public boolean addAtomic(Atomic atom) {
-        if (atomSet.add(atom)) {
-            atom.setParentQuery(this);
-            return true;
-        } else return false;
-    }
-
-    /**
-     * @param atom to be removed
-     * @return true if the atom set contained the specified atom
-     */
-    public boolean removeAtomic(Atomic atom) {
-        return atomSet.remove(atom);
-    }
-
-    /**
-     * remove given atom together with its disjoint neighbours (atoms it is connected to)
-     * @param atom to be removed
-     * @return modified query
-     */
-    ReasonerQueryImpl removeAtom(Atom atom){
-        //selectability may change after removing the top atom so determine first
-        Set<TypeAtom> nonSelectableTypes = atom.getTypeConstraints().stream()
-                .filter(at -> !at.isSelectable())
-                .collect(Collectors.toSet());
-
-        //remove atom of interest
-        removeAtomic(atom);
-
-        //remove disjoint type constraints
-        nonSelectableTypes.stream()
-                .filter(at -> !at.getNeighbours().findFirst().isPresent())
-                .forEach(this::removeAtomic);
-
-        //remove dangling predicates
-        atom.getPredicates().stream()
-                .filter(pred -> getVarNames().contains(pred.getVarName()))
-                .forEach(this::removeAtomic);
-        return this;
-    }
-
-    /**
-     * adds a set of constraints (types, predicates) to the atom set
-     * @param cstrs set of constraints
-     */
-    public void addAtomConstraints(Set<? extends Atomic> cstrs){
-        cstrs.forEach(con -> addAtomic(AtomicFactory.create(con, this)));
-    }
-
-    /**
-     * atom selection function
-     * @return selected atoms
-     */
-    public Set<Atom> selectAtoms() {
-        Set<Atom> atomsToSelect = atomSet.stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .filter(Atomic::isSelectable)
-                .collect(Collectors.toSet());
-        if (atomsToSelect.size() <= 2) return atomsToSelect;
-
-        Set<Atom> orderedSelection = new LinkedHashSet<>();
-
-        Atom atom = atomsToSelect.stream()
-                .filter(at -> at.getNeighbours().findFirst().isPresent())
-                .findFirst().orElse(null);
-        while(!atomsToSelect.isEmpty() && atom != null) {
-            orderedSelection.add(atom);
-            atomsToSelect.remove(atom);
-            atom = atom.getNeighbours()
-                    .filter(atomsToSelect::contains)
-                    .findFirst().orElse(null);
-        }
-        //if disjoint select at random
-        if (!atomsToSelect.isEmpty()) atomsToSelect.forEach(orderedSelection::add);
-
-        if (orderedSelection.isEmpty()) {
-            throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
-        }
-        return orderedSelection;
+        return QueryEquivalence.AlphaEquivalence.hash(this);
     }
 
     /**
@@ -410,76 +220,297 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if two queries are alpha-equivalent
      */
     public boolean isEquivalent(ReasonerQueryImpl q) {
-        Set<Atom> atoms = atomSet.stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .collect(Collectors.toSet());
-        if(atoms.size() != q.getAtoms().stream().filter(Atomic::isAtom).count()) return false;
-        for (Atom atom : atoms){
-            if(!q.containsEquivalentAtom(atom)){
-                return false;
-            }
-        }
-        return true;
+        return QueryEquivalence.AlphaEquivalence.equivalent(this, q);
     }
 
-    Answer getSubstitution(){
-        Set<IdPredicate> predicates = this.getTypeConstraints().stream()
-                .map(TypeAtom::getPredicate)
-                .filter(Objects::nonNull)
+    /**
+     * @param atom in question
+     * @return true if query contains an equivalent atom
+     */
+    boolean containsEquivalentAtom(Atom atom, BiFunction<Atom, Atom, Boolean> equivalenceFunction) {
+        return !getEquivalentAtoms(atom, equivalenceFunction).isEmpty();
+    }
+
+    private Set<Atom> getEquivalentAtoms(Atom atom, BiFunction<Atom, Atom, Boolean> equivalenceFunction) {
+        return getAtoms(Atom.class)
+                .filter(at -> equivalenceFunction.apply(at, atom))
                 .collect(Collectors.toSet());
-        predicates.addAll(getIdPredicates());
+    }
 
-        // the mapping function is declared separately to please the Eclipse compiler
-        Function<IdPredicate, Concept> f = p -> graph().getConcept(p.getPredicate());
+    @Override
+    public GraknTx tx() {
+        return tx;
+    }
 
-        return new QueryAnswer(predicates.stream()
-                .collect(Collectors.toMap(IdPredicate::getVarName, f))
+    @Override
+    public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
+
+    @Override
+    public Conjunction<PatternAdmin> getPattern() {
+        return Patterns.conjunction(
+                getAtoms().stream()
+                        .map(Atomic::getCombinedPattern)
+                        .flatMap(p -> p.admin().varPatterns().stream())
+                        .collect(Collectors.toSet())
         );
     }
 
-    ReasonerQueryImpl addSubstitution(Answer sub){
-        Set<Var> varNames = getVarNames();
-
-        //skip predicates from types
-        getTypeConstraints().stream().map(BinaryBase::getValueVariable).forEach(varNames::remove);
-
-        Set<IdPredicate> predicates = sub.entrySet().stream()
-                .filter(e -> varNames.contains(e.getKey()))
-                .map(e -> new IdPredicate(e.getKey(), e.getValue(), this))
+    @Override
+    public Set<String> validateOntologically() {
+        return getAtoms().stream()
+                .flatMap(at -> at.validateOntologically().stream())
                 .collect(Collectors.toSet());
-        atomSet.addAll(predicates);
-        return this;
     }
 
-    boolean hasFullSubstitution(){
-        return getSubstitution().keySet().containsAll(getVarNames());
+    @Override
+    public boolean isRuleResolvable() {
+        return selectAtoms().stream().filter(Atom::isRuleResolvable).findFirst().isPresent();
     }
 
-    private boolean requiresMaterialisation(){
-        for(Atom atom : selectAtoms()){
-            for (InferenceRule rule : atom.getApplicableRules())
-                if (rule.requiresMaterialisation(atom)){
-                    return true;
-                }
+    private boolean isTransitive() {
+        return getAtoms(Atom.class).filter(at -> this.containsEquivalentAtom(at, Atomic::isAlphaEquivalent)).count() == 2;
+    }
+
+    /**
+     * @return true if this query is atomic
+     */
+    boolean isAtomic() {
+        return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
+    }
+
+    /**
+     * @param typedVar variable of interest
+     * @param parentType to be checked
+     * @return true if typing the typeVar with type is compatible with role configuration of this query
+     */
+    @Override
+    public boolean isTypeRoleCompatible(Var typedVar, Type parentType){
+        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
+
+        Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
+        return !getAtoms(RelationshipAtom.class)
+                .filter(ra -> ra.getVarNames().contains(typedVar))
+                .filter(ra -> ra.getRoleVarMap().entries().stream()
+                        //get roles this type needs to play
+                        .filter(e -> e.getValue().equals(typedVar))
+                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
+                        //check if it can play it
+                        .filter(e -> !e.getKey().playedByTypes().filter(parentTypes::contains).findFirst().isPresent())
+                        .findFirst().isPresent())
+                .findFirst().isPresent();
+    }
+
+    @Override
+    public Set<Atomic> getAtoms() { return atomSet;}
+
+    @Override
+    public <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
+        return getAtoms().stream().filter(type::isInstance).map(type::cast);}
+
+    @Override
+    public Set<Var> getVarNames() {
+        Set<Var> vars = new HashSet<>();
+        getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
+        return vars;
+    }
+
+    @Override
+    public MultiUnifier getMultiUnifier(ReasonerQuery parent) {
+        return getMultiUnifier(parent, UnifierType.EXACT);
+    }
+
+    /**
+     * @param parent query for which unifier to unify with should be found
+     * @param unifierType unifier type
+     * @return corresponding multiunifier
+     */
+    public MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierComparison unifierType){
+        throw GraqlQueryException.getUnifierOfNonAtomicQuery();
+    }
+
+    @Override
+    public GetQuery getQuery() {
+        return tx.graql().infer(false).match(getPattern()).get();
+    }
+
+    private Stream<IsaAtom> inferEntityTypes(Answer sub) {
+        Set<Var> typedVars = getAtoms(IsaAtom.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
+        return Stream.concat(
+                getAtoms(IdPredicate.class),
+                sub.toPredicates(this).stream().map(IdPredicate.class::cast)
+        )
+                .filter(p -> !typedVars.contains(p.getVarName()))
+                .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
+                .filter(p -> Objects.nonNull(p.getValue()))
+                .filter(p -> p.getValue().isEntity())
+                .map(p -> new IsaAtom(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
+    }
+
+    private Stream<IsaAtom> inferEntityTypes() {
+        return inferEntityTypes(new QueryAnswer());
+    }
+
+    private Map<Var, Type> getVarTypeMap(Stream<IsaAtom> isas){
+        HashMap<Var, Type> map = new HashMap<>();
+        isas
+                .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))
+                .filter(p -> Objects.nonNull(p.getValue()))
+                .filter(p -> p.getValue().isType())
+                .forEach(p -> {
+                    Var var = p.getKey();
+                    Type newType = p.getValue().asType();
+                    Type type = map.get(var);
+                    if (type == null) map.put(var, newType);
+                    else {
+                        boolean isSubType = type.subs().filter(t -> t.equals(newType)).findFirst().isPresent();
+                        if (isSubType) map.put(var, newType);
+                    }
+                });
+        return map;
+    }
+
+    @Override
+    public ImmutableMap<Var, Type> getVarTypeMap() {
+        if (varTypeMap == null) {
+            this.varTypeMap = ImmutableMap.copyOf(getVarTypeMap(
+                    Stream.concat(
+                        getAtoms(IsaAtom.class),
+                        inferEntityTypes()
+                    )
+                )
+            );
         }
-        return false;
+        return varTypeMap;
+    }
+
+    @Override
+    public ImmutableMap<Var, Type> getVarTypeMap(Answer sub) {
+        return ImmutableMap.copyOf(getVarTypeMap(
+                Stream.concat(
+                        getAtoms(IsaAtom.class),
+                        inferEntityTypes()
+                )
+                )
+        );
+    }
+
+    /**
+     * @param var variable name
+     * @return id predicate for the specified var name if any
+     */
+    @Nullable
+    public IdPredicate getIdPredicate(Var var) {
+        return getAtoms(IdPredicate.class)
+                .filter(sub -> sub.getVarName().equals(var))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * returns id transform that would convert this query to a query alpha-equivalent to the query,
+     * provided they are structurally equivalent
+     * @param query for which the transform is to be constructed
+     * @param unifier between this query and provided query
+     * @return id transform
+     */
+    public Map<Var, ConceptId> idTransform(ReasonerQueryImpl query, Unifier unifier){
+        Map<Var, ConceptId> transform = new HashMap<>();
+        this.getAtoms(IdPredicate.class)
+                .forEach(thisP -> {
+                    Collection<Var> vars = unifier.get(thisP.getVarName());
+                    Var var = !vars.isEmpty()? Iterators.getOnlyElement(vars.iterator()) : thisP.getVarName();
+                    IdPredicate p2 = query.getIdPredicate(var);
+                    if ( p2 != null) transform.put(thisP.getVarName(), p2.getPredicate());
+                });
+        return transform;
+    }
+
+    /**
+     * atom selection function
+     * @return selected atoms
+     */
+    public Set<Atom> selectAtoms() {
+        Set<Atom> atomsToSelect = getAtoms(Atom.class)
+                .filter(Atomic::isSelectable)
+                .collect(Collectors.toSet());
+        if (atomsToSelect.size() <= 2) return atomsToSelect;
+
+        Set<Atom> orderedSelection = new LinkedHashSet<>();
+
+        Atom atom = atomsToSelect.stream()
+                .filter(at -> at.getNeighbours(Atom.class).findFirst().isPresent())
+                .findFirst().orElse(null);
+        while(!atomsToSelect.isEmpty() && atom != null) {
+            orderedSelection.add(atom);
+            atomsToSelect.remove(atom);
+            atom = atom.getNeighbours(Atom.class)
+                    .filter(atomsToSelect::contains)
+                    .findFirst().orElse(null);
+        }
+        //if disjoint select at random
+        if (!atomsToSelect.isEmpty()) atomsToSelect.forEach(orderedSelection::add);
+
+        if (orderedSelection.isEmpty()) {
+            throw GraqlQueryException.noAtomsSelected(this);
+        }
+        return orderedSelection;
+    }
+
+    /**
+     * @return substitution obtained from all id predicates (including internal) in the query
+     */
+    public Answer getSubstitution(){
+        if (substitution == null) {
+            Set<Var> varNames = getVarNames();
+            Set<IdPredicate> predicates = getAtoms(IsaAtom.class)
+                    .map(IsaAtom::getTypePredicate)
+                    .filter(Objects::nonNull)
+                    .filter(p -> varNames.contains(p.getVarName()))
+                    .collect(Collectors.toSet());
+            getAtoms(IdPredicate.class).forEach(predicates::add);
+
+            HashMap<Var, Concept> answerMap = new HashMap<>();
+            predicates.forEach(p -> {
+                Concept concept = tx().getConcept(p.getPredicate());
+                if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                answerMap.put(p.getVarName(), concept);
+            });
+            substitution = new QueryAnswer(answerMap);
+        }
+        return substitution;
+    }
+
+    public Answer getRoleSubstitution(){
+        Map<Var, Concept> roleSub = new HashMap<>();
+        getAtoms(RelationshipAtom.class)
+                .flatMap(RelationshipAtom::getRolePredicates)
+                .forEach(p -> {
+                    Concept concept = tx().getConcept(p.getPredicate());
+                    if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                    roleSub.put(p.getVarName(), concept);
+                });
+        return new QueryAnswer(roleSub);
+    }
+
+    /**
+     * @return true if this query is a ground query
+     */
+    boolean isGround(){
+        return getSubstitution().vars().containsAll(getVarNames());
     }
 
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,
                                     Cache<ReasonerAtomicQuery, ?> cache,
-                                    Cache<ReasonerAtomicQuery, ?> dCache,
-                                    boolean materialise,
-                                    boolean explanation){
+                                    Cache<ReasonerAtomicQuery, ?> dCache){
         List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
         Iterator<ReasonerAtomicQuery> qit = queries.iterator();
         ReasonerAtomicQuery childAtomicQuery = qit.next();
-        Stream<Answer> join = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, explanation, false);
+        Stream<Answer> join = childAtomicQuery.answerStream(subGoals, cache, dCache, false);
         Set<Var> joinedVars = childAtomicQuery.getVarNames();
         while(qit.hasNext()){
             childAtomicQuery = qit.next();
             Set<Var> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
-            Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, explanation, false);
-            join = join(join, localSubs, ImmutableSet.copyOf(joinVars), explanation);
+            Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, false);
+            join = join(join, localSubs, ImmutableSet.copyOf(joinVars));
             joinedVars.addAll(childAtomicQuery.getVarNames());
         }
         return join;
@@ -487,9 +518,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private Stream<Answer> differentialJoin(Set<ReasonerAtomicQuery> subGoals,
                                             Cache<ReasonerAtomicQuery, ?> cache,
-                                            Cache<ReasonerAtomicQuery, ?> dCache,
-                                            boolean materialise,
-                                            boolean explanation){
+                                            Cache<ReasonerAtomicQuery, ?> dCache){
         Stream<Answer> join = Stream.empty();
         List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
         Set<ReasonerAtomicQuery> uniqueQueries = queries.stream().collect(Collectors.toSet());
@@ -497,7 +526,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         List<ReasonerAtomicQuery> queriesToJoin  = isTransitive()? Lists.newArrayList(uniqueQueries) : queries;
 
         for(ReasonerAtomicQuery qi : queriesToJoin){
-            Stream<Answer> subs = qi.answerStream(subGoals, cache, dCache, materialise, explanation, true);
+            Stream<Answer> subs = qi.answerStream(subGoals, cache, dCache, true);
             Set<Var> joinedVars = qi.getVarNames();
             for(ReasonerAtomicQuery qj : queries){
                 if ( qj != qi ){
@@ -506,8 +535,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                             subs,
                             cache.getAnswerStream(qj),
                             cache.getInverseAnswerMap(qj, joinVars),
-                            ImmutableSet.copyOf(joinVars),
-                            explanation);
+                            ImmutableSet.copyOf(joinVars));
                     joinedVars.addAll(qj.getVarNames());
                 }
             }
@@ -519,54 +547,132 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     Stream<Answer> computeJoin(Set<ReasonerAtomicQuery> subGoals,
                                Cache<ReasonerAtomicQuery, ?> cache,
                                Cache<ReasonerAtomicQuery, ?> dCache,
-                               boolean materialise,
-                               boolean explanation,
                                boolean differentialJoin) {
-        Stream<Answer> join = differentialJoin?
-                differentialJoin(subGoals, cache, dCache, materialise, explanation) :
-                fullJoin(subGoals, cache, dCache, materialise, explanation);
 
-        Set<NotEquals> filters = getFilters();
-        return join
-                .filter(a -> nonEqualsFilter(a, filters));
+        //handling neq predicates by using complement
+        Set<NeqPredicate> neqPredicates = getAtoms(NeqPredicate.class).collect(Collectors.toSet());
+        ReasonerQueryImpl positive = neqPredicates.isEmpty()? this : this.positive();
+
+        Stream<Answer> join = differentialJoin?
+                positive.differentialJoin(subGoals, cache, dCache) :
+                positive.fullJoin(subGoals, cache, dCache);
+
+        return join.filter(a -> nonEqualsFilter(a, neqPredicates));
     }
 
     @Override
-    public Stream<Answer> resolve(boolean materialise, boolean explanation) {
-        if (materialise || requiresMaterialisation()) {
-            return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
+    public Stream<Answer> resolve(boolean materialise) {
+        if (materialise) {
+            return resolveAndMaterialise(new LazyQueryCache<>(), new LazyQueryCache<>());
         } else {
-            return new QueryAnswerIterator(this).hasStream();
+            return new ResolutionIterator(this).hasStream();
         }
     }
 
     /**
-     * resolves the query
-     * @param materialise materialisation flag
+     * resolves the query and materialises answers, explanations are not provided
      * @return stream of answers
      */
-    Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
+    Stream<Answer> resolveAndMaterialise(LazyQueryCache<ReasonerAtomicQuery> cache,
+                                         LazyQueryCache<ReasonerAtomicQuery> dCache) {
 
-        Iterator<Atom> atIt = this.selectAtoms().iterator();
+        //handling neq predicates by using complement
+        Set<NeqPredicate> neqPredicates = getAtoms(NeqPredicate.class).collect(Collectors.toSet());
+        ReasonerQueryImpl positive = neqPredicates.isEmpty()? this : this.positive();
+
+        Iterator<Atom> atIt = positive.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
-        Stream<Answer> answerStream = atomicQuery.resolve(materialise, explanation, cache, dCache);
+        Stream<Answer> answerStream = atomicQuery.resolveAndMaterialise(cache, dCache);
         Set<Var> joinedVars = atomicQuery.getVarNames();
+
         while (atIt.hasNext()) {
             atomicQuery = new ReasonerAtomicQuery(atIt.next());
-            Stream<Answer> subAnswerStream = atomicQuery.resolve(materialise, explanation, cache, dCache);
+            Stream<Answer> subAnswerStream = atomicQuery.resolveAndMaterialise(cache, dCache);
             Set<Var> joinVars = Sets.intersection(joinedVars, atomicQuery.getVarNames());
-            answerStream = join(answerStream, subAnswerStream, ImmutableSet.copyOf(joinVars), explanation);
+            answerStream = join(answerStream, subAnswerStream, ImmutableSet.copyOf(joinVars));
             joinedVars.addAll(atomicQuery.getVarNames());
         }
 
-        Set<NotEquals> filters = this.getFilters();
         Set<Var> vars = this.getVarNames();
         return answerStream
-                .filter(a -> nonEqualsFilter(a, filters))
-                .map(a -> a.filterVars(vars));
+                .filter(a -> nonEqualsFilter(a, neqPredicates))
+                .map(a -> a.project(vars));
     }
 
-    public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return new ReasonerQueryImplIterator(this, sub, subGoals, cache);
+    /**
+     * @param sub partial substitution
+     * @param u unifier with parent state
+     * @param parent parent state
+     * @param subGoals set of visited sub goals
+     * @param cache query cache
+     * @return resolution subGoal formed from this query
+     */
+    public QueryState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+    }
+
+    /**
+     * @param sub partial substitution
+     * @param u unifier with parent state
+     * @param parent parent state
+     * @param subGoals set of visited sub goals
+     * @param cache query cache
+     * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
+     */
+    public Stream<QueryState> subGoals(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return getQueryStream(sub)
+                .map(q -> q.subGoal(sub, u, parent, subGoals, cache));
+    }
+
+    /**
+     * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
+     */
+    Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+        return Stream.of(this);
+    }
+
+    /**
+     * @param parent parent state
+     * @param subGoals set of visited sub goals
+     * @param cache query cache
+     * @return query state iterator (db iter + unifier + state iter) for this query
+     */
+    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Iterator<AnswerState> dbIterator;
+        Iterator<QueryStateBase> subGoalIterator;
+
+        if(!this.isRuleResolvable()) {
+            dbIterator = this.getQuery().stream()
+                    .map(ans -> ans.explain(new JoinExplanation(this, ans)))
+                    .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
+                    .iterator();
+            subGoalIterator = Collections.emptyIterator();
+        } else {
+            dbIterator = Collections.emptyIterator();
+            LinkedList<ReasonerQueryImpl> subQueries = new ResolutionPlan(this).queryPlan();
+
+            LOG.trace("CQ plan:\n" + subQueries.stream()
+                    .map(sq -> sq.toString() + (sq.isRuleResolvable()? "*" : ""))
+                    .collect(Collectors.joining("\n"))
+            );
+
+            subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
+        }
+        return new Pair<>(
+                Iterators.concat(dbIterator, subGoalIterator),
+                new MultiUnifierImpl()
+        );
+    }
+
+
+    /**
+     * reiteration might be required if rule graph contains loops with negative flux
+     * or there exists a rule which head satisfies body
+     * @return true if because of the rule graph form, the resolution of this query may require reiteration
+     */
+    public boolean requiresReiteration() {
+        Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
+        return RuleUtils.subGraphIsCyclical(dependentRules, tx())
+               || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 }

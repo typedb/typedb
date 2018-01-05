@@ -17,7 +17,7 @@
  */
 
 
-import * as API from '../util/HALTerms';
+import * as API from '../Parser/APIUtils';
 import NodeSettings from '../NodeSettings';
 
 /*
@@ -68,10 +68,9 @@ export default class Style {
      */
   getDefaultNodeColour(type, baseType) {
     let colourObject;
-        // User defined ontology & instances
+        // User defined schema & instances
     switch (baseType) {
-      case API.GENERATED_RELATION_TYPE:
-      case API.INFERRED_RELATION_TYPE:
+      case API.INFERRED_RELATIONSHIP_TYPE:
         colourObject = {
           background: '#20a194',
           highlight: {
@@ -80,8 +79,8 @@ export default class Style {
         };
         break;
       case API.ROLE_TYPE:
-      case API.RELATION_TYPE:
-      case API.RELATION:
+      case API.RELATIONSHIP_TYPE:
+      case API.RELATIONSHIP:
         colourObject = {
           background: '#20a194',
           highlight: {
@@ -89,8 +88,8 @@ export default class Style {
           },
         };
         break;
-      case API.RESOURCE_TYPE:
-      case API.RESOURCE:
+      case API.ATTRIBUTE_TYPE:
+      case API.ATTRIBUTE:
         colourObject = {
           background: '#1d65cb',
           highlight: {
@@ -122,9 +121,8 @@ export default class Style {
   getNodeShape(baseType) {
     let shape;
     switch (baseType) {
-      case API.RELATION:
-      case API.GENERATED_RELATION_TYPE:
-      case API.INFERRED_RELATION_TYPE:
+      case API.RELATIONSHIP:
+      case API.INFERRED_RELATIONSHIP_TYPE:
       case API.ROLE_TYPE:
         shape = 'dot';
         break;
@@ -137,9 +135,8 @@ export default class Style {
   getNodeSize(baseType) {
     let size;
     switch (baseType) {
-      case API.RELATION:
-      case API.GENERATED_RELATION_TYPE:
-      case API.INFERRED_RELATION_TYPE:
+      case API.RELATIONSHIP:
+      case API.INFERRED_RELATIONSHIP_TYPE:
         size = 8;
         break;
       case API.ROLE_TYPE:

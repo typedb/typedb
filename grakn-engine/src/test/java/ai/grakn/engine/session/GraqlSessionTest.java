@@ -19,10 +19,11 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.analytics.CountQuery;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -45,17 +46,19 @@ public class GraqlSessionTest {
         Session jettySesssion = mock(Session.class, RETURNS_DEEP_STUBS);
 
         GraknSession factory = mock(GraknSession.class);
-        GraknGraph graph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        GraknTx graph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
         QueryBuilder qb = mock(QueryBuilder.class);
+        QueryParser parser = mock(QueryParser.class);
         CountQuery count = mock(CountQuery.class);
 
         when(factory.open(GraknTxType.WRITE)).thenReturn(graph);
         when(graph.graql()).thenReturn(qb);
         when(qb.infer(false)).thenReturn(qb);
         when(qb.materialise(false)).thenReturn(qb);
-        when(qb.parseList("compute count;")).thenReturn(Stream.of(count));
+        when(qb.parser()).thenReturn(parser);
+        when(parser.parseList("compute count;")).thenReturn(Stream.of(count));
 
-        GraqlSession session = new GraqlSession(jettySesssion, factory, "json", false, false, false);
+        GraqlSession session = new GraqlSession(jettySesssion, factory, "json", false);
         session.receiveQuery(Json.object(QUERY, "compute count;"));
         session.executeQuery().get();
 

@@ -18,9 +18,12 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Instance;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -28,11 +31,12 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.ErrorMessage;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -40,92 +44,114 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * Represents the {@code isa} property on a {@link Instance}.
+ * Represents the {@code isa} property on a {@link Thing}.
  *
  * This property can be queried and inserted.
  *
- * THe property is defined as a relationship between an {@link Instance} and a {@link Type}.
+ * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
  *
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
  * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
  *
  * @author Felix Chapman
  */
-public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+@AutoValue
+public abstract class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
-    private final VarPatternAdmin type;
+    public static final String NAME = "isa";
 
-    public IsaProperty(VarPatternAdmin type) {
-        this.type = type;
+    public static IsaProperty of(VarPatternAdmin type) {
+        return new AutoValue_IsaProperty(Graql.var(), type);
     }
 
-    public VarPatternAdmin getType() {
-        return type;
-    }
+    public abstract Var directType();
+
+    public abstract VarPatternAdmin type();
 
     @Override
     public String getName() {
-        return "isa";
+        return NAME;
     }
 
     @Override
     public String getProperty() {
-        return type.getPrintableName();
+        return type().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.isa(start, type.getVarName()));
+        return ImmutableSet.of(
+                EquivalentFragmentSets.isa(this, start, directType(), true),
+                EquivalentFragmentSets.sub(this, directType(), type().var())
+        );
     }
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(type);
+        return Stream.of(type());
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(type);
+    public Stream<VarPatternAdmin> innerVarPatterns() {
+        return Stream.of(type());
     }
 
     @Override
-    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
-        type.getTypeLabel().ifPresent(typeLabel -> {
-            Type theType = graph.getType(typeLabel);
-            if (theType != null && theType.isRoleType()) {
-                throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(typeLabel));
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Type type = executor.get(this.type().var()).asType();
+            executor.builder(var).isa(type);
+        };
+
+        return PropertyExecutor.builder(method).requires(type().var()).produces(var).build();
+    }
+
+    @Override
+    public void checkValidProperty(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
+        type().getTypeLabel().ifPresent(typeLabel -> {
+            SchemaConcept theSchemaConcept = graph.getSchemaConcept(typeLabel);
+            if (theSchemaConcept != null && !theSchemaConcept.isType()) {
+                throw GraqlQueryException.cannotGetInstancesOfNonType(typeLabel);
             }
         });
     }
 
+    @Nullable
+    @Override
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+        //IsaProperty is unique within a var, so skip if this is a relation
+        if (var.hasProperty(RelationshipProperty.class)) return null;
+
+        Var varName = var.var().asUserDefined();
+        VarPatternAdmin typePattern = this.type();
+        Var typeVariable = typePattern.var();
+
+        IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
+
+        //isa part
+        VarPatternAdmin isaVar = varName.isa(typeVariable).admin();
+        return new IsaAtom(isaVar, typeVariable, predicate, parent);
+    }
+
+    // TODO: These are overridden so we ignore `directType`, which ideally shouldn't be necessary
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        IsaProperty that = (IsaProperty) o;
-
-        return type.equals(that.type);
-
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IsaProperty) {
+            IsaProperty that = (IsaProperty) o;
+            return this.type().equals(that.type());
+        }
+        return false;
     }
 
     @Override
     public int hashCode() {
-        return type.hashCode();
+        int h = 1;
+        h *= 1000003;
+        h ^= this.type().hashCode();
+        return h;
     }
 
-    @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        //IsaProperty is unique within a var, so skip if this is a relation
-        if (var.hasProperty(RelationProperty.class)) return null;
-
-        Var varName = var.getVarName().asUserDefined();
-        VarPatternAdmin typeVar = this.getType();
-        Var typeVariable = typeVar.getVarName().asUserDefined();
-        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
-
-        //isa part
-        VarPatternAdmin resVar = varName.isa(typeVariable).admin();
-        return new TypeAtom(resVar, predicate, parent);
-    }
 }

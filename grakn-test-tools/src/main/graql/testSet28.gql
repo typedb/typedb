@@ -1,0 +1,63 @@
+define
+
+#Roles
+
+role1 sub role;
+role2 sub role;
+role3 sub role;
+role4 sub role;
+
+#Entities
+
+entity1 sub entity
+    plays role1
+    plays role2
+    plays role3
+    plays role4;
+
+relation1 sub relationship
+    relates role1
+    relates role2;
+
+relation2 sub relationship
+    relates role1
+    relates role2;
+
+relation3 sub relationship
+    relates role3
+    relates role4;
+
+res1 sub attribute datatype string;
+res2 sub attribute datatype string;
+
+#Rules
+
+dummyRule sub rule
+    when {
+        (role3: $x, role4: $y) isa relation3;
+        (role3: $y, role4: $z) isa relation3;
+    }
+    then {
+        (role3: $x, role4: $z) isa relation3;
+    };
+
+insert
+
+#Data
+
+$x1 isa entity1;
+$x2a isa entity1;
+$x2b isa entity1;
+$x2c isa entity1;
+$x3 isa entity1;
+$x4 isa entity1;
+
+(role1:$x1, role2: $x2a) isa relation1;
+(role1:$x1, role2: $x2b) isa relation1;
+(role1:$x1, role2: $x2c) isa relation1;
+
+(role1:$x2a, role2: $x3) isa relation2;
+(role1:$x2b, role2: $x3) isa relation2;
+(role1:$x2c, role2: $x3) isa relation2;
+
+(role3:$x3, role4: $x4) isa relation3;

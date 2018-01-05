@@ -1,0 +1,56 @@
+#!/bin/bash
+
+#
+# Grakn - A Distributed Semantic Database
+# Copyright (C) 2016  Grakn Labs Limited
+#
+# Grakn is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Grakn is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# <http://www.gnu.org/licenses/gpl.txt>.
+
+# Grakn global variables
+if [ -z "${GRAKN_HOME}" ]; then
+    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
+fi
+
+# ================================================
+# common helper functions
+# ================================================
+update_classpath_global_var() {
+  # Define CLASSPATH, exclude slf4j as we use logback
+  for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
+      if [[ $jar != *slf4j-log4j12* ]] ; then
+          CLASSPATH="$CLASSPATH":"$jar"
+      fi
+  done
+
+  # Add path containing grakn.properties and logback.xml
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
+}
+
+# =============================================
+# main routine
+# =============================================
+
+
+pushd "$GRAKN_HOME" > /dev/null
+
+update_classpath_global_var
+
+
+GRAKN_CONFIG="conf/grakn.properties"
+
+java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.dist.DistGrakn $@
+
+popd > /dev/null

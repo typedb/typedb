@@ -19,17 +19,20 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.util.ANSI;
-import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.util.CommonUtil;
+import ai.grakn.util.StringUtil;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -37,19 +40,18 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
-import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 
 /**
  * Default printer that prints results in Graql syntax
  */
 class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
-    private final ResourceType[] resourceTypes;
+    private final AttributeType[] attributeTypes;
     private final boolean colorize;
 
-    GraqlPrinter(boolean colorize, ResourceType... resourceTypes) {
+    GraqlPrinter(boolean colorize, AttributeType... attributeTypes) {
         this.colorize = colorize;
-        this.resourceTypes = resourceTypes;
+        this.attributeTypes = attributeTypes;
     }
 
     @Override
@@ -61,28 +63,28 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Concept concept) {
         return sb -> {
             // Display values for resources and ids for everything else
-            if (concept.isResource()) {
-                sb.append(colorKeyword("val ")).append(valueToString(concept.asResource().getValue()));
-            } else if (concept.isType()) {
-                Type type = concept.asType();
-                sb.append(colorKeyword("label ")).append(colorType(type));
+            if (concept.isAttribute()) {
+                sb.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asAttribute().getValue()));
+            } else if (concept.isSchemaConcept()) {
+                SchemaConcept ontoConcept = concept.asSchemaConcept();
+                sb.append(colorKeyword("label ")).append(colorType(ontoConcept));
 
-                Type superType = type.superType();
+                SchemaConcept superConcept = ontoConcept.sup();
 
-                if (superType != null) {
-                    sb.append(colorKeyword(" sub ")).append(colorType(superType));
+                if (superConcept != null) {
+                    sb.append(colorKeyword(" sub ")).append(colorType(superConcept));
                 }
             } else {
                 sb.append(colorKeyword("id ")).append(idToString(concept.getId()));
             }
 
-            if (concept.isRelation()) {
-                String relationString = concept.asRelation().allRolePlayers().entrySet().stream().flatMap(entry -> {
-                    RoleType roleType = entry.getKey();
-                    Set<Instance> instances = entry.getValue();
+            if (concept.isRelationship()) {
+                String relationString = concept.asRelationship().allRolePlayers().entrySet().stream().flatMap(entry -> {
+                    Role role = entry.getKey();
+                    Set<Thing> things = entry.getValue();
 
-                    return instances.stream().map(instance ->
-                        Optional.of(colorType(roleType) + ": id " + idToString(instance.getId()))
+                    return things.stream().map(instance ->
+                        Optional.of(colorType(role) + ": id " + idToString(instance.getId()))
                     );
                 }).flatMap(CommonUtil::optionalToStream).collect(Collectors.joining(", "));
 
@@ -90,22 +92,22 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             }
 
             // Display type of each instance
-            if (concept.isInstance()) {
-                Type type = concept.asInstance().type();
+            if (concept.isThing()) {
+                Type type = concept.asThing().type();
                 sb.append(colorKeyword(" isa ")).append(colorType(type));
             }
 
-            // Display lhs and rhs for rules
+            // Display when and then for rules
             if (concept.isRule()) {
-                sb.append(colorKeyword(" lhs ")).append("{ ").append(concept.asRule().getLHS()).append(" }");
-                sb.append(colorKeyword(" rhs ")).append("{ ").append(concept.asRule().getRHS()).append(" }");
+                sb.append(colorKeyword(" when ")).append("{ ").append(concept.asRule().getWhen()).append(" }");
+                sb.append(colorKeyword(" then ")).append("{ ").append(concept.asRule().getThen()).append(" }");
             }
 
             // Display any requested resources
-            if (concept.isInstance() && resourceTypes.length > 0) {
-                concept.asInstance().resources(resourceTypes).forEach(resource -> {
+            if (concept.isThing() && attributeTypes.length > 0) {
+                concept.asThing().attributes(attributeTypes).forEach(resource -> {
                     String resourceType = colorType(resource.type());
-                    String value = valueToString(resource.getValue());
+                    String value = StringUtil.valueToString(resource.getValue());
                     sb.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);
                 });
             }
@@ -175,7 +177,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     .andThen(sb -> sb.append(": "))
                     .andThen(graqlString(true, entry.getValue()));
         } else {
-            return sb -> sb.append(object.toString());
+            return sb -> sb.append(Objects.toString(object));
         }
     }
 
@@ -195,14 +197,14 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
     /**
      * Color-codes the given type if colorization enabled
-     * @param type a type to color-code using ANSI colors
+     * @param schemaConcept a type to color-code using ANSI colors
      * @return the type, color-coded
      */
-    private String colorType(Type type) {
+    private String colorType(SchemaConcept schemaConcept) {
         if(colorize) {
-            return ANSI.color(typeLabelToString(type.getLabel()), ANSI.PURPLE);
+            return ANSI.color(typeLabelToString(schemaConcept.getLabel()), ANSI.PURPLE);
         } else {
-            return typeLabelToString(type.getLabel());
+            return typeLabelToString(schemaConcept.getLabel());
         }
     }
 }

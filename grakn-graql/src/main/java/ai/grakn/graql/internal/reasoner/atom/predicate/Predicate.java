@@ -17,9 +17,13 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
+import ai.grakn.graql.VarPattern;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Sets;
+import java.util.Set;
 
 /**
  *
@@ -36,24 +40,15 @@ public abstract class Predicate<T> extends AtomicBase {
 
     private final T predicate;
 
-    Predicate(VarPatternAdmin pattern, ReasonerQuery par) {
+    Predicate(VarPattern pattern, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = extractPredicate(pattern);
     }
 
     Predicate(Predicate pred) {
         super(pred);
-        this.predicate = extractPredicate(pred.getPattern().asVar());
+        this.predicate = extractPredicate(pred.getPattern());
     }
-
-    /**
-     * @return true if the atom corresponds to a unifier (id atom)
-     * */
-    public boolean isIdPredicate(){ return false;}
-    /**
-     * @return true if the atom corresponds to a value atom
-     * */
-    public boolean isValuePredicate(){ return false;}
 
     @Override
     public boolean equals(Object obj) {
@@ -73,7 +68,12 @@ public abstract class Predicate<T> extends AtomicBase {
     }
 
     @Override
-    public boolean isEquivalent(Object obj){
+    public Set<String> validateAsRuleHead(Rule rule) {
+        return Sets.newHashSet(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getThen(), rule.getLabel()));
+    }
+    
+    @Override
+    public boolean isAlphaEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Predicate a2 = (Predicate) obj;
@@ -81,10 +81,20 @@ public abstract class Predicate<T> extends AtomicBase {
     }
 
     @Override
-    public int equivalenceHashCode() {
+    public int alphaEquivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.getPredicateValue().hashCode();
         return hashCode;
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        return isAlphaEquivalent(obj);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
     }
 
     @Override
@@ -95,5 +105,5 @@ public abstract class Predicate<T> extends AtomicBase {
 
     public T getPredicate(){ return predicate;}
     public abstract String getPredicateValue();
-    protected abstract T extractPredicate(VarPatternAdmin pattern);
+    protected abstract T extractPredicate(VarPattern pattern);
 }
