@@ -20,7 +20,7 @@ To install it, simply run:
 $ pip install grakn
 ```
 
-You will also need access to a Grakn database. Head [here](../documentation/get-started/setup-guide.html) to see how to
+You will also need access to a Grakn database. Head [here](../get-started/setup-guide.html) to see how to
 set up a Grakn database.
 
 ## Quickstart
