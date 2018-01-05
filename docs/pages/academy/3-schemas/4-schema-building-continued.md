@@ -110,7 +110,28 @@ define
 "distance-from-coast" sub attribute datatype long;
 ```
 
-Congratulations! You have built your first working GRAKN schema! Of course, this is just a starting point and when you start putting data into your knowledge base you will realise that you need to extend the schema (for example you might want to allow companies to have names), but the one you have built is valid and working and could be loaded into GRAKN as is (you will learn how in the next module of the Academy).
+Congratulations! You have built your first working GRAKN schema! Of course, this is just a starting point and when you start putting data into your knowledge base you will realise that you need to extend the schema (for example you might want to allow companies to have names), but the one you have built is valid and working and could be loaded into GRAKN as is (you will learn how in the next module of the Academy). There is one more topic you need to learn about before going on to the module review. Let's have a look at how we can modify a Grakn schema.
+
+
+## Changing the schema
+One of the best features of Grakn schemas is the fact that they are flexible. At any point in time you can add types, attribute to types roles and so on.
+
+But what about deleting a type? Well, that is a bit more delicate. Imagine you have stored information about a thousand dogs in your knowledge base and suddently you delete the type `dog`. What would happen to all those puppies? You wouldn't want to destroy them, would you. For this reason, in order to remove a type you first have to delete all of its instances.
+
+Once you have done that, you are free to modify your schema as you see fit. In order to undo something that is defined in your schema, you need to use the keyword `undefine`. Do you want to remove the type `dog`?
+
+```graql
+undefine dog sub entity;
+```
+
+Do you want to remove the connection between a cat and its nickname (because for some reason you still want cats, but you do not want to them to have nicknames)?
+
+```graql
+undefine cat has nickname;
+```
+
+And so on and so forth. Notice that in the first example, you do not simply `undefine dog`, because you need to specify _what_ about the dog you want to undefine. Notice as well that in the second example the query is only affecting the connection between `cat` and `nickname`, but it's not deleting either type. Basically `undefine` is the exact opposite of `define` (as one would expect): if you can create it with `define`, you can remove it with `undefine`.
+
 
 ## What next?
 First of all, proceed to [next lesson](./schema-review.html) to review the schema building process and to check that you remember what you have learned so far about GRAKN schemas; after that it will be time to load data and our knowledge base will start to look more and more like the one you have seen at the beginning of the Academy when you were still learning about the GRAQL basics.
