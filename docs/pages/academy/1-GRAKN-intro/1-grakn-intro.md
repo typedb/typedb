@@ -57,7 +57,7 @@ During the course of the Academy lessons, you will build step by step a fully fu
 At the end of the Academy, you will be able to take full advantage of the GRAKN software stack for your intelligent applications and you will be ready to start developing with it.
 
 ### What have you learned?
-In this section you will find questions and exercises that you should be able to solve after reading each of the guides that make up the GRAKN academy. They are used to make sure that you have understood the topics covered. The more technical the guides become, the more you will find exercises sprinkled along the text.
+In this section you will find questions and exercises that you should be able to solve after reading each of the guides that make up the Grakn Academy. They are used to make sure that you have understood the topics covered. The more technical the guides become, the more you will find exercises sprinkled along the text.
 
 For this lesson, the exercises are quite free-form, so feel free to answer them as you see fit:
 
