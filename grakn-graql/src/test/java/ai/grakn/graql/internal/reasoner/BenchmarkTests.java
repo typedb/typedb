@@ -18,13 +18,20 @@
 
 package ai.grakn.graql.internal.reasoner;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.kbs.RandomLinearTransitivityKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.test.kbs.DiagonalKB;
@@ -33,7 +40,6 @@ import ai.grakn.test.kbs.PathKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -51,32 +57,83 @@ public class BenchmarkTests {
     private static final Logger LOG = LoggerFactory.getLogger(BenchmarkTests.class);
 
     /**
-     * 2-rule transitive test with transitivity expressed in terms of two linear rules.
-     * Data arranged randomly with N number of db relation instances.
+     * Executes a scalability test defined in terms of number of rules in the system. Creates a simple rule chain:
+     *
+     * R_i(x, y) := R_{i-1}(x, y);     i e [1, N]
+     *
+     * with a single initial relation instance R_0(a ,b)
+     *
      */
     @Test
-    public void testRandomSetLinearTransitivity()  {
+    public void nonRecursiveChainOfRules() {
         final int N = 200;
-        final int limit = 100;
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
-        SampleKBContext kb = RandomLinearTransitivityKB.context(N);
 
-        ConceptId entityId = kb.tx().getEntityType("a-entity").instances().findFirst().get().getId();
-        String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
-        String subbedQueryString = "match (P-from: $x, P-to: $y) isa P;" +
-                "$x id '" + entityId.getValue() + "';" +
-                "get;";
-        String subbedQueryString2 = "match (P-from: $x, P-to: $y) isa P;" +
-                "$y id '" + entityId.getValue() + "';" +
-                "get;";
-        String limitedQueryString = "match (P-from: $x, P-to: $y) isa P;" +
-                "limit " + limit + ";" +
-                "get;";
+        GraknSession graknSession = sessionContext.newSession();
 
-        executeQuery(queryString, kb.tx(), "full");
-        executeQuery(subbedQueryString, kb.tx(), "first argument bound");
-        executeQuery(subbedQueryString2, kb.tx(), "second argument bound");
-        executeQuery(limitedQueryString, kb.tx(), "limit " + limit);
+        //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
+        try(GraknTx tx = graknSession.open(GraknTxType.WRITE)) {
+            Role fromRole = tx.putRole("fromRole");
+            Role toRole = tx.putRole("toRole");
+
+            RelationshipType relation0 = tx.putRelationshipType("relation0")
+                    .relates(fromRole)
+                    .relates(toRole);
+
+            for (int i = 1; i <= N; i++) {
+                tx.putRelationshipType("relation" + i)
+                        .relates(fromRole)
+                        .relates(toRole);
+            }
+            EntityType genericEntity = tx.putEntityType("genericEntity")
+                    .plays(fromRole)
+                    .plays(toRole);
+
+            Entity fromEntity = genericEntity.addEntity();
+            Entity toEntity = genericEntity.addEntity();
+
+            relation0.addRelationship()
+                    .addRolePlayer(fromRole, fromEntity)
+                    .addRolePlayer(toRole, toEntity);
+
+            for (int i = 1; i <= N; i++) {
+                Var fromVar = Graql.var().asUserDefined();
+                Var toVar = Graql.var().asUserDefined();
+                VarPattern rulePattern = Graql
+                        .label("rule" + i)
+                        .sub("rule")
+                        .when(
+                                Graql.and(
+                                        Graql.var()
+                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
+                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .isa("relation" + (i - 1))
+                                )
+                        )
+                        .then(
+                                Graql.and(
+                                        Graql.var()
+                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
+                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .isa("relation" + i)
+                                )
+                        );
+                tx.graql().define(rulePattern).execute();
+            }
+            tx.commit();
+        }
+
+        try( GraknTx tx = graknSession.open(GraknTxType.READ)) {
+            String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
+            String queryString = "match " + queryPattern + " get;";
+            String limitedQueryString = "match " +
+                    queryPattern +
+                    "limit 1;" +
+                    "get;";
+
+            assertEquals(executeQuery(queryString, tx, "full").size(), 1);
+            assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), 1);
+        }
     }
 
     /**
