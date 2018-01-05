@@ -116,21 +116,21 @@ Congratulations! You have built your first working GRAKN schema! Of course, this
 ## Changing the schema
 One of the best features of Grakn schemas is the fact that they are flexible. At any point in time you can add types, attribute to types roles and so on.
 
-But what about deleting a type? Well, that is a bit more delicate. Imagine you have stored information about a thousand dogs in your knowledge base and suddently you delete the type `dog`. What would happen to all those puppies? You wouldn't want to destroy them, would you. For this reason, in order to remove a type you first have to delete all of its instances.
+But what about deleting a type? Well, that is a bit more delicate. Imagine you have stored information about a thousand articles in your knowledge base and suddently you delete the type `article`. What would happen to all those articles? You wouldn't want to destroy them, would you. For this reason, in order to remove a type you first have to delete all of its instances.
 
-Once you have done that, you are free to modify your schema as you see fit. In order to undo something that is defined in your schema, you need to use the keyword `undefine`. Do you want to remove the type `dog`?
-
-```graql
-undefine dog sub entity;
-```
-
-Do you want to remove the connection between a cat and its nickname (because for some reason you still want cats, but you do not want to them to have nicknames)?
+Once you have done that, you are free to modify your schema as you see fit. In order to undo something that is defined in your schema, you need to use the keyword `undefine`. Do you want to remove the type `article`?
 
 ```graql
-undefine cat has nickname;
+undefine article sub entity;
 ```
 
-And so on and so forth. Notice that in the first example, you do not simply `undefine dog`, because you need to specify _what_ about the dog you want to undefine. Notice as well that in the second example the query is only affecting the connection between `cat` and `nickname`, but it's not deleting either type. Basically `undefine` is the exact opposite of `define` (as one would expect): if you can create it with `define`, you can remove it with `undefine`.
+Do you want to remove the connection between a country and its name (because for some reason you still want countries, but you do not want to them to have names)?
+
+```graql
+undefine country has name;
+```
+
+And so on and so forth. Notice that in the first example, you do not simply `undefine article`, because you need to specify _what_ about the article you want to undefine. Notice as well that in the second example the query is only affecting the connection between `country` and `name`, but it's not deleting either type. Basically `undefine` is the exact opposite of `define` (as one would expect): if you can create it with `define`, you can remove it with `undefine`.
 
 
 ## What next?
