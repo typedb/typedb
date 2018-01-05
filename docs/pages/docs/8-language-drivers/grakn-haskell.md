@@ -64,7 +64,7 @@ y = var "y"
 We can translate the following query into Haskell:
 
 ```graql
-match $x isa person, (husband: $x, wife: $y) isa marriage; get $y;
+match $x isa person; (husband: $x, wife: $y) isa marriage; get $y;
 ```
 
 ```haskell
