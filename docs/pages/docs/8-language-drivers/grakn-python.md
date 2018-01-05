@@ -53,6 +53,12 @@ You can write to the knowledge base:
 Or read from it:
 
 ```python
->>> resp = client.execute('match $bob isa person, has name $name; get $name;')
+>>> client.execute('match $bob isa person, has name $name; get $name;')
 [{'name': {'type': {'label': 'name', '@id': '/kb/mykb/type/name'}, 'value': 'Bob', 'id': ...}}]
+```
+
+You can also configure inference or support for multiple queries:
+
+```python
+>>> resp = client.execute('match $x isa person; get; match ($y, $z) isa marriage; get;', infer=False, multi=True)
 ```
