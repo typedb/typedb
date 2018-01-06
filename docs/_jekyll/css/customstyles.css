@@ -1178,7 +1178,7 @@ h4.panel-title {
 pre {
     color: #46cc90;
     background: #2f3543;
-    padding: 25px 30px;
+    padding: 15px 25px;
     border-radius: 6px;
 }
 
@@ -1277,17 +1277,10 @@ pre {
 
 /* Custom Styles */
 body {
-    background: linear-gradient(to right, #f3f4fa 0%, #f3f4fa 50%,#f3f4fa 50%,white 50%,white 100%); /* W3C */
-    background-color: transparent;
+    background-color: #f3f4fa;
     color: #8c8d92 !important;
 }
 
-@media screen and (max-width: 990px) {
-    body {
-        background: none;
-        background-color: #f3f4fa;
-    }
-}
 
 img, video {
     border-radius: 6px;
@@ -1353,7 +1346,7 @@ img, video {
     color: #4f5157;
     font-size: 16px;
     color: #4f5157;
-    line-height: 1.53;
+    line-height: 20px;
 }
 
 #mysidebar > li > ul > .active > a:before {
@@ -1410,13 +1403,11 @@ table > tbody > tr:nth-of-type(even) {
 }
 
 #profileTabs {
-    display: flex;
-    flex-direction: row;
+    display: block;
 }
 
 #profileTabs > li {
-    flex-basis: 0;
-    flex-grow: 1;
+    width: 50%;
     height: 50px;
 }
 
@@ -1444,6 +1435,10 @@ table > tbody > tr:nth-of-type(even) {
     border-radius: 0 5px 0 0;
 }
 
+.nav-tabs--intro > li {
+    width: 25% !important;
+}
+
 .nav-tabs--intro > li > a  {
 	background-color: #d4d1e8 !important;
     border: solid 1px #e6e8f4 !important;
@@ -1454,4 +1449,5 @@ table > tbody > tr:nth-of-type(even) {
     background-color: #f6f5fb;
     border: solid 1px #e6e8f4;
     padding: 30px 50px !important;
+    border-radius: 0 0 6px 6px;
 }
