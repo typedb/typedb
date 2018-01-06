@@ -54,7 +54,3 @@ hadoop
 parameters_bi.log
 parameters_interactive.log
 social_network
-
-# Rake documentation stuff
-docs/_jekyll/_site
-docs/_site
