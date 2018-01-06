@@ -21,13 +21,13 @@ toc: false
 
   <div role="tabpanel" class="tab-pane active" id="getstarted">
     <h2>Get Started</h2>
-    <p>Check out our guide to <b><a href="./docs/get-started/setup-guide">download and set up Grakn</a></b>.</p>
-    <p>When you're set up, there's an <a href="./docs/get-started/quickstart-tutorial">introductory tutorial</a> to show the basics of Graql and how to use the Java API.</p>
+    <p>Check out our guide to <b><a href="./get-started/setup-guide">download and set up Grakn</a></b>.</p>
+    <p>When you're set up, there's an <a href="./get-started/quickstart-tutorial">introductory tutorial</a> to show the basics of Graql and how to use the Java API.</p>
   </div>
 
   <div role="tabpanel" class="tab-pane" id="contribute">
     <h2>Contribute</h2>
-    <p>We have a set of pages about <a href="./contributors/index.html">Contributing to GRAKN.AI</a>.</p>
+    <p>We have a set of pages about <a href="../contributors/index.html">Contributing to GRAKN.AI</a>.</p>
   </div>
 
   <div role="tabpanel" class="tab-pane" id="apireference">
@@ -35,8 +35,8 @@ toc: false
     <a href="https://javadoc.io/doc/ai.grakn/grakn"><img src="https://javadoc.io/badge/ai.grakn/grakn.svg" alt="Javadocs"></a>
 
     <br /> <br />
-    <p>The API reference is also available in the Grakn distribution that you can download from <a href="./docs/get-started/setup-guide">here</a>, in the <code>docs</code> directory.</p>
-      <p>Additional API reference documents can be found <a href="./docs/api-references/rest-api">here</a>. </p>
+    <p>The API reference is also available in the Grakn distribution that you can download from <a href="./get-started/setup-guide">here</a>, in the <code>docs</code> directory.</p>
+      <p>Additional API reference documents can be found <a href="./api-references/rest-api">here</a>. </p>
   </div>
 
   <div role="tabpanel" class="tab-pane" id="gethelp">
