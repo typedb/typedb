@@ -277,7 +277,7 @@
 /*  */
 
 div#toc > ul > li {
-    list-style: disc;
+    list-style-image: url('/images/list-oval.svg');
 }
 
 div#toc li > ul {
@@ -831,7 +831,7 @@ a.dropdown-toggle,
     color: #f75e62;
     padding: 10px 20px;
     border-radius: 5px;
-    width: 200px;
+    width: 220px;
     border: 1px solid #f75e62;
     display: block;
     text-align: center;
@@ -843,4 +843,26 @@ a.dropdown-toggle,
     color: #f75e62;
     font-size: 16px;
     padding-left: 10px;
+}
+
+blockquote {
+    border-left: 3px solid #796de3;
+}
+
+blockquote p {
+    font-style: italic;
+    line-height: 1.8;
+    font-size: 16px;
+}
+
+.alert > i {
+    font-size: 18px;
+}
+
+.alert-info > i {
+    color: #21b5fb;
+}
+
+.alert-danger > i {
+    color: #f75e62;
 }

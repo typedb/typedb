@@ -272,7 +272,6 @@ div#toc ul li {
 div#toc ul {
     padding: 5px;
     border-radius: 5px;
-    max-width: 300px;
     color: gray;
 }
 
@@ -1178,7 +1177,7 @@ h4.panel-title {
 pre {
     color: #46cc90;
     background: #2f3543;
-    padding: 15px 25px;
+    padding: 20px 30px;
     border-radius: 6px;
 }
 
@@ -1284,6 +1283,7 @@ body {
 
 img, video {
     border-radius: 6px;
+    max-width: 100% !important;
 }
 
 .col-content {
@@ -1450,4 +1450,8 @@ table > tbody > tr:nth-of-type(even) {
     border: solid 1px #e6e8f4;
     padding: 30px 50px !important;
     border-radius: 0 0 6px 6px;
+}
+
+.alert > i {
+    padding-right: 6px;
 }
