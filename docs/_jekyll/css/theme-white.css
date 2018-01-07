@@ -757,68 +757,6 @@ a.dropdown-toggle,
 
 }
 
-/*  */
-
-.footer {
-    text-align: left;
-    font-family: 'Titillium';
-    letter-spacing: 0.2px;
-    font-size: 110%;
-}
-
-.footer ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.footer p,
-.footer a {
-    font-weight: 400;
-}
-
-.footer a {
-    color: #6b6b6b;
-    text-decoration: underline;
-}
-
-.footer li a,
-.footer a.gitter,
-.footer a.slack,
-.footer a.github {
-    text-decoration: none;
-}
-
-.footer a:hover {
-    text-decoration: none;
-}
-
-.footer a:after {
-    display: none;
-}
-
-.footer p svg {
-    fill: #6b6b6b;
-    width: 16px;
-    height: 16px;
-    position: relative;
-    top: -1px;
-    vertical-align: middle;
-    display: inline-block;
-    margin-right: 0.1em;
-}
-
-.footer .footer-header {
-    font-size: 110%;
-    display: block;
-    font-weight: 400;
-    margin-bottom: 0.7em;
-}
-
-.footer a.gitter {
-    display: inline-block;
-    margin-bottom: 0.25em;
-}
 
 #download-btn {
     margin: 20px 0;

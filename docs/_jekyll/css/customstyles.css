@@ -1455,3 +1455,279 @@ table > tbody > tr:nth-of-type(even) {
 .alert > i {
     padding-right: 6px;
 }
+
+.footer {
+    background-color: #f3f4fa;
+    margin: 50px -50px -50px -50px;
+  }
+  .footer__container {
+    padding-top: 30px;
+    padding-bottom: 40px;
+    text-align: center;
+    width: 100%;
+    margin: 0 auto;
+  }
+  @media screen and (max-width: 768px) {
+    .footer__container {
+      width: 80%;
+    }
+  }
+  .footer .footer__container:nth-child(1) {
+    padding-top: 50px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .footer__social {
+    text-align: left;
+  }
+  .footer__social__buttons {
+    display: inline-block;
+    vertical-align: middle;
+    padding-bottom: 0;
+    text-align: left;
+  }
+  @media screen and (max-width: 768px) {
+    .footer__social__buttons {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding-bottom: 1rem;
+    }
+  }
+  .footer__social__buttons > a {
+    display: inline-block;
+    position: relative;
+    width: 44px;
+    height: 44px;
+    background-color: white;
+    text-align: center;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    border: 1px solid #c9c9cb;
+    color: #4a4c52;
+    margin-right: 0.5rem;
+  }
+  .footer__social__buttons > a:after {
+      content: '';
+  }
+
+  .footer__social__buttons > a > i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+  }
+
+  .footer__social__buttons > a > .fa-twitter {
+    color: #00B6F1;
+  }
+  .footer__social__buttons > a > .fa-facebook-f {
+    color: #3B5998;
+  }
+  .footer__social__buttons > a > .fa-linkedin {
+    color: #007BB6;
+  }
+  .footer__social__signup {
+    display: inline-block;
+    position: relative;
+    width: auto;
+    vertical-align: middle;
+    float: right;
+    border: 1px solid #c9c9cb;
+    border-radius: 6px;
+    overflow-y: hidden;
+  }
+  @media screen and (max-width: 768px) {
+    .footer__social__signup {
+      display: block;
+      margin: 0 auto;
+      float: none;
+      width: 100%;
+    }
+  }
+  .footer__social__signup > * {
+    display: inline-block;
+    vertical-align: top;
+    appearance: none;
+    border: none;
+    outline: none;
+  }
+  .footer__social__signup > input {
+    height: 47px;
+    width: 200px;
+    font-size: 12px;
+    color: #8c8f92;
+    padding: 0 14px;
+    border-radius: 6px;
+    padding-bottom: 2px;
+  }
+  @media screen and (max-width: 768px) {
+    .footer__social__signup > input {
+      width: calc(100% - 102px);
+    }
+  }
+  .footer__social__signup > button {
+    height: 47px;
+    font-size: 12px;
+    width: 102px;
+    border-radius: 0 5px 5px 0;
+    float: right;
+    cursor: pointer;
+  }
+  .footer__block {
+    display: inline-block;
+    width: 15%;
+    vertical-align: top;
+    text-align: left;
+  }
+  .footer__block__header {
+    font-size: 14px;
+    color: #4a4c52;
+    padding-bottom: 1rem;
+    font-weight: 600;
+  }
+  .footer__block__links > a {
+    font-size: 14px;
+    color: #8c8f92;
+    display: block;
+    line-height: 2.6;
+    text-decoration: none;
+  }
+  .footer__block__links > a:after {
+      content: '' !important;
+  }
+
+  @media screen and (max-width: 768px) {
+    .footer__block__links > a {
+      font-size: 14px;
+    }
+  }
+  .footer__block__links > a > img {
+    width: 28px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+  }
+  .footer__block__links > a > i {
+    font-size: 25px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 1rem;
+  }
+  .footer__block__links--github {
+    font-weight: 300;
+    margin-left: -10px;
+  }
+  .footer__block__links--github > img {
+    width: 38px !important;
+  }
+  .footer__block__links--github > strong {
+    font-weight: 600;
+    color: black;
+    text-decoration: underline;
+  }
+  .footer__block__links--slack {
+    font-weight: 300;
+    margin-left: -4px;
+  }
+  .footer__block__links--slack > img {
+    margin-right: 0.8rem !important;
+  }
+  .footer__block__links--slack > strong {
+    font-weight: 600;
+    color: #d30d0c;
+    text-decoration: underline;
+  }
+  .footer__block__links--address {
+    line-height: 2.0;
+    font-size: 14px;
+    color: #8c8f92;
+  }
+  @media screen and (max-width: 768px) {
+    .footer__block__links--address {
+      font-size: 14px;
+    }
+  }
+  .footer__block__links--address > span {
+    display: block;
+  }
+  .footer__block__links--address > span > i {
+    font-size: 25px;
+    margin-right: 1rem;
+    vertical-align: middle;
+    padding-left: 5px;
+  }
+  .footer__block__links--address > span:nth-child(2) {
+    margin-left: 28px;
+  }
+  .footer__block__links--address > a {
+    color: #7a68e8;
+    display: block;
+    text-decoration: none;
+    margin-left: 28px;
+  }
+  @media screen and (max-width: 768px) {
+    .footer__block {
+      width: 59%;
+      padding-bottom: 50px;
+    }
+  }
+  .footer__block:nth-child(1) {
+    width: 28%;
+  }
+  @media screen and (max-width: 768px) {
+    .footer__block:nth-child(1) {
+      width: 59%;
+    }
+  }
+  .footer__block:nth-child(4) {
+    width: 17%;
+  }
+  @media screen and (max-width: 768px) {
+    .footer__block:nth-child(4) {
+      width: 40%;
+    }
+  }
+  .footer__block:nth-child(6) {
+    width: 7%;
+  }
+  @media screen and (max-width: 768px) {
+    .footer__block:nth-child(2), .footer__block:nth-child(4), .footer__block:nth-child(6) {
+      width: 40%;
+    }
+  }
+  @media screen and (max-width: 768px) {
+    .footer__block:nth-child(5), .footer__block:nth-child(6) {
+      padding-bottom: 0;
+    }
+  }
+  
+  .button-footer {
+    display: block;
+    padding: 0 1rem;
+    width: fit-content;
+    height: 50px;
+    border-radius: 5px;
+    line-height: 50px;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 auto;
+    cursor: pointer;
+    outline: none;
+    border: none;
+  }
+  @media screen and (max-width: 768px) {
+    .button-footer {
+      font-size: 14px;
+    }
+  }
+  .button-footer--red {
+    background-color: #f75e61;
+    color: white;
+  }
+  .button-footer--red:hover {
+    background-color: #d30d0c;
+  }
+  
