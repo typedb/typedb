@@ -1669,7 +1669,7 @@ table > tbody > tr:nth-of-type(even) {
   }
   @media screen and (max-width: 768px) {
     .footer__block {
-      width: 59%;
+      width: 56%;
       padding-bottom: 50px;
     }
   }
@@ -1678,23 +1678,24 @@ table > tbody > tr:nth-of-type(even) {
   }
   @media screen and (max-width: 768px) {
     .footer__block:nth-child(1) {
-      width: 59%;
+      width: 61%;
     }
   }
   .footer__block:nth-child(4) {
     width: 17%;
   }
   @media screen and (max-width: 768px) {
-    .footer__block:nth-child(4) {
-      width: 40%;
+    .footer__block:nth-child(2) {
+      width: 37%;
     }
   }
+
   .footer__block:nth-child(6) {
     width: 7%;
   }
   @media screen and (max-width: 768px) {
-    .footer__block:nth-child(2), .footer__block:nth-child(4), .footer__block:nth-child(6) {
-      width: 40%;
+    .footer__block:nth-child(4), .footer__block:nth-child(6) {
+      width: 42%;
     }
   }
   @media screen and (max-width: 768px) {
