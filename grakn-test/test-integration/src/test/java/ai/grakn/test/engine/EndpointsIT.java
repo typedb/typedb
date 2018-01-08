@@ -38,11 +38,13 @@ public class EndpointsIT {
 
     @Test
     public void whenGettingRootWithoutAcceptType_ReturnHTML() {
-        when().get("/").then().contentType(ContentType.HTML).body(containsString("<html>"));
+        when().get("/")
+                .then().contentType(containsString(ContentType.HTML.toString())).body(containsString("<html>"));
     }
 
     @Test
     public void whenGettingRootWithJsonAcceptType_ReturnJson() {
-        given().accept(ContentType.JSON).when().get("/").then().contentType(ContentType.JSON);
+        given().accept(ContentType.JSON).when().get("/")
+                .then().contentType(containsString(ContentType.JSON.toString()));
     }
 }
