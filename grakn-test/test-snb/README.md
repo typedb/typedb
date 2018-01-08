@@ -71,9 +71,9 @@ java.lang.IllegalThreadStateException
 [INFO] Finished at: 2018-01-08T21:28:10Z
 [INFO] Final Memory: 126M/1750M
 [INFO] ------------------------------------------------------------------------
-++ cat /Users/lolski/grakn.ai/grakn/social_network/validation_params-failed-actual.json
+++ cat $GRAKN_HOME/social_network/validation_params-failed-actual.json
 + FAILURES='[ ]'
-++ cat /Users/lolski/grakn.ai/grakn/social_network/validation_params-failed-expected.json
+++ cat $GRAKN_HOME/social_network/validation_params-failed-expected.json
 + EXPECTED='[ ]'
 + '[' '[ ]' == '[ ]' ']'
 + echo 'Validation completed without failures.'
