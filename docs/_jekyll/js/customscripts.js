@@ -61,7 +61,7 @@ $(function() {
 });
 
 $( document ).ready(function() {
-
+    // Navbar Logic
     var hamburgerBtn = $('#hamburger-btn');
     var hamburgerMenu = $('#hamburger-menu');
     var hamburgerSecondaryMenu = $('#hamburger-menu-secondary');
@@ -104,4 +104,25 @@ $( document ).ready(function() {
         secondaryExpanded = false;
     })
 
+
+    //Footer Subscribe logic
+    var footerSubscribeButton = $("#footer-subscribe-btn");
+    var footerSubscribeInput = $("#footer-subscribe-input");
+    
+    function validateEmail(email) {
+        var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return re.test(email.toLowerCase());
+    }
+
+    footerSubscribeButton.click(function() {
+        var inputValue = footerSubscribeInput.val();
+        if(validateEmail(inputValue)) {
+            $.post(
+                "https://grakn.ai/invite/mailchimp",
+                {
+                    email: inputValue
+                }
+            );
+        }
+    })
 });
