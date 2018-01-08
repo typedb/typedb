@@ -57,7 +57,7 @@ public class BenchmarkTests {
     private static final Logger LOG = LoggerFactory.getLogger(BenchmarkTests.class);
 
     /**
-     * Executes a scalability test defined in terms of number of rules in the system. Creates a simple rule chain:
+     * Executes a scalability test defined in terms of the number of rules in the system. Creates a simple rule chain:
      *
      * R_i(x, y) := R_{i-1}(x, y);     i e [1, N]
      *
@@ -123,15 +123,16 @@ public class BenchmarkTests {
         }
 
         try( GraknTx tx = graknSession.open(GraknTxType.READ)) {
+            final long limit = 1;
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";
             String limitedQueryString = "match " +
                     queryPattern +
-                    "limit 1;" +
+                    "limit " + limit +  ";" +
                     "get;";
 
-            assertEquals(executeQuery(queryString, tx, "full").size(), 1);
-            assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), 1);
+            assertEquals(executeQuery(queryString, tx, "full").size(), limit);
+            assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), limit);
         }
     }
 
@@ -195,10 +196,10 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
-        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         final int N = 100;
         final int limit = 10;
         final int answers = (N+1)*N/2;
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
 
         SampleKBContext kb = TransitivityChainKB.context(N);
         QueryBuilder iqb = kb.tx().graql().infer(true).materialise(false);
@@ -295,9 +296,9 @@ public class BenchmarkTests {
      */
     @Test
     public void testDiagonal()  {
-        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         final int N = 10; //9604
         final int limit = 10;
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
 
         //results @N = 40  1444  3.5s
         //results @N = 50  2304    8s    / 1s
@@ -349,9 +350,10 @@ public class BenchmarkTests {
      */
     @Test
     public void testPathTree(){
-        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         final int N = 5;
         final int linksPerEntity = 4;
+        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
+        
         int answers = 0;
         for(int i = 1 ; i <= N ; i++) answers += Math.pow(linksPerEntity, i);
         SampleKBContext kb = PathKB.context(N, linksPerEntity);
