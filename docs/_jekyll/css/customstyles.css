@@ -1739,7 +1739,7 @@ table > tbody > tr:nth-of-type(even) {
   .navigation-bar {
     height: 70px;
     line-height: 70px;
-    padding: 0 2rem;
+    padding: 0 28px;
     position: fixed;
     width: stretch;
     background-color: white;
@@ -1820,7 +1820,7 @@ table > tbody > tr:nth-of-type(even) {
     display: inline-block;
   }
   .navigation-bar__link__dropdown .fa {
-    padding-left: 0.5rem;
+    padding-left: 7px;
     vertical-align: top;
     color: #4a4c52;
   }
@@ -1912,19 +1912,19 @@ table > tbody > tr:nth-of-type(even) {
     user-select: none;
     line-height: 1;
     padding-bottom: 4px;
-    margin-bottom: 1rem;
+    margin-bottom: 14px;
     width: inherit;
   }
   > .navigation-bar__hamburger__secondary > .navigation-bar__link__icon {
     display: block;
-    padding-top: 0.5rem;
+    padding-top:7px;
   }
   .navigation-bar__hamburger__secondary--open {
     transform: translateX(0%);
   }
   .navigation-bar__hamburger__secondary__back > i {
     color: #4a4c52 !important;
-    margin-right: 0.5rem;
+    margin-right: 7px;
   }
   
   .hamburger-inner {
