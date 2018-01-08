@@ -26,6 +26,7 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
+import com.jayway.restassured.RestAssured;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import org.apache.commons.io.IOUtils;
@@ -99,6 +100,7 @@ public class DistributionContext extends CompositeTestRule {
         unzipDistribution();
         engineProcess = newEngineProcess(port, redisPort);
         waitForEngine();
+        RestAssured.baseURI = uri().toURI().toString();
     }
 
     @Override

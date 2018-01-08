@@ -14,51 +14,35 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.engine.controller.response;
 
 import ai.grakn.engine.Jacksonisable;
 import ai.grakn.util.REST;
-import ai.grakn.util.REST.WebPath;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.CheckReturnValue;
-import java.util.Set;
-
 /**
- * <p>
- *     Response object representing a collection of {@link Keyspace}s
- * </p>
- *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Felix Chapman
  */
 @AutoValue
-@JsonIgnoreProperties(value={"@id", "keyspace"}, allowGetters=true)
-public abstract class Keyspaces implements Jacksonisable{
+public abstract class Root implements Jacksonisable {
 
-    @CheckReturnValue
-    @JsonProperty
-    public abstract Set<Keyspace> keyspaces();
+    public static Root create() {
+        return create(Link.create(REST.WebPath.ROOT), Link.create(REST.WebPath.KB));
+    }
 
-    @CheckReturnValue
     @JsonCreator
-    public static Keyspaces of(@JsonProperty("keyspaces") Set<Keyspace> keyspaces){
-        return new AutoValue_Keyspaces(keyspaces);
+    public static Root create(@JsonProperty("@id") Link selfLink, @JsonProperty("keyspaces") Link kb) {
+        return new AutoValue_Root(selfLink, kb);
     }
 
-    @CheckReturnValue
-    @JsonProperty("keyspace")
-    public final Link keyspace() {
-        return Link.create(REST.reformatTemplate(WebPath.KB_KEYSPACE));
-    }
-
-    @CheckReturnValue
     @JsonProperty("@id")
-    public String id(){
-        return WebPath.KB;
-    }
+    public abstract Link selfLink();
+
+    @JsonProperty("keyspaces")
+    public abstract Link kb();
 }
