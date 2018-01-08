@@ -101,7 +101,7 @@ public abstract class Atom extends AtomicBase {
     }
 
     /**
-     * @return true if the atom is ground
+     * @return true if the atom is ground (all variables are bound)
      */
     public boolean isGround(){
         Set<Var> varNames = getVarNames();
