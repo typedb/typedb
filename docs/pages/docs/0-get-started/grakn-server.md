@@ -38,13 +38,11 @@ We recommend changing this to another location to make upgrading Grakn easier an
 * `commitlog_directory`: eg. /var/lib/cassandra/commitlog
 * `saved_caches_directory`: eg. /var/lib/cassandra/saved_caches
 
-### Distributed
+### Grakn Cluster
 
-//TODO this section needs rewording entirely
+Grakn's clustering functionality is part of [Grakn KBMS](https://grakn.ai/kbms).
 
 ## Upgrading Grakn
-
-### Standalone
 
 #### Default directory
 For the default storage directory, `db/cassandra/`, you need to:
@@ -63,13 +61,3 @@ If you have changed the location of data_file_directories in the `conf/cassandra
 - start new Grakn (`grakn server start`)
 
 You will need to amend these variables with every new version of Grakn.
-
-### Distributed
-
-Upgrading Grakn in a distributed setup is very simple:
-
-- stop and remove old Grakn Engine (`grakn server stop grakn`)
-- roll out the latest Grakn package with the correct Redis variables in the configuration files
-- start new Grakn Engine (`grakn server start grakn`)
-
-You can perform a rolling deployment in this fashion with minimum impact on your services.
