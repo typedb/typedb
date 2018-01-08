@@ -29,6 +29,7 @@ import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -81,6 +82,11 @@ public class GraknEngineServerTest {
         Pool<Jedis> jedisPool = mock(JedisPool.class);
         when(redisWrapper.getJedisPool()).thenReturn(jedisPool);
         when(jedisPool.getResource()).thenReturn(jedis);
+    }
+
+    @After
+    public void tearDown() {
+        spark.stop();
     }
 
 

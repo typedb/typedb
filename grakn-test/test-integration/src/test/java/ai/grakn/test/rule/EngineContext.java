@@ -70,6 +70,7 @@ public class EngineContext extends CompositeTestRule {
 
     private final GraknConfig config = createTestConfig();
     private JedisPool jedisPool;
+    private Service spark;
 
     private final TestRule redis;
 
@@ -164,7 +165,7 @@ public class EngineContext extends CompositeTestRule {
         setRestAssuredUri(config);
 
         EngineID id = EngineID.me();
-        Service spark = Service.ignite();
+        spark = Service.ignite();
         GraknEngineStatus status = new GraknEngineStatus();
         MetricRegistry metricRegistry = new MetricRegistry();
         RedisWrapper redis = RedisWrapper.create(config);
@@ -196,6 +197,7 @@ public class EngineContext extends CompositeTestRule {
                 // There is no way to stop the embedded Casssandra, no such API offered.
             }, "Error closing engine");
             jedisPool.close();
+            spark.stop();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
