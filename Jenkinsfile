@@ -153,6 +153,12 @@ def shouldDeployLongRunningInstance() {
     return env.BRANCH_NAME == 'stable'
 }
 
+def shouldDeployMaven() {
+    // TODO: this isn't working for some reason
+    // return isMainBranch()
+    return false
+}
+
 def mvn(String args) {
     sh "mvn --batch-mode ${args}"
 }
@@ -296,12 +302,14 @@ def runBuild() {
         checkout scm
 
         // Push to Grakn Maven if tests pass
-        if (isMainBranch()) {
-            withMaven(
-                options: [artifactsPublisher(disabled: true)],
-                mavenSettingsConfig: '8358fa5c-17c9-4a16-b501-4ebacb7f163d',
-            ){
-                sh 'mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo'
+        if (shouldDeployMaven()) {
+            stage('Deploy Maven') {
+                withMaven(
+                        options: [artifactsPublisher(disabled: true)],
+                        mavenSettingsConfig: '8358fa5c-17c9-4a16-b501-4ebacb7f163d',
+                ) {
+                    sh 'mvn clean deploy -T 14 --batch-mode -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -PgraknRepo'
+                }
             }
         }
 
@@ -309,7 +317,7 @@ def runBuild() {
         if (shouldDeployLongRunningInstance()) {
             unstash 'dist'
 
-            stage('Deploy Grakn') {
+            stage('Deploy Long-Running Instance') {
                 sshagent(credentials: ['jenkins-aws-ssh']) {
                     sh "scp -o StrictHostKeyChecking=no ${graknDist()} ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/grakn-dist.tar.gz"
                     sh "scp -o StrictHostKeyChecking=no scripts/repeat-query ubuntu@${LONG_RUNNING_INSTANCE_ADDRESS}:~/"

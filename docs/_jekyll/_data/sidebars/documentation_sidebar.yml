@@ -146,6 +146,15 @@ entries:
       - title: Advanced
         output: web
         url: /docs/java-library/advanced
+  - title: Language Drivers
+    output: web
+    folderitems:
+      - title: Python
+        output: web
+        url: /docs/language-drivers/grakn-python
+      - title: Haskell
+        output: web
+        url: /docs/language-drivers/grakn-haskell
   - title: API References
     output: web
     folderitems:
