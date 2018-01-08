@@ -1892,7 +1892,7 @@ table > tbody > tr:nth-of-type(even) {
   }
   .navigation-bar__hamburger__secondary {
     display: block;
-    min-height: 304px;
+    min-height: 308px;
     transform: translateX(100%);
     transition: transform 0.2s ease-in-out;
     position: fixed;
