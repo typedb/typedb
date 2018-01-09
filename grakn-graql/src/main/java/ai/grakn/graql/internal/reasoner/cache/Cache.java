@@ -64,7 +64,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @param query for which the entry is to be retrieved
      * @return corresponding cache entry if any or null
      */
-    public CacheEntry<Q, T> get(Q query){ return cache.get(query);}
+    public CacheEntry<Q, T> getEntry(Q query){ return cache.get(query);}
 
     /**
      * Associates the specified answers with the specified query in this cache adding an (query) -> (answers) entry
@@ -72,7 +72,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @param answers of the association
      * @return previous value if any or null
      */
-    public CacheEntry<Q, T> put(Q query, T answers){ return cache.put(query, new CacheEntry<>(query, answers));}
+    public CacheEntry<Q, T> putEntry(Q query, T answers){ return cache.put(query, new CacheEntry<>(query, answers));}
 
     /**
      * Copies all of the mappings from the specified map to this cache

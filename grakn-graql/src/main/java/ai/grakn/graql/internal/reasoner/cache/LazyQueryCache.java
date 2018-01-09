@@ -50,14 +50,14 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
 
     @Override
     public LazyAnswerIterator record(Q query, LazyAnswerIterator answers) {
-        CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
+        CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
             Stream<Answer> unifiedStream = answers.unify(query.getMultiUnifier(equivalentQuery)).stream();
-            this.put(match.query(), match.cachedElement().merge(unifiedStream));
+            this.putEntry(match.query(), match.cachedElement().merge(unifiedStream));
             return getAnswerIterator(query);
         }
-        this.put(query, answers);
+        this.putEntry(query, answers);
         return answers;
     }
 
@@ -68,16 +68,16 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
 
     @Override
     public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<Answer> answers){
-        CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
+        CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match!= null) {
             Q equivalentQuery = match.query();
             MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery);
             Stream<Answer> unifiedStream = answers.flatMap(a -> a.unify(multiUnifier));
-            this.put(match.query(), match.cachedElement().merge(unifiedStream));
+            this.putEntry(match.query(), match.cachedElement().merge(unifiedStream));
             return getAnswerIterator(query);
         }
         LazyAnswerIterator liter = new LazyAnswerIterator(answers);
-        this.put(query, liter);
+        this.putEntry(query, liter);
         return liter;
     }
 
@@ -88,7 +88,7 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
 
     @Override
     public Pair<LazyAnswerIterator, MultiUnifier> getAnswersWithUnifier(Q query) {
-        CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
+        CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
@@ -109,7 +109,7 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
 
     @Override
     public Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
-        CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
+        CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
@@ -142,10 +142,10 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
                 .filter(queries::contains)
                 .filter(this::contains)
                 .forEach( q -> {
-                    CacheEntry<Q, LazyAnswerIterator> match =  this.get(q);
+                    CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(q);
                     Set<Answer> s = match.cachedElement().stream().collect(Collectors.toSet());
                     s.removeAll(c2.getAnswerStream(q).collect(Collectors.toSet()));
-                    this.put(match.query(), new LazyAnswerIterator(s.stream()));
+                    this.putEntry(match.query(), new LazyAnswerIterator(s.stream()));
                 });
     }
 
