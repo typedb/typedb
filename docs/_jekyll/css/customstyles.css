@@ -131,7 +131,7 @@ th {
     text-align: left;
 }
 table {
-    max-width: 90%;
+    width: 100%;
     margin-bottom: 20px;
     border: 1px solid #dedede;
 }
@@ -1306,8 +1306,8 @@ img, video {
 
 #mysidebar {
     background-color: #f3f4fa;
-    margin: 50px 0;
-    height: calc(90vh - 100px);
+    margin: 30px 0;
+    height: calc(90vh - 60px);
     overflow-y: scroll;
 }
 
@@ -1380,8 +1380,33 @@ img, video {
 
 /* Table Styles */
 table {
+    /* border: solid 1px #e6e8f4; */
+    border-collapse: separate;
+    border-spacing: 0;
+    border: solid 1px #e6e8f4;
     border-radius: 6px;
 }
+
+th:first-child {
+    border-radius: 6px 0 0 0;
+}
+
+th:last-child {
+    border-radius: 0 6px 0 0;
+}
+
+th:only-child{
+    border-radius: 6px 6px 0 0;
+}
+
+table tbody tr:last-child td:last-child {
+    border-radius: 0 0 6px 0;
+}
+
+table tbody tr:last-child td:first-child {
+    border-radius: 0 0 0 6px;
+}
+
 
 table > thead > tr > th {
     background-color: #2f3544;
