@@ -23,7 +23,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redismock.RedisServer;
-import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
@@ -92,22 +91,27 @@ public class GraknEngineServerTest {
 
     @Test
     public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
-        RedisServer redisServer = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(conf.getProperty(GraknConfigKey.REDIS_HOST))).getPort()).server();
+        SimpleURI uri = new SimpleURI(Iterables.getOnlyElement(conf.getProperty(GraknConfigKey.REDIS_HOST)));
+        RedisServer redisServer = RedisServer.newRedisServer(uri.getPort());
+
         redisServer.start();
-        GraknCreator creator = GraknCreator.create(id, spark, status, metrics, conf, RedisWrapper.create(conf));
 
-        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
-            server.start();
-            assertNotNull(server.factory().systemKeyspace());
+        try {
+            GraknCreator creator = GraknCreator.create(id, spark, status, metrics, conf, RedisWrapper.create(conf));
 
-            // init a random keyspace
-            String keyspaceName = "thisisarandomwhalekeyspace";
-            server.factory().systemKeyspace().openKeyspace(Keyspace.of(keyspaceName));
+            try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
+                server.start();
+                assertNotNull(server.factory().systemKeyspace());
 
-            assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
+                // init a random keyspace
+                String keyspaceName = "thisisarandomwhalekeyspace";
+                server.factory().systemKeyspace().openKeyspace(Keyspace.of(keyspaceName));
+
+                assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
+            }
+        } finally {
+            redisServer.stop();
         }
-
-        redisServer.stop();
     }
 
     @Test
