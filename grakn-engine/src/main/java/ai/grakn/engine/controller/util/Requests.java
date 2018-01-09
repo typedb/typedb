@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller.util;
 
+import ai.grakn.engine.controller.response.Link;
 import ai.grakn.exception.GraknServerException;
 import mjson.Json;
 import spark.Request;
@@ -75,6 +76,10 @@ public class Requests {
     public static String mandatoryBody(Request request){
         return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(
                 GraknServerException::requestMissingBody);
+    }
+
+    public static Link selfLink(Request request) {
+        return Link.create(request.pathInfo());
     }
 
     /**

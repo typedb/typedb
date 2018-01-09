@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
@@ -121,38 +122,58 @@ public class Client {
      * @return true if Grakn Engine running, false otherwise
      */
     public static boolean serverIsRunning(SimpleURI uri) {
+        URL url;
         try {
-            URL url = UriBuilder.fromUri(uri.toURI()).path(REST.WebPath.KB).build().toURL();
-
-            HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
-
-            connection.setRequestMethod("GET");
-
-            try {
-                connection.connect();
-            } catch (IOException e) {
-                // If this fails, then the server is not reachable
-                return false;
-            }
-
-            InputStream inputStream = connection.getInputStream();
-            if (inputStream.available() == 0) {
-                LOG.error("input stream is not available");
-                return false;
-            }
-            return true;
-        } catch (IOException e) {
+            url = UriBuilder.fromUri(uri.toURI()).path(REST.WebPath.KB).build().toURL();
+        } catch (MalformedURLException e) {
+            assert false : "This will never throw because we're appending a known path to a valid URI";
             throw new RuntimeException(e);
         }
+
+        HttpURLConnection connection;
+        try {
+            connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
+        } catch (IOException e) {
+            // If this fails, then the server is not reachable
+            return false;
+        }
+
+        try {
+            connection.setRequestMethod("GET");
+        } catch (ProtocolException e) {
+            assert false : "This will never throw because 'GET' is correct and the connection is not open yet";
+            throw new RuntimeException(e);
+        }
+
+        int available;
+
+        try {
+            connection.connect();
+            InputStream inputStream = connection.getInputStream();
+            available = inputStream.available();
+        } catch (IOException e) {
+            // If this fails, then the server is not reachable
+            return false;
+        }
+
+        if (available == 0) {
+            LOG.error("input stream is not available");
+            return false;
+        }
+        return true;
     }
 
-    private static URL mapQuadZeroRouteToLocalhost(URL originalUrl) throws MalformedURLException {
+    private static URL mapQuadZeroRouteToLocalhost(URL originalUrl) {
         final String QUAD_ZERO_ROUTE = "http://0.0.0.0";
 
         URL mappedUrl;
         if ((originalUrl.getProtocol() + originalUrl.getHost()).equals(QUAD_ZERO_ROUTE)) {
-            mappedUrl = new URL(
-                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.KB);
+            try {
+                mappedUrl = new URL(originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.KB);
+            } catch (MalformedURLException e) {
+                assert false : "This will never throw because the protocol is valid (because it came from another URL)";
+                throw new RuntimeException(e);
+            }
         } else {
             mappedUrl = originalUrl;
         }

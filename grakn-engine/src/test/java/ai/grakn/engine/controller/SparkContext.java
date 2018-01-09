@@ -21,13 +21,17 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.util.SimpleURI;
+import ai.grakn.test.rule.CompositeTestRule;
 import ai.grakn.util.GraknTestUtil;
+import ai.grakn.util.SimpleURI;
+import com.google.common.collect.ImmutableList;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.builder.RequestSpecBuilder;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
 import spark.Service;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -37,10 +41,11 @@ import static ai.grakn.engine.HttpHandler.configureSpark;
  * Context that starts spark
  * @author Felix Chapman
  */
-public class SparkContext extends ExternalResource {
+public class SparkContext extends CompositeTestRule {
 
     private final BiConsumer<Service, GraknConfig> createControllers;
     private final GraknConfig config = GraknConfig.create();
+    private final TemporaryFolder staticFiles = new TemporaryFolder();
 
     private Service spark;
     
@@ -100,7 +105,13 @@ public class SparkContext extends ExternalResource {
         return config;
     }
 
+    public TemporaryFolder staticFiles() {
+        return staticFiles;
+    }
+
     public void start() {
+        config.setConfigProperty(GraknConfigKey.STATIC_FILES_PATH, staticFiles.getRoot().toPath());
+
         spark = startSparkCopyOnNewPort();
 
         createControllers.accept(spark, config);
@@ -121,6 +132,11 @@ public class SparkContext extends ExternalResource {
                 running = false;
             }
         }
+    }
+
+    @Override
+    protected List<TestRule> testRules() {
+        return ImmutableList.of(staticFiles);
     }
 
     @Override

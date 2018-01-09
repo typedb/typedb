@@ -26,15 +26,20 @@ import ai.grakn.engine.controller.response.Keyspaces;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.when;
@@ -42,6 +47,7 @@ import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
@@ -55,20 +61,54 @@ import static org.mockito.Mockito.mock;
  * @author Felix Chapman
  */
 public class SystemControllerTest {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final GraknConfig config = GraknConfig.create();
     private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final SystemKeyspaceFake systemKeyspace = SystemKeyspaceFake.of();
 
+    private static final String INDEX_CONTENTS = "<html>hello world!</html>";
+
+    private static GraknConfig config;
+
     @ClassRule
-    public static final SparkContext sparkContext = SparkContext.withControllers(spark -> {
+    public static final SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
+        SystemControllerTest.config = config;
         new SystemController(spark, config, systemKeyspace, status, metricRegistry);
     });
+
+    @BeforeClass
+    public static void createIndex() throws IOException {
+        File index = sparkContext.staticFiles().newFile("dashboard.html");
+        Files.write(index.toPath(), ImmutableList.of(INDEX_CONTENTS), StandardCharsets.UTF_8);
+    }
 
     @Before
     public void setUp() {
         systemKeyspace.clear();
+    }
+
+    @Test
+    public void whenCallingRootEndpoint_Return200() {
+        when().get("/").then().statusCode(SC_OK);
+    }
+
+    @Test
+    public void whenCallingRootEndpointWithoutContentType_ReturnIndexFile() {
+        when().get("/").then().contentType(ContentType.HTML).and().body(containsString(INDEX_CONTENTS));
+    }
+
+    @Test
+    public void whenCallingRootEndpointAndRequestingJson_ReturnJson() {
+        given().accept(ContentType.JSON).get("/").then().contentType(ContentType.JSON);
+    }
+
+    @Test
+    public void whenCallingRootEndpoint_ReturnIdLinkToSelf() {
+        given().accept(ContentType.JSON).when().get("/").then().body("@id", is("/"));
+    }
+
+    @Test
+    public void whenCallingRootEndpoint_ReturnLinkToKeyspacesEndpoint() {
+        given().accept(ContentType.JSON).when().get("/").then().body("keyspaces", is("/kb"));
     }
 
     @Test
@@ -82,10 +122,18 @@ public class SystemControllerTest {
     }
 
     @Test
+    public void whenCallingKbEndpoint_ReturnIdLinkToSelf() {
+        when().get("/kb").then().body("@id", is("/kb"));
+    }
+
+    @Test
+    public void whenCallingKbEndpoint_ReturnLinkToPutANewKeyspace() {
+        when().get("/kb").then().body("keyspace", is("/kb/{keyspace}"));
+    }
+
+    @Test
     public void whenInitiallyCallingKBEndpoint_GetEmptyList() throws IOException {
-        String content = when().get("/kb").thenReturn().body().asString();
-        Keyspaces keyspaces = objectMapper.readValue(content, Keyspaces.class);
-        assertThat(keyspaces.keyspaces(), empty());
+        when().get("/kb").then().body("keyspaces", empty());
     }
 
     @Test
@@ -95,7 +143,10 @@ public class SystemControllerTest {
 
     @Test
     public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() throws JsonProcessingException {
-        when().put("/kb/myks").then().statusCode(SC_OK).body(is(new ObjectMapper().writeValueAsString(config)));
+        when().put("/kb/myks").then()
+                .statusCode(SC_OK)
+                .contentType(ContentType.JSON)
+                .body(is(new ObjectMapper().writeValueAsString(config)));
     }
 
     @Test
