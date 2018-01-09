@@ -21,6 +21,7 @@ package ai.grakn.client;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.TaskId;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 import mjson.Json;
@@ -126,8 +127,9 @@ public class Client {
         try {
             url = UriBuilder.fromUri(uri.toURI()).path(REST.WebPath.KB).build().toURL();
         } catch (MalformedURLException e) {
-            assert false : "This will never throw because we're appending a known path to a valid URI";
-            throw new RuntimeException(e);
+            throw CommonUtil.unreachableStatement(
+                    "This will never throw because we're appending a known path to a valid URI", e
+            );
         }
 
         HttpURLConnection connection;
@@ -141,8 +143,9 @@ public class Client {
         try {
             connection.setRequestMethod("GET");
         } catch (ProtocolException e) {
-            assert false : "This will never throw because 'GET' is correct and the connection is not open yet";
-            throw new RuntimeException(e);
+            throw CommonUtil.unreachableStatement(
+                    "This will never throw because 'GET' is correct and the connection is not open yet", e
+            );
         }
 
         int available;
@@ -171,8 +174,9 @@ public class Client {
             try {
                 mappedUrl = new URL(originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.KB);
             } catch (MalformedURLException e) {
-                assert false : "This will never throw because the protocol is valid (because it came from another URL)";
-                throw new RuntimeException(e);
+                throw CommonUtil.unreachableStatement(
+                        "This will never throw because the protocol is valid (because it came from another URL)", e
+                );
             }
         } else {
             mappedUrl = originalUrl;
