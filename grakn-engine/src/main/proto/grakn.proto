@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package ai.grakn.rpc;
+
+service Grakn {
+    rpc OpenTx (OpenTxRequest) returns (OpenTxResponse);
+}
+
+message OpenTxRequest {
+    Keyspace keyspace = 1;
+}
+
+message OpenTxResponse {
+    GraknTx tx = 1;
+}
+
+message GraknTx {
+
+}
+
+message Keyspace {
+    string value = 1;
+}

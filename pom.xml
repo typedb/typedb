@@ -100,7 +100,8 @@
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.basedir}</main.basedir>
         <spark-gremlin.version>3.2.5</spark-gremlin.version>
-        <netty-all.version>4.0.42.Final</netty-all.version>
+        <grpc.version>1.8.0</grpc.version>
+        <netty-all.version>4.1.16.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
         <netty.version>1.1.33.Fork19</netty.version>
         <apache-http-core.version>4.4.6</apache-http-core.version>
@@ -796,6 +797,21 @@
                 <groupId>org.eclipse.jetty.websocket</groupId>
                 <artifactId>websocket-client</artifactId>
                 <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-stub</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty</artifactId>
+                <version>${grpc.version}</version>
             </dependency>
             <dependency>
                 <groupId>net.lingala.zip4j</groupId>
