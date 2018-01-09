@@ -1312,6 +1312,11 @@ img, video {
     overflow-y: scroll;
 }
 
+#mysidebar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent; /* make scrollbar transparent */
+}
+
 @media screen and (max-width: 990px) {
     #mysidebar {
         height: fit-content;
