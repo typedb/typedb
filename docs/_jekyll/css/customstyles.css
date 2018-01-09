@@ -1293,7 +1293,6 @@ img, video {
 .col-content {
     background-color: white !important;
     padding: 50px !important;
-    min-height: 100vh;
     height: 100%;
     /* margin-left: 25%; */
 }
