@@ -32,9 +32,18 @@ public class REST {
     }
 
     /**
+     * e.g. /kb/:keyspace/graql -> /kb/{keyspace}/graql
+     */
+    public static String reformatTemplate(String pathTemplate) {
+        return pathTemplate.replaceAll(":([^/]+)", "{$1}");
+    }
+
+    /**
      * Class containing URIs to REST endpoints.
      */
     public static class WebPath{
+
+        public static final String ROOT = "/";
 
         /**
          * Keyspace Specific Operations

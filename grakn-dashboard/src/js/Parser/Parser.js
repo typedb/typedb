@@ -25,23 +25,23 @@ import { KEY_BASE_TYPE, RELATIONSHIP, AT_ID, KEY_ID, conceptProperties, parseAtt
  * Regular expression used to match URIs contained in attributes values
  */
 export const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +
-    '(?!(?:10|127)(?:\\.\\d{1,3}){3})' +
-    '(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})' +
-    '(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})' +
-    '(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])' +
-    '(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}' +
-    '(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))' +
-    '|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)' +
-    '(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*' +
-    '(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?' +
-    '(?:[/?#]\\S*)?$';
+  '(?!(?:10|127)(?:\\.\\d{1,3}){3})' +
+  '(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})' +
+  '(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})' +
+  '(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])' +
+  '(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}' +
+  '(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))' +
+  '|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)' +
+  '(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*' +
+  '(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?' +
+  '(?:[/?#]\\S*)?$';
 
 const collect = (array, current) => array.concat(current);
 function flat(array) {
   return array.flatMap(x => Object.values(x).reduce((array, current) => array.concat(current), []));
 }
 
-function newNode(nodeObj:Object) {
+function newNode(nodeObj: Object) {
   const properties = conceptProperties(nodeObj);
   // TODO: decide whether list attributes also on meta type node for now we just set empty array
   const attributes = (nodeObj.inferred) ? [] : nodeObj.attributes;
@@ -74,7 +74,7 @@ export default {
     * @returns {Object} Object containing two arrays containing graph nodes and edges
     * @public
     */
-  parseResponse(data: Object|Object[]) {
+  parseResponse(data: Object | Object[]) {
     let dataArray;
 
     if (Array.isArray(data)) {
@@ -101,5 +101,5 @@ export default {
 
     return { nodes, edges };
   },
-  parseAttributes(data) { return parseAttributes(JSON.parse(data)); },
+  parseAttributes(data: string) { return parseAttributes(JSON.parse(data).attributes); },
 };
