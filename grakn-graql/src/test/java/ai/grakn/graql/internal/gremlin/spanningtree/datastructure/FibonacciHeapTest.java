@@ -1,23 +1,20 @@
 /*
-* The contents of this file are subject to the terms of the Common Development
-* and Distribution License (the License). You may not use this file except in
-* compliance with the License.
-*
-* You can obtain a copy of the License at http://www.netbeans.org/cddl.html
-* or http://www.netbeans.org/cddl.txt.
-*
-* When distributing Covered Code, include this CDDL Header Notice in each file
-* and include the License file at http://www.netbeans.org/cddl.txt.
-* If applicable, add the following below the CDDL Header, with the fields
-* enclosed by brackets [] replaced by your own identifying information:
-* "Portions Copyrighted [year] [name of copyright owner]"
-*
-* The Original Software is GraphMaker. The Initial Developer of the Original
-* Software is Nathan L. Fiedler. Portions created by Nathan L. Fiedler
-* are Copyright (C) 2007-2010. All Rights Reserved.
-*
-* Contributor(s): Nathan L. Fiedler.
-*/
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
 package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
 
 import com.google.common.collect.Maps;
