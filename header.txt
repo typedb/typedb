@@ -1,9 +1,9 @@
 ^\W*$
 ^\W*Grakn - A Distributed Semantic Database$
-^\W*Copyright \(C\) 2016  Grakn Labs Limited$
+^\W*Copyright \(C\) 2016-2018 Grakn Labs Limited$
 ^\W*$
 ^\W*Grakn is free software: you can redistribute it and/or modify$
-^\W*it under the terms of the GNU General Public License as published by$
+^\W*it under the terms of the GNU Affero General Public License as published by$
 ^\W*the Free Software Foundation, either version 3 of the License, or$
 ^\W*\(at your option\) any later version.$
 ^\W*$
