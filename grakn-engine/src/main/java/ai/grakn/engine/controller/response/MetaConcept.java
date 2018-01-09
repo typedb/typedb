@@ -53,4 +53,5 @@ public abstract class MetaConcept extends Type{
     ){
         return new AutoValue_MetaConcept(Schema.BaseType.TYPE.name(), id, selfLink, label, false, sup, subs, true, plays, attributes, keys, instances);
     }
+    
 }
