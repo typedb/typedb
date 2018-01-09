@@ -280,8 +280,7 @@ public class ResourceAtom extends Binary{
         if (getMultiPredicate().isEmpty()){
             boolean predicateBound = getParentQuery().getAtoms(Atom.class)
                     .filter(at -> !at.equals(this))
-                    .filter(at -> at.getVarNames().contains(getPredicateVariable()))
-                    .findFirst().isPresent();
+                    .anyMatch(at -> at.getVarNames().contains(getPredicateVariable()));
             if (!predicateBound) {
                 errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
             }
@@ -372,10 +371,9 @@ public class ResourceAtom extends Binary{
             priority += vpsPriority;
         }
 
-        boolean reifiesRelation =  getNeighbours(Atom.class)
+        boolean reifiesRelation = getNeighbours(Atom.class)
                 .filter(Atom::isRelation)
-                .filter(at -> at.getVarName().equals(this.getVarName()))
-                .findFirst().isPresent();
+                .anyMatch(at -> at.getVarName().equals(this.getVarName()));
 
         priority += reifiesRelation ? SimplePlanner.RESOURCE_REIFYING_RELATION : 0;
 

@@ -95,9 +95,8 @@ public abstract class Atom extends AtomicBase {
         return getApplicableRules()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
                         .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                        .filter(at -> typesCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
-                .filter(this::isRuleApplicable)
-                .findFirst().isPresent();
+                        .anyMatch(at -> typesCompatible(schemaConcept, at.getSchemaConcept())))
+                .anyMatch(this::isRuleApplicable);
     }
 
     /**
@@ -123,8 +122,7 @@ public abstract class Atom extends AtomicBase {
                 this.getInnerPredicates().map(Atomic::getVarName).collect(Collectors.toSet())
         );
         boolean unboundVariables = varNames.stream()
-                .filter(var -> !parentAtoms.stream().filter(at -> at.getVarNames().contains(var)).findFirst().isPresent())
-                .findFirst().isPresent();
+                .anyMatch(var -> !parentAtoms.stream().anyMatch(at -> at.getVarNames().contains(var)));
         if (unboundVariables) {
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
         }

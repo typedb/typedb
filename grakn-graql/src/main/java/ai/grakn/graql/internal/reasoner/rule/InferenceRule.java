@@ -200,7 +200,7 @@ public class InferenceRule {
     private ReasonerQueryImpl getCombinedQuery(){
         Set<Atomic> allAtoms = new HashSet<>();
         allAtoms.add(head.getAtom());
-        body.getAtoms().forEach(allAtoms::add);
+        allAtoms.addAll(body.getAtoms());
         return ReasonerQueries.create(allAtoms, tx);
     }
 

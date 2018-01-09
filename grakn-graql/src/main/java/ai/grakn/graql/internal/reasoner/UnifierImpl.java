@@ -55,15 +55,15 @@ public class UnifierImpl implements Unifier {
     public UnifierImpl(){
         this.unifier = ImmutableSetMultimap.of();
     }
-    public UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){
+    public UnifierImpl(ImmutableMultimap<Var, Var> map){ this(map.entries());}
+    public UnifierImpl(Multimap<Var, Var> map){ this(map.entries());}
+    public UnifierImpl(Map<Var, Var> map){ this(map.entrySet());}
+    private UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){
         Builder<Var, Var> builder = ImmutableSetMultimap.builder();
         mappings.forEach(entry -> builder.put(entry.getKey(), entry.getValue()));
         this.unifier =  builder.build();
     }
-    public UnifierImpl(ImmutableMultimap<Var, Var> map){ this(map.entries());}
-    public UnifierImpl(Multimap<Var, Var> map){ this(map.entries());}
-    public UnifierImpl(Map<Var, Var> map){ this(map.entrySet());}
-    public UnifierImpl(Unifier u){ this(u.mappings());}
+    private UnifierImpl(Unifier u){ this(u.mappings());}
 
     @Override
     public String toString(){
