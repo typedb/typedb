@@ -25,7 +25,6 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 import mjson.Json;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,9 +186,5 @@ public class Client {
 
     protected String convert(String uri, TaskId id){
         return uri.replace(ID_PARAMETER, id.value());
-    }
-
-    protected String exceptionFrom(HttpResponse response) throws IOException {
-        return asJsonHandler.handleResponse(response).at("exception").asString();
     }
 }
