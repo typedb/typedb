@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
@@ -26,6 +27,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.plan.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.rule.SampleKBContext;
@@ -37,8 +39,10 @@ import java.util.Set;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ResolutionPlanTest {
@@ -175,6 +179,29 @@ public class ResolutionPlanTest {
             assertTrue(!Sets.intersection(varNames, vars).isEmpty());
             varNames.forEach(vars::add);
         }
+    }
+
+    @Test
+    public void makeSureOptimalOrderPickedWhenResourcesWithSubstitutionsArePresent() {
+        GraknTx testTx = testContext.tx();
+        Concept concept = testTx.graql().match(var("x").isa("baseEntity")).get("x").findAny().orElse(null);
+        String basePatternString =
+                "(role1:$x, role2: $y) isa relation;" +
+                "$x has resource 'this';" +
+                "$y has anotherResource 'that';";
+
+        String xPatternString = "{" +
+                "$x id '" + concept.getId() + "';" +
+                basePatternString +
+                "}";
+        String yPatternString = "{" +
+                "$y id '" + concept.getId() + "';" +
+                basePatternString +
+                "}";
+        ReasonerQueryImpl queryX = ReasonerQueries.create(conjunction(xPatternString, testTx), testTx);
+        ReasonerQueryImpl queryY = ReasonerQueries.create(conjunction(yPatternString, testTx), testTx);
+        assertNotEquals(new ResolutionPlan(queryX).plan().get(0), getAtom(queryX, "anotherResource", testTx));
+        assertNotEquals(new ResolutionPlan(queryY).plan().get(0), getAtom(queryX, "resource", testTx));
     }
 
     private Atom getAtom(ReasonerQueryImpl query, String typeString, GraknTx tx){
