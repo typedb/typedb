@@ -121,7 +121,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
 
     @Override
     public Stream<Answer> getAnswerStream(Q query) {
-        return getAnswers(query).stream();
+        return getAnswerStreamWithUnifier(query).getKey();
     }
 
     @Override
@@ -140,13 +140,13 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
             Q equivalentQuery = match.query();
             QueryAnswers answers = match.cachedElement();
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
+
+            //NB: this is not lazy
+            //lazy version would be answers.stream().flatMap(ans -> ans.unify(multiUnifier))
             return new Pair<>(answers.unify(multiUnifier).stream(), multiUnifier);
         }
-        //initialise entry so that the unifier stays valid
-        QueryAnswers answers = new QueryAnswers();
-        this.putEntry(query, answers);
         return new Pair<>(
-                structuralCache().get(query).peek(answers::add),
+                structuralCache().get(query),
                 new MultiUnifierImpl()
         );
     }
@@ -168,10 +168,10 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         if (match != null) {
             Q equivalentQuery = match.query();
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
-            QueryAnswers answers =  match.cachedElement().unify(multiUnifier);
 
             //NB: only used when checking for materialised answer duplicates
-            Answer answer = answers.stream()
+            Answer answer = match.cachedElement().stream()
+                    .flatMap(a -> a.unify(multiUnifier))
                     .filter(a -> a.containsAll(ans))
                     .findFirst().orElse(null);
             if (answer != null) return answer;

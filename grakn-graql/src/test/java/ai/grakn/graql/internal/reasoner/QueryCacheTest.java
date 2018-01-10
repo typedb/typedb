@@ -33,8 +33,10 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -42,6 +44,7 @@ import org.junit.Test;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -79,7 +82,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void batched_Record_Retrieve(){
+    public void record_Retrieve(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         QueryAnswers record = cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
         assertEquals(record, cache.getAnswers(retrieveQuery).unify(retrieveToRecordUnifier));
@@ -87,7 +90,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void batched_Record_SingleAnswerUpdate_Retrieve(){
+    public void record_Update_Retrieve(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
         cache.recordAnswer(recordQuery, singleAnswer);
@@ -104,6 +107,57 @@ public class QueryCacheTest {
     }
 
     @Test
+    public void stream_Record_Update_Retrieve(){
+        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        Set<Answer> record = cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet());
+        cache.recordAnswer(recordQuery, singleAnswer);
+
+        Set<Answer> updatedRecord = Sets.union(record, Sets.newHashSet(singleAnswer));
+        assertEquals(updatedRecord, cache.getAnswerStream(retrieveQuery).map(ans -> ans.unify(retrieveToRecordUnifier)).collect(Collectors.toSet()));
+        assertEquals(updatedRecord, cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void stream_Get_Retrieve() {
+        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
+        Answer retrieveAnswer = answer.unify(recordToRetrieveUnifier);
+
+        Stream<Answer> recordStream = cache.getAnswerStream(recordQuery);
+        Stream<Answer> retrieveStream = cache.getAnswerStream(retrieveQuery);
+
+        QueryAnswers recordAnswers = new QueryAnswers(recordStream.collect(Collectors.toSet()));
+        QueryAnswers retrieveAnswers = new QueryAnswers(retrieveStream.collect(Collectors.toSet()));
+
+        assertTrue(recordAnswers.contains(answer));
+        assertTrue(retrieveAnswers.contains(retrieveAnswer));
+    }
+
+    @Test
+    public void stream_Get_Update_Retrieve() {
+        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
+        Answer retrieveAnswer = answer.unify(recordToRetrieveUnifier);
+        Answer retrieveSingleAnswer = singleAnswer.unify(recordToRetrieveUnifier);
+        Stream<Answer> recordStream = cache.getAnswerStream(recordQuery);
+        Stream<Answer> retrieveStream = cache.getAnswerStream(retrieveQuery);
+
+        cache.recordAnswer(recordQuery, singleAnswer);
+
+        QueryAnswers recordAnswers = new QueryAnswers(recordStream.collect(Collectors.toSet()));
+        QueryAnswers retrieveAnswers = new QueryAnswers(retrieveStream.collect(Collectors.toSet()));
+
+        //NB: not expecting the update in the stream
+        assertTrue(recordAnswers.contains(answer));
+        assertTrue(retrieveAnswers.contains(retrieveAnswer));
+        assertFalse(recordAnswers.contains(singleAnswer));
+        assertFalse(retrieveAnswers.contains(retrieveSingleAnswer));
+
+        assertTrue(cache.getAnswers(recordQuery).contains(singleAnswer));
+        assertTrue(cache.getAnswers(retrieveQuery).contains(retrieveSingleAnswer));
+    }
+
+    @Test
     public void stream_Record_SingleAnswerUpdate_Retrieve(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         cache.record(recordQuery, recordQuery.getQuery().stream());
@@ -115,18 +169,20 @@ public class QueryCacheTest {
 
     @Test
     public void singleAnswer_Record_Retrieve(){
-        //TODO
+        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
+        Answer retrieveAnswer = answer.unify(recordToRetrieveUnifier);
+        cache.recordAnswer(recordQuery, answer);
+
+        assertEquals(cache.getAnswer(recordQuery, new QueryAnswer()), new QueryAnswer());
+        assertEquals(cache.getAnswer(recordQuery, answer), answer);
+        assertEquals(cache.getAnswer(recordQuery, retrieveAnswer), answer);
+
+        assertEquals(cache.getAnswer(retrieveQuery, new QueryAnswer()), new QueryAnswer());
+        assertEquals(cache.getAnswer(retrieveQuery, retrieveAnswer), retrieveAnswer);
+        assertEquals(cache.getAnswer(retrieveQuery, answer), retrieveAnswer);
     }
 
-    @Test
-    public void singeAnswer_dualRecord_Retrieve() {
-        //TODO
-    }
-
-    @Test
-    public void singleAnswer_Record_Update_Retrieve(){
-        //TODO
-    }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
         Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
