@@ -105,9 +105,7 @@ public class SystemController {
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
 
-        // Handle root here for JSON, otherwise redirect to HTML page
-        spark.get(REST.WebPath.ROOT, APPLICATION_JSON, (req, res) -> getRoot(res));
-        spark.get(REST.WebPath.ROOT, (req, res) -> getIndexPage());
+        spark.get(REST.WebPath.ROOT, this::getRoot);
 
         spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
         spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
@@ -131,14 +129,21 @@ public class SystemController {
 
     @GET
     @Path(REST.WebPath.ROOT)
-    private String getRoot(Response response) throws JsonProcessingException {
+    private String getRoot(Request request, Response response) throws JsonProcessingException {
+        // Handle root here for JSON, otherwise redirect to HTML page
+        if (Requests.getAcceptType(request).equals(APPLICATION_JSON)) {
+            return getJsonRoot(response);
+        } else {
+            return getIndexPage();
+        }
+    }
+
+    private String getJsonRoot(Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
         Root root = Root.create();
         return objectMapper.writeValueAsString(root);
     }
 
-    @GET
-    @Path(REST.WebPath.ROOT)
     private String getIndexPage() {
         try {
             return new String(Files.readAllBytes(dashboardHtml()), Charsets.UTF_8);
