@@ -17,18 +17,26 @@
  */
 package ai.grakn.engine.data;
 
-import ai.grakn.util.SimpleURI;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.util.SimpleURI;
 import com.google.common.base.Preconditions;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.util.Pool;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import static ai.grakn.GraknConfigKey.REDIS_HOST;
+import static ai.grakn.GraknConfigKey.REDIS_POOL_SIZE;
+import static ai.grakn.GraknConfigKey.REDIS_SENTINEL_HOST;
+import static ai.grakn.GraknConfigKey.REDIS_SENTINEL_MASTER;
 
 /**
  * This class just wraps a Jedis  pool so it's transparent whether
@@ -44,6 +52,21 @@ public class RedisWrapper {
     private RedisWrapper(Pool<Jedis> jedisPool, Set<String> uriSet) {
         this.jedisPool = jedisPool;
         this.uriSet = uriSet;
+    }
+
+    public static RedisWrapper create(GraknConfig config) {
+        List<String> redisUrl = config.getProperty(REDIS_HOST);
+        List<String> sentinelUrl = config.getProperty(REDIS_SENTINEL_HOST);
+        int poolSize = config.getProperty(REDIS_POOL_SIZE);
+        boolean useSentinel = !sentinelUrl.isEmpty();
+        Builder builder = builder()
+                .setUseSentinel(useSentinel)
+                .setPoolSize(poolSize)
+                .setURI((useSentinel ? sentinelUrl : redisUrl));
+        if (useSentinel) {
+            builder.setMasterName(config.getProperty(REDIS_SENTINEL_MASTER));
+        }
+        return builder.build();
     }
 
     public Pool<Jedis> getJedisPool() {
