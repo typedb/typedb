@@ -4,6 +4,7 @@ package ai.grakn.rpc;
 
 service Grakn {
     rpc OpenTx (OpenTxRequest) returns (OpenTxResponse);
+    rpc CloseTx (CloseTxRequest) returns (CloseTxResponse);
 }
 
 message OpenTxRequest {
@@ -11,11 +12,27 @@ message OpenTxRequest {
 }
 
 message OpenTxResponse {
-    GraknTx tx = 1;
+    message Success {
+        TxId tx = 1;
+    }
+    message InvalidKeyspaceError {
+
+    }
+    oneof response {
+        Success success = 1;
+        InvalidKeyspaceError invalidKeyspace = 2;
+    }
 }
 
-message GraknTx {
+message CloseTxRequest {
+    TxId tx = 1;
+}
 
+message CloseTxResponse {
+}
+
+message TxId {
+    int32 value = 1;
 }
 
 message Keyspace {
