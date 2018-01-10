@@ -54,6 +54,7 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         if (match != null) {
             Q equivalentQuery = match.query();
             Stream<Answer> unifiedStream = answers.unify(query.getMultiUnifier(equivalentQuery)).stream();
+            //NB: entry overwrite
             this.putEntry(match.query(), match.cachedElement().merge(unifiedStream));
             return getAnswerIterator(query);
         }
@@ -73,6 +74,7 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
             Q equivalentQuery = match.query();
             MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery);
             Stream<Answer> unifiedStream = answers.flatMap(a -> a.unify(multiUnifier));
+            //NB: entry overwrite
             this.putEntry(match.query(), match.cachedElement().merge(unifiedStream));
             return getAnswerIterator(query);
         }

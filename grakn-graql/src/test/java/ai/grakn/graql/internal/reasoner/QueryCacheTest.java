@@ -26,14 +26,15 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -109,12 +110,11 @@ public class QueryCacheTest {
     @Test
     public void stream_Record_Update_Retrieve(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
-        Set<Answer> record = cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet());
+        cache.record(recordQuery, recordQuery.getQuery().stream());
         cache.recordAnswer(recordQuery, singleAnswer);
 
-        Set<Answer> updatedRecord = Sets.union(record, Sets.newHashSet(singleAnswer));
-        assertEquals(updatedRecord, cache.getAnswerStream(retrieveQuery).map(ans -> ans.unify(retrieveToRecordUnifier)).collect(Collectors.toSet()));
-        assertEquals(updatedRecord, cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet()));
+        assertTrue(cache.getAnswerStream(recordQuery).anyMatch(ans -> ans.equals(singleAnswer)));
+        assertTrue(cache.getAnswerStream(retrieveQuery).anyMatch(ans -> ans.equals(singleAnswer.unify(recordToRetrieveUnifier))));
     }
 
     @Test
@@ -158,16 +158,6 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void stream_Record_SingleAnswerUpdate_Retrieve(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
-        cache.record(recordQuery, recordQuery.getQuery().stream());
-        cache.recordAnswer(recordQuery, singleAnswer);
-
-        assertTrue(cache.getAnswerStream(recordQuery).anyMatch(ans -> ans.equals(singleAnswer)));
-        assertTrue(cache.getAnswerStream(retrieveQuery).anyMatch(ans -> ans.equals(singleAnswer.unify(recordToRetrieveUnifier))));
-    }
-
-    @Test
     public void singleAnswer_Record_Retrieve(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
@@ -181,6 +171,75 @@ public class QueryCacheTest {
         assertEquals(cache.getAnswer(retrieveQuery, new QueryAnswer()), new QueryAnswer());
         assertEquals(cache.getAnswer(retrieveQuery, retrieveAnswer), retrieveAnswer);
         assertEquals(cache.getAnswer(retrieveQuery, answer), retrieveAnswer);
+    }
+
+    /**
+     * ##################################
+     *
+     *      Lazy query cache tests
+     *
+     * ##################################
+     */
+
+    @Test
+    public void lazyCache_Record_Retrieve(){
+        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+        cache.record(recordQuery, recordQuery.getQuery().stream());
+
+        Set<Answer> retrieve = cache.getAnswerStream(retrieveQuery).map(ans -> ans.unify(retrieveToRecordUnifier)).collect(toSet());
+        Set<Answer> record = cache.getAnswerStream(recordQuery).collect(toSet());
+
+        assertTrue(!retrieve.isEmpty());
+        assertEquals(record, retrieve);
+    }
+
+    @Test
+    public void lazyCache_Record_Update_Retrieve(){
+        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+        cache.record(recordQuery, recordQuery.getQuery().stream());
+        cache.record(recordQuery, Stream.of(singleAnswer));
+
+        Set<Answer> retrieve = cache.getAnswerStream(retrieveQuery).map(ans -> ans.unify(retrieveToRecordUnifier)).collect(toSet());
+        Set<Answer> record = cache.getAnswerStream(recordQuery).collect(toSet());
+
+        assertTrue(!retrieve.isEmpty());
+        assertTrue(retrieve.contains(singleAnswer));
+        assertEquals(record, retrieve);
+    }
+
+    @Test
+    public void lazyCache_Get_Retrieve() {
+        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+        cache.record(recordQuery, recordQuery.getQuery().stream());
+        LazyAnswerIterator retrieveIterator = cache.getAnswers(retrieveQuery);
+        LazyAnswerIterator recordIterator = cache.getAnswers(recordQuery);
+
+        Set<Answer> record = recordIterator.stream().collect(toSet());
+        Set<Answer> retrieve = retrieveIterator.stream().map(ans -> ans.unify(retrieveToRecordUnifier)).collect(toSet());
+
+        assertTrue(!retrieve.isEmpty());
+        assertEquals(record, retrieve);
+    }
+
+    @Test
+    public void lazyCache_Get_Update_Retrieve(){
+        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+        Answer retrieveSingleAnswer = singleAnswer.unify(recordToRetrieveUnifier);
+        cache.record(recordQuery, recordQuery.getQuery().stream());
+        LazyAnswerIterator retrieveIterator = cache.getAnswers(retrieveQuery);
+        LazyAnswerIterator recordIterator = cache.getAnswers(recordQuery);
+
+        cache.record(recordQuery, Stream.of(singleAnswer));
+
+        Set<Answer> record = recordIterator.stream().collect(toSet());
+        Set<Answer> retrieve = retrieveIterator.stream().map(ans -> ans.unify(retrieveToRecordUnifier)).collect(toSet());
+
+        assertTrue(!retrieve.isEmpty());
+        assertTrue(!retrieve.contains(singleAnswer));
+        assertEquals(record, retrieve);
+
+        assertTrue(cache.getAnswers(recordQuery).stream().anyMatch(ans -> ans.equals(singleAnswer)));
+        assertTrue(cache.getAnswers(retrieveQuery).stream().anyMatch(ans -> ans.equals(retrieveSingleAnswer)));
     }
 
 
