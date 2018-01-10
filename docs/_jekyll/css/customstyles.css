@@ -1832,7 +1832,7 @@ table > tbody > tr:nth-of-type(even) {
     cursor: pointer;
   }
   .navigation-bar__link:after {
-      content: '' !important;
+      content: none !important;
   }
 
   .navigation-bar__link > .fa {
@@ -1858,13 +1858,13 @@ table > tbody > tr:nth-of-type(even) {
     position: absolute;
     background-color: white;
     top: 50px;
-    width: max-content;
+    width: auto;
     border-radius: 5px;
     padding: 12px 7px;
     padding-bottom: 0;
     left: 0;
     text-align: left;
-    min-width: 80px;
+    min-width: max-content;
     border: 1px solid #c9c9cb;
   }
   .navigation-bar__link__dropdown__content__item {
