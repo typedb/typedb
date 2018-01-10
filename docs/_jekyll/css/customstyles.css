@@ -1866,6 +1866,8 @@ table > tbody > tr:nth-of-type(even) {
     text-align: left;
     min-width: max-content;
     border: 1px solid #c9c9cb;
+    white-space: nowrap;
+    overflow: hidden;
   }
   .navigation-bar__link__dropdown__content__item {
     display: block;
