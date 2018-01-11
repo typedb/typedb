@@ -32,21 +32,15 @@ description sub attribute datatype string;
 practice sub relationship
     relates philosopher
     relates philosophy;
-philosopher sub role;
-philosophy sub role;
 
 education sub relationship
     relates teacher
     relates student;
-teacher sub role;
-student sub role;
 
 knowledge sub relationship
     relates thinker
     relates thought
     plays thought;
-thinker sub role;
-thought sub role;
 
 
 insert

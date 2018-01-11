@@ -57,11 +57,11 @@ public interface VarPropertyInternal extends VarProperty {
      *
      * @throws GraqlQueryException if this {@link VarProperty} cannot be inserted
      */
-    PropertyExecutor insert(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException;
 
-    PropertyExecutor define(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> define(Var var) throws GraqlQueryException;
 
-    PropertyExecutor undefine(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException;
 
     /**
      * Whether this property will uniquely identify a concept in the graph, if one exists.
