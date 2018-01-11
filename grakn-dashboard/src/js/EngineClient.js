@@ -38,7 +38,7 @@ export default {
      *  - data
      * @param requestData
      */
-  request(requestData:Object) {
+  request(requestData: RequestData): Promise<string> {
     return new Promise((resolve, reject) => {
       try {
         const req = new XMLHttpRequest();
@@ -68,12 +68,12 @@ export default {
     });
   },
 
-  setHeaders(xhr:Object, requestData:Object) {
+  setHeaders(xhr: Object, requestData: RequestData) {
     xhr.setRequestHeader('Content-Type', requestData.contentType || 'application/json; charset=utf-8');
     if (requestData.accepts) xhr.setRequestHeader('Accept', requestData.accepts);
   },
 
-  sendInvite(credentials:Object, callbackFn:()=>mixed) {
+  sendInvite(credentials: Object, callbackFn: (any) => mixed) {
     $.ajax({
       type: 'POST',
       contentType: 'application/json; charset=utf-8',
@@ -96,7 +96,7 @@ export default {
     });
   },
 
-  newSession(creds:Object) {
+  newSession(creds: Object) {
     return this.request({
       url: '/auth/session/',
       data: JSON.stringify({
@@ -110,7 +110,7 @@ export default {
   /**
              * Send graql shell command to engine. Returns a string representing shell output.
              */
-  graqlShell(query:string) {
+  graqlShell(query: string) {
     return this.request({
       url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}`,
       contentType: 'application/text',
@@ -122,7 +122,7 @@ export default {
   /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
-  graqlQuery(query:string) {
+  graqlQuery(query: string) {
     // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
       url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}&defineAllVars=true`,
@@ -131,7 +131,7 @@ export default {
     });
   },
 
-  getExplanation(query:string) {
+  getExplanation(query: string) {
     // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
       url: `/kb/${User.getCurrentKeySpace()}/explain?query=${query}`,
@@ -141,7 +141,7 @@ export default {
   /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
-  graqlAnalytics(query:string) {
+  graqlAnalytics(query: string) {
     return this.request({
       url: `/kb/${User.getCurrentKeySpace()}/graql?infer=${User.getReasonerStatus()}`,
       requestType: 'POST',
@@ -165,19 +165,32 @@ export default {
     });
   },
   /**
-             * Get meta schema type instances.
-             */
-  getMetaTypes() {
+   * Get meta schema type instances.
+   */
+  getMetaTypes(): Promise<SchemaConcept[]> {
     return this.request({
       url: `/kb/${User.getCurrentKeySpace()}/type`,
       accepts: 'application/json',
-    });
+    }).then((x) => JSON.parse(x).types);
   },
 
-  getConceptTypes(id:string) {
+  getConceptTypes(id: string) {
     return this.request({
       url: `/dashboard/types/${id}?keyspace=${User.getCurrentKeySpace()}`,
       accepts: 'application/json',
     });
   },
 };
+
+type SchemaConcept = {
+  label: string,
+  implicit: boolean
+}
+
+type RequestData = {
+  url: string,
+  accepts?: string,
+  requestType?: string,
+  cotentType?: string,
+  data?: string
+}

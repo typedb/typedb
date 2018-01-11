@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -14,7 +14,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.util;
@@ -33,12 +32,15 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Common utility methods used within Grakn.
@@ -69,6 +71,10 @@ public class CommonUtil {
      */
     public static <T> Stream<T> optionalToStream(Optional<T> optional) {
         return optional.map(Stream::of).orElseGet(Stream::empty);
+    }
+
+    public static <T> Stream<T> stream(Iterator<T> iterator) {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
     }
 
     @SafeVarargs
