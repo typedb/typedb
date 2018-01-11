@@ -152,14 +152,11 @@ public final class ResolutionPlan {
             //look at neighbours up to two hops away
             top = top.getNeighbours(Atom.class).filter(atoms::contains)
                     .flatMap(at -> Stream.concat(Stream.of(at), at.getNeighbours(Atom.class).filter(atoms::contains)))
-                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                    .findFirst().orElse(null);
+                    .min(Comparator.comparing(at -> -at.computePriority(subbedVars))).orElse(null);
 
             //top is disconnected atom
             if (top == null) {
-                top = atoms.stream()
-                        .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().orElse(null);
+                top = atoms.stream().min(Comparator.comparing(at -> -at.computePriority(subbedVars))).orElse(null);
             }
         }
 

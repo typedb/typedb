@@ -48,7 +48,7 @@ public abstract class AtomicBase implements Atomic {
     private final Var varName;
     private final VarPattern atomPattern;
     private Pattern combinedPattern = null;
-    private ReasonerQuery parent = null;
+    private ReasonerQuery parent;
 
     protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
         this.atomPattern = pattern;

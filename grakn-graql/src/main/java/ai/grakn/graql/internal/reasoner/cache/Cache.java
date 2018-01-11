@@ -58,7 +58,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
     /**
      * @return structural cache of this cache
      */
-    public StructuralCache<Q> structuralCache(){ return sCache;}
+    StructuralCache<Q> structuralCache(){ return sCache;}
 
     /**
      * @param query for which the entry is to be retrieved
