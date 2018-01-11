@@ -20,21 +20,17 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.kb.log.CommitLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.util.Collections;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_OK;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 /**
  * @author Felix Chapman
@@ -44,12 +40,11 @@ public class CommitLogControllerTest {
     private static final Keyspace keyspace = Keyspace.of("myks");
     private static final CommitLog commitLog = CommitLog.create(keyspace, Collections.emptyMap(), Collections.emptyMap());
 
-    private final TaskManager taskManager = mock(TaskManager.class);
     private final PostProcessor postProcessor = mock(PostProcessor.class);
 
     @Rule
     public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new CommitLogController(spark, taskManager, postProcessor);
+        new CommitLogController(spark, postProcessor);
     });
 
     @Test
@@ -61,6 +56,7 @@ public class CommitLogControllerTest {
     public void whenPostingToCommitLogEndpoint_SubmitTwoTasks() throws JsonProcessingException {
         given().body(mapper.writeValueAsString(commitLog)).post("/kb/" + keyspace.getValue() +"/commit_log");
 
-        verify(taskManager, Mockito.times(1)).addTask(any(), any());
+        //TODO: Verify addition to central cache
+        //verify(taskManager, Mockito.times(1)).addTask(any(), any());
     }
 }

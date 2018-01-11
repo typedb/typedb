@@ -27,9 +27,6 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.GraknTxAbstract;
@@ -154,17 +151,6 @@ public class PostProcessingIT {
         assertTrue("Failed at breaking graph", graphIsBroken(session));
 
         // Check graph fixed
-        long tasksRunning = 0;
-        do{
-            Thread.sleep(1000);
-
-            Set<TaskState> runningPPTasks = engine.getTaskManager().storage().getTasks(null, PostProcessingTask.class.getName(), null, null, 0, 0);
-            LOG.debug("Tasks found {}", runningPPTasks.size());
-            tasksRunning = runningPPTasks.stream()
-                    .filter(t -> !t.status().equals(TaskStatus.COMPLETED)).count();
-            LOG.debug("Still running {}", tasksRunning);
-        } while(tasksRunning > 0);
-
         assertFalse("Failed at fixing graph", graphIsBroken(session));
 
         try(GraknTx graph = session.open(GraknTxType.WRITE)) {

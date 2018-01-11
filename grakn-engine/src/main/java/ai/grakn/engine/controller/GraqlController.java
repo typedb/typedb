@@ -24,9 +24,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.response.ExplanationBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -105,17 +103,15 @@ public class GraqlController {
     private static final int MAX_RETRY = 10;
     private final Printer printer;
     private final EngineGraknTxFactory factory;
-    private final TaskManager taskManager;
     private final PostProcessor postProcessor;
     private final Timer executeGraql;
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
+            EngineGraknTxFactory factory, Service spark,
             PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
-        this.taskManager = taskManager;
         this.postProcessor = postProcessor;
         this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
@@ -281,18 +277,19 @@ public class GraqlController {
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) commitAndSubmitPPTask(tx, postProcessor, taskManager);
+        if (commitQuery) commitAndSubmitPPTask(tx, postProcessor);
 
         return formatted;
     }
 
-    private static void commitAndSubmitPPTask(
-            GraknTx graph, PostProcessor postProcessor, TaskManager taskSubmitter
-    ) {
+    private static void commitAndSubmitPPTask(GraknTx graph, PostProcessor postProcessor) {
         Optional<CommitLog> result = graph.admin().commitSubmitNoLogs();
         if (result.isPresent()) { // Submit more tasks if commit resulted in created commit logs
             CommitLog logs = result.get();
 
+            //TODO: Use background process again or something
+
+            /*
             //Update the attributes which need to be merged
             System.out.println("Adding task to manager . . . ");
             taskSubmitter.addTask(
@@ -303,6 +300,7 @@ public class GraqlController {
             //Update the counts which need to be updated
             System.out.println("Updating counts . . . ");
             postProcessor.updateCounts(graph.keyspace(), logs);
+            */
         }
     }
 

@@ -30,7 +30,6 @@ import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.util.GraknTestUtil;
@@ -117,10 +116,6 @@ public class EngineContext extends CompositeTestRule {
         this.jedisPool = new JedisPool(poolConfig, host, port);
         MetricRegistry metricRegistry = new MetricRegistry();
         return RedisCountStorage.create(jedisPool, metricRegistry);
-    }
-
-    public TaskManager getTaskManager(){
-        return server.getTaskManager();
     }
 
     public SimpleURI uri() {

@@ -23,7 +23,6 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
 import redis.clients.jedis.Jedis;
@@ -47,7 +46,6 @@ public class GraknCreator {
     protected RedisWrapper redisWrapper;
     protected LockProvider lockProvider;
     protected EngineGraknTxFactory engineGraknTxFactory;
-    protected TaskManager taskManager;
 
     /**
      * @deprecated use {@link GraknCreator#create()}.
@@ -108,8 +106,8 @@ public class GraknCreator {
             LockProvider lockProvider = instantiateLock(jedisPool);
             EngineGraknTxFactory factory = instantiateGraknTxFactory(graknEngineConfig, lockProvider);
             PostProcessor postProcessor = postProcessor(metricRegistry, graknEngineConfig, factory, jedisPool, lockProvider);
-            HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, taskManager, postProcessor);
-            graknEngineServer = new GraknEngineServer(graknEngineConfig, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID);
+            HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor);
+            graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID);
             Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
             runtime.addShutdownHook(thread);
         }

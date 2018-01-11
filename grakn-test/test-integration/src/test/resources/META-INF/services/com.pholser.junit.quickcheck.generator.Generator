@@ -71,8 +71,6 @@
 #
 #
 
-ai.grakn.generator.TaskStates
-
 ai.grakn.generator.Vars
 ai.grakn.generator.VarPatternAdmins
 ai.grakn.generator.Conjunctions

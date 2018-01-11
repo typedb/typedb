@@ -22,7 +22,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
@@ -45,11 +44,9 @@ import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
  */
 public class CommitLogController {
     private static final ObjectMapper mapper = new ObjectMapper();
-    private final TaskManager manager;
     private final PostProcessor postProcessor;
 
-    public CommitLogController(Service spark, TaskManager manager, PostProcessor postProcessor){
-        this.manager = manager;
+    public CommitLogController(Service spark, PostProcessor postProcessor){
         this.postProcessor = postProcessor;
 
         spark.post(REST.WebPath.COMMIT_LOG_URI, (req, res) -> submitConcepts(req));
@@ -72,8 +69,8 @@ public class CommitLogController {
 
         // TODO Use an engine wide executor here
         CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, commitLog)),
-                CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration)))
+                CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, commitLog))/*, TODO: Use background process or something
+                CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration))*/)
                 .join();
 
         return "";
