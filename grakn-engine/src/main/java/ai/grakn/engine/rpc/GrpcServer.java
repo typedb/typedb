@@ -19,17 +19,15 @@
 
 package ai.grakn.engine.rpc;
 
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.GraknGrpc;
-import ai.grakn.rpc.GraknOuterClass;
-import ai.grakn.rpc.GraknOuterClass.CloseTxRequest;
-import ai.grakn.rpc.GraknOuterClass.CloseTxResponse;
-import ai.grakn.rpc.GraknOuterClass.OpenTxRequest;
-import ai.grakn.rpc.GraknOuterClass.OpenTxResponse;
-import ai.grakn.rpc.GraknOuterClass.TxId;
-import com.google.common.collect.Maps;
+import ai.grakn.rpc.GraknOuterClass.TxRequest;
+import ai.grakn.rpc.GraknOuterClass.TxResponse;
+import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.Status;
@@ -38,13 +36,24 @@ import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Felix Chapman
  */
 public class GrpcServer implements AutoCloseable {
+
+    public static final Metadata.Key<String> MESSAGE = Metadata.Key.of("message", new Metadata.AsciiMarshaller<String>() {
+        @Override
+        public String toAsciiString(String value) {
+            return value;
+        }
+
+        @Override
+        public String parseAsciiString(String serialized) {
+            return serialized;
+        }
+    });
 
     private final Server server;
 
@@ -71,53 +80,58 @@ public class GrpcServer implements AutoCloseable {
     static class GraknImpl extends GraknGrpc.GraknImplBase {
 
         private final EngineGraknTxFactory txFactory;
-        private final Map<TxId, TxThread> txThreads = Maps.newConcurrentMap();
-        private final AtomicInteger counter = new AtomicInteger();
 
         private GraknImpl(EngineGraknTxFactory txFactory) {
             this.txFactory = txFactory;
         }
 
         @Override
-        public void openTx(OpenTxRequest request, StreamObserver<OpenTxResponse> responseObserver) {
-            GraknOuterClass.Keyspace requestKeyspace = request.getKeyspace();
+        public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver) {
+            return new StreamObserver<TxRequest>() {
+                @Nullable GraknTx tx;
+                AtomicBoolean terminated = new AtomicBoolean(false);
 
-            Keyspace keyspace;
-            try {
-                keyspace = Keyspace.of(requestKeyspace.getValue());
-            } catch (GraknTxOperationException e) {
-                OpenTxResponse.InvalidKeyspaceError error = OpenTxResponse.InvalidKeyspaceError.getDefaultInstance();
-                responseObserver.onNext(OpenTxResponse.newBuilder().setInvalidKeyspace(error).build());
-                responseObserver.onCompleted();
-                return;
-            }
+                @Override
+                public void onNext(TxRequest request) {
+                    switch (request.getRequestCase()) {
+                        case OPEN:
+                            String keyspaceString = request.getOpen().getKeyspace().getValue();
+                            Keyspace keyspace;
+                            try {
+                                keyspace = Keyspace.of(keyspaceString);
+                            } catch (GraknTxOperationException e) {
+                                Metadata trailers = new Metadata();
+                                trailers.put(MESSAGE, e.getMessage());
+                                if (!terminated.getAndSet(true)) {
+                                    responseObserver.onError(new StatusRuntimeException(Status.UNKNOWN, trailers));
+                                }
+                                return;
+                            }
 
-            TxId txId = TxId.newBuilder().setValue(counter.getAndIncrement()).build();
+                            tx = txFactory.tx(keyspace, GraknTxType.WRITE);
+                            break;
+                        case COMMIT:
+                            tx.commit();
+                            break;
+                        case REQUEST_NOT_SET:
+                            break;
+                    }
+                }
 
-            TxThread txThread = TxThread.open(txFactory, keyspace);
+                @Override
+                public void onError(Throwable t) {
 
-            assert !txThreads.containsKey(txId) : "There should not be a transaction with this ID yet";
-            txThreads.put(txId, txThread);
+                }
 
-            OpenTxResponse.Success.Builder success = OpenTxResponse.Success.newBuilder().setTx(txId);
-            OpenTxResponse response = OpenTxResponse.newBuilder().setSuccess(success).build();
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-        }
+                @Override
+                public void onCompleted() {
+                    if (tx != null) tx.close();
 
-        @Override
-        public void closeTx(CloseTxRequest request, StreamObserver<CloseTxResponse> responseObserver) {
-            TxId txId = request.getTx();
-
-            @Nullable TxThread txThread = txThreads.remove(txId);
-
-            if (txThread == null) {
-                responseObserver.onError(new StatusRuntimeException(Status.FAILED_PRECONDITION));
-            } else {
-                txThread.close();
-                responseObserver.onNext(CloseTxResponse.newBuilder().build());
-                responseObserver.onCompleted();
-            }
+                    if (!terminated.getAndSet(true)) {
+                        responseObserver.onCompleted();
+                    }
+                }
+            };
         }
     }
 

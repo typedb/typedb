@@ -3,36 +3,21 @@ syntax = "proto3";
 package ai.grakn.rpc;
 
 service Grakn {
-    rpc OpenTx (OpenTxRequest) returns (OpenTxResponse);
-    rpc CloseTx (CloseTxRequest) returns (CloseTxResponse);
+    rpc Tx (stream TxRequest) returns (stream TxResponse);
 }
 
-message OpenTxRequest {
-    Keyspace keyspace = 1;
-}
-
-message OpenTxResponse {
-    message Success {
-        TxId tx = 1;
+message TxRequest {
+    message Open {
+        Keyspace keyspace = 1;
     }
-    message InvalidKeyspaceError {
-
-    }
-    oneof response {
-        Success success = 1;
-        InvalidKeyspaceError invalidKeyspace = 2;
+    message Commit {}
+    oneof request {
+        Open open = 1;
+        Commit commit = 2;
     }
 }
 
-message CloseTxRequest {
-    TxId tx = 1;
-}
-
-message CloseTxResponse {
-}
-
-message TxId {
-    int32 value = 1;
+message TxResponse {
 }
 
 message Keyspace {
