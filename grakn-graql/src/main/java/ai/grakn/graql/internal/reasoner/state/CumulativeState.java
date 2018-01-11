@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -40,7 +40,7 @@ import java.util.Set;
 public class CumulativeState extends QueryStateBase{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
-    private final Iterator<QueryState> feederStateIterator;
+    private final Iterator<ResolutionState> feederStateIterator;
 
     public CumulativeState(LinkedList<ReasonerQueryImpl> qs,
                            Answer sub,
@@ -50,6 +50,8 @@ public class CumulativeState extends QueryStateBase{
                            QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
+
+        //NB: we need lazy subGoal initialisation here, otherwise they are marked as visited before visit happens
         this.feederStateIterator = !subQueries.isEmpty()?
                 subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() :
                 Collections.emptyIterator();

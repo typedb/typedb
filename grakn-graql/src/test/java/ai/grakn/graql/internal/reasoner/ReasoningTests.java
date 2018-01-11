@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -203,8 +203,6 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
     }
 
-    //TODO unrelated problem, will fix in another PR
-    @Ignore
     @Test //Expected result: The query should return 3 results: one for meta type, one for db, one for inferred type.
     public void queryingForGenericType_ruleDefinesNewType() {
         QueryBuilder qb = testSet2.tx().graql().infer(true);

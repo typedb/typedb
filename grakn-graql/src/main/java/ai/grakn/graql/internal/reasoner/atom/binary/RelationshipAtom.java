@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -68,7 +68,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -110,7 +109,7 @@ public class RelationshipAtom extends IsaAtom {
     private ImmutableMultimap<Role, Var> roleVarMap = null;
     private ImmutableMultimap<Role, Type> roleTypeMap = null;
     private ImmutableMultimap<Role, String> roleConceptIdMap = null;
-    private ImmutableList<RelationshipType> possibleRelations = null;
+    private ImmutableList<Type> possibleRelations = null;
     private final ImmutableList<RelationPlayer> relationPlayers;
     private final ImmutableSet<Label> roleLabels;
 
@@ -131,7 +130,7 @@ public class RelationshipAtom extends IsaAtom {
         ).build();
     }
 
-    private RelationshipAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate predicate, ImmutableList<RelationshipType> possibleRelations, ReasonerQuery par) {
+    private RelationshipAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate predicate, ImmutableList<Type> possibleRelations, ReasonerQuery par) {
         this(pattern, predicateVar, predicate, par);
         this.possibleRelations = possibleRelations;
     }
@@ -165,7 +164,7 @@ public class RelationshipAtom extends IsaAtom {
     public String toString(){
         String typeString = getSchemaConcept() != null?
                 getSchemaConcept().getLabel().getValue() :
-                "{" + inferPossibleRelationTypes(new QueryAnswer()).stream().map(rt -> rt.getLabel().getValue()).collect(Collectors.joining(", ")) + "}";
+                "{" + inferPossibleTypes(new QueryAnswer()).stream().map(rt -> rt.getLabel().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
                 getRelationPlayers().toString();
@@ -194,7 +193,7 @@ public class RelationshipAtom extends IsaAtom {
                 .collect(Collectors.toSet());
     }
 
-    public Answer getRoleSubstitution(){
+    private Answer getRoleSubstitution(){
         Map<Var, Concept> roleSub = new HashMap<>();
         getRolePredicates().forEach(p -> roleSub.put(p.getVarName(), tx().getConcept(p.getPredicate())));
         return new QueryAnswer(roleSub);
@@ -541,7 +540,7 @@ public class RelationshipAtom extends IsaAtom {
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
-    public ImmutableList<RelationshipType> inferPossibleRelationTypes(Answer sub) {
+    public ImmutableList<Type> inferPossibleTypes(Answer sub) {
         if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asRelationshipType());
         if (possibleRelations == null) {
             Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations(sub);
@@ -550,7 +549,7 @@ public class RelationshipAtom extends IsaAtom {
                     .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
                     .collect(toSet());
 
-            ImmutableList.Builder<RelationshipType> builder = ImmutableList.builder();
+            ImmutableList.Builder<Type> builder = ImmutableList.builder();
             //prioritise relations with higher chance of yielding answers
             compatibleConfigurations.asMap().entrySet().stream()
                     //prioritise relations with more allowed roles
@@ -583,6 +582,8 @@ public class RelationshipAtom extends IsaAtom {
                     //retain super types only
                     .filter(t -> Sets.intersection(supers(t), compatibleConfigurations.keySet()).isEmpty())
                     .forEach(builder::add);
+
+            //TODO need to add THING and meta relation type as well to make it complete
             this.possibleRelations = builder.build();
         }
         return possibleRelations;
@@ -596,7 +597,7 @@ public class RelationshipAtom extends IsaAtom {
     private RelationshipAtom inferRelationshipType(Answer sub){
         if (getTypePredicate() != null) return this;
         if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
-        List<RelationshipType> relationshipTypes = inferPossibleRelationTypes(sub);
+        List<Type> relationshipTypes = inferPossibleTypes(sub);
         if (relationshipTypes.size() == 1) return addType(Iterables.getOnlyElement(relationshipTypes));
         return this;
     }
@@ -610,7 +611,7 @@ public class RelationshipAtom extends IsaAtom {
 
     @Override
     public List<Atom> atomOptions(Answer sub) {
-        return this.inferPossibleRelationTypes(sub).stream()
+        return this.inferPossibleTypes(sub).stream()
                 .map(this::addType)
                 .map(at -> at.inferRoles(sub))
                 //order by number of distinct roles
@@ -707,7 +708,10 @@ public class RelationshipAtom extends IsaAtom {
         //TODO make restrictions based on cardinality constraints
         Set<Role> possibleRoles = relType != null?
                 relType.relates().collect(toSet()) :
-                inferPossibleRelationTypes(sub).stream().flatMap(RelationshipType::relates).collect(toSet());
+                inferPossibleTypes(sub).stream()
+                        .filter(Concept::isRelationshipType)
+                        .map(Concept::asRelationshipType)
+                        .flatMap(RelationshipType::relates).collect(toSet());
 
         //possible role types for each casting based on its type
         Map<RelationPlayer, Set<Role>> mappings = new HashMap<>();
