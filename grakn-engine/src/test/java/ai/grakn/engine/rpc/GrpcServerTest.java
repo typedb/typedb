@@ -39,7 +39,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,6 +50,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -142,15 +142,15 @@ public class GrpcServerTest {
             return tx;
         });
 
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
             threadClosedWith[0] = Thread.currentThread();
             return null;
         }).when(tx).close();
 
         OpenTxRequest openRequest = OpenTxRequest.newBuilder().setKeyspace(KEYSPACE_RPC).build();
-        GraknOuterClass.GraknTx txRpc = blockingStub.openTx(openRequest).getSuccess().getTx();
+        GraknOuterClass.TxId txId = blockingStub.openTx(openRequest).getSuccess().getTx();
 
-        CloseTxRequest request = CloseTxRequest.newBuilder().setTx(txRpc).build();
+        CloseTxRequest request = CloseTxRequest.newBuilder().setTx(txId).build();
         blockingStub.closeTx(request);
 
         verify(tx).close();
