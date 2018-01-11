@@ -50,6 +50,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.util.CommonUtil.toImmutableList;
+
 /**
  *
  * <p>
@@ -114,7 +116,7 @@ public class IsaAtom extends TypeAtom {
     private ImmutableList<Type> inferPossibleEntityTypes(Answer sub){
         if (getSchemaConcept() != null) return ImmutableList.of(this.getSchemaConcept().asType());
         if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
-        return ImmutableList.copyOf(tx().admin().getMetaConcept().subs().iterator());
+        return tx().admin().getMetaConcept().subs().collect(toImmutableList());
     }
 
     @Override
