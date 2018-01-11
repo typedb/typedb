@@ -70,6 +70,12 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- Used For Testing Redis Functionality -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
