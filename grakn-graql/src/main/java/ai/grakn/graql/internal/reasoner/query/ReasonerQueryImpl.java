@@ -79,7 +79,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -211,7 +210,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public int hashCode() {
-        return QueryEquivalence.AlphaEquivalence.hash(this);
+        return ReasonerQueryEquivalence.AlphaEquivalence.hash(this);
     }
 
     /**
@@ -219,21 +218,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if two queries are alpha-equivalent
      */
     public boolean isEquivalent(ReasonerQueryImpl q) {
-        return QueryEquivalence.AlphaEquivalence.equivalent(this, q);
-    }
-
-    /**
-     * @param atom in question
-     * @return true if query contains an equivalent atom
-     */
-    boolean containsEquivalentAtom(Atom atom, BiFunction<Atom, Atom, Boolean> equivalenceFunction) {
-        return !getEquivalentAtoms(atom, equivalenceFunction).isEmpty();
-    }
-
-    private Set<Atom> getEquivalentAtoms(Atom atom, BiFunction<Atom, Atom, Boolean> equivalenceFunction) {
-        return getAtoms(Atom.class)
-                .filter(at -> equivalenceFunction.apply(at, atom))
-                .collect(Collectors.toSet());
+        return ReasonerQueryEquivalence.AlphaEquivalence.equivalent(this, q);
     }
 
     @Override
@@ -267,7 +252,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private boolean isTransitive() {
-        return getAtoms(Atom.class).filter(at -> this.containsEquivalentAtom(at, Atomic::isAlphaEquivalent)).count() == 2;
+        return getAtoms(Atom.class).filter(at -> ReasonerQueryEquivalence.containsEquivalentAtom(this, at, Atomic::isAlphaEquivalent)).count() == 2;
     }
 
     /**
@@ -287,14 +272,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
 
         Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
-        return !getAtoms(RelationshipAtom.class)
+        return getAtoms(RelationshipAtom.class)
                 .filter(ra -> ra.getVarNames().contains(typedVar))
-                .anyMatch(ra -> ra.getRoleVarMap().entries().stream()
+                .noneMatch(ra -> ra.getRoleVarMap().entries().stream()
                         //get roles this type needs to play
                         .filter(e -> e.getValue().equals(typedVar))
                         .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
                         //check if it can play it
-                        .anyMatch(e -> !e.getKey().playedByTypes().anyMatch(parentTypes::contains)));
+                        .anyMatch(e -> e.getKey().playedByTypes().noneMatch(parentTypes::contains)));
     }
 
     @Override

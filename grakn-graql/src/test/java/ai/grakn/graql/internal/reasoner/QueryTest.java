@@ -126,24 +126,24 @@ public class QueryTest {
                 "($z, $u) isa is-located-in;" +
                 "}";
 
-        String treeString2 = "{" +
+        String treeString = "{" +
                 "($x, $y) isa is-located-in;" +
                 "($y, $z) isa is-located-in;" +
                 "($y, $u) isa is-located-in;" +
                 "}";
 
-        String loopString3 = "{" +
+        String loopString = "{" +
                 "($x, $y) isa is-located-in;" +
                 "($y, $z) isa is-located-in;" +
                 "($z, $x) isa is-located-in;" +
                 "}";
 
-        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(chainString, graph), graph);
-        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(treeString2, graph), graph);
-        ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(loopString3, graph), graph);
-        queryEquivalence(query, query2, false);
-        queryEquivalence(query, query3, false);
-        queryEquivalence(query2, query3, false);
+        ReasonerQueryImpl chainQuery = ReasonerQueries.create(conjunction(chainString, graph), graph);
+        ReasonerQueryImpl treeQuery = ReasonerQueries.create(conjunction(treeString, graph), graph);
+        ReasonerQueryImpl loopQuery = ReasonerQueries.create(conjunction(loopString, graph), graph);
+        queryEquivalence(chainQuery, treeQuery, false);
+        queryEquivalence(chainQuery, loopQuery, false);
+        queryEquivalence(treeQuery, loopQuery, false);
     }
 
     @Test //tests various configurations of alpha-equivalence with extra type atoms present

@@ -22,13 +22,14 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
-import ai.grakn.graql.internal.reasoner.query.QueryEquivalence;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.base.Equivalence;
 import java.util.HashMap;
@@ -53,7 +54,7 @@ import java.util.stream.Stream;
  */
 class StructuralCache<Q extends ReasonerQueryImpl>{
 
-    private final Equivalence<ReasonerQueryImpl> equivalence = QueryEquivalence.StructuralEquivalence;
+    private final Equivalence<ReasonerQuery> equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
     private final Map<Equivalence.Wrapper<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
 
     StructuralCache(){

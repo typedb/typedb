@@ -30,15 +30,15 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.query.QueryEquivalence;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.util.GraknTestUtil;
@@ -1335,7 +1335,7 @@ public class AtomicQueryTest {
         queryEquivalence(a, b, expectation, expectation, structuralExpectation);
     }
 
-    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, Equivalence<ReasonerQueryImpl> equiv){
+    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, Equivalence<ReasonerQuery> equiv){
         assertEquals("Query: " + a.toString() + " =? " + b.toString(), equiv.equivalent(a, b), queryExpectation);
         assertEquals("Query: " + b.toString() + " =? " + a.toString(), equiv.equivalent(b, a), queryExpectation);
 
@@ -1346,8 +1346,8 @@ public class AtomicQueryTest {
     }
 
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, boolean atomExpectation, boolean structuralExpectation){
-        queryEquivalence(a, b, queryExpectation, QueryEquivalence.AlphaEquivalence);
-        queryEquivalence(a, b, structuralExpectation, QueryEquivalence.StructuralEquivalence);
+        queryEquivalence(a, b, queryExpectation, ReasonerQueryEquivalence.AlphaEquivalence);
+        queryEquivalence(a, b, structuralExpectation, ReasonerQueryEquivalence.StructuralEquivalence);
         atomicEquivalence(a.getAtom(), b.getAtom(), atomExpectation);
     }
 
