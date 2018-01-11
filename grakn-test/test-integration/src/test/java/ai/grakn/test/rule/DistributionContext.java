@@ -140,6 +140,7 @@ public class DistributionContext extends CompositeTestRule {
                 "-cp", getClassPath(),
                 "-Dgrakn.dir=" + DIST_DIRECTORY,
                 "-Dgrakn.conf=" + propertiesFile.getAbsolutePath(),
+                "-Dgrakn.pidfile=/tmp/grakn.pid",
                 Grakn.class.getName(), "&"};
 
         // Start process
@@ -177,7 +178,7 @@ public class DistributionContext extends CompositeTestRule {
             }
         }
 
-        Path graknLog = Paths.get(DIST_DIRECTORY,"logs/grakn.log");
+        Path graknLog = Paths.get(DIST_DIRECTORY,"logs/grakn.log"); // TODO:  do not hardcode
         try {
             LOG.error("logs/grakn.log: " + FileUtils.readFileToString(graknLog.toFile()));
         } catch (IOException e) {
