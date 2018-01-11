@@ -33,6 +33,7 @@ import ai.grakn.test.kbs.PathKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;

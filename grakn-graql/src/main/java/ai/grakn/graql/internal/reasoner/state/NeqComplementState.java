@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 public class NeqComplementState extends AtomicState {
 
     private final Answer predicateSub;
-    private final AtomicState complementState;
+    private final ResolutionState complementState;
     private boolean visited = false;
 
     private final Set<NeqPredicate> predicates;

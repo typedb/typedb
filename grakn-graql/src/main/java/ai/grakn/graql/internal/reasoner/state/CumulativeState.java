@@ -40,7 +40,7 @@ import java.util.Set;
 public class CumulativeState extends QueryStateBase{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
-    private final Iterator<QueryState> feederStateIterator;
+    private final Iterator<ResolutionState> feederStateIterator;
 
     public CumulativeState(LinkedList<ReasonerQueryImpl> qs,
                            Answer sub,
@@ -50,6 +50,8 @@ public class CumulativeState extends QueryStateBase{
                            QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
+
+        //NB: we need lazy subGoal initialisation here, otherwise they are marked as visited before visit happens
         this.feederStateIterator = !subQueries.isEmpty()?
                 subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() :
                 Collections.emptyIterator();
