@@ -28,6 +28,7 @@ import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.rules.TestRule;
@@ -40,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
@@ -175,6 +177,12 @@ public class DistributionContext extends CompositeTestRule {
             }
         }
 
+        Path graknLog = Paths.get(DIST_DIRECTORY,"logs/grakn.log");
+        try {
+            LOG.error("logs/grakn.log: " + FileUtils.readFileToString(graknLog.toFile()));
+        } catch (IOException e) {
+            LOG.error("logs/grakn.log: unable to open " + graknLog.toAbsolutePath().toString());
+        }
         LOG.error("Engine stdout = '" + inputStreamToString(engineProcess.getInputStream()) + "'");
         LOG.error("Engine stderr = '" + inputStreamToString(engineProcess.getErrorStream()) + "'");
         throw new RuntimeException("Could not start engine within expected time");
