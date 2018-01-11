@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  *
  * <p>
  * Lazy container class for storing performed query resolutions.
- * NB: In case the entry is not found, get methods perform a record operation.
+ * NB: For the GET operation, in the case the entry is not found, a RECORD operation is performed.
  * </p>
  *
  * @param <Q> the type of query that is being cached
