@@ -268,13 +268,16 @@ public class ExplanationTest {
     @Test
     public void testExplanationConsistency(){
         GraknTx genealogyGraph = genealogyKB.tx();
+        final long limit = 3;
         QueryBuilder iqb = genealogyGraph.graql().infer(true);
         String queryString = "match " +
                 "($x, $y) isa cousins;" +
-                "limit 3; get;";
+                "limit " + limit + ";"+
+                "get;";
 
         List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
 
+        assertEquals(answers.size(), limit);
         answers.forEach(answer -> {
             testExplanation(answer);
 

@@ -41,6 +41,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -189,6 +191,29 @@ public class TxFactoryJanusTest extends JanusTestBase {
         graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
+    }
+
+    @Test
+    public void whenSeveralFactoriesCreateTheSameKeyspace_NoErrorOccurs() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        Runnable createGraph = () -> {
+            TxFactoryJanus factory = new TxFactoryJanus(session);
+            factory.buildTinkerPopGraph(false);
+        };
+
+        Set<Future<?>> futures = Stream.generate(() -> createGraph)
+                .limit(10)
+                .map(executor::submit)
+                .collect(Collectors.toSet());
+
+        try {
+            for (Future<?> future : futures) {
+                future.get();
+            }
+        } finally {
+            executor.shutdown();
+        }
     }
 
 
