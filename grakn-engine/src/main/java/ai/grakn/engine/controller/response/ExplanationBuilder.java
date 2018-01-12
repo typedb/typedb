@@ -59,7 +59,8 @@ public class ExplanationBuilder {
                         .flatMap(unifier -> rewrittenQuery.materialise(answer.unify(unifier)))
                         .findFirst().orElse(new QueryAnswer());
             }
-            explanation.add((Answer) printer.graqlString(false, inferredAnswer));
+            // TODO: this looks like a bug: the return type is not `Answer`
+            explanation.add((Answer) printer.convert(false, inferredAnswer));
         });
         return explanation;
     }

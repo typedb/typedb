@@ -22,8 +22,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
@@ -65,7 +65,7 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public Stream<String> resultsString(Printer printer) {
+    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
         execute();
         return Stream.empty();
     }

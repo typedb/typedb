@@ -22,7 +22,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -67,8 +67,8 @@ abstract class DefineQueryImpl implements DefineQuery {
     }
 
     @Override
-    public Stream<String> resultsString(Printer printer) {
-        return Stream.of(printer.graqlString(execute()));
+    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
+        return Stream.of(converter.convert(execute()));
     }
 
     @Override

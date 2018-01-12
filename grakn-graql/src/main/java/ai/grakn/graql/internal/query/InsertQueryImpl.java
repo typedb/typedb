@@ -22,9 +22,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
@@ -95,8 +95,8 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Stream<String> resultsString(Printer printer) {
-        return stream().map(printer::graqlString);
+    public <T> Stream<T> results(GraqlConverter<?, T> converter) {
+        return stream().map(converter::convert);
     }
 
     @Override
