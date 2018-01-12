@@ -24,6 +24,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.rpc.GrpcServer;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.EngineID;
@@ -36,6 +37,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 import spark.Service;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -119,7 +121,21 @@ public class GraknCreator {
             EngineGraknTxFactory factory = instantiateGraknTxFactory(graknEngineConfig, lockProvider);
             PostProcessor postProcessor = postProcessor(metricRegistry, graknEngineConfig, factory, jedisPool, lockProvider);
             TaskManager taskManager = instantiateTaskManager(metricRegistry, graknEngineConfig, engineID, factory, jedisPool, postProcessor);
-            HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, taskManager, postProcessor);
+
+            int grpcPortPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
+            GrpcServer grpcServer;
+            try {
+                grpcServer = GrpcServer.create(grpcPortPort, engineGraknTxFactory);
+            } catch (IOException e) {
+                // Thrown if unable to bind to the given port
+                throw new IllegalStateException(e);
+            }
+
+            HttpHandler httpHandler = new HttpHandler(
+                    graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, taskManager,
+                    postProcessor, grpcServer
+            );
+
             graknEngineServer = new GraknEngineServer(graknEngineConfig, taskManager, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID);
             Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
             runtime.addShutdownHook(thread);

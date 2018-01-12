@@ -127,6 +127,18 @@ public class EngineContext extends CompositeTestRule {
         return config.uri();
     }
 
+    public String host() {
+        return config.uri().getHost();
+    }
+
+    public int port() {
+        return config.uri().getPort();
+    }
+
+    public int grpcPort() {
+        return config.getProperty(GraknConfigKey.GRPC_PORT);
+    }
+
     public GraknSession sessionWithNewKeyspace() {
         return Grakn.session(uri(), randomKeyspace());
     }

@@ -102,10 +102,10 @@ public class GraknEngineServer implements AutoCloseable {
         synchronized (this) {
             try {
                 taskManager.close();
+                httpHandler.stopHTTP();
             } catch (Exception e){
                 LOG.error(getFullStackTrace(e));
             }
-            httpHandler.stopHTTP();
             redisWrapper.close();
         }
     }

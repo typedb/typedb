@@ -31,6 +31,9 @@ import java.util.function.Function;
 
 /**
  * @author Felix Chapman
+ *
+ * @param <Request> The type of requests being received
+ * @param <Response> The type of responses being sent
  */
 public class BidirectionalObserver<Request, Response> implements AutoCloseable {
 
@@ -105,19 +108,24 @@ public class BidirectionalObserver<Request, Response> implements AutoCloseable {
         }
     }
 
+    /**
+     * A response, that may be an element, an error or a "completed" message.
+     *
+     * @param <T> The type of response elements
+     */
     @AutoValue
-    abstract static class QueueElem<T> {
+    public abstract static class QueueElem<T> {
 
-        abstract @Nullable T elem();
-        abstract @Nullable Throwable throwable();
+        public abstract @Nullable T elem();
+        public abstract @Nullable Throwable throwable();
 
-        boolean isCompleted() {
+        public boolean isCompleted() {
             return elem() == null && throwable() == null;
         }
 
         private static <T> QueueElem<T> create(@Nullable T elem, @Nullable Throwable throwable) {
             Preconditions.checkArgument(elem == null || throwable == null);
-            return new AutoValue_BidirectionalObserver_QueueElem<>(elem, throwable);
+            return new ai.grakn.engine.rpc.AutoValue_BidirectionalObserver_QueueElem<>(elem, throwable);
         }
 
         static <T> QueueElem<T> completed() {

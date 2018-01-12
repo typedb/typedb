@@ -75,7 +75,7 @@ public class BatchExecutorClientIT {
     }
 
     @Test
-    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() {
+    public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() throws InterruptedException {
         List<Observable<QueryResponse>> all = new ArrayList<>();
         // Create a BatchExecutorClient with a callback that will fail
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
