@@ -121,7 +121,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     @Override
-    public <T1> Stream<T1> results(GraqlConverter<?, T1> converter) {
+    public <S> Stream<S> results(GraqlConverter<?, S> converter) {
         return Stream.of(converter.convert(execute()));
     }
 
