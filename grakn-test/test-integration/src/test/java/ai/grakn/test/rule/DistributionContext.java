@@ -63,7 +63,6 @@ public class DistributionContext extends CompositeTestRule {
 
     public static final Logger LOG = LoggerFactory.getLogger(DistributionContext.class);
 
-    private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
     private static final String ZIP_FILENAME = "grakn-dist-" + GraknVersion.VERSION + ".zip";
     private static final Path GRAKN_BASE_DIRECTORY = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value());
     private static final Path TARGET_DIRECTORY = Paths.get(GRAKN_BASE_DIRECTORY.toString(), "grakn-dist", "target");
@@ -119,13 +118,13 @@ public class DistributionContext extends CompositeTestRule {
         }
 
         try {
-            FileUtils.deleteDirectory(DIST_DIRECTORY.toFile());
+            FileUtils.deleteDirectory(EXTRACTED_DISTRIBUTION_DIRECTORY.toFile());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void assertPackageBuilt() throws IOException {
+    private void assertPackageBuilt() {
         boolean packaged = Files.exists(ZIP_FULLPATH);
 
         if(!packaged) {
@@ -133,7 +132,7 @@ public class DistributionContext extends CompositeTestRule {
         }
     }
 
-    private void unzipDistribution() throws ZipException, IOException {
+    private void unzipDistribution() throws ZipException {
         // Unzip the distribution
         ZipFile zipped = new ZipFile( ZIP_FULLPATH.toFile());
         zipped.extractAll(TARGET_DIRECTORY.toAbsolutePath().toString());
@@ -172,6 +171,7 @@ public class DistributionContext extends CompositeTestRule {
         Path servicesLibDir = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "services", "lib");
         Path confDir = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "conf");
         Path graknLogback = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "services", "grakn");
+        FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
 
         Stream<File> jars = Stream.of(servicesLibDir.toFile().listFiles(jarFiles));
         return Stream.concat(jars, Stream.of(confDir.toFile(), graknLogback.toFile()))
