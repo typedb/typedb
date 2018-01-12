@@ -196,19 +196,6 @@ public class DistributionContext extends CompositeTestRule {
             }
         }
 
-        LOG.error("Engine stdout = '" + inputStreamToString(engineProcess.getInputStream()) + "'");
-        LOG.error("Engine stderr = '" + inputStreamToString(engineProcess.getErrorStream()) + "'");
         throw new RuntimeException("Could not start engine within expected time");
-    }
-
-    private String inputStreamToString(InputStream output) {
-        String engineStdout;
-        try {
-            engineStdout = IOUtils.toString(output, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            engineStdout = "Unable to get output from Engine: " + e.getMessage();
-        }
-
-        return engineStdout;
     }
 }
