@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -21,10 +21,10 @@ package ai.grakn.client;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.TaskId;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 import mjson.Json;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
@@ -121,38 +122,61 @@ public class Client {
      * @return true if Grakn Engine running, false otherwise
      */
     public static boolean serverIsRunning(SimpleURI uri) {
+        URL url;
         try {
-            URL url = UriBuilder.fromUri(uri.toURI()).path(REST.WebPath.KB).build().toURL();
-
-            HttpURLConnection connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
-
-            connection.setRequestMethod("GET");
-
-            try {
-                connection.connect();
-            } catch (IOException e) {
-                // If this fails, then the server is not reachable
-                return false;
-            }
-
-            InputStream inputStream = connection.getInputStream();
-            if (inputStream.available() == 0) {
-                LOG.error("input stream is not available");
-                return false;
-            }
-            return true;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            url = UriBuilder.fromUri(uri.toURI()).path(REST.WebPath.KB).build().toURL();
+        } catch (MalformedURLException e) {
+            throw CommonUtil.unreachableStatement(
+                    "This will never throw because we're appending a known path to a valid URI", e
+            );
         }
+
+        HttpURLConnection connection;
+        try {
+            connection = (HttpURLConnection) mapQuadZeroRouteToLocalhost(url).openConnection();
+        } catch (IOException e) {
+            // If this fails, then the server is not reachable
+            return false;
+        }
+
+        try {
+            connection.setRequestMethod("GET");
+        } catch (ProtocolException e) {
+            throw CommonUtil.unreachableStatement(
+                    "This will never throw because 'GET' is correct and the connection is not open yet", e
+            );
+        }
+
+        int available;
+
+        try {
+            connection.connect();
+            InputStream inputStream = connection.getInputStream();
+            available = inputStream.available();
+        } catch (IOException e) {
+            // If this fails, then the server is not reachable
+            return false;
+        }
+
+        if (available == 0) {
+            LOG.error("input stream is not available");
+            return false;
+        }
+        return true;
     }
 
-    private static URL mapQuadZeroRouteToLocalhost(URL originalUrl) throws MalformedURLException {
+    private static URL mapQuadZeroRouteToLocalhost(URL originalUrl) {
         final String QUAD_ZERO_ROUTE = "http://0.0.0.0";
 
         URL mappedUrl;
         if ((originalUrl.getProtocol() + originalUrl.getHost()).equals(QUAD_ZERO_ROUTE)) {
-            mappedUrl = new URL(
-                    originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.KB);
+            try {
+                mappedUrl = new URL(originalUrl.getProtocol(), "localhost", originalUrl.getPort(), REST.WebPath.KB);
+            } catch (MalformedURLException e) {
+                throw CommonUtil.unreachableStatement(
+                        "This will never throw because the protocol is valid (because it came from another URL)", e
+                );
+            }
         } else {
             mappedUrl = originalUrl;
         }
@@ -162,9 +186,5 @@ public class Client {
 
     protected String convert(String uri, TaskId id){
         return uri.replace(ID_PARAMETER, id.value());
-    }
-
-    protected String exceptionFrom(HttpResponse response) throws IOException {
-        return asJsonHandler.handleResponse(response).at("exception").asString();
     }
 }

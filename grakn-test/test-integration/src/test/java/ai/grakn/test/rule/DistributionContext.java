@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -26,6 +26,7 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
+import com.jayway.restassured.RestAssured;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import org.apache.commons.io.FileUtils;
@@ -60,15 +61,17 @@ public class DistributionContext extends CompositeTestRule {
     public static final Logger LOG = LoggerFactory.getLogger(DistributionContext.class);
 
     private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
-    private static final String ZIP = "grakn-dist-" + GraknVersion.VERSION + ".zip";
-    private static final String CURRENT_DIRECTORY = GraknSystemProperty.PROJECT_RELATIVE_DIR.value();
-    private static final String TARGET_DIRECTORY = CURRENT_DIRECTORY + "/grakn-dist/target/";
-    private static final String DIST_DIRECTORY = TARGET_DIRECTORY + "grakn-dist-" + GraknVersion.VERSION;
+    private static final Path ZIP = Paths.get("grakn-dist-" + GraknVersion.VERSION + ".zip");
+    private static final Path CURRENT_DIRECTORY = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value());
+    private static final Path TARGET_DIRECTORY = CURRENT_DIRECTORY.resolve(Paths.get("grakn-dist", "target"));
+    private static final Path DIST_DIRECTORY = TARGET_DIRECTORY.resolve("grakn-dist-" + GraknVersion.VERSION);
 
     private Process engineProcess;
     private int port = 4567;
     private boolean inheritIO = true;
     private int redisPort = 6379;
+    private final SessionContext session = SessionContext.create();
+    private final InMemoryRedisContext redis = InMemoryRedisContext.create(redisPort);
 
     // prevent initialization with the default constructor
     private DistributionContext() {
@@ -89,10 +92,7 @@ public class DistributionContext extends CompositeTestRule {
 
     @Override
     protected List<TestRule> testRules() {
-        return ImmutableList.of(
-                SessionContext.create(),
-                InMemoryRedisContext.create(redisPort)
-        );
+        return ImmutableList.of(session, redis);
     }
 
     @Override
@@ -101,15 +101,28 @@ public class DistributionContext extends CompositeTestRule {
         unzipDistribution();
         engineProcess = newEngineProcess(port, redisPort);
         waitForEngine();
+        RestAssured.baseURI = uri().toURI().toString();
     }
 
     @Override
     public void after() {
         engineProcess.destroy();
+
+        try {
+            engineProcess.waitFor();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            FileUtils.deleteDirectory(DIST_DIRECTORY.toFile());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void assertPackageBuilt() throws IOException {
-        boolean packaged = Files.exists(Paths.get(TARGET_DIRECTORY, ZIP));
+        boolean packaged = Files.exists(TARGET_DIRECTORY.resolve(ZIP));
 
         if(!packaged) {
             Assert.fail("Grakn has not been packaged. Please package before running tests with the distribution context.");
@@ -118,8 +131,8 @@ public class DistributionContext extends CompositeTestRule {
 
     private void unzipDistribution() throws ZipException, IOException {
         // Unzip the distribution
-        ZipFile zipped = new ZipFile( TARGET_DIRECTORY + ZIP);
-        zipped.extractAll(TARGET_DIRECTORY);
+        ZipFile zipped = new ZipFile(TARGET_DIRECTORY.resolve(ZIP).toFile());
+        zipped.extractAll(TARGET_DIRECTORY.toString());
     }
 
     private Process newEngineProcess(Integer port, Integer redisPort) throws IOException {

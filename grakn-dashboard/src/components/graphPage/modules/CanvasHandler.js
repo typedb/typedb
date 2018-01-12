@@ -28,10 +28,10 @@ function clearGraph() {
 }
 
 
-function onClickSubmit(query:string) {
+function onClickSubmit(query: string) {
   if (query.includes('aggregate')
-          || (query.includes('compute') && query.includes('degrees'))
-      || (query.includes('compute') && query.includes('cluster'))) { // Error message until we will not properly support aggregate queries in graph page.
+    || (query.includes('compute') && query.includes('degrees'))
+    || (query.includes('compute') && query.includes('cluster'))) { // Error message until we will not properly support aggregate queries in graph page.
     EventHub.$emit('error-message', '{"exception":"Invalid query: \\n \'aggregate\' queries \\n \'compute degrees\' \\n \'compute cluster\' \\nare not allowed from the Graph page. \\n \\nPlease use the Console page."}');
     return;
   }
@@ -207,7 +207,7 @@ function addAttributeAndEdgeToInstance(instanceId, res) {
 function loadEntityRelationships(node) {
   EngineClient.request({ url: node.relationships })
     .then((relationships) => {
-      JSON.parse(relationships).map(rel => EngineClient.request({ url: rel.thing }))
+      JSON.parse(relationships).relationships.map(rel => EngineClient.request({ url: rel.thing }))
         .forEach((promise) => { promise.then(onGraphResponse); });
     });
 }
@@ -229,7 +229,7 @@ function showNeighbours(node: Object) {
       // TODO: show nothing as we are not showing roles for now
       break;
     default:
-      console.log('ERROR: Basetype not recognised');
+      console.log(`ERROR: Basetype not recognised: ${baseType}`);
       break;
   }
 }

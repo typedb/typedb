@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -24,7 +24,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.ImmutableSetMultimap.Builder;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.AbstractMap;
@@ -55,15 +54,11 @@ public class UnifierImpl implements Unifier {
     public UnifierImpl(){
         this.unifier = ImmutableSetMultimap.of();
     }
-    public UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){
-        Builder<Var, Var> builder = ImmutableSetMultimap.builder();
-        mappings.forEach(entry -> builder.put(entry.getKey(), entry.getValue()));
-        this.unifier =  builder.build();
-    }
     public UnifierImpl(ImmutableMultimap<Var, Var> map){ this(map.entries());}
     public UnifierImpl(Multimap<Var, Var> map){ this(map.entries());}
     public UnifierImpl(Map<Var, Var> map){ this(map.entrySet());}
-    public UnifierImpl(Unifier u){ this(u.mappings());}
+    private UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){ this.unifier = ImmutableSetMultimap.copyOf(mappings);}
+    private UnifierImpl(Unifier u){ this(u.mappings());}
 
     @Override
     public String toString(){

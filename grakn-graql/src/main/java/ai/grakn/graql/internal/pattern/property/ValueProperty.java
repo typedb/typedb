@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -71,12 +71,12 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).value(predicate().equalsValue().get()); // TODO
         };
 
-        return PropertyExecutor.builder(method).produces(var).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 
     @Override

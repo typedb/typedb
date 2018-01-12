@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -59,7 +59,7 @@ public class QueryAnswers implements Iterable<Answer>{
 
     public QueryAnswers(){}
     public QueryAnswers(Answer ans){ set.add(ans);}
-    public QueryAnswers(Collection<Answer> ans){ ans.forEach(set::add);}
+    public QueryAnswers(Collection<Answer> ans){ set.addAll(ans); }
     public QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
 
     public boolean add(Answer a){ return set.add(a);}

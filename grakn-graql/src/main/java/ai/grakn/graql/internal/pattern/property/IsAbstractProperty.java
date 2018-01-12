@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -74,7 +74,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public PropertyExecutor define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Concept concept = executor.get(var);
             if (concept.isType()) {
@@ -84,11 +84,11 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
             }
         };
 
-        return PropertyExecutor.builder(method).requires(var).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
     }
 
     @Override
-    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
             if (!type.isDeleted()) {
@@ -96,7 +96,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
             }
         };
 
-        return PropertyExecutor.builder(method).requires(var).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
     }
 
     @Override

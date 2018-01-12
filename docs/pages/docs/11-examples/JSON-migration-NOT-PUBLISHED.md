@@ -84,11 +84,6 @@ publication sub relationship
     relates publication-item
     relates publication-author
     relates publication-subject;
-
-publication-item sub role;
-publication-author sub role;
-publication-subject sub role;
-
 ```
 
 Here, there are three entities, to reflect the book, author of the book and possible book subjects. There is one relationship, `publication` which between all three entities.

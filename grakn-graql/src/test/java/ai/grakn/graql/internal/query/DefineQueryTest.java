@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -14,7 +14,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package ai.grakn.graql.internal.query;
@@ -23,6 +22,9 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Graql;
@@ -35,8 +37,8 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.hamcrest.Matchers;
@@ -66,7 +68,9 @@ import static ai.grakn.util.Schema.MetaSchema.ROLE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -428,6 +432,42 @@ public class DefineQueryTest {
         String queryString = "define label my-entity sub entity;";
         DefineQuery defineQuery = parse(queryString);
         assertEquals(queryString, defineQuery.toString());
+    }
+
+    @Test
+    public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped() {
+        qb.define(label("marriage").sub(label(RELATIONSHIP.getLabel())).relates("husband").relates("wife")).execute();
+
+        RelationshipType marriage = movies.tx().getRelationshipType("marriage");
+        Role husband = movies.tx().getRole("husband");
+        Role wife = movies.tx().getRole("wife");
+        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(husband, wife));
+    }
+
+    @Test
+    public void whenDefiningARelationship_SubRoleDeclarationsCanBeSkipped_EvenWhenRoleInReferredToInOtherContexts() {
+        qb.define(
+                label("marriage").sub(label(RELATIONSHIP.getLabel())).relates("husband").relates("wife"),
+                label("person").plays("husband").plays("wife")
+        ).execute();
+
+        RelationshipType marriage = movies.tx().getRelationshipType("marriage");
+        EntityType person = movies.tx().getEntityType("person");
+        Role husband = movies.tx().getRole("husband");
+        Role wife = movies.tx().getRole("wife");
+        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(husband, wife));
+        assertThat(person.plays().toArray(), hasItemInArray(wife));
+        assertThat(person.plays().toArray(), hasItemInArray(husband));
+    }
+
+    @Test
+    public void whenDefiningARelationshipWithNonRoles_Throw() {
+        exception.expect(GraknException.class);
+
+        qb.define(
+                label("marriage").sub(label(RELATIONSHIP.getLabel())).relates("husband").relates("wife"),
+                label("wife").sub(label(ENTITY.getLabel()))
+        ).execute();
     }
 
     private void assertDefine(VarPattern... vars) {

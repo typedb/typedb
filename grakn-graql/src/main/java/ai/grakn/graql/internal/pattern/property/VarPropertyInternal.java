@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -57,11 +57,11 @@ public interface VarPropertyInternal extends VarProperty {
      *
      * @throws GraqlQueryException if this {@link VarProperty} cannot be inserted
      */
-    PropertyExecutor insert(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException;
 
-    PropertyExecutor define(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> define(Var var) throws GraqlQueryException;
 
-    PropertyExecutor undefine(Var var) throws GraqlQueryException;
+    Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException;
 
     /**
      * Whether this property will uniquely identify a concept in the graph, if one exists.
