@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.GraknOuterClass.TxResponse.QueryResult;
 import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -83,6 +84,8 @@ public class GrpcServer implements AutoCloseable {
 
         private final EngineGraknTxFactory txFactory;
 
+        private static final Printer<?> PRINTER = Printers.json();
+
         private GraknImpl(EngineGraknTxFactory txFactory) {
             this.txFactory = txFactory;
         }
@@ -98,30 +101,13 @@ public class GrpcServer implements AutoCloseable {
                     try {
                         switch (request.getRequestCase()) {
                             case OPEN:
-                                if (tx != null) {
-                                    error(Status.FAILED_PRECONDITION);
-                                    break;
-                                }
-
-                                String keyspaceString = request.getOpen().getKeyspace().getValue();
-                                Keyspace keyspace = Keyspace.of(keyspaceString);
-                                tx = txFactory.tx(keyspace, GraknTxType.WRITE);
+                                open(request);
                                 break;
                             case COMMIT:
-                                if (tx == null) {
-                                    error(Status.FAILED_PRECONDITION);
-                                    break;
-                                }
-                                tx.commit();
+                                commit();
                                 break;
                             case EXECQUERY:
-                                if (tx == null) {
-                                    error(Status.FAILED_PRECONDITION);
-                                    break;
-                                }
-                                Printer<?> printer = Printers.json();
-                                Object result = tx.graql().parse(request.getExecQuery().getQuery().getValue()).execute();
-                                responseObserver.onNext(TxResponse.newBuilder().setQueryResult(TxResponse.QueryResult.newBuilder().setValue(printer.graqlString(result))).build());
+                                execQuery(request);
                                 break;
                             case REQUEST_NOT_SET:
                                 break;
@@ -131,6 +117,38 @@ public class GrpcServer implements AutoCloseable {
                         trailers.put(MESSAGE, e.getMessage());
                         error(Status.UNKNOWN, trailers);
                     }
+                }
+
+                private void open(TxRequest request) {
+                    if (tx != null) {
+                        error(Status.FAILED_PRECONDITION);
+                        return;
+                    }
+
+                    String keyspaceString = request.getOpen().getKeyspace().getValue();
+                    Keyspace keyspace = Keyspace.of(keyspaceString);
+                    tx = txFactory.tx(keyspace, GraknTxType.WRITE);
+                }
+
+                private void commit() {
+                    if (tx == null) {
+                        error(Status.FAILED_PRECONDITION);
+                        return;
+                    }
+                    tx.commit();
+                }
+
+                private void execQuery(TxRequest request) {
+                    if (tx == null) {
+                        error(Status.FAILED_PRECONDITION);
+                        return;
+                    }
+
+                    Object result = tx.graql().parse(request.getExecQuery().getQuery().getValue()).execute();
+
+                    QueryResult rpcResult = QueryResult.newBuilder().setValue(PRINTER.graqlString(result)).build();
+
+                    responseObserver.onNext(TxResponse.newBuilder().setQueryResult(rpcResult).build());
                 }
 
                 @Override
