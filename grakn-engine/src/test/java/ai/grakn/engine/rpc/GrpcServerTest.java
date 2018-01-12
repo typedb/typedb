@@ -26,6 +26,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
@@ -42,6 +43,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import mjson.Json;
 import org.hamcrest.Description;
@@ -58,11 +60,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -154,7 +159,7 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_AnErrorOccurs() throws Throwable {
+    public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
         TxRequest.Open openRequest = TxRequest.Open.getDefaultInstance();
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
@@ -162,7 +167,7 @@ public class GrpcServerTest {
 
             exception.expect(hasMessage(GraknTxOperationException.invalidKeyspace("").getMessage()));
 
-            throw tx.error().get();
+            throw tx.receive().throwable();
         }
     }
 
@@ -232,7 +237,7 @@ public class GrpcServerTest {
 
             tx.send(TxRequest.newBuilder().setExecQuery(execQueryRequest).build());
 
-            Json response = Json.read(tx.receive().getQueryResult().getValue());
+            Json response = Json.read(tx.receive().elem().getQueryResult().getValue());
 
             Json expected = Json.array(
                     Json.object("x", Json.object("isa", "L123", "id", "V123")),
@@ -243,9 +248,115 @@ public class GrpcServerTest {
         }
     }
 
-    private Matcher<StatusRuntimeException> hasMessage(String message) {
+    @Test
+    public void whenCommittingBeforeOpeningTx_Throw() throws Throwable {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
+            tx.send(TxRequest.newBuilder().setCommit(TxRequest.Commit.getDefaultInstance()).build());
+
+            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
+    public void whenExecutingAQueryBeforeOpeningTx_Throw() throws Throwable {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
+            tx.send(TxRequest.newBuilder().setExecQuery(TxRequest.ExecQuery.newBuilder().setQuery(QUERY)).build());
+
+            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
+    public void whenOpeningTxTwice_Throw() throws Throwable {
+        TxRequest.Open.Builder openRequest = TxRequest.Open.newBuilder().setKeyspace(KEYSPACE_RPC);
+
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
+            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
+            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
+
+            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
+    public void whenOpeningTxFails_Throw() throws Throwable {
+        when(txFactory.tx(KEYSPACE, GraknTxType.WRITE)).thenThrow(GraknExceptionFake.EXCEPTION);
+
+        TxRequest.Open.Builder openRequest = TxRequest.Open.newBuilder().setKeyspace(KEYSPACE_RPC);
+
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
+            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
+
+            exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
+    public void whenCommittingFails_Throw() throws Throwable {
+        doThrow(GraknExceptionFake.EXCEPTION).when(tx).commit();
+
+        TxRequest.Open.Builder openRequest = TxRequest.Open.newBuilder().setKeyspace(KEYSPACE_RPC);
+
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
+            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
+            tx.send(TxRequest.newBuilder().setCommit(TxRequest.Commit.getDefaultInstance()).build());
+
+            exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
+    public void whenParsingQueryFails_Throw() throws Throwable {
+        when(tx.graql().parse(QUERY.getValue())).thenThrow(GraknExceptionFake.EXCEPTION);
+
+        TxRequest.Open.Builder openRequest = TxRequest.Open.newBuilder().setKeyspace(KEYSPACE_RPC);
+
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
+            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
+            tx.send(TxRequest.newBuilder().setExecQuery(TxRequest.ExecQuery.newBuilder().setQuery(QUERY)).build());
+
+            exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
+    public void whenExecutingQueryFails_Throw() throws Throwable {
+        when(query.execute()).thenThrow(GraknExceptionFake.EXCEPTION);
+
+        TxRequest.Open.Builder openRequest = TxRequest.Open.newBuilder().setKeyspace(KEYSPACE_RPC);
+
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
+            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
+            tx.send(TxRequest.newBuilder().setExecQuery(TxRequest.ExecQuery.newBuilder().setQuery(QUERY)).build());
+
+            exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    private Matcher<StatusRuntimeException> hasStatus(Status status) {
         return allOf(
                 isA(StatusRuntimeException.class),
+                hasProperty("status", is(status))
+        );
+    }
+
+    private Matcher<StatusRuntimeException> hasMessage(String message) {
+        return allOf(
+                hasStatus(Status.UNKNOWN),
                 new TypeSafeMatcher<StatusRuntimeException>() {
                     @Override
                     public void describeTo(Description description) {
@@ -258,6 +369,16 @@ public class GrpcServerTest {
                     }
                 }
         );
+    }
+
+    static class GraknExceptionFake extends GraknException {
+
+        public static final String MESSAGE = "OH DEAR";
+        public static final GraknExceptionFake EXCEPTION = new GraknExceptionFake();
+
+        protected GraknExceptionFake() {
+            super(MESSAGE);
+        }
     }
 }
 

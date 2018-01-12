@@ -19,14 +19,15 @@
 
 package ai.grakn.engine.rpc;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
@@ -56,12 +57,8 @@ class BidirectionalObserver<Request, Response> implements AutoCloseable {
         requests.onNext(request);
     }
 
-    public Response receive() {
+    public QueueElem<Response> receive() {
         return responses.poll();
-    }
-
-    public Optional<Throwable> error() {
-        return Optional.ofNullable(responses.throwable);
     }
 
     @Override
@@ -72,39 +69,27 @@ class BidirectionalObserver<Request, Response> implements AutoCloseable {
 
     static class BlockingObserver<T> implements StreamObserver<T>, AutoCloseable {
 
-        private final BlockingQueue<T> queue = new LinkedBlockingDeque<>();
-        private final CountDownLatch latch = new CountDownLatch(1);
-        private @Nullable Throwable throwable = null;
+        private final BlockingQueue<QueueElem<T>> queue = new LinkedBlockingDeque<>();
+        private final AtomicBoolean terminated = new AtomicBoolean(false);
 
         @Override
         public void onNext(T value) {
-            queue.add(value);
+            queue.add(QueueElem.elem(value));
         }
 
         @Override
         public void onError(Throwable throwable) {
-            this.throwable = throwable;
-            latch.countDown();
+            terminated.set(true);
+            queue.add(QueueElem.error(throwable));
         }
 
         @Override
         public void onCompleted() {
-            latch.countDown();
+            terminated.set(true);
+            queue.add(QueueElem.completed());
         }
 
-        public T poll() {
-            if (isCompleted()) {
-                if (throwable != null) {
-                    if (throwable instanceof RuntimeException) {
-                        throw (RuntimeException) throwable;
-                    } else {
-                        throw new IllegalStateException(throwable);
-                    }
-                } else {
-                    throw new IllegalStateException("Observer has completed");
-                }
-            }
-
+        public QueueElem<T> poll() {
             try {
                 return queue.poll(100, TimeUnit.DAYS);
             } catch (InterruptedException e) {
@@ -113,18 +98,39 @@ class BidirectionalObserver<Request, Response> implements AutoCloseable {
             }
         }
 
-        private boolean isCompleted() {
-            return latch.getCount() == 0;
-        }
-
         @Override
         public void close() {
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                // TODO
-                throw new RuntimeException(e);
+            while (!terminated.get()) {
+                poll();
             }
+        }
+    }
+
+    @AutoValue
+    abstract static class QueueElem<T> {
+
+        abstract @Nullable T elem();
+        abstract @Nullable Throwable throwable();
+
+        boolean isCompleted() {
+            return elem() == null && throwable() == null;
+        }
+
+        private static <T> QueueElem<T> create(@Nullable T elem, @Nullable Throwable throwable) {
+            Preconditions.checkArgument(elem == null || throwable == null);
+            return new AutoValue_BidirectionalObserver_QueueElem<>(elem, throwable);
+        }
+
+        static <T> QueueElem<T> completed() {
+            return create(null, null);
+        }
+
+        static <T> QueueElem<T> error(Throwable throwable) {
+            return create(null, throwable);
+        }
+
+        static <T> QueueElem<T> elem(T elem) {
+            return create(elem, null);
         }
     }
 }

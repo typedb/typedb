@@ -23,7 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.GraknGrpc;
@@ -95,33 +95,41 @@ public class GrpcServer implements AutoCloseable {
 
                 @Override
                 public void onNext(TxRequest request) {
-                    switch (request.getRequestCase()) {
-                        case OPEN:
-                            String keyspaceString = request.getOpen().getKeyspace().getValue();
-                            Keyspace keyspace;
-                            try {
-                                keyspace = Keyspace.of(keyspaceString);
-                            } catch (GraknTxOperationException e) {
-                                Metadata trailers = new Metadata();
-                                trailers.put(MESSAGE, e.getMessage());
-                                if (!terminated.getAndSet(true)) {
-                                    responseObserver.onError(new StatusRuntimeException(Status.UNKNOWN, trailers));
+                    try {
+                        switch (request.getRequestCase()) {
+                            case OPEN:
+                                if (tx != null) {
+                                    error(Status.FAILED_PRECONDITION);
+                                    break;
                                 }
-                                return;
-                            }
 
-                            tx = txFactory.tx(keyspace, GraknTxType.WRITE);
-                            break;
-                        case COMMIT:
-                            tx.commit();
-                            break;
-                        case EXECQUERY:
-                            Printer<?> printer = Printers.json();
-                            Object result = tx.graql().parse(request.getExecQuery().getQuery().getValue()).execute();
-                            responseObserver.onNext(TxResponse.newBuilder().setQueryResult(TxResponse.QueryResult.newBuilder().setValue(printer.graqlString(result))).build());
-                            break;
-                        case REQUEST_NOT_SET:
-                            break;
+                                String keyspaceString = request.getOpen().getKeyspace().getValue();
+                                Keyspace keyspace = Keyspace.of(keyspaceString);
+                                tx = txFactory.tx(keyspace, GraknTxType.WRITE);
+                                break;
+                            case COMMIT:
+                                if (tx == null) {
+                                    error(Status.FAILED_PRECONDITION);
+                                    break;
+                                }
+                                tx.commit();
+                                break;
+                            case EXECQUERY:
+                                if (tx == null) {
+                                    error(Status.FAILED_PRECONDITION);
+                                    break;
+                                }
+                                Printer<?> printer = Printers.json();
+                                Object result = tx.graql().parse(request.getExecQuery().getQuery().getValue()).execute();
+                                responseObserver.onNext(TxResponse.newBuilder().setQueryResult(TxResponse.QueryResult.newBuilder().setValue(printer.graqlString(result))).build());
+                                break;
+                            case REQUEST_NOT_SET:
+                                break;
+                        }
+                    } catch (GraknException e) {
+                        Metadata trailers = new Metadata();
+                        trailers.put(MESSAGE, e.getMessage());
+                        error(Status.UNKNOWN, trailers);
                     }
                 }
 
@@ -136,6 +144,16 @@ public class GrpcServer implements AutoCloseable {
 
                     if (!terminated.getAndSet(true)) {
                         responseObserver.onCompleted();
+                    }
+                }
+
+                private void error(Status status) {
+                    error(status, null);
+                }
+
+                private void error(Status status, @Nullable Metadata trailers) {
+                    if (!terminated.getAndSet(true)) {
+                        responseObserver.onError(new StatusRuntimeException(status, trailers));
                     }
                 }
             };
