@@ -113,6 +113,10 @@ public class GrpcServer implements AutoCloseable {
                         case COMMIT:
                             tx.commit();
                             break;
+                        case EXECQUERY:
+                            Object result = tx.graql().parse(request.getExecQuery().getQuery().getValue()).execute();
+                            responseObserver.onNext(TxResponse.newBuilder().setQueryResult(TxResponse.QueryResult.getDefaultInstance()).build());
+                            break;
                         case REQUEST_NOT_SET:
                             break;
                     }

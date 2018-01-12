@@ -11,15 +11,29 @@ message TxRequest {
         Keyspace keyspace = 1;
     }
     message Commit {}
+    message ExecQuery {
+        Query query = 1;
+    }
     oneof request {
         Open open = 1;
         Commit commit = 2;
+        ExecQuery execQuery = 3;
     }
 }
 
 message TxResponse {
+    message QueryResult {
+
+    }
+    oneof response {
+        QueryResult queryResult = 1;
+    }
 }
 
 message Keyspace {
+    string value = 1;
+}
+
+message Query {
     string value = 1;
 }

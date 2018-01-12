@@ -22,13 +22,21 @@ package ai.grakn.engine.rpc;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.concept.Concept;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
+import ai.grakn.rpc.GraknOuterClass.Query;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
@@ -37,7 +45,6 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -64,9 +71,11 @@ public class GrpcServerTest {
     private static final Keyspace KEYSPACE = Keyspace.of("myks");
     private static final GraknOuterClass.Keyspace KEYSPACE_RPC =
             GraknOuterClass.Keyspace.newBuilder().setValue(KEYSPACE.getValue()).build();
+    private static final Query QUERY = Query.newBuilder().setValue("match $x isa person; get;").build();
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final GraknTx tx = mock(GraknTx.class);
+    private final ai.grakn.graql.Query<?> query = mock(ai.grakn.graql.Query.class);
 
     private GrpcServer server;
 
@@ -81,7 +90,11 @@ public class GrpcServerTest {
     public void setUp() throws IOException {
         server = GrpcServer.create(PORT, txFactory);
 
+        QueryBuilder qb = mock(QueryBuilder.class);
+
         when(txFactory.tx(KEYSPACE, GraknTxType.WRITE)).thenReturn(tx);
+        when(tx.graql()).thenReturn(qb);
+        when(qb.parse(QUERY.getValue())).thenReturn(query);
     }
 
     @After
@@ -111,11 +124,6 @@ public class GrpcServerTest {
         }
 
         verify(tx).commit();
-    }
-
-    @Ignore("Make this check that they are different another way")
-    @Test
-    public void whenOpeningTwoTransactions_TransactionsHaveDifferentIDs() {
     }
 
     @Test
@@ -176,6 +184,44 @@ public class GrpcServerTest {
 
         verify(tx).close();
         assertEquals(threadOpenedWith[0], threadClosedWith[0]);
+    }
+
+    @Test
+    public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
+        TxRequest.Open.Builder openRequest = TxRequest.Open.newBuilder().setKeyspace(KEYSPACE_RPC);
+        TxRequest.ExecQuery execQueryRequest = TxRequest.ExecQuery.newBuilder().setQuery(QUERY).build();
+
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
+            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
+            tx.send(TxRequest.newBuilder().setExecQuery(execQueryRequest).build());
+        }
+
+        ai.grakn.graql.Query<?> query = tx.graql().parse(QUERY.getValue());
+        verify(query).execute();
+    }
+
+    @Test
+    public void whenExecutingAQueryRemotely_AResultIsReturned() {
+        TxRequest.Open.Builder openRequest = TxRequest.Open.newBuilder().setKeyspace(KEYSPACE_RPC);
+        TxRequest.ExecQuery execQueryRequest = TxRequest.ExecQuery.newBuilder().setQuery(QUERY).build();
+
+        Concept conceptX = mock(Concept.class);
+        Concept conceptY = mock(Concept.class);
+
+        ImmutableList<Answer> answers = ImmutableList.of(
+                new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
+        );
+
+        when(query.execute()).thenReturn(answers);
+
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = BidirectionalObserver.create(stub::tx)) {
+            tx.send(TxRequest.newBuilder().setOpen(openRequest).build());
+
+            tx.send(TxRequest.newBuilder().setExecQuery(execQueryRequest).build());
+
+            TxResponse response = tx.receive();
+        }
     }
 
     private Matcher<StatusRuntimeException> hasMessage(String message) {
