@@ -18,27 +18,18 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.exception.GraknException;
-import ai.grakn.graql.Printer;
-import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
-import ai.grakn.rpc.GraknOuterClass.TxResponse.QueryResult;
 import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Felix Chapman
@@ -83,99 +74,14 @@ public class GrpcServer implements AutoCloseable {
 
         private final EngineGraknTxFactory txFactory;
 
-        private static final Printer<?> PRINTER = Printers.json();
-
         private GraknImpl(EngineGraknTxFactory txFactory) {
             this.txFactory = txFactory;
         }
 
         @Override
         public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver) {
-            return new StreamObserver<TxRequest>() {
-                @Nullable GraknTx tx;
-                AtomicBoolean terminated = new AtomicBoolean(false);
-
-                @Override
-                public void onNext(TxRequest request) {
-                    try {
-                        switch (request.getRequestCase()) {
-                            case OPEN:
-                                open(request);
-                                break;
-                            case COMMIT:
-                                commit();
-                                break;
-                            case EXECQUERY:
-                                execQuery(request);
-                                break;
-                            case REQUEST_NOT_SET:
-                                break;
-                        }
-                    } catch (GraknException e) {
-                        Metadata trailers = new Metadata();
-                        trailers.put(MESSAGE, e.getMessage());
-                        error(Status.UNKNOWN, trailers);
-                    }
-                }
-
-                private void open(TxRequest request) {
-                    if (tx != null) {
-                        error(Status.FAILED_PRECONDITION);
-                        return;
-                    }
-
-                    String keyspaceString = request.getOpen().getKeyspace().getValue();
-                    Keyspace keyspace = Keyspace.of(keyspaceString);
-                    tx = txFactory.tx(keyspace, GraknTxType.WRITE);
-                }
-
-                private void commit() {
-                    if (tx == null) {
-                        error(Status.FAILED_PRECONDITION);
-                        return;
-                    }
-                    tx.commit();
-                }
-
-                private void execQuery(TxRequest request) {
-                    if (tx == null) {
-                        error(Status.FAILED_PRECONDITION);
-                        return;
-                    }
-
-                    Object result = tx.graql().parse(request.getExecQuery().getQuery().getValue()).execute();
-
-                    QueryResult rpcResult = QueryResult.newBuilder().setValue(PRINTER.graqlString(result)).build();
-
-                    responseObserver.onNext(TxResponse.newBuilder().setQueryResult(rpcResult).build());
-                }
-
-                @Override
-                public void onError(Throwable t) {
-
-                }
-
-                @Override
-                public void onCompleted() {
-                    if (tx != null) tx.close();
-
-                    if (!terminated.getAndSet(true)) {
-                        responseObserver.onCompleted();
-                    }
-                }
-
-                private void error(Status status) {
-                    error(status, null);
-                }
-
-                private void error(Status status, @Nullable Metadata trailers) {
-                    if (!terminated.getAndSet(true)) {
-                        responseObserver.onError(new StatusRuntimeException(status, trailers));
-                    }
-                }
-            };
+            return TxObserver.create(txFactory, responseObserver);
         }
     }
-
 }
 
