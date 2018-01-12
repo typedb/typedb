@@ -191,7 +191,7 @@ public class DistributionContext extends CompositeTestRule {
             }
         }
 
-        Path graknLog = Paths.get(DIST_DIRECTORY,"logs/grakn.log"); // TODO:  do not hardcode
+        Path graknLog = Paths.get(DIST_DIRECTORY.toString(),"logs/grakn.log"); // TODO:  do not hardcode
         try {
             LOG.error("logs/grakn.log: " + FileUtils.readFileToString(graknLog.toFile()));
         } catch (IOException e) {
