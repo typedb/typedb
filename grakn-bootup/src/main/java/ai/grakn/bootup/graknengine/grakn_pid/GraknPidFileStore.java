@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -17,6 +17,8 @@
  */
 
 package ai.grakn.bootup.graknengine.grakn_pid;
+
+import ai.grakn.util.ErrorMessage;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -56,8 +58,7 @@ public class GraknPidFileStore implements GraknPidStore {
                 throw new RuntimeException(e);
             }
         } else {
-            String message = "pid file already exists: '" + pidFilePath.toString();
-            throw new GraknPidException(message);
+            throw new GraknPidException(ErrorMessage.PID_ALREADY_EXISTS.getMessage(pidFilePath.toString()));
         }
     }
 }
