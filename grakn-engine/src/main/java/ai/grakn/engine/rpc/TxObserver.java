@@ -23,6 +23,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
@@ -109,7 +110,20 @@ class TxObserver implements StreamObserver<TxRequest> {
             return;
         }
 
-        Object result = tx.runAndReturn(t -> t.graql().parse(request.getExecQuery().getQuery().getValue()).execute());
+        boolean infer = request.getExecQuery().getInfer();
+        boolean setInfer = request.getExecQuery().getSetInfer();
+
+        String queryString = request.getExecQuery().getQuery().getValue();
+
+        Object result = tx.runAndReturn(t -> {
+            QueryBuilder graql = t.graql();
+
+            if (setInfer) {
+                graql.infer(infer);
+            }
+
+            return graql.parse(queryString).execute();
+        });
 
         QueryResult rpcResult = QueryResult.newBuilder().setValue(PRINTER.graqlString(result)).build();
 

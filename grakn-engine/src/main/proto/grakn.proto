@@ -13,6 +13,8 @@ message TxRequest {
     message Commit {}
     message ExecQuery {
         Query query = 1;
+        bool setInfer = 2;
+        bool infer = 3;
     }
     oneof request {
         Open open = 1;

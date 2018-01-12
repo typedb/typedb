@@ -53,6 +53,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,10 +64,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -228,6 +231,36 @@ public class GrpcServerTest {
     }
 
     @Test
+    public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS));
+            tx.send(execQueryRequest(QUERY));
+        }
+
+        verify(tx.graql(), times(0)).infer(anyBoolean());
+    }
+
+    @Test
+    public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS));
+            tx.send(execQueryRequest(QUERY, false));
+        }
+
+        verify(tx.graql()).infer(false);
+    }
+
+    @Test
+    public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS));
+            tx.send(execQueryRequest(QUERY, true));
+        }
+
+        verify(tx.graql()).infer(true);
+    }
+
+    @Test
     public void whenCommittingBeforeOpeningTx_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(commitRequest());
@@ -330,8 +363,18 @@ public class GrpcServerTest {
     }
 
     private TxRequest execQueryRequest(String queryString) {
+        return execQueryRequest(queryString, null);
+    }
+
+    private TxRequest execQueryRequest(String queryString, @Nullable Boolean infer) {
         GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
-        return TxRequest.newBuilder().setExecQuery(TxRequest.ExecQuery.newBuilder().setQuery(query)).build();
+        TxRequest.ExecQuery.Builder execQueryRequest = TxRequest.ExecQuery.newBuilder().setQuery(query);
+
+        if (infer != null) {
+            execQueryRequest.setSetInfer(true).setInfer(infer);
+        }
+
+        return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
     }
 
     private Matcher<StatusRuntimeException> hasStatus(Status status) {
