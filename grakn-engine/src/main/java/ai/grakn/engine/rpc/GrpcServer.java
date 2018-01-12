@@ -24,6 +24,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
@@ -114,8 +116,9 @@ public class GrpcServer implements AutoCloseable {
                             tx.commit();
                             break;
                         case EXECQUERY:
+                            Printer<?> printer = Printers.json();
                             Object result = tx.graql().parse(request.getExecQuery().getQuery().getValue()).execute();
-                            responseObserver.onNext(TxResponse.newBuilder().setQueryResult(TxResponse.QueryResult.getDefaultInstance()).build());
+                            responseObserver.onNext(TxResponse.newBuilder().setQueryResult(TxResponse.QueryResult.newBuilder().setValue(printer.graqlString(result))).build());
                             break;
                         case REQUEST_NOT_SET:
                             break;

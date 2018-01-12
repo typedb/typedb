@@ -23,8 +23,11 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
@@ -40,6 +43,7 @@ import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import mjson.Json;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -57,6 +61,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -75,7 +80,7 @@ public class GrpcServerTest {
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final GraknTx tx = mock(GraknTx.class);
-    private final ai.grakn.graql.Query<?> query = mock(ai.grakn.graql.Query.class);
+    private final GetQuery query = mock(GetQuery.class);
 
     private GrpcServer server;
 
@@ -205,8 +210,15 @@ public class GrpcServerTest {
         TxRequest.Open.Builder openRequest = TxRequest.Open.newBuilder().setKeyspace(KEYSPACE_RPC);
         TxRequest.ExecQuery execQueryRequest = TxRequest.ExecQuery.newBuilder().setQuery(QUERY).build();
 
-        Concept conceptX = mock(Concept.class);
-        Concept conceptY = mock(Concept.class);
+        Concept conceptX = mock(Concept.class, RETURNS_DEEP_STUBS);
+        when(conceptX.getId()).thenReturn(ConceptId.of("V123"));
+        when(conceptX.isThing()).thenReturn(true);
+        when(conceptX.asThing().type().getLabel()).thenReturn(Label.of("L123"));
+
+        Concept conceptY = mock(Concept.class, RETURNS_DEEP_STUBS);
+        when(conceptY.getId()).thenReturn(ConceptId.of("V456"));
+        when(conceptY.isThing()).thenReturn(true);
+        when(conceptY.asThing().type().getLabel()).thenReturn(Label.of("L456"));
 
         ImmutableList<Answer> answers = ImmutableList.of(
                 new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
@@ -220,7 +232,14 @@ public class GrpcServerTest {
 
             tx.send(TxRequest.newBuilder().setExecQuery(execQueryRequest).build());
 
-            TxResponse response = tx.receive();
+            Json response = Json.read(tx.receive().getQueryResult().getValue());
+
+            Json expected = Json.array(
+                    Json.object("x", Json.object("isa", "L123", "id", "V123")),
+                    Json.object("y", Json.object("isa", "L456", "id", "V456"))
+            );
+
+            assertEquals(expected, response);
         }
     }
 

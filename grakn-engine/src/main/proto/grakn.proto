@@ -23,7 +23,7 @@ message TxRequest {
 
 message TxResponse {
     message QueryResult {
-
+        string value = 1;
     }
     oneof response {
         QueryResult queryResult = 1;
