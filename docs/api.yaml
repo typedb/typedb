@@ -215,12 +215,8 @@ paths:
       parameters:
       - $ref: '#/parameters/keyspace'
       - $ref: '#/parameters/label'
-      - name: limit
-        in: query
-        type: number
-      - name: offset
-        in: query
-        type: number
+      - $ref: '#/parameters/limit'
+      - $ref: '#/parameters/offset'
       produces: [application/json]
       responses:
         200:
@@ -259,7 +255,7 @@ paths:
             $ref: '#/definitions/Plays'
         404:
           description: ''
-  /kb/{keyspace}/type/{label}/atributes:
+  /kb/{keyspace}/type/{label}/attributes:
     get:
       summary: Get Attributes
       tags: [Concepts]
@@ -373,16 +369,6 @@ paths:
             $ref: '#/definitions/SubRules'
         404:
           description: ''
-  /configuration:
-    get:
-      summary: Get Configuration
-      tags: [Internal]
-      produces: [application/json]
-      responses:
-        200:
-          description: ''
-          schema:
-            $ref: '#/definitions/Configuration'
   /status:
     get:
       summary: Get Status
@@ -436,11 +422,23 @@ parameters:
 #   For OpenAPI 3.0
 #   schema:
 #     $ref: '#/definitions/Label'
+  limit:
+    name: limit
+    in: query
+    type: number
+  offset:
+    name: offset
+    in: query
+    type: number
 definitions:
   Root:
     type: object
-    required: [keyspaces]
+    required: ['@id', keyspaces]
     properties:
+      '@id':
+        type: string
+        format: uri
+        example: /
       keyspaces:
         $ref: '#/definitions/KnowledgeBasesLink'
   KnowledgeBasesLink:
@@ -695,7 +693,7 @@ definitions:
           instances:
             $ref: '#/definitions/InstancesLink'
           'base-type':
-            enum: ['ENTITY_TYPE', 'RELATIONSHIP_TYPE', 'ATTRIBUTE_TYPE']
+            enum: ['TYPE', 'ENTITY_TYPE', 'RELATIONSHIP_TYPE', 'ATTRIBUTE_TYPE']
   InstancesLink:
     type: string
     format: uri

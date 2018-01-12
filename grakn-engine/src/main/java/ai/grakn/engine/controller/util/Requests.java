@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller.util;
 
+import ai.grakn.engine.controller.response.Link;
 import ai.grakn.exception.GraknServerException;
 import mjson.Json;
 import spark.Request;
@@ -75,6 +76,10 @@ public class Requests {
     public static String mandatoryBody(Request request){
         return Optional.ofNullable(request.body()).filter(s -> !s.isEmpty()).orElseThrow(
                 GraknServerException::requestMissingBody);
+    }
+
+    public static Link selfLink(Request request) {
+        return Link.create(request.pathInfo());
     }
 
     /**
