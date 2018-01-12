@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -77,8 +77,7 @@ public class NeqComplementState extends AtomicState {
         Answer fullAnswer = state.getSubstitution().merge(predicateSub);
 
         boolean isNeqSatisfied = !predicates.stream()
-                .filter(p -> !p.isSatisfied(fullAnswer))
-                .findFirst().isPresent();
+                .anyMatch(p -> !p.isSatisfied(fullAnswer));
         return isNeqSatisfied?
                 new AnswerState(state.getSubstitution(), getUnifier(), getParentState()) :
                 null;

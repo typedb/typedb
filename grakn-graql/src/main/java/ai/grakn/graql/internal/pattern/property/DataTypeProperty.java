@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -69,16 +69,16 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
     }
 
     @Override
-    public PropertyExecutor define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).dataType(dataType());
         };
 
-        return PropertyExecutor.builder(method).produces(var).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 
     @Override
-    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         // TODO: resolve the below issue correctly
         // undefine for datatype must be supported, because it is supported in define.
         // However, making it do the right thing is difficult. Ideally we want the same as define:
@@ -90,7 +90,7 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
         //
         // Doing this is tough because it means the `datatype` property needs to be aware of the context somehow.
         // As a compromise, we make all the cases succeed (where some do nothing)
-        return PropertyExecutor.builder(executor -> {}).build();
+        return ImmutableSet.of(PropertyExecutor.builder(executor -> {}).build());
     }
 
     @Override

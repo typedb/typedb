@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -58,7 +58,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
     /**
      * @return structural cache of this cache
      */
-    public StructuralCache<Q> structuralCache(){ return sCache;}
+    StructuralCache<Q> structuralCache(){ return sCache;}
 
     /**
      * @param query for which the entry is to be retrieved

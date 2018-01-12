@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -117,7 +117,7 @@ public class GraqlTraversalPlanner {
             atomsToPlan.remove(first);
 
             Set<IdPredicate> extraSubs = first.getVarNames().stream()
-                    .filter(v -> !subs.stream().anyMatch(s -> s.getVarName().equals(v)))
+                    .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
                     .map(v -> new IdPredicate(v, ConceptId.of("placeholderId"), query))
                     .collect(Collectors.toSet());
             return Stream.concat(

@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -48,7 +48,7 @@ public abstract class AtomicBase implements Atomic {
     private final Var varName;
     private final VarPattern atomPattern;
     private Pattern combinedPattern = null;
-    private ReasonerQuery parent = null;
+    private ReasonerQuery parent;
 
     protected AtomicBase(VarPattern pattern, ReasonerQuery par) {
         this.atomPattern = pattern;

@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -90,18 +90,13 @@ public class QueryOperationExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
-    // The method that is applied on every `VarProperty`
-    private final ExecutionType executionType;
-
     private QueryOperationExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
                                    Partition<Var> equivalentVars,
-                                   ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
-                                   ExecutionType executionType) {
+                                   ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
         this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
         this.dependencies = dependencies;
-        this.executionType = executionType;
     }
 
     /**
@@ -130,8 +125,9 @@ public class QueryOperationExecutor {
     private static QueryOperationExecutor create(
             Collection<VarPatternAdmin> patterns, GraknTx graph, ExecutionType executionType
     ) {
-        ImmutableSet<VarAndProperty> properties =
-                patterns.stream().flatMap(VarAndProperty::fromPattern).collect(toImmutableSet());
+        ImmutableSet<VarAndProperty> properties = patterns.stream()
+                .flatMap(pattern -> VarAndProperty.fromPattern(pattern, executionType))
+                .collect(toImmutableSet());
 
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
@@ -145,7 +141,7 @@ public class QueryOperationExecutor {
         Multimap<VarAndProperty, Var> propDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var requiredVar : property.executor(executionType).requiredVars()) {
+            for (Var requiredVar : property.executor().requiredVars()) {
                 propDependencies.put(property, requiredVar);
             }
         }
@@ -159,7 +155,7 @@ public class QueryOperationExecutor {
         Multimap<Var, VarAndProperty> varDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var producedVar : property.executor(executionType).producedVars()) {
+            for (Var producedVar : property.executor().producedVars()) {
                 varDependencies.put(producedVar, property);
             }
         }
@@ -220,9 +216,7 @@ public class QueryOperationExecutor {
          */
         Multimap<VarAndProperty, VarAndProperty> dependencies = composeMultimaps(propDependencies, varDependencies);
 
-        return new QueryOperationExecutor(
-                graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), executionType
-        );
+        return new QueryOperationExecutor(graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies));
     }
 
     private static Multimap<VarProperty, Var> equivalentProperties(Set<VarAndProperty> properties) {
@@ -259,7 +253,7 @@ public class QueryOperationExecutor {
     private Answer insertAll(Answer results) {
         concepts.putAll(results.map());
 
-        sortProperties().forEach(property -> property.executor(executionType).execute(this));
+        sortProperties().forEach(property -> property.executor().execute(this));
 
         conceptBuilders.forEach(this::buildConcept);
 
@@ -448,17 +442,21 @@ public class QueryOperationExecutor {
 
         abstract Var var();
         abstract VarPropertyInternal property();
+        abstract PropertyExecutor executor();
 
-        static VarAndProperty of(Var var, VarProperty property) {
-            return new AutoValue_QueryOperationExecutor_VarAndProperty(var, VarPropertyInternal.from(property));
+        private static VarAndProperty of(Var var, VarProperty property, PropertyExecutor executor) {
+            VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
+            return new AutoValue_QueryOperationExecutor_VarAndProperty(var, propertyInternal, executor);
         }
 
-        static Stream<VarAndProperty> fromPattern(VarPatternAdmin pattern) {
-            return pattern.getProperties().map(prop -> VarAndProperty.of(pattern.var(), prop));
+        private static Stream<VarAndProperty> all(Var var, VarProperty property, ExecutionType executionType) {
+            VarPropertyInternal propertyInternal = VarPropertyInternal.from(property);
+            return executionType.executors(propertyInternal, var).stream()
+                    .map(executor -> VarAndProperty.of(var, property, executor));
         }
 
-        private PropertyExecutor executor(ExecutionType executionType) {
-            return executionType.executor(property(), var());
+        static Stream<VarAndProperty> fromPattern(VarPatternAdmin pattern, ExecutionType executionType) {
+            return pattern.getProperties().flatMap(prop -> VarAndProperty.all(pattern.var(), prop, executionType));
         }
 
         boolean uniquelyIdentifiesConcept() {
@@ -468,21 +466,21 @@ public class QueryOperationExecutor {
 
     private enum ExecutionType {
         INSERT {
-            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
                 return property.insert(var);
             }
         },
         DEFINE {
-            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
                 return property.define(var);
             }
         },
         UNDEFINE {
-            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+            Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var) {
                 return property.undefine(var);
             }
         };
 
-        abstract PropertyExecutor executor(VarPropertyInternal property, Var var);
+        abstract Collection<PropertyExecutor> executors(VarPropertyInternal property, Var var);
     }
 }

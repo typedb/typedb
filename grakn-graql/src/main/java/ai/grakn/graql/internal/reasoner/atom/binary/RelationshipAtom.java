@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -118,7 +118,7 @@ public class RelationshipAtom extends IsaAtom {
         List<RelationPlayer> rps = new ArrayList<>();
         getPattern().admin()
                 .getProperty(RelationshipProperty.class)
-                .ifPresent(prop -> prop.relationPlayers().forEach(rps::add));
+                .ifPresent(prop -> rps.addAll(prop.relationPlayers()));
         this.relationPlayers = ImmutableList.copyOf(rps);
         this.roleLabels = ImmutableSet.<Label>builder().addAll(
                 relationPlayers.stream()
@@ -623,8 +623,8 @@ public class RelationshipAtom extends IsaAtom {
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = super.getVarNames();
-        getRolePlayers().forEach(vars::add);
-        getRoleVariables().forEach(vars::add);
+        vars.addAll(getRolePlayers());
+        vars.addAll(getRoleVariables());
         return vars;
     }
 
@@ -790,20 +790,18 @@ public class RelationshipAtom extends IsaAtom {
         Multimap<Role, RelationPlayer> roleRelationPlayerMap = ArrayListMultimap.create();
         Multimap<Role, Var> roleVarMap = getRoleVarMap();
         List<RelationPlayer> relationPlayers = getRelationPlayers();
-        roleVarMap.asMap().entrySet()
-                .forEach(e -> {
-                    Role role = e.getKey();
-                    Label roleLabel = role.getLabel();
-                    relationPlayers.stream()
-                            .filter(rp -> rp.getRole().isPresent())
-                            .forEach(rp -> {
-                                VarPatternAdmin roleTypeVar = rp.getRole().orElse(null);
-                                Label rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
-                                if (roleLabel != null && roleLabel.equals(rl)) {
-                                    roleRelationPlayerMap.put(role, rp);
-                                }
-                            });
-                });
+        roleVarMap.asMap().forEach((role, value) -> {
+            Label roleLabel = role.getLabel();
+            relationPlayers.stream()
+                    .filter(rp -> rp.getRole().isPresent())
+                    .forEach(rp -> {
+                        VarPatternAdmin roleTypeVar = rp.getRole().orElse(null);
+                        Label rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
+                        if (roleLabel != null && roleLabel.equals(rl)) {
+                            roleRelationPlayerMap.put(role, rp);
+                        }
+                    });
+        });
         return roleRelationPlayerMap;
     }
 
@@ -925,8 +923,7 @@ public class RelationshipAtom extends IsaAtom {
             boolean unifyRoleVariables = parentAtom.getRelationPlayers().stream()
                     .map(RelationPlayer::getRole)
                     .flatMap(CommonUtil::optionalToStream)
-                    .filter(rp -> rp.var().isUserDefinedName())
-                    .findFirst().isPresent();
+                    .anyMatch(rp -> rp.var().isUserDefinedName());
             getRelationPlayerMappings(parentAtom, unifierType)
                     .forEach(mappingList -> {
                         Multimap<Var, Var> varMappings = HashMultimap.create();
@@ -957,8 +954,7 @@ public class RelationshipAtom extends IsaAtom {
         Answer substitution = getParentQuery().getSubstitution();
 
         Relationship relationship = RelationshipTypeImpl.from(relationType).addRelationshipInferred();
-        roleVarMap.asMap().entrySet()
-                .forEach(e -> e.getValue().forEach(var -> relationship.addRolePlayer(e.getKey(), substitution.get(var).asThing())));
+        roleVarMap.asMap().forEach((key, value) -> value.forEach(var -> relationship.addRolePlayer(key, substitution.get(var).asThing())));
 
         Answer relationSub = getRoleSubstitution().merge(
                 getVarName().isUserDefinedName()?

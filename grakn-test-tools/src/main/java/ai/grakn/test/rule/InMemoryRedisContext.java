@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -18,10 +18,12 @@
 package ai.grakn.test.rule;
 
 import ai.grakn.redismock.RedisServer;
+import com.google.common.base.Preconditions;
 import org.junit.rules.ExternalResource;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,14 +36,11 @@ import java.util.Map;
 public class InMemoryRedisContext extends ExternalResource {
     private static final JedisPoolConfig DEFAULT_CONFIG = new JedisPoolConfig();
     private final Map<JedisPoolConfig, JedisPool> pools = new HashMap<>();
-    private RedisServer server;
+    private final int port;
+    private @Nullable RedisServer server = null;
 
     private InMemoryRedisContext(int port) {
-        try {
-            server = RedisServer.newRedisServer(port);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        this.port = port;
     }
 
     public static InMemoryRedisContext create(){
@@ -54,6 +53,12 @@ public class InMemoryRedisContext extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
+        try {
+            server = RedisServer.newRedisServer(port);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         server.start();
     }
 
@@ -66,6 +71,8 @@ public class InMemoryRedisContext extends ExternalResource {
     }
 
     public RedisServer server() {
+        checkInitialised();
+        assert server != null;
         return server;
     }
 
@@ -74,10 +81,17 @@ public class InMemoryRedisContext extends ExternalResource {
     }
 
     public JedisPool jedisPool(JedisPoolConfig config){
+        checkInitialised();
+        assert server != null;
+
         if(!pools.containsKey(config)){
             JedisPool pool = new JedisPool(config, server.getHost(), server.getBindPort(), 1000000);
             pools.put(config, pool);
         }
         return pools.get(config);
+    }
+
+    private void checkInitialised() {
+        Preconditions.checkState(server != null, "InMemoryRedisContext not initialised");
     }
 }

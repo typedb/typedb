@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -70,16 +70,16 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     }
 
     @Override
-    public PropertyExecutor define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             executor.get(var).asAttributeType().setRegex(regex());
         };
 
-        return PropertyExecutor.builder(method).requires(var).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
     }
 
     @Override
-    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             AttributeType<Object> attributeType = executor.get(var).asAttributeType();
             if (!attributeType.isDeleted() && regex().equals(attributeType.getRegex())) {
@@ -87,7 +87,7 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
             }
         };
 
-        return PropertyExecutor.builder(method).requires(var).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
     }
 
     @Override

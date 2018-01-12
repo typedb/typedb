@@ -107,8 +107,6 @@ define
 
   employment sub relationship,
     relates employee, relates employer;
-  employee sub role;
-  employer sub role;
 ```
 
 <br /> <img src="/images/knowledge-model4.png" style="width: 400px;" alt="
@@ -156,9 +154,6 @@ define
   employment sub relationship,
     relates employee, relates employer,
     has "date";
-
-  employee sub role;
-  employer sub role;
 ```
 
 <br /> <img src="/images/knowledge-model6.png" style="width: 400px;" alt="
@@ -174,10 +169,6 @@ define
     relates employee,
     relates employer,
     relates office;
-
-  employee sub role;
-  employer sub role;
-  office sub role;
 ```
 
 <br /> <img src="/images/knowledge-model8.png" style="width: 400px;" alt="

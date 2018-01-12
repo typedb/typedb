@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -152,14 +152,11 @@ public final class ResolutionPlan {
             //look at neighbours up to two hops away
             top = top.getNeighbours(Atom.class).filter(atoms::contains)
                     .flatMap(at -> Stream.concat(Stream.of(at), at.getNeighbours(Atom.class).filter(atoms::contains)))
-                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                    .findFirst().orElse(null);
+                    .min(Comparator.comparing(at -> -at.computePriority(subbedVars))).orElse(null);
 
             //top is disconnected atom
             if (top == null) {
-                top = atoms.stream()
-                        .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().orElse(null);
+                top = atoms.stream().min(Comparator.comparing(at -> -at.computePriority(subbedVars))).orElse(null);
             }
         }
 
