@@ -35,11 +35,31 @@ import java.util.Set;
  *
  * @author Jason Liu
  */
-public interface CorenessQuery extends ComputeQuery<Map<String, Set<String>>> {
+public interface CorenessQuery extends ComputeQuery<Map<Integer, Set<String>>> {
+
+    /**
+     * @param k set the min value of coreness in k-core. Be default, k = 2.
+     * @return a CorenessQuery with min value of coreness set
+     */
+    CorenessQuery minK(int k);
+
+    /**
+     * @param ofTypeLabels an array of types in the subgraph to compute coreness of. By default the coreness of all
+     *                     entities and attributes are computed.
+     * @return a CorenessQuery with the subTypeLabels set
+     */
+    CorenessQuery of(String... ofTypeLabels);
+
+    /**
+     * @param ofLabels a collection of types in the subgraph to compute coreness of. By default the coreness of all
+     *                 entities and attributes are computed.
+     * @return a CorenessQuery with the subTypeLabels set
+     */
+    CorenessQuery of(Collection<Label> ofLabels);
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph.
-     *                      By default KCoreQuery uses instances of all the types.
+     *                      By default CorenessQuery includes all entities, relationships and attributes.
      * @return a CorenessQuery with the subTypeLabels set
      */
     @Override
@@ -47,17 +67,11 @@ public interface CorenessQuery extends ComputeQuery<Map<String, Set<String>>> {
 
     /**
      * @param subLabels a collection of types to include in the subgraph.
-     *                  By default KCoreQuery uses instances of all the types.
-     * @return a KCoreQuery with the subLabels set
+     *                  By default CorenessQuery includes all entities, relationships and attributes.
+     * @return a CorenessQuery with the subLabels set
      */
     @Override
     CorenessQuery in(Collection<Label> subLabels);
-
-    /**
-     * @param k set the min value of coreness in k-core.
-     * @return a CorenessQuery with min value of coreness set
-     */
-    CorenessQuery min(int k);
 
     /**
      * @param tx the transaction to execute the query on
@@ -65,10 +79,4 @@ public interface CorenessQuery extends ComputeQuery<Map<String, Set<String>>> {
      */
     @Override
     CorenessQuery withTx(GraknTx tx);
-
-    /**
-     * Allow attributes and their relationships to be included.
-     */
-    @Override
-    CorenessQuery includeAttribute();
 }
