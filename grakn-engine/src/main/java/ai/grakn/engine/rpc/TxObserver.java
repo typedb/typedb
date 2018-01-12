@@ -24,7 +24,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.rpc.GraknOuterClass;
+import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.GraknOuterClass.TxResponse.QueryResult;
 import io.grpc.Metadata;
@@ -36,9 +36,15 @@ import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
+ *
+ * <p>
+ * Receives a stream of {@link TxRequest}s and returning a stream of {@link TxResponse}s.
+ * </p>
+ *
  * @author Felix Chapman
  */
-class TxObserver implements StreamObserver<GraknOuterClass.TxRequest> {
+class TxObserver implements StreamObserver<TxRequest> {
     private final StreamObserver<TxResponse> responseObserver;
     private final EngineGraknTxFactory txFactory;
     private @Nullable TxThread tx = null;
@@ -56,7 +62,7 @@ class TxObserver implements StreamObserver<GraknOuterClass.TxRequest> {
     }
 
     @Override
-    public void onNext(GraknOuterClass.TxRequest request) {
+    public void onNext(TxRequest request) {
         try {
             switch (request.getRequestCase()) {
                 case OPEN:
@@ -78,7 +84,7 @@ class TxObserver implements StreamObserver<GraknOuterClass.TxRequest> {
         }
     }
 
-    private void open(GraknOuterClass.TxRequest request) {
+    private void open(TxRequest request) {
         if (tx != null) {
             error(Status.FAILED_PRECONDITION);
             return;
@@ -97,7 +103,7 @@ class TxObserver implements StreamObserver<GraknOuterClass.TxRequest> {
         tx.run(GraknTx::commit);
     }
 
-    private void execQuery(GraknOuterClass.TxRequest request) {
+    private void execQuery(TxRequest request) {
         if (tx == null) {
             error(Status.FAILED_PRECONDITION);
             return;

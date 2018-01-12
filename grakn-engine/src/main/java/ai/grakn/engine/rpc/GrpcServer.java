@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
@@ -36,17 +34,7 @@ import java.io.IOException;
  */
 public class GrpcServer implements AutoCloseable {
 
-    public static final Metadata.Key<String> MESSAGE = Metadata.Key.of("message", new Metadata.AsciiMarshaller<String>() {
-        @Override
-        public String toAsciiString(String value) {
-            return value;
-        }
-
-        @Override
-        public String parseAsciiString(String serialized) {
-            return serialized;
-        }
-    });
+    static final Metadata.Key<String> MESSAGE = Metadata.Key.of("message", StringMarshaller.create());
 
     private final Server server;
 
@@ -65,12 +53,13 @@ public class GrpcServer implements AutoCloseable {
         return new GrpcServer(server);
     }
 
+    @Override
     public void close() throws InterruptedException {
         server.shutdown();
         server.awaitTermination();
     }
 
-    static class GraknImpl extends GraknGrpc.GraknImplBase {
+    private static class GraknImpl extends GraknGrpc.GraknImplBase {
 
         private final EngineGraknTxFactory txFactory;
 
@@ -81,6 +70,23 @@ public class GrpcServer implements AutoCloseable {
         @Override
         public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver) {
             return TxObserver.create(txFactory, responseObserver);
+        }
+    }
+
+    private static class StringMarshaller implements Metadata.AsciiMarshaller<String> {
+
+        public static StringMarshaller create() {
+            return new StringMarshaller();
+        }
+
+        @Override
+        public String toAsciiString(String value) {
+            return value;
+        }
+
+        @Override
+        public String parseAsciiString(String serialized) {
+            return serialized;
         }
     }
 }

@@ -32,7 +32,7 @@ import java.util.function.Function;
 /**
  * @author Felix Chapman
  */
-class BidirectionalObserver<Request, Response> implements AutoCloseable {
+public class BidirectionalObserver<Request, Response> implements AutoCloseable {
 
     private final StreamObserver<Request> requests;
     private final BlockingObserver<Response> responses;
