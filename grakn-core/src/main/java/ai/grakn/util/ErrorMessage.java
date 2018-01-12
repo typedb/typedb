@@ -74,6 +74,7 @@ public enum ErrorMessage {
             "only allows [%s] roles \n"),
     VALIDATION_RELATION_CASTING_LOOP_FAIL("The relation [%s] has a role player playing the role [%s] " +
             "which it's type [%s] is not connecting to via a relates connection \n"),
+    VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS("Cannot commit relationship [%s] of type [%s] because it does not have any role players. \n"),
 
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play Role [%s] \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relationship Type. \n"),

@@ -68,14 +68,21 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     @Override
     public Relationship addRelationship() {
-        return addInstance(Schema.BaseType.RELATIONSHIP,
-                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), false, true);
+        return addRelationship(false);
     }
 
     public Relationship addRelationshipInferred() {
-        return addInstance(Schema.BaseType.RELATIONSHIP,
-                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), true, true);
+        return addRelationship(true);
     }
+
+    public Relationship addRelationship(boolean isInferred) {
+        Relationship relationship = addInstance(Schema.BaseType.RELATIONSHIP,
+                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred, true);
+        vertex().tx().txCache().addNewRelationship(relationship);
+        return relationship;
+    }
+
+
 
     @Override
     public Stream<Role> relates() {

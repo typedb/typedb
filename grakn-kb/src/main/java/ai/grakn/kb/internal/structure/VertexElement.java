@@ -71,7 +71,7 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @return The edge created
      */
     public EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type) {
-        tx().txCache().writeOccured();
+        tx().txCache().writeOccurred();
         return tx().factory().buildEdgeElement(element().addEdge(type.getLabel(), to.element()));
     }
 
