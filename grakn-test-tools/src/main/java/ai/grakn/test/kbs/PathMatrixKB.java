@@ -24,41 +24,25 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.SampleKBLoader;
-
-import java.util.function.Consumer;
 
 /**
+ * Defines a KB based on test 6.10 from Cao p. 82, but arranged in a matrix instead of a tree.
  *
  * @author Kasper Piskorski
  *
  */
-public class PathKBII extends TestKB {
+public class PathMatrixKB extends AbstractPathKB {
 
-    private final static Label key = Label.of("index");
-    final static String gqlFile = "path-test.gql";
-
-    private final int n;
-    private final int m;
-
-    public PathKBII(int n, int m){
-        this.m = m;
-        this.n = n;
+    private PathMatrixKB(int n, int m){
+        super("path-test.gql", Label.of("index"), n, m);
     }
 
     public static SampleKBContext context(int n, int m) {
-        return new PathKBII(n, m).makeContext();
+        return new PathMatrixKB(n, m).makeContext();
     }
 
     @Override
-    public Consumer<GraknTx> build(){
-        return (GraknTx graph) -> {
-            SampleKBLoader.loadFromFile(graph, gqlFile);
-            buildExtensionalDB(graph, n, m);
-        };
-    }
-
-    private void buildExtensionalDB(GraknTx graph, int n, int m) {
+    protected void buildExtensionalDB(GraknTx graph, int n, int m) {
         long startTime = System.currentTimeMillis();
 
         EntityType vertex = graph.getEntityType("vertex");
@@ -67,11 +51,11 @@ public class PathKBII extends TestKB {
         Role arcTo = graph.getRole("arc-to");
 
         RelationshipType arc = graph.getRelationshipType("arc");
-        putEntityWithResource(graph, "a0", startVertex, key);
+        putEntityWithResource(graph, "a0", startVertex, getKey());
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                putEntityWithResource(graph, "a" + i + "," + j, vertex, key);
+                putEntityWithResource(graph, "a" + i + "," + j, vertex, getKey());
             }
         }
 

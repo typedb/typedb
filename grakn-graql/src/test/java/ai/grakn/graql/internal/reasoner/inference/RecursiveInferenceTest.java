@@ -29,9 +29,9 @@ import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.DualLinearTransitivityMatrixKB;
 import ai.grakn.test.kbs.LinearTransitivityMatrixKB;
 import ai.grakn.test.kbs.NguyenKB;
-import ai.grakn.test.kbs.PathKB;
-import ai.grakn.test.kbs.PathKBII;
-import ai.grakn.test.kbs.PathKBSymmetric;
+import ai.grakn.test.kbs.PathTreeKB;
+import ai.grakn.test.kbs.PathMatrixKB;
+import ai.grakn.test.kbs.PathTreeSymmetricKB;
 import ai.grakn.test.kbs.TailRecursionKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
@@ -40,7 +40,6 @@ import java.util.List;
 import ai.grakn.util.GraknTestUtil;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
@@ -130,7 +129,7 @@ public class RecursiveInferenceTest {
     }
 
     @Test
-    public void testAncestor2() {
+    public void testAncestorClosure() {
         QueryBuilder qb = ancestorContext.tx().graql().infer(false);
         QueryBuilder iqb = ancestorContext.tx().graql().infer(true);
 
@@ -147,7 +146,7 @@ public class RecursiveInferenceTest {
     }
 
     @Test
-    public void testAncestor2Prime() {
+    public void testAncestorClosurePrime() {
         QueryBuilder qb = ancestorContext.tx().graql().infer(false);
         QueryBuilder iqb = ancestorContext.tx().graql().infer(true);
         String queryString = "match ($X, $Y) isa Ancestor; get;";
@@ -201,7 +200,7 @@ public class RecursiveInferenceTest {
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
-    public void testAncestorFriend2() {
+    public void testAncestorFriend_secondVariant() {
         QueryBuilder qb = ancestorFriendContext.tx().graql().infer(false);
         QueryBuilder iqb = ancestorFriendContext.tx().graql().infer(true);
 
@@ -215,7 +214,7 @@ public class RecursiveInferenceTest {
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
-    public void testAncestorFriend2Prime() {
+    public void testAncestorFriend__secondVariantPrime() {
         QueryBuilder qb = ancestorFriendContext.tx().graql().infer(false);
         QueryBuilder iqb = ancestorFriendContext.tx().graql().infer(true);
 
@@ -228,8 +227,6 @@ public class RecursiveInferenceTest {
     }
 
     /**from Vieille - Recursive Query Processing: The power of logic p. 25*/
-    //TODO answer immutability exposes a bug with variables being overwritten in this test
-    @Ignore
     @Test
     public void testSameGeneration(){
         QueryBuilder qb = recursivitySGContext.tx().graql().infer(false);
@@ -274,8 +271,6 @@ public class RecursiveInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    //TODO remodel when repeating roles allowed
-    @Ignore
     @Test
     public void testReachabilitySymmetric(){
         QueryBuilder qb = reachabilitySymmetricContext.tx().graql().infer(false);
@@ -291,7 +286,7 @@ public class RecursiveInferenceTest {
 
     /** test 6.1 from Cao p 71*/
     @Test
-    public void testMatrix(){
+    public void testDualLinearTransitivityMatrix(){
         final int N = 5;
         SampleKBContext kb = DualLinearTransitivityMatrixKB.context(N, N);
         QueryBuilder qb = kb.tx().graql().infer(false);
@@ -373,7 +368,7 @@ public class RecursiveInferenceTest {
 
     /**test 6.9 from Cao p.82*/
     @Test
-    public void testMatrixII(){
+    public void testLinearTransitivityMatrix(){
         final int N = 5;
         final int M = 5;
         SampleKBContext kb = LinearTransitivityMatrixKB.context(N, M);
@@ -391,7 +386,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathTree(){
         final int N = 3;
-        SampleKBContext kb = PathKB.context(N, 3);
+        SampleKBContext kb = PathTreeKB.context(N, 3);
         GraknTx tx = kb.tx();
         QueryBuilder qb = tx.graql().infer(false);
         QueryBuilder iqb = tx.graql().infer(true);
@@ -412,14 +407,10 @@ public class RecursiveInferenceTest {
         assertCollectionsEqual(answers, answers2);
     }
 
-    private Concept getConcept(GraknTx graph, String typeName, Object val){
-        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).get("x").findAny().orElse(null);
-    }
-
     @Test
     public void testPathTreePrime(){
         final int N = 3;
-        SampleKBContext kb = PathKB.context(N, 3);
+        SampleKBContext kb = PathTreeKB.context(N, 3);
         QueryBuilder qb = kb.tx().graql().infer(false);
         QueryBuilder iqb = kb.tx().graql().infer(true);
 
@@ -430,16 +421,15 @@ public class RecursiveInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    @Ignore
     @Test
     public void testPathSymmetric(){
         final int N = 3;
-        SampleKBContext kb = PathKBSymmetric.context(N, 3);
+        SampleKBContext kb = PathTreeSymmetricKB.context(N, 3);
         QueryBuilder qb = kb.tx().graql().infer(false);
         QueryBuilder iqb = kb.tx().graql().infer(true);
 
-        String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
-        String explicitQuery = "match $y isa vertex;";
+        String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
+        String explicitQuery = "match {$y isa vertex;} or {$y isa start-vertex;}; get;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
@@ -447,9 +437,9 @@ public class RecursiveInferenceTest {
 
     @Test
     /*modified test 6.10 from Cao p. 82*/
-    public void testPathII(){
+    public void testPathMatrix(){
         final int N = 3;
-        SampleKBContext kb = PathKBII.context(N, N);
+        SampleKBContext kb = PathMatrixKB.context(N, N);
         QueryBuilder qb = kb.tx().graql().infer(false);
         QueryBuilder iqb = kb.tx().graql().infer(true);
 
@@ -462,9 +452,9 @@ public class RecursiveInferenceTest {
 
     @Test
     /*modified test 6.10 from Cao p. 82*/
-    public void testPathIIPrime(){
+    public void testPathMatrixPrime(){
         final int N = 3;
-        SampleKBContext kb = PathKBII.context(N, N);
+        SampleKBContext kb = PathMatrixKB.context(N, N);
         QueryBuilder qb = kb.tx().graql().infer(false);
         QueryBuilder iqb = kb.tx().graql().infer(true);
 
@@ -544,5 +534,9 @@ public class RecursiveInferenceTest {
 
         assertEquals(iqb.materialise(false).<GetQuery>parse(queryString).execute().size(), 64);
         assertEquals(iqb.materialise(true).<GetQuery>parse(queryString).execute().size(), 64);
+    }
+
+    private Concept getConcept(GraknTx graph, String typeName, Object val){
+        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).get("x").findAny().orElse(null);
     }
 }

@@ -307,7 +307,7 @@ public class ExplanationTest {
         assertFalse("Non-lookup explanation misses children",
                 answer.getExplanations().stream()
                 .filter(e -> !e.isLookupExplanation())
-                .filter(e -> e.getAnswers().isEmpty()).findFirst().isPresent()
+                .anyMatch(e -> e.getAnswers().isEmpty())
         );
     }
 
@@ -317,8 +317,7 @@ public class ExplanationTest {
             assertTrue("Disconnected answer in explanation",
                     answers.stream()
                             .filter(a2 -> !a2.equals(a))
-                            .filter(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
-                            .findFirst().isPresent()
+                            .anyMatch(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
             );
         });
     }
