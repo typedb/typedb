@@ -19,7 +19,6 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknException;
@@ -42,8 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 class TxObserver implements StreamObserver<GraknOuterClass.TxRequest> {
     private final StreamObserver<TxResponse> responseObserver;
     private final EngineGraknTxFactory txFactory;
-    private @Nullable
-    GraknTx tx = null;
+    private @Nullable TxThread tx = null;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
 
     private static final Printer<?> PRINTER = Printers.json();
@@ -88,7 +86,7 @@ class TxObserver implements StreamObserver<GraknOuterClass.TxRequest> {
 
         String keyspaceString = request.getOpen().getKeyspace().getValue();
         Keyspace keyspace = Keyspace.of(keyspaceString);
-        tx = txFactory.tx(keyspace, GraknTxType.WRITE);
+        tx = TxThread.open(txFactory, keyspace);
     }
 
     private void commit() {
@@ -96,7 +94,7 @@ class TxObserver implements StreamObserver<GraknOuterClass.TxRequest> {
             error(Status.FAILED_PRECONDITION);
             return;
         }
-        tx.commit();
+        tx.run(GraknTx::commit);
     }
 
     private void execQuery(GraknOuterClass.TxRequest request) {
@@ -105,7 +103,7 @@ class TxObserver implements StreamObserver<GraknOuterClass.TxRequest> {
             return;
         }
 
-        Object result = tx.graql().parse(request.getExecQuery().getQuery().getValue()).execute();
+        Object result = tx.runAndReturn(t -> t.graql().parse(request.getExecQuery().getQuery().getValue()).execute());
 
         QueryResult rpcResult = QueryResult.newBuilder().setValue(PRINTER.graqlString(result)).build();
 

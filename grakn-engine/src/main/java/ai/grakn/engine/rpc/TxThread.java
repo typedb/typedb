@@ -59,6 +59,10 @@ class TxThread implements AutoCloseable {
     }
 
     public <T> T run(Function<GraknTx, T> task) {
+        return runAndReturn(task);
+    }
+
+    public <T> T runAndReturn(Function<GraknTx, T> task) {
         return runAndAssumeSafe(executor, () -> task.apply(tx));
     }
 
@@ -73,6 +77,9 @@ class TxThread implements AutoCloseable {
         try {
             return future.get();
         } catch (InterruptedException | ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            }
             throw CommonUtil.unreachableStatement(
                     "This should never be interrupted, cancelled or throw a checked exception", e
             );
