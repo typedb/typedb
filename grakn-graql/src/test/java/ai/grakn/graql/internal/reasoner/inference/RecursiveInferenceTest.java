@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -107,7 +107,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;$X has name 'aa';" +
                 "$Y has name $name;get $Y, $name;";
-        String explicitQuery = "match $Y isa Person, has name $name;" +
+        String explicitQuery = "match $Y isa person, has name $name;" +
                 "{$name val 'aaa';} or {$name val 'aab';} or {$name val 'aaaa';};get $Y, $name;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
@@ -121,7 +121,7 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = ancestorContext.tx().graql().infer(true);
 
         String queryString = "match ($X, $Y) isa Ancestor;$X has name 'aa'; get $Y;";
-        String explicitQuery = "match $Y isa Person, has name $name;" +
+        String explicitQuery = "match $Y isa person, has name $name;" +
                 "{$name val 'a';} or {$name val 'aaa';} or {$name val 'aab';} or {$name val 'aaaa';};get $Y;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
@@ -134,7 +134,7 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = ancestorContext.tx().graql().infer(true);
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor; get;";
-        String explicitQuery = "match $Y isa Person, has name $nameY; $X isa Person, has name $nameX;" +
+        String explicitQuery = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
                 "{$nameX val 'a';$nameY val 'aa';} or {$nameX val 'a';$nameY val 'ab';} or" +
                 "{$nameX val 'a';$nameY val 'aaa';} or {$nameX val 'a';$nameY val 'aab';} or" +
                 "{$nameX val 'a';$nameY val 'aaaa';} or {$nameX val 'aa';$nameY val 'aaa';} or" +
@@ -150,7 +150,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = ancestorContext.tx().graql().infer(false);
         QueryBuilder iqb = ancestorContext.tx().graql().infer(true);
         String queryString = "match ($X, $Y) isa Ancestor; get;";
-        String explicitQuery = "match $Y isa Person, has name $nameY; $X isa Person, has name $nameX;" +
+        String explicitQuery = "match $Y isa person, has name $nameY; $X isa person, has name $nameX;" +
                 "{$nameX val 'a';$nameY val 'aa';} or " +
                 "{$nameX val 'a';$nameY val 'ab';} or {$nameX val 'a';$nameY val 'aaa';} or" +
                 "{$nameX val 'a';$nameY val 'aab';} or {$nameX val 'a';$nameY val 'aaaa';} or " +
@@ -178,7 +178,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = ancestorFriendContext.tx().graql().infer(false);
         QueryBuilder iqb = ancestorFriendContext.tx().graql().infer(true);
 
-        String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; get $Y, $name;";
+        String queryString = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; get $Y, $name;";
         String explicitQuery = "match $Y has name $name;{$name val 'd';} or {$name val 'g';}; get;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
@@ -204,7 +204,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = ancestorFriendContext.tx().graql().infer(false);
         QueryBuilder iqb = ancestorFriendContext.tx().graql().infer(true);
 
-        String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
+        String queryString = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
         String explicitQuery = "match $X has name $name;" +
                 "{$name val 'a';} or {$name val 'b';} or {$name val 'c';}; get $X;";
 
