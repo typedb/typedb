@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -26,8 +26,10 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
+import com.jayway.restassured.RestAssured;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.rules.TestRule;
@@ -72,6 +74,8 @@ public class DistributionContext extends CompositeTestRule {
     private int port = 4567;
     private boolean inheritIO = true;
     private int redisPort = 6379;
+    private final SessionContext session = SessionContext.create();
+    private final InMemoryRedisContext redis = InMemoryRedisContext.create(redisPort);
 
     // prevent initialization with the default constructor
     private DistributionContext() {
@@ -92,10 +96,7 @@ public class DistributionContext extends CompositeTestRule {
 
     @Override
     protected List<TestRule> testRules() {
-        return ImmutableList.of(
-                SessionContext.create(),
-                InMemoryRedisContext.create(redisPort)
-        );
+        return ImmutableList.of(session, redis);
     }
 
     @Override
@@ -104,11 +105,24 @@ public class DistributionContext extends CompositeTestRule {
         unzipDistribution();
         engineProcess = newEngineProcess(port, redisPort);
         waitForEngine();
+        RestAssured.baseURI = uri().toURI().toString();
     }
 
     @Override
     public void after() {
         engineProcess.destroy();
+
+        try {
+            engineProcess.waitFor();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            FileUtils.deleteDirectory(DIST_DIRECTORY.toFile());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void assertPackageBuilt() throws IOException {

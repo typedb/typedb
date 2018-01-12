@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -30,6 +30,7 @@ import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.response.EmbeddedAttribute;
 import ai.grakn.engine.controller.response.Link;
+import ai.grakn.engine.controller.response.ListResource;
 import ai.grakn.engine.controller.response.RolePlayer;
 import ai.grakn.engine.controller.response.Things;
 import ai.grakn.engine.controller.util.Requests;
@@ -43,8 +44,8 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -110,17 +111,17 @@ public class ConceptController {
 
     private String getTypeAttributes(Request request, Response response) throws JsonProcessingException {
         Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.attributes().map(ConceptBuilder::build);
-        return getConceptCollection(request, response, buildTypeGetter(request), collector);
+        return getConceptCollection(request, response, "attributes", buildTypeGetter(request), collector);
     }
 
     private String getTypeKeys(Request request, Response response) throws JsonProcessingException {
         Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.keys().map(ConceptBuilder::build);
-        return getConceptCollection(request, response, buildTypeGetter(request), collector);
+        return getConceptCollection(request, response, "keys", buildTypeGetter(request), collector);
     }
 
     private String getTypePlays(Request request, Response response) throws JsonProcessingException {
         Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.plays().map(ConceptBuilder::build);
-        return getConceptCollection(request, response, buildTypeGetter(request), collector);
+        return getConceptCollection(request, response, "plays", buildTypeGetter(request), collector);
     }
 
     private String getRelationships(Request request, Response response) throws JsonProcessingException {
@@ -132,7 +133,7 @@ public class ConceptController {
                 return RolePlayer.create(roleWrapper, relationshipWrapper);
             });
         });
-        return this.getConceptCollection(request, response, buildThingGetter(request), collector);
+        return this.getConceptCollection(request, response, "relationships", buildThingGetter(request), collector);
     }
 
     private String getKeys(Request request, Response response) throws JsonProcessingException {
@@ -150,10 +151,13 @@ public class ConceptController {
         Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing ->
                 attributeFetcher.apply(thing).skip(offset).limit(limit).map(EmbeddedAttribute::create);
 
-        return this.getConceptCollection(request, response, buildThingGetter(request), collector);
+        return this.getConceptCollection(request, response, "attributes", buildThingGetter(request), collector);
     }
 
-    private <X extends ai.grakn.concept.Concept> String getConceptCollection(Request request, Response response, Function<GraknTx, X> getter, Function<X, Stream<Jacksonisable>> collector) throws JsonProcessingException {
+    private <X extends ai.grakn.concept.Concept> String getConceptCollection(
+            Request request, Response response, String key,
+            Function<GraknTx, X> getter, Function<X, Stream<Jacksonisable>> collector
+    ) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
@@ -167,13 +171,18 @@ public class ConceptController {
                 return "[]";
             }
 
-            return objectMapper.writeValueAsString(collector.apply(concept).collect(Collectors.toList()));
+            List<Jacksonisable> list = collector.apply(concept).collect(Collectors.toList());
+            Link link = Link.create(request.pathInfo());
+
+            ListResource<Jacksonisable> listResource = ListResource.create(link, key, list);
+
+            return objectMapper.writeValueAsString(listResource);
         }
     }
 
     private String getSchemaConceptSubs(Request request, Response response) throws JsonProcessingException {
         Function<ai.grakn.concept.SchemaConcept, Stream<Jacksonisable>> collector = schema -> schema.subs().map(ConceptBuilder::build);
-        return getConceptCollection(request, response, buildSchemaConceptGetter(request), collector);
+        return getConceptCollection(request, response, "subs", buildSchemaConceptGetter(request), collector);
     }
 
     private String getTypeInstances(Request request, Response response) throws JsonProcessingException {
@@ -214,14 +223,14 @@ public class ConceptController {
     }
 
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
-        Requests.validateRequest(request, APPLICATION_ALL);
+        Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         Label label = Label.of(mandatoryPathParameter(request, LABEL_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getSchemaConcept(label));
     }
 
     private String getConceptById(Request request, Response response) throws JsonProcessingException {
-        Requests.validateRequest(request, APPLICATION_ALL);
+        Requests.validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
         ConceptId conceptId = ConceptId.of(mandatoryPathParameter(request, ID_PARAMETER));
         return getConcept(response, keyspace, (tx) -> tx.getConcept(conceptId));
@@ -245,26 +254,30 @@ public class ConceptController {
     }
 
     private String getTypes(Request request, Response response) throws JsonProcessingException {
-        return getConcepts(request, response, (tx) -> tx.admin().getMetaConcept().subs());
+        return getConcepts(request, response, "types", (tx) -> tx.admin().getMetaConcept().subs());
     }
 
     private String getRules(Request request, Response response) throws JsonProcessingException {
-        return getConcepts(request, response, (tx) -> tx.admin().getMetaRule().subs());
+        return getConcepts(request, response, "rules", (tx) -> tx.admin().getMetaRule().subs());
     }
 
     private String getRoles(Request request, Response response) throws JsonProcessingException {
-        return getConcepts(request, response, (tx) -> tx.admin().getMetaRole().subs());
+        return getConcepts(request, response, "roles", (tx) -> tx.admin().getMetaRole().subs());
     }
 
-    private String getConcepts(Request request, Response response, Function<GraknTx, Stream<? extends ai.grakn.concept.Concept>>getter) throws JsonProcessingException {
+    private String getConcepts(
+            Request request, Response response, String key,
+            Function<GraknTx, Stream<? extends ai.grakn.concept.Concept>> getter
+    ) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
 
         Keyspace keyspace = Keyspace.of(mandatoryPathParameter(request, KEYSPACE_PARAM));
 
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = labelGetTimer.time()) {
-            Set<Concept> concepts = getter.apply(tx).map(ConceptBuilder::<Concept>build).collect(Collectors.toSet());
+            List<Concept> concepts = getter.apply(tx).map(ConceptBuilder::<Concept>build).collect(Collectors.toList());
+            ListResource list = ListResource.create(Requests.selfLink(request), key, concepts);
             response.status(SC_OK);
-            return objectMapper.writeValueAsString(concepts);
+            return objectMapper.writeValueAsString(list);
         }
     }
 
