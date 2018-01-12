@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -19,12 +19,14 @@
 package ai.grakn.engine.controller;
 
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.controller.response.Keyspace;
 import ai.grakn.engine.controller.response.Keyspaces;
+import ai.grakn.engine.controller.response.Root;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.GraknVersion;
@@ -38,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
+import org.apache.commons.io.Charsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -53,6 +56,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.file.Files;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -101,6 +105,8 @@ public class SystemController {
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
 
+        spark.get(REST.WebPath.ROOT, this::getRoot);
+
         spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
         spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
         spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
@@ -119,6 +125,35 @@ public class SystemController {
                         durationUnit,
                         showSamples,
                         filter));
+    }
+
+    @GET
+    @Path(REST.WebPath.ROOT)
+    private String getRoot(Request request, Response response) throws JsonProcessingException {
+        // Handle root here for JSON, otherwise redirect to HTML page
+        if (Requests.getAcceptType(request).equals(APPLICATION_JSON)) {
+            return getJsonRoot(response);
+        } else {
+            return getIndexPage();
+        }
+    }
+
+    private String getJsonRoot(Response response) throws JsonProcessingException {
+        response.type(APPLICATION_JSON);
+        Root root = Root.create();
+        return objectMapper.writeValueAsString(root);
+    }
+
+    private String getIndexPage() {
+        try {
+            return new String(Files.readAllBytes(dashboardHtml()), Charsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private java.nio.file.Path dashboardHtml() {
+        return config.getPath(GraknConfigKey.STATIC_FILES_PATH).resolve("dashboard.html");
     }
 
     @GET
@@ -158,6 +193,7 @@ public class SystemController {
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
         systemKeyspace.openKeyspace(keyspace);
         response.status(HttpServletResponse.SC_OK);
+        response.type(APPLICATION_JSON);
         return objectMapper.writeValueAsString(config);
     }
 
@@ -207,5 +243,4 @@ public class SystemController {
                 throw GraknServerException.requestInvalidParameter(FORMAT, dFormat);
         }
     }
-
 }

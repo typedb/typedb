@@ -68,7 +68,7 @@ Or unless you have a reasoner engine, like GRAKN has.
 
 In the course of this module, you will learn how to augment your knowledge base with reasoning rules that help you get more useful and smart answer to your questions, like the one above.
 
-That is, you will learn to make your data more intelligent. Which is one of the reason why say that GRAKN is the database for the AI.
+That is, you will learn to make your data more intelligent and knowledgable. Which is one of the reason why say that GRAKN is the database for the knowledge engineering.
 
 ### What have you learned?
 This was a very brief introductory lesson, but you should have at this point understood what logic inference is about.
