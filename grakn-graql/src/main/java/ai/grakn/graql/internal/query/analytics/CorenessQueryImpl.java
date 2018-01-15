@@ -21,9 +21,13 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
+import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
 import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -62,6 +66,22 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> 
         initSubGraph();
         getAllSubTypes();
 
+        // Check if ofType is valid before returning emptyMap
+        if (ofLabels.isEmpty()) {
+            ofLabels.addAll(subLabels);
+        } else {
+            ofLabels = ofLabels.stream()
+                    .flatMap(typeLabel -> {
+                        Type type = tx.get().getSchemaConcept(typeLabel);
+                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+                        if (type.isRelationshipType()) throw GraqlQueryException.kCoreOnRelationshipType(typeLabel);
+                        return type.subs();
+                    })
+                    .map(SchemaConcept::getLabel)
+                    .collect(Collectors.toSet());
+            subLabels.addAll(ofLabels);
+        }
+
         if (!selectedTypesHaveInstance()) {
             LOGGER.info("Coreness query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
@@ -69,10 +89,12 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> 
 
         ComputerResult result;
         Set<LabelId> subLabelIds = convertLabelsToIds(subLabels);
+        Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
+
         try {
             result = getGraphComputer().compute(
-                    new KCoreVertexProgram(k),
-                    new ClusterMemberMapReduce(KCoreVertexProgram.CLUSTER_LABEL),
+                    new CorenessVertexProgram(k),
+                    new DegreeDistributionMapReduce(ofLabelIds, KCoreVertexProgram.CLUSTER_LABEL),
                     subLabelIds);
         } catch (NoResultException e) {
             LOGGER.info("Coreness query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
@@ -151,6 +173,8 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> 
     @Override
     public int hashCode() {
         int result = super.hashCode();
+        result = 31 * result + (ofTypeLabelsSet ? 1 : 0);
+        result = 31 * result + ofLabels.hashCode();
         result = 31 * result + k;
         return result;
     }
