@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -26,9 +26,10 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
+import com.jayway.restassured.RestAssured;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
@@ -37,9 +38,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
@@ -48,7 +48,10 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Start a SingleQueueEngine from the packaged distribution.
+ * Start a GraknEngineServer from the packaged distribution Zip.
+ * The class is responsible for unzipping and starting the distribution.
+ * The location of the distribution must be at $GRAKN_HOME/grakn-dist/target/grakn-dist-$GRAKN_VERSION.zip
+ *
  * This context can be used for integration tests.
  *
  * @author alexandraorth
@@ -57,16 +60,18 @@ public class DistributionContext extends CompositeTestRule {
 
     public static final Logger LOG = LoggerFactory.getLogger(DistributionContext.class);
 
-    private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
-    private static final String ZIP = "grakn-dist-" + GraknVersion.VERSION + ".zip";
-    private static final String CURRENT_DIRECTORY = GraknSystemProperty.PROJECT_RELATIVE_DIR.value();
-    private static final String TARGET_DIRECTORY = CURRENT_DIRECTORY + "/grakn-dist/target/";
-    private static final String DIST_DIRECTORY = TARGET_DIRECTORY + "grakn-dist-" + GraknVersion.VERSION;
+    private static final String ZIP_FILENAME = "grakn-dist-" + GraknVersion.VERSION + ".zip";
+    private static final Path GRAKN_BASE_DIRECTORY = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value());
+    private static final Path TARGET_DIRECTORY = Paths.get(GRAKN_BASE_DIRECTORY.toString(), "grakn-dist", "target");
+    private static final Path ZIP_FULLPATH = Paths.get(TARGET_DIRECTORY.toString(), ZIP_FILENAME);
+    private static final Path EXTRACTED_DISTRIBUTION_DIRECTORY = Paths.get(TARGET_DIRECTORY.toString(), "grakn-dist-" + GraknVersion.VERSION);
 
     private Process engineProcess;
     private int port = 4567;
     private boolean inheritIO = true;
     private int redisPort = 6379;
+    private final SessionContext session = SessionContext.create();
+    private final InMemoryRedisContext redis = InMemoryRedisContext.create(redisPort);
 
     // prevent initialization with the default constructor
     private DistributionContext() {
@@ -87,10 +92,7 @@ public class DistributionContext extends CompositeTestRule {
 
     @Override
     protected List<TestRule> testRules() {
-        return ImmutableList.of(
-                SessionContext.create(),
-                InMemoryRedisContext.create(redisPort)
-        );
+        return ImmutableList.of(session, redis);
     }
 
     @Override
@@ -99,25 +101,38 @@ public class DistributionContext extends CompositeTestRule {
         unzipDistribution();
         engineProcess = newEngineProcess(port, redisPort);
         waitForEngine();
+        RestAssured.baseURI = uri().toURI().toString();
     }
 
     @Override
     public void after() {
         engineProcess.destroy();
-    }
 
-    private void assertPackageBuilt() throws IOException {
-        boolean packaged = Files.exists(Paths.get(TARGET_DIRECTORY, ZIP));
+        try {
+            engineProcess.waitFor();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
-        if(!packaged) {
-            Assert.fail("Grakn has not been packaged. Please package before running tests with the distribution context.");
+        try {
+            FileUtils.deleteDirectory(EXTRACTED_DISTRIBUTION_DIRECTORY.toFile());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private void unzipDistribution() throws ZipException, IOException {
+    private void assertPackageBuilt() {
+        boolean packaged = Files.exists(ZIP_FULLPATH);
+
+        if(!packaged) {
+            Assert.fail("Grakn distribution '" + ZIP_FULLPATH.toString() + "' could not be found. Please ensure it has been packaged (ie. run `mvn package`) in order to build  before running tests with the distribution context.");
+        }
+    }
+
+    private void unzipDistribution() throws ZipException {
         // Unzip the distribution
-        ZipFile zipped = new ZipFile( TARGET_DIRECTORY + ZIP);
-        zipped.extractAll(TARGET_DIRECTORY);
+        ZipFile zipped = new ZipFile( ZIP_FULLPATH.toFile());
+        zipped.extractAll(TARGET_DIRECTORY.toAbsolutePath().toString());
     }
 
     private Process newEngineProcess(Integer port, Integer redisPort) throws IOException {
@@ -136,7 +151,7 @@ public class DistributionContext extends CompositeTestRule {
         // Java commands to start Engine process
         String[] commands = {"java",
                 "-cp", getClassPath(),
-                "-Dgrakn.dir=" + DIST_DIRECTORY,
+                "-Dgrakn.dir=" + EXTRACTED_DISTRIBUTION_DIRECTORY,
                 "-Dgrakn.conf=" + propertiesFile.getAbsolutePath(),
                 Grakn.class.getName(), "&"};
 
@@ -150,10 +165,13 @@ public class DistributionContext extends CompositeTestRule {
      * Get the class path of all the jars in the /lib folder
      */
     private String getClassPath(){
-        Stream<File> jars = Stream.of(new File(DIST_DIRECTORY + "/services/lib").listFiles(jarFiles));
-        File conf = new File(DIST_DIRECTORY + "/conf/");
-        File graknLogback = new File(DIST_DIRECTORY + "/services/grakn/");
-        return Stream.concat(jars, Stream.of(conf, graknLogback))
+        Path servicesLibDir = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "services", "lib");
+        Path confDir = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "conf");
+        Path graknLogback = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(), "services", "grakn");
+        FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
+
+        Stream<File> jars = Stream.of(servicesLibDir.toFile().listFiles(jarFiles));
+        return Stream.concat(jars, Stream.of(confDir.toFile(), graknLogback.toFile()))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(File::getAbsolutePath)
                 .collect(joining(":"));
@@ -175,19 +193,6 @@ public class DistributionContext extends CompositeTestRule {
             }
         }
 
-        LOG.error("Engine stdout = '" + inputStreamToString(engineProcess.getInputStream()) + "'");
-        LOG.error("Engine stderr = '" + inputStreamToString(engineProcess.getErrorStream()) + "'");
         throw new RuntimeException("Could not start engine within expected time");
-    }
-
-    private String inputStreamToString(InputStream output) {
-        String engineStdout;
-        try {
-            engineStdout = IOUtils.toString(output, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            engineStdout = "Unable to get output from Engine: " + e.getMessage();
-        }
-
-        return engineStdout;
     }
 }
