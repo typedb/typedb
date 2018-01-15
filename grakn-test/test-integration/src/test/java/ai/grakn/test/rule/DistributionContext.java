@@ -21,7 +21,7 @@ package ai.grakn.test.rule;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.client.Client;
-import ai.grakn.engine.Grakn;
+import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
@@ -153,6 +153,7 @@ public class DistributionContext extends CompositeTestRule {
                 "-cp", getClassPath(),
                 "-Dgrakn.dir=" + EXTRACTED_DISTRIBUTION_DIRECTORY,
                 "-Dgrakn.conf=" + propertiesFile.getAbsolutePath(),
+                "-Dgrakn.pidfile=/tmp/grakn.pid",
                 Grakn.class.getName(), "&"};
 
         // Start process
@@ -193,6 +194,12 @@ public class DistributionContext extends CompositeTestRule {
             }
         }
 
+        Path graknLog = Paths.get(EXTRACTED_DISTRIBUTION_DIRECTORY.toString(),"logs/grakn.log");
+        try {
+            LOG.error("logs/grakn.log: " + FileUtils.readFileToString(graknLog.toFile()));
+        } catch (IOException e) {
+            LOG.error("logs/grakn.log: unable to open " + graknLog.toAbsolutePath().toString());
+        }
         throw new RuntimeException("Could not start engine within expected time");
     }
 }
