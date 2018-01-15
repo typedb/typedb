@@ -28,7 +28,6 @@ import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
-import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
 import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.Sets;
@@ -94,7 +93,7 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> 
         try {
             result = getGraphComputer().compute(
                     new CorenessVertexProgram(k),
-                    new DegreeDistributionMapReduce(ofLabelIds, KCoreVertexProgram.CLUSTER_LABEL),
+                    new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
                     subLabelIds);
         } catch (NoResultException e) {
             LOGGER.info("Coreness query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
@@ -102,7 +101,7 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> 
         }
 
         LOGGER.info("Coreness query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
-        return result.memory().get(ClusterMemberMapReduce.class.getName());
+        return result.memory().get(DegreeDistributionMapReduce.class.getName());
     }
 
     @Override

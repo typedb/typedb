@@ -21,6 +21,8 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.concept.LabelId;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +37,7 @@ import java.util.Set;
  * @author Sheldon Hall
  */
 public abstract class CommonOLAP {
+    static final Logger LOGGER = LoggerFactory.getLogger(CommonOLAP.class);
 
     private static final String PREFIX_SELECTED_TYPE_KEY = "SELECTED_TYPE";
     private static final String PREFIX_PERSISTENT_PROPERTIES = "PERSISTENT";

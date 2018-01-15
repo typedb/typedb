@@ -46,8 +46,6 @@ import java.util.Set;
 
 public abstract class GraknVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(GraknVertexProgram.class);
-
     static final MessageScope.Local<?> messageScopeIn = MessageScope.Local.of(__::inE);
     static final MessageScope.Local<?> messageScopeOut = MessageScope.Local.of(__::outE);
     static final Set<MessageScope> messageScopeSetInAndOut =
