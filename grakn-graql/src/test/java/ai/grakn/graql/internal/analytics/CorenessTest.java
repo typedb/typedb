@@ -118,7 +118,7 @@ public class CorenessTest {
                     .addRolePlayer(role3, entity1)
                     .addRolePlayer(role4, entity2);
 
-            Map<String, Set<String>> result = graph.graql().compute().kCore().kValue(2).execute();
+            Map<Integer, Set<String>> result = graph.graql().compute().coreness().execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -128,46 +128,17 @@ public class CorenessTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<String, Set<String>> result1 = graph.graql().compute().kCore().kValue(2).execute();
-            assertEquals(1, result1.size());
-            assertEquals(4, result1.values().iterator().next().size());
-
-            Map<String, Set<String>> result2 = graph.graql().compute().kCore().kValue(3).execute();
-            assertEquals(result1, result2);
-
-            result2 = graph.graql().compute().kCore().kValue(2).in(thing, related).execute();
-            assertEquals(result1, result2);
-
-            result2 = graph.graql().compute().kCore().kValue(3).in(thing, related).execute();
-            assertTrue(result2.isEmpty());
-        }
-    }
-
-    @Test
-    public void testImplicitTypeShouldBeExcluded() {
-        addSchemaAndEntities();
-
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            String aResourceTypeLabel = "aResourceTypeLabel";
-            AttributeType<String> attributeType =
-                    graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
-            graph.getEntityType(thing).attribute(attributeType);
-            Attribute aAttribute = attributeType.putAttribute("blah");
-            graph.getConcept(entityId1).asEntity().attribute(aAttribute);
-            graph.getConcept(entityId2).asEntity().attribute(aAttribute);
-
-            graph.commit();
-        }
-
-        Map<String, Set<String>> result;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().kCore().kValue(2).includeAttribute().execute();
+            Map<Integer, Set<String>> result = graph.graql().compute().coreness().execute();
             assertEquals(1, result.size());
-            assertEquals(5, result.values().iterator().next().size());
+            assertEquals(4, result.get(3).size());
 
-            result = graph.graql().compute().kCore().kValue(3).includeAttribute().execute();
+            result = graph.graql().compute().coreness().of(thing).execute();
             assertEquals(1, result.size());
-            assertEquals(4, result.values().iterator().next().size());
+            assertEquals(2, result.get(3).size());
+
+            result = graph.graql().compute().coreness().in(thing, anotherThing, related).execute();
+            assertEquals(1, result.size());
+            assertEquals(4, result.get(2).size());
         }
     }
 
@@ -180,6 +151,7 @@ public class CorenessTest {
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
             graph.getEntityType(thing).attribute(attributeType);
+            graph.getEntityType(anotherThing).attribute(attributeType);
 
             Attribute Attribute1 = attributeType.putAttribute("blah");
             graph.getConcept(entityId1).asEntity().attribute(Attribute1);
@@ -195,17 +167,17 @@ public class CorenessTest {
             graph.commit();
         }
 
-        Map<String, Set<String>> result;
+        Map<Integer, Set<String>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().kCore().kValue(4).includeAttribute().execute();
+            result = graph.graql().compute().coreness().execute();
             System.out.println("result = " + result);
-            assertEquals(1, result.size());
-            assertEquals(5, result.values().iterator().next().size());
+            assertEquals(2, result.size());
+            assertEquals(5, result.get(4).size());
+            assertEquals(1, result.get(3).size());
 
-            result = graph.graql().compute().kCore().kValue(3).includeAttribute().execute();
-            System.out.println("result = " + result);
+            result = graph.graql().compute().coreness().minK(4).execute();
             assertEquals(1, result.size());
-            assertEquals(6, result.values().iterator().next().size());
+            assertEquals(5, result.get(4).size());
         }
     }
 
@@ -286,16 +258,16 @@ public class CorenessTest {
             graph.commit();
         }
 
-        Map<String, Set<String>> result;
+        Map<Integer, Set<String>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().kCore().kValue(3).execute();
+            result = graph.graql().compute().coreness().execute();
             assertEquals(2, result.size());
-            assertEquals(4, result.values().iterator().next().size());
+            assertEquals(8, result.get(3).size());
+            assertEquals(1, result.get(2).size());
 
-            System.out.println("result = " + result);
-            result = graph.graql().compute().kCore().kValue(2).execute();
+            result = graph.graql().compute().coreness().minK(3).execute();
             assertEquals(1, result.size());
-            assertEquals(9, result.values().iterator().next().size());
+            assertEquals(8, result.get(3).size());
         }
     }
 
@@ -311,14 +283,15 @@ public class CorenessTest {
             list.add(i);
         }
 
-        Set<Map<String, Set<String>>> result = list.parallelStream().map(i -> {
+        Set<Map<Integer, Set<String>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return Graql.compute().withTx(graph).kCore().kValue(3).execute();
+                return Graql.compute().withTx(graph).coreness().minK(3).execute();
             }
         }).collect(Collectors.toSet());
+        assertEquals(1, result.size());
         result.forEach(map -> {
             assertEquals(1, map.size());
-            assertEquals(4, map.values().iterator().next().size());
+            assertEquals(4, map.get(3).size());
         });
     }
 
@@ -342,8 +315,8 @@ public class CorenessTest {
 
             Entity entity1 = entityType1.addEntity();
             Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType1.addEntity();
+            Entity entity3 = entityType2.addEntity();
+            Entity entity4 = entityType2.addEntity();
 
             relationshipType1.addRelationship()
                     .addRolePlayer(role1, entity1)
