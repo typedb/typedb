@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Iterators;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
@@ -32,6 +31,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.IMPLICIT_MESSAGE_COUNT;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_EXIST;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_STABLE;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.checkDegree;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.getMessageCountExcludeSelf;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.relayOrSaveMessages;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.sendMessage;
 import static com.google.common.collect.Sets.newHashSet;
 
 /**
@@ -46,12 +52,9 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
     private static final String EMPTY_MESSAGE = "";
 
     public static final String CORENESS = "corenessVertexProgram.coreness";
-    private static final String IMPLICIT_MESSAGE_COUNT = "corenessVertexProgram.implicitMessageCount";
+
     private static final String MESSAGE_COUNT = "corenessVertexProgram.messageCount";
     private static final String QUALIFIED = "corenessVertexProgram.qualified";
-
-    private static final String K_CORE_STABLE = "corenessVertexProgram.stable";
-    private static final String K_CORE_EXIST = "corenessVertexProgram.exist";
     private static final String PERSIST_CORENESS = "corenessVertexProgram.persistCoreness";
     private static final String MIN_K = "corenessVertexProgram.k";
     private static final String CURRENT_K = "corenessVertexProgram.currentK";
@@ -114,23 +117,13 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
 
     @Override
     public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
-        String id;
         switch (memory.getIteration()) {
             case 0:
                 sendMessage(messenger, EMPTY_MESSAGE);
                 break;
 
             case 1: // get degree first, as degree must >= k
-                if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
-                        vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
-                        Iterators.size(messenger.receiveMessages()) >= memory.<Integer>get(CURRENT_K)) {
-                    id = vertex.value(Schema.VertexProperty.ID.name());
-                    vertex.property(QUALIFIED, true);
-                    memory.add(K_CORE_EXIST, true);
-
-                    // send ids from now on, as we want to count connected entities, not relationships
-                    sendMessage(messenger, id);
-                }
+                checkDegree(vertex, messenger, memory, memory.<Integer>get(CURRENT_K), QUALIFIED);
                 break;
 
             default:
@@ -148,7 +141,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                 // relay message through relationship vertices in even iterations
                 // send message from regular entities in odd iterations
                 if (memory.getIteration() % 2 == 0) {
-                    relayOrSaveMessages(vertex, messenger);
+                    relayOrSaveMessages(vertex, messenger, QUALIFIED);
                 } else {
                     updateEntityAndAttribute(vertex, messenger, memory);
                 }
@@ -156,24 +149,10 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
         }
     }
 
-    private static void relayOrSaveMessages(Vertex vertex, Messenger<String> messenger) {
-        if (messenger.receiveMessages().hasNext()) {
-            if (vertex.label().equals(Schema.BaseType.RELATIONSHIP.name())) {
-                // relay the messages
-                messenger.receiveMessages().forEachRemaining(msg -> sendMessage(messenger, msg));
-            } else if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
-                    vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
-                    vertex.property(QUALIFIED).isPresent()) {
-                // messages received via implicit edge, save the count for next iteration
-                vertex.property(IMPLICIT_MESSAGE_COUNT, newHashSet(messenger.receiveMessages()).size());
-            }
-        }
-    }
-
     private void updateEntityAndAttribute(Vertex vertex, Messenger<String> messenger, Memory memory) {
         if (vertex.property(QUALIFIED).isPresent()) {
             String id = vertex.value(Schema.VertexProperty.ID.name());
-            int messageCount = getMessageCount(messenger, id) +
+            int messageCount = getMessageCountExcludeSelf(messenger, id) +
                     (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent() ?
                             (int) vertex.value(IMPLICIT_MESSAGE_COUNT) : 0);
 
@@ -181,6 +160,8 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                 LOGGER.trace("Sending msg from " + id);
                 sendMessage(messenger, id);
                 memory.add(K_CORE_EXIST, true);
+
+                // message count may help eliminate unqualified vertex in earlier iterations
                 vertex.property(MESSAGE_COUNT, messageCount);
             } else {
                 LOGGER.trace("Removing label of " + id);
@@ -188,18 +169,6 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                 memory.add(K_CORE_STABLE, false);
             }
         }
-    }
-
-    // count the messages from relationships, so need to filter its own msg
-    private static int getMessageCount(Messenger<String> messenger, String id) {
-        Set<String> messageSet = newHashSet(messenger.receiveMessages());
-        messageSet.remove(id);
-        return messageSet.size();
-    }
-
-    private static void sendMessage(Messenger<String> messenger, String message) {
-        messenger.sendMessage(messageScopeIn, message);
-        messenger.sendMessage(messageScopeOut, message);
     }
 
     @Override
