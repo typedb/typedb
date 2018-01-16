@@ -83,7 +83,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void record_Retrieve(){
+    public void recordRetrieveAnswers(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         QueryAnswers record = cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
         assertEquals(record, cache.getAnswers(retrieveQuery).unify(retrieveToRecordUnifier));
@@ -91,7 +91,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void record_Update_Retrieve(){
+    public void recordUpdateRetrieveAnswers(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
         cache.recordAnswer(recordQuery, singleAnswer);
@@ -100,7 +100,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void stream_Record_Retrieve(){
+    public void recordRetrieveAnswerStream(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         Set<Answer> record = cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet());
         assertEquals(record, cache.getAnswerStream(retrieveQuery).map(ans -> ans.unify(retrieveToRecordUnifier)).collect(Collectors.toSet()));
@@ -108,7 +108,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void stream_Record_Update_Retrieve(){
+    public void recordUpdateRetrieveAnswerStream(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         cache.record(recordQuery, recordQuery.getQuery().stream());
         cache.recordAnswer(recordQuery, singleAnswer);
@@ -118,7 +118,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void stream_Get_Retrieve() {
+    public void getRetrieveAnswerStream() {
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
         Answer retrieveAnswer = answer.unify(recordToRetrieveUnifier);
@@ -134,7 +134,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void stream_Get_Update_Retrieve() {
+    public void getUpdateRetrieveAnswerStream() {
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
         Answer retrieveAnswer = answer.unify(recordToRetrieveUnifier);
@@ -158,7 +158,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void singleAnswer_Record_Retrieve(){
+    public void recordRetrieveSingleAnswer(){
         QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
         Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
         Answer retrieveAnswer = answer.unify(recordToRetrieveUnifier);
@@ -182,7 +182,7 @@ public class QueryCacheTest {
      */
 
     @Test
-    public void lazyCache_Record_Retrieve(){
+    public void lazilyRecordRetrieveAnswers(){
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         cache.record(recordQuery, recordQuery.getQuery().stream());
 
@@ -194,7 +194,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void lazyCache_Record_Update_Retrieve(){
+    public void lazilyRecordUpdateRetrieveAnswers(){
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         cache.record(recordQuery, recordQuery.getQuery().stream());
         cache.record(recordQuery, Stream.of(singleAnswer));
@@ -208,7 +208,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void lazyCache_Get_Retrieve() {
+    public void lazilyGetRetrieveAnswers() {
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         cache.record(recordQuery, recordQuery.getQuery().stream());
         LazyAnswerIterator retrieveIterator = cache.getAnswers(retrieveQuery);
@@ -222,7 +222,7 @@ public class QueryCacheTest {
     }
 
     @Test
-    public void lazyCache_Get_Update_Retrieve(){
+    public void lazilyGetUpdateRetrieveAnswers(){
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         Answer retrieveSingleAnswer = singleAnswer.unify(recordToRetrieveUnifier);
         cache.record(recordQuery, recordQuery.getQuery().stream());
