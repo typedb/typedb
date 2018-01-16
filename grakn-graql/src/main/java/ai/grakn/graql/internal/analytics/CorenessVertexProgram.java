@@ -19,25 +19,25 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.util.Schema;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.IMPLICIT_MESSAGE_COUNT;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_EXIST;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_LABEL;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_STABLE;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.MESSAGE_COUNT;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.checkDegree;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.getMessageCountExcludeSelf;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.relayOrSaveMessages;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.sendMessage;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.updateEntityAndAttribute;
 import static com.google.common.collect.Sets.newHashSet;
 
 /**
@@ -53,45 +53,26 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
 
     public static final String CORENESS = "corenessVertexProgram.coreness";
 
-    private static final String MESSAGE_COUNT = "corenessVertexProgram.messageCount";
-    private static final String QUALIFIED = "corenessVertexProgram.qualified";
     private static final String PERSIST_CORENESS = "corenessVertexProgram.persistCoreness";
-    private static final String MIN_K = "corenessVertexProgram.k";
-    private static final String CURRENT_K = "corenessVertexProgram.currentK";
 
     private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS = newHashSet(
             MemoryComputeKey.of(K_CORE_STABLE, Operator.and, false, true),
             MemoryComputeKey.of(K_CORE_EXIST, Operator.or, false, true),
             MemoryComputeKey.of(PERSIST_CORENESS, Operator.assign, true, true),
-            MemoryComputeKey.of(CURRENT_K, Operator.assign, true, true));
+            MemoryComputeKey.of(K, Operator.assign, true, true));
 
     private static final Set<VertexComputeKey> VERTEX_COMPUTE_KEYS = newHashSet(
             VertexComputeKey.of(CORENESS, false),
-            VertexComputeKey.of(QUALIFIED, true),
+            VertexComputeKey.of(K_CORE_LABEL, true),
             VertexComputeKey.of(MESSAGE_COUNT, true),
             VertexComputeKey.of(IMPLICIT_MESSAGE_COUNT, true));
-
-    private int minK;
 
     // Needed internally for OLAP tasks
     public CorenessVertexProgram() {
     }
 
     public CorenessVertexProgram(int minK) {
-        this.minK = minK;
-        this.persistentProperties.put(MIN_K, minK);
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        super.storeState(configuration);
-        persistentProperties.put(MIN_K, minK);
-    }
-
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        minK = (int) persistentProperties.get(MIN_K);
+        this.persistentProperties.put(K, minK);
     }
 
     @Override
@@ -112,7 +93,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
         memory.set(K_CORE_STABLE, false);
         memory.set(K_CORE_EXIST, false);
         memory.set(PERSIST_CORENESS, false);
-        memory.set(CURRENT_K, persistentProperties.get(MIN_K));
+        memory.set(K, persistentProperties.get(K));
     }
 
     @Override
@@ -123,17 +104,17 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                 break;
 
             case 1: // get degree first, as degree must >= k
-                checkDegree(vertex, messenger, memory, memory.<Integer>get(CURRENT_K), QUALIFIED);
+                checkDegree(vertex, messenger, memory, false);
                 break;
 
             default:
-                if (memory.<Boolean>get(PERSIST_CORENESS) && vertex.property(QUALIFIED).isPresent()) {
+                if (memory.<Boolean>get(PERSIST_CORENESS) && vertex.property(K_CORE_LABEL).isPresent()) {
                     // persist coreness
-                    vertex.property(CORENESS, memory.<Integer>get(CURRENT_K) - 1);
+                    vertex.property(CORENESS, memory.<Integer>get(K) - 1);
 
                     // check if the vertex should included for the next k value
-                    if ((int) vertex.value(MESSAGE_COUNT) < memory.<Integer>get(CURRENT_K)) {
-                        vertex.property(QUALIFIED).remove();
+                    if ((int) vertex.value(MESSAGE_COUNT) < memory.<Integer>get(K)) {
+                        vertex.property(K_CORE_LABEL).remove();
                         break;
                     }
                 }
@@ -141,33 +122,11 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                 // relay message through relationship vertices in even iterations
                 // send message from regular entities in odd iterations
                 if (memory.getIteration() % 2 == 0) {
-                    relayOrSaveMessages(vertex, messenger, QUALIFIED);
+                    relayOrSaveMessages(vertex, messenger);
                 } else {
-                    updateEntityAndAttribute(vertex, messenger, memory);
+                    updateEntityAndAttribute(vertex, messenger, memory, true);
                 }
                 break;
-        }
-    }
-
-    private void updateEntityAndAttribute(Vertex vertex, Messenger<String> messenger, Memory memory) {
-        if (vertex.property(QUALIFIED).isPresent()) {
-            String id = vertex.value(Schema.VertexProperty.ID.name());
-            int messageCount = getMessageCountExcludeSelf(messenger, id) +
-                    (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent() ?
-                            (int) vertex.value(IMPLICIT_MESSAGE_COUNT) : 0);
-
-            if (messageCount >= memory.<Integer>get(CURRENT_K)) {
-                LOGGER.trace("Sending msg from " + id);
-                sendMessage(messenger, id);
-                memory.add(K_CORE_EXIST, true);
-
-                // message count may help eliminate unqualified vertex in earlier iterations
-                vertex.property(MESSAGE_COUNT, messageCount);
-            } else {
-                LOGGER.trace("Removing label of " + id);
-                vertex.property(QUALIFIED).remove();
-                memory.add(K_CORE_STABLE, false);
-            }
         }
     }
 
@@ -193,8 +152,8 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                 return true;
             } else {
                 if (memory.<Boolean>get(K_CORE_STABLE)) {
-                    LOGGER.debug("Found Core Areas K = " + memory.<Integer>get(CURRENT_K) + "\n");
-                    memory.set(CURRENT_K, memory.<Integer>get(CURRENT_K) + 1);
+                    LOGGER.debug("Found Core Areas K = " + memory.<Integer>get(K) + "\n");
+                    memory.set(K, memory.<Integer>get(K) + 1);
                     memory.set(PERSIST_CORENESS, true);
                 } else {
                     memory.set(K_CORE_STABLE, true);
