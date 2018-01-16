@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
@@ -166,7 +165,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                     vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
                     vertex.property(QUALIFIED).isPresent()) {
                 // messages received via implicit edge, save the count for next iteration
-                vertex.property(IMPLICIT_MESSAGE_COUNT, Sets.newHashSet(messenger.receiveMessages()).size());
+                vertex.property(IMPLICIT_MESSAGE_COUNT, newHashSet(messenger.receiveMessages()).size());
             }
         }
     }
