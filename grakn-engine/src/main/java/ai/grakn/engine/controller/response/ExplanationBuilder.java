@@ -40,7 +40,7 @@ import java.util.List;
  */
 public class ExplanationBuilder {
 
-    public static List<Answer> buildExplanation(ai.grakn.graql.admin.Answer queryAnswer, Printer printer) {
+    public static List<Answer> buildExplanation(ai.grakn.graql.admin.Answer queryAnswer, Printer<?> printer) {
         final List<Answer> explanation = new ArrayList<>();
         queryAnswer.getExplanation().getAnswers().forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();

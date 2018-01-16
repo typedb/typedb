@@ -18,9 +18,10 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.controller.response.Keyspace;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
@@ -82,14 +83,16 @@ public class RedisIndexStorage extends RedisStorage {
     /**
      * The key which refers to  a list of all the indices in a certain {@link Keyspace} which need to be post processed
      */
-    private static String getIndicesKey(Keyspace keyspace){
-        return "IndicesToProcess_" + keyspace.value();
+    @VisibleForTesting
+    static String getIndicesKey(Keyspace keyspace){
+        return "IndicesToProcess_" + keyspace.getValue();
     }
 
     /**
      * The key which refers to a set of vertices currently pointing to the same index
      */
-    private static String getConceptIdsKey(Keyspace keyspace, String index){
-        return "IdsToPostProcess_" + keyspace.value() + "_Id_" + index;
+    @VisibleForTesting
+    static String getConceptIdsKey(Keyspace keyspace, String index){
+        return "IdsToPostProcess_" + keyspace.getValue() + "_Id_" + index;
     }
 }
