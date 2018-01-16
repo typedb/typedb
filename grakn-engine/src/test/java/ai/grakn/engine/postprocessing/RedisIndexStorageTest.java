@@ -33,9 +33,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 /**
  * <p>
@@ -101,10 +101,12 @@ public class RedisIndexStorageTest {
     @Test
     public void whenPoppingIds_EnsureListOfIdsAreUpdated(){
         String [] ids = conceptIds.stream().map(ConceptId::getValue).toArray(String[]::new);
-        assertJedisContains(RedisIndexStorage.getConceptIdsKey(keyspace2, index1), ids);
+        String conceptIdsKey = RedisIndexStorage.getConceptIdsKey(keyspace2, index1);
+        assertJedisContains(conceptIdsKey, ids);
+
         Set<ConceptId> foundIds = indexStorage.popIds(keyspace2, index1);
         assertEquals(conceptIds, foundIds);
-        assertTrue(RedisIndexStorage.getConceptIdsKey(keyspace2, index1).isEmpty());
+        assertThat(indexStorage.contactRedis(jedis -> jedis.smembers(conceptIdsKey)), empty());
     }
 
     private void assertJedisContains(String key, String... vals){
