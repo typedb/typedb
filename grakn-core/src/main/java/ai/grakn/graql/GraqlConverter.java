@@ -27,7 +27,19 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * An interface for converting objects in Graql responses into other formats.
+ * An interface for converting objects in Graql responses (e.g. {@link Integer}s and {@link Answer}s into a
+ * given type {@link T}).
+ *
+ * <p>
+ *     The intermediate {@link Builder} type is used when the final type is different to the "in-progress" type when
+ *     creating it. For example, if {@link T} is {@link String}, then you may want to use a link {@link StringBuilder}
+ *     for {@link Builder} (for efficiency).
+ * </p>
+ *
+ * <p>
+ *     If you don't need a {@link Builder} type, then set it to the same type as {@link T} and implement
+ *     {@link #build(Builder)} to just return its argument.
+ * </p>
  *
  * @param <Builder> An intermediate builder type that can be changed into a {@link T}
  * @param <T> The type to convert into
