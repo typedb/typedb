@@ -23,6 +23,8 @@ import ai.grakn.concept.ConceptId;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Response;
+import redis.clients.jedis.Transaction;
 import redis.clients.util.Pool;
 
 import java.util.Set;
@@ -74,9 +76,11 @@ public class RedisIndexStorage extends RedisStorage {
     public Set<ConceptId> popIds(Keyspace keyspace, String index){
         String idKey = getConceptIdsKey(keyspace, index);
         return contactRedis(jedis -> {
-            Set<ConceptId> ids = jedis.smembers(idKey).stream().map(ConceptId::of).collect(Collectors.toSet());
-            jedis.del(idKey);
-            return ids;
+            Transaction tx = jedis.multi();
+            Response<Set<String>> responseIds = tx.smembers(idKey);
+            tx.del(idKey);
+            tx.exec();
+            return  responseIds.get().stream().map(ConceptId::of).collect(Collectors.toSet());
         });
     }
 
