@@ -22,7 +22,10 @@ import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.postprocessing.IndexPostProcessor;
+import ai.grakn.engine.postprocessing.InstanceCountPostProcessor;
 import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
 import redis.clients.jedis.Jedis;
@@ -105,7 +108,11 @@ public class GraknCreator {
             Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
             LockProvider lockProvider = instantiateLock(jedisPool);
             EngineGraknTxFactory factory = instantiateGraknTxFactory(graknEngineConfig, lockProvider);
-            PostProcessor postProcessor = postProcessor(metricRegistry, graknEngineConfig, factory, jedisPool, lockProvider);
+
+            IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider);
+            InstanceCountPostProcessor instanceCountPostProcessor = InstanceCountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, RedisCountStorage.create(jedisPool, metricRegistry));
+
+            PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, instanceCountPostProcessor);
             HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor);
             graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID);
             Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
@@ -150,10 +157,6 @@ public class GraknCreator {
 
     protected static EngineGraknTxFactory engineGraknTxFactory(GraknConfig config, LockProvider lockProvider) {
         return EngineGraknTxFactory.create(lockProvider, config);
-    }
-
-    protected PostProcessor postProcessor(MetricRegistry metricRegistry, GraknConfig config, EngineGraknTxFactory factory, Pool<Jedis> jedisPool, LockProvider lockProvider){
-        return PostProcessor.create(config, jedisPool, factory, lockProvider, metricRegistry);
     }
 
 }

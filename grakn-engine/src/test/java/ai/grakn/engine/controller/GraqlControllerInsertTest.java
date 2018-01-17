@@ -24,6 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.postprocessing.InstanceCountPostProcessor;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -72,6 +73,7 @@ public class GraqlControllerInsertTest {
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
     private static final PostProcessor postProcessor = mock(PostProcessor.class);
+    private static final InstanceCountPostProcessor instanceCountPostProcessor = mock(InstanceCountPostProcessor.class);
     private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static final Printer printer = mock(Printer.class);
 
@@ -85,6 +87,7 @@ public class GraqlControllerInsertTest {
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
         when(tx.keyspace()).thenReturn(keyspace);
         when(printer.graqlString(any())).thenReturn(Json.object().toString());
+        when(postProcessor.count()).thenReturn(instanceCountPostProcessor);
 
         // Describe expected response to a typical query
         Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
@@ -230,7 +233,7 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(postProcessor, times(0)).updateCounts(any(), any());
+        verify(instanceCountPostProcessor, times(0)).updateCounts(any(), any());
     }
 
     @Test
@@ -255,7 +258,7 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(postProcessor, times(1)).updateCounts(tx.keyspace(), commitLog);
+        verify(instanceCountPostProcessor, times(1)).updateCounts(tx.keyspace(), commitLog);
     }
 
     private Response sendRequest(String query){

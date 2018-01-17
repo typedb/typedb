@@ -66,7 +66,7 @@ public class CommitLogController {
 
         // TODO Use an engine wide executor here
         CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> postProcessor.updateCounts(keyspace, commitLog))/*, TODO: Use background process or something
+                CompletableFuture.runAsync(() -> postProcessor.count().updateCounts(keyspace, commitLog))/*, TODO: Use background process or something
                 CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration))*/)
                 .join();
 

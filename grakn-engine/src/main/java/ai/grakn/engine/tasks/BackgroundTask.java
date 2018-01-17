@@ -20,7 +20,7 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.postprocessing.IndexPostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
@@ -41,7 +41,7 @@ public abstract class BackgroundTask {
     private @Nullable
     EngineGraknTxFactory factory = null;
     private @Nullable MetricRegistry metricRegistry = null;
-    private @Nullable PostProcessor postProcessor = null;
+    private @Nullable IndexPostProcessor postProcessor = null;
 
     /**
      * Initialize the {@link BackgroundTask}. This must be called prior to any other call to {@link BackgroundTask}.
@@ -52,7 +52,7 @@ public abstract class BackgroundTask {
     public final void initialize(
             TaskConfiguration configuration,
             GraknConfig engineConfig,
-            EngineGraknTxFactory factory, MetricRegistry metricRegistry, PostProcessor postProcessor)  {
+            EngineGraknTxFactory factory, MetricRegistry metricRegistry, IndexPostProcessor postProcessor)  {
         this.configuration = configuration;
         this.engineConfig = engineConfig;
         this.metricRegistry = metricRegistry;
@@ -98,7 +98,7 @@ public abstract class BackgroundTask {
         return defaultNullCheck(metricRegistry);
     }
 
-    public final PostProcessor postProcessor(){
+    public final IndexPostProcessor postProcessor(){
         return defaultNullCheck(postProcessor);
     }
 

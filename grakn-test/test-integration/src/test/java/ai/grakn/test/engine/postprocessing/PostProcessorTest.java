@@ -25,7 +25,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;

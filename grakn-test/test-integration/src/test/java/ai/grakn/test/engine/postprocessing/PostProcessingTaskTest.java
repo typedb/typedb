@@ -24,7 +24,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;

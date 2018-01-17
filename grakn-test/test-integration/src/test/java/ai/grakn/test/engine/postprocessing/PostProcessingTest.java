@@ -25,7 +25,6 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;

@@ -108,8 +108,7 @@ public class GraqlController {
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, Service spark,
-            PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
+            EngineGraknTxFactory factory, Service spark, PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.postProcessor = postProcessor;
