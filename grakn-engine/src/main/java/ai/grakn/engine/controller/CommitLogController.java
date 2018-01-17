@@ -60,13 +60,14 @@ public class CommitLogController {
         CommitLog commitLog = mapper.readValue(req.body(), CommitLog.class);
         CommitLog commitLogPP = CommitLog.create(keyspace, Collections.emptyMap(), commitLog.attributes());
 
+
         // Things to post process
         //TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
         //TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(commitLogPP);
 
         // TODO Use an engine wide executor here
         CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> postProcessor.count().updateCounts(keyspace, commitLog))/*, TODO: Use background process or something
+                CompletableFuture.runAsync(() -> postProcessor.count().updateCounts(commitLog))/*, TODO: Use background process or something
                 CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration))*/)
                 .join();
 

@@ -50,6 +50,10 @@ public class IndexPostProcessor {
         return new IndexPostProcessor(lockProvider);
     }
 
+    public void updateIndices(){
+        
+    }
+
     /**
      * Merges duplicate {@link ai.grakn.concept.Concept}s based on the unique index provided plus the {@link ConceptId}s
      * of the suspected duplicates

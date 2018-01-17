@@ -68,10 +68,9 @@ public class InstanceCountPostProcessor {
     /**
      * Updates the counts of {@link ai.grakn.concept.Type}s based on the commit logs received.
      *
-     * @param keyspace The {@link Keyspace} which contains {@link ai.grakn.concept.Type}s with new instances.
      * @param commitLog The commit log containing the details of the job
      */
-    public void updateCounts(Keyspace keyspace, CommitLog commitLog){
+    public void updateCounts(CommitLog commitLog){
         final long shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
         final int maxRetry = engineConfig.getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
         try (Timer.Context context = metricRegistry.timer(name(InstanceCountPostProcessor.class, "execution")).time()) {
@@ -92,7 +91,7 @@ public class InstanceCountPostProcessor {
                 Timer.Context contextSingle = metricRegistry
                         .timer(name(InstanceCountPostProcessor.class, "execution-single")).time();
                 try {
-                    if (updateShardCounts(redis, keyspace, key, value, shardingThreshold)) {
+                    if (updateShardCounts(redis, commitLog.keyspace(), key, value, shardingThreshold)) {
                         conceptToShard.add(key);
                     }
                 } finally {
@@ -104,7 +103,7 @@ public class InstanceCountPostProcessor {
             conceptToShard.forEach(type -> {
                 Timer.Context contextSharding = metricRegistry.timer("sharding").time();
                 try {
-                    shardConcept(redis, factory, keyspace, type, maxRetry, shardingThreshold);
+                    shardConcept(redis, factory, commitLog.keyspace(), type, maxRetry, shardingThreshold);
                 } finally {
                     contextSharding.stop();
                 }
@@ -124,8 +123,7 @@ public class InstanceCountPostProcessor {
      * @param value The number of instances which the type has gained/lost
      * @return true if sharding is needed.
      */
-    private static boolean updateShardCounts(
-            RedisCountStorage redis, Keyspace keyspace, ConceptId conceptId, long value, long shardingThreshold){
+    private static boolean updateShardCounts(RedisCountStorage redis, Keyspace keyspace, ConceptId conceptId, long value, long shardingThreshold){
         long numShards = redis.getCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId));
         if(numShards == 0) numShards = 1;
         long numInstances = redis.adjustCount(
