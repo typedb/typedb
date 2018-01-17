@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -66,6 +67,7 @@ public class TxCache{
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
+    private final Set<Relationship> newRelationships = new HashSet<>();
     private final Set<Thing> modifiedThings = new HashSet<>();
 
     private final Set<Role> modifiedRoles = new HashSet<>();
@@ -110,7 +112,7 @@ public class TxCache{
      * Notifies the cache that a write has occurred.
      * This is later used to determine if it is safe to flush the transaction cache to the session cache or not.
      */
-    public void writeOccured(){
+    public void writeOccurred(){
         writeOccurred = true;
     }
 
@@ -153,7 +155,7 @@ public class TxCache{
 
     public void removeFromValidation(Type type){
         if (type.isRelationshipType()) {
-            modifiedRelationshipTypes.add(type.asRelationshipType());
+            modifiedRelationshipTypes.remove(type.asRelationshipType());
         }
     }
 
@@ -199,8 +201,13 @@ public class TxCache{
         modifiedRoles.remove(concept);
         modifiedRelationshipTypes.remove(concept);
         modifiedRules.remove(concept);
+
         if(concept.isAttribute()) {
             newAttributes.remove(AttributeImpl.from(concept.asAttribute()).getIndex());
+        }
+
+        if(concept.isRelationship()){
+            newRelationships.remove(concept.asRelationship());
         }
 
         conceptCache.remove(concept.getId());
@@ -333,6 +340,13 @@ public class TxCache{
         return modifiedCastings;
     }
 
+    public void addNewRelationship(Relationship relationship){
+        newRelationships.add(relationship);
+    }
+    public Set<Relationship> getNewRelationships() {
+        return newRelationships;
+    }
+
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
     public void closeTx(String closedReason){
         isTxOpen = false;
@@ -348,6 +362,7 @@ public class TxCache{
         modifiedRules.clear();
         modifiedCastings.clear();
         newAttributes.clear();
+        newRelationships.clear();
         shardingCount.clear();
         conceptCache.clear();
         schemaConceptCache.clear();
@@ -369,4 +384,5 @@ public class TxCache{
     public String getClosedReason(){
         return closedReason;
     }
+
 }

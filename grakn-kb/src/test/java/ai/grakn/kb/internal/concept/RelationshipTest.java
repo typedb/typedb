@@ -31,8 +31,10 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.TxTestBase;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -46,6 +48,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -310,5 +313,18 @@ public class RelationshipTest extends TxTestBase {
 
         RelationshipImpl.from(relationship).attributeInferred(attribute);
         assertTrue(relationship.relationships().findAny().get().isInferred());
+    }
+
+    @Test
+    public void whenAddingRelationshipWithNoRolePlayers_Throw(){
+        Role role1 = tx.putRole("r1");
+        Role role2 = tx.putRole("r2");
+        RelationshipType relationshipType = tx.putRelationshipType("A thing of sorts").relates(role1).relates(role2);
+        Relationship relationship = relationshipType.addRelationship();
+
+        expectedException.expect(InvalidKBException.class);
+        expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS.getMessage(relationship.getId(), relationship.type().getLabel())));
+
+        tx.commit();
     }
 }
