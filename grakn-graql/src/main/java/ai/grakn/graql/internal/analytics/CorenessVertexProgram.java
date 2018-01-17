@@ -34,7 +34,8 @@ import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_EXIST;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_LABEL;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_STABLE;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.MESSAGE_COUNT;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.checkDegree;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.atRelationships;
+import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.filterByDegree;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.relayOrSaveMessages;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.sendMessage;
 import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.updateEntityAndAttribute;
@@ -42,6 +43,9 @@ import static com.google.common.collect.Sets.newHashSet;
 
 /**
  * The vertex program for computing coreness using k-core.
+ * <p>
+ * https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)#k-Cores
+ * </p>
  *
  * @author Jason Liu
  */
@@ -104,7 +108,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                 break;
 
             case 1: // get degree first, as degree must >= k
-                checkDegree(vertex, messenger, memory, false);
+                filterByDegree(vertex, messenger, memory, false);
                 break;
 
             default:
@@ -113,7 +117,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                     vertex.property(CORENESS, memory.<Integer>get(K) - 1);
 
                     // check if the vertex should included for the next k value
-                    if ((int) vertex.value(MESSAGE_COUNT) < memory.<Integer>get(K)) {
+                    if (vertex.<Integer>value(MESSAGE_COUNT) < memory.<Integer>get(K)) {
                         vertex.property(K_CORE_LABEL).remove();
                         break;
                     }
@@ -121,7 +125,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
 
                 // relay message through relationship vertices in even iterations
                 // send message from regular entities in odd iterations
-                if (memory.getIteration() % 2 == 0) {
+                if (atRelationships(memory)) {
                     relayOrSaveMessages(vertex, messenger);
                 } else {
                     updateEntityAndAttribute(vertex, messenger, memory, true);
@@ -145,7 +149,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
         if (memory.<Boolean>get(PERSIST_CORENESS)) {
             memory.set(PERSIST_CORENESS, false);
         }
-        if (memory.getIteration() % 2 != 0) {
+        if (!atRelationships(memory)) {
             LOGGER.debug("UpdateEntityAndAttribute... Finished Iteration " + memory.getIteration());
             if (!memory.<Boolean>get(K_CORE_EXIST)) {
                 LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");

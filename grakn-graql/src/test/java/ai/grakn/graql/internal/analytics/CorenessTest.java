@@ -69,14 +69,14 @@ public class CorenessTest {
     }
 
     @Test(expected = GraqlQueryException.class)
-    public void testKSmallerThan2() {
+    public void testKSmallerThan2_ThrowsException() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().coreness().minK(1).execute();
         }
     }
 
     @Test
-    public void testOnEmptyGraph() {
+    public void testOnEmptyGraph_ReturnsEmptyMap() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             Map<Integer, Set<String>> result = graph.graql().compute().coreness().execute();
             assertTrue(result.isEmpty());
@@ -84,7 +84,7 @@ public class CorenessTest {
     }
 
     @Test
-    public void testOnGraphWithoutRelationships() {
+    public void testOnGraphWithoutRelationships_ReturnsEmptyMap() {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.putEntityType(thing).addEntity();
             graph.putEntityType(anotherThing).addEntity();

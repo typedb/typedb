@@ -104,7 +104,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                 break;
 
             case 1: // get degree first, as degree must >= k
-                checkDegree(vertex, messenger, memory, true);
+                filterByDegree(vertex, messenger, memory, true);
                 break;
 
             default:
@@ -119,7 +119,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                 } else {
                     // relay message through relationship vertices in even iterations
                     // send message from regular entities in odd iterations
-                    if (memory.getIteration() % 2 == 0) {
+                    if (atRelationships(memory)) {
                         relayOrSaveMessages(vertex, messenger);
                     } else {
                         updateEntityAndAttribute(vertex, messenger, memory, false);
@@ -129,7 +129,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         }
     }
 
-    static void checkDegree(Vertex vertex, Messenger<String> messenger, Memory memory, boolean persistId) {
+    static void filterByDegree(Vertex vertex, Messenger<String> messenger, Memory memory, boolean persistId) {
         if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
                 vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
                 Iterators.size(messenger.receiveMessages()) >= memory.<Integer>get(K)) {
@@ -168,7 +168,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
             String id = vertex.value(Schema.VertexProperty.ID.name());
             int messageCount = getMessageCountExcludeSelf(messenger, id);
             if (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent()) {
-                messageCount += (int) vertex.value(IMPLICIT_MESSAGE_COUNT);
+                messageCount += vertex.<Integer>value(IMPLICIT_MESSAGE_COUNT);
                 // need to remove implicit count as the vertex may not receive msg via implicit edge
                 vertex.property(IMPLICIT_MESSAGE_COUNT).remove();
             }
@@ -224,6 +224,10 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         messenger.sendMessage(messageScopeOut, message);
     }
 
+    static boolean atRelationships(Memory memory) {
+        return memory.getIteration() % 2 == 0;
+    }
+
     @Override
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Finished Iteration " + memory.getIteration());
@@ -243,7 +247,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                 return false;
             }
         } else {
-            if (memory.getIteration() % 2 != 0) {
+            if (!atRelationships(memory)) {
                 if (!memory.<Boolean>get(K_CORE_EXIST)) {
                     LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
                     LOGGER.debug("No Such Core Areas Found !!!!!!!!");

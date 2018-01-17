@@ -111,11 +111,7 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> 
 
     @Override
     public CorenessQuery of(String... ofTypeLabels) {
-        if (ofTypeLabels.length > 0) {
-            ofTypeLabelsSet = true;
-            this.ofLabels = Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet());
-        }
-        return this;
+        return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
     }
 
     @Override
