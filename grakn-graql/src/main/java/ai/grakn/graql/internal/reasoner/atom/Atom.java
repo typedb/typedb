@@ -32,7 +32,7 @@ import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -95,9 +95,20 @@ public abstract class Atom extends AtomicBase {
         return getApplicableRules()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
                         .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                        .filter(at -> typesCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
-                .filter(this::isRuleApplicable)
-                .findFirst().isPresent();
+                        .anyMatch(at -> typesCompatible(schemaConcept, at.getSchemaConcept())))
+                .anyMatch(this::isRuleApplicable);
+    }
+
+    /**
+     * @return true if the atom is ground (all variables are bound)
+     */
+    public boolean isGround(){
+        Set<Var> varNames = getVarNames();
+        return Stream.concat(
+                getPredicates(),
+                getInnerPredicates())
+                .map(AtomicBase::getVarName)
+                .allMatch(varNames::contains);
     }
 
     public abstract Class<? extends VarProperty> getVarPropertyClass();
@@ -111,8 +122,7 @@ public abstract class Atom extends AtomicBase {
                 this.getInnerPredicates().map(Atomic::getVarName).collect(Collectors.toSet())
         );
         boolean unboundVariables = varNames.stream()
-                .filter(var -> !parentAtoms.stream().filter(at -> at.getVarNames().contains(var)).findFirst().isPresent())
-                .findFirst().isPresent();
+                .anyMatch(var -> !parentAtoms.stream().anyMatch(at -> at.getVarNames().contains(var)));
         if (unboundVariables) {
             errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.getThen(), rule.getLabel()));
         }
@@ -158,21 +168,21 @@ public abstract class Atom extends AtomicBase {
      */
     public int computePriority(Set<Var> subbedVars){
         int priority = 0;
-        priority += Sets.intersection(getVarNames(), subbedVars).size() * ResolutionPlan.PARTIAL_SUBSTITUTION;
-        priority += isRuleResolvable()? ResolutionPlan.RULE_RESOLVABLE_ATOM : 0;
-        priority += isRecursive()? ResolutionPlan.RECURSIVE_ATOM : 0;
+        priority += Sets.intersection(getVarNames(), subbedVars).size() * SimplePlanner.PARTIAL_SUBSTITUTION;
+        priority += isRuleResolvable()? SimplePlanner.RULE_RESOLVABLE_ATOM : 0;
+        priority += isRecursive()? SimplePlanner.RECURSIVE_ATOM : 0;
 
-        priority += getTypeConstraints().count() * ResolutionPlan.GUARD;
+        priority += getTypeConstraints().count() * SimplePlanner.GUARD;
         Set<Var> otherVars = getParentQuery().getAtoms().stream()
                 .filter(a -> a != this)
                 .flatMap(at -> at.getVarNames().stream())
                 .collect(Collectors.toSet());
-        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionPlan.BOUND_VARIABLE;
+        priority += Sets.intersection(getVarNames(), otherVars).size() * SimplePlanner.BOUND_VARIABLE;
 
         //inequality predicates with unmapped variable
         priority += getPredicates(NeqPredicate.class)
                 .map(Predicate::getPredicate)
-                .filter(v -> !subbedVars.contains(v)).count() * ResolutionPlan.INEQUALITY_PREDICATE;
+                .filter(v -> !subbedVars.contains(v)).count() * SimplePlanner.INEQUALITY_PREDICATE;
         return priority;
     }
 

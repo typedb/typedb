@@ -45,7 +45,7 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -118,7 +118,7 @@ public class RelationshipAtom extends IsaAtom {
         List<RelationPlayer> rps = new ArrayList<>();
         getPattern().admin()
                 .getProperty(RelationshipProperty.class)
-                .ifPresent(prop -> prop.relationPlayers().forEach(rps::add));
+                .ifPresent(prop -> rps.addAll(prop.relationPlayers()));
         this.relationPlayers = ImmutableList.copyOf(rps);
         this.roleLabels = ImmutableSet.<Label>builder().addAll(
                 relationPlayers.stream()
@@ -392,7 +392,7 @@ public class RelationshipAtom extends IsaAtom {
     @Override
     public int computePriority(Set<Var> subbedVars) {
         int priority = super.computePriority(subbedVars);
-        priority += ResolutionPlan.IS_RELATION_ATOM;
+        priority += SimplePlanner.IS_RELATION_ATOM;
         return priority;
     }
 
@@ -623,8 +623,8 @@ public class RelationshipAtom extends IsaAtom {
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = super.getVarNames();
-        getRolePlayers().forEach(vars::add);
-        getRoleVariables().forEach(vars::add);
+        vars.addAll(getRolePlayers());
+        vars.addAll(getRoleVariables());
         return vars;
     }
 
@@ -790,20 +790,18 @@ public class RelationshipAtom extends IsaAtom {
         Multimap<Role, RelationPlayer> roleRelationPlayerMap = ArrayListMultimap.create();
         Multimap<Role, Var> roleVarMap = getRoleVarMap();
         List<RelationPlayer> relationPlayers = getRelationPlayers();
-        roleVarMap.asMap().entrySet()
-                .forEach(e -> {
-                    Role role = e.getKey();
-                    Label roleLabel = role.getLabel();
-                    relationPlayers.stream()
-                            .filter(rp -> rp.getRole().isPresent())
-                            .forEach(rp -> {
-                                VarPatternAdmin roleTypeVar = rp.getRole().orElse(null);
-                                Label rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
-                                if (roleLabel != null && roleLabel.equals(rl)) {
-                                    roleRelationPlayerMap.put(role, rp);
-                                }
-                            });
-                });
+        roleVarMap.asMap().forEach((role, value) -> {
+            Label roleLabel = role.getLabel();
+            relationPlayers.stream()
+                    .filter(rp -> rp.getRole().isPresent())
+                    .forEach(rp -> {
+                        VarPatternAdmin roleTypeVar = rp.getRole().orElse(null);
+                        Label rl = roleTypeVar != null ? roleTypeVar.getTypeLabel().orElse(null) : null;
+                        if (roleLabel != null && roleLabel.equals(rl)) {
+                            roleRelationPlayerMap.put(role, rp);
+                        }
+                    });
+        });
         return roleRelationPlayerMap;
     }
 
@@ -846,7 +844,7 @@ public class RelationshipAtom extends IsaAtom {
                         List<RelationPlayer> compatibleRelationPlayers = new ArrayList<>();
                         compatibleRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
-                                .forEach(role -> {
+                                .forEach(role ->
                                     childRoleRPMap.get(role).stream()
                                             //check for inter-type compatibility
                                             .filter(crp -> {
@@ -867,8 +865,8 @@ public class RelationshipAtom extends IsaAtom {
                                                 ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
                                                 return matchType.atomicCompatibility(parentVP, childVP);
                                             })
-                                            .forEach(compatibleRelationPlayers::add);
-                                });
+                                            .forEach(compatibleRelationPlayers::add)
+                                );
                         if (!compatibleRelationPlayers.isEmpty()) {
                             compatibleMappingsPerParentRP.add(
                                     compatibleRelationPlayers.stream()
@@ -925,8 +923,7 @@ public class RelationshipAtom extends IsaAtom {
             boolean unifyRoleVariables = parentAtom.getRelationPlayers().stream()
                     .map(RelationPlayer::getRole)
                     .flatMap(CommonUtil::optionalToStream)
-                    .filter(rp -> rp.var().isUserDefinedName())
-                    .findFirst().isPresent();
+                    .anyMatch(rp -> rp.var().isUserDefinedName());
             getRelationPlayerMappings(parentAtom, unifierType)
                     .forEach(mappingList -> {
                         Multimap<Var, Var> varMappings = HashMultimap.create();
@@ -957,8 +954,7 @@ public class RelationshipAtom extends IsaAtom {
         Answer substitution = getParentQuery().getSubstitution();
 
         Relationship relationship = RelationshipTypeImpl.from(relationType).addRelationshipInferred();
-        roleVarMap.asMap().entrySet()
-                .forEach(e -> e.getValue().forEach(var -> relationship.addRolePlayer(e.getKey(), substitution.get(var).asThing())));
+        roleVarMap.asMap().forEach((key, value) -> value.forEach(var -> relationship.addRolePlayer(key, substitution.get(var).asThing())));
 
         Answer relationSub = getRoleSubstitution().merge(
                 getVarName().isUserDefinedName()?

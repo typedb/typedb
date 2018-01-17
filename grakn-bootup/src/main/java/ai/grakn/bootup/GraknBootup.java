@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist;
+package ai.grakn.bootup;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.GraknVersion;
@@ -32,7 +32,7 @@ import java.util.Scanner;
  * 
  * @author Michele Orsi
  */
-public class DistGrakn {
+public class GraknBootup {
 
     private static final String GRAKN = "grakn";
     private static final String QUEUE = "queue";
@@ -68,8 +68,8 @@ public class DistGrakn {
         }
     }
 
-    private static DistGrakn newDistGrakn(Path homePathFolder, Path configPath) {
-        return new DistGrakn(new StorageProcess(homePathFolder),
+    private static GraknBootup newDistGrakn(Path homePathFolder, Path configPath) {
+        return new GraknBootup(new StorageProcess(homePathFolder),
                 new QueueProcess(homePathFolder),
                 new GraknProcess(homePathFolder, configPath));
     }
@@ -102,7 +102,7 @@ public class DistGrakn {
         }
     }
 
-    public DistGrakn(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
+    public GraknBootup(StorageProcess storageProcess, QueueProcess queueProcess, GraknProcess graknProcess) {
         this.storageProcess = storageProcess;
         this.queueProcess = queueProcess;
         this.graknProcess = graknProcess;

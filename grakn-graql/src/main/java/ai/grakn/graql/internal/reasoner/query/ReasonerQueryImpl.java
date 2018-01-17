@@ -38,7 +38,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.plan.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
@@ -263,7 +263,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public boolean isRuleResolvable() {
-        return selectAtoms().stream().filter(Atom::isRuleResolvable).findFirst().isPresent();
+        return selectAtoms().stream().anyMatch(Atom::isRuleResolvable);
     }
 
     private boolean isTransitive() {
@@ -289,14 +289,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
         return !getAtoms(RelationshipAtom.class)
                 .filter(ra -> ra.getVarNames().contains(typedVar))
-                .filter(ra -> ra.getRoleVarMap().entries().stream()
+                .anyMatch(ra -> ra.getRoleVarMap().entries().stream()
                         //get roles this type needs to play
                         .filter(e -> e.getValue().equals(typedVar))
                         .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
                         //check if it can play it
-                        .filter(e -> !e.getKey().playedByTypes().filter(parentTypes::contains).findFirst().isPresent())
-                        .findFirst().isPresent())
-                .findFirst().isPresent();
+                        .anyMatch(e -> !e.getKey().playedByTypes().anyMatch(parentTypes::contains)));
     }
 
     @Override
@@ -361,7 +359,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     Type type = map.get(var);
                     if (type == null) map.put(var, newType);
                     else {
-                        boolean isSubType = type.subs().filter(t -> t.equals(newType)).findFirst().isPresent();
+                        boolean isSubType = type.subs().anyMatch(t -> t.equals(newType));
                         if (isSubType) map.put(var, newType);
                     }
                 });
@@ -398,7 +396,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return id predicate for the specified var name if any
      */
     @Nullable
-    public IdPredicate getIdPredicate(Var var) {
+    private IdPredicate getIdPredicate(Var var) {
         return getAtoms(IdPredicate.class)
                 .filter(sub -> sub.getVarName().equals(var))
                 .findFirst().orElse(null);
@@ -446,7 +444,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     .findFirst().orElse(null);
         }
         //if disjoint select at random
-        if (!atomsToSelect.isEmpty()) atomsToSelect.forEach(orderedSelection::add);
+        if (!atomsToSelect.isEmpty()) orderedSelection.addAll(atomsToSelect);
 
         if (orderedSelection.isEmpty()) {
             throw GraqlQueryException.noAtomsSelected(this);
@@ -520,7 +518,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                                             Cache<ReasonerAtomicQuery, ?> dCache){
         Stream<Answer> join = Stream.empty();
         List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
-        Set<ReasonerAtomicQuery> uniqueQueries = queries.stream().collect(Collectors.toSet());
+        Set<ReasonerAtomicQuery> uniqueQueries = new HashSet<>(queries);
         //only do one join for transitive queries
         List<ReasonerAtomicQuery> queriesToJoin  = isTransitive()? Lists.newArrayList(uniqueQueries) : queries;
 

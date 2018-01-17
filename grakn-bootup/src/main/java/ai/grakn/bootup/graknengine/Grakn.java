@@ -16,16 +16,24 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine;
-
-import ai.grakn.bootup.PidRetriever;
-import ai.grakn.engine.grakn_pid.GraknPid;
+package ai.grakn.bootup.graknengine;
+import ai.grakn.GraknSystemProperty;
+import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManager;
+import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManagerFactory;
+import ai.grakn.engine.GraknCreator;
+import ai.grakn.engine.GraknEngineServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+
 /**
  *
- * Main class invoked by bash scripting
+ * Main class invoked by bash scripting.
+ *
+ * NOTE: The class name is shown when a user is running the 'jps' command. Therefore please keep the class name "Grakn".
  *
  * @author Michele Orsi
  *
@@ -42,8 +50,11 @@ public class Grakn {
      */
     public static void main(String[] args) {
         try {
-            GraknPid pidFile = newPidFile_deleteOnExit();
-            pidFile.createPidFile_deleteOnExit();
+            String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
+                    .orElseThrow(() -> new RuntimeException("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"));
+            Path pidfile = Paths.get(graknPidFileProperty);
+            GraknPidManager graknPidManager = GraknPidManagerFactory.newGraknPidManagerForUnixOS(pidfile);
+            graknPidManager.trackGraknPid();
 
             // Start Engine
             GraknEngineServer graknEngineServer = GraknCreator.create().instantiateGraknEngineServer(Runtime.getRuntime());
@@ -51,11 +62,6 @@ public class Grakn {
         } catch (Exception e) {
             LOG.error("An exception has occurred", e);
         }
-    }
-
-    private static GraknPid newPidFile_deleteOnExit() {
-        long pid = new PidRetriever().getPid();
-        return new GraknPid(pid);
     }
 }
 

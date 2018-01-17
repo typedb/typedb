@@ -97,13 +97,13 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
     }
 
     @Override
-    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(this.type().var()).asType();
             executor.builder(var).isa(type);
         };
 
-        return PropertyExecutor.builder(method).requires(type().var()).produces(var).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(type().var()).produces(var).build());
     }
 
     @Override

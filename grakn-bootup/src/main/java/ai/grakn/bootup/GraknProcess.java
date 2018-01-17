@@ -16,11 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist;
+package ai.grakn.bootup;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.bootup.AbstractProcessHandler;
-import ai.grakn.engine.Grakn;
+
+import ai.grakn.bootup.graknengine.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.grakn_pid.GraknPid;
 import ai.grakn.util.REST;
@@ -49,7 +49,7 @@ public class GraknProcess extends AbstractProcessHandler implements ProcessHandl
     protected final Path configPath;
     private final GraknConfig graknConfig;
 
-    private static final long GRAKN_STARTUP_TIMEOUT_S = 120;
+    private static final long GRAKN_STARTUP_TIMEOUT_S = 300;
     public static final Path GRAKN_PID = GraknPid.GRAKN_PID_FILE_PATH;
 
     public GraknProcess(Path homePath, Path configPath) {

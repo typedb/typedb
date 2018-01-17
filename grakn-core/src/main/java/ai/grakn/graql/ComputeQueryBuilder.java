@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
+import ai.grakn.graql.analytics.KCoreQuery;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.analytics.MedianQuery;
@@ -103,10 +104,16 @@ public interface ComputeQueryBuilder {
     PathsQuery paths();
 
     /**
-     * @return a cluster query that will find the clusters in the graph
+     * @return a cluster query that will find the connected components
      */
     @CheckReturnValue
     ClusterQuery<Map<String, Long>> cluster();
+
+    /**
+     * @return a k-core query that will find interlinked core areas using k-core.
+     */
+    @CheckReturnValue
+    KCoreQuery kCore();
 
     /**
      * @return a degree query that will compute the degree of instances

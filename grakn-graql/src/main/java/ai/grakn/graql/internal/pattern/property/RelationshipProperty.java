@@ -185,13 +185,13 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Relationship relationship = executor.get(var).asRelationship();
             relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
         };
 
-        return PropertyExecutor.builder(method).requires(requiredVars(var)).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(requiredVars(var)).build());
     }
 
     /**

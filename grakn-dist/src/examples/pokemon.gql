@@ -25,20 +25,14 @@ weight sub attribute datatype double;
 evolution sub relationship
     relates ancestor
     relates descendant;
-ancestor sub role;
-descendant sub role;
 
 has-type sub relationship
     relates pokemon-with-type
     relates type-of-pokemon;
-pokemon-with-type sub role;
-type-of-pokemon sub role;
 
 super-effective sub relationship
     relates defending-type
     relates attacking-type;
-defending-type sub role;
-attacking-type sub role;
 
 insert
 

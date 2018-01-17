@@ -112,8 +112,7 @@ public class RuleUtils {
      */
     public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules){
         return rules.stream()
-                .filter(InferenceRule::headSatisfiesBody)
-                .findFirst().isPresent();
+                .anyMatch(InferenceRule::headSatisfiesBody);
     }
 
     /**

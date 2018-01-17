@@ -71,22 +71,22 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
         // This is supported in insert queries in order to allow looking up schema concepts by label
         return define(var);
     }
 
     @Override
-    public PropertyExecutor define(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             executor.builder(var).label(label());
         };
 
-        return PropertyExecutor.builder(method).produces(var).build();
+        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
     }
 
     @Override
-    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
         // This is supported in undefine queries in order to allow looking up schema concepts by label
         return define(var);
     }

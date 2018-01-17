@@ -207,13 +207,13 @@ public class ReasonerUtils {
         Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();
 
         if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ){
-            Sets.intersection(
-                    new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()),
-                    entryRoles
-            )
-                    .forEach(compatibleRoles::add);
+            compatibleRoles.addAll(
+                    Sets.intersection(
+                            new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()),
+                            entryRoles
+            ));
         } else {
-            entryRoles.forEach(compatibleRoles::add);
+            compatibleRoles.addAll(entryRoles);
         }
 
         if (parentType != null && !Schema.MetaSchema.isMetaLabel(parentType.getLabel())) {

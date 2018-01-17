@@ -264,6 +264,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
     }
 
+    public static GraqlQueryException kValueSmallerThanTwo() {
+        return new GraqlQueryException(ErrorMessage.K_SMALLER_THAN_TWO.getMessage());
+    }
+
     public static GraqlQueryException resourceMustBeANumber(AttributeType.DataType dataType, Label resourceType) {
         return new GraqlQueryException(resourceType + " must have data type of `long` or `double`, but was " + dataType.getName());
     }

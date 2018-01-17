@@ -59,7 +59,7 @@ public class QueryAnswers implements Iterable<Answer>{
 
     public QueryAnswers(){}
     public QueryAnswers(Answer ans){ set.add(ans);}
-    public QueryAnswers(Collection<Answer> ans){ ans.forEach(set::add);}
+    public QueryAnswers(Collection<Answer> ans){ set.addAll(ans); }
     public QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
 
     public boolean add(Answer a){ return set.add(a);}

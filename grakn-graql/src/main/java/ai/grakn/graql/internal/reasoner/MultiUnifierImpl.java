@@ -100,13 +100,13 @@ public class MultiUnifierImpl implements MultiUnifier{
 
     @Override
     public boolean contains(Unifier u2) {
-        return unifiers().stream().filter(u -> u.containsAll(u2)).findFirst().isPresent();
+        return unifiers().stream().anyMatch(u -> u.containsAll(u2));
     }
 
     @Override
     public boolean containsAll(MultiUnifier mu) {
         return !mu.unifiers().stream()
-                .filter(u -> !this.contains(u)).findFirst().isPresent();
+                .anyMatch(u -> !this.contains(u));
     }
 
     @Override

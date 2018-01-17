@@ -210,6 +210,7 @@ public enum ErrorMessage {
     //Distributed loading Errors
     ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
     STATE_STORAGE_ERROR("Exception thrown while retrieving state of a task from storage."),
+    PID_ALREADY_EXISTS("pid file already exists: '[%s]'."),
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
@@ -227,6 +228,7 @@ public enum ErrorMessage {
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
+    K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
     ROLE_AND_RULE_DO_NOT_HAVE_INSTANCE("Role and rule do not have instances."),
     NO_PATH_EXIST("There is no path between the two instances."),
