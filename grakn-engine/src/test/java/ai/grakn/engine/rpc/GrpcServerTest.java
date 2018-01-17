@@ -35,6 +35,9 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
+import ai.grakn.rpc.GraknOuterClass.Commit;
+import ai.grakn.rpc.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.GraknOuterClass.Open;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.GraknOuterClass.TxType;
@@ -54,7 +57,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -263,7 +265,8 @@ public class GrpcServerTest {
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
-            tx.send(execQueryRequest(QUERY, false));
+            tx.send(inferRequest(false));
+            tx.send(execQueryRequest(QUERY));
         }
 
         verify(tx.graql()).infer(false);
@@ -273,7 +276,8 @@ public class GrpcServerTest {
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
-            tx.send(execQueryRequest(QUERY, true));
+            tx.send(inferRequest(true));
+            tx.send(execQueryRequest(QUERY));
         }
 
         verify(tx.graql()).infer(true);
@@ -374,27 +378,22 @@ public class GrpcServerTest {
 
     private TxRequest openRequest(String keyspaceString, TxType txType) {
         GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
-        TxRequest.Open.Builder open = TxRequest.Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
+        Open.Builder open = Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
         return TxRequest.newBuilder().setOpen(open).build();
     }
 
     private TxRequest commitRequest() {
-        return TxRequest.newBuilder().setCommit(TxRequest.Commit.getDefaultInstance()).build();
+        return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
     }
 
     private TxRequest execQueryRequest(String queryString) {
-        return execQueryRequest(queryString, null);
+        GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
+        ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
+        return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
     }
 
-    private TxRequest execQueryRequest(String queryString, @Nullable Boolean infer) {
-        GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
-        TxRequest.ExecQuery.Builder execQueryRequest = TxRequest.ExecQuery.newBuilder().setQuery(query);
-
-        if (infer != null) {
-            execQueryRequest.setSetInfer(true).setInfer(infer);
-        }
-
-        return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
+    private TxRequest inferRequest(boolean value) {
+        return TxRequest.newBuilder().setInfer(GraknOuterClass.Infer.newBuilder().setValue(value)).build();
     }
 
     private Matcher<StatusRuntimeException> hasStatus(Status status) {

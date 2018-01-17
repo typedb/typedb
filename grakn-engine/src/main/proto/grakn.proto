@@ -7,30 +7,37 @@ service Grakn {
 }
 
 message TxRequest {
-    message Open {
-        Keyspace keyspace = 1;
-        TxType txType = 2;
-    }
-    message Commit {}
-    message ExecQuery {
-        Query query = 1;
-        bool setInfer = 2;
-        bool infer = 3;
-    }
     oneof request {
         Open open = 1;
         Commit commit = 2;
         ExecQuery execQuery = 3;
+        Infer infer = 4;
     }
 }
 
+message Open {
+    Keyspace keyspace = 1;
+    TxType txType = 2;
+}
+
+message Commit {}
+
+message ExecQuery {
+    Query query = 1;
+}
+
+message Infer {
+    bool value = 1;
+}
+
 message TxResponse {
-    message QueryResult {
-        string value = 1;
-    }
     oneof response {
         QueryResult queryResult = 1;
     }
+}
+
+message QueryResult {
+    string value = 1;
 }
 
 enum TxType {

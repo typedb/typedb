@@ -27,6 +27,9 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
+import ai.grakn.rpc.GraknOuterClass.Commit;
+import ai.grakn.rpc.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.GraknOuterClass.Open;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.GraknOuterClass.TxType;
@@ -124,16 +127,16 @@ public class GrpcServerIT {
 
     private TxRequest openRequest(String keyspaceString, TxType txType) {
         GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
-        TxRequest.Open.Builder open = TxRequest.Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
+        Open.Builder open = Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
         return TxRequest.newBuilder().setOpen(open).build();
     }
 
     private TxRequest commitRequest() {
-        return TxRequest.newBuilder().setCommit(TxRequest.Commit.getDefaultInstance()).build();
+        return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
     }
 
     private TxRequest execQueryRequest(String queryString) {
         GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
-        return TxRequest.newBuilder().setExecQuery(TxRequest.ExecQuery.newBuilder().setQuery(query)).build();
+        return TxRequest.newBuilder().setExecQuery(ExecQuery.newBuilder().setQuery(query)).build();
     }
 }

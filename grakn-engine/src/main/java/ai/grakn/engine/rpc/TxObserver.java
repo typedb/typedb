@@ -27,9 +27,12 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.GraknOuterClass;
+import ai.grakn.rpc.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.GraknOuterClass.Infer;
+import ai.grakn.rpc.GraknOuterClass.Open;
+import ai.grakn.rpc.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
-import ai.grakn.rpc.GraknOuterClass.TxResponse.QueryResult;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -47,13 +50,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Felix Chapman
  */
-class TxObserver implements StreamObserver<TxRequest> {
-    private final StreamObserver<TxResponse> responseObserver;
-    private final EngineGraknTxFactory txFactory;
-    private @Nullable TxThread tx = null;
-    private final AtomicBoolean terminated = new AtomicBoolean(false);
+class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     private static final Printer<?> PRINTER = Printers.json();
+
+    private final StreamObserver<TxResponse> responseObserver;
+    private final EngineGraknTxFactory txFactory;
+    private final AtomicBoolean terminated = new AtomicBoolean(false);
+
+    private @Nullable GraknTx tx = null;
+    private @Nullable Boolean infer = null;
 
     private TxObserver(EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver) {
         this.responseObserver = responseObserver;
@@ -69,13 +75,16 @@ class TxObserver implements StreamObserver<TxRequest> {
         try {
             switch (request.getRequestCase()) {
                 case OPEN:
-                    open(request);
+                    open(request.getOpen());
                     break;
                 case COMMIT:
                     commit();
                     break;
                 case EXECQUERY:
-                    execQuery(request);
+                    execQuery(request.getExecQuery());
+                    break;
+                case INFER:
+                    infer(request.getInfer());
                     break;
                 case REQUEST_NOT_SET:
                     break;
@@ -87,16 +96,16 @@ class TxObserver implements StreamObserver<TxRequest> {
         }
     }
 
-    private void open(TxRequest request) {
+    private void open(Open request) {
         if (tx != null) {
             error(Status.FAILED_PRECONDITION);
             return;
         }
 
-        String keyspaceString = request.getOpen().getKeyspace().getValue();
+        String keyspaceString = request.getKeyspace().getValue();
         Keyspace keyspace = Keyspace.of(keyspaceString);
-        GraknTxType txType = getTxType(request.getOpen().getTxType());
-        tx = TxThread.open(txFactory, txType, keyspace);
+        GraknTxType txType = getTxType(request.getTxType());
+        tx = txFactory.tx(keyspace, txType);
     }
 
     private void commit() {
@@ -104,33 +113,38 @@ class TxObserver implements StreamObserver<TxRequest> {
             error(Status.FAILED_PRECONDITION);
             return;
         }
-        tx.run(GraknTx::commit);
+        tx.commit();
     }
 
-    private void execQuery(TxRequest request) {
+    private void execQuery(ExecQuery request) {
         if (tx == null) {
             error(Status.FAILED_PRECONDITION);
             return;
         }
 
-        boolean infer = request.getExecQuery().getInfer();
-        boolean setInfer = request.getExecQuery().getSetInfer();
+        String queryString = request.getQuery().getValue();
 
-        String queryString = request.getExecQuery().getQuery().getValue();
+        QueryBuilder graql = tx.graql();
 
-        Object result = tx.runAndReturn(t -> {
-            QueryBuilder graql = t.graql();
+        if (infer != null) {
+            graql.infer(infer);
+            // We reset `infer` so the next query will use the default inference setting again, so this works:
+            // ```
+            // tx.execute("match ...", infer=False)  # should run with inference off
+            // tx.execute("match ...")               # should run with inference set to server default
+            // ```
+            infer = null;
+        }
 
-            if (setInfer) {
-                graql.infer(infer);
-            }
-
-            return graql.parse(queryString).execute();
-        });
+        Object result = graql.parse(queryString).execute();
 
         QueryResult rpcResult = QueryResult.newBuilder().setValue(PRINTER.graqlString(result)).build();
 
         responseObserver.onNext(TxResponse.newBuilder().setQueryResult(rpcResult).build());
+    }
+
+    private void infer(Infer request) {
+        this.infer = request.getValue();
     }
 
     private GraknTxType getTxType(GraknOuterClass.TxType txType) {
@@ -148,16 +162,12 @@ class TxObserver implements StreamObserver<TxRequest> {
 
     @Override
     public void onError(Throwable t) {
-
+        close();
     }
 
     @Override
     public void onCompleted() {
-        if (tx != null) tx.close();
-
-        if (!terminated.getAndSet(true)) {
-            responseObserver.onCompleted();
-        }
+        close();
     }
 
     private void error(Status status) {
@@ -167,6 +177,15 @@ class TxObserver implements StreamObserver<TxRequest> {
     private void error(Status status, @Nullable Metadata trailers) {
         if (!terminated.getAndSet(true)) {
             responseObserver.onError(new StatusRuntimeException(status, trailers));
+        }
+    }
+
+    @Override
+    public void close() {
+        if (tx != null) tx.close();
+
+        if (!terminated.getAndSet(true)) {
+            responseObserver.onCompleted();
         }
     }
 }
