@@ -89,6 +89,22 @@ public class RuleTest {
     }
 
     @Test
+    public void whenCreatingDistinctRulesWithSimilarStringHashes_EnsureRulesDoNotClash(){
+        String productRefused = "productRefused";
+        Pattern when1 = graknTx.graql().parser().parsePattern("{$step has step-id 9; $e (process-case: $case) isa process-record; $case has consent false;}");
+        Pattern then1 = graknTx.graql().parser().parsePattern("{(record: $e, step: $step) isa record-step;}");
+        Rule rule1 = graknTx.putRule(productRefused, when1, then1);
+
+        String productAccepted = "productAccepted";
+        Pattern when2 = graknTx.graql().parser().parsePattern("{$step has step-id 7; $e (process-case: $case) isa process-record; $case has consent true;}");
+        Pattern then2 = graknTx.graql().parser().parsePattern("{(record: $e, step: $step) isa record-step;}");
+        Rule rule2 = graknTx.putRule(productAccepted, when2, then2);
+
+        assertEquals(rule1, graknTx.getRule(productRefused));
+        assertEquals(rule2, graknTx.getRule(productAccepted));
+    }
+
+    @Test
     public void whenAddingRuleWithDisjunctionInTheBody_Throw() throws InvalidKBException {
         validateIllegalRule(
                 graknTx.graql().parser().parsePattern("(role: $x) or (role: $x, role: $y)"),

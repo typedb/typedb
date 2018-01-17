@@ -299,7 +299,7 @@ public final class ElementFactory {
             newConceptId = conceptIds[0].getValue();
         }
         vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
-        tx.txCache().writeOccured();
+        tx.txCache().writeOccurred();
         return new VertexElement(tx, vertex);
     }
 }
