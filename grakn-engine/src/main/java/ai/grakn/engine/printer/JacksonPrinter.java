@@ -80,7 +80,7 @@ public class JacksonPrinter implements Printer<Object>{
         Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
         return entries.collect(Collectors.toMap(
                 entry -> graqlString(inner, entry.getKey()),
-                entry -> graqlString(inner, entry.getKey())
+                entry -> graqlString(inner, entry.getValue())
         ));
     }
 
