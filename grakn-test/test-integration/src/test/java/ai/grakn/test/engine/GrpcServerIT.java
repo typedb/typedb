@@ -29,6 +29,7 @@ import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.GraknOuterClass.TxType;
 import ai.grakn.test.rule.EngineContext;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -64,7 +65,7 @@ public class GrpcServerIT {
     @Test
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(session.keyspace().getValue()));
+            tx.send(openRequest(session.keyspace().getValue(), TxType.Write));
             tx.send(execQueryRequest("define person sub entity;"));
             tx.send(commitRequest());
         }
@@ -77,7 +78,7 @@ public class GrpcServerIT {
     @Test
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(session.keyspace().getValue()));
+            tx.send(openRequest(session.keyspace().getValue(), TxType.Write));
             tx.send(execQueryRequest("define person sub entity;"));
         }
 
@@ -91,7 +92,7 @@ public class GrpcServerIT {
         Json response;
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(session.keyspace().getValue()));
+            tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
             tx.send(execQueryRequest("match $x sub thing; get;"));
             response = Json.read(tx.receive().elem().getQueryResult().getValue());
         }
@@ -108,7 +109,7 @@ public class GrpcServerIT {
     @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(session.keyspace().getValue()));
+            tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
             tx.send(execQueryRequest("match $x sub thing; get $y;"));
 
             exception.expect(GrpcUtil.hasMessage("boo"));
@@ -121,9 +122,10 @@ public class GrpcServerIT {
         return BidirectionalObserver.create(stub::tx);
     }
 
-    private TxRequest openRequest(String keyspaceString) {
+    private TxRequest openRequest(String keyspaceString, TxType txType) {
         GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
-        return TxRequest.newBuilder().setOpen(TxRequest.Open.newBuilder().setKeyspace(keyspace)).build();
+        TxRequest.Open.Builder open = TxRequest.Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
+        return TxRequest.newBuilder().setOpen(open).build();
     }
 
     private TxRequest commitRequest() {

@@ -45,9 +45,9 @@ class TxThread implements AutoCloseable {
         this.tx = tx;
     }
 
-    public static TxThread open(EngineGraknTxFactory txFactory, Keyspace keyspace) {
+    public static TxThread open(EngineGraknTxFactory txFactory, GraknTxType txType, Keyspace keyspace) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        GraknTx tx = runAndAssumeSafe(executor, () -> txFactory.tx(keyspace, GraknTxType.WRITE));
+        GraknTx tx = runAndAssumeSafe(executor, () -> txFactory.tx(keyspace, txType));
         return new TxThread(executor, tx);
     }
 

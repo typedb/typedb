@@ -9,6 +9,7 @@ service Grakn {
 message TxRequest {
     message Open {
         Keyspace keyspace = 1;
+        TxType txType = 2;
     }
     message Commit {}
     message ExecQuery {
@@ -30,6 +31,12 @@ message TxResponse {
     oneof response {
         QueryResult queryResult = 1;
     }
+}
+
+enum TxType {
+    Read = 0;
+    Write = 1;
+    Batch = 2;
 }
 
 message Keyspace {

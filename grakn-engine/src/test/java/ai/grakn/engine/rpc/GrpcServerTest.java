@@ -37,6 +37,7 @@ import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.GraknOuterClass.TxType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -112,18 +113,36 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenOpeningATransactionRemotely_ATransactionIsOpened() {
+    public void whenOpeningAReadTransactionRemotely_AReadTransactionIsOpened() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Read));
+        }
+
+        verify(txFactory).tx(Keyspace.of(MYKS), GraknTxType.READ);
+    }
+
+    @Test
+    public void whenOpeningAWriteTransactionRemotely_AWriteTransactionIsOpened() {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS, TxType.Write));
         }
 
         verify(txFactory).tx(Keyspace.of(MYKS), GraknTxType.WRITE);
     }
 
     @Test
+    public void whenOpeningABatchTransactionRemotely_ABatchTransactionIsOpened() {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS, TxType.Batch));
+        }
+
+        verify(txFactory).tx(Keyspace.of(MYKS), GraknTxType.BATCH);
+    }
+
+    @Test
     public void whenCommittingATransactionRemotely_TheTransactionIsCommitted() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
             tx.send(commitRequest());
         }
 
@@ -143,8 +162,8 @@ public class GrpcServerTest {
                 BidirectionalObserver<TxRequest, TxResponse> tx1 = startTx();
                 BidirectionalObserver<TxRequest, TxResponse> tx2 = startTx()
         ) {
-            tx1.send(openRequest(MYKS));
-            tx2.send(openRequest(MYKS));
+            tx1.send(openRequest(MYKS, TxType.Write));
+            tx2.send(openRequest(MYKS, TxType.Write));
         }
 
         assertNotEquals(threads.get(0), threads.get(1));
@@ -153,7 +172,7 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest("not!@akeyspace"));
+            tx.send(openRequest("not!@akeyspace", TxType.Write));
 
             exception.expect(hasMessage(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage()));
 
@@ -177,7 +196,7 @@ public class GrpcServerTest {
         }).when(tx).close();
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
         }
 
         verify(tx).close();
@@ -187,7 +206,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
         }
 
@@ -215,7 +234,7 @@ public class GrpcServerTest {
         when(query.execute()).thenReturn(answers);
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
 
             tx.send(execQueryRequest(QUERY));
 
@@ -233,7 +252,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingQueryWithoutInferenceSet_InferenceIsNotSet() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
         }
 
@@ -243,7 +262,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, false));
         }
 
@@ -253,7 +272,7 @@ public class GrpcServerTest {
     @Test
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, true));
         }
 
@@ -285,8 +304,8 @@ public class GrpcServerTest {
     @Test
     public void whenOpeningTxTwice_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(openRequest(MYKS, TxType.Write));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -299,7 +318,7 @@ public class GrpcServerTest {
         when(txFactory.tx(Keyspace.of(MYKS), GraknTxType.WRITE)).thenThrow(GraknExceptionFake.EXCEPTION);
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
 
             exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
 
@@ -312,7 +331,7 @@ public class GrpcServerTest {
         doThrow(GraknExceptionFake.EXCEPTION).when(tx).commit();
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
             tx.send(commitRequest());
 
             exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
@@ -326,7 +345,7 @@ public class GrpcServerTest {
         when(tx.graql().parse(QUERY)).thenThrow(GraknExceptionFake.EXCEPTION);
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
 
             exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
@@ -340,7 +359,7 @@ public class GrpcServerTest {
         when(query.execute()).thenThrow(GraknExceptionFake.EXCEPTION);
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
-            tx.send(openRequest(MYKS));
+            tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
 
             exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
@@ -353,9 +372,10 @@ public class GrpcServerTest {
         return BidirectionalObserver.create(stub::tx);
     }
 
-    private TxRequest openRequest(String keyspaceString) {
+    private TxRequest openRequest(String keyspaceString, TxType txType) {
         GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
-        return TxRequest.newBuilder().setOpen(TxRequest.Open.newBuilder().setKeyspace(keyspace)).build();
+        TxRequest.Open.Builder open = TxRequest.Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
+        return TxRequest.newBuilder().setOpen(open).build();
     }
 
     private TxRequest commitRequest() {

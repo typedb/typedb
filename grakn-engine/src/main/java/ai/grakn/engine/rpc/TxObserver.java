@@ -19,12 +19,14 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.GraknOuterClass.TxResponse.QueryResult;
@@ -93,7 +95,8 @@ class TxObserver implements StreamObserver<TxRequest> {
 
         String keyspaceString = request.getOpen().getKeyspace().getValue();
         Keyspace keyspace = Keyspace.of(keyspaceString);
-        tx = TxThread.open(txFactory, keyspace);
+        GraknTxType txType = getTxType(request.getOpen().getTxType());
+        tx = TxThread.open(txFactory, txType, keyspace);
     }
 
     private void commit() {
@@ -128,6 +131,19 @@ class TxObserver implements StreamObserver<TxRequest> {
         QueryResult rpcResult = QueryResult.newBuilder().setValue(PRINTER.graqlString(result)).build();
 
         responseObserver.onNext(TxResponse.newBuilder().setQueryResult(rpcResult).build());
+    }
+
+    private GraknTxType getTxType(GraknOuterClass.TxType txType) {
+        switch (txType) {
+            default:
+            case UNRECOGNIZED:  // Unrecognised indicates a newer client and is treated as "read"
+            case Read:
+                return GraknTxType.READ;
+            case Write:
+                return GraknTxType.WRITE;
+            case Batch:
+                return GraknTxType.BATCH;
+        }
     }
 
     @Override
