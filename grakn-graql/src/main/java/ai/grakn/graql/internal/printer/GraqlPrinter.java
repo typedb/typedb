@@ -60,7 +60,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Concept concept) {
+    public Function<StringBuilder, StringBuilder> convert(boolean inner, Concept concept) {
         return sb -> {
             // Display values for resources and ids for everything else
             if (concept.isAttribute()) {
@@ -117,7 +117,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, boolean bool) {
+    public Function<StringBuilder, StringBuilder> convert(boolean inner, boolean bool) {
         if (bool) {
             return sb -> sb.append(ANSI.color("True", ANSI.GREEN));
         } else {
@@ -126,24 +126,24 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Optional<?> optional) {
+    public Function<StringBuilder, StringBuilder> convert(boolean inner, Optional<?> optional) {
         if (optional.isPresent()) {
-            return graqlString(inner, optional.get());
+            return convert(inner, optional.get());
         } else {
             return sb -> sb.append("Nothing");
         }
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Collection<?> collection) {
+    public Function<StringBuilder, StringBuilder> convert(boolean inner, Collection<?> collection) {
         return sb -> {
             if (inner) {
                 sb.append("{");
-                collection.stream().findFirst().ifPresent(item -> graqlString(true, item).apply(sb));
-                collection.stream().skip(1).forEach(item -> graqlString(true, item).apply(sb.append(", ")));
+                collection.stream().findFirst().ifPresent(item -> convert(true, item).apply(sb));
+                collection.stream().skip(1).forEach(item -> convert(true, item).apply(sb.append(", ")));
                 sb.append("}");
             } else {
-                collection.forEach(item -> graqlString(true, item).apply(sb).append("\n"));
+                collection.forEach(item -> convert(true, item).apply(sb).append("\n"));
             }
 
             return sb;
@@ -151,18 +151,18 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Map<?, ?> map) {
-        return graqlString(inner, map.entrySet());
+    public Function<StringBuilder, StringBuilder> convert(boolean inner, Map<?, ?> map) {
+        return convert(inner, map.entrySet());
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Answer answer) {
+    public Function<StringBuilder, StringBuilder> convert(boolean inner, Answer answer) {
         return sb -> {
             if (answer.isEmpty()) {
                 sb.append("{}");
             } else {
                 answer.forEach((name, concept) ->
-                        sb.append(name).append(" ").append(graqlString(concept)).append("; ")
+                        sb.append(name).append(" ").append(convert(concept)).append("; ")
                 );
             }
             return sb;
@@ -170,12 +170,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> graqlStringDefault(boolean inner, Object object) {
+    public Function<StringBuilder, StringBuilder> convertDefault(boolean inner, Object object) {
         if (object instanceof Map.Entry<?, ?>) {
             Map.Entry<?, ?> entry = (Map.Entry<?, ?>) object;
-            return graqlString(true, entry.getKey())
+            return convert(true, entry.getKey())
                     .andThen(sb -> sb.append(": "))
-                    .andThen(graqlString(true, entry.getValue()));
+                    .andThen(convert(true, entry.getValue()));
         } else {
             return sb -> sb.append(Objects.toString(object));
         }

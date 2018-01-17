@@ -210,6 +210,7 @@ public enum ErrorMessage {
     //Distributed loading Errors
     ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
     STATE_STORAGE_ERROR("Exception thrown while retrieving state of a task from storage."),
+    PID_ALREADY_EXISTS("pid file already exists: '[%s]'."),
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),

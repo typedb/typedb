@@ -32,6 +32,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -99,6 +100,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     @Override
     public Stream<String> resultsString(Printer printer) {
+        // TODO: clarify or remove this special-case behaviour
         Object computeResult = execute();
         if (computeResult instanceof Map) {
             if (((Map) computeResult).isEmpty()) {
@@ -116,6 +118,11 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             }
         }
         return Stream.of(printer.graqlString(computeResult));
+    }
+
+    @Override
+    public <S> Stream<S> results(GraqlConverter<?, S> converter) {
+        return Stream.of(converter.convert(execute()));
     }
 
     void initSubGraph() {

@@ -16,23 +16,25 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.dist;
+package ai.grakn.bootup.graknengine.grakn_pid;
 
 /**
  *
- * @author Michele Orsi
+ * A class responsible for managing the grakn.pid file of Grakn
+ *
+ * @author Ganeshwara Herawan Hananda
+ *
  */
-interface ProcessHandler {
+public class GraknPidManager {
+    GraknPidStore graknPidStore;
+    GraknPidRetriever graknPidRetriever;
 
-    void start();
-
-    void stop();
-
-    void status();
-
-    void statusVerbose();
-
-    void clean();
-
-    boolean isRunning();
+    public GraknPidManager(GraknPidStore graknPidStore, GraknPidRetriever graknPidRetriever) {
+        this.graknPidStore = graknPidStore;
+        this.graknPidRetriever = graknPidRetriever;
+    }
+    public void trackGraknPid() {
+        long pid = graknPidRetriever.getPid();
+        graknPidStore.trackGraknPid(pid);
+    }
 }

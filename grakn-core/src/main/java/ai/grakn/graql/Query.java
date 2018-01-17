@@ -47,9 +47,20 @@ public interface Query<T> {
 
     /**
      * Execute the query and return a human-readable stream of results
+     *
+     * @deprecated use {@link #results(GraqlConverter)}}
+     */
+    @Deprecated
+    @CheckReturnValue
+    default Stream<String> resultsString(Printer printer) {
+        return results(printer);
+    }
+
+    /**
+     * Execute the query and return a converted stream of results
      */
     @CheckReturnValue
-    Stream<String> resultsString(Printer printer);
+    <T> Stream<T> results(GraqlConverter<?, T> converter);
 
     /**
      * Whether this query will modify the graph
