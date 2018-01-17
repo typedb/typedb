@@ -18,6 +18,9 @@
 
 package ai.grakn.test.kbs;
 
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 import ai.grakn.test.rule.SampleKBContext;
 
 /**
@@ -25,14 +28,19 @@ import ai.grakn.test.rule.SampleKBContext;
  * @author Kasper Piskorski
  *
  */
-public class PathKBSymmetric extends AbstractPathKB {
-    private final static String gqlFile = "path-test-symmetric.gql";
+public class PathTreeSymmetricKB extends PathTreeKB {
 
-    public PathKBSymmetric(int n, int m){
-        super(gqlFile, n, m);
+    private PathTreeSymmetricKB(int n, int m){
+        super("path-test-symmetric.gql", Label.of("index"), n, m);
     }
 
     public static SampleKBContext context(int n, int m) {
-        return new PathKBSymmetric(n, m).makeContext();
+        return new PathTreeSymmetricKB(n, m).makeContext();
+    }
+
+    @Override
+    protected void buildExtensionalDB(GraknTx tx, int n, int children) {
+        Role coordinate = tx.getRole("coordinate");
+        buildTree(tx, coordinate, coordinate, n , children);
     }
 }
