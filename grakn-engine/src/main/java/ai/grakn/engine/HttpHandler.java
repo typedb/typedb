@@ -25,7 +25,6 @@ import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.IndexPostProcessor;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.engine.session.RemoteSession;
@@ -58,7 +57,6 @@ public class HttpHandler {
     protected final EngineGraknTxFactory factory;
     protected final MetricRegistry metricRegistry;
     protected final GraknEngineStatus graknEngineStatus;
-    protected final TaskManager taskManager;
     protected final PostProcessor postProcessor;
 
     public HttpHandler(GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, PostProcessor postProcessor) {

@@ -233,7 +233,7 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(instanceCountPostProcessor, times(0)).updateCounts(any(), any());
+        verify(instanceCountPostProcessor, times(0)).updateCounts(any());
     }
 
     @Test
@@ -258,7 +258,7 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(instanceCountPostProcessor, times(1)).updateCounts(tx.keyspace(), commitLog);
+        verify(instanceCountPostProcessor, times(1)).updateCounts(commitLog);
     }
 
     private Response sendRequest(String query){

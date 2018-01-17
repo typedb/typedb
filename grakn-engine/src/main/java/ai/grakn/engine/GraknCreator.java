@@ -26,11 +26,9 @@ import ai.grakn.engine.postprocessing.IndexPostProcessor;
 import ai.grakn.engine.postprocessing.InstanceCountPostProcessor;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
+import ai.grakn.engine.postprocessing.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 import spark.Service;
@@ -112,7 +110,7 @@ public class GraknCreator {
             LockProvider lockProvider = instantiateLock(jedisPool);
             EngineGraknTxFactory factory = instantiateGraknTxFactory(graknEngineConfig, lockProvider);
 
-            IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider);
+            IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, RedisIndexStorage.create(jedisPool, metricRegistry));
             InstanceCountPostProcessor instanceCountPostProcessor = InstanceCountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, RedisCountStorage.create(jedisPool, metricRegistry));
 
             PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, instanceCountPostProcessor);

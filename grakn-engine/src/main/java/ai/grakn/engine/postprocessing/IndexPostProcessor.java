@@ -21,6 +21,7 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.Schema;
 import com.google.common.base.Preconditions;
 
@@ -38,20 +39,28 @@ import java.util.concurrent.locks.Lock;
  */
 public class IndexPostProcessor {
     private final LockProvider lockProvider;
+    private final RedisIndexStorage redisIndexStorage;
 
     @Deprecated
     private static final String LOCK_KEY = "/post-processing-lock";
 
-    IndexPostProcessor(LockProvider lockProvider) {
+    IndexPostProcessor(LockProvider lockProvider, RedisIndexStorage redisIndexStorage) {
         this.lockProvider = lockProvider;
+        this.redisIndexStorage = redisIndexStorage;
     }
 
-    public static IndexPostProcessor create(LockProvider lockProvider) {
-        return new IndexPostProcessor(lockProvider);
+    public static IndexPostProcessor create(LockProvider lockProvider, RedisIndexStorage redisIndexStorage) {
+        return new IndexPostProcessor(lockProvider, redisIndexStorage);
     }
 
-    public void updateIndices(){
-        
+    /**
+     * Adds all the new {@link ai.grakn.concept.Attribute}s of a {@link CommitLog} to {@link RedisIndexStorage} for storage.
+     * This data will be retrieved later and post processed.
+     *
+     * @param commitLog The {@link CommitLog} which contains the new {@link ai.grakn.concept.Attribute}s to post process
+     */
+    public void updateIndices(CommitLog commitLog){
+        commitLog.attributes().forEach((index, ids) -> redisIndexStorage.addIndex(commitLog.keyspace(), index, ids));
     }
 
     /**
