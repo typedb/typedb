@@ -67,6 +67,7 @@ public class QueryAnswers implements Iterable<Answer>{
     public boolean remove(Answer a){ return set.remove(a);}
     public boolean removeAll(QueryAnswers ans){ return set.removeAll(ans.set);}
 
+    public boolean contains(Answer a){ return set.contains(a);}
     public boolean containsAll(QueryAnswers ans){ return set.containsAll(ans.set);}
 
     public int size(){ return set.size();}
