@@ -26,7 +26,6 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;
@@ -117,11 +116,11 @@ public class PostProcessingTest {
 
         //Now fix everything
         PostProcessingTask task = new PostProcessingTask();
-        TaskConfiguration configuration = TaskConfiguration.of(mapper.writeValueAsString(commitLog));
-        task.initialize(configuration, engine.config(), engine.server().factory(),
-                new MetricRegistry(), postProcessor);
+        //TaskConfiguration configuration = TaskConfiguration.of(mapper.writeValueAsString(commitLog));
+        //task.initialize(configuration, engine.config(), engine.server().factory(),
+        //        new MetricRegistry(), postProcessor);
 
-        task.start();
+        //task.start();
 
         tx = session.open(GraknTxType.READ);
 

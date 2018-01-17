@@ -22,11 +22,9 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.Timer.Context;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,30 +90,6 @@ public class PostProcessingTask extends BackgroundTask {
         try {
             return mapper.readValue(configuration.configuration(), CommitLog.class);
         } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Helper method which creates PP Task States.
-     *
-     * @param creator The class which is creating the task
-     * @return The executable postprocessing task state
-     */
-    public static TaskState createTask(Class creator) {
-        return TaskState.of(PostProcessingTask.class, creator.getName());
-    }
-
-    /**
-     * Helper method which creates the task config needed in order to execute a PP task
-     *
-     * @param commitLog The {@link CommitLog} which contains all the information needed to perform PP
-     * @return The task configuration encapsulating the above details in a manner executable by the task runner
-     */
-    public static TaskConfiguration createConfig(CommitLog commitLog){
-        try {
-            return TaskConfiguration.of(mapper.writeValueAsString(commitLog));
-        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }

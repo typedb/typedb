@@ -19,10 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,8 +61,8 @@ public class CommitLogController {
         CommitLog commitLogPP = CommitLog.create(keyspace, Collections.emptyMap(), commitLog.attributes());
 
         // Things to post process
-        TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
-        TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(commitLogPP);
+        //TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
+        //TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(commitLogPP);
 
         // TODO Use an engine wide executor here
         CompletableFuture.allOf(
