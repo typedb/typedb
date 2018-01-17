@@ -103,7 +103,7 @@ public class GraqlController {
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private static final RetryLogger retryLogger = new RetryLogger();
     private static final int MAX_RETRY = 10;
-    private final Printer printer;
+    private final Printer<?> printer;
     private final EngineGraknTxFactory factory;
     private final TaskManager taskManager;
     private final PostProcessor postProcessor;
@@ -112,7 +112,7 @@ public class GraqlController {
 
     public GraqlController(
             EngineGraknTxFactory factory, Service spark, TaskManager taskManager,
-            PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
+            PostProcessor postProcessor, Printer<?> printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.taskManager = taskManager;
@@ -143,7 +143,7 @@ public class GraqlController {
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
                 Answer answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new QueryAnswer());
-                return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer, printer));
+                return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer));
             }
         });
     }

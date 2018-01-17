@@ -20,19 +20,17 @@ package ai.grakn.engine.controller.response;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +47,6 @@ public class ExplanationBuilderTest {
         Label siblings = Label.of("siblings");
         Label parentship = Label.of("parentship");
 
-        Printer printer = new JacksonPrinter();
         String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
         genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery)
                 .forEach(answer -> {
@@ -69,7 +66,7 @@ public class ExplanationBuilderTest {
                     .map(ai.grakn.concept.Concept::getId)
                     .collect(Collectors.toSet());
 
-            List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer, printer);
+            List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer);
 
             Set<ConceptId> entityIds = explanation.stream()
                     .flatMap(exp -> exp.conceptMap().values().stream())
