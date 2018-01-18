@@ -75,7 +75,7 @@ public class TaskManagerTest {
     }
 
     @ClassRule
-    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static EngineContext engine = EngineContext.create();
 
     @Property(trials=10)
     public void afterRunning_AllNonFailingTasksAreRecordedAsCompleted(Set<TaskState> tasks) {

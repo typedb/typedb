@@ -43,7 +43,7 @@ public class PostProcessorTest {
     private PostProcessor postProcessor;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static final EngineContext engine = EngineContext.create();
 
     @Before
     public void setupPostProcessor(){
