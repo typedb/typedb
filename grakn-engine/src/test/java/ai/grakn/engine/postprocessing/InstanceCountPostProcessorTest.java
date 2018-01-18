@@ -19,11 +19,15 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
@@ -35,6 +39,7 @@ import org.mockito.Mockito;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -58,12 +63,22 @@ public class InstanceCountPostProcessorTest {
         when(countStorage.getCount(any())).thenReturn(1L);
 
         configMock = mock(GraknConfig.class);
-        when(configMock.getProperty(GraknConfigKey.SHARDING_THRESHOLD)).thenReturn(10L);
+        when(configMock.getProperty(GraknConfigKey.SHARDING_THRESHOLD)).thenReturn(5L);
         when(configMock.getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS)).thenReturn(5);
 
+        SystemKeyspace systemKeyspaceMock = mock(SystemKeyspace.class);
+        when(systemKeyspaceMock.containsKeyspace(any())).thenReturn(true);
+
+        GraknTx txMock = mock(GraknTx.class);
+        when(txMock.admin()).thenReturn(mock(GraknAdmin.class));
+
         factoryMock = mock(EngineGraknTxFactory.class);
+        when(factoryMock.systemKeyspace()).thenReturn(systemKeyspaceMock);
+        when(factoryMock.tx(any(Keyspace.class), any())).thenReturn(txMock);
 
         lockProviderMock = mock(LockProvider.class);
+        when(lockProviderMock.getLock(any())).thenReturn(new ReentrantLock());
+
         metricRegistry = new MetricRegistry();
         countPostProcessor = InstanceCountPostProcessor.create(configMock, factoryMock, lockProviderMock, metricRegistry, countStorage);
     }
@@ -87,8 +102,31 @@ public class InstanceCountPostProcessorTest {
 
         //Check the calls
         newInstanceCounts.forEach((id, value) -> {
+            //Redis is updated
             verify(countStorage, Mockito.times(1)).getCount(RedisCountStorage.getKeyNumShards(keyspace, id));
             verify(countStorage, Mockito.times(1)).adjustCount(RedisCountStorage.getKeyNumInstances(keyspace, id), value);
+
+            //No Sharding takes place
+            verify(factoryMock, Mockito.times(0)).tx(any(String.class), any());
         });
+    }
+
+    @Test
+    public void whenBreachingTheShardingThreshold_ShardingHappens(){
+        //Configure mock to return value which breaches threshold
+        ConceptId id = ConceptId.of("e");
+        newInstanceCounts.put(id, 6L);
+        when(countStorage.adjustCount(RedisCountStorage.getKeyNumInstances(keyspace, id), 6L)).thenReturn(6L);
+        when(countStorage.adjustCount(RedisCountStorage.getKeyNumInstances(keyspace, id), 0L)).thenReturn(6L);
+
+        //Create fake commit log
+        CommitLog commitLog = CommitLog.create(keyspace, newInstanceCounts, Collections.emptyMap());
+
+        //Update The Counts
+        countPostProcessor.updateCounts(commitLog);
+
+        //Check Sharding Takes Place
+        verify(factoryMock, Mockito.times(1)).tx(keyspace, GraknTxType.WRITE);
+        verify(countStorage, Mockito.times(1)).adjustCount(RedisCountStorage.getKeyNumShards(keyspace, id), 1);
     }
 }
