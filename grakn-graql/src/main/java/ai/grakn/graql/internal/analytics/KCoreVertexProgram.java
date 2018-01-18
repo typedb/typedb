@@ -21,13 +21,11 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterators;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -46,46 +44,34 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     private static final int MAX_ITERATION = 200;
     private static final String EMPTY_MESSAGE = "";
 
-    public static final String CLUSTER_LABEL = "kCoreVertexProgram.clusterLabel";
-    private static final String IMPLICIT_MESSAGE_COUNT = "kCoreVertexProgram.implicitMessageCount";
+    public static final String K_CORE_LABEL = "kCoreVertexProgram.kCoreLabel";
 
-    private static final String K_CORE_STABLE = "kCoreVertexProgram.stable";
-    private static final String K_CORE_EXIST = "kCoreVertexProgram.exist";
+    static final String IMPLICIT_MESSAGE_COUNT = "kCoreVertexProgram.implicitMessageCount";
+    static final String MESSAGE_COUNT = "corenessVertexProgram.messageCount";
+    static final String K_CORE_STABLE = "kCoreVertexProgram.stable";
+    static final String K_CORE_EXIST = "kCoreVertexProgram.exist";
+    static final String K = "kCoreVertexProgram.k";
+
     private static final String CONNECTED_COMPONENT_STARTED = "kCoreVertexProgram.ccStarted";
     private static final String VOTE_TO_HALT = "kCoreVertexProgram.voteToHalt";
-    private static final String K = "kCoreVertexProgram.k";
 
     private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS = newHashSet(
             MemoryComputeKey.of(K_CORE_STABLE, Operator.and, false, true),
             MemoryComputeKey.of(K_CORE_EXIST, Operator.or, false, true),
             MemoryComputeKey.of(CONNECTED_COMPONENT_STARTED, Operator.assign, true, true),
-            MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true));
+            MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true),
+            MemoryComputeKey.of(K, Operator.assign, true, true));
 
     private static final Set<VertexComputeKey> VERTEX_COMPUTE_KEYS = newHashSet(
-            VertexComputeKey.of(CLUSTER_LABEL, false),
+            VertexComputeKey.of(K_CORE_LABEL, false),
             VertexComputeKey.of(IMPLICIT_MESSAGE_COUNT, true));
-
-    private int k;
 
     // Needed internally for OLAP tasks
     public KCoreVertexProgram() {
     }
 
     public KCoreVertexProgram(int kValue) {
-        this.k = kValue;
         this.persistentProperties.put(K, kValue);
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        super.storeState(configuration);
-        persistentProperties.put(K, k);
-    }
-
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        k = (int) persistentProperties.get(K);
     }
 
     @Override
@@ -105,35 +91,26 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         // K_CORE_STABLE is true by default, and we reset it after each odd iteration.
         memory.set(K_CORE_STABLE, false);
         memory.set(K_CORE_EXIST, false);
+        memory.set(K, persistentProperties.get(K));
         memory.set(VOTE_TO_HALT, true);
         memory.set(CONNECTED_COMPONENT_STARTED, false);
     }
 
     @Override
     public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
-        String id;
         switch (memory.getIteration()) {
             case 0:
                 sendMessage(messenger, EMPTY_MESSAGE);
                 break;
 
             case 1: // get degree first, as degree must >= k
-                if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
-                        vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
-                        Iterators.size(messenger.receiveMessages()) >= k) {
-                    id = vertex.value(Schema.VertexProperty.ID.name());
-                    vertex.property(CLUSTER_LABEL, id);
-                    memory.add(K_CORE_EXIST, true);
-
-                    // send ids from now on, as we want to count connected entities, not relationships
-                    sendMessage(messenger, id);
-                }
+                filterByDegree(vertex, messenger, memory, true);
                 break;
 
             default:
                 if (memory.<Boolean>get(CONNECTED_COMPONENT_STARTED)) {
                     if (messenger.receiveMessages().hasNext()) {
-                        if (vertex.property(CLUSTER_LABEL).isPresent()) {
+                        if (vertex.property(K_CORE_LABEL).isPresent()) {
                             updateClusterLabel(vertex, messenger, memory);
                         } else if (vertex.label().equals(Schema.BaseType.RELATIONSHIP.name())) {
                             relayClusterLabel(messenger, memory);
@@ -142,56 +119,84 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                 } else {
                     // relay message through relationship vertices in even iterations
                     // send message from regular entities in odd iterations
-                    if (memory.getIteration() % 2 == 0) {
+                    if (atRelationships(memory)) {
                         relayOrSaveMessages(vertex, messenger);
                     } else {
-                        updateEntityAndAttribute(vertex, messenger, memory);
+                        updateEntityAndAttribute(vertex, messenger, memory, false);
                     }
                 }
                 break;
         }
     }
 
-    private void updateEntityAndAttribute(Vertex vertex, Messenger<String> messenger, Memory memory) {
-        if (vertex.property(CLUSTER_LABEL).isPresent()) {
+    static void filterByDegree(Vertex vertex, Messenger<String> messenger, Memory memory, boolean persistId) {
+        if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
+                vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
+                Iterators.size(messenger.receiveMessages()) >= memory.<Integer>get(K)) {
             String id = vertex.value(Schema.VertexProperty.ID.name());
-            int messageCount = getMessageCount(messenger, id) +
-                    (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent() ?
-                            (int) vertex.value(IMPLICIT_MESSAGE_COUNT) : 0);
 
-            if (messageCount >= k) {
-                LOGGER.trace("Sending msg from " + id);
-                sendMessage(messenger, id);
-                memory.add(K_CORE_EXIST, true);
+            // coreness query doesn't require id
+            if (persistId) {
+                vertex.property(K_CORE_LABEL, id);
             } else {
-                LOGGER.trace("Removing label of " + id);
-                vertex.property(CLUSTER_LABEL).remove();
-                memory.add(K_CORE_STABLE, false);
+                vertex.property(K_CORE_LABEL, true);
             }
+            memory.add(K_CORE_EXIST, true);
+
+            // send ids from now on, as we want to count connected entities, not relationships
+            sendMessage(messenger, id);
         }
     }
 
-    private static void relayOrSaveMessages(Vertex vertex, Messenger<String> messenger) {
+    static void relayOrSaveMessages(Vertex vertex, Messenger<String> messenger) {
         if (messenger.receiveMessages().hasNext()) {
             if (vertex.label().equals(Schema.BaseType.RELATIONSHIP.name())) {
                 // relay the messages
                 messenger.receiveMessages().forEachRemaining(msg -> sendMessage(messenger, msg));
             } else if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
                     vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
-                    vertex.property(CLUSTER_LABEL).isPresent()) {
+                    vertex.property(K_CORE_LABEL).isPresent()) {
                 // messages received via implicit edge, save the count for next iteration
-                vertex.property(IMPLICIT_MESSAGE_COUNT, Iterators.size(messenger.receiveMessages()));
+                vertex.property(IMPLICIT_MESSAGE_COUNT, newHashSet(messenger.receiveMessages()).size());
+            }
+        }
+    }
+
+    static void updateEntityAndAttribute(Vertex vertex, Messenger<String> messenger,
+                                         Memory memory, boolean persistMessageCount) {
+        if (vertex.property(K_CORE_LABEL).isPresent()) {
+            String id = vertex.value(Schema.VertexProperty.ID.name());
+            int messageCount = getMessageCountExcludeSelf(messenger, id);
+            if (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent()) {
+                messageCount += vertex.<Integer>value(IMPLICIT_MESSAGE_COUNT);
+                // need to remove implicit count as the vertex may not receive msg via implicit edge
+                vertex.property(IMPLICIT_MESSAGE_COUNT).remove();
+            }
+
+            if (messageCount >= memory.<Integer>get(K)) {
+                LOGGER.trace("Sending msg from " + id);
+                sendMessage(messenger, id);
+                memory.add(K_CORE_EXIST, true);
+
+                if (persistMessageCount) {
+                    // message count may help eliminate unqualified vertex in earlier iterations
+                    vertex.property(MESSAGE_COUNT, messageCount);
+                }
+            } else {
+                LOGGER.trace("Removing label of " + id);
+                vertex.property(K_CORE_LABEL).remove();
+                memory.add(K_CORE_STABLE, false);
             }
         }
     }
 
     private static void updateClusterLabel(Vertex vertex, Messenger<String> messenger, Memory memory) {
-        String currentMax = vertex.value(CLUSTER_LABEL);
+        String currentMax = vertex.value(K_CORE_LABEL);
         String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
         if (!max.equals(currentMax)) {
             LOGGER.trace("Cluster label of " + vertex + " changed from " + currentMax + " to " + max);
-            vertex.property(CLUSTER_LABEL, max);
+            vertex.property(K_CORE_LABEL, max);
             sendMessage(messenger, max);
             memory.add(VOTE_TO_HALT, false);
         } else {
@@ -208,15 +213,19 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     }
 
     // count the messages from relationships, so need to filter its own msg
-    private static int getMessageCount(Messenger<String> messenger, String id) {
+    private static int getMessageCountExcludeSelf(Messenger<String> messenger, String id) {
         Set<String> messageSet = newHashSet(messenger.receiveMessages());
         messageSet.remove(id);
         return messageSet.size();
     }
 
-    private static void sendMessage(Messenger<String> messenger, String message) {
+    static void sendMessage(Messenger<String> messenger, String message) {
         messenger.sendMessage(messageScopeIn, message);
         messenger.sendMessage(messageScopeOut, message);
+    }
+
+    static boolean atRelationships(Memory memory) {
+        return memory.getIteration() % 2 == 0;
     }
 
     @Override
@@ -238,7 +247,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                 return false;
             }
         } else {
-            if (memory.getIteration() % 2 != 0) {
+            if (!atRelationships(memory)) {
                 if (!memory.<Boolean>get(K_CORE_EXIST)) {
                     LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
                     LOGGER.debug("No Such Core Areas Found !!!!!!!!");
