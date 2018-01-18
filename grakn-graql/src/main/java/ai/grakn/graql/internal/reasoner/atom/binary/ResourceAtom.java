@@ -196,6 +196,20 @@ public class ResourceAtom extends Binary{
         return thisPredicate == null && predicate == null || thisPredicate != null && thisPredicate.isAlphaEquivalent(predicate);
     }
 
+    private boolean hasCompatiblePredicatesWith(ResourceAtom child) {
+        if (child.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
+        for (ValuePredicate childPredicate : child.getMultiPredicate()) {
+            Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();
+            boolean predicateCompatible = false;
+            while (parentIt.hasNext() && !predicateCompatible) {
+                ValuePredicate parentPredicate = parentIt.next();
+                predicateCompatible = parentPredicate.isCompatibleWith(childPredicate);
+            }
+            if (!predicateCompatible) return false;
+        }
+        return true;
+    }
+
     @Override
     boolean predicateBindingsAreEquivalent(Binary at) {
         if (!(at instanceof ResourceAtom && super.predicateBindingsAreEquivalent(at))) return false;
@@ -228,31 +242,28 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        //findbugs complains about cast without it
-        if(!(ruleAtom instanceof ResourceAtom)) return false;
+    public boolean isCompatibleWith(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        ResourceAtom a2 = (ResourceAtom) obj;
+        //TODO check uniqueness constraint if key
+        return this.getTypeId() != a2.getTypeId()
+                || hasCompatiblePredicatesWith(a2);
+    }
 
+    @Override
+    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
+        //extra check to make PMD happy
+        if (!(ruleAtom instanceof ResourceAtom && this.isCompatibleWith(ruleAtom))) return false;
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
         ReasonerQueryImpl childQuery = (ReasonerQueryImpl) childAtom.getParentQuery();
 
-        //check type bindings compatiblity
+        //check type bindings compatibility
         Type parentType = this.getParentQuery().getVarTypeMap().get(this.getVarName());
         Type childType = childQuery.getVarTypeMap().get(childAtom.getVarName());
 
         if (parentType != null && childType != null && areDisjointTypes(parentType, childType)
                 || !childQuery.isTypeRoleCompatible(ruleAtom.getVarName(), parentType)) return false;
-
-        //check value predicate compatibility
-        if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
-        for (ValuePredicate childPredicate : childAtom.getMultiPredicate()) {
-            Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();
-            boolean predicateCompatible = false;
-            while (parentIt.hasNext() && !predicateCompatible) {
-                ValuePredicate parentPredicate = parentIt.next();
-                predicateCompatible = parentPredicate.isCompatibleWith(childPredicate);
-            }
-            if (!predicateCompatible) return false;
-        }
         return true;
     }
 

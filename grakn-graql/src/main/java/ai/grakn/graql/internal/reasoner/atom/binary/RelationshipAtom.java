@@ -859,6 +859,18 @@ public class RelationshipAtom extends IsaAtom {
                                                 IdPredicate childId = this.getIdPredicate(crp.getRolePlayer().var());
                                                 return matchType.atomicCompatibility(parentId, childId);
                                             })
+                                            //check for resource compatibility
+                                            .filter(crp -> {
+                                                Set<ResourceAtom> childResources = this.getNeighbours(ResourceAtom.class)
+                                                        .filter(n -> n.getVarName().equals(crp.getRolePlayer().var()))
+                                                        .collect(Collectors.toSet());
+                                                return parentAtom.getNeighbours(ResourceAtom.class)
+                                                        .filter(n -> n.getVarName().equals(prp.getRolePlayer().var()))
+                                                        .allMatch(parentResource ->
+                                                                childResources.stream()
+                                                                        .allMatch(childResource -> matchType.atomicCompatibility(parentResource, childResource))
+                                                        );
+                                            })
                                             //check for value predicate compatibility
                                             .filter(crp -> {
                                                 ValuePredicate parentVP = parentAtom.getPredicate(prp.getRolePlayer().var(), ValuePredicate.class);
