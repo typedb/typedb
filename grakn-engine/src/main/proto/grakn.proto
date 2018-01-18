@@ -3,6 +3,10 @@ syntax = "proto3";
 package ai.grakn.rpc;
 
 service Grakn {
+    /*
+        Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
+        When the call is completed, the transaction will always be closed, with or without a `Commit` message.
+    */
     rpc Tx (stream TxRequest) returns (stream TxResponse);
 }
 
@@ -15,17 +19,34 @@ message TxRequest {
     }
 }
 
+/*
+    Open a transaction on a keyspace. This must be the first message sent.
+    After this message, the server will accept a command message.
+*/
 message Open {
     Keyspace keyspace = 1;
     TxType txType = 2;
 }
 
+/*
+    Command to commit a transaction.
+    After this message, the server will not accept any further messages.
+*/
 message Commit {}
 
+/*
+    Command to execute a query.
+    The server will return a stream of zero or more `QueryResult`s, followed by one `QueryComplete`.
+    After this message, the server will accept a command message.
+*/
 message ExecQuery {
     Query query = 1;
 }
 
+/*
+    Command to specify inference for only the next `ExecQuery` message.
+    After this, the server will accept only an `ExecQuery` message.
+*/
 message Infer {
     bool value = 1;
 }
@@ -33,11 +54,29 @@ message Infer {
 message TxResponse {
     oneof response {
         QueryResult queryResult = 1;
+        QueryComplete queryComplete = 2;
     }
 }
 
 message QueryResult {
-    string value = 1;
+    oneof queryResult {
+        Answer answer = 1;
+        string otherResult = 3;
+    }
+}
+
+message QueryComplete { }
+
+message AnswerSet {
+    Answer answer = 1;
+}
+
+message Concept {
+    string id = 1;
+}
+
+message Answer {
+    map<string, Concept> answer = 1;
 }
 
 enum TxType {

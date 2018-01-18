@@ -21,30 +21,41 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.rpc.BidirectionalObserver;
 import ai.grakn.engine.rpc.GrpcUtil;
-import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.Commit;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.GraknOuterClass.Open;
+import ai.grakn.rpc.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.GraknOuterClass.TxType;
 import ai.grakn.test.rule.EngineContext;
+import ai.grakn.util.CommonUtil;
+import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.junit.Assert.assertEquals;
+import java.util.List;
+import java.util.Map;
+
+import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Felix Chapman
@@ -92,21 +103,27 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAQuery_ResultsAreReturned() {
-        Json response;
+        List<QueryResult> results;
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
             tx.send(execQueryRequest("match $x sub thing; get;"));
-            response = Json.read(tx.receive().elem().getQueryResult().getValue());
+
+            results = queryResults(tx);
         }
 
-        Json expected;
+        int numMetaTypes = Schema.MetaSchema.METATYPES.size();
+        assertThat(results.toString(), results, hasSize(numMetaTypes));
+        assertThat(Sets.newHashSet(results), hasSize(numMetaTypes));
 
         try (GraknTx tx = session.open(GraknTxType.READ)) {
-            expected = Json.read(Printers.json().graqlString(tx.graql().parse("match $x sub thing; get;").execute()));
-        }
+            for (QueryResult result : results) {
+                Map<String, GraknOuterClass.Concept> map = result.getAnswer().getAnswerMap();
 
-        assertEquals(expected, response);
+                assertThat(map.keySet(), contains("x"));
+                assertNotNull(tx.getConcept(ConceptId.of(map.get("x").getId())));
+            }
+        }
     }
 
     @Test
@@ -115,7 +132,7 @@ public class GrpcServerIT {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
             tx.send(execQueryRequest("match $x sub thing; get $y;"));
 
-            exception.expect(GrpcUtil.hasMessage("boo"));
+            exception.expect(GrpcUtil.hasMessage(GraqlQueryException.varNotInQuery(var("y")).getMessage()));
 
             throw tx.receive().throwable();
         }
@@ -138,5 +155,23 @@ public class GrpcServerIT {
     private TxRequest execQueryRequest(String queryString) {
         GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
         return TxRequest.newBuilder().setExecQuery(ExecQuery.newBuilder().setQuery(query)).build();
+    }
+
+    private List<QueryResult> queryResults(BidirectionalObserver<TxRequest, TxResponse> tx) {
+        ImmutableList.Builder<QueryResult> results = ImmutableList.builder();
+
+        while (true) {
+            TxResponse response = tx.receive().elem();
+
+            switch (response.getResponseCase()) {
+                case QUERYRESULT:
+                    results.add(response.getQueryResult());
+                    break;
+                case QUERYCOMPLETE:
+                    return results.build();
+                case RESPONSE_NOT_SET:
+                    throw CommonUtil.unreachableStatement("Response not set");
+            }
+        }
     }
 }

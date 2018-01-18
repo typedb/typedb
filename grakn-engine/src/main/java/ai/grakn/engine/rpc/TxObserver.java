@@ -23,13 +23,12 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknException;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.GraknOuterClass.Infer;
 import ai.grakn.rpc.GraknOuterClass.Open;
+import ai.grakn.rpc.GraknOuterClass.QueryComplete;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
@@ -40,6 +39,7 @@ import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
@@ -51,8 +51,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Felix Chapman
  */
 class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
-
-    private static final Printer<?> PRINTER = Printers.json();
 
     private final StreamObserver<TxResponse> responseObserver;
     private final EngineGraknTxFactory txFactory;
@@ -136,11 +134,13 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             infer = null;
         }
 
-        Object result = graql.parse(queryString).execute();
+        Stream<QueryResult> results = graql.parse(queryString).results(GrpcConverter.get());
 
-        QueryResult rpcResult = QueryResult.newBuilder().setValue(PRINTER.graqlString(result)).build();
+        results.forEach(result -> {
+            responseObserver.onNext(TxResponse.newBuilder().setQueryResult(result).build());
+        });
 
-        responseObserver.onNext(TxResponse.newBuilder().setQueryResult(rpcResult).build());
+        responseObserver.onNext(TxResponse.newBuilder().setQueryComplete(QueryComplete.getDefaultInstance()).build());
     }
 
     private void infer(Infer request) {

@@ -38,6 +38,8 @@ import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.Commit;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.GraknOuterClass.Open;
+import ai.grakn.rpc.GraknOuterClass.QueryComplete;
+import ai.grakn.rpc.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.GraknOuterClass.TxType;
@@ -47,7 +49,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import mjson.Json;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -67,6 +68,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
@@ -213,7 +215,7 @@ public class GrpcServerTest {
         }
 
         ai.grakn.graql.Query<?> query = tx.graql().parse(QUERY);
-        verify(query).execute();
+        verify(query).results(any());
     }
 
     @Test
@@ -233,21 +235,33 @@ public class GrpcServerTest {
                 new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
-        when(query.execute()).thenReturn(answers);
+        // TODO: reduce wtf
+        when(query.results(any())).thenAnswer(params -> query.stream().map(params.<GrpcConverter>getArgument(0)::convert));
+        when(query.stream()).thenAnswer(params -> answers.stream());
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
 
             tx.send(execQueryRequest(QUERY));
 
-            Json response = Json.read(tx.receive().elem().getQueryResult().getValue());
+            TxResponse response1 = tx.receive().elem();
 
-            Json expected = Json.array(
-                    Json.object("x", Json.object("isa", "L123", "id", "V123")),
-                    Json.object("y", Json.object("isa", "L456", "id", "V456"))
-            );
+            GraknOuterClass.Concept rpcX = GraknOuterClass.Concept.newBuilder().setId("V123").build();
+            GraknOuterClass.Answer.Builder answerX = GraknOuterClass.Answer.newBuilder().putAnswer("x", rpcX);
+            QueryResult.Builder resultX = QueryResult.newBuilder().setAnswer(answerX);
+            assertEquals(TxResponse.newBuilder().setQueryResult(resultX).build(), response1);
 
-            assertEquals(expected, response);
+            TxResponse response2 = tx.receive().elem();
+
+            GraknOuterClass.Concept rpcY = GraknOuterClass.Concept.newBuilder().setId("V456").build();
+            GraknOuterClass.Answer.Builder answerY = GraknOuterClass.Answer.newBuilder().putAnswer("y", rpcY);
+            QueryResult.Builder resultY = QueryResult.newBuilder().setAnswer(answerY);
+            assertEquals(TxResponse.newBuilder().setQueryResult(resultY).build(), response2);
+
+            TxResponse response3 = tx.receive().elem();
+
+            TxResponse expected = TxResponse.newBuilder().setQueryComplete(QueryComplete.getDefaultInstance()).build();
+            assertEquals(expected, response3);
         }
     }
 
@@ -360,7 +374,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingQueryFails_Throw() throws Throwable {
-        when(query.execute()).thenThrow(GraknExceptionFake.EXCEPTION);
+        when(query.results(any())).thenThrow(GraknExceptionFake.EXCEPTION);
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
