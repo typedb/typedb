@@ -60,7 +60,7 @@ public interface Query<T> {
      * Execute the query and return a converted stream of results
      */
     @CheckReturnValue
-    <T> Stream<T> results(GraqlConverter<?, T> converter);
+    <S> Stream<S> results(GraqlConverter<?, S> converter);
 
     /**
      * Whether this query will modify the graph

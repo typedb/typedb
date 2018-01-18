@@ -47,7 +47,7 @@ public class JacksonPrinter implements Printer<Object>{
     }
 
     @Override
-    public String build(Object object) {
+    public String complete(Object object) {
         try {
             return mapper.writeValueAsString(object);
         } catch (IOException e) {
@@ -56,43 +56,43 @@ public class JacksonPrinter implements Printer<Object>{
     }
 
     @Override
-    public Object convert(boolean inner, Concept concept) {
+    public Object build(Concept concept) {
         return ConceptBuilder.build(concept);
     }
 
     @Override
-    public Object convert(boolean inner, ai.grakn.graql.admin.Answer answer) {
+    public Object build(ai.grakn.graql.admin.Answer answer) {
         return Answer.create(answer);
     }
 
     @Override
-    public Object convert(boolean inner, boolean bool) {
+    public Object build(boolean bool) {
         return bool;
     }
 
     @Override
-    public Object convertDefault(boolean inner, Object object) {
+    public Object convertDefault(Object object) {
         return object;
     }
 
     @Override
-    public Object convert(boolean inner, Map map) {
+    public Object build(Map map) {
         Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
         return entries.collect(Collectors.toMap(
-                entry -> convert(inner, entry.getKey()),
-                entry -> convert(inner, entry.getKey())
+                entry -> convert(entry.getKey()),
+                entry -> convert(entry.getKey())
         ));
     }
 
     @Override
-    public Object convert(boolean inner, Collection collection) {
-        return collection.stream().map(object -> convert(inner, object)).collect(Collectors.toList());
+    public Object build(Collection collection) {
+        return collection.stream().map(object -> convert(object)).collect(Collectors.toList());
     }
 
     @Override
-    public Object convert(boolean inner, Optional optional) {
+    public Object build(Optional optional) {
         if(optional.isPresent()){
-            return convert(inner, optional.get());
+            return convert(optional.get());
         } else {
             return null;
         }
