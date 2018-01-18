@@ -64,7 +64,6 @@ public class InstanceCountPostProcessorTest {
 
         configMock = mock(GraknConfig.class);
         when(configMock.getProperty(GraknConfigKey.SHARDING_THRESHOLD)).thenReturn(5L);
-        when(configMock.getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS)).thenReturn(5);
 
         SystemKeyspace systemKeyspaceMock = mock(SystemKeyspace.class);
         when(systemKeyspaceMock.containsKeyspace(any())).thenReturn(true);

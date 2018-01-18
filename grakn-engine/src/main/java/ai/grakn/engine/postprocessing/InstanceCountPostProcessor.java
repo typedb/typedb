@@ -19,6 +19,8 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
@@ -72,7 +74,6 @@ public class InstanceCountPostProcessor {
      */
     public void updateCounts(CommitLog commitLog){
         final long shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
-        final int maxRetry = engineConfig.getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
 
         try (Timer.Context context = metricRegistry.timer(name(InstanceCountPostProcessor.class, "execution")).time()) {
             Map<ConceptId, Long> jobs = commitLog.instanceCount();
@@ -104,7 +105,7 @@ public class InstanceCountPostProcessor {
             conceptToShard.forEach(type -> {
                 Timer.Context contextSharding = metricRegistry.timer("sharding").time();
                 try {
-                    shardConcept(redis, factory, commitLog.keyspace(), type, maxRetry, shardingThreshold);
+                    shardConcept(redis, factory, commitLog.keyspace(), type, shardingThreshold);
                 } finally {
                     contextSharding.stop();
                 }
@@ -143,7 +144,7 @@ public class InstanceCountPostProcessor {
      * @param conceptId The id of the concept to shard
      */
     private void shardConcept(RedisCountStorage redis, EngineGraknTxFactory factory,
-                              Keyspace keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
+                              Keyspace keyspace, ConceptId conceptId, long shardingThreshold){
         Lock engineLock = lockProvider.getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 
@@ -151,12 +152,11 @@ public class InstanceCountPostProcessor {
             //Check if sharding is still needed. Another engine could have sharded whilst waiting for lock
             if (updateShardCounts(redis, keyspace, conceptId, 0, shardingThreshold)) {
 
-                //Shard
-                GraknTxMutators.runMutationWithRetry(factory, keyspace, maxRetry, graph -> {
+
+                try(GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
                     graph.admin().shard(conceptId);
                     graph.admin().commitSubmitNoLogs();
-                });
-
+                }
                 //Update number of shards
                 redis.adjustCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId), 1);
             }
