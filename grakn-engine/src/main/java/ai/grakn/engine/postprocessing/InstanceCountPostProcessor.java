@@ -73,6 +73,7 @@ public class InstanceCountPostProcessor {
     public void updateCounts(CommitLog commitLog){
         final long shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
         final int maxRetry = engineConfig.getProperty(GraknConfigKey.LOADER_REPEAT_COMMITS);
+
         try (Timer.Context context = metricRegistry.timer(name(InstanceCountPostProcessor.class, "execution")).time()) {
             Map<ConceptId, Long> jobs = commitLog.instanceCount();
             metricRegistry.histogram(name(InstanceCountPostProcessor.class, "jobs"))
