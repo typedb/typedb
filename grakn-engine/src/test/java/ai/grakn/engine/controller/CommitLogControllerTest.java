@@ -65,9 +65,7 @@ public class CommitLogControllerTest {
     }
 
     @Rule
-    public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new CommitLogController(spark, postProcessor);
-    });
+    public final SparkContext sparkContext = SparkContext.withControllers(spark -> new CommitLogController(spark, postProcessor));
 
     @Test
     public void whenPostingToCommitLogEndpoint_Return200() throws JsonProcessingException {
