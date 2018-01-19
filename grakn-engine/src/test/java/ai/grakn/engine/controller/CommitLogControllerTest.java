@@ -19,18 +19,25 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
+import ai.grakn.engine.postprocessing.IndexPostProcessor;
+import ai.grakn.engine.postprocessing.InstanceCountPostProcessor;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.kb.log.CommitLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.Collections;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Felix Chapman
@@ -40,7 +47,22 @@ public class CommitLogControllerTest {
     private static final Keyspace keyspace = Keyspace.of("myks");
     private static final CommitLog commitLog = CommitLog.create(keyspace, Collections.emptyMap(), Collections.emptyMap());
 
-    private final PostProcessor postProcessor = mock(PostProcessor.class);
+    private static PostProcessor postProcessor;
+    private static InstanceCountPostProcessor countPostProcessor;
+    private static IndexPostProcessor indexPostProcessor;
+
+    @BeforeClass
+    public static void setupMocks(){
+        countPostProcessor = mock(InstanceCountPostProcessor.class);
+        indexPostProcessor = mock(IndexPostProcessor.class);
+        postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+    }
+
+    @Before
+    public void resetMocks(){
+        reset(countPostProcessor);
+        reset(indexPostProcessor);
+    }
 
     @Rule
     public final SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -53,10 +75,10 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void whenPostingToCommitLogEndpoint_SubmitTwoTasks() throws JsonProcessingException {
+    public void whenPostingToCommitLogEndpoint_RecordCommitLog() throws JsonProcessingException {
         given().body(mapper.writeValueAsString(commitLog)).post("/kb/" + keyspace.getValue() +"/commit_log");
 
-        //TODO: Verify addition to central cache
-        //verify(taskManager, Mockito.times(1)).addTask(any(), any());
+        verify(countPostProcessor, Mockito.times(1)).updateCounts(commitLog);
+        verify(indexPostProcessor, Mockito.times(1)).updateIndices(commitLog);
     }
 }

@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.Keyspace;
 import ai.grakn.engine.postprocessing.PostProcessor;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
@@ -29,10 +28,7 @@ import spark.Service;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
-
-import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 
 /**
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
@@ -52,23 +48,11 @@ public class CommitLogController {
     @POST
     @Path("/kb/{keyspace}/commit_log")
     private String submitConcepts(Request req) throws IOException {
-        Keyspace keyspace = Keyspace.of(mandatoryPathParameter(req, REST.Request.KEYSPACE_PARAM));
-
-        //TODO: Is this really necessary? Will it add that much overhead?
-        //Separate commit logs are needed to prevent logging more info than needed.
-        // For example PP does not need to know the instance count
         CommitLog commitLog = mapper.readValue(req.body(), CommitLog.class);
-        CommitLog commitLogPP = CommitLog.create(keyspace, Collections.emptyMap(), commitLog.attributes());
 
-
-        // Things to post process
-        //TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass());
-        //TaskConfiguration postProcessingTaskConfiguration = PostProcessingTask.createConfig(commitLogPP);
-
-        // TODO Use an engine wide executor here
         CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> postProcessor.count().updateCounts(commitLog))/*, TODO: Use background process or something
-                CompletableFuture.runAsync(() -> manager.addTask(postProcessingTaskState, postProcessingTaskConfiguration))*/)
+                CompletableFuture.runAsync(() -> postProcessor.count().updateCounts(commitLog)),
+                CompletableFuture.runAsync(() -> postProcessor.index().updateIndices(commitLog)))
                 .join();
 
         return "";
