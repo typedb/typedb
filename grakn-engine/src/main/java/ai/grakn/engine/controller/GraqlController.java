@@ -38,7 +38,6 @@ import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -276,31 +275,9 @@ public class GraqlController {
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) commitAndSubmitPPTask(tx, postProcessor);
+        if (commitQuery) tx.admin().commitSubmitNoLogs().ifPresent(postProcessor::submit);
 
         return formatted;
-    }
-
-    private static void commitAndSubmitPPTask(GraknTx graph, PostProcessor postProcessor) {
-        Optional<CommitLog> result = graph.admin().commitSubmitNoLogs();
-        if (result.isPresent()) { // Submit more tasks if commit resulted in created commit logs
-            CommitLog logs = result.get();
-
-            //TODO: Use background process again or something
-
-            /*
-            //Update the attributes which need to be merged
-            System.out.println("Adding task to manager . . . ");
-            taskSubmitter.addTask(
-                    PostProcessingTask.createTask(GraqlController.class),
-                    PostProcessingTask.createConfig(logs)
-            );
-
-            //Update the counts which need to be updated
-            System.out.println("Updating counts . . . ");
-            postProcessor.updateCounts(graph.keyspace(), logs);
-            */
-        }
     }
 
     private Object executeAndMonitor(Query<?> query) {
