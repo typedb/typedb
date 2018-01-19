@@ -22,9 +22,9 @@ def stopAllRunningBuildsForThisJob() {
 
 class Constants {
 
-    // In order to add a new integration test, create a new sub-folder under `grakn-test` with two executable scripts,
-    // `load.sh` and `validate.sh`. Add the name of the folder to the list `INTEGRATION_TESTS` below.
-    static final INTEGRATION_TESTS = ["test-snb", "test-biomed"]
+    // In order to add a new end-to-end test, create a new sub-folder under `grakn-test` with two executable scripts,
+    // `load.sh` and `validate.sh`. Add the name of the folder to the list `E2E_TESTS` below.
+    static final E2E_TESTS = ["test-snb", "test-biomed"]
 
     static final LONG_RUNNING_INSTANCE_ADDRESS = '172.31.22.83'
 }
@@ -53,7 +53,7 @@ def slackGithub(String message, String color = null) {
     slackSend channel: "#github", color: color, message: statusNotification(message)
 }
 
-def runIntegrationTest(String workspace, String moduleName) {
+def runEndToEndTests(String workspace, String moduleName) {
     String modulePath = "${workspace}/grakn-test/${moduleName}"
 
     stage(moduleName) {
@@ -179,17 +179,16 @@ Closure createTestJob(split, i, testTimeout) {
             mavenVerify += " -Dsurefire.excludesFile=${workspace}/parallel-test-excludes-${i}.txt"
         }
 
-            try {
-                /* Call the Maven build with tests. */
-                timeout(testTimeout) {
-                    stage('Run Janus test profile') {
-                        mvn mavenVerify
-                    }
+        try {
+            /* Call the Maven build with tests. */
+            timeout(testTimeout) {
+                stage('Run Janus test profile') {
+                    mvn mavenVerify
                 }
-            } finally {
-                /* Archive the test results */
-                junit "**/TEST*.xml"
-
+            }
+        } finally {
+            /* Archive the test results */
+            junit "**/TEST*.xml"
         }
     }
 }
@@ -256,7 +255,7 @@ def runBuild() {
         // A map of jobs for end-to-end tests
         e2eTests = [:]
 
-        // Build grakn so it can be used by benchmarks and integration tests
+        // Build grakn so it can be used by benchmarks and end-to-end tests
         graknNode { workspace ->
             checkout scm
 
@@ -285,13 +284,13 @@ def runBuild() {
             }
         }
 
-        INTEGRATION_TESTS.each { String moduleName ->
-            // Add each integration test as a parallel job
+        E2E_TESTS.each { String moduleName ->
+            // Add each end-to-end test as a parallel job
             addJob(e2eTests, moduleName) { workspace ->
                 checkout scm
                 unstash 'dist'
 
-                runIntegrationTest(workspace, moduleName)
+                runEndToEndTests(workspace, moduleName)
             }
         }
 
