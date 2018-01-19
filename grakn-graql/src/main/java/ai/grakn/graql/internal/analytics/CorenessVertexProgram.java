@@ -75,7 +75,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
     public CorenessVertexProgram() {
     }
 
-    public CorenessVertexProgram(int minK) {
+    public CorenessVertexProgram(long minK) {
         this.persistentProperties.put(K, minK);
     }
 
@@ -114,10 +114,10 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
             default:
                 if (memory.<Boolean>get(PERSIST_CORENESS) && vertex.property(K_CORE_LABEL).isPresent()) {
                     // persist coreness
-                    vertex.property(CORENESS, memory.<Integer>get(K) - 1);
+                    vertex.property(CORENESS, memory.<Long>get(K) - 1L);
 
                     // check if the vertex should included for the next k value
-                    if (vertex.<Integer>value(MESSAGE_COUNT) < memory.<Integer>get(K)) {
+                    if (vertex.<Long>value(MESSAGE_COUNT) < memory.<Long>get(K)) {
                         vertex.property(K_CORE_LABEL).remove();
                         break;
                     }
@@ -156,8 +156,8 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                 return true;
             } else {
                 if (memory.<Boolean>get(K_CORE_STABLE)) {
-                    LOGGER.debug("Found Core Areas K = " + memory.<Integer>get(K) + "\n");
-                    memory.set(K, memory.<Integer>get(K) + 1);
+                    LOGGER.debug("Found Core Areas K = " + memory.<Long>get(K) + "\n");
+                    memory.set(K, memory.<Long>get(K) + 1L);
                     memory.set(PERSIST_CORENESS, true);
                 } else {
                     memory.set(K_CORE_STABLE, true);

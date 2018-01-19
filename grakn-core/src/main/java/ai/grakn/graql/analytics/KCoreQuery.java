@@ -41,7 +41,7 @@ public interface KCoreQuery extends ComputeQuery<Map<String, Set<String>>> {
      * @param k set the value of k in k-core. k can not be smaller than 2.
      * @return a KCoreQuery with k value set
      */
-    KCoreQuery kValue(int k);
+    KCoreQuery kValue(long k);
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph.

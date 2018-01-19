@@ -36,7 +36,7 @@ import java.util.Set;
 
 class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> implements KCoreQuery {
 
-    private int k = -1;
+    private long k = -1L;
 
     KCoreQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -47,7 +47,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
         LOGGER.info("KCore query is started");
         long startTime = System.currentTimeMillis();
 
-        if (k < 2) throw GraqlQueryException.kValueSmallerThanTwo();
+        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         initSubGraph();
         getAllSubTypes();
@@ -74,7 +74,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
     }
 
     @Override
-    public KCoreQuery kValue(int kValue) {
+    public KCoreQuery kValue(long kValue) {
         k = kValue;
         return this;
     }
@@ -121,7 +121,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + k;
+        result = 31 * result + Long.hashCode(k);
         return result;
     }
 }

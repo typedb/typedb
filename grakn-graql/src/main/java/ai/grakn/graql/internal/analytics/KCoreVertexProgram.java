@@ -70,7 +70,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     public KCoreVertexProgram() {
     }
 
-    public KCoreVertexProgram(int kValue) {
+    public KCoreVertexProgram(long kValue) {
         this.persistentProperties.put(K, kValue);
     }
 
@@ -132,7 +132,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     static void filterByDegree(Vertex vertex, Messenger<String> messenger, Memory memory, boolean persistId) {
         if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
                 vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
-                Iterators.size(messenger.receiveMessages()) >= memory.<Integer>get(K)) {
+                Iterators.size(messenger.receiveMessages()) >= memory.<Long>get(K)) {
             String id = vertex.value(Schema.VertexProperty.ID.name());
 
             // coreness query doesn't require id
@@ -157,7 +157,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                     vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
                     vertex.property(K_CORE_LABEL).isPresent()) {
                 // messages received via implicit edge, save the count for next iteration
-                vertex.property(IMPLICIT_MESSAGE_COUNT, newHashSet(messenger.receiveMessages()).size());
+                vertex.property(IMPLICIT_MESSAGE_COUNT, (long) newHashSet(messenger.receiveMessages()).size());
             }
         }
     }
@@ -166,14 +166,14 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                                          Memory memory, boolean persistMessageCount) {
         if (vertex.property(K_CORE_LABEL).isPresent()) {
             String id = vertex.value(Schema.VertexProperty.ID.name());
-            int messageCount = getMessageCountExcludeSelf(messenger, id);
+            long messageCount = (long) getMessageCountExcludeSelf(messenger, id);
             if (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent()) {
-                messageCount += vertex.<Integer>value(IMPLICIT_MESSAGE_COUNT);
+                messageCount += vertex.<Long>value(IMPLICIT_MESSAGE_COUNT);
                 // need to remove implicit count as the vertex may not receive msg via implicit edge
                 vertex.property(IMPLICIT_MESSAGE_COUNT).remove();
             }
 
-            if (messageCount >= memory.<Integer>get(K)) {
+            if (messageCount >= memory.<Long>get(K)) {
                 LOGGER.trace("Sending msg from " + id);
                 sendMessage(messenger, id);
                 memory.add(K_CORE_EXIST, true);

@@ -43,9 +43,9 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
-class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> implements CorenessQuery {
+class CorenessQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> implements CorenessQuery {
 
-    private int k = 2;
+    private long k = 2L;
     private boolean ofTypeLabelsSet = false;
     private Set<Label> ofLabels = new HashSet<>();
 
@@ -54,11 +54,11 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> 
     }
 
     @Override
-    public Map<Integer, Set<String>> execute() {
+    public Map<Long, Set<String>> execute() {
         LOGGER.info("Coreness query is started");
         long startTime = System.currentTimeMillis();
 
-        if (k < 2) throw GraqlQueryException.kValueSmallerThanTwo();
+        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         includeAttribute = true; //TODO: REMOVE THIS LINE
         initSubGraph();
@@ -104,7 +104,7 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> 
     }
 
     @Override
-    public CorenessQuery minK(int k) {
+    public CorenessQuery minK(long k) {
         this.k = k;
         return this;
     }
@@ -169,7 +169,7 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Integer, Set<String>>> 
         int result = super.hashCode();
         result = 31 * result + (ofTypeLabelsSet ? 1 : 0);
         result = 31 * result + ofLabels.hashCode();
-        result = 31 * result + k;
+        result = 31 * result + Long.hashCode(k);
         return result;
     }
 }
