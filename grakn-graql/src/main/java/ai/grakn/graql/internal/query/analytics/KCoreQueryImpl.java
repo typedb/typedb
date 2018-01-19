@@ -49,6 +49,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
+        includeAttribute = true; //TODO: REMOVE THIS LINE
         initSubGraph();
         getAllSubTypes();
 
