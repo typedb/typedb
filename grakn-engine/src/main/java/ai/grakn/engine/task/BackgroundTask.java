@@ -26,4 +26,16 @@ package ai.grakn.engine.task;
  * @author Filipe Peliz Pinto Teixeira
  */
 public interface BackgroundTask {
+
+    /**
+     * @return The amount of minutes to wait between running this job.
+     */
+    default int period(){
+        return 5;
+    }
+
+    /**
+     * The primary method to execute when the {@link BackgroundTask} starts executing
+     */
+    void run();
 }
