@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.task.postprocessing;
 
+import ai.grakn.kb.log.CommitLog;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -36,5 +37,15 @@ public abstract class PostProcessor {
 
     public static PostProcessor create(IndexPostProcessor indexPostProcessor, InstanceCountPostProcessor instanceCountPostProcessor) {
         return new AutoValue_PostProcessor(indexPostProcessor, instanceCountPostProcessor);
+    }
+
+    /**
+     * Submits a {@link CommitLog} to be stored and post processed later
+     *
+     * @param commitLog The {@link CommitLog} to store for usage later
+     */
+    public void submit(CommitLog commitLog){
+        index().updateIndices(commitLog);
+        count().updateCounts(commitLog);
     }
 }

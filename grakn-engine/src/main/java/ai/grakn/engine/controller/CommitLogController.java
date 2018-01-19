@@ -49,12 +49,7 @@ public class CommitLogController {
     @Path("/kb/{keyspace}/commit_log")
     private String submitConcepts(Request req) throws IOException {
         CommitLog commitLog = mapper.readValue(req.body(), CommitLog.class);
-
-        CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> postProcessor.count().updateCounts(commitLog)),
-                CompletableFuture.runAsync(() -> postProcessor.index().updateIndices(commitLog)))
-                .join();
-
+        CompletableFuture.allOf(CompletableFuture.runAsync(() -> postProcessor.submit(commitLog))).join();
         return "";
     }
 }
