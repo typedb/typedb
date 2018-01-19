@@ -21,6 +21,7 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Stopwatch;
@@ -52,8 +53,9 @@ public class GraknEngineServer implements AutoCloseable {
     private final RedisWrapper redisWrapper;
     private final HttpHandler httpHandler;
     private final EngineID engineId;
+    private final BackgroundTaskRunner backgroundTaskRunner;
 
-    public GraknEngineServer(GraknConfig prop, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, HttpHandler httpHandler, EngineID engineId) {
+    public GraknEngineServer(GraknConfig prop, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, HttpHandler httpHandler, EngineID engineId, BackgroundTaskRunner backgroundTaskRunner) {
         this.prop = prop;
         this.graknEngineStatus = graknEngineStatus;
         // Redis connection pool
@@ -63,6 +65,7 @@ public class GraknEngineServer implements AutoCloseable {
         this.factory = factory;
         this.httpHandler = httpHandler;
         this.engineId = engineId;
+        this.backgroundTaskRunner = backgroundTaskRunner;
     }
 
     public void start() {
@@ -95,6 +98,7 @@ public class GraknEngineServer implements AutoCloseable {
         synchronized (this) {
             httpHandler.stopHTTP();
             redisWrapper.close();
+            backgroundTaskRunner.close();
         }
     }
 
