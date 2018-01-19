@@ -16,25 +16,14 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.postprocessing;
-
-import com.google.auto.value.AutoValue;
+package ai.grakn.engine.task;
 
 /**
  * <p>
- *     Simple helper class which contains {@link IndexPostProcessor} and {@link InstanceCountPostProcessor}.
- *     This is so we can hold all the logic for post processing in one place without encapsulating too much
- *     diverging logic in one class
+ *     Defines the API which must be implemented in order to be able to run the task in the background
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-@AutoValue
-public abstract class PostProcessor {
-    public abstract IndexPostProcessor index();
-    public abstract InstanceCountPostProcessor count();
-
-    public static PostProcessor create(IndexPostProcessor indexPostProcessor, InstanceCountPostProcessor instanceCountPostProcessor) {
-        return new AutoValue_PostProcessor(indexPostProcessor, instanceCountPostProcessor);
-    }
+public interface BackgroundTask {
 }

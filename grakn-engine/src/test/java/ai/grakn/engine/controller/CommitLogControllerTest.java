@@ -19,9 +19,9 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
-import ai.grakn.engine.postprocessing.IndexPostProcessor;
-import ai.grakn.engine.postprocessing.InstanceCountPostProcessor;
-import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
+import ai.grakn.engine.task.postprocessing.InstanceCountPostProcessor;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.kb.log.CommitLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

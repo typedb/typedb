@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
 import com.fasterxml.jackson.databind.ObjectMapper;

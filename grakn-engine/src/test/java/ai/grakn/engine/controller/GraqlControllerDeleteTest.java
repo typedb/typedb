@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Printer;

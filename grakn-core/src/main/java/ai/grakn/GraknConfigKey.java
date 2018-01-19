@@ -49,7 +49,6 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
     public static final GraknConfigKey<Integer> SERVER_PORT = key("server.port", INT);
 
-    public static final GraknConfigKey<Integer> LOADER_REPEAT_COMMITS = key("loader.repeat-commits", INT);
 
     public static final GraknConfigKey<List<String>> REDIS_HOST =
             key("queue.host", required(GraknConfigKey::parseCSValue), GraknConfigKey::toStringCSValue);
@@ -61,21 +60,17 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER =
             key("redis.sentinel.master", withDefault(Function.identity(), "graknmaster"));
     public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("redis.pool-size", INT);
-    public static final GraknConfigKey<Integer> QUEUE_CONSUMERS = key("queue.consumers", INT);
+    public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
 
     public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", required(Paths::get));
 
     public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
-
-    public static final GraknConfigKey<Integer> TASK_DELAY = key("tasks.delay", INT);
 
     public static final GraknConfigKey<Integer> TASKS_RETRY_DELAY = key("tasks.retry.delay", INT);
 
     public static final GraknConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);
     public static final GraknConfigKey<String> KB_MODE = key("knowledge-base.mode");
     public static final GraknConfigKey<String> KB_ANALYTICS = key("knowledge-base.analytics");
-
-    public static final GraknConfigKey<String> LOG_DIRS = key("log.dirs");
 
     public static final GraknConfigKey<Boolean> TEST_START_EMBEDDED_COMPONENTS =
             key("test.start.embedded.components", BOOL);

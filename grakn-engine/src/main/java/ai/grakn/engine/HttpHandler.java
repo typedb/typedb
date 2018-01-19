@@ -25,7 +25,7 @@ import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.exception.GraknBackendException;

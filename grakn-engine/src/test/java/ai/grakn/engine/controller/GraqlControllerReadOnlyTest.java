@@ -24,7 +24,7 @@ import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.SystemKeyspaceImpl;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;

@@ -94,7 +94,7 @@
     </logger>
 
     <!--Post Processing logs go to separate log file-->
-    <logger name="ai.grakn.engine.postprocessing" level="${log.level:-INFO}" additivity="false">
+    <logger name="ai.grakn.engine.task.postprocessing" level="${log.level:-INFO}" additivity="false">
         <appender-ref ref="POST-PROCESSING"/>
     </logger>
 

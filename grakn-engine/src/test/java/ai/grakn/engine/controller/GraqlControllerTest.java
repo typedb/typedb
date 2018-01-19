@@ -25,7 +25,7 @@ import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.graql.Query;
 import ai.grakn.test.kbs.GenealogyKB;

@@ -29,7 +29,7 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.data.RedisWrapper;
-import ai.grakn.engine.postprocessing.RedisCountStorage;
+import ai.grakn.engine.task.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.util.GraknTestUtil;
