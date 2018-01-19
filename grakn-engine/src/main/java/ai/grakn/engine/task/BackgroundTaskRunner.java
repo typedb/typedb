@@ -21,6 +21,8 @@ package ai.grakn.engine.task;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +36,7 @@ import java.util.concurrent.TimeUnit;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class BackgroundTaskRunner {
+    private final Set<BackgroundTask> registeredTasks = new HashSet<>();
     private final ScheduledExecutorService threadPool;
 
     public BackgroundTaskRunner(GraknConfig graknConfig) {
@@ -46,11 +49,15 @@ public class BackgroundTaskRunner {
      *
      * @param backgroundTask The Background Task To Run Periodically
      */
-    public void submit(BackgroundTask backgroundTask){
-        threadPool.scheduleAtFixedRate(backgroundTask::run, backgroundTask.period(), backgroundTask.period(), TimeUnit.SECONDS);
+    void register(BackgroundTask backgroundTask){
+        if(!registeredTasks.contains(backgroundTask)) {
+            registeredTasks.add(backgroundTask);
+            threadPool.scheduleAtFixedRate(backgroundTask::run, backgroundTask.period(), backgroundTask.period(), TimeUnit.SECONDS);
+        }
     }
 
     public void close(){
+        registeredTasks.forEach(BackgroundTask::close);
         threadPool.shutdown();
     }
 }

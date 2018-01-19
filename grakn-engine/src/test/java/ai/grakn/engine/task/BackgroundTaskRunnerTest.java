@@ -52,7 +52,7 @@ public class BackgroundTaskRunnerTest {
         when(backgroundTask.period()).thenReturn(1);
 
         //Submit it
-        taskRunner.submit(backgroundTask);
+        taskRunner.register(backgroundTask);
 
         //Wait for 5 seconds
         Thread.sleep(5000);

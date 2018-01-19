@@ -16,31 +16,32 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.task;
+package ai.grakn.engine.task.postprocessing;
+
+import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.GraknConfig;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * <p>
- *     Defines the API which must be implemented in order to be able to run the task in the background
+ *     Class which facilitates running {@link PostProcessor} jobs.
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public interface BackgroundTask {
+public class PostProcessingTask {
+    private final PostProcessor postProcessor;
+    private final ScheduledExecutorService threadPool;
 
-    /**
-     * @return The amount of seconds to wait between running this job.
-     */
-    default int period(){
-        return 60;
+    public PostProcessingTask(PostProcessor postProcessor, GraknConfig config){
+        this.postProcessor = postProcessor;
+        this.threadPool = Executors.newScheduledThreadPool(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE));
     }
 
-    /**
-     * The primary method to execute when the {@link BackgroundTask} starts executing
-     */
-    void run();
+    public void close(){
+        threadPool.shutdown();
+    }
 
-    /**
-     * Shutdown the task. This is useful if the task creates it's own processes
-     */
-    void close();
 }
