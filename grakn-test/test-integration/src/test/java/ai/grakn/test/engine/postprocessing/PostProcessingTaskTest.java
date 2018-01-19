@@ -48,7 +48,7 @@ public class PostProcessingTaskTest {
     private static final ObjectMapper mapper = new ObjectMapper();
     public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
     @ClassRule
-    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static EngineContext engine = EngineContext.create();
 
     private String mockResourceIndex;
     private Set<ConceptId> mockResourceSet;

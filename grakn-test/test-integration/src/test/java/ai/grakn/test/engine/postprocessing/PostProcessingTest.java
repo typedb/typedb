@@ -57,7 +57,7 @@ public class PostProcessingTest {
     private GraknSession session;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static final EngineContext engine = EngineContext.create();
 
     @BeforeClass
     public static void onlyRunOnTinker(){

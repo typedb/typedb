@@ -78,7 +78,7 @@ public class GraqlDocsTest {
     private static int numFound = 0;
 
     @ClassRule
-    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static EngineContext engine = EngineContext.create();
 
     @Parameterized.Parameters(name = "{1}")
     public static Collection files() {
