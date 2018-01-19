@@ -42,10 +42,15 @@ public class BackgroundTaskRunner {
     }
 
     /**
+     *  Submit a {@link BackgroundTask} to run periodically
      *
-     * @param backgroundTask
+     * @param backgroundTask The Background Task To Run Periodically
      */
     public void submit(BackgroundTask backgroundTask){
-        threadPool.scheduleAtFixedRate(backgroundTask::run, backgroundTask.period(), backgroundTask.period(), TimeUnit.MINUTES);
+        threadPool.scheduleAtFixedRate(backgroundTask::run, backgroundTask.period(), backgroundTask.period(), TimeUnit.SECONDS);
+    }
+
+    public void close(){
+        threadPool.shutdown();
     }
 }

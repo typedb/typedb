@@ -28,10 +28,10 @@ package ai.grakn.engine.task;
 public interface BackgroundTask {
 
     /**
-     * @return The amount of minutes to wait between running this job.
+     * @return The amount of seconds to wait between running this job.
      */
     default int period(){
-        return 5;
+        return 60;
     }
 
     /**
