@@ -42,15 +42,16 @@ import com.google.appengine.repackaged.com.google.common.collect.Iterables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
-import java.io.File;
-import java.nio.charset.Charset;
-import java.util.List;
-import java.util.Random;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Random;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
@@ -61,7 +62,7 @@ public class BenchmarkIT {
     private static final Logger LOG = LoggerFactory.getLogger(BenchmarkIT.class);
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static final EngineContext engine = EngineContext.create();
     private GraknSession session;
     private Keyspace keyspace;
 
