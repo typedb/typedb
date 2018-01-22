@@ -53,6 +53,10 @@ public class IndexPostProcessor {
         return new IndexPostProcessor(lockProvider, redisIndexStorage);
     }
 
+    public RedisIndexStorage storage(){
+        return redisIndexStorage;
+    }
+
     /**
      * Adds all the new {@link ai.grakn.concept.Attribute}s of a {@link CommitLog} to {@link RedisIndexStorage} for storage.
      * This data will be retrieved later and post processed.

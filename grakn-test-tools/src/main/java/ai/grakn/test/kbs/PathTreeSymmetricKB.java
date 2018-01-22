@@ -16,36 +16,31 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graknmodule.http;
+package ai.grakn.test.kbs;
+
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
+import ai.grakn.test.rule.SampleKBContext;
 
 /**
- * A class representing an HTTP response
  *
- * @author Ganeshwara Herawan Hananda
+ * @author Kasper Piskorski
+ *
  */
+public class PathTreeSymmetricKB extends PathTreeKB {
 
-public class HttpResponse {
-    public HttpResponse(int statusCode, String body) {
-        this.statusCode = statusCode;
-        this.body = body;
+    private PathTreeSymmetricKB(int n, int m){
+        super("path-test-symmetric.gql", Label.of("index"), n, m);
     }
 
-    /**
-     * Get the HTTP response status code
-     * @return HTTP response status code
-     */
-    public int getStatusCode() {
-        return statusCode;
+    public static SampleKBContext context(int n, int m) {
+        return new PathTreeSymmetricKB(n, m).makeContext();
     }
 
-    /**
-     * Get the body out of the HTTP response
-     * @return HTTP response body
-     */
-    public String getBody() {
-        return body;
+    @Override
+    protected void buildExtensionalDB(GraknTx tx, int n, int children) {
+        Role coordinate = tx.getRole("coordinate");
+        buildTree(tx, coordinate, coordinate, n , children);
     }
-
-    private final int statusCode;
-    private final String body;
 }

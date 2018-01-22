@@ -98,6 +98,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 
+    public static GraqlQueryException kCoreOnRelationshipType(Label label) {
+        return create("cannot compute coreness of relationship type %s.", label.getValue());
+    }
+
     public static GraqlQueryException deleteSchemaConcept(SchemaConcept schemaConcept) {
         return create("cannot delete schema concept %s. Use `undefine` instead.", schemaConcept);
     }

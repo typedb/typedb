@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
@@ -109,6 +110,11 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     @Override
     public KCoreQuery kCore() {
         return new KCoreQueryImpl(tx);
+    }
+
+    @Override
+    public CorenessQuery coreness() {
+        return new CorenessQueryImpl(tx);
     }
 
     @Override

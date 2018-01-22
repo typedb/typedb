@@ -43,7 +43,6 @@
         <module>grakn-factory</module>
         <module>grakn-client</module>
         <module>grakn-test-tools</module>
-        <module>grakn-module-sdk</module>
         <module>grakn-bootup</module>
     </modules>
 

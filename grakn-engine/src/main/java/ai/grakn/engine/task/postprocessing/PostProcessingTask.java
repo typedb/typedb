@@ -19,11 +19,21 @@
 package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.BackgroundTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -33,17 +43,44 @@ import java.util.concurrent.ScheduledExecutorService;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class PostProcessingTask implements BackgroundTask{
+    private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
+    private final EngineGraknTxFactory factory;
     private final PostProcessor postProcessor;
     private final ScheduledExecutorService threadPool;
 
-    public PostProcessingTask(PostProcessor postProcessor, GraknConfig config){
+    public PostProcessingTask(EngineGraknTxFactory factory,  PostProcessor postProcessor, GraknConfig config){
+        this.factory = factory;
         this.postProcessor = postProcessor;
         this.threadPool = Executors.newScheduledThreadPool(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE));
     }
 
     @Override
     public void run() {
-        throw new UnsupportedOperationException("Not Yet Implemented");
+        Set<Keyspace> kespaces = factory.systemKeyspace().keyspaces();
+        kespaces.forEach(keyspace -> {
+            String index = postProcessor.index().storage().popIndex(keyspace);
+            Set<ConceptId> ids = postProcessor.index().storage().popIds(keyspace, index);
+
+            //TODO: Is 5 minutes too long?
+            threadPool.schedule(() -> processIndex(keyspace, index, ids), 5, TimeUnit.MINUTES);
+        });
+    }
+
+    /**
+     * Process the provided index belonging to the provided {@link Keyspace}.
+     * If post processing fails the index and ids relating to that index are restored back in the cache of {@link RedisIndexStorage}
+     *
+     * @param keyspace The {@link Keyspace} requiring post processing for a specific index
+     * @param index the index to be post processed
+     */
+    private void processIndex(Keyspace keyspace, String index, Set<ConceptId> ids){
+        try(GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)){
+            postProcessor.index().mergeDuplicateConcepts(tx, index, ids);
+            tx.commit();
+        } catch (Exception e){
+            String stringIds = ids.stream().map(ConceptId::getValue).collect(Collectors.joining(","));
+            LOG.error(String.format("Error during post processing index {%s} with ids {$s}", index, stringIds), e);
+        }
     }
 
     @Override

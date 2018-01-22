@@ -46,8 +46,9 @@ import java.io.IOException;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -119,7 +120,7 @@ public class GraknEngineServerTest {
     @Test
     public void whenStartingEngineServer_EnsureBackgroundTasksAreRegistered(){
         try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
-            assertThat(server.backgroundTaskRunner().tasks(), containsInAnyOrder(PostProcessingTask.class));
+            assertThat(server.backgroundTaskRunner().tasks(), hasItem(isA(PostProcessingTask.class)));
         }
     }
 

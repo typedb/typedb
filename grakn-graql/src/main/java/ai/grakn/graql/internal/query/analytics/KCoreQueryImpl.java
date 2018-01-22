@@ -62,7 +62,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
         try {
             result = getGraphComputer().compute(
                     new KCoreVertexProgram(k),
-                    new ClusterMemberMapReduce(KCoreVertexProgram.CLUSTER_LABEL),
+                    new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
                     subLabelIds);
         } catch (NoResultException e) {
             LOGGER.info("KCore query is finished in " + (System.currentTimeMillis() - startTime) + " ms");

@@ -156,10 +156,10 @@ rule-5 sub rule
 
 resource-rule sub rule
     when {
-        $r1 (role1: $x, role2: $y) isa reifiable-relation;
+        $rel (role1: $x, role2: $y) isa reifiable-relation;
     }
     then {
-        $r1 has description 'reified';
+        $rel has description 'reified';
     };
 
 resource-rule2 sub rule

@@ -30,7 +30,6 @@ import com.jayway.restassured.RestAssured;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;

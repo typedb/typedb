@@ -38,6 +38,12 @@ import java.util.Set;
 public interface KCoreQuery extends ComputeQuery<Map<String, Set<String>>> {
 
     /**
+     * @param k set the value of k in k-core. k can not be smaller than 2.
+     * @return a KCoreQuery with k value set
+     */
+    KCoreQuery kValue(int k);
+
+    /**
      * @param subTypeLabels an array of types to include in the subgraph.
      *                      By default KCoreQuery uses instances of all the types.
      * @return a KCoreQuery with the subTypeLabels set
@@ -52,12 +58,6 @@ public interface KCoreQuery extends ComputeQuery<Map<String, Set<String>>> {
      */
     @Override
     KCoreQuery in(Collection<Label> subLabels);
-
-    /**
-     * @param k set the value of k in k-core.
-     * @return a KCoreQuery with k value set
-     */
-    KCoreQuery kValue(int k);
 
     /**
      * @param tx the transaction to execute the query on
