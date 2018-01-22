@@ -28,26 +28,18 @@ import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.NoResultException;
-import ai.grakn.graql.internal.util.StringConverter;
-import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.joining;
-
-class CorenessQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> implements CorenessQuery {
+class CorenessQueryImpl extends AbstractCentralityQuery implements CorenessQuery {
 
     private long k = 2L;
-    private boolean ofTypeLabelsSet = false;
-    private Set<Label> ofLabels = new HashSet<>();
 
     CorenessQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -111,16 +103,12 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imp
 
     @Override
     public CorenessQuery of(String... ofTypeLabels) {
-        return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
+        return (CorenessQuery) super.setOfTypeLabels(ofTypeLabels);
     }
 
     @Override
     public CorenessQuery of(Collection<Label> ofLabels) {
-        if (!ofLabels.isEmpty()) {
-            ofTypeLabelsSet = true;
-            this.ofLabels = Sets.newHashSet(ofLabels);
-        }
-        return this;
+        return (CorenessQuery) super.setOfTypeLabels(ofLabels);
     }
 
     @Override
@@ -134,16 +122,14 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imp
     }
 
     @Override
+    CentralityMeasure getMethod() {
+        return CentralityMeasure.K_CORE;
+    }
+
+    @Override
     String graqlString() {
-        String string = "centrality";
-        if (ofTypeLabelsSet) {
-            string += " of " + ofLabels.stream()
-                    .map(StringConverter::typeLabelToString)
-                    .collect(joining(", "));
-        }
-        string += subtypeString();
-        string += " using k-core where k = ";
-        string += k + ";";
+        String string = super.graqlString();
+        string += " where k = " + k + ";";
 
         return string;
     }
@@ -161,14 +147,12 @@ class CorenessQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imp
 
         CorenessQueryImpl that = (CorenessQueryImpl) o;
 
-        return k == that.k && ofTypeLabelsSet == that.ofTypeLabelsSet && ofLabels.equals(that.ofLabels);
+        return k == that.k;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (ofTypeLabelsSet ? 1 : 0);
-        result = 31 * result + ofLabels.hashCode();
         result = 31 * result + Long.hashCode(k);
         return result;
     }

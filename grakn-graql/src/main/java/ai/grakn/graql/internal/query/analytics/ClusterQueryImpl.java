@@ -101,11 +101,6 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override
     public ClusterQuery<Map<String, Set<String>>> members() {
         this.members = true;
         return (ClusterQuery<Map<String, Set<String>>>) this;

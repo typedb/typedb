@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Compute coreness of concepts using k-core.
+ * Compute centrality of concepts using k-core (coreness).
  * <p>
  * https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)#k-Cores
  * </p>

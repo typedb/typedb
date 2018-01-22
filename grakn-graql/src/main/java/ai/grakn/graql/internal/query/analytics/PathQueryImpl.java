@@ -65,11 +65,6 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override
     public PathQuery in(String... subTypeLabels) {
         return (PathQuery) super.in(subTypeLabels);
     }

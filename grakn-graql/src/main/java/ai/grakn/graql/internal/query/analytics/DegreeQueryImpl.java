@@ -108,11 +108,6 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     }
 
     @Override
-    public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override
     public DegreeQuery in(String... subTypeLabels) {
         return (DegreeQuery) super.in(subTypeLabels);
     }

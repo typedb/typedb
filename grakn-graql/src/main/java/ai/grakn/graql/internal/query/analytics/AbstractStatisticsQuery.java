@@ -60,11 +60,6 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     @Override
-    public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override
     void getAllSubTypes() {
         super.getAllSubTypes();
         getResourceTypes(tx.get());

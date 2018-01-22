@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.analytics.CentralityQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -127,4 +128,10 @@ public interface ComputeQueryBuilder {
      */
     @CheckReturnValue
     DegreeQuery degree();
+
+    /**
+     * @return a centrality query builder for creating centrality query
+     */
+    @CheckReturnValue
+    CentralityQueryBuilder centrality();
 }
