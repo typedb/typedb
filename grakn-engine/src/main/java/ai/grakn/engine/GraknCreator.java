@@ -25,6 +25,7 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
 import ai.grakn.engine.task.postprocessing.InstanceCountPostProcessor;
+import ai.grakn.engine.task.postprocessing.PostProcessingTask;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.RedisIndexStorage;
@@ -117,13 +118,20 @@ public class GraknCreator {
             PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, instanceCountPostProcessor);
             HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor);
 
-            BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
+            BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(postProcessor);
 
             graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID, taskRunner);
             Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
             runtime.addShutdownHook(thread);
         }
         return graknEngineServer;
+    }
+
+    private BackgroundTaskRunner configureBackgroundTaskRunner(PostProcessor postProcessor){
+        PostProcessingTask postProcessingTask = new PostProcessingTask(postProcessor, graknEngineConfig);
+        BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
+        taskRunner.register(postProcessingTask);
+        return taskRunner;
     }
 
     /**

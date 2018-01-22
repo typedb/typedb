@@ -72,7 +72,7 @@
         <jetty.version>9.3.6.v20151106</jetty.version>
         <mjson.version>1.4.0</mjson.version>
         <logback.version>1.2.3</logback.version>
-        <redis-mock.version>0.1.5-SNAPSHOT</redis-mock.version>
+        <redis-mock.version>0.1.5</redis-mock.version>
         <janino.version>2.7.8</janino.version>
         <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>

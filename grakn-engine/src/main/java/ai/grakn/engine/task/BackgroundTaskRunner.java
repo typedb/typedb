@@ -49,7 +49,7 @@ public class BackgroundTaskRunner {
      *
      * @param backgroundTask The Background Task To Run Periodically
      */
-    void register(BackgroundTask backgroundTask){
+    public void register(BackgroundTask backgroundTask){
         if(!registeredTasks.contains(backgroundTask)) {
             registeredTasks.add(backgroundTask);
             threadPool.scheduleAtFixedRate(backgroundTask::run, backgroundTask.period(), backgroundTask.period(), TimeUnit.SECONDS);

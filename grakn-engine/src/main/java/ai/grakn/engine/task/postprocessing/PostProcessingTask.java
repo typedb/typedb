@@ -20,6 +20,7 @@ package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.task.BackgroundTask;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,7 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class PostProcessingTask {
+public class PostProcessingTask implements BackgroundTask{
     private final PostProcessor postProcessor;
     private final ScheduledExecutorService threadPool;
 
@@ -40,6 +41,12 @@ public class PostProcessingTask {
         this.threadPool = Executors.newScheduledThreadPool(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE));
     }
 
+    @Override
+    public void run() {
+        throw new UnsupportedOperationException("Not Yet Implemented");
+    }
+
+    @Override
     public void close(){
         threadPool.shutdown();
     }
