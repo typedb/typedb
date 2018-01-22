@@ -47,12 +47,11 @@ class CorenessQueryImpl extends AbstractCentralityQuery implements CorenessQuery
 
     @Override
     public Map<Long, Set<String>> execute() {
-        LOGGER.info("Coreness query is started");
+        LOGGER.info("Coreness query started");
         long startTime = System.currentTimeMillis();
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
-        includeAttribute = true; //TODO: REMOVE THIS LINE
         initSubGraph();
         getAllSubTypes();
 
@@ -73,7 +72,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery implements CorenessQuery
         }
 
         if (!selectedTypesHaveInstance()) {
-            LOGGER.info("Coreness query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
+            LOGGER.info("Coreness query finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
         }
 
@@ -87,11 +86,11 @@ class CorenessQueryImpl extends AbstractCentralityQuery implements CorenessQuery
                     new DegreeDistributionMapReduce(ofLabelIds, CorenessVertexProgram.CORENESS),
                     subLabelIds);
         } catch (NoResultException e) {
-            LOGGER.info("Coreness query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
+            LOGGER.info("Coreness query finished in " + (System.currentTimeMillis() - startTime) + " ms");
             return Collections.emptyMap();
         }
 
-        LOGGER.info("Coreness query is finished in " + (System.currentTimeMillis() - startTime) + " ms");
+        LOGGER.info("Coreness query finished in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());
     }
 
@@ -128,10 +127,7 @@ class CorenessQueryImpl extends AbstractCentralityQuery implements CorenessQuery
 
     @Override
     String graqlString() {
-        String string = super.graqlString();
-        string += " where k = " + k + ";";
-
-        return string;
+        return super.graqlString() + " where k = " + k + ";";
     }
 
     @Override

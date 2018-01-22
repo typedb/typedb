@@ -35,7 +35,7 @@ public class CentralityQueryBuilderImpl implements CentralityQueryBuilder {
 
     private Optional<GraknTx> tx;
 
-    public CentralityQueryBuilderImpl(Optional<GraknTx> tx) {
+    CentralityQueryBuilderImpl(Optional<GraknTx> tx) {
         this.tx = tx;
     }
 

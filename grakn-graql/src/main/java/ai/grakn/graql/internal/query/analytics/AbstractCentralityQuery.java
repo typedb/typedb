@@ -56,6 +56,10 @@ abstract class AbstractCentralityQuery extends AbstractComputeQuery<Map<Long, Se
     private boolean ofTypeLabelsSet = false;
     Set<Label> ofLabels = new HashSet<>();
 
+    void initSubGraph() { //TODO: REMOVE THIS METHOD
+        includeAttribute = true;
+    }
+
     AbstractCentralityQuery setOfTypeLabels(String... ofTypeLabels) {
         return setOfTypeLabels(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
     }

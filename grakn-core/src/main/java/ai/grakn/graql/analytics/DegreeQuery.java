@@ -67,10 +67,4 @@ public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
      */
     @Override
     DegreeQuery withTx(GraknTx tx);
-
-    /**
-     * Allow attributes and their relationships to be included.
-     */
-    @Override
-    DegreeQuery includeAttribute();
 }
