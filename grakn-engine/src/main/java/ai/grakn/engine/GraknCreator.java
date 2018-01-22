@@ -118,7 +118,7 @@ public class GraknCreator {
             PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, instanceCountPostProcessor);
             HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor);
 
-            BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(factory.systemKeyspace(), postProcessor);
+            BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(factory, postProcessor);
 
             graknEngineServer = new GraknEngineServer(graknEngineConfig, factory, lockProvider, graknEngineStatus, redisWrapper, httpHandler, engineID, taskRunner);
             Thread thread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
@@ -127,8 +127,8 @@ public class GraknCreator {
         return graknEngineServer;
     }
 
-    private BackgroundTaskRunner configureBackgroundTaskRunner(SystemKeyspace systemKeyspace, PostProcessor postProcessor){
-        PostProcessingTask postProcessingTask = new PostProcessingTask(systemKeyspace, postProcessor, graknEngineConfig);
+    private BackgroundTaskRunner configureBackgroundTaskRunner(EngineGraknTxFactory factory, PostProcessor postProcessor){
+        PostProcessingTask postProcessingTask = new PostProcessingTask(factory, postProcessor, graknEngineConfig);
         BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
         taskRunner.register(postProcessingTask);
         return taskRunner;

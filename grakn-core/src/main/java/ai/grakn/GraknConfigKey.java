@@ -62,6 +62,7 @@ public abstract class GraknConfigKey<T> {
             key("redis.sentinel.master", withDefault(Function.identity(), "graknmaster"));
     public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("redis.pool-size", INT);
     public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
+    public static final GraknConfigKey<Integer> POST_PROCESSOR_DELAY = key("post-processor.delay", INT);
 
     public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", required(Paths::get));
 

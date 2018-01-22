@@ -27,6 +27,7 @@ import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
 import redis.clients.util.Pool;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -65,6 +66,7 @@ public class RedisIndexStorage extends RedisStorage {
     /**
      * Gets and removes the next index to post process
      */
+    @Nullable
     public String popIndex(Keyspace keyspace){
         String indexKey = getIndicesKey(keyspace);
         return contactRedis(jedis -> jedis.spop(indexKey));

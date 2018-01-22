@@ -19,41 +19,81 @@
 package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.Keyspace;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PostProcessingTaskTest {
-    private SystemKeyspace systemKeyspace;
+    private Keyspace keyspaceA = Keyspace.of("a");
+    private Set<Keyspace> keyspaces = new HashSet<>(Arrays.asList(keyspaceA, Keyspace.of("b"), Keyspace.of("c")));
+    private EngineGraknTxFactory factory;
+    private RedisIndexStorage storage;
     private IndexPostProcessor indexPostProcessor;
-    private InstanceCountPostProcessor countPostProcessor;
+    private GraknConfig config;
     private PostProcessor postProcessor;
     private PostProcessingTask postProcessingTask;
 
     @Before
     public void setupMocks(){
-        systemKeyspace = mock(SystemKeyspace.class);
+        SystemKeyspace systemKeyspace = mock(SystemKeyspace.class);
+        when(systemKeyspace.keyspaces()).thenReturn(keyspaces);
+
+        factory = mock(EngineGraknTxFactory.class);
+        when(factory.systemKeyspace()).thenReturn(systemKeyspace);
+
+        storage = mock(RedisIndexStorage.class);
         indexPostProcessor = mock(IndexPostProcessor.class);
-        countPostProcessor = mock(InstanceCountPostProcessor.class);
-        postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+        when(indexPostProcessor.storage()).thenReturn(storage);
+        postProcessor = PostProcessor.create(indexPostProcessor, mock(InstanceCountPostProcessor.class));
 
-        GraknConfig config = mock(GraknConfig.class);
+        config = mock(GraknConfig.class);
         when(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE)).thenReturn(5);
+        when(config.getProperty(GraknConfigKey.POST_PROCESSOR_DELAY)).thenReturn(1);
 
-        postProcessingTask = new PostProcessingTask(systemKeyspace, postProcessor, config);
+        postProcessingTask = new PostProcessingTask(factory, postProcessor, config);
     }
 
     @Test
-    public void whenThereIsSomethingInTheIndexCache_PPStarts(){
+    public void whenThereIsSomethingInTheIndexCache_PPStarts() throws InterruptedException {
+        //Configure Data For Mocks
+        String index1 = "index1";
+        when(storage.popIndex(keyspaceA)).thenReturn(index1);
 
+        Set<ConceptId> ids = Arrays.asList("id1", "id2", "id3").stream().map(ConceptId::of).collect(Collectors.toSet());
+        when(storage.popIds(keyspaceA, index1)).thenReturn(ids);
+
+        //Run the method
+        postProcessingTask.run();
+
+        //Give time for PP to run
+        Thread.sleep(config.getProperty(GraknConfigKey.POST_PROCESSOR_DELAY) * 2000);
+
+        //Check methods are called
+        verify(indexPostProcessor, Mockito.times(1)).mergeDuplicateConcepts(any(), eq(index1), eq(ids));
     }
 
     @Test
     public void whenTheIndexCacheIsEmpty_NothingStarts(){
+        //Run the method
+        postProcessingTask.run();
 
+        //Check no methods calls
+        verify(indexPostProcessor, Mockito.times(0)).mergeDuplicateConcepts(any(), any(), any());
     }
 }

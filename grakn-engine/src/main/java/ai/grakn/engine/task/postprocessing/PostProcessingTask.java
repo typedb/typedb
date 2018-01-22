@@ -47,11 +47,13 @@ public class PostProcessingTask implements BackgroundTask{
     private final EngineGraknTxFactory factory;
     private final PostProcessor postProcessor;
     private final ScheduledExecutorService threadPool;
+    private final int postprocessingDelay;
 
     public PostProcessingTask(EngineGraknTxFactory factory,  PostProcessor postProcessor, GraknConfig config){
         this.factory = factory;
         this.postProcessor = postProcessor;
         this.threadPool = Executors.newScheduledThreadPool(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE));
+        this.postprocessingDelay = config.getProperty(GraknConfigKey.POST_PROCESSOR_DELAY);
     }
 
     @Override
@@ -59,10 +61,10 @@ public class PostProcessingTask implements BackgroundTask{
         Set<Keyspace> kespaces = factory.systemKeyspace().keyspaces();
         kespaces.forEach(keyspace -> {
             String index = postProcessor.index().storage().popIndex(keyspace);
-            Set<ConceptId> ids = postProcessor.index().storage().popIds(keyspace, index);
-
-            //TODO: Is 5 minutes too long?
-            threadPool.schedule(() -> processIndex(keyspace, index, ids), 5, TimeUnit.MINUTES);
+            if(index != null) {
+                //TODO: Is 5 minutes too long?
+                threadPool.schedule(() -> processIndex(keyspace, index), postprocessingDelay, TimeUnit.SECONDS);
+            }
         });
     }
 
@@ -73,7 +75,12 @@ public class PostProcessingTask implements BackgroundTask{
      * @param keyspace The {@link Keyspace} requiring post processing for a specific index
      * @param index the index to be post processed
      */
-    private void processIndex(Keyspace keyspace, String index, Set<ConceptId> ids){
+    private void processIndex(Keyspace keyspace, String index){
+        Set<ConceptId> ids = postProcessor.index().storage().popIds(keyspace, index);
+
+        //No need to post process if another engine has beaten you to doing it
+        if(ids.isEmpty()) return;
+
         try(GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)){
             postProcessor.index().mergeDuplicateConcepts(tx, index, ids);
             tx.commit();
