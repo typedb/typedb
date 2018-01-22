@@ -956,7 +956,7 @@
     <repositories>
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
-            <id>development-snapshots</id>
+            <id>snapshots</id>
             <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
         </repository>
         <repository>
@@ -1258,11 +1258,11 @@
             </properties>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>grakn-snapshots</id>
+                    <id>snapshots</id>
                     <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
                 </snapshotRepository>
                 <repository>
-                    <id>grakn-releases</id>
+                    <id>releases</id>
                     <url>https://maven.grakn.ai/content/repositories/releases/</url>
                 </repository>
             </distributionManagement>
