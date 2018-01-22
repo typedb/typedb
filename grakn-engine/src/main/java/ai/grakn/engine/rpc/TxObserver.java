@@ -79,20 +79,20 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 case EXECQUERY:
                     execQuery(request.getExecQuery());
                     break;
+                default:
                 case REQUEST_NOT_SET:
-                    break;
+                    throw error(Status.INVALID_ARGUMENT);
             }
         } catch (GraknException e) {
             Metadata trailers = new Metadata();
             trailers.put(GrpcServer.MESSAGE, e.getMessage());
-            error(Status.UNKNOWN, trailers);
+            throw error(Status.UNKNOWN, trailers);
         }
     }
 
     private void open(Open request) {
         if (tx != null) {
-            error(Status.FAILED_PRECONDITION);
-            return;
+            throw error(Status.FAILED_PRECONDITION);
         }
 
         String keyspaceString = request.getKeyspace().getValue();
@@ -103,16 +103,14 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     private void commit() {
         if (tx == null) {
-            error(Status.FAILED_PRECONDITION);
-            return;
+            throw error(Status.FAILED_PRECONDITION);
         }
         tx.commit();
     }
 
     private void execQuery(ExecQuery request) {
         if (tx == null) {
-            error(Status.FAILED_PRECONDITION);
-            return;
+            throw error(Status.FAILED_PRECONDITION);
         }
 
         String queryString = request.getQuery().getValue();
@@ -125,23 +123,24 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         Stream<QueryResult> results = graql.parse(queryString).results(GrpcConverter.get());
 
-        results.forEach(result -> {
-            responseObserver.onNext(TxResponse.newBuilder().setQueryResult(result).build());
-        });
+        results.forEach(result ->
+                responseObserver.onNext(TxResponse.newBuilder().setQueryResult(result).build())
+        );
 
         responseObserver.onNext(TxResponse.newBuilder().setEnd(End.getDefaultInstance()).build());
     }
 
     private GraknTxType getTxType(GraknOuterClass.TxType txType) {
         switch (txType) {
-            default:
-            case UNRECOGNIZED:  // Unrecognised indicates a newer client and is treated as "read"
             case Read:
                 return GraknTxType.READ;
             case Write:
                 return GraknTxType.WRITE;
             case Batch:
                 return GraknTxType.BATCH;
+            default:
+            case UNRECOGNIZED:
+                throw error(Status.INVALID_ARGUMENT);
         }
     }
 
@@ -155,14 +154,16 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         close();
     }
 
-    private void error(Status status) {
-        error(status, null);
+    private StatusRuntimeException error(Status status) {
+        return error(status, null);
     }
 
-    private void error(Status status, @Nullable Metadata trailers) {
+    private StatusRuntimeException error(Status status, @Nullable Metadata trailers) {
+        StatusRuntimeException exception = new StatusRuntimeException(status, trailers);
         if (!terminated.getAndSet(true)) {
-            responseObserver.onError(new StatusRuntimeException(status, trailers));
+            responseObserver.onError(exception);
         }
+        return exception;
     }
 
     @Override
