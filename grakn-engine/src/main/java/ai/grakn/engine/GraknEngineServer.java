@@ -24,6 +24,7 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.util.GraknVersion;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +92,11 @@ public class GraknEngineServer implements AutoCloseable {
         } else if (!storedVersion.equals(GraknVersion.VERSION)) {
             LOG.warn(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, storedVersion));
         }
+    }
+
+    @VisibleForTesting
+    BackgroundTaskRunner backgroundTaskRunner(){
+        return backgroundTaskRunner;
     }
 
     @Override

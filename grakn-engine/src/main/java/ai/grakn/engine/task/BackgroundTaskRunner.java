@@ -20,6 +20,7 @@ package ai.grakn.engine.task;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
+import com.google.common.annotations.VisibleForTesting;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -59,5 +60,16 @@ public class BackgroundTaskRunner {
     public void close(){
         registeredTasks.forEach(BackgroundTask::close);
         threadPool.shutdown();
+    }
+
+    /**
+     * Returns the set of all tasks registered to run as {@link BackgroundTask}s.
+     * These tasks are run periodically.
+     *
+     * @return the set of all tasks registered to run as {@link BackgroundTask}s
+     */
+    @VisibleForTesting
+    public Set<BackgroundTask> tasks(){
+        return registeredTasks;
     }
 }

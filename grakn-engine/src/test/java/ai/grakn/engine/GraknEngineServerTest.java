@@ -21,6 +21,7 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.data.RedisWrapper;
+import ai.grakn.engine.task.postprocessing.PostProcessingTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redismock.RedisServer;
 import ai.grakn.test.rule.SessionContext;
@@ -45,6 +46,7 @@ import java.io.IOException;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -111,6 +113,13 @@ public class GraknEngineServerTest {
             }
         } finally {
             redisServer.stop();
+        }
+    }
+
+    @Test
+    public void whenStartingEngineServer_EnsureBackgroundTasksAreRegistered(){
+        try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
+            assertThat(server.backgroundTaskRunner().tasks(), containsInAnyOrder(PostProcessingTask.class));
         }
     }
 
