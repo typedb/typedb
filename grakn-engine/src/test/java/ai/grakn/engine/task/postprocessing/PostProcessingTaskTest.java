@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -75,7 +76,7 @@ public class PostProcessingTaskTest {
         String index1 = "index1";
         when(storage.popIndex(keyspaceA)).thenReturn(index1);
 
-        Set<ConceptId> ids = Arrays.asList("id1", "id2", "id3").stream().map(ConceptId::of).collect(Collectors.toSet());
+        Set<ConceptId> ids = Stream.of("id1", "id2", "id3").map(ConceptId::of).collect(Collectors.toSet());
         when(storage.popIds(keyspaceA, index1)).thenReturn(ids);
 
         //Run the method
