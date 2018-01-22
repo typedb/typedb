@@ -25,10 +25,9 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.rpc.GraknOuterClass;
+import ai.grakn.rpc.GraknOuterClass.End;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.GraknOuterClass.Infer;
 import ai.grakn.rpc.GraknOuterClass.Open;
-import ai.grakn.rpc.GraknOuterClass.QueryComplete;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
@@ -57,7 +56,6 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
 
     private @Nullable GraknTx tx = null;
-    private @Nullable Boolean infer = null;
 
     private TxObserver(EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver) {
         this.responseObserver = responseObserver;
@@ -80,9 +78,6 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                     break;
                 case EXECQUERY:
                     execQuery(request.getExecQuery());
-                    break;
-                case INFER:
-                    infer(request.getInfer());
                     break;
                 case REQUEST_NOT_SET:
                     break;
@@ -124,14 +119,8 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         QueryBuilder graql = tx.graql();
 
-        if (infer != null) {
-            graql.infer(infer);
-            // We reset `infer` so the next query will use the default inference setting again, so this works:
-            // ```
-            // tx.execute("match ...", infer=False)  # should run with inference off
-            // tx.execute("match ...")               # should run with inference set to server default
-            // ```
-            infer = null;
+        if (request.getInfer().getIsSet()) {
+            graql.infer(request.getInfer().getValue());
         }
 
         Stream<QueryResult> results = graql.parse(queryString).results(GrpcConverter.get());
@@ -140,11 +129,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             responseObserver.onNext(TxResponse.newBuilder().setQueryResult(result).build());
         });
 
-        responseObserver.onNext(TxResponse.newBuilder().setQueryComplete(QueryComplete.getDefaultInstance()).build());
-    }
-
-    private void infer(Infer request) {
-        this.infer = request.getValue();
+        responseObserver.onNext(TxResponse.newBuilder().setEnd(End.getDefaultInstance()).build());
     }
 
     private GraknTxType getTxType(GraknOuterClass.TxType txType) {

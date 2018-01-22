@@ -15,7 +15,8 @@ message TxRequest {
         Open open = 1;
         Commit commit = 2;
         ExecQuery execQuery = 3;
-        Infer infer = 4;
+        Next next = 5;
+        End end = 6;
     }
 }
 
@@ -36,25 +37,40 @@ message Commit {}
 
 /*
     Command to execute a query.
-    The server will return a stream of zero or more `QueryResult`s, followed by one `QueryComplete`.
-    After this message, the server will accept a command message.
+    The server will return a `QueryResult` or a `End` message.
+    After this message, the server will accept a `NextResult` or `EndQuery` message.
 */
 message ExecQuery {
     Query query = 1;
+    Infer infer = 2;
 }
 
 /*
-    Command to specify inference for only the next `ExecQuery` message.
-    After this, the server will accept only an `ExecQuery` message.
+    Request next result of some iterator.
+    The server will return a `QueryResult` or a `QueryComplete` message.
+    After this message, the server will accept a `NextResult` or `EndQuery` message.
+*/
+message Next {}
+
+/*
+    Tell the server we have finished executing a query.
+    After this message, the server will accept a command message.
+*/
+message End {}
+
+/*
+    Toggle inference for this query.
+    If `isSet` is false, then the value is ignored and the default on the server is used.
 */
 message Infer {
-    bool value = 1;
+    bool isSet = 1;
+    bool value = 2;
 }
 
 message TxResponse {
     oneof response {
         QueryResult queryResult = 1;
-        QueryComplete queryComplete = 2;
+        End end = 2;
     }
 }
 
@@ -63,12 +79,6 @@ message QueryResult {
         Answer answer = 1;
         string otherResult = 3;
     }
-}
-
-message QueryComplete { }
-
-message AnswerSet {
-    Answer answer = 1;
 }
 
 message Concept {

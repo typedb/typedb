@@ -167,7 +167,7 @@ public class GrpcServerIT {
                 case QUERYRESULT:
                     results.add(response.getQueryResult());
                     break;
-                case QUERYCOMPLETE:
+                case END:
                     return results.build();
                 case RESPONSE_NOT_SET:
                     throw CommonUtil.unreachableStatement("Response not set");

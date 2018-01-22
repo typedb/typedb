@@ -36,9 +36,10 @@ import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.Commit;
+import ai.grakn.rpc.GraknOuterClass.End;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.GraknOuterClass.Infer;
 import ai.grakn.rpc.GraknOuterClass.Open;
-import ai.grakn.rpc.GraknOuterClass.QueryComplete;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
@@ -260,7 +261,7 @@ public class GrpcServerTest {
 
             TxResponse response3 = tx.receive().elem();
 
-            TxResponse expected = TxResponse.newBuilder().setQueryComplete(QueryComplete.getDefaultInstance()).build();
+            TxResponse expected = TxResponse.newBuilder().setEnd(End.getDefaultInstance()).build();
             assertEquals(expected, response3);
         }
     }
@@ -279,8 +280,7 @@ public class GrpcServerTest {
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
-            tx.send(inferRequest(false));
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, false));
         }
 
         verify(tx.graql()).infer(false);
@@ -290,8 +290,7 @@ public class GrpcServerTest {
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
-            tx.send(inferRequest(true));
-            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY, true));
         }
 
         verify(tx.graql()).infer(true);
@@ -401,13 +400,19 @@ public class GrpcServerTest {
     }
 
     private TxRequest execQueryRequest(String queryString) {
-        GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
-        ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
-        return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
+        return execQueryRequest(queryString, Infer.getDefaultInstance());
     }
 
-    private TxRequest inferRequest(boolean value) {
-        return TxRequest.newBuilder().setInfer(GraknOuterClass.Infer.newBuilder().setValue(value)).build();
+    private TxRequest execQueryRequest(String queryString, boolean infer) {
+        Infer inferMessage = Infer.newBuilder().setValue(infer).setIsSet(true).build();
+        return execQueryRequest(queryString, inferMessage);
+    }
+
+    private TxRequest execQueryRequest(String queryString, Infer infer) {
+        GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
+        ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
+        execQueryRequest.setInfer(infer);
+        return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
     }
 
     private Matcher<StatusRuntimeException> hasStatus(Status status) {
