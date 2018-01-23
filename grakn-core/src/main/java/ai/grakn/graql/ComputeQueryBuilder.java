@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.KCoreQuery;
@@ -114,6 +115,12 @@ public interface ComputeQueryBuilder {
      */
     @CheckReturnValue
     KCoreQuery kCore();
+
+    /**
+     * @return a coreness query that computes centrality using k-core.
+     */
+    @CheckReturnValue
+    CorenessQuery coreness();
 
     /**
      * @return a degree query that will compute the degree of instances

@@ -388,4 +388,15 @@ class ValidateGlobalRules {
 
         return errors;
     }
+
+    /**
+     * Checks if a {@link Relationship} has at least one role player.
+     * @param relationship The {@link Relationship} to check
+     */
+    static Optional<String> validateRelationshipHasRolePlayers(Relationship relationship) {
+        if(!relationship.rolePlayers().findAny().isPresent()){
+            return Optional.of(ErrorMessage.VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS.getMessage(relationship.getId(), relationship.type().getLabel()));
+        }
+        return Optional.empty();
+    }
 }

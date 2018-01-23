@@ -147,12 +147,12 @@ public class ResolutionPlanTest {
 
         UnmodifiableIterator<Atom> iterator = plan.iterator();
         Set<Var> vars = new HashSet<>();
-        iterator.next().getVarNames().forEach(vars::add);
+        vars.addAll(iterator.next().getVarNames());
         while(iterator.hasNext()){
             Atom next = iterator.next();
             Set<Var> varNames = next.getVarNames();
             assertTrue(!Sets.intersection(varNames, vars).isEmpty());
-            varNames.forEach(vars::add);
+            vars.addAll(varNames);
         }
     }
 
@@ -172,12 +172,12 @@ public class ResolutionPlanTest {
 
         UnmodifiableIterator<Atom> iterator = plan.iterator();
         Set<Var> vars = new HashSet<>();
-        iterator.next().getVarNames().forEach(vars::add);
+        vars.addAll(iterator.next().getVarNames());
         while(iterator.hasNext()){
             Atom next = iterator.next();
             Set<Var> varNames = next.getVarNames();
             assertTrue(!Sets.intersection(varNames, vars).isEmpty());
-            varNames.forEach(vars::add);
+            vars.addAll(varNames);
         }
     }
 
