@@ -47,15 +47,15 @@ import static com.codahale.metrics.MetricRegistry.name;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class InstanceCountPostProcessor {
-    private final static Logger LOG = LoggerFactory.getLogger(InstanceCountPostProcessor.class);
+public class CountPostProcessor {
+    private final static Logger LOG = LoggerFactory.getLogger(CountPostProcessor.class);
     private final RedisCountStorage redis;
     private final GraknConfig engineConfig;
     private final MetricRegistry metricRegistry;
     private final EngineGraknTxFactory factory;
     private final LockProvider lockProvider;
 
-    private InstanceCountPostProcessor(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, RedisCountStorage countStorage) {
+    private CountPostProcessor(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, RedisCountStorage countStorage) {
         this.redis = countStorage;
         this.engineConfig = engineConfig;
         this.metricRegistry = metricRegistry;
@@ -63,8 +63,8 @@ public class InstanceCountPostProcessor {
         this.lockProvider = lockProvider;
     }
 
-    public static InstanceCountPostProcessor create(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, RedisCountStorage countStorage) {
-        return new InstanceCountPostProcessor(engineConfig, factory, lockProvider, metricRegistry, countStorage);
+    public static CountPostProcessor create(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, RedisCountStorage countStorage) {
+        return new CountPostProcessor(engineConfig, factory, lockProvider, metricRegistry, countStorage);
     }
 
     /**
@@ -75,9 +75,9 @@ public class InstanceCountPostProcessor {
     public void updateCounts(CommitLog commitLog){
         final long shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
 
-        try (Timer.Context context = metricRegistry.timer(name(InstanceCountPostProcessor.class, "execution")).time()) {
+        try (Timer.Context context = metricRegistry.timer(name(CountPostProcessor.class, "execution")).time()) {
             Map<ConceptId, Long> jobs = commitLog.instanceCount();
-            metricRegistry.histogram(name(InstanceCountPostProcessor.class, "jobs"))
+            metricRegistry.histogram(name(CountPostProcessor.class, "jobs"))
                     .update(jobs.size());
 
             //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
@@ -88,10 +88,10 @@ public class InstanceCountPostProcessor {
             //Update counts
             jobs.forEach((key, value) -> {
                 metricRegistry
-                        .histogram(name(InstanceCountPostProcessor.class, "shard-size-increase"))
+                        .histogram(name(CountPostProcessor.class, "shard-size-increase"))
                         .update(value);
                 Timer.Context contextSingle = metricRegistry
-                        .timer(name(InstanceCountPostProcessor.class, "execution-single")).time();
+                        .timer(name(CountPostProcessor.class, "execution-single")).time();
                 try {
                     if (updateShardCounts(redis, commitLog.keyspace(), key, value, shardingThreshold)) {
                         conceptToShard.add(key);

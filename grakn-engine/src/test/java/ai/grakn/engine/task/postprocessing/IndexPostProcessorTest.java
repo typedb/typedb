@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -79,14 +80,17 @@ public class IndexPostProcessorTest {
     @Test
     public void whenPostProcessingIndices_EnsureFixingMethodIsCalled(){
         //Setup mocks
+        Keyspace keyspace = Keyspace.of("whatakeyspace");
+
         GraknAdmin admin = mock(GraknAdmin.class);
         when(admin.duplicateResourcesExist(any(), any())).thenReturn(true);
 
         GraknTx tx = mock(GraknTx.class);
+        when(tx.keyspace()).thenReturn(keyspace);
         when(tx.admin()).thenReturn(admin);
 
         String index = "index1";
-        Set<ConceptId> ids = Arrays.asList("a", "b", "c").stream().map(ConceptId::of).collect(Collectors.toSet());
+        Set<ConceptId> ids = Stream.of("a", "b", "c").map(ConceptId::of).collect(Collectors.toSet());
 
         //Call post processor
         indexPostProcessor.mergeDuplicateConcepts(tx, index, ids);

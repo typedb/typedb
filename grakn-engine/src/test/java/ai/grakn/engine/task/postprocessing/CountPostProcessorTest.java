@@ -46,13 +46,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class InstanceCountPostProcessorTest {
+public class CountPostProcessorTest {
     private static RedisCountStorage countStorage = mock(RedisCountStorage.class);
     private static GraknConfig configMock = mock(GraknConfig.class);
     private static EngineGraknTxFactory factoryMock = mock(EngineGraknTxFactory.class);
     private static LockProvider lockProviderMock = mock(LockProvider.class);
     private static MetricRegistry metricRegistry = new MetricRegistry();
-    private static InstanceCountPostProcessor countPostProcessor = InstanceCountPostProcessor.create(configMock, factoryMock, lockProviderMock, metricRegistry, countStorage);
+    private static CountPostProcessor countPostProcessor = CountPostProcessor.create(configMock, factoryMock, lockProviderMock, metricRegistry, countStorage);
 
     private final Map<ConceptId, Long> newInstanceCounts = new HashMap<>();
     private final Keyspace keyspace = SampleKBLoader.randomKeyspace();
@@ -79,7 +79,7 @@ public class InstanceCountPostProcessorTest {
         when(lockProviderMock.getLock(any())).thenReturn(new ReentrantLock());
 
         metricRegistry = new MetricRegistry();
-        countPostProcessor = InstanceCountPostProcessor.create(configMock, factoryMock, lockProviderMock, metricRegistry, countStorage);
+        countPostProcessor = CountPostProcessor.create(configMock, factoryMock, lockProviderMock, metricRegistry, countStorage);
     }
 
     @Before

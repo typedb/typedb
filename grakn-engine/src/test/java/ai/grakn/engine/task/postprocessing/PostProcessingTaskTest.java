@@ -60,8 +60,7 @@ public class PostProcessingTaskTest {
 
         storage = mock(RedisIndexStorage.class);
         indexPostProcessor = mock(IndexPostProcessor.class);
-        when(indexPostProcessor.storage()).thenReturn(storage);
-        postProcessor = PostProcessor.create(indexPostProcessor, mock(InstanceCountPostProcessor.class));
+        postProcessor = PostProcessor.create(indexPostProcessor, mock(CountPostProcessor.class));
 
         config = mock(GraknConfig.class);
         when(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE)).thenReturn(5);
@@ -74,10 +73,10 @@ public class PostProcessingTaskTest {
     public void whenThereIsSomethingInTheIndexCache_PPStarts() throws InterruptedException {
         //Configure Data For Mocks
         String index1 = "index1";
-        when(storage.popIndex(keyspaceA)).thenReturn(index1);
+        when(indexPostProcessor.popIndex(keyspaceA)).thenReturn(index1);
 
         Set<ConceptId> ids = Stream.of("id1", "id2", "id3").map(ConceptId::of).collect(Collectors.toSet());
-        when(storage.popIds(keyspaceA, index1)).thenReturn(ids);
+        when(indexPostProcessor.popIds(keyspaceA, index1)).thenReturn(ids);
 
         //Run the method
         postProcessingTask.run();

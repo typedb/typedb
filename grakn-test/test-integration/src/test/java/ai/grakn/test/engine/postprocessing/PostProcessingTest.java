@@ -28,8 +28,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
-import ai.grakn.engine.task.postprocessing.InstanceCountPostProcessor;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.RedisIndexStorage;
@@ -76,8 +76,9 @@ public class PostProcessingTest {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(engine.server().lockProvider(), indexStorage);
 
         RedisCountStorage countStorage = RedisCountStorage.create(engine.getJedisPool(), metricRegistry);
-        InstanceCountPostProcessor countPostProcessor = InstanceCountPostProcessor.create(engine.config(), engine.server().factory(), engine.server().lockProvider(), metricRegistry, countStorage);
+        CountPostProcessor countPostProcessor = CountPostProcessor.create(engine.config(), engine.server().factory(), engine.server().lockProvider(), metricRegistry, countStorage);
 
+        session = engine.sessionWithNewKeyspace();
         postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
     }
 
@@ -126,13 +127,13 @@ public class PostProcessingTest {
         CommitLog commitLog = CommitLog.createDefault(tx.keyspace());
         commitLog.attributes().put(resourceIndex, resourceConcepts);
 
-        //Now fix everything
-        //PostProcessingTask task = new PostProcessingTask();
-        //TaskConfiguration configuration = TaskConfiguration.of(mapper.writeValueAsString(commitLog));
-        //task.initialize(configuration, engine.config(), engine.server().factory(),
-        //        new MetricRegistry(), postProcessor);
+        //Submit it
+        postProcessor.submit(commitLog);
 
-        //task.start();
+        //Force running the PP job
+
+
+        Thread.sleep(2000);
 
         tx = session.open(GraknTxType.READ);
 
@@ -150,27 +151,27 @@ public class PostProcessingTest {
         String entityType2 = "e2";
 
         //Create Artificial configuration
-        createAndExecuteCountTask(keyspace, ConceptId.of(entityType1), 6L);
-        createAndExecuteCountTask(keyspace, ConceptId.of(entityType2), 3L);
+        createAndUploadCountCommitLog(keyspace, ConceptId.of(entityType1), 6L);
+        createAndUploadCountCommitLog(keyspace, ConceptId.of(entityType2), 3L);
         // Check cache in redis has been updated
         assertEquals(6L, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, ConceptId.of(entityType1))));
         assertEquals(3L, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, ConceptId.of(entityType2))));
 
         //Create Artificial configuration
-        createAndExecuteCountTask(keyspace, ConceptId.of(entityType1), 1L);
-        createAndExecuteCountTask(keyspace, ConceptId.of(entityType2), -1L);
+        createAndUploadCountCommitLog(keyspace, ConceptId.of(entityType1), 1L);
+        createAndUploadCountCommitLog(keyspace, ConceptId.of(entityType2), -1L);
         // Check cache in redis has been updated
         assertEquals(7L, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, ConceptId.of(entityType1))));
         assertEquals(2L, redis.getCount(RedisCountStorage.getKeyNumInstances(keyspace, ConceptId.of(entityType2))));
     }
 
-    private void createAndExecuteCountTask(Keyspace keyspace, ConceptId conceptId, long count) {
+    private void createAndUploadCountCommitLog(Keyspace keyspace, ConceptId conceptId, long count) {
         //Create the fake commit log
         CommitLog commitLog = CommitLog.createDefault(keyspace);
         commitLog.instanceCount().put(conceptId, count);
 
         //Start up the Job
-        postProcessor.index().updateIndices(commitLog);
+        postProcessor.submit(commitLog);
     }
 
     @Test
@@ -190,15 +191,15 @@ public class PostProcessingTest {
         checkShardCount(keyspace, et2, 1);
 
         //Add new counts
-        createAndExecuteCountTask(keyspace, et1.getId(), 99_999L);
-        createAndExecuteCountTask(keyspace, et2.getId(), 99_999L);
+        createAndUploadCountCommitLog(keyspace, et1.getId(), 99_999L);
+        createAndUploadCountCommitLog(keyspace, et2.getId(), 99_999L);
 
         checkShardCount(keyspace, et1, 1);
         checkShardCount(keyspace, et2, 1);
 
         //Add new counts
-        createAndExecuteCountTask(keyspace, et1.getId(), 2L);
-        createAndExecuteCountTask(keyspace, et2.getId(), 1L);
+        createAndUploadCountCommitLog(keyspace, et1.getId(), 2L);
+        createAndUploadCountCommitLog(keyspace, et2.getId(), 1L);
 
         checkShardCount(keyspace, et1, 2);
         checkShardCount(keyspace, et2, 1);

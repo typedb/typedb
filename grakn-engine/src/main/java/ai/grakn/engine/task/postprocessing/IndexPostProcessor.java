@@ -19,6 +19,7 @@
 package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.kb.log.CommitLog;
@@ -40,9 +41,7 @@ import java.util.concurrent.locks.Lock;
 public class IndexPostProcessor {
     private final LockProvider lockProvider;
     private final RedisIndexStorage redisIndexStorage;
-
-    @Deprecated
-    private static final String LOCK_KEY = "/post-processing-lock";
+    private static final String LOCK_KEY = "post-processing-index-lock-%s-%s";
 
     private IndexPostProcessor(LockProvider lockProvider, RedisIndexStorage redisIndexStorage) {
         this.lockProvider = lockProvider;
@@ -53,8 +52,16 @@ public class IndexPostProcessor {
         return new IndexPostProcessor(lockProvider, redisIndexStorage);
     }
 
-    public RedisIndexStorage storage(){
-        return redisIndexStorage;
+    private String getLockKey(Keyspace keyspace, String index){
+        return String.format(LOCK_KEY, keyspace.getValue(), index);
+    }
+
+    public String popIndex(Keyspace keyspace){
+        return redisIndexStorage.popIndex(keyspace);
+    }
+
+    public Set<ConceptId> popIds(Keyspace keyspace, String index){
+        return redisIndexStorage.popIds(keyspace, index);
     }
 
     /**
@@ -82,7 +89,7 @@ public class IndexPostProcessor {
 
             // Acquire a lock when you post process on an index to prevent race conditions
             // Lock is acquired after checking for duplicates to reduce runtime
-            Lock indexLock = lockProvider.getLock(LOCK_KEY + "/" + conceptIndex);
+            Lock indexLock = lockProvider.getLock(getLockKey(tx.keyspace(), conceptIndex));
             indexLock.lock();
 
             try {

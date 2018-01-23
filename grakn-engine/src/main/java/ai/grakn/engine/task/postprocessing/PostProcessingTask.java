@@ -60,7 +60,7 @@ public class PostProcessingTask implements BackgroundTask{
     public void run() {
         Set<Keyspace> kespaces = factory.systemKeyspace().keyspaces();
         kespaces.forEach(keyspace -> {
-            String index = postProcessor.index().storage().popIndex(keyspace);
+            String index = postProcessor.index().popIndex(keyspace);
             if(index != null) {
                 //TODO: Is 5 minutes too long?
                 threadPool.schedule(() -> processIndex(keyspace, index), postprocessingDelay, TimeUnit.SECONDS);
@@ -75,8 +75,8 @@ public class PostProcessingTask implements BackgroundTask{
      * @param keyspace The {@link Keyspace} requiring post processing for a specific index
      * @param index the index to be post processed
      */
-    private void processIndex(Keyspace keyspace, String index){
-        Set<ConceptId> ids = postProcessor.index().storage().popIds(keyspace, index);
+    public void processIndex(Keyspace keyspace, String index){
+        Set<ConceptId> ids = postProcessor.index().popIds(keyspace, index);
 
         //No need to post process if another engine has beaten you to doing it
         if(ids.isEmpty()) return;

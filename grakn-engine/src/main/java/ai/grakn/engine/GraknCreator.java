@@ -23,8 +23,8 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.BackgroundTaskRunner;
+import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
-import ai.grakn.engine.task.postprocessing.InstanceCountPostProcessor;
 import ai.grakn.engine.task.postprocessing.PostProcessingTask;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.RedisCountStorage;
@@ -113,9 +113,9 @@ public class GraknCreator {
             EngineGraknTxFactory factory = instantiateGraknTxFactory(graknEngineConfig, lockProvider);
 
             IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, RedisIndexStorage.create(jedisPool, metricRegistry));
-            InstanceCountPostProcessor instanceCountPostProcessor = InstanceCountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, RedisCountStorage.create(jedisPool, metricRegistry));
+            CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, RedisCountStorage.create(jedisPool, metricRegistry));
 
-            PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, instanceCountPostProcessor);
+            PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
             HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor);
 
             BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(factory, postProcessor);

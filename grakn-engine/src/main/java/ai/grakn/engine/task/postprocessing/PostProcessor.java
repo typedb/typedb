@@ -23,7 +23,7 @@ import com.google.auto.value.AutoValue;
 
 /**
  * <p>
- *     Simple helper class which contains {@link IndexPostProcessor} and {@link InstanceCountPostProcessor}.
+ *     Simple helper class which contains {@link IndexPostProcessor} and {@link CountPostProcessor}.
  *     This is so we can hold all the logic for post processing in one place without encapsulating too much
  *     diverging logic in one class
  * </p>
@@ -33,10 +33,10 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class PostProcessor {
     public abstract IndexPostProcessor index();
-    public abstract InstanceCountPostProcessor count();
+    public abstract CountPostProcessor count();
 
-    public static PostProcessor create(IndexPostProcessor indexPostProcessor, InstanceCountPostProcessor instanceCountPostProcessor) {
-        return new AutoValue_PostProcessor(indexPostProcessor, instanceCountPostProcessor);
+    public static PostProcessor create(IndexPostProcessor indexPostProcessor, CountPostProcessor countPostProcessor) {
+        return new AutoValue_PostProcessor(indexPostProcessor, countPostProcessor);
     }
 
     /**
