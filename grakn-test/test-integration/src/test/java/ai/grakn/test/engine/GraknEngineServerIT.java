@@ -58,10 +58,10 @@ public class GraknEngineServerIT {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine1 = EngineContext.createWithInMemoryRedis();
+    public static final EngineContext engine1 = EngineContext.create();
 
     @ClassRule
-    public static final EngineContext engine2 = EngineContext.createWithInMemoryRedis();
+    public static final EngineContext engine2 = EngineContext.create();
 
     private TaskStateStorage storage;
 

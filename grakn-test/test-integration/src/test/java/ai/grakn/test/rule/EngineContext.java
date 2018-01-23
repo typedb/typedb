@@ -74,25 +74,19 @@ public class EngineContext extends CompositeTestRule {
 
     private final TestRule redis;
 
-    private EngineContext(boolean inMemoryRedis){
+    private EngineContext(){
         SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         int redisPort = redisURI.getPort();
-
-        if (inMemoryRedis) {
-            redis = InMemoryRedisContext.create(redisPort);
-        } else {
-            redis = EmbeddedRedisContext.create(redisPort);
-        }
+        redis = InMemoryRedisContext.create(redisPort);
     }
 
     /**
      * Creates a {@link EngineContext} for testing which uses an in-memory redis mock.
-     * This is the default test environment which should be used because starting an embedded redis is a costly process.
      *
      * @return a new {@link EngineContext} for testing
      */
-    public static EngineContext createWithInMemoryRedis(){
-        return new EngineContext(true);
+    public static EngineContext create(){
+        return new EngineContext();
     }
 
     public GraknEngineServer server() {
