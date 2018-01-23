@@ -29,7 +29,9 @@ import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.Commit;
+import ai.grakn.rpc.GraknOuterClass.End;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.GraknOuterClass.Next;
 import ai.grakn.rpc.GraknOuterClass.Open;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
@@ -42,6 +44,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,10 +52,12 @@ import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -127,6 +132,37 @@ public class GrpcServerIT {
     }
 
     @Test
+    public void whenExecutingTwoSequentialQueries_ResultsAreTheSame() {
+        Set<QueryResult> results1;
+        Set<QueryResult> results2;
+
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
+            tx.send(execQueryRequest("match $x sub thing; get;"));
+            results1 = Sets.newHashSet(queryResults(tx));
+            tx.send(endRequest());
+            tx.send(execQueryRequest("match $x sub thing; get;"));
+            results2 = Sets.newHashSet(queryResults(tx));
+            tx.send(endRequest());
+        }
+
+        assertEquals(results1, results2);
+    }
+
+    @Test // This behaviour is temporary - we should eventually support it correctly
+    public void whenExecutingTwoParallelQueries_Throw() throws Throwable {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
+            tx.send(execQueryRequest("match $x sub thing; get;"));
+            tx.send(execQueryRequest("match $x sub thing; get;"));
+
+            exception.expect(GrpcUtil.hasStatus(Status.FAILED_PRECONDITION));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
@@ -157,11 +193,21 @@ public class GrpcServerIT {
         return TxRequest.newBuilder().setExecQuery(ExecQuery.newBuilder().setQuery(query)).build();
     }
 
+    private TxRequest nextRequest() {
+        return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
+    }
+
+    private TxRequest endRequest() {
+        return TxRequest.newBuilder().setEnd(End.getDefaultInstance()).build();
+    }
+
     private List<QueryResult> queryResults(BidirectionalObserver<TxRequest, TxResponse> tx) {
         ImmutableList.Builder<QueryResult> results = ImmutableList.builder();
 
         while (true) {
+            tx.send(nextRequest());
             TxResponse response = tx.receive().elem();
+            assert response != null;
 
             switch (response.getResponseCase()) {
                 case QUERYRESULT:
@@ -169,8 +215,9 @@ public class GrpcServerIT {
                     break;
                 case END:
                     return results.build();
+                default:
                 case RESPONSE_NOT_SET:
-                    throw CommonUtil.unreachableStatement("Response not set");
+                    throw CommonUtil.unreachableStatement("Unexpected response: " + response);
             }
         }
     }

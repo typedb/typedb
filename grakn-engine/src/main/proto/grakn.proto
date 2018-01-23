@@ -36,9 +36,9 @@ message Open {
 message Commit {}
 
 /*
-    Command to execute a query.
-    The server will return a `QueryResult` or a `End` message.
-    After this message, the server will accept a `NextResult` or `EndQuery` message.
+    Command to start executing a query.
+    The query will not actually execute unless you send a `Next` message.
+    After this message, the server will accept a `Next` or `End` message.
 */
 message ExecQuery {
     Query query = 1;
@@ -47,8 +47,8 @@ message ExecQuery {
 
 /*
     Request next result of some iterator.
-    The server will return a `QueryResult` or a `QueryComplete` message.
-    After this message, the server will accept a `NextResult` or `EndQuery` message.
+    The server will return a `QueryResult` or an `End` message.
+    After this message, the server will accept a `Next` or `End` message.
 */
 message Next {}
 

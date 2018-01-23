@@ -27,6 +27,8 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.End;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.GraknOuterClass.Infer;
+import ai.grakn.rpc.GraknOuterClass.Next;
 import ai.grakn.rpc.GraknOuterClass.Open;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
@@ -37,8 +39,8 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
@@ -56,6 +58,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
 
     private @Nullable GraknTx tx = null;
+    private @Nullable Iterator<QueryResult> queryResults = null;
 
     private TxObserver(EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver) {
         this.responseObserver = responseObserver;
@@ -78,6 +81,12 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                     break;
                 case EXECQUERY:
                     execQuery(request.getExecQuery());
+                    break;
+                case NEXT:
+                    next(request.getNext());
+                    break;
+                case END:
+                    end(request.getEnd());
                     break;
                 default:
                 case REQUEST_NOT_SET:
@@ -109,25 +118,48 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     }
 
     private void execQuery(ExecQuery request) {
-        if (tx == null) {
+        if (tx == null || queryResults != null) {
             throw error(Status.FAILED_PRECONDITION);
         }
 
         String queryString = request.getQuery().getValue();
 
-        QueryBuilder graql = tx.graql();
+        QueryBuilder graql = setInfer(tx.graql(), request.getInfer());
 
-        if (request.getInfer().getIsSet()) {
-            graql.infer(request.getInfer().getValue());
+        queryResults = graql.parse(queryString).results(GrpcConverter.get()).iterator();
+    }
+
+    private void next(Next next) {
+        if (queryResults == null) {
+            throw error(Status.FAILED_PRECONDITION);
         }
 
-        Stream<QueryResult> results = graql.parse(queryString).results(GrpcConverter.get());
+        TxResponse response;
 
-        results.forEach(result ->
-                responseObserver.onNext(TxResponse.newBuilder().setQueryResult(result).build())
-        );
+        if (queryResults.hasNext()) {
+            QueryResult queryResult = queryResults.next();
+            response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+        } else {
+            response = TxResponse.newBuilder().setEnd(End.getDefaultInstance()).build();
+        }
 
-        responseObserver.onNext(TxResponse.newBuilder().setEnd(End.getDefaultInstance()).build());
+        responseObserver.onNext(response);
+    }
+
+    private void end(End end) {
+        if (queryResults == null) {
+            throw error(Status.FAILED_PRECONDITION);
+        }
+
+        queryResults = null;
+    }
+
+    private QueryBuilder setInfer(QueryBuilder queryBuilder, Infer infer) {
+        if (infer.getIsSet()) {
+            return queryBuilder.infer(infer.getValue());
+        } else {
+            return queryBuilder;
+        }
     }
 
     private GraknTxType getTxType(GraknOuterClass.TxType txType) {

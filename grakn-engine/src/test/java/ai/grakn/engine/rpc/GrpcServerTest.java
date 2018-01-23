@@ -39,6 +39,7 @@ import ai.grakn.rpc.GraknOuterClass.Commit;
 import ai.grakn.rpc.GraknOuterClass.End;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.GraknOuterClass.Infer;
+import ai.grakn.rpc.GraknOuterClass.Next;
 import ai.grakn.rpc.GraknOuterClass.Open;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
@@ -62,6 +63,8 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasProperty;
@@ -245,6 +248,7 @@ public class GrpcServerTest {
 
             tx.send(execQueryRequest(QUERY));
 
+            tx.send(nextRequest());
             TxResponse response1 = tx.receive().elem();
 
             GraknOuterClass.Concept rpcX = GraknOuterClass.Concept.newBuilder().setId("V123").build();
@@ -252,6 +256,7 @@ public class GrpcServerTest {
             QueryResult.Builder resultX = QueryResult.newBuilder().setAnswer(answerX);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultX).build(), response1);
 
+            tx.send(nextRequest());
             TxResponse response2 = tx.receive().elem();
 
             GraknOuterClass.Concept rpcY = GraknOuterClass.Concept.newBuilder().setId("V456").build();
@@ -259,10 +264,48 @@ public class GrpcServerTest {
             QueryResult.Builder resultY = QueryResult.newBuilder().setAnswer(answerY);
             assertEquals(TxResponse.newBuilder().setQueryResult(resultY).build(), response2);
 
+            tx.send(nextRequest());
             TxResponse response3 = tx.receive().elem();
 
             TxResponse expected = TxResponse.newBuilder().setEnd(End.getDefaultInstance()).build();
             assertEquals(expected, response3);
+
+            tx.send(endRequest());
+        }
+    }
+
+    @Test(timeout = 1000) // This tests uses an endless stream, so a failure may cause it to never terminate
+    public void whenExecutingAQueryRemotelyAndAskingForOneResult_OnlyOneResultIsReturned() throws InterruptedException {
+        Concept conceptX = mock(Concept.class, RETURNS_DEEP_STUBS);
+        when(conceptX.getId()).thenReturn(ConceptId.of("V123"));
+        when(conceptX.isThing()).thenReturn(true);
+        when(conceptX.asThing().type().getLabel()).thenReturn(Label.of("L123"));
+
+        Concept conceptY = mock(Concept.class, RETURNS_DEEP_STUBS);
+        when(conceptY.getId()).thenReturn(ConceptId.of("V456"));
+        when(conceptY.isThing()).thenReturn(true);
+        when(conceptY.asThing().type().getLabel()).thenReturn(Label.of("L456"));
+
+        ImmutableList<Answer> answers = ImmutableList.of(
+                new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
+        );
+
+        // TODO: reduce wtf
+        when(query.results(any())).thenAnswer(params -> query.stream().map(params.<GrpcConverter>getArgument(0)::convert));
+
+        // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
+        when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
+
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS, TxType.Write));
+
+            tx.send(execQueryRequest(QUERY));
+
+            tx.send(nextRequest());
+            tx.receive().elem();
+
+            tx.send(endRequest());
         }
     }
 
@@ -271,6 +314,8 @@ public class GrpcServerTest {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
+            tx.send(nextRequest());
+            tx.send(endRequest());
         }
 
         verify(tx.graql(), times(0)).infer(anyBoolean());
@@ -281,6 +326,8 @@ public class GrpcServerTest {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, false));
+            tx.send(nextRequest());
+            tx.send(endRequest());
         }
 
         verify(tx.graql()).infer(false);
@@ -291,6 +338,8 @@ public class GrpcServerTest {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, true));
+            tx.send(nextRequest());
+            tx.send(endRequest());
         }
 
         verify(tx.graql()).infer(true);
@@ -385,6 +434,57 @@ public class GrpcServerTest {
         }
     }
 
+    @Test
+    public void whenSendingNextBeforeQuery_Throw() throws Throwable {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(nextRequest());
+
+            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
+    public void whenSendingEndBeforeQuery_Throw() throws Throwable {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(endRequest());
+
+            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
+    public void whenSendingNextAfterEnd_Throw() throws Throwable {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(execQueryRequest(QUERY));
+            tx.send(endRequest());
+            tx.send(nextRequest());
+
+            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
+
+            throw tx.receive().throwable();
+        }
+    }
+
+    @Test
+    public void whenSendingAnotherQueryDuringQueryExecution_Throw() throws Throwable {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(execQueryRequest(QUERY));
+            tx.send(execQueryRequest(QUERY));
+
+            exception.expect(hasStatus(Status.FAILED_PRECONDITION));
+
+            throw tx.receive().throwable();
+        }
+    }
+
     private BidirectionalObserver<TxRequest, TxResponse> startTx() {
         return BidirectionalObserver.create(stub::tx);
     }
@@ -413,6 +513,14 @@ public class GrpcServerTest {
         ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
         execQueryRequest.setInfer(infer);
         return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
+    }
+
+    private TxRequest nextRequest() {
+        return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
+    }
+
+    private TxRequest endRequest() {
+        return TxRequest.newBuilder().setEnd(End.getDefaultInstance()).build();
     }
 
     private Matcher<StatusRuntimeException> hasStatus(Status status) {
