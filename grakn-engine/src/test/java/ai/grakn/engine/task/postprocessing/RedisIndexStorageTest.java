@@ -47,7 +47,7 @@ import static org.junit.Assert.assertThat;
 public class RedisIndexStorageTest {
     @ClassRule
     public static final InMemoryRedisContext IN_MEMORY_REDIS_CONTEXT = InMemoryRedisContext.create();
-
+    private static RedisStorage directConnection;
     private static RedisIndexStorage indexStorage;
     private final static Keyspace keyspace1 = Keyspace.of("myhappypotato");
     private final static Keyspace keyspace2 = Keyspace.of("mysadapple");
@@ -57,7 +57,9 @@ public class RedisIndexStorageTest {
 
     @BeforeClass
     public static void getConnection(){
-        indexStorage = RedisIndexStorage.create(IN_MEMORY_REDIS_CONTEXT.jedisPool(), new MetricRegistry());
+        MetricRegistry metricRegistry = new MetricRegistry();
+        indexStorage = RedisIndexStorage.create(IN_MEMORY_REDIS_CONTEXT.jedisPool(), metricRegistry);
+        directConnection = new RedisStorage(IN_MEMORY_REDIS_CONTEXT.jedisPool(), metricRegistry);
     }
 
     @Before
@@ -106,11 +108,11 @@ public class RedisIndexStorageTest {
 
         Set<ConceptId> foundIds = indexStorage.popIds(keyspace2, index1);
         assertEquals(conceptIds, foundIds);
-        assertThat(indexStorage.contactRedis(jedis -> jedis.smembers(conceptIdsKey)), empty());
+        assertThat(directConnection.contactRedis(jedis -> jedis.smembers(conceptIdsKey)), empty());
     }
 
     private void assertJedisContains(String key, String... vals){
-        Set<String> result = indexStorage.contactRedis(jedis -> jedis.smembers(key));
+        Set<String> result = directConnection.contactRedis(jedis -> jedis.smembers(key));
         assertThat(result, containsInAnyOrder(vals));
     }
 }
