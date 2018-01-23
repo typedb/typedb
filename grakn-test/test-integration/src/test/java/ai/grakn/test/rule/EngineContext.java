@@ -30,7 +30,6 @@ import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.task.postprocessing.RedisCountStorage;
-import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
@@ -177,7 +176,6 @@ public class EngineContext extends CompositeTestRule {
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
-        noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
             noThrow(() -> {

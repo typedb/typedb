@@ -44,7 +44,7 @@ public class IndexPostProcessor {
     @Deprecated
     private static final String LOCK_KEY = "/post-processing-lock";
 
-    IndexPostProcessor(LockProvider lockProvider, RedisIndexStorage redisIndexStorage) {
+    private IndexPostProcessor(LockProvider lockProvider, RedisIndexStorage redisIndexStorage) {
         this.lockProvider = lockProvider;
         this.redisIndexStorage = redisIndexStorage;
     }
