@@ -63,7 +63,7 @@ public class RedisIndexStorageTest {
     }
 
     @Before
-    public void addDataToStorage(){
+    public void preinitializedIndexStorage(){
         indexStorage.addIndex(keyspace1, index1, conceptIds);
         indexStorage.addIndex(keyspace2, index1, conceptIds);
         indexStorage.addIndex(keyspace2, index2, conceptIds);
@@ -79,7 +79,7 @@ public class RedisIndexStorageTest {
     }
 
     @Test
-    public void whenAddingIndices_EnsureKeyspaceListContainIndices(){
+    public void onPreinitializedIndexStorage_EnsureKeyspaceListContainIndices(){
         assertEquals(index1, indexStorage.popIndex(keyspace1));
         assertEquals(null, indexStorage.popIndex(keyspace1));
         assertEquals(index1, indexStorage.popIndex(keyspace2));
@@ -87,7 +87,7 @@ public class RedisIndexStorageTest {
     }
 
     @Test
-    public void whenAddingDifferentKeyspaceIndices_EnsureIndicesAreStoredUnderDifferentKeys(){
+    public void onPreinitializedIndexStorage_EnsureIndicesAreStoredUnderDifferentKeys(){
         assertJedisContains(RedisIndexStorage.getIndicesKey(keyspace1), index1);
         assertJedisContains(RedisIndexStorage.getIndicesKey(keyspace2), index1, index2);
     }
