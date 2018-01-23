@@ -39,9 +39,11 @@ import java.util.stream.Collectors;
  *
  * @author fppt
  */
-public class RedisIndexStorage extends RedisStorage {
+public class RedisIndexStorage {
+    private final RedisStorage redisStorage;
+
     private RedisIndexStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
-        super(jedisPool, metricRegistry);
+        redisStorage = new RedisStorage(jedisPool, metricRegistry);
     }
 
     public static RedisIndexStorage create(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
@@ -55,7 +57,7 @@ public class RedisIndexStorage extends RedisStorage {
         String listOfIndicesKey = getIndicesKey(keyspace);
         String listOfIdsKey = getConceptIdsKey(keyspace, index);
 
-        contactRedis(jedis -> {
+        redisStorage.contactRedis(jedis -> {
             //Track all the indices which need to be post proceed
             jedis.sadd(listOfIndicesKey, index);
             conceptIds.forEach(id -> jedis.sadd(listOfIdsKey, id.getValue()));
@@ -69,7 +71,7 @@ public class RedisIndexStorage extends RedisStorage {
     @Nullable
     public String popIndex(Keyspace keyspace){
         String indexKey = getIndicesKey(keyspace);
-        return contactRedis(jedis -> jedis.spop(indexKey));
+        return redisStorage.contactRedis(jedis -> jedis.spop(indexKey));
     }
 
     /**
@@ -77,7 +79,7 @@ public class RedisIndexStorage extends RedisStorage {
      */
     public Set<ConceptId> popIds(Keyspace keyspace, String index){
         String idKey = getConceptIdsKey(keyspace, index);
-        return contactRedis(jedis -> {
+        return redisStorage.contactRedis(jedis -> {
             Transaction tx = jedis.multi();
             Response<Set<String>> responseIds = tx.smembers(idKey);
             tx.del(idKey);

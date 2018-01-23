@@ -42,7 +42,7 @@ import static com.codahale.metrics.MetricRegistry.name;
  *
  * @author fppt
  */
-abstract class RedisStorage {
+class RedisStorage {
     private final static Logger LOG = LoggerFactory.getLogger(RedisStorage.class);
     private final Timer contactRedisTimer;
     private Pool<Jedis> jedisPool;

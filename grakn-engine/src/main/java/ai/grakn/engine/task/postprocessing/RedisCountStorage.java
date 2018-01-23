@@ -33,10 +33,11 @@ import redis.clients.util.Pool;
  *
  * @author fppt
  */
-public class RedisCountStorage extends RedisStorage{
+public class RedisCountStorage {
+    private final RedisStorage redisStorage;
 
     private RedisCountStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry){
-        super(jedisPool, metricRegistry);
+        redisStorage = new RedisStorage(jedisPool, metricRegistry);
     }
 
     public static RedisCountStorage create(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
@@ -51,7 +52,7 @@ public class RedisCountStorage extends RedisStorage{
      * @return true
      */
     public long adjustCount(String key, long count){
-        return contactRedis(jedis -> {
+        return redisStorage.contactRedis(jedis -> {
             if(count != 0) {
                 return jedis.incrBy(key, count); //Number is decremented when count is negative
             } else {
@@ -67,7 +68,7 @@ public class RedisCountStorage extends RedisStorage{
      * @return the current count.
      */
     public long getCount(String key){
-        return contactRedis(jedis -> {
+        return redisStorage.contactRedis(jedis -> {
             String value = jedis.get(key);
             if(value == null) return 0L;
             return Long.parseLong(value);
