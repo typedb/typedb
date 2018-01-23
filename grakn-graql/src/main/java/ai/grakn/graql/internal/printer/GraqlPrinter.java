@@ -55,12 +55,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public String build(Function<StringBuilder, StringBuilder> builder) {
+    public String complete(Function<StringBuilder, StringBuilder> builder) {
         return builder.apply(new StringBuilder()).toString();
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> convert(boolean inner, Concept concept) {
+    public Function<StringBuilder, StringBuilder> build(boolean inner, Concept concept) {
         return sb -> {
             // Display values for resources and ids for everything else
             if (concept.isAttribute()) {
@@ -117,7 +117,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> convert(boolean inner, boolean bool) {
+    public Function<StringBuilder, StringBuilder> build(boolean inner, boolean bool) {
         if (bool) {
             return sb -> sb.append(ANSI.color("True", ANSI.GREEN));
         } else {
@@ -126,24 +126,24 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> convert(boolean inner, Optional<?> optional) {
+    public Function<StringBuilder, StringBuilder> build(boolean inner, Optional<?> optional) {
         if (optional.isPresent()) {
-            return convert(inner, optional.get());
+            return build(inner, optional.get());
         } else {
             return sb -> sb.append("Nothing");
         }
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> convert(boolean inner, Collection<?> collection) {
+    public Function<StringBuilder, StringBuilder> build(boolean inner, Collection<?> collection) {
         return sb -> {
             if (inner) {
                 sb.append("{");
-                collection.stream().findFirst().ifPresent(item -> convert(true, item).apply(sb));
-                collection.stream().skip(1).forEach(item -> convert(true, item).apply(sb.append(", ")));
+                collection.stream().findFirst().ifPresent(item -> build(true, item).apply(sb));
+                collection.stream().skip(1).forEach(item -> build(true, item).apply(sb.append(", ")));
                 sb.append("}");
             } else {
-                collection.forEach(item -> convert(true, item).apply(sb).append("\n"));
+                collection.forEach(item -> build(true, item).apply(sb).append("\n"));
             }
 
             return sb;
@@ -151,12 +151,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> convert(boolean inner, Map<?, ?> map) {
-        return convert(inner, map.entrySet());
+    public Function<StringBuilder, StringBuilder> build(boolean inner, Map<?, ?> map) {
+        return build(inner, map.entrySet());
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> convert(boolean inner, Answer answer) {
+    public Function<StringBuilder, StringBuilder> build(boolean inner, Answer answer) {
         return sb -> {
             if (answer.isEmpty()) {
                 sb.append("{}");
@@ -170,12 +170,12 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> convertDefault(boolean inner, Object object) {
+    public Function<StringBuilder, StringBuilder> buildDefault(boolean inner, Object object) {
         if (object instanceof Map.Entry<?, ?>) {
             Map.Entry<?, ?> entry = (Map.Entry<?, ?>) object;
-            return convert(true, entry.getKey())
+            return build(true, entry.getKey())
                     .andThen(sb -> sb.append(": "))
-                    .andThen(convert(true, entry.getValue()));
+                    .andThen(build(true, entry.getValue()));
         } else {
             return sb -> sb.append(Objects.toString(object));
         }

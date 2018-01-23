@@ -38,7 +38,7 @@ import java.util.Optional;
  *
  * <p>
  *     If you don't need a {@link Builder} type, then set it to the same type as {@link T} and implement
- *     {@link #build(Builder)} to just return its argument.
+ *     {@link #complete(Builder)} to just return its argument.
  * </p>
  *
  * @param <Builder> An intermediate builder type that can be changed into a {@link T}
@@ -55,8 +55,8 @@ public interface GraqlConverter<Builder, T> {
      */
     @CheckReturnValue
     default T convert(Object object) {
-        Builder builder = convert(false, object);
-        return build(builder);
+        Builder builder = build(false, object);
+        return complete(builder);
     }
 
     /**
@@ -66,21 +66,21 @@ public interface GraqlConverter<Builder, T> {
      * @return the object as a builder
      */
     @CheckReturnValue
-    default Builder convert(boolean inner, Object object) {
+    default Builder build(boolean inner, Object object) {
         if (object instanceof Concept) {
-            return convert(inner, (Concept) object);
+            return build(inner, (Concept) object);
         } else if (object instanceof Boolean) {
-            return convert(inner, (boolean) object);
+            return build(inner, (boolean) object);
         } else if (object instanceof Optional) {
-            return convert(inner, (Optional<?>) object);
+            return build(inner, (Optional<?>) object);
         } else if (object instanceof Collection) {
-            return convert(inner, (Collection<?>) object);
+            return build(inner, (Collection<?>) object);
         } else if (object instanceof Answer) {
-            return convert(inner, (Answer) object);
+            return build(inner, (Answer) object);
         } else if (object instanceof Map) {
-            return convert(inner, (Map<?, ?>) object);
+            return build(inner, (Map<?, ?>) object);
         } else {
-            return convertDefault(inner, object);
+            return buildDefault(inner, object);
         }
     }
 
@@ -90,7 +90,7 @@ public interface GraqlConverter<Builder, T> {
      * @return the converted builder
      */
     @CheckReturnValue
-    T build(Builder builder);
+    T complete(Builder builder);
 
     /**
      * Convert any concept into a builder
@@ -99,7 +99,7 @@ public interface GraqlConverter<Builder, T> {
      * @return the concept as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, Concept concept);
+    Builder build(boolean inner, Concept concept);
 
     /**
      * Convert any boolean into a builder
@@ -108,7 +108,7 @@ public interface GraqlConverter<Builder, T> {
      * @return the boolean as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, boolean bool);
+    Builder build(boolean inner, boolean bool);
 
     /**
      * Convert any optional into a builder
@@ -117,7 +117,7 @@ public interface GraqlConverter<Builder, T> {
      * @return the optional as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, Optional<?> optional);
+    Builder build(boolean inner, Optional<?> optional);
 
     /**
      * Convert any collection into a builder
@@ -126,7 +126,7 @@ public interface GraqlConverter<Builder, T> {
      * @return the collection as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, Collection<?> collection);
+    Builder build(boolean inner, Collection<?> collection);
 
     /**
      * Convert any map into a builder
@@ -135,7 +135,7 @@ public interface GraqlConverter<Builder, T> {
      * @return the map as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, Map<?, ?> map);
+    Builder build(boolean inner, Map<?, ?> map);
 
     /**
      * Convert any {@link Answer} into a builder
@@ -144,8 +144,8 @@ public interface GraqlConverter<Builder, T> {
      * @return the map as a builder
      */
     @CheckReturnValue
-    default Builder convert(boolean inner, Answer answer) {
-        return convert(inner, answer.map());
+    default Builder build(boolean inner, Answer answer) {
+        return build(inner, answer.map());
     }
 
     /**
@@ -155,5 +155,5 @@ public interface GraqlConverter<Builder, T> {
      * @return the object as a builder
      */
     @CheckReturnValue
-    Builder convertDefault(boolean inner, Object object);
+    Builder buildDefault(boolean inner, Object object);
 }
