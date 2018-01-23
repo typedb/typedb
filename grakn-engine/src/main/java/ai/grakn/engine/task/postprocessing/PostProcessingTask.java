@@ -86,7 +86,7 @@ public class PostProcessingTask implements BackgroundTask{
             tx.commit();
         } catch (Exception e){
             String stringIds = ids.stream().map(ConceptId::getValue).collect(Collectors.joining(","));
-            LOG.error(String.format("Error during post processing index {%s} with ids {$s}", index, stringIds), e);
+            LOG.error(String.format("Error during post processing index {%s} with ids {%s}", index, stringIds), e);
         }
     }
 
