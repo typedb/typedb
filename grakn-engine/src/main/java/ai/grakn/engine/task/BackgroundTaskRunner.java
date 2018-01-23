@@ -21,6 +21,7 @@ package ai.grakn.engine.task;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -71,6 +72,6 @@ public class BackgroundTaskRunner implements AutoCloseable {
      */
     @VisibleForTesting
     public Set<BackgroundTask> tasks(){
-        return registeredTasks;
+        return ImmutableSet.copyOf(registeredTasks);
     }
 }

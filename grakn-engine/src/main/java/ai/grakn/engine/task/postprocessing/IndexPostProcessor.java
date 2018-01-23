@@ -24,7 +24,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.Schema;
-import com.google.common.base.Preconditions;
 
 import java.util.Optional;
 import java.util.Set;
@@ -84,7 +83,6 @@ public class IndexPostProcessor {
      * @param conceptIds The {@link ConceptId}s of the suspected duplicates
      */
     public void mergeDuplicateConcepts(GraknTx tx, String conceptIndex, Set<ConceptId> conceptIds){
-        Preconditions.checkNotNull(lockProvider, "Lock provider was null, possible race condition in initialisation");
         if(tx.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
 
             // Acquire a lock when you post process on an index to prevent race conditions
