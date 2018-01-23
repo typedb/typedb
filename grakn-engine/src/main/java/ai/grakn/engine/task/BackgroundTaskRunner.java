@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class BackgroundTaskRunner {
+public class BackgroundTaskRunner implements AutoCloseable {
     private final Set<BackgroundTask> registeredTasks = new HashSet<>();
     private final ScheduledExecutorService threadPool;
 
@@ -57,6 +57,7 @@ public class BackgroundTaskRunner {
         }
     }
 
+    @Override
     public void close(){
         registeredTasks.forEach(BackgroundTask::close);
         threadPool.shutdown();

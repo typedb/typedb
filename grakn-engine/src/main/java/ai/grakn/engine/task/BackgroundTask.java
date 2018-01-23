@@ -25,7 +25,7 @@ package ai.grakn.engine.task;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public interface BackgroundTask {
+public interface BackgroundTask extends AutoCloseable{
 
     /**
      * @return The amount of seconds to wait between running this job.
