@@ -66,7 +66,7 @@ public class PostProcessingTest {
 
     private static GraknConfig config;
     static {
-        //THis override is needed so we can test in a reasonable time frame
+        //This override is needed so we can test in a reasonable time frame
         config = EngineContext.createTestConfig();
         config.setConfigProperty(GraknConfigKey.POST_PROCESSOR_DELAY, 1);
     }

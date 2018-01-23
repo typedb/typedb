@@ -50,14 +50,14 @@ import static com.codahale.metrics.MetricRegistry.name;
 public class CountPostProcessor {
     private final static Logger LOG = LoggerFactory.getLogger(CountPostProcessor.class);
     private final RedisCountStorage redis;
-    private final GraknConfig engineConfig;
     private final MetricRegistry metricRegistry;
     private final EngineGraknTxFactory factory;
     private final LockProvider lockProvider;
+    private final long shardingThreshold;
 
     private CountPostProcessor(GraknConfig engineConfig, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry, RedisCountStorage countStorage) {
         this.redis = countStorage;
-        this.engineConfig = engineConfig;
+        this.shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
         this.metricRegistry = metricRegistry;
         this.factory = factory;
         this.lockProvider = lockProvider;
@@ -73,8 +73,6 @@ public class CountPostProcessor {
      * @param commitLog The commit log containing the details of the job
      */
     public void updateCounts(CommitLog commitLog){
-        final long shardingThreshold = engineConfig.getProperty(GraknConfigKey.SHARDING_THRESHOLD);
-
         try (Timer.Context context = metricRegistry.timer(name(CountPostProcessor.class, "execution")).time()) {
             Map<ConceptId, Long> jobs = commitLog.instanceCount();
             metricRegistry.histogram(name(CountPostProcessor.class, "jobs"))

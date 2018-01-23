@@ -62,7 +62,6 @@ public class PostProcessingTask implements BackgroundTask{
         kespaces.forEach(keyspace -> {
             String index = indexPostProcessor.popIndex(keyspace);
             if(index != null) {
-                //TODO: Is 5 minutes too long?
                 threadPool.schedule(() -> processIndex(keyspace, index), postprocessingDelay, TimeUnit.SECONDS);
             }
         });
