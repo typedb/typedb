@@ -45,13 +45,13 @@ import java.util.stream.Collectors;
 public class PostProcessingTask implements BackgroundTask{
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
     private final EngineGraknTxFactory factory;
-    private final PostProcessor postProcessor;
+    private final IndexPostProcessor indexPostProcessor;
     private final ScheduledExecutorService threadPool;
     private final int postprocessingDelay;
 
-    public PostProcessingTask(EngineGraknTxFactory factory,  PostProcessor postProcessor, GraknConfig config){
+    public PostProcessingTask(EngineGraknTxFactory factory,  IndexPostProcessor indexPostProcessor, GraknConfig config){
         this.factory = factory;
-        this.postProcessor = postProcessor;
+        this.indexPostProcessor = indexPostProcessor;
         this.threadPool = Executors.newScheduledThreadPool(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE));
         this.postprocessingDelay = config.getProperty(GraknConfigKey.POST_PROCESSOR_DELAY);
     }
@@ -60,7 +60,7 @@ public class PostProcessingTask implements BackgroundTask{
     public void run() {
         Set<Keyspace> kespaces = factory.systemKeyspace().keyspaces();
         kespaces.forEach(keyspace -> {
-            String index = postProcessor.index().popIndex(keyspace);
+            String index = indexPostProcessor.popIndex(keyspace);
             if(index != null) {
                 //TODO: Is 5 minutes too long?
                 threadPool.schedule(() -> processIndex(keyspace, index), postprocessingDelay, TimeUnit.SECONDS);
@@ -76,13 +76,13 @@ public class PostProcessingTask implements BackgroundTask{
      * @param index the index to be post processed
      */
     public void processIndex(Keyspace keyspace, String index){
-        Set<ConceptId> ids = postProcessor.index().popIds(keyspace, index);
+        Set<ConceptId> ids = indexPostProcessor.popIds(keyspace, index);
 
         //No need to post process if another engine has beaten you to doing it
         if(ids.isEmpty()) return;
 
         try(GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)){
-            postProcessor.index().mergeDuplicateConcepts(tx, index, ids);
+            indexPostProcessor.mergeDuplicateConcepts(tx, index, ids);
             tx.commit();
         } catch (Exception e){
             String stringIds = ids.stream().map(ConceptId::getValue).collect(Collectors.joining(","));

@@ -32,7 +32,7 @@ import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * <p>
- *     Reid Server Connection Manager
+ *     Redis Server Connection Manager
  * </p>
  *
  * <p>

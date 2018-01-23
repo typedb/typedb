@@ -44,7 +44,6 @@ public class PostProcessingTaskTest {
     private Keyspace keyspaceA = Keyspace.of("a");
     private Set<Keyspace> keyspaces = new HashSet<>(Arrays.asList(keyspaceA, Keyspace.of("b"), Keyspace.of("c")));
     private EngineGraknTxFactory factory;
-    private RedisIndexStorage storage;
     private IndexPostProcessor indexPostProcessor;
     private GraknConfig config;
     private PostProcessor postProcessor;
@@ -58,7 +57,6 @@ public class PostProcessingTaskTest {
         factory = mock(EngineGraknTxFactory.class);
         when(factory.systemKeyspace()).thenReturn(systemKeyspace);
 
-        storage = mock(RedisIndexStorage.class);
         indexPostProcessor = mock(IndexPostProcessor.class);
         postProcessor = PostProcessor.create(indexPostProcessor, mock(CountPostProcessor.class));
 
@@ -66,7 +64,7 @@ public class PostProcessingTaskTest {
         when(config.getProperty(GraknConfigKey.POST_PROCESSOR_POOL_SIZE)).thenReturn(5);
         when(config.getProperty(GraknConfigKey.POST_PROCESSOR_DELAY)).thenReturn(1);
 
-        postProcessingTask = new PostProcessingTask(factory, postProcessor, config);
+        postProcessingTask = new PostProcessingTask(factory, indexPostProcessor, config);
     }
 
     @Test
