@@ -55,32 +55,31 @@ public interface GraqlConverter<Builder, T> {
      */
     @CheckReturnValue
     default T convert(Object object) {
-        Builder builder = build(false, object);
+        Builder builder = build(object);
         return complete(builder);
     }
 
     /**
      * Convert any object into a builder
-     * @param inner whether this object is within a collection
      * @param object the object to convert into a builder
      * @return the object as a builder
      */
     @CheckReturnValue
-    default Builder build(boolean inner, Object object) {
+    default Builder build(Object object) {
         if (object instanceof Concept) {
-            return build(inner, (Concept) object);
+            return build((Concept) object);
         } else if (object instanceof Boolean) {
-            return build(inner, (boolean) object);
+            return build((boolean) object);
         } else if (object instanceof Optional) {
-            return build(inner, (Optional<?>) object);
+            return build((Optional<?>) object);
         } else if (object instanceof Collection) {
-            return build(inner, (Collection<?>) object);
+            return build((Collection<?>) object);
         } else if (object instanceof Answer) {
-            return build(inner, (Answer) object);
+            return build((Answer) object);
         } else if (object instanceof Map) {
-            return build(inner, (Map<?, ?>) object);
+            return build((Map<?, ?>) object);
         } else {
-            return buildDefault(inner, object);
+            return buildDefault(object);
         }
     }
 
@@ -94,66 +93,59 @@ public interface GraqlConverter<Builder, T> {
 
     /**
      * Convert any concept into a builder
-     * @param inner whether this concept is within a collection
      * @param concept the concept to convert into a builder
      * @return the concept as a builder
      */
     @CheckReturnValue
-    Builder build(boolean inner, Concept concept);
+    Builder build(Concept concept);
 
     /**
      * Convert any boolean into a builder
-     * @param inner whether this boolean is within a collection
      * @param bool the boolean to convert into a builder
      * @return the boolean as a builder
      */
     @CheckReturnValue
-    Builder build(boolean inner, boolean bool);
+    Builder build(boolean bool);
 
     /**
      * Convert any optional into a builder
-     * @param inner whether this optional is within a collection
      * @param optional the optional to convert into a builder
      * @return the optional as a builder
      */
     @CheckReturnValue
-    Builder build(boolean inner, Optional<?> optional);
+    Builder build(Optional<?> optional);
 
     /**
      * Convert any collection into a builder
-     * @param inner whether this collection is within a collection
      * @param collection the collection to convert into a builder
      * @return the collection as a builder
      */
     @CheckReturnValue
-    Builder build(boolean inner, Collection<?> collection);
+    Builder build(Collection<?> collection);
 
     /**
      * Convert any map into a builder
-     * @param inner whether this map is within a collection
      * @param map the map to convert into a builder
      * @return the map as a builder
      */
     @CheckReturnValue
-    Builder build(boolean inner, Map<?, ?> map);
+    Builder build(Map<?, ?> map);
 
     /**
      * Convert any {@link Answer} into a builder
-     * @param inner whether this map is within a collection
      * @param answer the answer to convert into a builder
      * @return the map as a builder
      */
     @CheckReturnValue
-    default Builder build(boolean inner, Answer answer) {
-        return build(inner, answer.map());
+    default Builder build(Answer answer) {
+        return build(answer.map());
     }
 
     /**
      * Default conversion behaviour if none of the more specific methods can be used
-     * @param inner whether this object is within a collection
      * @param object the object to convert into a builder
      * @return the object as a builder
      */
     @CheckReturnValue
-    Builder buildDefault(boolean inner, Object object);
+    Builder buildDefault(Object object);
 }

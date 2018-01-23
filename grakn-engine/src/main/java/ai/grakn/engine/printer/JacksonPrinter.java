@@ -56,43 +56,43 @@ public class JacksonPrinter implements Printer<Object>{
     }
 
     @Override
-    public Object build(boolean inner, Concept concept) {
+    public Object build(Concept concept) {
         return ConceptBuilder.build(concept);
     }
 
     @Override
-    public Object build(boolean inner, ai.grakn.graql.admin.Answer answer) {
+    public Object build(ai.grakn.graql.admin.Answer answer) {
         return Answer.create(answer);
     }
 
     @Override
-    public Object build(boolean inner, boolean bool) {
+    public Object build(boolean bool) {
         return bool;
     }
 
     @Override
-    public Object buildDefault(boolean inner, Object object) {
+    public Object buildDefault(Object object) {
         return object;
     }
 
     @Override
-    public Object build(boolean inner, Map map) {
+    public Object build(Map map) {
         Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
         return entries.collect(Collectors.toMap(
-                entry -> build(inner, entry.getKey()),
-                entry -> build(inner, entry.getKey())
+                entry -> build(entry.getKey()),
+                entry -> build(entry.getKey())
         ));
     }
 
     @Override
-    public Object build(boolean inner, Collection collection) {
-        return collection.stream().map(object -> build(inner, object)).collect(Collectors.toList());
+    public Object build(Collection collection) {
+        return collection.stream().map(object -> build(object)).collect(Collectors.toList());
     }
 
     @Override
-    public Object build(boolean inner, Optional optional) {
+    public Object build(Optional optional) {
         if(optional.isPresent()){
-            return build(inner, optional.get());
+            return build(optional.get());
         } else {
             return null;
         }
