@@ -52,7 +52,7 @@ public class CountPostProcessorTest {
     private static EngineGraknTxFactory factoryMock = mock(EngineGraknTxFactory.class);
     private static LockProvider lockProviderMock = mock(LockProvider.class);
     private static MetricRegistry metricRegistry = new MetricRegistry();
-    private static CountPostProcessor countPostProcessor = CountPostProcessor.create(configMock, factoryMock, lockProviderMock, metricRegistry, countStorage);
+    private static CountPostProcessor countPostProcessor;
 
     private final Map<ConceptId, Long> newInstanceCounts = new HashMap<>();
     private final Keyspace keyspace = SampleKBLoader.randomKeyspace();
