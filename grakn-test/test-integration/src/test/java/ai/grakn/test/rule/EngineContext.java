@@ -66,13 +66,14 @@ public class EngineContext extends CompositeTestRule {
 
     private GraknEngineServer server;
 
-    private final GraknConfig config = createTestConfig();
+    private final GraknConfig config;
     private JedisPool jedisPool;
     private Service spark;
 
     private final TestRule redis;
 
     private EngineContext(boolean inMemoryRedis){
+        config = createTestConfig();
         SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         int redisPort = redisURI.getPort();
 
@@ -81,6 +82,18 @@ public class EngineContext extends CompositeTestRule {
         } else {
             redis = EmbeddedRedisContext.create(redisPort);
         }
+    }
+
+    private EngineContext(GraknConfig config, TestRule redis){
+        this.config = config;
+        this.redis = redis;
+    }
+
+    public static EngineContext create(GraknConfig config){
+        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
+        int redisPort = redisURI.getPort();
+        TestRule redis = InMemoryRedisContext.create(redisPort);
+        return new EngineContext(config, redis);
     }
 
     /**
@@ -234,7 +247,7 @@ public class EngineContext extends CompositeTestRule {
     /**
      * Create a configuration for use in tests, using random ports.
      */
-    private static GraknConfig createTestConfig() {
+    public static GraknConfig createTestConfig() {
         GraknConfig config = GraknConfig.create();
 
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, GraknTestUtil.getEphemeralPort());

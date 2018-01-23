@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -28,6 +29,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.task.BackgroundTask;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
@@ -61,8 +64,15 @@ public class PostProcessingTest {
     private PostProcessor postProcessor;
     private GraknSession session;
 
+    private static GraknConfig config;
+    static {
+        //THis override is needed so we can test in a reasonable time frame
+        config = EngineContext.createTestConfig();
+        config.setConfigProperty(GraknConfigKey.POST_PROCESSOR_DELAY, 1);
+    }
+
     @ClassRule
-    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static final EngineContext engine = EngineContext.create(config);
 
     @BeforeClass
     public static void onlyRunOnTinker() {
@@ -131,7 +141,7 @@ public class PostProcessingTest {
         postProcessor.submit(commitLog);
 
         //Force running the PP job
-
+        engine.server().backgroundTaskRunner().tasks().forEach(BackgroundTask::run);
 
         Thread.sleep(2000);
 

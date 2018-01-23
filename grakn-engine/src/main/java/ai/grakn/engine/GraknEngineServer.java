@@ -95,7 +95,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     @VisibleForTesting
-    BackgroundTaskRunner backgroundTaskRunner(){
+    public BackgroundTaskRunner backgroundTaskRunner(){
         return backgroundTaskRunner;
     }
 
