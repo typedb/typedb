@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -26,10 +26,13 @@ import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.GraknCreator;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.postprocessing.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
@@ -40,6 +43,7 @@ import org.junit.rules.TestRule;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import spark.Service;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -66,28 +70,23 @@ public class EngineContext extends CompositeTestRule {
 
     private final GraknConfig config = createTestConfig();
     private JedisPool jedisPool;
+    private Service spark;
 
     private final TestRule redis;
 
-    private EngineContext(boolean inMemoryRedis){
+    private EngineContext(){
         SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         int redisPort = redisURI.getPort();
-
-        if (inMemoryRedis) {
-            redis = InMemoryRedisContext.create(redisPort);
-        } else {
-            redis = EmbeddedRedisContext.create(redisPort);
-        }
+        redis = InMemoryRedisContext.create(redisPort);
     }
 
     /**
      * Creates a {@link EngineContext} for testing which uses an in-memory redis mock.
-     * This is the default test environment which should be used because starting an embedded redis is a costly process.
      *
      * @return a new {@link EngineContext} for testing
      */
-    public static EngineContext createWithInMemoryRedis(){
-        return new EngineContext(true);
+    public static EngineContext create(){
+        return new EngineContext();
     }
 
     public GraknEngineServer server() {
@@ -158,7 +157,15 @@ public class EngineContext extends CompositeTestRule {
 
         // start engine
         setRestAssuredUri(config);
-        server = new GraknCreator().cleanGraknEngineServer(config);
+
+        EngineID id = EngineID.me();
+        spark = Service.ignite();
+        GraknEngineStatus status = new GraknEngineStatus();
+        MetricRegistry metricRegistry = new MetricRegistry();
+        RedisWrapper redis = RedisWrapper.create(config);
+
+        GraknCreator creator = GraknCreator.create(id, spark, status, metricRegistry, config, redis);
+        server = creator.instantiateGraknEngineServer(Runtime.getRuntime());
         server.start();
 
         LOG.info("engine started on " + uri());
@@ -184,6 +191,7 @@ public class EngineContext extends CompositeTestRule {
                 // There is no way to stop the embedded Casssandra, no such API offered.
             }, "Error closing engine");
             jedisPool.close();
+            spark.stop();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }

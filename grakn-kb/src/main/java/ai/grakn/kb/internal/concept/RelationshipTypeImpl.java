@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -68,14 +68,21 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     @Override
     public Relationship addRelationship() {
-        return addInstance(Schema.BaseType.RELATIONSHIP,
-                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), false, true);
+        return addRelationship(false);
     }
 
     public Relationship addRelationshipInferred() {
-        return addInstance(Schema.BaseType.RELATIONSHIP,
-                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), true, true);
+        return addRelationship(true);
     }
+
+    public Relationship addRelationship(boolean isInferred) {
+        Relationship relationship = addInstance(Schema.BaseType.RELATIONSHIP,
+                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred, true);
+        vertex().tx().txCache().addNewRelationship(relationship);
+        return relationship;
+    }
+
+
 
     @Override
     public Stream<Role> relates() {

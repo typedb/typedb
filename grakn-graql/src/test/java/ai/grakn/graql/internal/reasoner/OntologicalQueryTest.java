@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -29,6 +29,7 @@ import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -43,6 +44,34 @@ public class OntologicalQueryTest {
 
     @Rule
     public final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
+
+    //TODO need to correctly return THING and RELATIONSHIP mapping for %type
+    @Ignore
+    @Test
+    public void allInstancesAndTheirType(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String queryString = "match $x isa $type; get;";
+
+        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+    }
+
+    @Test
+    public void allRolePlayerPairsAndTheirRelationType(){
+        GraknTx tx = testContext.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+        String relationString = "match $x isa relationship;get;";
+        String rolePlayerPairString = "match ($u, $v) isa $type; get;";
+
+        List<Answer> rolePlayerPairs = qb.<GetQuery>parse(rolePlayerPairString).execute();
+        //TODO doesn't include THING and RELATIONSHIP, with RELATIONSHIP it's 38, with THING as well it should be 57
+        assertEquals(rolePlayerPairs.size(), 25);
+
+        List<Answer> relations = qb.<GetQuery>parse(relationString).execute();
+        //one implicit, 3 x binary, 2 x ternary, 7 (3 reflexive) x reifying-relation
+        assertEquals(relations.size(), 13);
+    }
 
     /** HasAtom **/
 
@@ -135,10 +164,11 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa $type; $type relates role1; get;";
 
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+
+        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
         List<Answer> relations = qb.<GetQuery>parse("match $x isa relationship;get;").execute();
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
-        assertEquals(answers.size(),  relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3);
-        assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
+        assertEquals(answers.size(), relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3);
     }
 
     @Test

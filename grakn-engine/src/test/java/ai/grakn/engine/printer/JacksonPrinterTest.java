@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -21,14 +21,18 @@ package ai.grakn.engine.printer;
 import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.SampleKBContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -77,6 +81,17 @@ public class JacksonPrinterTest {
     public void whenGraqlQueryReturnsBoolean_EnsureNativeBooleanRepresentationIsReturned() throws JsonProcessingException {
         Boolean bool = rule.tx().graql().match(var("x").isa("person")).aggregate(ask()).execute();
         assertWrappersMatch(bool, bool);
+    }
+
+    @Test
+    public void whenPrintingMap_MapGraqlStringOverKeyAndValues() {
+        QueryAnswer ans = new QueryAnswer();
+
+        Map<?, ?> map = ImmutableMap.of(ans, ImmutableList.of(ans));
+
+        Map<?, ?> expected = ImmutableMap.of(Answer.create(ans), ImmutableList.of(Answer.create(ans)));
+
+        assertEquals(expected, printer.graqlString(false, map));
     }
 
     private static void assertWrappersMatch(Object expected, Object toPrint) throws JsonProcessingException {

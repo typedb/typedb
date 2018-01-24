@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  *
  * <p>
  * Lazy container class for storing performed query resolutions.
- * NB: In case the entry is not found, get methods perform a record operation.
+ * NB: For the GET operation, in the case the entry is not found, a RECORD operation is performed.
  * </p>
  *
  * @param <Q> the type of query that is being cached
@@ -50,14 +50,15 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
 
     @Override
     public LazyAnswerIterator record(Q query, LazyAnswerIterator answers) {
-        CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
+        CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
             Stream<Answer> unifiedStream = answers.unify(query.getMultiUnifier(equivalentQuery)).stream();
-            this.put(match.query(), match.cachedElement().merge(unifiedStream));
+            //NB: entry overwrite
+            this.putEntry(match.query(), match.cachedElement().merge(unifiedStream));
             return getAnswerIterator(query);
         }
-        this.put(query, answers);
+        this.putEntry(query, answers);
         return answers;
     }
 
@@ -68,16 +69,17 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
 
     @Override
     public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<Answer> answers){
-        CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
+        CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match!= null) {
             Q equivalentQuery = match.query();
             MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery);
             Stream<Answer> unifiedStream = answers.flatMap(a -> a.unify(multiUnifier));
-            this.put(match.query(), match.cachedElement().merge(unifiedStream));
+            //NB: entry overwrite
+            this.putEntry(match.query(), match.cachedElement().merge(unifiedStream));
             return getAnswerIterator(query);
         }
         LazyAnswerIterator liter = new LazyAnswerIterator(answers);
-        this.put(query, liter);
+        this.putEntry(query, liter);
         return liter;
     }
 
@@ -88,7 +90,7 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
 
     @Override
     public Pair<LazyAnswerIterator, MultiUnifier> getAnswersWithUnifier(Q query) {
-        CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
+        CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
@@ -109,7 +111,7 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
 
     @Override
     public Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
-        CacheEntry<Q, LazyAnswerIterator> match =  this.get(query);
+        CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
@@ -142,10 +144,10 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
                 .filter(queries::contains)
                 .filter(this::contains)
                 .forEach( q -> {
-                    CacheEntry<Q, LazyAnswerIterator> match =  this.get(q);
+                    CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(q);
                     Set<Answer> s = match.cachedElement().stream().collect(Collectors.toSet());
                     s.removeAll(c2.getAnswerStream(q).collect(Collectors.toSet()));
-                    this.put(match.query(), new LazyAnswerIterator(s.stream()));
+                    this.putEntry(match.query(), new LazyAnswerIterator(s.stream()));
                 });
     }
 

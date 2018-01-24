@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -23,6 +23,8 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.Iterators;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -34,12 +36,14 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-public class RuleState extends ConjunctiveState{
+public class RuleState extends QueryStateBase{
 
     private final InferenceRule rule;
+    private final Iterator<ResolutionState> bodyIterator;
 
     public RuleState(InferenceRule rule, Answer sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
-        super(rule.getBody(), sub, unifier, parent, visitedSubGoals, cache);
+        super(sub, unifier, parent, visitedSubGoals, cache);
+        this.bodyIterator = Iterators.singletonIterator(rule.getBody().subGoal(sub, unifier, this, visitedSubGoals, cache));
         this.rule = rule;
     }
 
@@ -51,4 +55,13 @@ public class RuleState extends ConjunctiveState{
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState(), rule) : null;
     }
 
+    @Override
+    public ResolutionState generateSubGoal() {
+        return bodyIterator.hasNext() ? bodyIterator.next() : null;
+    }
+
+    @Override
+    Answer consumeAnswer(AnswerState state) {
+        return state.getSubstitution();
+    }
 }

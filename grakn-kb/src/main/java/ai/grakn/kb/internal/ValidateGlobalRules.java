@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -387,5 +387,16 @@ class ValidateGlobalRules {
                 });
 
         return errors;
+    }
+
+    /**
+     * Checks if a {@link Relationship} has at least one role player.
+     * @param relationship The {@link Relationship} to check
+     */
+    static Optional<String> validateRelationshipHasRolePlayers(Relationship relationship) {
+        if(!relationship.rolePlayers().findAny().isPresent()){
+            return Optional.of(ErrorMessage.VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS.getMessage(relationship.getId(), relationship.type().getLabel()));
+        }
+        return Optional.empty();
     }
 }

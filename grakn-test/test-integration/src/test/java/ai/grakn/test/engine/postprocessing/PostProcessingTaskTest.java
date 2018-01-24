@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -48,7 +48,7 @@ public class PostProcessingTaskTest {
     private static final ObjectMapper mapper = new ObjectMapper();
     public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
     @ClassRule
-    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static EngineContext engine = EngineContext.create();
 
     private String mockResourceIndex;
     private Set<ConceptId> mockResourceSet;

@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -21,13 +21,17 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.util.SimpleURI;
+import ai.grakn.test.rule.CompositeTestRule;
 import ai.grakn.util.GraknTestUtil;
+import ai.grakn.util.SimpleURI;
+import com.google.common.collect.ImmutableList;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.builder.RequestSpecBuilder;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
 import spark.Service;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -37,10 +41,11 @@ import static ai.grakn.engine.HttpHandler.configureSpark;
  * Context that starts spark
  * @author Felix Chapman
  */
-public class SparkContext extends ExternalResource {
+public class SparkContext extends CompositeTestRule {
 
     private final BiConsumer<Service, GraknConfig> createControllers;
     private final GraknConfig config = GraknConfig.create();
+    private final TemporaryFolder staticFiles = new TemporaryFolder();
 
     private Service spark;
     
@@ -100,7 +105,13 @@ public class SparkContext extends ExternalResource {
         return config;
     }
 
+    public TemporaryFolder staticFiles() {
+        return staticFiles;
+    }
+
     public void start() {
+        config.setConfigProperty(GraknConfigKey.STATIC_FILES_PATH, staticFiles.getRoot().toPath());
+
         spark = startSparkCopyOnNewPort();
 
         createControllers.accept(spark, config);
@@ -121,6 +132,11 @@ public class SparkContext extends ExternalResource {
                 running = false;
             }
         }
+    }
+
+    @Override
+    protected List<TestRule> testRules() {
+        return ImmutableList.of(staticFiles);
     }
 
     @Override

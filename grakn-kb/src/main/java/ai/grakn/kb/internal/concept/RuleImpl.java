@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -48,7 +48,6 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
         super(vertexElement, type);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
-        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(sup(), when, then));
     }
 
     public static RuleImpl get(VertexElement vertexElement){
@@ -108,13 +107,6 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
         } else {
             return vertex().tx().graql().parser().parsePattern(value);
         }
-    }
-
-    /**
-     * Generate the internal hash in order to perform a faster lookups and ensure rules are unique
-     */
-    static String generateRuleIndex(Rule type, Pattern when, Pattern then){
-        return "RuleType_" + type.getLabel().getValue() + "_LHS:" + when.hashCode() + "_RHS:" + then.hashCode();
     }
 
     public static <X extends Type, Y extends Thing> RuleImpl from(Rule type){

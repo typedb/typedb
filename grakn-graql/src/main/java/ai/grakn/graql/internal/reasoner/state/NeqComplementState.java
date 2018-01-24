@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 public class NeqComplementState extends AtomicState {
 
     private final Answer predicateSub;
-    private final AtomicState complementState;
+    private final ResolutionState complementState;
     private boolean visited = false;
 
     private final Set<NeqPredicate> predicates;

@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -44,8 +44,7 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
-import ai.grakn.graql.internal.reasoner.state.AtomicState;
-import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
+import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -302,14 +301,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public AtomicState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return getAtoms(NeqPredicate.class).findFirst().isPresent()?
-                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
-                new AtomicState(this, sub, u, parent, subGoals, cache);
+    public ResolutionState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
     }
 
     @Override
-    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+        Atom atom = getAtom();
+        return atom.getSchemaConcept() == null?
+                atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new) :
+                Stream.of(this);
+    }
+
+    @Override
+    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
         Pair<Stream<Answer>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
         MultiUnifier cacheUnifier = cacheEntry.getValue().inverse();
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
@@ -317,29 +322,21 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
 
-        Iterator<QueryStateBase> subGoalIterator;
+        Iterator<ResolutionState> subGoalIterator;
         //if this is ground and exists in the db then do not resolve further
-        if(subGoals.contains(this)
+        if(visitedSubGoals.contains(this)
                 || (this.isGround() && dbIterator.hasNext())){
             subGoalIterator = Collections.emptyIterator();
         } else {
-            subGoals.add(this);
+            visitedSubGoals.add(this);
             subGoalIterator = this.getRuleStream()
-                    .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, subGoals, cache))
+                    .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
                     .iterator();
         }
         return new Pair<>(
                 Iterators.concat(dbIterator, subGoalIterator),
                 cacheUnifier
         );
-    }
-
-    @Override
-    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
-        Atom atom = getAtom();
-        return atom.getSchemaConcept() == null?
-            atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new) :
-            Stream.of(this);
     }
 
     /**

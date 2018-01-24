@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -38,6 +38,13 @@ import java.util.stream.Stream;
  *
  * <p>
  * Generic container class for storing performed query resolutions.
+ * A one-to-one mapping is ensured between queries and entries.
+ * On retrieval, a relevant entry is identified by means of a query alpha-equivalence check.
+ *
+ * Defines two basic operations:
+ * - GET(Query) - retrieve an entry corresponding to a provided query, if entry doesn't exist return db lookup result of the query.
+ * - RECORD(Query) - if the query entry exists, update the entry, otherwise create a new entry. In each case return an up-to-date entry.
+ *
  * </p>
  *
  * @param <Q> the type of query that is being cached
@@ -58,13 +65,13 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
     /**
      * @return structural cache of this cache
      */
-    public StructuralCache<Q> structuralCache(){ return sCache;}
+    StructuralCache<Q> structuralCache(){ return sCache;}
 
     /**
      * @param query for which the entry is to be retrieved
      * @return corresponding cache entry if any or null
      */
-    public CacheEntry<Q, T> get(Q query){ return cache.get(query);}
+    CacheEntry<Q, T> getEntry(Q query){ return cache.get(query);}
 
     /**
      * Associates the specified answers with the specified query in this cache adding an (query) -> (answers) entry
@@ -72,13 +79,13 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @param answers of the association
      * @return previous value if any or null
      */
-    public CacheEntry<Q, T> put(Q query, T answers){ return cache.put(query, new CacheEntry<>(query, answers));}
+    CacheEntry<Q, T> putEntry(Q query, T answers){ return cache.put(query, new CacheEntry<>(query, answers));}
 
     /**
      * Copies all of the mappings from the specified map to this cache
      * @param map with mappings to be copied
      */
-    public void putAll(Map<Q, CacheEntry<Q, T>> map){ cache.putAll(map);}
+    void putAll(Map<Q, CacheEntry<Q, T>> map){ cache.putAll(map);}
 
     /**
      * Perform cache union
@@ -141,7 +148,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
     public abstract LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers);
 
     /**
-     * retrieve cached answers for provided query
+     * retrieve (possibly) cached answers for provided query
      * @param query for which to retrieve answers
      * @return unified cached answers
      */

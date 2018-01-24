@@ -1,9 +1,9 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * Copyright (C) 2016-2018 Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal;
 
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -64,6 +65,9 @@ class Validator {
     public boolean validate(){
         //Validate Things
         graknGraph.txCache().getModifiedThings().forEach(this::validateThing);
+
+        //Validate Relationships
+        graknGraph.txCache().getNewRelationships().forEach(this::validateRelationship);
 
         //Validate RoleTypes
         graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
@@ -130,5 +134,13 @@ class Validator {
      */
     private void validateThing(Thing thing) {
         ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(thing).ifPresent(errorsFound::add);
+    }
+
+    /**
+     * Validates that {@link Relationship}s can be committed.
+     * @param relationship The {@link Relationship} to validate
+     */
+    private void validateRelationship(Relationship relationship){
+        ValidateGlobalRules.validateRelationshipHasRolePlayers(relationship).ifPresent(errorsFound::add);
     }
 }
