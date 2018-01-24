@@ -29,9 +29,7 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.data.RedisWrapper;
-import ai.grakn.engine.postprocessing.RedisCountStorage;
-import ai.grakn.engine.tasks.manager.TaskManager;
-import ai.grakn.engine.tasks.mock.MockBackgroundTask;
+import ai.grakn.engine.task.postprocessing.RedisCountStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
@@ -68,16 +66,29 @@ public class EngineContext extends CompositeTestRule {
 
     private GraknEngineServer server;
 
-    private final GraknConfig config = createTestConfig();
+    private final GraknConfig config;
     private JedisPool jedisPool;
     private Service spark;
 
     private final TestRule redis;
 
     private EngineContext(){
+        config = createTestConfig();
         SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         int redisPort = redisURI.getPort();
         redis = InMemoryRedisContext.create(redisPort);
+    }
+
+    private EngineContext(GraknConfig config, TestRule redis){
+        this.config = config;
+        this.redis = redis;
+    }
+
+    public static EngineContext create(GraknConfig config){
+        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
+        int redisPort = redisURI.getPort();
+        TestRule redis = InMemoryRedisContext.create(redisPort);
+        return new EngineContext(config, redis);
     }
 
     /**
@@ -111,10 +122,6 @@ public class EngineContext extends CompositeTestRule {
         this.jedisPool = new JedisPool(poolConfig, host, port);
         MetricRegistry metricRegistry = new MetricRegistry();
         return RedisCountStorage.create(jedisPool, metricRegistry);
-    }
-
-    public TaskManager getTaskManager(){
-        return server.getTaskManager();
     }
 
     public SimpleURI uri() {
@@ -176,7 +183,6 @@ public class EngineContext extends CompositeTestRule {
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
-        noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
             noThrow(() -> {
@@ -235,7 +241,7 @@ public class EngineContext extends CompositeTestRule {
     /**
      * Create a configuration for use in tests, using random ports.
      */
-    private static GraknConfig createTestConfig() {
+    public static GraknConfig createTestConfig() {
         GraknConfig config = GraknConfig.create();
 
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, GraknTestUtil.getEphemeralPort());

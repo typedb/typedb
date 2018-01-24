@@ -21,9 +21,10 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.util.GraknVersion;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -48,15 +48,15 @@ public class GraknEngineServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
 
     private final GraknConfig prop;
-    private final TaskManager taskManager;
     private final EngineGraknTxFactory factory;
     private final LockProvider lockProvider;
     private final GraknEngineStatus graknEngineStatus;
     private final RedisWrapper redisWrapper;
     private final HttpHandler httpHandler;
     private final EngineID engineId;
+    private final BackgroundTaskRunner backgroundTaskRunner;
 
-    public GraknEngineServer(GraknConfig prop, TaskManager taskManager, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, HttpHandler httpHandler, EngineID engineId) {
+    public GraknEngineServer(GraknConfig prop, EngineGraknTxFactory factory, LockProvider lockProvider, GraknEngineStatus graknEngineStatus, RedisWrapper redisWrapper, HttpHandler httpHandler, EngineID engineId, BackgroundTaskRunner backgroundTaskRunner) {
         this.prop = prop;
         this.graknEngineStatus = graknEngineStatus;
         // Redis connection pool
@@ -64,16 +64,13 @@ public class GraknEngineServer implements AutoCloseable {
         // Lock provider
         this.lockProvider = lockProvider;
         this.factory = factory;
-        // Task manager
-        this.taskManager = taskManager;
         this.httpHandler = httpHandler;
         this.engineId = engineId;
+        this.backgroundTaskRunner = backgroundTaskRunner;
     }
 
     public void start() {
         redisWrapper.testConnection();
-        LOG.info("Starting task manager {}", taskManager.getClass().getCanonicalName());
-        taskManager.start();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
                 prop.getProperty(GraknConfigKey.SERVER_HOST_NAME),
@@ -97,16 +94,17 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
+    @VisibleForTesting
+    public BackgroundTaskRunner backgroundTaskRunner(){
+        return backgroundTaskRunner;
+    }
+
     @Override
     public void close() {
         synchronized (this) {
-            try {
-                taskManager.close();
-            } catch (Exception e){
-                LOG.error(getFullStackTrace(e));
-            }
             httpHandler.stopHTTP();
             redisWrapper.close();
+            backgroundTaskRunner.close();
         }
     }
 
@@ -141,14 +139,6 @@ public class GraknEngineServer implements AutoCloseable {
 
     public EngineGraknTxFactory factory() {
         return factory;
-    }
-
-    public TaskManager getTaskManager() {
-        return taskManager;
-    }
-
-    public GraknEngineStatus getGraknEngineStatus() {
-        return graknEngineStatus;
     }
 
     public HttpHandler getHttpHandler() {

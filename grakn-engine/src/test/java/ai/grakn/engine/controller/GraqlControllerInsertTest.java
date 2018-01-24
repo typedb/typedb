@@ -24,8 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessor;
-import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Printer;
@@ -72,14 +71,13 @@ public class GraqlControllerInsertTest {
     private final GraknTx tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
-    private static final TaskManager taskManager = mock(TaskManager.class);
     private static final PostProcessor postProcessor = mock(PostProcessor.class);
     private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static final Printer printer = mock(Printer.class);
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new GraqlController(mockFactory, spark, taskManager, postProcessor, printer, new MetricRegistry());
+        new GraqlController(mockFactory, spark, postProcessor, printer, new MetricRegistry());
     });
 
     @Before
@@ -102,7 +100,6 @@ public class GraqlControllerInsertTest {
 
     @After
     public void clearExceptions(){
-        reset(taskManager);
         reset(postProcessor);
     }
 
@@ -214,29 +211,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsertAndNoLogs_PPTaskIsNotSubmitted(){
-        String query = "insert $x isa person has name 'Alice';";
-
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.empty());
-
-        sendRequest(query);
-
-        verify(taskManager, times(0)).addTask(any(), any());
-    }
-
-    @Test
-    public void POSTGraqlInsertAndNoLogs_CountsAreNotUpdated(){
-        String query = "insert $x isa person has name 'Alice';";
-
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.empty());
-
-        sendRequest(query);
-
-        verify(postProcessor, times(0)).updateCounts(any(), any());
-    }
-
-    @Test
-    public void POSTGraqlInsert_PPTaskIsSubmitted(){
+    public void POSTGraqlInsert_CommitLogsAreSubmitted(){
         String query = "insert $x isa person has name 'Alice';";
 
         CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
@@ -244,19 +219,7 @@ public class GraqlControllerInsertTest {
 
         sendRequest(query);
 
-        verify(taskManager, times(1)).addTask(any(), any());
-    }
-
-    @Test
-    public void POSTGraqlInsert_CountsAreUpdated(){
-        String query = "insert $x isa person has name 'Alice';";
-
-        CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
-        when(tx.admin().commitSubmitNoLogs()).thenReturn(Optional.of(commitLog));
-
-        sendRequest(query);
-
-        verify(postProcessor, times(1)).updateCounts(tx.keyspace(), commitLog);
+        verify(postProcessor, times(1)).submit(commitLog);
     }
 
     private Response sendRequest(String query){
