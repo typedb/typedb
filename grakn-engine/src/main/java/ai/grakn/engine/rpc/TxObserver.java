@@ -25,12 +25,13 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.rpc.GraknOuterClass;
-import ai.grakn.rpc.GraknOuterClass.End;
+import ai.grakn.rpc.GraknOuterClass.Done;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.GraknOuterClass.Infer;
 import ai.grakn.rpc.GraknOuterClass.Next;
 import ai.grakn.rpc.GraknOuterClass.Open;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
+import ai.grakn.rpc.GraknOuterClass.Stop;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import io.grpc.Metadata;
@@ -85,8 +86,8 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 case NEXT:
                     next(request.getNext());
                     break;
-                case END:
-                    end(request.getEnd());
+                case STOP:
+                    stop(request.getStop());
                     break;
                 default:
                 case REQUEST_NOT_SET:
@@ -140,13 +141,13 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             QueryResult queryResult = queryResults.next();
             response = TxResponse.newBuilder().setQueryResult(queryResult).build();
         } else {
-            response = TxResponse.newBuilder().setEnd(End.getDefaultInstance()).build();
+            response = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
         }
 
         responseObserver.onNext(response);
     }
 
-    private void end(End end) {
+    private void stop(Stop stop) {
         if (queryResults == null) {
             throw error(Status.FAILED_PRECONDITION);
         }

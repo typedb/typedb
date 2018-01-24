@@ -36,12 +36,13 @@ import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.Commit;
-import ai.grakn.rpc.GraknOuterClass.End;
+import ai.grakn.rpc.GraknOuterClass.Done;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.GraknOuterClass.Infer;
 import ai.grakn.rpc.GraknOuterClass.Next;
 import ai.grakn.rpc.GraknOuterClass.Open;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
+import ai.grakn.rpc.GraknOuterClass.Stop;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.GraknOuterClass.TxType;
@@ -267,10 +268,10 @@ public class GrpcServerTest {
             tx.send(nextRequest());
             TxResponse response3 = tx.receive().elem();
 
-            TxResponse expected = TxResponse.newBuilder().setEnd(End.getDefaultInstance()).build();
+            TxResponse expected = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
             assertEquals(expected, response3);
 
-            tx.send(endRequest());
+            tx.send(stopRequest());
         }
     }
 
@@ -305,7 +306,7 @@ public class GrpcServerTest {
             tx.send(nextRequest());
             tx.receive().elem();
 
-            tx.send(endRequest());
+            tx.send(stopRequest());
         }
     }
 
@@ -315,7 +316,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
             tx.send(nextRequest());
-            tx.send(endRequest());
+            tx.send(stopRequest());
         }
 
         verify(tx.graql(), times(0)).infer(anyBoolean());
@@ -327,7 +328,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, false));
             tx.send(nextRequest());
-            tx.send(endRequest());
+            tx.send(stopRequest());
         }
 
         verify(tx.graql()).infer(false);
@@ -339,7 +340,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY, true));
             tx.send(nextRequest());
-            tx.send(endRequest());
+            tx.send(stopRequest());
         }
 
         verify(tx.graql()).infer(true);
@@ -447,10 +448,10 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenSendingEndBeforeQuery_Throw() throws Throwable {
+    public void whenSendingStopBeforeQuery_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
-            tx.send(endRequest());
+            tx.send(stopRequest());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -459,11 +460,11 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenSendingNextAfterEnd_Throw() throws Throwable {
+    public void whenSendingNextAfterStop_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.send(execQueryRequest(QUERY));
-            tx.send(endRequest());
+            tx.send(stopRequest());
             tx.send(nextRequest());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -519,8 +520,8 @@ public class GrpcServerTest {
         return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
     }
 
-    private TxRequest endRequest() {
-        return TxRequest.newBuilder().setEnd(End.getDefaultInstance()).build();
+    private TxRequest stopRequest() {
+        return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
     }
 
     private Matcher<StatusRuntimeException> hasStatus(Status status) {

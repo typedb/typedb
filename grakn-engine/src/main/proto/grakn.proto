@@ -15,14 +15,14 @@ message TxRequest {
         Open open = 1;
         Commit commit = 2;
         ExecQuery execQuery = 3;
-        Next next = 5;
-        End end = 6;
+        Next next = 4;
+        Stop stop = 5;
     }
 }
 
 /*
     Open a transaction on a keyspace. This must be the first message sent.
-    After this message, the server will accept a command message.
+    After this message, the server will send a `Done` message and then accept a command message.
 */
 message Open {
     Keyspace keyspace = 1;
@@ -31,14 +31,15 @@ message Open {
 
 /*
     Command to commit a transaction.
-    After this message, the server will not accept any further messages.
+    After this message, the server will send a `Done` message and then accept a command message.
 */
 message Commit {}
 
 /*
     Command to start executing a query.
-    The query will not actually execute unless you send a `Next` message.
-    After this message, the server will accept a `Next` or `End` message.
+    The server will return a `QueryResult` or a `Done` message.
+    After returning a `QueryResult` message, the server will accept a `Next` or `Stop` message.
+    After returnin a `Done` message, the server will accept a command message.
 */
 message ExecQuery {
     Query query = 1;
@@ -46,21 +47,23 @@ message ExecQuery {
 }
 
 /*
-    Request next result of some iterator.
-    The server will return a `QueryResult` or an `End` message.
-    After this message, the server will accept a `Next` or `End` message.
+    Request next query result.
+    The server will return a `QueryResult` or a `Done` message.
+    After returning a `QueryResult` message, the server will accept a `Next` or `Stop` message.
+    After returnin a `Done` message, the server will accept a command message.
 */
 message Next {}
 
 /*
     Tell the server we have finished executing a query.
-    After this message, the server will accept a command message.
+    After this message, the server will send a `Done` message and then accept a command message.
 */
-message End {}
+message Stop {}
 
 /*
     Toggle inference for this query.
     If `isSet` is false, then the value is ignored and the default on the server is used.
+    This allows us to have a server-side default value that is not dictated by the client.
 */
 message Infer {
     bool isSet = 1;
@@ -70,21 +73,43 @@ message Infer {
 message TxResponse {
     oneof response {
         QueryResult queryResult = 1;
-        End end = 2;
+        Done done = 2;
     }
 }
 
 message QueryResult {
     oneof queryResult {
         Answer answer = 1;
-        string otherResult = 3;
+        // This is used to represent `aggregate` and `compute` query results.
+        // These come in many different formats, so they are just returned
+        // as JSON strings.
+        string otherResult = 2;
     }
 }
+
+/*
+    Tells the client we have completed their command.
+*/
+message Done {}
 
 message Concept {
     string id = 1;
 }
 
+/*
+    Represents an answer to a `get`, `insert` or `define` query. e.g.
+
+    ```
+    $x id V123; $y id V456;
+    ```
+    is represented as:
+    ```
+    Answer {
+        "x": Concept { id: "V123" }
+        "y": Concept { id: "V456" }
+    }
+    ```
+*/
 message Answer {
     map<string, Concept> answer = 1;
 }
@@ -102,3 +127,5 @@ message Keyspace {
 message Query {
     string value = 1;
 }
+
+

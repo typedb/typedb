@@ -29,11 +29,11 @@ import ai.grakn.rpc.GraknGrpc;
 import ai.grakn.rpc.GraknGrpc.GraknStub;
 import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.Commit;
-import ai.grakn.rpc.GraknOuterClass.End;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.GraknOuterClass.Next;
 import ai.grakn.rpc.GraknOuterClass.Open;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
+import ai.grakn.rpc.GraknOuterClass.Stop;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.GraknOuterClass.TxType;
@@ -140,10 +140,10 @@ public class GrpcServerIT {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
             tx.send(execQueryRequest("match $x sub thing; get;"));
             results1 = Sets.newHashSet(queryResults(tx));
-            tx.send(endRequest());
+            tx.send(stopRequest());
             tx.send(execQueryRequest("match $x sub thing; get;"));
             results2 = Sets.newHashSet(queryResults(tx));
-            tx.send(endRequest());
+            tx.send(stopRequest());
         }
 
         assertEquals(results1, results2);
@@ -197,8 +197,8 @@ public class GrpcServerIT {
         return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
     }
 
-    private TxRequest endRequest() {
-        return TxRequest.newBuilder().setEnd(End.getDefaultInstance()).build();
+    private TxRequest stopRequest() {
+        return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
     }
 
     private List<QueryResult> queryResults(BidirectionalObserver<TxRequest, TxResponse> tx) {
@@ -213,7 +213,7 @@ public class GrpcServerIT {
                 case QUERYRESULT:
                     results.add(response.getQueryResult());
                     break;
-                case END:
+                case DONE:
                     return results.build();
                 default:
                 case RESPONSE_NOT_SET:
