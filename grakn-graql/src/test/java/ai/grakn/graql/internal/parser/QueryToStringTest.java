@@ -155,7 +155,7 @@ public class QueryToStringTest {
         assertEquals("compute count;", qb.compute().count().toString());
     }
 
-    @Ignore
+    @Ignore  // TODO: FIX THIS
     @Test
     public void testComputeQuerySubgraphToString() {
         ComputeQuery query = qb.compute().degree().in("movie", "person");
@@ -174,7 +174,7 @@ public class QueryToStringTest {
         assertEquivalent(query, "compute cluster in movie, person; size 10;");
     }
 
-    @Ignore
+    @Ignore  // TODO: FIX THIS
     @Test
     public void testDegreeOf() {
         ComputeQuery query = qb.compute().centrality().usingDegree().in("movie", "person").of("person");

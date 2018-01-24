@@ -118,14 +118,20 @@ public interface ComputeQueryBuilder {
     KCoreQuery kCore();
 
     /**
+     * This method is deprecated. Please use centrality query instead.
+     *
      * @return a coreness query that computes centrality using k-core.
      */
+    @Deprecated
     @CheckReturnValue
     CorenessQuery coreness();
 
     /**
+     * This method is deprecated. Please use centrality query instead.
+     *
      * @return a degree query that will compute the degree of instances
      */
+    @Deprecated
     @CheckReturnValue
     DegreeQuery degree();
 

@@ -646,7 +646,7 @@ public class QueryParserTest {
         assertEquals(expected, parsed);
     }
 
-    @Ignore
+    @Ignore //TODO: Fix this
     @Test
     public void testParseComputeDegree() {
         assertParseEquivalence("compute centrality in movie; using degree;");
