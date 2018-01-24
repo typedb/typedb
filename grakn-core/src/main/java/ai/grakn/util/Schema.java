@@ -88,7 +88,8 @@ public final class Schema {
         RELATIONSHIP("relationship", 5),
         RULE("rule", 6);
 
-        public static ImmutableSet<MetaSchema> METATYPES = ImmutableSet.of(THING, ENTITY, ATTRIBUTE, RELATIONSHIP);
+        public static final ImmutableSet<MetaSchema> METATYPES =
+                ImmutableSet.of(THING, ENTITY, ATTRIBUTE, RELATIONSHIP);
 
         private final Label label;
         private final LabelId id;
