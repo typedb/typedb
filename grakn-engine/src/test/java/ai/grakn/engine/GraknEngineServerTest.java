@@ -115,7 +115,7 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() {
+    public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(null);
 
         try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
@@ -126,7 +126,7 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() {
+    public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(GraknVersion.VERSION);
 
         try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {
@@ -138,7 +138,7 @@ public class GraknEngineServerTest {
 
     @Test
     @Ignore("Printed but not detected")
-    public void whenEngineServerIsStartedWithDifferentVersion_PrintWarning() {
+    public void whenEngineServerIsStartedWithDifferentVersion_PrintWarning() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
         stdout.enableLog();
 
@@ -151,7 +151,7 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() {
+    public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() throws IOException {
         when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
 
         try (GraknEngineServer server = creator.instantiateGraknEngineServer(Runtime.getRuntime())) {

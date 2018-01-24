@@ -114,7 +114,7 @@ public class GraknCreator {
         return create(engineId(), sparkService(), graknEngineStatus(), metricRegistry(), config, RedisWrapper.create(config));
     }
 
-    public synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime) {
+    public synchronized GraknEngineServer instantiateGraknEngineServer(Runtime runtime) throws IOException {
         if (graknEngineServer == null) {
             Pool<Jedis> jedisPool = redisWrapper.getJedisPool();
             LockProvider lockProvider = instantiateLock(jedisPool);
@@ -123,13 +123,7 @@ public class GraknCreator {
             TaskManager taskManager = instantiateTaskManager(metricRegistry, graknEngineConfig, engineID, factory, jedisPool, postProcessor);
 
             int grpcPortPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
-            GrpcServer grpcServer;
-            try {
-                grpcServer = GrpcServer.create(grpcPortPort, engineGraknTxFactory);
-            } catch (IOException e) {
-                // Thrown if unable to bind to the given port
-                throw new IllegalStateException(e);
-            }
+            GrpcServer grpcServer = GrpcServer.create(grpcPortPort, engineGraknTxFactory);
 
             HttpHandler httpHandler = new HttpHandler(
                     graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, taskManager,
