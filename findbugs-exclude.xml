@@ -18,9 +18,12 @@
 
 <FindBugsFilter>
 
-    <!-- Exclude generated ANTLR classes -->
+    <!-- Exclude generated ANTLR and protobuffer classes -->
     <Match>
-        <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
+        <Or>
+            <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
+            <Class name="~ai\.grakn\.rpc\..*"/>
+        </Or>
     </Match>
 
     <!-- Exclude mocked tasks in engine-->
