@@ -36,7 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-class DegreeQueryImpl extends AbstractCentralityQuery implements DegreeQuery {
+class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements DegreeQuery {
 
     DegreeQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -90,16 +90,6 @@ class DegreeQueryImpl extends AbstractCentralityQuery implements DegreeQuery {
     @Override
     public DegreeQuery in(Collection<Label> subLabels) {
         return (DegreeQuery) super.in(subLabels);
-    }
-
-    @Override
-    public DegreeQuery of(String... ofTypeLabels) {
-        return (DegreeQuery) super.setOfTypeLabels(ofTypeLabels);
-    }
-
-    @Override
-    public DegreeQuery of(Collection<Label> ofLabels) {
-        return (DegreeQuery) super.setOfTypeLabels(ofLabels);
     }
 
     @Override

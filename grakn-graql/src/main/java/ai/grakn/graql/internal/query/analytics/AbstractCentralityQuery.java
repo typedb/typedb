@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.concept.Label;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.Sets;
 
@@ -32,7 +33,8 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
-abstract class AbstractCentralityQuery extends AbstractComputeQuery<Map<Long, Set<String>>> {
+abstract class AbstractCentralityQuery<T extends ComputeQuery<Map<Long, Set<String>>>>
+        extends AbstractComputeQuery<Map<Long, Set<String>>> {
 
     /**
      * The centrality measures supported.
@@ -60,16 +62,16 @@ abstract class AbstractCentralityQuery extends AbstractComputeQuery<Map<Long, Se
         includeAttribute = true;
     }
 
-    AbstractCentralityQuery setOfTypeLabels(String... ofTypeLabels) {
-        return setOfTypeLabels(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
+    public T of(String... ofTypeLabels) {
+        return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
     }
 
-    AbstractCentralityQuery setOfTypeLabels(Collection<Label> ofLabels) {
+    public T of(Collection<Label> ofLabels) {
         if (!ofLabels.isEmpty()) {
             ofTypeLabelsSet = true;
             this.ofLabels = Sets.newHashSet(ofLabels);
         }
-        return this;
+        return (T) this;
     }
 
     abstract CentralityMeasure getMethod();

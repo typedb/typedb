@@ -37,7 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-class CorenessQueryImpl extends AbstractCentralityQuery implements CorenessQuery {
+class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implements CorenessQuery {
 
     private long k = 2L;
 
@@ -98,16 +98,6 @@ class CorenessQueryImpl extends AbstractCentralityQuery implements CorenessQuery
     public CorenessQuery minK(long k) {
         this.k = k;
         return this;
-    }
-
-    @Override
-    public CorenessQuery of(String... ofTypeLabels) {
-        return (CorenessQuery) super.setOfTypeLabels(ofTypeLabels);
-    }
-
-    @Override
-    public CorenessQuery of(Collection<Label> ofLabels) {
-        return (CorenessQuery) super.setOfTypeLabels(ofLabels);
     }
 
     @Override
