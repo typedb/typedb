@@ -90,7 +90,7 @@ class GrpcConverter implements GraqlConverter<Object, QueryResult> {
     }
 
     @Override
-    public Object convertDefault(Object object) {
+    public Object buildDefault(Object object) {
         return object;
     }
 

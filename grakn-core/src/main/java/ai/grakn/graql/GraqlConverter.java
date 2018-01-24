@@ -79,7 +79,7 @@ public interface GraqlConverter<Builder, T> {
         } else if (object instanceof Map) {
             return build((Map<?, ?>) object);
         } else {
-            return convertDefault(object);
+            return buildDefault(object);
         }
     }
 
@@ -147,5 +147,5 @@ public interface GraqlConverter<Builder, T> {
      * @return the object as a builder
      */
     @CheckReturnValue
-    Builder convertDefault(Object object);
+    Builder buildDefault(Object object);
 }

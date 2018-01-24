@@ -165,7 +165,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     }
 
     @Override
-    public Function<StringBuilder, StringBuilder> convertDefault(Object object) {
+    public Function<StringBuilder, StringBuilder> buildDefault(Object object) {
         if (object instanceof Map.Entry<?, ?>) {
             Map.Entry<?, ?> entry = (Map.Entry<?, ?>) object;
             return build(entry.getKey())

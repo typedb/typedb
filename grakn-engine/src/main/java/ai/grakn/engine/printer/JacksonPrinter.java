@@ -71,7 +71,7 @@ public class JacksonPrinter implements Printer<Object>{
     }
 
     @Override
-    public Object convertDefault(Object object) {
+    public Object buildDefault(Object object) {
         return object;
     }
 
@@ -79,20 +79,20 @@ public class JacksonPrinter implements Printer<Object>{
     public Object build(Map map) {
         Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
         return entries.collect(Collectors.toMap(
-                entry -> convert(entry.getKey()),
-                entry -> convert(entry.getKey())
+                entry -> build(entry.getKey()),
+                entry -> build(entry.getKey())
         ));
     }
 
     @Override
     public Object build(Collection collection) {
-        return collection.stream().map(object -> convert(object)).collect(Collectors.toList());
+        return collection.stream().map(object -> build(object)).collect(Collectors.toList());
     }
 
     @Override
     public Object build(Optional optional) {
         if(optional.isPresent()){
-            return convert(optional.get());
+            return build(optional.get());
         } else {
             return null;
         }

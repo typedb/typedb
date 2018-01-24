@@ -78,12 +78,12 @@ class JsonPrinter implements Printer<Json> {
 
     @Override
     public final Json build(Optional<?> optional) {
-        return optional.map(this::build).orElse(nil());
+        return optional.map(item -> build(item)).orElse(nil());
     }
 
     @Override
     public final Json build(Collection<?> collection) {
-        return Json.make(collection.stream().map(this::build).collect(toList()));
+        return Json.make(collection.stream().map(item -> build(item)).collect(toList()));
     }
 
     @Override
@@ -100,7 +100,7 @@ class JsonPrinter implements Printer<Json> {
     }
 
     @Override
-    public final Json convertDefault(Object object) {
+    public final Json buildDefault(Object object) {
         return Json.make(object);
     }
 }
