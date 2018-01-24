@@ -38,7 +38,7 @@ import java.util.Optional;
  *
  * <p>
  *     If you don't need a {@link Builder} type, then set it to the same type as {@link T} and implement
- *     {@link #build(Builder)} to just return its argument.
+ *     {@link #complete(Builder)} to just return its argument.
  * </p>
  *
  * @param <Builder> An intermediate builder type that can be changed into a {@link T}
@@ -55,32 +55,31 @@ public interface GraqlConverter<Builder, T> {
      */
     @CheckReturnValue
     default T convert(Object object) {
-        Builder builder = convert(false, object);
-        return build(builder);
+        Builder builder = build(object);
+        return complete(builder);
     }
 
     /**
      * Convert any object into a builder
-     * @param inner whether this object is within a collection
      * @param object the object to convert into a builder
      * @return the object as a builder
      */
     @CheckReturnValue
-    default Builder convert(boolean inner, Object object) {
+    default Builder build(Object object) {
         if (object instanceof Concept) {
-            return convert(inner, (Concept) object);
+            return build((Concept) object);
         } else if (object instanceof Boolean) {
-            return convert(inner, (boolean) object);
+            return build((boolean) object);
         } else if (object instanceof Optional) {
-            return convert(inner, (Optional<?>) object);
+            return build((Optional<?>) object);
         } else if (object instanceof Collection) {
-            return convert(inner, (Collection<?>) object);
+            return build((Collection<?>) object);
         } else if (object instanceof Answer) {
-            return convert(inner, (Answer) object);
+            return build((Answer) object);
         } else if (object instanceof Map) {
-            return convert(inner, (Map<?, ?>) object);
+            return build((Map<?, ?>) object);
         } else {
-            return convertDefault(inner, object);
+            return buildDefault(object);
         }
     }
 
@@ -90,70 +89,63 @@ public interface GraqlConverter<Builder, T> {
      * @return the converted builder
      */
     @CheckReturnValue
-    T build(Builder builder);
+    T complete(Builder builder);
 
     /**
      * Convert any concept into a builder
-     * @param inner whether this concept is within a collection
      * @param concept the concept to convert into a builder
      * @return the concept as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, Concept concept);
+    Builder build(Concept concept);
 
     /**
      * Convert any boolean into a builder
-     * @param inner whether this boolean is within a collection
      * @param bool the boolean to convert into a builder
      * @return the boolean as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, boolean bool);
+    Builder build(boolean bool);
 
     /**
      * Convert any optional into a builder
-     * @param inner whether this optional is within a collection
      * @param optional the optional to convert into a builder
      * @return the optional as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, Optional<?> optional);
+    Builder build(Optional<?> optional);
 
     /**
      * Convert any collection into a builder
-     * @param inner whether this collection is within a collection
      * @param collection the collection to convert into a builder
      * @return the collection as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, Collection<?> collection);
+    Builder build(Collection<?> collection);
 
     /**
      * Convert any map into a builder
-     * @param inner whether this map is within a collection
      * @param map the map to convert into a builder
      * @return the map as a builder
      */
     @CheckReturnValue
-    Builder convert(boolean inner, Map<?, ?> map);
+    Builder build(Map<?, ?> map);
 
     /**
      * Convert any {@link Answer} into a builder
-     * @param inner whether this map is within a collection
      * @param answer the answer to convert into a builder
      * @return the map as a builder
      */
     @CheckReturnValue
-    default Builder convert(boolean inner, Answer answer) {
-        return convert(inner, answer.map());
+    default Builder build(Answer answer) {
+        return build(answer.map());
     }
 
     /**
      * Default conversion behaviour if none of the more specific methods can be used
-     * @param inner whether this object is within a collection
      * @param object the object to convert into a builder
      * @return the object as a builder
      */
     @CheckReturnValue
-    Builder convertDefault(boolean inner, Object object);
+    Builder buildDefault(Object object);
 }
