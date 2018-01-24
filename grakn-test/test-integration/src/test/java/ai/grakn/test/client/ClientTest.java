@@ -33,7 +33,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class ClientTest {
     @ClassRule
-    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static final EngineContext engine = EngineContext.create();
 
     @Test
     public void whenGraknEngineIsRunning_ClientCanConnect() throws Throwable {

@@ -31,10 +31,6 @@
     
     <dependencies>
         <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>redisq</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>

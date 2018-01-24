@@ -65,7 +65,7 @@ public class JavaDocsTest {
     private static int numFound = 0;
 
     @ClassRule
-    public static EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static EngineContext engine = EngineContext.create();
 
     public static String knowledgeBaseName;
 

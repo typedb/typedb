@@ -25,11 +25,10 @@ import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.postprocessing.PostProcessor;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
 import ai.grakn.engine.rpc.GrpcServer;
 import ai.grakn.engine.session.RemoteSession;
-import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
@@ -58,13 +57,12 @@ public class HttpHandler {
     protected final EngineGraknTxFactory factory;
     protected final MetricRegistry metricRegistry;
     protected final GraknEngineStatus graknEngineStatus;
-    protected final TaskManager taskManager;
     protected final PostProcessor postProcessor;
     private final GrpcServer grpcServer;
 
     public HttpHandler(
             GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
-            GraknEngineStatus graknEngineStatus, TaskManager taskManager, PostProcessor postProcessor,
+            GraknEngineStatus graknEngineStatus, PostProcessor postProcessor,
             GrpcServer grpcServer
     ) {
         this.prop = prop;
@@ -72,7 +70,6 @@ public class HttpHandler {
         this.factory = factory;
         this.metricRegistry = metricRegistry;
         this.graknEngineStatus = graknEngineStatus;
-        this.taskManager = taskManager;
         this.postProcessor = postProcessor;
         this.grpcServer = grpcServer;
     }
@@ -95,10 +92,10 @@ public class HttpHandler {
         JacksonPrinter printer = JacksonPrinter.create();
 
         // Start all the controllers
-        new GraqlController(factory, spark, taskManager, postProcessor, printer, metricRegistry);
+        new GraqlController(factory, spark, postProcessor, printer, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
         new SystemController(spark, prop, factory.systemKeyspace(), graknEngineStatus, metricRegistry);
-        new CommitLogController(spark, taskManager, postProcessor);
+        new CommitLogController(spark, postProcessor);
     }
 
     public static void configureSpark(Service spark, GraknConfig prop) {

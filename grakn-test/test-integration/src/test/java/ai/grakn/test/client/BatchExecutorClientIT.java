@@ -65,7 +65,7 @@ public class BatchExecutorClientIT {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.createWithInMemoryRedis();
+    public static final EngineContext engine = EngineContext.create();
     private Keyspace keyspace;
 
     @Before
