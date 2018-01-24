@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.LabelId;
 import ai.grakn.util.CommonUtil;
+import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -77,7 +78,8 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return memory.isInitialIteration() ? messageScopeSetInAndOut : Collections.emptySet();
+        return memory.isInitialIteration() ?
+                Sets.newHashSet(messageScopeResourceIn, messageScopeOut) : Collections.emptySet();
     }
 
     @Override
@@ -101,12 +103,13 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     }
 
     private void degreeMessagePassing(Messenger<Long> messenger) {
-        messenger.sendMessage(messageScopeIn, 1L);
+        messenger.sendMessage(messageScopeResourceIn, 1L);
         messenger.sendMessage(messageScopeOut, 1L);
     }
 
     private void degreeMessageCounting(Messenger<Long> messenger, Vertex vertex) {
-        if (ofLabelIds.isEmpty() || vertexHasSelectedTypeId(vertex, ofLabelIds)) {
+        if (messenger.receiveMessages().hasNext() &&
+                (ofLabelIds.isEmpty() || vertexHasSelectedTypeId(vertex, ofLabelIds))) {
             vertex.property(DEGREE, getMessageCount(messenger));
         }
     }
