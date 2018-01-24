@@ -178,30 +178,30 @@ public class GrpcServerIT {
         return BidirectionalObserver.create(stub::tx);
     }
 
-    private TxRequest openRequest(String keyspaceString, TxType txType) {
+    private static TxRequest openRequest(String keyspaceString, TxType txType) {
         GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
         Open.Builder open = Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
         return TxRequest.newBuilder().setOpen(open).build();
     }
 
-    private TxRequest commitRequest() {
+    private static TxRequest commitRequest() {
         return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
     }
 
-    private TxRequest execQueryRequest(String queryString) {
+    private static TxRequest execQueryRequest(String queryString) {
         GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
         return TxRequest.newBuilder().setExecQuery(ExecQuery.newBuilder().setQuery(query)).build();
     }
 
-    private TxRequest nextRequest() {
+    private static TxRequest nextRequest() {
         return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
     }
 
-    private TxRequest stopRequest() {
+    private static TxRequest stopRequest() {
         return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
     }
 
-    private List<QueryResult> queryResults(BidirectionalObserver<TxRequest, TxResponse> tx) {
+    private static List<QueryResult> queryResults(BidirectionalObserver<TxRequest, TxResponse> tx) {
         ImmutableList.Builder<QueryResult> results = ImmutableList.builder();
 
         while (true) {

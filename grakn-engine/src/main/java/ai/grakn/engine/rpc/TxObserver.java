@@ -59,6 +59,8 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private @Nullable GraknTx tx = null;
     private @Nullable Iterator<QueryResult> queryResults = null;
 
+    private static final TxResponse DONE = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
+
     private TxObserver(EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver) {
         this.responseObserver = responseObserver;
         this.txFactory = txFactory;
@@ -108,7 +110,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         GraknTxType txType = getTxType(request.getTxType());
         tx = txFactory.tx(keyspace, txType);
 
-        responseObserver.onNext(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build());
+        responseObserver.onNext(DONE);
     }
 
     private void commit() {
@@ -147,7 +149,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         queryResults = null;
 
-        responseObserver.onNext(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build());
+        responseObserver.onNext(DONE);
     }
 
     private QueryBuilder setInfer(QueryBuilder queryBuilder, Infer infer) {
@@ -165,7 +167,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             QueryResult queryResult = results.next();
             response = TxResponse.newBuilder().setQueryResult(queryResult).build();
         } else {
-            response = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
+            response = DONE;
         }
 
         responseObserver.onNext(response);

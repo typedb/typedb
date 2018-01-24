@@ -51,10 +51,6 @@ import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,10 +63,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isA;
+import static ai.grakn.engine.rpc.GrpcUtil.hasMessage;
+import static ai.grakn.engine.rpc.GrpcUtil.hasStatus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -154,7 +148,7 @@ public class GrpcServerTest {
             tx.send(openRequest(MYKS, TxType.Read));
             TxResponse response = tx.receive().elem();
 
-            assertEquals(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build(), response);
+            assertEquals(doneResponse(), response);
         }
     }
 
@@ -175,7 +169,7 @@ public class GrpcServerTest {
             tx.send(commitRequest());
             TxResponse response = tx.receive().elem();
 
-            assertEquals(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build(), response);
+            assertEquals(doneResponse(), response);
         }
     }
 
@@ -288,7 +282,7 @@ public class GrpcServerTest {
             tx.send(nextRequest());
             TxResponse response3 = tx.receive().elem();
 
-            TxResponse expected = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
+            TxResponse expected = doneResponse();
             assertEquals(expected, response3);
 
             tx.send(stopRequest());
@@ -332,7 +326,7 @@ public class GrpcServerTest {
 
             TxResponse response = tx.receive().elem();
 
-            assertEquals(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build(), response);
+            assertEquals(doneResponse(), response);
         }
     }
 
@@ -538,70 +532,52 @@ public class GrpcServerTest {
         return BidirectionalObserver.create(stub::tx);
     }
 
-    private TxRequest openRequest(String keyspaceString, TxType txType) {
+    private static TxRequest openRequest(String keyspaceString, TxType txType) {
         GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
         Open.Builder open = Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
         return TxRequest.newBuilder().setOpen(open).build();
     }
 
-    private TxRequest commitRequest() {
+    private static TxRequest commitRequest() {
         return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
     }
 
-    private TxRequest execQueryRequest(String queryString) {
+    private static TxRequest execQueryRequest(String queryString) {
         return execQueryRequest(queryString, Infer.getDefaultInstance());
     }
 
-    private TxRequest execQueryRequest(String queryString, boolean infer) {
+    private static TxRequest execQueryRequest(String queryString, boolean infer) {
         Infer inferMessage = Infer.newBuilder().setValue(infer).setIsSet(true).build();
         return execQueryRequest(queryString, inferMessage);
     }
 
-    private TxRequest execQueryRequest(String queryString, Infer infer) {
+    private static TxRequest execQueryRequest(String queryString, Infer infer) {
         GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
         ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
         execQueryRequest.setInfer(infer);
         return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
     }
 
-    private TxRequest nextRequest() {
+    private static TxRequest nextRequest() {
         return TxRequest.newBuilder().setNext(Next.getDefaultInstance()).build();
     }
 
-    private TxRequest stopRequest() {
+    private static TxRequest stopRequest() {
         return TxRequest.newBuilder().setStop(Stop.getDefaultInstance()).build();
     }
 
-    private Matcher<StatusRuntimeException> hasStatus(Status status) {
-        return allOf(
-                isA(StatusRuntimeException.class),
-                hasProperty("status", is(status))
-        );
-    }
-
-    private Matcher<StatusRuntimeException> hasMessage(String message) {
-        return allOf(
-                hasStatus(Status.UNKNOWN),
-                new TypeSafeMatcher<StatusRuntimeException>() {
-                    @Override
-                    public void describeTo(Description description) {
-                        description.appendText("has message " + message);
-                    }
-
-                    @Override
-                    protected boolean matchesSafely(StatusRuntimeException item) {
-                        return message.equals(item.getTrailers().get(GrpcServer.MESSAGE));
-                    }
-                }
-        );
+    private static TxResponse doneResponse() {
+        return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
 
     static class GraknExceptionFake extends GraknException {
 
-        public static final String MESSAGE = "OH DEAR";
-        public static final GraknExceptionFake EXCEPTION = new GraknExceptionFake();
+        private static final long serialVersionUID = 4308283394793131638L;
 
-        protected GraknExceptionFake() {
+        static final String MESSAGE = "OH DEAR";
+        static final GraknExceptionFake EXCEPTION = new GraknExceptionFake();
+
+        GraknExceptionFake() {
             super(MESSAGE);
         }
     }
