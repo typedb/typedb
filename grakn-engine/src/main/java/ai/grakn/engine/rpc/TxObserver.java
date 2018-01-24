@@ -28,10 +28,8 @@ import ai.grakn.rpc.GraknOuterClass;
 import ai.grakn.rpc.GraknOuterClass.Done;
 import ai.grakn.rpc.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.GraknOuterClass.Infer;
-import ai.grakn.rpc.GraknOuterClass.Next;
 import ai.grakn.rpc.GraknOuterClass.Open;
 import ai.grakn.rpc.GraknOuterClass.QueryResult;
-import ai.grakn.rpc.GraknOuterClass.Stop;
 import ai.grakn.rpc.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.GraknOuterClass.TxResponse;
 import io.grpc.Metadata;
@@ -84,10 +82,10 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                     execQuery(request.getExecQuery());
                     break;
                 case NEXT:
-                    next(request.getNext());
+                    next();
                     break;
                 case STOP:
-                    stop(request.getStop());
+                    stop();
                     break;
                 default:
                 case REQUEST_NOT_SET:
@@ -109,6 +107,8 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         Keyspace keyspace = Keyspace.of(keyspaceString);
         GraknTxType txType = getTxType(request.getTxType());
         tx = txFactory.tx(keyspace, txType);
+
+        responseObserver.onNext(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build());
     }
 
     private void commit() {
@@ -128,31 +128,26 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         QueryBuilder graql = setInfer(tx.graql(), request.getInfer());
 
         queryResults = graql.parse(queryString).results(GrpcConverter.get()).iterator();
+
+        sendNextResult(queryResults);
     }
 
-    private void next(Next next) {
+    private void next() {
         if (queryResults == null) {
             throw error(Status.FAILED_PRECONDITION);
         }
 
-        TxResponse response;
-
-        if (queryResults.hasNext()) {
-            QueryResult queryResult = queryResults.next();
-            response = TxResponse.newBuilder().setQueryResult(queryResult).build();
-        } else {
-            response = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
-        }
-
-        responseObserver.onNext(response);
+        sendNextResult(queryResults);
     }
 
-    private void stop(Stop stop) {
+    private void stop() {
         if (queryResults == null) {
             throw error(Status.FAILED_PRECONDITION);
         }
 
         queryResults = null;
+
+        responseObserver.onNext(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build());
     }
 
     private QueryBuilder setInfer(QueryBuilder queryBuilder, Infer infer) {
@@ -161,6 +156,19 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         } else {
             return queryBuilder;
         }
+    }
+
+    private void sendNextResult(Iterator<QueryResult> results) {
+        TxResponse response;
+
+        if (results.hasNext()) {
+            QueryResult queryResult = results.next();
+            response = TxResponse.newBuilder().setQueryResult(queryResult).build();
+        } else {
+            response = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
+        }
+
+        responseObserver.onNext(response);
     }
 
     private GraknTxType getTxType(GraknOuterClass.TxType txType) {

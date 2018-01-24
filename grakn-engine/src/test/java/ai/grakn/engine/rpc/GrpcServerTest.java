@@ -149,6 +149,16 @@ public class GrpcServerTest {
     }
 
     @Test
+    public void whenOpeningATransactionRemotely_ReceiveADoneMessage() {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS, TxType.Read));
+            TxResponse response = tx.receive().elem();
+
+            assertEquals(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build(), response);
+        }
+    }
+
+    @Test
     public void whenCommittingATransactionRemotely_TheTransactionIsCommitted() {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
@@ -156,6 +166,17 @@ public class GrpcServerTest {
         }
 
         verify(tx).commit();
+    }
+
+    @Test
+    public void whenCommittingATransactionRemotely_ReceiveADoneMessage() {
+        try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
+            tx.send(openRequest(MYKS, TxType.Write));
+            tx.send(commitRequest());
+            TxResponse response = tx.receive().elem();
+
+            assertEquals(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build(), response);
+        }
     }
 
     @Test
@@ -246,10 +267,9 @@ public class GrpcServerTest {
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
 
             tx.send(execQueryRequest(QUERY));
-
-            tx.send(nextRequest());
             TxResponse response1 = tx.receive().elem();
 
             GraknOuterClass.Concept rpcX = GraknOuterClass.Concept.newBuilder().setId("V123").build();
@@ -300,13 +320,19 @@ public class GrpcServerTest {
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
 
             tx.send(execQueryRequest(QUERY));
+            tx.receive();
 
             tx.send(nextRequest());
             tx.receive().elem();
 
             tx.send(stopRequest());
+
+            TxResponse response = tx.receive().elem();
+
+            assertEquals(TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build(), response);
         }
     }
 
@@ -372,6 +398,8 @@ public class GrpcServerTest {
     public void whenOpeningTxTwice_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
+
             tx.send(openRequest(MYKS, TxType.Write));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -399,6 +427,8 @@ public class GrpcServerTest {
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
+
             tx.send(commitRequest());
 
             exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
@@ -413,6 +443,8 @@ public class GrpcServerTest {
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
+
             tx.send(execQueryRequest(QUERY));
 
             exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
@@ -427,6 +459,8 @@ public class GrpcServerTest {
 
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
+
             tx.send(execQueryRequest(QUERY));
 
             exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
@@ -439,6 +473,8 @@ public class GrpcServerTest {
     public void whenSendingNextBeforeQuery_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
+
             tx.send(nextRequest());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -451,6 +487,8 @@ public class GrpcServerTest {
     public void whenSendingStopBeforeQuery_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
+
             tx.send(stopRequest());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -463,8 +501,14 @@ public class GrpcServerTest {
     public void whenSendingNextAfterStop_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
+
             tx.send(execQueryRequest(QUERY));
+            tx.receive();
+
             tx.send(stopRequest());
+            tx.receive();
+
             tx.send(nextRequest());
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
@@ -477,7 +521,11 @@ public class GrpcServerTest {
     public void whenSendingAnotherQueryDuringQueryExecution_Throw() throws Throwable {
         try (BidirectionalObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
+
             tx.send(execQueryRequest(QUERY));
+            tx.receive();
+
             tx.send(execQueryRequest(QUERY));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
