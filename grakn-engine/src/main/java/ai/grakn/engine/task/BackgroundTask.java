@@ -16,20 +16,31 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks.mock;
-
-import ai.grakn.engine.TaskId;
+package ai.grakn.engine.task;
 
 /**
- * Mocked task that will throw exception
+ * <p>
+ *     Defines the API which must be implemented in order to be able to run the task in the background
+ * </p>
  *
- * @author alexandraorth, Felix Chapman
+ * @author Filipe Peliz Pinto Teixeira
  */
-public class FailingMockTask extends MockBackgroundTask {
+public interface BackgroundTask extends AutoCloseable{
 
-    @Override
-    protected void executeStartInner(TaskId id) {
-        throw new RuntimeException("deliberate test failure");
+    /**
+     * @return The amount of seconds to wait between running this job.
+     */
+    default int period(){
+        return 60;
     }
 
+    /**
+     * The primary method to execute when the {@link BackgroundTask} starts executing
+     */
+    void run();
+
+    /**
+     * Shutdown the task. This is useful if the task creates it's own processes
+     */
+    void close();
 }

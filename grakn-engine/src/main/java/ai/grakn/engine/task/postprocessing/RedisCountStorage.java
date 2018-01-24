@@ -16,43 +16,28 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.postprocessing;
+package ai.grakn.engine.task.postprocessing;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.codahale.metrics.Timer.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.util.Pool;
 
-import java.util.function.Function;
-
-import static com.codahale.metrics.MetricRegistry.name;
-
 /**
- * <p>
- *     Connection To Redis Server
- * </p>
  *
  * <p>
- *    Given a pool of connections to Redis, it manages the counting
+ *    Stores a cache of counts so that we can know which {@link ai.grakn.concept.Type}s to shard when they have too many
+ *    instances.
  * </p>
  *
  * @author fppt
  */
 public class RedisCountStorage {
-    private final static Logger LOG = LoggerFactory.getLogger(RedisCountStorage.class);
-
-    private final Timer contactRedisTimer;
-    private Pool<Jedis> jedisPool;
+    private final RedisStorage redisStorage;
 
     private RedisCountStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry){
-        this.jedisPool = jedisPool;
-        this.contactRedisTimer = metricRegistry.timer(name(RedisCountStorage.class, "contact"));
+        redisStorage = new RedisStorage(jedisPool, metricRegistry);
     }
 
     public static RedisCountStorage create(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
@@ -67,7 +52,7 @@ public class RedisCountStorage {
      * @return true
      */
     public long adjustCount(String key, long count){
-        return contactRedis(jedis -> {
+        return redisStorage.contactRedis(jedis -> {
             if(count != 0) {
                 return jedis.incrBy(key, count); //Number is decremented when count is negative
             } else {
@@ -83,28 +68,11 @@ public class RedisCountStorage {
      * @return the current count.
      */
     public long getCount(String key){
-        return contactRedis(jedis -> {
+        return redisStorage.contactRedis(jedis -> {
             String value = jedis.get(key);
             if(value == null) return 0L;
             return Long.parseLong(value);
         });
-    }
-
-    /**
-     * A helper function which acquires a connection to redis from the pool and then uses it for some operations.
-     * This function ensures the connection is closed properly.
-     *
-     * @param function The function which contactes redis and returns some result
-     * @param <X> The type of the result returned.
-     * @return The result of contacting redis.
-     */
-    private <X> X contactRedis(Function<Jedis, X> function){
-        try(Jedis jedis = jedisPool.getResource(); Context ignored = contactRedisTimer.time()){
-            return function.apply(jedis);
-        } catch (JedisException e) {
-            LOG.error("Could not contact redis. Active: {}. Idle: {}", jedisPool.getNumActive(), jedisPool.getNumIdle(), e);
-            throw e;
-        }
     }
 
     /**
