@@ -19,9 +19,9 @@
 package ai.grakn.engine.rpc;
 
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.rpc.GraknGrpc;
-import ai.grakn.rpc.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.generated.GraknGrpc;
+import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
+import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;

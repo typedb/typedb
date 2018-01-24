@@ -22,8 +22,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GraqlConverter;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.rpc.GraknOuterClass;
-import ai.grakn.rpc.GraknOuterClass.QueryResult;
+import ai.grakn.rpc.generated.GraknOuterClass;
+import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 
 import java.util.Collection;
 import java.util.Map;

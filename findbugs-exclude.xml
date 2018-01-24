@@ -23,7 +23,7 @@
         <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
     </Match>
     <Match>
-        <Class name="~ai\.grakn\.rpc\..*"/>
+        <Class name="~ai\.grakn\.rpc\.generated\..*"/>
     </Match>
 
     <!-- Exclude mocked tasks in engine-->
