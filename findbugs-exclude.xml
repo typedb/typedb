@@ -20,10 +20,10 @@
 
     <!-- Exclude generated ANTLR and protobuffer classes -->
     <Match>
-        <Or>
+        <And>
             <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
             <Class name="~ai\.grakn\.rpc\..*"/>
-        </Or>
+        </And>
     </Match>
 
     <!-- Exclude mocked tasks in engine-->
