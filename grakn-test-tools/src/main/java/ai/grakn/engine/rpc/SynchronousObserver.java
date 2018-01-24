@@ -172,7 +172,7 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
 
         private static <T> QueueElem<T> create(@Nullable T elem, @Nullable Throwable throwable) {
             Preconditions.checkArgument(elem == null || throwable == null);
-            return new ai.grakn.engine.rpc.AutoValue_BidirectionalObserver_QueueElem<>(elem, throwable);
+            return new ai.grakn.engine.rpc.AutoValue_SynchronousObserver_QueueElem<>(elem, throwable);
         }
 
         static <T> QueueElem<T> completed() {
