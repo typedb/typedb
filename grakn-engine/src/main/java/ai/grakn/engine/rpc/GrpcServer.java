@@ -34,6 +34,9 @@ import java.io.IOException;
  */
 public class GrpcServer implements AutoCloseable {
 
+    /**
+     * Metadata used for storing error messages.
+     */
     static final Metadata.Key<String> MESSAGE = Metadata.Key.of("message", StringMarshaller.create());
 
     private final Server server;
@@ -73,6 +76,10 @@ public class GrpcServer implements AutoCloseable {
         }
     }
 
+    /**
+     * This class describes how to serialise and deserialise strings in HTTP/2 Metadata. In this case we literally store
+     * the string in its original representation, so nothing needs to be done!
+     */
     private static class StringMarshaller implements Metadata.AsciiMarshaller<String> {
 
         public static StringMarshaller create() {
