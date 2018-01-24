@@ -30,35 +30,77 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
+ * Wrapper for synchronous bidirectional streaming communication - i.e. when there is a stream of {@link Request}s and
+ * a stream of {@link Response}s.
+ *
+ * A request is sent with the {@link #send(Request)}} method, and you can block for a response with the
+ * {@link #receive()} method.
+ *
+ * <pre>
+ * {@code
+ *
+ *     try (SynchronousObserver<TxRequest, TxResponse> tx = SynchronousObserver.create(stub::tx) {
+ *         tx.send(openMessage);
+ *         TxResponse doneMessage = tx.receive().elem();
+ *         tx.send(commitMessage);
+ *         Throwable validationError = tx.receive.throwable();
+ *     }
+ * }
+ * </pre>
+ *
  * @author Felix Chapman
  *
  * @param <Request> The type of requests being received
  * @param <Response> The type of responses being sent
  */
-public class BidirectionalObserver<Request, Response> implements AutoCloseable {
+public class SynchronousObserver<Request, Response> implements AutoCloseable {
 
     private final StreamObserver<Request> requests;
-    private final BlockingObserver<Response> responses;
+    private final QueueingObserver<Response> responses;
 
-    private BidirectionalObserver(StreamObserver<Request> requests, BlockingObserver<Response> responses) {
+    private SynchronousObserver(StreamObserver<Request> requests, QueueingObserver<Response> responses) {
         this.requests = requests;
         this.responses = responses;
     }
 
-    public static <Request, Response> BidirectionalObserver<Request, Response> create(StreamObserver<Request> requests) {
-        return create(responses -> requests);
+    /**
+     * Create a {@link SynchronousObserver} using a method that accepts a {@link StreamObserver} and returns
+     * a {@link StreamObserver}.
+     *
+     * <p>
+     * This looks super-weird because it is super-weird. The reason is that the gRPC-generated methods on client-stubs
+     * for bidirectional streaming calls look like this:
+     * </p>
+     *
+     * <p>
+     *     {@code StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver)}
+     * </p>
+     *
+     * <p>
+     *     So, we cannot get at the {@link Request} observer until we provide a {@link Response} observer.
+     *     Unfortunately the latter is created within this method below - so we must pass in a method reference:
+     * </p>
+     *
+     * {@code SynchronousObserver.create(stub::tx)}
+     */
+    public static <Request, Response> SynchronousObserver<Request, Response> create(
+            Function<StreamObserver<Response>, StreamObserver<Request>> createRequestObserver
+    ) {
+        QueueingObserver<Response> responses = new QueueingObserver<>();
+        StreamObserver<Request> requests = createRequestObserver.apply(responses);
+        return new SynchronousObserver<>(requests, responses);
     }
 
-    public static <Request, Response> BidirectionalObserver<Request, Response> create(Function<StreamObserver<Response>, StreamObserver<Request>> f) {
-        BlockingObserver<Response> responses = new BlockingObserver<>();
-        StreamObserver<Request> requests = f.apply(responses);
-        return new BidirectionalObserver<>(requests, responses);
-    }
-
+    /**
+     * Send a request and return immediately.
+     */
     public void send(Request request) {
         requests.onNext(request);
     }
 
+    /**
+     * Block until a response is returned.
+     */
     public QueueElem<Response> receive() {
         return responses.poll();
     }
@@ -69,7 +111,12 @@ public class BidirectionalObserver<Request, Response> implements AutoCloseable {
         responses.close();
     }
 
-    static class BlockingObserver<T> implements StreamObserver<T>, AutoCloseable {
+    /**
+     * A {@link StreamObserver} that stores all responses in a blocking queue.
+     *
+     * A response can be polled with the {@link #poll()} method.
+     */
+    static class QueueingObserver<T> implements StreamObserver<T>, AutoCloseable {
 
         private final BlockingQueue<QueueElem<T>> queue = new LinkedBlockingDeque<>();
         private final AtomicBoolean terminated = new AtomicBoolean(false);
@@ -91,11 +138,11 @@ public class BidirectionalObserver<Request, Response> implements AutoCloseable {
             queue.add(QueueElem.completed());
         }
 
-        public QueueElem<T> poll() {
+        QueueElem<T> poll() {
             try {
                 return queue.poll(100, TimeUnit.DAYS);
             } catch (InterruptedException e) {
-                // TODO
+                // TODO: If we move this out of test code, we should handle this correctly
                 throw new RuntimeException(e);
             }
         }
