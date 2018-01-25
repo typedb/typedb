@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
 import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
@@ -36,7 +36,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> implements ClusterQuery<T> {
+class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ConnectedComponentQuery<T>>
+        implements ConnectedComponentQuery<T> {
 
     private boolean members = false;
     private boolean anySize = true;
@@ -94,24 +95,24 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ClusterQuery<T>> imple
     }
 
     @Override
-    public ClusterQuery<T> includeAttribute() {
-        return (ClusterQuery<T>) super.includeAttribute();
+    public ConnectedComponentQuery<T> includeAttribute() {
+        return (ConnectedComponentQuery<T>) super.includeAttribute();
     }
 
     @Override
-    public ClusterQuery<Map<String, Set<String>>> members() {
+    public ConnectedComponentQuery<Map<String, Set<String>>> members() {
         this.members = true;
-        return (ClusterQuery<Map<String, Set<String>>>) this;
+        return (ConnectedComponentQuery<Map<String, Set<String>>>) this;
     }
 
     @Override
-    public ClusterQuery<T> of(ConceptId conceptId) {
+    public ConnectedComponentQuery<T> of(ConceptId conceptId) {
         this.sourceId = Optional.ofNullable(conceptId);
         return this;
     }
 
     @Override
-    public ClusterQuery<T> clusterSize(long clusterSize) {
+    public ConnectedComponentQuery<T> clusterSize(long clusterSize) {
         this.anySize = false;
         this.clusterSize = clusterSize;
         return this;

@@ -20,7 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.CentralityQueryBuilder;
-import ai.grakn.graql.analytics.ClusterQuery;
+import ai.grakn.graql.analytics.ConnectedComponentQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -109,7 +109,7 @@ public interface ComputeQueryBuilder {
      * @return a cluster query that will find the connected components
      */
     @CheckReturnValue
-    ClusterQuery<Map<String, Long>> cluster();
+    ConnectedComponentQuery<Map<String, Long>> cluster();
 
     /**
      * @return a k-core query that will find interlinked core areas using k-core.

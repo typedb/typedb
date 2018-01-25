@@ -33,7 +33,7 @@ import java.util.Set;
  * @param <T> the type of result this query will return
  * @author Jason Liu
  */
-public interface ClusterQuery<T> extends ComputeQuery<T> {
+public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
 
     /**
      * Return the instances in each cluster after executing the query. By default, the size of each cluster is
@@ -41,7 +41,7 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
      *
      * @return a ClusterQuery with members flag set
      */
-    ClusterQuery<Map<String, Set<String>>> members();
+    ConnectedComponentQuery<Map<String, Set<String>>> members();
 
     /**
      * Return only the cluster containing the given concept after executing the query.
@@ -49,38 +49,38 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
      * @param conceptId The id of the given concept. conceptId is ignored if it's null.
      * @return a ClusterQuery
      */
-    ClusterQuery<T> of(ConceptId conceptId);
+    ConnectedComponentQuery<T> of(ConceptId conceptId);
 
     /**
      * @param clusterSize the size of the clusters returned and/or persisted
      * @return a ClusterQuery with cluster set
      */
-    ClusterQuery<T> clusterSize(long clusterSize);
+    ConnectedComponentQuery<T> clusterSize(long clusterSize);
 
     /**
      * @param subTypeLabels an array of types to include in the sub graph
      * @return a ClusterQuery with the subTypeLabels set
      */
     @Override
-    ClusterQuery<T> in(String... subTypeLabels);
+    ConnectedComponentQuery<T> in(String... subTypeLabels);
 
     /**
      * @param subLabels a collection of types to include in the sub graph
      * @return a ClusterQuery with the subLabels set
      */
     @Override
-    ClusterQuery<T> in(Collection<Label> subLabels);
+    ConnectedComponentQuery<T> in(Collection<Label> subLabels);
 
     /**
      * @param tx the transaction to execute the query on
      * @return a ClusterQuery with the transaction set
      */
     @Override
-    ClusterQuery<T> withTx(GraknTx tx);
+    ConnectedComponentQuery<T> withTx(GraknTx tx);
 
     /**
      * Allow attributes and their relationships to be included.
      */
     @Override
-    ClusterQuery<T> includeAttribute();
+    ConnectedComponentQuery<T> includeAttribute();
 }

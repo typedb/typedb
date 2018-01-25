@@ -52,7 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class ClusteringTest {
+public class ConnectedComponentTest {
     private static final String thing = "thingy";
     private static final String anotherThing = "anotherThing";
     private static final String related = "related";
@@ -82,7 +82,7 @@ public class ClusteringTest {
     }
 
     @Test
-    public void testNullSourceIdIsIgnored() throws Exception {
+    public void testNullSourceIdIsIgnored() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().cluster().of(null).execute();
         }
@@ -94,7 +94,7 @@ public class ClusteringTest {
     }
 
     @Test(expected = GraqlQueryException.class)
-    public void testSourceDoesNotExistInSubGraph() throws Exception {
+    public void testSourceDoesNotExistInSubGraph() {
         addSchemaAndEntities();
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             graph.graql().compute().cluster().in(thing).of(entityId4).execute();
@@ -102,7 +102,7 @@ public class ClusteringTest {
     }
 
     @Test
-    public void testConnectedComponentOnEmptyGraph() throws Exception {
+    public void testConnectedComponentOnEmptyGraph() {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             // test on an empty rule.graph()
             Map<String, Long> sizeMap = Graql.compute().withTx(graph).cluster().includeAttribute().execute();
@@ -114,7 +114,7 @@ public class ClusteringTest {
     }
 
     @Test
-    public void testConnectedComponentSize() throws Exception {
+    public void testConnectedComponentSize() {
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
 
@@ -145,7 +145,7 @@ public class ClusteringTest {
     }
 
     @Test
-    public void testConnectedComponentImplicitType() throws Exception {
+    public void testConnectedComponentImplicitType() {
         String aResourceTypeLabel = "aResourceTypeLabel";
 
         addSchemaAndEntities();
@@ -186,7 +186,7 @@ public class ClusteringTest {
     }
 
     @Test
-    public void testConnectedComponent() throws Exception {
+    public void testConnectedComponent() {
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
 
@@ -246,7 +246,7 @@ public class ClusteringTest {
     }
 
     @Test
-    public void testConnectedComponentConcurrency() throws Exception {
+    public void testConnectedComponentConcurrency() {
         assumeFalse(GraknTestUtil.usingTinker());
 
         addSchemaAndEntities();
