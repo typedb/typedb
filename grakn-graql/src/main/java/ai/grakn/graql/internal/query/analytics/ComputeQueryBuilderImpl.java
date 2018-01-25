@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.analytics.CentralityQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -120,5 +121,10 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     @Override
     public DegreeQuery degree() {
         return new DegreeQueryImpl(tx);
+    }
+
+    @Override
+    public CentralityQueryBuilder centrality() {
+        return new CentralityQueryBuilderImpl(tx);
     }
 }

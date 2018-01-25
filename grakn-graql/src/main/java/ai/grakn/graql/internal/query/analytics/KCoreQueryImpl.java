@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.KCoreQuery;
@@ -28,15 +27,14 @@ import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
 import ai.grakn.graql.internal.analytics.NoResultException;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> implements KCoreQuery {
+class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCoreQuery> implements KCoreQuery {
 
-    private int k = -1;
+    private long k = -1L;
 
     KCoreQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -47,8 +45,9 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
         LOGGER.info("KCore query is started");
         long startTime = System.currentTimeMillis();
 
-        if (k < 2) throw GraqlQueryException.kValueSmallerThanTwo();
+        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
+        includeAttribute = true; //TODO: REMOVE THIS LINE
         initSubGraph();
         getAllSubTypes();
 
@@ -74,19 +73,9 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
     }
 
     @Override
-    public KCoreQuery kValue(int kValue) {
+    public KCoreQuery kValue(long kValue) {
         k = kValue;
         return this;
-    }
-
-    @Override
-    public KCoreQuery in(String... subTypeLabels) {
-        return (KCoreQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public KCoreQuery in(Collection<Label> subLabels) {
-        return (KCoreQuery) super.in(subLabels);
     }
 
     @Override
@@ -95,11 +84,6 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
         string += k;
         string += subtypeString();
         return string;
-    }
-
-    @Override
-    public KCoreQuery withTx(GraknTx tx) {
-        return (KCoreQuery) super.withTx(tx);
     }
 
     @Override
@@ -121,7 +105,7 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + k;
+        result = 31 * result + Long.hashCode(k);
         return result;
     }
 }

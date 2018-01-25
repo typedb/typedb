@@ -19,9 +19,8 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -30,12 +29,11 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements MeanQuery {
+class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>, MeanQuery> implements MeanQuery {
 
     MeanQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -67,31 +65,6 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
 
         LOGGER.info("MeanMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(finalResult);
-    }
-
-    @Override
-    public MeanQuery of(String... resourceTypeLabels) {
-        return (MeanQuery) setStatisticsResourceType(resourceTypeLabels);
-    }
-
-    @Override
-    public MeanQuery of(Collection<Label> resourceLabels) {
-        return (MeanQuery) setStatisticsResourceType(resourceLabels);
-    }
-
-    @Override
-    public MeanQuery in(String... subTypeLabels) {
-        return (MeanQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public MeanQuery in(Collection<Label> subLabels) {
-        return (MeanQuery) super.in(subLabels);
-    }
-
-    @Override
-    public MeanQuery withTx(GraknTx tx) {
-        return (MeanQuery) super.withTx(tx);
     }
 
     @Override

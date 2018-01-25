@@ -24,6 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.Sets;
@@ -38,29 +39,25 @@ import java.util.stream.Collectors;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 
-abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
+abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
+        extends AbstractComputeQuery<T, V> {
 
     Set<Label> statisticsResourceLabels = new HashSet<>();
     Set<Type> statisticsResourceTypes = new HashSet<>();
 
-    AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeLabels) {
+    public V of(String... statisticsResourceTypeLabels) {
         this.statisticsResourceLabels =
                 Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(Collectors.toSet());
-        return this;
+        return (V) this;
     }
 
-    AbstractStatisticsQuery<T> setStatisticsResourceType(Collection<Label> statisticsResourceLabels) {
+    public V of(Collection<Label> statisticsResourceLabels) {
         this.statisticsResourceLabels = Sets.newHashSet(statisticsResourceLabels);
-        return this;
+        return (V) this;
     }
 
     @Override
     public boolean isStatisticsQuery() {
-        return true;
-    }
-
-    @Override
-    public boolean isReadOnly() {
         return true;
     }
 
@@ -160,7 +157,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        AbstractStatisticsQuery<?> that = (AbstractStatisticsQuery<?>) o;
+        AbstractStatisticsQuery<?, ?> that = (AbstractStatisticsQuery<?, ?>) o;
 
         return statisticsResourceLabels.equals(that.statisticsResourceLabels);
     }

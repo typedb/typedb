@@ -71,14 +71,14 @@ public class CorenessTest {
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().coreness().minK(1).execute();
+            graph.graql().compute().centrality().usingKCore().minK(1).execute();
         }
     }
 
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Integer, Set<String>> result = graph.graql().compute().coreness().execute();
+            Map<Long, Set<String>> result = graph.graql().compute().centrality().usingKCore().execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -88,7 +88,7 @@ public class CorenessTest {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.putEntityType(thing).addEntity();
             graph.putEntityType(anotherThing).addEntity();
-            Map<Integer, Set<String>> result = graph.graql().compute().coreness().execute();
+            Map<Long, Set<String>> result = graph.graql().compute().centrality().usingKCore().execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -118,7 +118,7 @@ public class CorenessTest {
                     .addRolePlayer(role3, entity1)
                     .addRolePlayer(role4, entity2);
 
-            Map<Integer, Set<String>> result = graph.graql().compute().coreness().execute();
+            Map<Long, Set<String>> result = graph.graql().compute().centrality().usingKCore().execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -128,17 +128,17 @@ public class CorenessTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Integer, Set<String>> result = graph.graql().compute().coreness().execute();
+            Map<Long, Set<String>> result = graph.graql().compute().centrality().usingKCore().execute();
             assertEquals(1, result.size());
-            assertEquals(4, result.get(3).size());
+            assertEquals(4, result.get(3L).size());
 
-            result = graph.graql().compute().coreness().of(thing).execute();
+            result = graph.graql().compute().centrality().usingKCore().of(thing).execute();
             assertEquals(1, result.size());
-            assertEquals(2, result.get(3).size());
+            assertEquals(2, result.get(3L).size());
 
-            result = graph.graql().compute().coreness().in(thing, anotherThing, related).execute();
+            result = graph.graql().compute().centrality().usingKCore().in(thing, anotherThing, related).execute();
             assertEquals(1, result.size());
-            assertEquals(4, result.get(2).size());
+            assertEquals(4, result.get(2L).size());
         }
     }
 
@@ -167,17 +167,17 @@ public class CorenessTest {
             graph.commit();
         }
 
-        Map<Integer, Set<String>> result;
+        Map<Long, Set<String>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().coreness().execute();
+            result = graph.graql().compute().centrality().usingKCore().execute();
             System.out.println("result = " + result);
             assertEquals(2, result.size());
-            assertEquals(5, result.get(4).size());
-            assertEquals(1, result.get(3).size());
+            assertEquals(5, result.get(4L).size());
+            assertEquals(1, result.get(3L).size());
 
-            result = graph.graql().compute().coreness().minK(4).execute();
+            result = graph.graql().compute().centrality().usingKCore().minK(4L).execute();
             assertEquals(1, result.size());
-            assertEquals(5, result.get(4).size());
+            assertEquals(5, result.get(4L).size());
         }
     }
 
@@ -258,16 +258,16 @@ public class CorenessTest {
             graph.commit();
         }
 
-        Map<Integer, Set<String>> result;
+        Map<Long, Set<String>> result;
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().coreness().execute();
+            result = graph.graql().compute().centrality().usingKCore().execute();
             assertEquals(2, result.size());
-            assertEquals(8, result.get(3).size());
-            assertEquals(1, result.get(2).size());
+            assertEquals(8, result.get(3L).size());
+            assertEquals(1, result.get(2L).size());
 
-            result = graph.graql().compute().coreness().minK(3).execute();
+            result = graph.graql().compute().centrality().usingKCore().minK(3L).execute();
             assertEquals(1, result.size());
-            assertEquals(8, result.get(3).size());
+            assertEquals(8, result.get(3L).size());
         }
     }
 
@@ -283,15 +283,15 @@ public class CorenessTest {
             list.add(i);
         }
 
-        Set<Map<Integer, Set<String>>> result = list.parallelStream().map(i -> {
+        Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return Graql.compute().withTx(graph).coreness().minK(3).execute();
+                return Graql.compute().withTx(graph).centrality().usingKCore().minK(3L).execute();
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());
         result.forEach(map -> {
             assertEquals(1, map.size());
-            assertEquals(4, map.get(3).size());
+            assertEquals(4, map.get(3L).size());
         });
     }
 

@@ -44,7 +44,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -66,7 +65,7 @@ public class DegreeTest {
     }
 
     @Test
-    public void testDegreesSimple() throws Exception {
+    public void testDegreesSimple() {
         // create instances
         EntityType thingy = tx.putEntityType("thingy");
         EntityType anotherThing = tx.putEntityType("another");
@@ -118,7 +117,7 @@ public class DegreeTest {
 
         Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return graph.graql().compute().degree().execute();
+                return graph.graql().compute().centrality().usingDegree().execute();
             }
         }).collect(Collectors.toSet());
         result.forEach(degrees -> {
@@ -132,7 +131,8 @@ public class DegreeTest {
         });
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thingy").execute();
+            Map<Long, Set<String>> degrees2 =
+                    graph.graql().compute().centrality().usingDegree().of("thingy").execute();
 
             assertEquals(2, degrees2.size());
             assertEquals(2, degrees2.get(1L).size());
@@ -144,7 +144,7 @@ public class DegreeTest {
                     }
             ));
 
-            degrees2 = graph.graql().compute().degree().of("thingy", "related").execute();
+            degrees2 = graph.graql().compute().centrality().usingDegree().of("thingy", "related").execute();
             assertEquals(3, degrees2.size());
             assertEquals(2, degrees2.get(1L).size());
             assertEquals(3, degrees2.get(2L).size());
@@ -156,7 +156,7 @@ public class DegreeTest {
                     }
             ));
 
-            degrees2 = graph.graql().compute().degree().of().execute();
+            degrees2 = graph.graql().compute().centrality().usingDegree().of().execute();
 
             assertEquals(3, degrees2.size());
             assertEquals(3, degrees2.get(1L).size());
@@ -170,7 +170,8 @@ public class DegreeTest {
             ));
 
             // compute degrees on subgraph
-            Map<Long, Set<String>> degrees3 = graph.graql().compute().degree().in("thingy", "related").execute();
+            Map<Long, Set<String>> degrees3 = graph.graql().compute().centrality().usingDegree()
+                    .in("thingy", "related").execute();
             correctDegrees.put(id3, 1L);
             assertTrue(!degrees3.isEmpty());
             degrees3.forEach((key, value) -> value.forEach(
@@ -180,7 +181,7 @@ public class DegreeTest {
                     }
             ));
 
-            degrees3 = graph.graql().compute().degree().of("thingy").in("related").execute();
+            degrees3 = graph.graql().compute().centrality().usingDegree().of("thingy").in("related").execute();
             assertEquals(2, degrees3.size());
             assertEquals(2, degrees3.get(1L).size());
             assertEquals(1, degrees3.get(3L).size());
@@ -194,7 +195,7 @@ public class DegreeTest {
     }
 
     @Test
-    public void testSubIsAccountedForInSubgraph() throws Exception {
+    public void testSubIsAccountedForInSubgraph() {
         // create a simple tx
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
@@ -209,7 +210,7 @@ public class DegreeTest {
             // set subgraph
             HashSet<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
                     Label.of("mans-best-friend"));
-            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().in(ct).execute();
 
             // check that dog has a degree to confirm sub has been inferred
             assertTrue(degrees.keySet().iterator().next().equals(0L));
@@ -217,8 +218,8 @@ public class DegreeTest {
     }
 
     @Test
-    public void testDegreeTwoAttributes() throws InvalidKBException, ExecutionException, InterruptedException {
-        // create a simple tx
+    public void testDegreeTwoAttributes() throws InvalidKBException {
+        // create a simple graph
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
         RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
@@ -231,7 +232,7 @@ public class DegreeTest {
 
         animal.attribute(name).attribute(altName);
 
-        // add data to the tx
+        // add data to the graph
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
         Attribute coconut = name.putAttribute("coconut");
@@ -241,13 +242,13 @@ public class DegreeTest {
                 .addRolePlayer(pet, coco);
         coco.attribute(coconut).attribute(stinky);
 
-        // manually compute the degree for small tx
+        // manually compute the degree for small graph
         Map<ConceptId, Long> subGraphReferenceDegrees = new HashMap<>();
         subGraphReferenceDegrees.put(coco.getId(), 1L);
         subGraphReferenceDegrees.put(dave.getId(), 1L);
         subGraphReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
 
-        // manually compute degree for almost full tx
+        // manually compute degree for almost full graph
         Map<ConceptId, Long> almostFullReferenceDegrees = new HashMap<>();
         almostFullReferenceDegrees.put(coco.getId(), 2L);
         almostFullReferenceDegrees.put(dave.getId(), 1L);
@@ -268,10 +269,9 @@ public class DegreeTest {
             // create a subgraph excluding attributes and their relationship
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
                     Label.of("mans-best-friend"));
-            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(subGraphTypes).execute();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree()
+                    .in(subGraphTypes).execute();
             assertEquals(2, degrees.size());
-            System.out.println("degrees = " + degrees);
-
             degrees.forEach((key, value1) -> value1.forEach(
                     id -> {
                         assertTrue(subGraphReferenceDegrees.containsKey(ConceptId.of(id)));
@@ -279,23 +279,20 @@ public class DegreeTest {
                     }
             ));
 
-            degrees = graph.graql().compute().degree().execute();
-            assertEquals(2, degrees.size());
-            System.out.println("degrees = " + degrees);
-
+            // full graph
+            degrees = graph.graql().compute().centrality().usingDegree().of().execute();
+            assertEquals(3, degrees.size());
             degrees.forEach((key, value1) -> value1.forEach(
                     id -> {
-                        assertTrue(subGraphReferenceDegrees.containsKey(ConceptId.of(id)));
-                        assertEquals(subGraphReferenceDegrees.get(ConceptId.of(id)), key);
+                        assertTrue(fullReferenceDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(fullReferenceDegrees.get(ConceptId.of(id)), key);
                     }
             ));
 
             // create a subgraph excluding one attribute type only
             HashSet<Label> almostFullTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
                     Label.of("mans-best-friend"), Label.of("@has-name"), Label.of("name"));
-            degrees = graph.graql().compute().degree().in(almostFullTypes).execute();
-            System.out.println("degrees = " + degrees);
-
+            degrees = graph.graql().compute().centrality().usingDegree().in(almostFullTypes).execute();
             assertEquals(2, degrees.size());
             degrees.forEach((key, value1) -> value1.forEach(
                     id -> {
@@ -303,22 +300,11 @@ public class DegreeTest {
                         assertEquals(almostFullReferenceDegrees.get(ConceptId.of(id)), key);
                     }
             ));
-
-            // full tx
-            degrees = graph.graql().compute().degree().includeAttribute().of().execute();
-            assertEquals(3, degrees.size());
-            System.out.println("degrees = " + degrees);
-            degrees.forEach((key, value1) -> value1.forEach(
-                    id -> {
-                        assertTrue(fullReferenceDegrees.containsKey(ConceptId.of(id)));
-                        assertEquals(fullReferenceDegrees.get(ConceptId.of(id)), key);
-                    }
-            ));
         }
     }
 
     @Test
-    public void testDegreeMissingRolePlayer() throws Exception {
+    public void testDegreeMissingRolePlayer() {
         // create a simple tx
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
@@ -344,7 +330,7 @@ public class DegreeTest {
         try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // compute and persist degrees
-            Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute();
 
             // check degrees are correct
             referenceDegrees.forEach((key, value) -> assertTrue(degrees.get(value).contains(key.getValue())));
@@ -355,7 +341,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeAssertionAboutAssertion()
-            throws InvalidKBException, ExecutionException, InterruptedException {
+            throws InvalidKBException {
         // create a simple tx
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
@@ -413,7 +399,7 @@ public class DegreeTest {
                             Label.of("mans-best-friend"),
                             Label.of("start-date"),
                             Label.of("has-ownership-resource"));
-            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().in(ct).execute();
             assertTrue(!degrees.isEmpty());
             degrees.forEach((key1, value2) -> value2.forEach(
                     id -> {
@@ -427,7 +413,7 @@ public class DegreeTest {
             ct.add(Label.of("animal"));
             ct.add(Label.of("person"));
             ct.add(Label.of("mans-best-friend"));
-            degrees = graph.graql().compute().degree().in(ct).execute();
+            degrees = graph.graql().compute().centrality().usingDegree().in(ct).execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value1) -> value1.forEach(
                     id -> {
@@ -440,7 +426,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeTernaryRelationships()
-            throws InvalidKBException, ExecutionException, InterruptedException {
+            throws InvalidKBException {
         // make relationship
         Role productionWithCast = tx.putRole("production-with-cast");
         Role actor = tx.putRole("actor");
@@ -468,7 +454,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute();
             assertTrue(degrees.get(3L).contains(relationId.getValue()));
             assertTrue(degrees.get(1L).contains(marlonId.getValue()));
         }
@@ -476,7 +462,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeOneRolePlayerMultipleRoles()
-            throws InvalidKBException, ExecutionException, InterruptedException {
+            throws InvalidKBException {
         // create a simple tx
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
@@ -504,7 +490,7 @@ public class DegreeTest {
         tx.commit();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value) -> value.forEach(
                     id -> {
@@ -517,7 +503,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeRolePlayerWrongType()
-            throws InvalidKBException, ExecutionException, InterruptedException {
+            throws InvalidKBException {
         // create a simple tx
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
@@ -552,7 +538,7 @@ public class DegreeTest {
             //TODO: should we count the relationship even if there is no cat attached?
             HashSet<Label> ct = Sets.newHashSet(Label.of("mans-best-friend"), Label.of("cat"),
                     Label.of("person"));
-            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
+            Map<Long, Set<String>> degrees = graph.graql().compute().centrality().usingDegree().in(ct).execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value) -> value.forEach(
                     id -> {

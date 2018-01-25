@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.analytics.CentralityQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CorenessQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -117,14 +118,26 @@ public interface ComputeQueryBuilder {
     KCoreQuery kCore();
 
     /**
+     * This method is deprecated. Please use centrality query instead.
+     *
      * @return a coreness query that computes centrality using k-core.
      */
+    @Deprecated
     @CheckReturnValue
     CorenessQuery coreness();
 
     /**
+     * This method is deprecated. Please use centrality query instead.
+     *
      * @return a degree query that will compute the degree of instances
      */
+    @Deprecated
     @CheckReturnValue
     DegreeQuery degree();
+
+    /**
+     * @return a centrality query builder for creating centrality query
+     */
+    @CheckReturnValue
+    CentralityQueryBuilder centrality();
 }

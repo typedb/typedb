@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Compute coreness of concepts using k-core.
+ * Compute centrality of concepts using k-core (coreness).
  * <p>
  * https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)#k-Cores
  * </p>
@@ -35,13 +35,13 @@ import java.util.Set;
  *
  * @author Jason Liu
  */
-public interface CorenessQuery extends ComputeQuery<Map<Integer, Set<String>>> {
+public interface CorenessQuery extends ComputeQuery<Map<Long, Set<String>>> {
 
     /**
      * @param k set the min value of coreness in k-core. Be default, k = 2.
      * @return a CorenessQuery with min value of coreness set
      */
-    CorenessQuery minK(int k);
+    CorenessQuery minK(long k);
 
     /**
      * @param ofTypeLabels an array of types in the subgraph to compute coreness of. By default the coreness of all
