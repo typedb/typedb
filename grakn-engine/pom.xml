@@ -136,6 +136,7 @@
     </dependencies>
 
     <build>
+        <!-- This is required so we fetch the OS-specific GRPC implementation -->
         <extensions>
             <extension>
                 <groupId>kr.motd.maven</groupId>
@@ -150,6 +151,7 @@
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>0.5.0</version>
                 <configuration>
+                    <!-- Get the (OS-specific) executable to generate Java code from proto files -->
                     <protocArtifact>com.google.protobuf:protoc:3.0.2:exe:${os.detected.classifier}</protocArtifact>
                     <pluginId>grpc-java</pluginId>
                     <pluginArtifact>io.grpc:protoc-gen-grpc-java:1.2.0:exe:${os.detected.classifier}</pluginArtifact>
