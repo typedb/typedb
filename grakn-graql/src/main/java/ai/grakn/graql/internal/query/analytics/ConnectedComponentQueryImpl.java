@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ConnectedComponentQuery<T>>
+class ConnectedComponentQueryImpl<T> extends AbstractClusterQuery<T, ConnectedComponentQuery<T>>
         implements ConnectedComponentQuery<T> {
 
     private boolean members = false;
@@ -44,7 +44,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ConnectedComponentQuer
     private Optional<ConceptId> sourceId = Optional.empty();
     private long clusterSize = -1L;
 
-    ClusterQueryImpl(Optional<GraknTx> graph) {
+    ConnectedComponentQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
     }
 
@@ -95,11 +95,6 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ConnectedComponentQuer
     }
 
     @Override
-    public ConnectedComponentQuery<T> includeAttribute() {
-        return (ConnectedComponentQuery<T>) super.includeAttribute();
-    }
-
-    @Override
     public ConnectedComponentQuery<Map<String, Set<String>>> members() {
         this.members = true;
         return (ConnectedComponentQuery<Map<String, Set<String>>>) this;
@@ -116,6 +111,11 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ConnectedComponentQuer
         this.anySize = false;
         this.clusterSize = clusterSize;
         return this;
+    }
+
+    @Override
+    ClusterMeasure getMethod() {
+        return ClusterMeasure.CONNECTED_COMPONENT;
     }
 
     @Override
@@ -139,7 +139,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T, ConnectedComponentQuer
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        ClusterQueryImpl<?> that = (ClusterQueryImpl<?>) o;
+        ConnectedComponentQueryImpl<?> that = (ConnectedComponentQueryImpl<?>) o;
 
         return sourceId.equals(that.sourceId) && members == that.members &&
                 anySize == that.anySize && clusterSize == that.clusterSize;

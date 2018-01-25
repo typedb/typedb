@@ -105,7 +105,7 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
     @Override
     public ConnectedComponentQuery<Map<String, Long>> cluster() {
-        return new ClusterQueryImpl<>(tx);
+        return new ConnectedComponentQueryImpl<>(tx);
     }
 
     @Override

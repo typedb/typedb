@@ -18,34 +18,22 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.internal.util.StringConverter;
-import com.google.common.collect.Sets;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.joining;
-
-abstract class AbstractClusterQuery<V extends ComputeQuery<Map<Long, Set<String>>>>
-        extends AbstractComputeQuery<Map<Long, Set<String>>, V> {
-
+abstract class AbstractClusterQuery<T, V extends ComputeQuery<T>>
+        extends AbstractComputeQuery<T, V> {
     /**
      * The centrality measures supported.
      */
-    enum CentralityMeasure {
+    enum ClusterMeasure {
 
-        DEGREE("degree"),
+        CONNECTED_COMPONENT("connected-component"),
         K_CORE("k-core");
         private final String name;
 
-        CentralityMeasure(String name) {
+        ClusterMeasure(String name) {
             this.name = name;
         }
 
@@ -55,35 +43,11 @@ abstract class AbstractClusterQuery<V extends ComputeQuery<Map<Long, Set<String>
         }
     }
 
-    private boolean ofTypeLabelsSet = false;
-    Set<Label> ofLabels = new HashSet<>();
-
-    void initSubGraph() { //TODO: REMOVE THIS METHOD
-        includeAttribute = true;
-    }
-
-    public V of(String... ofTypeLabels) {
-        return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
-    }
-
-    public V of(Collection<Label> ofLabels) {
-        if (!ofLabels.isEmpty()) {
-            ofTypeLabelsSet = true;
-            this.ofLabels = Sets.newHashSet(ofLabels);
-        }
-        return (V) this;
-    }
-
-    abstract CentralityMeasure getMethod();
+    abstract ClusterMeasure getMethod();
 
     @Override
     String graqlString() {
-        String string = "centrality";
-        if (ofTypeLabelsSet) {
-            string += " of " + ofLabels.stream()
-                    .map(StringConverter::typeLabelToString)
-                    .collect(joining(", "));
-        }
+        String string = "cluster";
         string += subtypeString() + " using " + getMethod().getName();
 
         return string;
@@ -97,15 +61,12 @@ abstract class AbstractClusterQuery<V extends ComputeQuery<Map<Long, Set<String>
 
         AbstractClusterQuery that = (AbstractClusterQuery) o;
 
-        return ofTypeLabelsSet == that.ofTypeLabelsSet && ofLabels.equals(that.ofLabels) &&
-                getMethod() == that.getMethod();
+        return getMethod() == that.getMethod();
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (ofTypeLabelsSet ? 1 : 0);
-        result = 31 * result + ofLabels.hashCode();
         result = 31 * result + getMethod().hashCode();
         return result;
     }

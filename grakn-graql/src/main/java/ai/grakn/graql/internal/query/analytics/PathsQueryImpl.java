@@ -195,11 +195,6 @@ class PathsQueryImpl extends AbstractComputeQuery<List<List<Concept>>, PathsQuer
     }
 
     @Override
-    public PathsQuery includeAttribute() {
-        return (PathsQuery) super.includeAttribute();
-    }
-
-    @Override
     String graqlString() {
         return "paths from " + idToString(sourceId) + " to " + idToString(destinationId) + subtypeString();
     }

@@ -86,9 +86,9 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements Com
     }
 
     @Override
-    public ComputeQuery<T> includeAttribute() {
+    public V includeAttribute() {
         this.includeAttribute = true;
-        return this;
+        return (V) this;
     }
 
     @Override

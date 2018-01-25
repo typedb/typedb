@@ -29,6 +29,9 @@ import java.util.Set;
 
 /**
  * Compute the connected components in the sub graph.
+ * <p>
+ * https://en.wikipedia.org/wiki/Connected_component_(graph_theory)
+ * </p>
  *
  * @param <T> the type of result this query will return
  * @author Jason Liu
@@ -52,7 +55,7 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
     ConnectedComponentQuery<T> of(ConceptId conceptId);
 
     /**
-     * @param clusterSize the size of the clusters returned and/or persisted
+     * @param clusterSize the size of the clusters returned
      * @return a ClusterQuery with cluster set
      */
     ConnectedComponentQuery<T> clusterSize(long clusterSize);
