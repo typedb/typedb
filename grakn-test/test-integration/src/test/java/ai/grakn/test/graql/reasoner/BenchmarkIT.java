@@ -54,8 +54,10 @@ import java.util.List;
 import java.util.Random;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraknTestUtil.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 public class BenchmarkIT {
 
@@ -68,6 +70,9 @@ public class BenchmarkIT {
 
     @Before
     public void setupSession() {
+        // Because we think tinkerpop is not thread-safe and batch-loading uses multiple threads
+        assumeFalse(usingTinker());
+
         keyspace = randomKeyspace();
         this.session = Grakn.session(engine.uri(), keyspace);
     }

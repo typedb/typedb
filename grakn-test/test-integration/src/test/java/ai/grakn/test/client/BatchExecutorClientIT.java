@@ -50,10 +50,12 @@ import java.util.UUID;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ConcurrencyUtil.allObservable;
+import static ai.grakn.util.GraknTestUtil.usingTinker;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static java.util.stream.Stream.generate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.spy;
 
 public class BatchExecutorClientIT {
@@ -70,6 +72,9 @@ public class BatchExecutorClientIT {
 
     @Before
     public void setupSession() {
+        // Because we think tinkerpop is not thread-safe and batch-loading uses multiple threads
+        assumeFalse(usingTinker());
+
         keyspace = randomKeyspace();
         this.session = Grakn.session(engine.uri(), keyspace);
     }
