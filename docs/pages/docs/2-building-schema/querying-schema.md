@@ -137,13 +137,6 @@ match $x plays has-firstname-owner; get;
 <code>
 qb.match(var("x").plays("has-firstname-owner")).get();
 </code>
-<pre>
-match $x plays @has-firstname-owner; get;
-</pre>
-</div>
-<div role="tabpanel" class="tab-pane" id="java11">
-<pre>
-qb.match(var("x").plays("@has-firstname-owner")).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

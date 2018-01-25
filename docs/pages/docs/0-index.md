@@ -10,14 +10,14 @@ toc: false
 ---
 
 <br />
-<ul id="profileTabs" class="nav nav-tabs">
+<ul id="profileTabs" class="nav nav-tabs nav-tabs--intro">
     <li class="active"><a href="#getstarted" data-toggle="tab">Get Started</a></li>
     <li><a href="#apireference" data-toggle="tab">API Reference</a></li>
     <li><a href="#contribute" data-toggle="tab">Contribute</a></li>
     <li><a href="#gethelp" data-toggle="tab">Get Help</a></li>
 </ul>
 
-<div class="tab-content">
+<div class="tab-content tab-content--intro">
 
   <div role="tabpanel" class="tab-pane active" id="getstarted">
     <h2>Get Started</h2>
