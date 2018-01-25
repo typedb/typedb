@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
@@ -30,12 +29,11 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
+class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>, StdQuery> implements StdQuery {
 
     StdQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -71,31 +69,6 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
 
         LOGGER.info("StdMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(finalResult);
-    }
-
-    @Override
-    public StdQuery of(String... resourceTypeLabels) {
-        return (StdQuery) setStatisticsResourceType(resourceTypeLabels);
-    }
-
-    @Override
-    public StdQuery of(Collection<Label> resourceLabels) {
-        return (StdQuery) setStatisticsResourceType(resourceLabels);
-    }
-
-    @Override
-    public StdQuery in(String... subTypeLabels) {
-        return (StdQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public StdQuery in(Collection<Label> subLabels) {
-        return (StdQuery) super.in(subLabels);
-    }
-
-    @Override
-    public StdQuery withTx(GraknTx tx) {
-        return (StdQuery) super.withTx(tx);
     }
 
     @Override

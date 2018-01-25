@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
@@ -30,12 +29,11 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements SumQuery {
+class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>, SumQuery> implements SumQuery {
 
     SumQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -66,31 +64,6 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
 
         LOGGER.info("SumMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(finalResult);
-    }
-
-    @Override
-    public SumQuery of(String... resourceTypeLabels) {
-        return (SumQuery) setStatisticsResourceType(resourceTypeLabels);
-    }
-
-    @Override
-    public SumQuery of(Collection<Label> resourceLabels) {
-        return (SumQuery) setStatisticsResourceType(resourceLabels);
-    }
-
-    @Override
-    public SumQuery in(String... subTypeLabels) {
-        return (SumQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public SumQuery in(Collection<Label> subLabels) {
-        return (SumQuery) super.in(subLabels);
-    }
-
-    @Override
-    public SumQuery withTx(GraknTx tx) {
-        return (SumQuery) super.withTx(tx);
     }
 
     @Override

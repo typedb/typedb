@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -30,7 +29,6 @@ import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.NoResultException;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -101,16 +99,6 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     }
 
     @Override
-    public CorenessQuery in(String... subTypeLabels) {
-        return (CorenessQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public CorenessQuery in(Collection<Label> subLabels) {
-        return (CorenessQuery) super.in(subLabels);
-    }
-
-    @Override
     CentralityMeasure getMethod() {
         return CentralityMeasure.K_CORE;
     }
@@ -118,11 +106,6 @@ class CorenessQueryImpl extends AbstractCentralityQuery<CorenessQuery> implement
     @Override
     String graqlString() {
         return super.graqlString() + " where k = " + k + ";";
-    }
-
-    @Override
-    public CorenessQuery withTx(GraknTx tx) {
-        return (CorenessQuery) super.withTx(tx);
     }
 
     @Override

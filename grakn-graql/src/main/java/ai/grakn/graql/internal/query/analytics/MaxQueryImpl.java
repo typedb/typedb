@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
@@ -30,12 +29,11 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MaxQuery {
+class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>, MaxQuery> implements MaxQuery {
 
     MaxQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -64,31 +62,6 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         LOGGER.debug("Max = " + max.get(MapReduce.NullObject.instance()));
         LOGGER.info("MaxMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(max.get(MapReduce.NullObject.instance()));
-    }
-
-    @Override
-    public MaxQuery of(String... resourceTypeLabels) {
-        return (MaxQuery) setStatisticsResourceType(resourceTypeLabels);
-    }
-
-    @Override
-    public MaxQuery of(Collection<Label> resourceLabels) {
-        return (MaxQuery) setStatisticsResourceType(resourceLabels);
-    }
-
-    @Override
-    public MaxQuery in(String... subTypeLabels) {
-        return (MaxQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public MaxQuery in(Collection<Label> subLabels) {
-        return (MaxQuery) super.in(subLabels);
-    }
-
-    @Override
-    public MaxQuery withTx(GraknTx tx) {
-        return (MaxQuery) super.withTx(tx);
     }
 
     @Override

@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -29,7 +28,6 @@ import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -83,16 +81,6 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
     }
 
     @Override
-    public DegreeQuery in(String... subTypeLabels) {
-        return (DegreeQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public DegreeQuery in(Collection<Label> subLabels) {
-        return (DegreeQuery) super.in(subLabels);
-    }
-
-    @Override
     CentralityMeasure getMethod() {
         return CentralityMeasure.DEGREE;
     }
@@ -100,10 +88,5 @@ class DegreeQueryImpl extends AbstractCentralityQuery<DegreeQuery> implements De
     @Override
     String graqlString() {
         return super.graqlString() + ";";
-    }
-
-    @Override
-    public DegreeQuery withTx(GraknTx tx) {
-        return (DegreeQuery) super.withTx(tx);
     }
 }

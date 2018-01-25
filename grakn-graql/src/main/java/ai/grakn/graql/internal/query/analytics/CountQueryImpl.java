@@ -19,21 +19,19 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduceWithAttribute;
 import ai.grakn.graql.internal.analytics.CountVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.GraknMapReduce.RESERVED_TYPE_LABEL_KEY;
 
-class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
+class CountQueryImpl extends AbstractComputeQuery<Long, CountQuery> implements CountQuery {
 
     CountQueryImpl(Optional<GraknTx> graph) {
         this.tx = graph;
@@ -78,22 +76,7 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     }
 
     @Override
-    public CountQuery in(String... subTypeLabels) {
-        return (CountQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public CountQuery in(Collection<Label> subLabels) {
-        return (CountQuery) super.in(subLabels);
-    }
-
-    @Override
     String graqlString() {
         return "count" + subtypeString();
-    }
-
-    @Override
-    public CountQuery withTx(GraknTx tx) {
-        return (CountQuery) super.withTx(tx);
     }
 }

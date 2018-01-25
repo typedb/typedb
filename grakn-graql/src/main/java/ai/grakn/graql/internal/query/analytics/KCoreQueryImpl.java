@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.KCoreQuery;
@@ -28,13 +27,12 @@ import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
 import ai.grakn.graql.internal.analytics.NoResultException;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> implements KCoreQuery {
+class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>, KCoreQuery> implements KCoreQuery {
 
     private long k = -1L;
 
@@ -81,26 +79,11 @@ class KCoreQueryImpl extends AbstractComputeQuery<Map<String, Set<String>>> impl
     }
 
     @Override
-    public KCoreQuery in(String... subTypeLabels) {
-        return (KCoreQuery) super.in(subTypeLabels);
-    }
-
-    @Override
-    public KCoreQuery in(Collection<Label> subLabels) {
-        return (KCoreQuery) super.in(subLabels);
-    }
-
-    @Override
     String graqlString() {
         String string = "kcore ";
         string += k;
         string += subtypeString();
         return string;
-    }
-
-    @Override
-    public KCoreQuery withTx(GraknTx tx) {
-        return (KCoreQuery) super.withTx(tx);
     }
 
     @Override

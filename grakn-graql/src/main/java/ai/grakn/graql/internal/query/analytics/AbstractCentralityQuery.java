@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
-abstract class AbstractCentralityQuery<T extends ComputeQuery<Map<Long, Set<String>>>>
-        extends AbstractComputeQuery<Map<Long, Set<String>>> {
+abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<String>>>>
+        extends AbstractComputeQuery<Map<Long, Set<String>>, V> {
 
     /**
      * The centrality measures supported.
@@ -62,16 +62,16 @@ abstract class AbstractCentralityQuery<T extends ComputeQuery<Map<Long, Set<Stri
         includeAttribute = true;
     }
 
-    public T of(String... ofTypeLabels) {
+    public V of(String... ofTypeLabels) {
         return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
     }
 
-    public T of(Collection<Label> ofLabels) {
+    public V of(Collection<Label> ofLabels) {
         if (!ofLabels.isEmpty()) {
             ofTypeLabelsSet = true;
             this.ofLabels = Sets.newHashSet(ofLabels);
         }
-        return (T) this;
+        return (V) this;
     }
 
     abstract CentralityMeasure getMethod();

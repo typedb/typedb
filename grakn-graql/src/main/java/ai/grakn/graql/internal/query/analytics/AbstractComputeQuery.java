@@ -56,7 +56,7 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 
-abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
+abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements ComputeQuery<T> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
@@ -68,21 +68,21 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     Set<Type> subTypes = new HashSet<>();
 
     @Override
-    public ComputeQuery<T> withTx(GraknTx tx) {
+    public V withTx(GraknTx tx) {
         this.tx = Optional.of(tx);
-        return this;
+        return (V) this;
     }
 
     @Override
-    public ComputeQuery<T> in(String... subTypeLabels) {
+    public V in(String... subTypeLabels) {
         this.subLabels = Arrays.stream(subTypeLabels).map(Label::of).collect(Collectors.toSet());
-        return this;
+        return (V) this;
     }
 
     @Override
-    public ComputeQuery<T> in(Collection<Label> subLabels) {
+    public V in(Collection<Label> subLabels) {
         this.subLabels = Sets.newHashSet(subLabels);
-        return this;
+        return (V) this;
     }
 
     @Override
@@ -168,7 +168,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     GraknComputer getGraphComputer() {
         if (graknComputer == null) {
-            if(tx.isPresent()){
+            if (tx.isPresent()) {
                 graknComputer = tx.get().session().getGraphComputer();
             } else {
                 throw new IllegalStateException("Transaction has not been provided. Cannot initialise graph computer");
@@ -225,7 +225,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
+        AbstractComputeQuery<?, ?> that = (AbstractComputeQuery<?, ?>) o;
 
         return tx.equals(that.tx) && includeAttribute == that.includeAttribute && subLabels.equals(that.subLabels);
     }
