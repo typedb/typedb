@@ -82,6 +82,11 @@ import static org.mockito.Mockito.when;
  */
 public class GrpcServerTest {
 
+    private static final String EXCEPTION_MESSAGE = "OH DEAR";
+    private static final GraknException EXCEPTION = new GraknException(EXCEPTION_MESSAGE) {
+        private static final long serialVersionUID = 8491972914457727509L;
+    };
+
     private static final int PORT = 5555;
     private static final String MYKS = "myks";
     private static final String QUERY = "match $x isa person; get;";
@@ -404,12 +409,12 @@ public class GrpcServerTest {
 
     @Test
     public void whenOpeningTxFails_Throw() throws Throwable {
-        when(txFactory.tx(Keyspace.of(MYKS), GraknTxType.WRITE)).thenThrow(GraknExceptionFake.EXCEPTION);
+        when(txFactory.tx(Keyspace.of(MYKS), GraknTxType.WRITE)).thenThrow(EXCEPTION);
 
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
 
-            exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
+            exception.expect(hasMessage(EXCEPTION_MESSAGE));
 
             throw tx.receive().throwable();
         }
@@ -417,7 +422,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenCommittingFails_Throw() throws Throwable {
-        doThrow(GraknExceptionFake.EXCEPTION).when(tx).commit();
+        doThrow(EXCEPTION).when(tx).commit();
 
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
@@ -425,7 +430,7 @@ public class GrpcServerTest {
 
             tx.send(commitRequest());
 
-            exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
+            exception.expect(hasMessage(EXCEPTION_MESSAGE));
 
             throw tx.receive().throwable();
         }
@@ -433,7 +438,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenParsingQueryFails_Throw() throws Throwable {
-        when(tx.graql().parse(QUERY)).thenThrow(GraknExceptionFake.EXCEPTION);
+        when(tx.graql().parse(QUERY)).thenThrow(EXCEPTION);
 
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
@@ -441,7 +446,7 @@ public class GrpcServerTest {
 
             tx.send(execQueryRequest(QUERY));
 
-            exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
+            exception.expect(hasMessage(EXCEPTION_MESSAGE));
 
             throw tx.receive().throwable();
         }
@@ -449,7 +454,7 @@ public class GrpcServerTest {
 
     @Test
     public void whenExecutingQueryFails_Throw() throws Throwable {
-        when(query.results(any())).thenThrow(GraknExceptionFake.EXCEPTION);
+        when(query.results(any())).thenThrow(EXCEPTION);
 
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
@@ -457,7 +462,7 @@ public class GrpcServerTest {
 
             tx.send(execQueryRequest(QUERY));
 
-            exception.expect(hasMessage(GraknExceptionFake.MESSAGE));
+            exception.expect(hasMessage(EXCEPTION_MESSAGE));
 
             throw tx.receive().throwable();
         }
@@ -568,18 +573,6 @@ public class GrpcServerTest {
 
     private static TxResponse doneResponse() {
         return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
-    }
-
-    static class GraknExceptionFake extends GraknException {
-
-        private static final long serialVersionUID = 4308283394793131638L;
-
-        static final String MESSAGE = "OH DEAR";
-        static final GraknExceptionFake EXCEPTION = new GraknExceptionFake();
-
-        GraknExceptionFake() {
-            super(MESSAGE);
-        }
     }
 }
 

@@ -86,13 +86,15 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
     public static <Request, Response> SynchronousObserver<Request, Response> create(
             Function<StreamObserver<Response>, StreamObserver<Request>> createRequestObserver
     ) {
-        QueueingObserver<Response> responses = new QueueingObserver<>();
-        StreamObserver<Request> requests = createRequestObserver.apply(responses);
-        return new SynchronousObserver<>(requests, responses);
+        QueueingObserver<Response> responseListener = new QueueingObserver<>();
+        StreamObserver<Request> requestSender = createRequestObserver.apply(responseListener);
+        return new SynchronousObserver<>(requestSender, responseListener);
     }
 
     /**
      * Send a request and return immediately.
+     *
+     * This method is non-blocking - it returns immediately.
      */
     public void send(Request request) {
         requests.onNext(request);

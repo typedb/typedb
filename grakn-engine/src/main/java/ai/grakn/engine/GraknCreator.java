@@ -119,8 +119,8 @@ public class GraknCreator {
             CountPostProcessor countPostProcessor = CountPostProcessor.create(graknEngineConfig, factory, lockProvider, metricRegistry, RedisCountStorage.create(jedisPool, metricRegistry));
 
             PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
-            int grpcPortPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
-            GrpcServer grpcServer = GrpcServer.create(grpcPortPort, engineGraknTxFactory);
+            int grpcPort = graknEngineConfig.getProperty(GraknConfigKey.GRPC_PORT);
+            GrpcServer grpcServer = GrpcServer.create(grpcPort, engineGraknTxFactory);
             HttpHandler httpHandler = new HttpHandler(graknEngineConfig, sparkService, factory, metricRegistry, graknEngineStatus, postProcessor, grpcServer
             );
             BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(factory, indexPostProcessor);
