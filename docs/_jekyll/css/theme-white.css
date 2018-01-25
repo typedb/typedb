@@ -277,7 +277,7 @@
 /*  */
 
 div#toc > ul > li {
-    list-style: disc;
+    list-style-image: url('/images/list-oval.svg');
 }
 
 div#toc li > ul {
@@ -309,12 +309,20 @@ span.projectTitle {
     font-family: 'Titillium';
     letter-spacing: 0.2px;
     font-weight: 200;
+    color: #4a4c52;
+    font-weight: 600;
 }
 
 .summary {
-    color: #808080;
-    border-left: 5px solid #ff7878;
+	color: #8c8d92;
+    border-left: 3px solid #f75e62;
     font-size: 16px;
+}
+
+.summary:before {
+    font-weight: 600;
+    font-size: 18px;
+    color: #f75e62;
 }
 
 h3 {
@@ -700,16 +708,6 @@ a.dropdown-toggle,
     margin-left:10px;
 }
 
-.nav li > a span{
-    margin-top: 0.45em;
-    width: 0;
-    height: 0;
-    border-top: 4px solid #000000;
-    border-right: 4px solid transparent;
-    border-left: 4px solid transparent;
-    border-bottom: none;
-}
-
 .nav li a {
     font-family: 'Titillium';
     letter-spacing: 0.2px;
@@ -759,78 +757,50 @@ a.dropdown-toggle,
 
 }
 
-/*  */
 
-.footer {
-    text-align: left;
-    font-family: 'Titillium';
-    letter-spacing: 0.2px;
-    font-size: 110%;
-}
-
-.footer ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.footer p,
-.footer a {
-    font-weight: 400;
-}
-
-.footer a {
-    color: #6b6b6b;
-    text-decoration: underline;
-}
-
-.footer li a,
-.footer a.gitter,
-.footer a.slack,
-.footer a.github {
-    text-decoration: none;
-}
-
-.footer a:hover {
-    text-decoration: none;
-}
-
-.footer a:after {
-    display: none;
-}
-
-.footer p svg {
-    fill: #6b6b6b;
-    width: 16px;
-    height: 16px;
-    position: relative;
-    top: -1px;
-    vertical-align: middle;
-    display: inline-block;
-    margin-right: 0.1em;
-}
-
-.footer .footer-header {
-    font-size: 110%;
-    display: block;
-    font-weight: 400;
-    margin-bottom: 0.7em;
-}
-
-.footer a.gitter {
-    display: inline-block;
-    margin-bottom: 0.25em;
-}
 #download-btn {
     margin: 20px 0;
 }
+
 #download-btn > a{
     height: 50px;
-    background-color: #f75e61;
+    background-color: white;
     text-decoration: none;
-    color: white;
-    padding: 5px 10px;
+    color: #f75e62;
+    padding: 10px 20px;
     border-radius: 5px;
-    margin: 10px 0;
-    width: fit-content;
+    width: 220px;
+    border: 1px solid #f75e62;
+    display: block;
+    text-align: center;
+    font-size: 16px;
+}
+
+#download-btn > a:after {
+    content: "\f019";
+    color: #f75e62;
+    font-size: 16px;
+    padding-left: 10px;
+}
+
+blockquote {
+    border-left: 3px solid #796de3;
+}
+
+blockquote p {
+    font-style: italic;
+    line-height: 1.8;
+    font-size: 16px;
+}
+
+.alert > i {
+    font-size: 18px;
+}
+
+.alert-info > i {
+    color: #21b5fb;
+}
+
+.alert-danger > i {
+    color: #f75e62;
 }
