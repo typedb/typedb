@@ -17,6 +17,7 @@
  */
 
 package ai.grakn.bootup.graknengine;
+
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManager;
 import ai.grakn.bootup.graknengine.grakn_pid.GraknPidManagerFactory;
@@ -25,6 +26,7 @@ import ai.grakn.engine.GraknEngineServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -59,7 +61,7 @@ public class Grakn {
             // Start Engine
             GraknEngineServer graknEngineServer = GraknCreator.create().instantiateGraknEngineServer(Runtime.getRuntime());
             graknEngineServer.start();
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             LOG.error("An exception has occurred", e);
         }
     }
