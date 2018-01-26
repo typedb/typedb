@@ -65,6 +65,10 @@ public class QueryBuilderImpl implements QueryBuilder {
         this.tx = Optional.empty();
     }
 
+    public QueryBuilderImpl(GraknTx tx) {
+        this.tx = Optional.of(tx);
+    }
+
     @Override
     public QueryBuilder infer(boolean infer) {
         this.infer = infer;
