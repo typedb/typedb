@@ -128,7 +128,7 @@ class GraknClientFake implements GraknClient {
 
         return Lists.transform(queryList, query -> {
             assert query != null;
-            return new QueryResponse(query, Json.object("response", "I ran query " + query));
+            return new QueryResponse();
         });
     }
 

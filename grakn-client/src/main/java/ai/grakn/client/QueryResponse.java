@@ -18,7 +18,6 @@
 package ai.grakn.client;
 
 import ai.grakn.graql.Query;
-import mjson.Json;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,14 +29,13 @@ import java.util.List;
  */
 public class QueryResponse {
 
-    public QueryResponse(Query<?> query, Json jsonResponse) {
+    public QueryResponse() {
     }
 
-    public static List<QueryResponse> from(List<Query<?>> queries, String response) {
-        List<Json> json = Json.read(response).asJsonList();
+    public static List<QueryResponse> from(List<Query<?>> queries) {
         ArrayList<QueryResponse> result = new ArrayList<>();
         for (int i = 0; i < queries.size(); i++) {
-            result.add(new QueryResponse(queries.get(i), json.get(i)));
+            result.add(new QueryResponse());
         }
         return result;
     }
