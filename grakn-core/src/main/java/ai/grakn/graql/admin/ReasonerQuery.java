@@ -117,4 +117,12 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     ImmutableMap<Var, Type> getVarTypeMap();
+
+    /**
+     * Returns a var-type of this query with possible additions coming from supplied partial answer.
+     * @param sub partial answer
+     * @return map of variable name - corresponding type pairs
+     */
+    @CheckReturnValue
+    ImmutableMap<Var, Type> getVarTypeMap(Answer sub);
 }

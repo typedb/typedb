@@ -360,6 +360,17 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return varTypeMap;
     }
 
+    @Override
+    public ImmutableMap<Var, Type> getVarTypeMap(Answer sub) {
+        return ImmutableMap.copyOf(getVarTypeMap(
+                Stream.concat(
+                        getAtoms(IsaAtom.class),
+                        inferEntityTypes()
+                )
+                )
+        );
+    }
+
     /**
      * @param var variable name
      * @return id predicate for the specified var name if any

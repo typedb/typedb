@@ -543,7 +543,7 @@ public class RelationshipAtom extends IsaAtom {
         if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asRelationshipType());
         if (possibleRelations == null) {
             Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations();
-            Set<Var> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap().keySet());
+            Set<Var> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap(sub).keySet());
             Set<RelationshipAtom> untypedNeighbours = getNeighbours(RelationshipAtom.class)
                     .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
                     .collect(toSet());
@@ -675,7 +675,7 @@ public class RelationshipAtom extends IsaAtom {
     private RelationshipAtom inferRoles(Answer sub){
         //return if all roles known and non-meta
         List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
-        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
         boolean allRolesMeta = explicitRoles.stream().allMatch(role ->
                 Schema.MetaSchema.isMetaLabel(role.getLabel())
         );
