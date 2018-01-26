@@ -490,7 +490,7 @@ public class RelationshipAtom extends IsaAtom {
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
     private Set<Type> inferPossibleEntityTypes(Answer sub){
-        return inferPossibleRelationConfigurations().asMap().entrySet().stream()
+        return inferPossibleRelationConfigurations(sub).asMap().entrySet().stream()
                 .flatMap(e -> {
                     Set<Role> rs = e.getKey().relates().collect(toSet());
                     rs.removeAll(e.getValue());
@@ -501,9 +501,9 @@ public class RelationshipAtom extends IsaAtom {
     /**
      * @return a map of relationships and corresponding roles that could be played by this atom
      */
-    private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(){
+    private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(Answer sub){
         Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.getLabel())).collect(toSet());
-        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
         Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).map(varTypeMap::get).collect(toSet());
 
         if (roles.isEmpty() && types.isEmpty()){
@@ -542,8 +542,8 @@ public class RelationshipAtom extends IsaAtom {
     public ImmutableList<Type> inferPossibleTypes(Answer sub) {
         if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asRelationshipType());
         if (possibleRelations == null) {
-            Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations();
-            Set<Var> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap(sub).keySet());
+            Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations(sub);
+            Set<Var> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap().keySet());
             Set<RelationshipAtom> untypedNeighbours = getNeighbours(RelationshipAtom.class)
                     .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
                     .collect(toSet());
