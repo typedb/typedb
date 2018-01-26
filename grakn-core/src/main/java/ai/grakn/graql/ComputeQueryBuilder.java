@@ -107,14 +107,20 @@ public interface ComputeQueryBuilder {
     PathsQuery paths();
 
     /**
+     * This method is deprecated. Please use centrality query instead.
+     *
      * @return a cluster query that will find the connected components
      */
+    @Deprecated
     @CheckReturnValue
     ConnectedComponentQuery<Map<String, Long>> connectedComponent();
 
     /**
+     * This method is deprecated. Please use cluster query instead.
+     *
      * @return a k-core query that will find interlinked core areas using k-core.
      */
+    @Deprecated
     @CheckReturnValue
     KCoreQuery kCore();
 
