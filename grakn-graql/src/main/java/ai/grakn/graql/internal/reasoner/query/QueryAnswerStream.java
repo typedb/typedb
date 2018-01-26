@@ -22,7 +22,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
@@ -83,17 +82,6 @@ public class QueryAnswerStream {
             }
         }
         return true;
-    }
-
-    private static Answer joinOperator(Answer m1, Answer m2){
-        boolean isCompatible = true;
-        Set<Var> joinVars = Sets.intersection(m1.vars(), m2.vars());
-        Iterator<Var> it = joinVars.iterator();
-        while(it.hasNext() && isCompatible) {
-            Var var = it.next();
-            isCompatible = m1.get(var).equals(m2.get(var));
-        }
-        return isCompatible? m1.merge(m2) : new QueryAnswer();
     }
 
     private static Set<Answer> findMatchingAnswers(Var var, Concept con, Map<Pair<Var, Concept>, Set<Answer>> inverseMap){
