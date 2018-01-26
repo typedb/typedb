@@ -52,10 +52,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -104,6 +104,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         super(atoms, tx);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
+
+    @Override
+    public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
     public ReasonerAtomicQuery withSubstitution(Answer sub){
