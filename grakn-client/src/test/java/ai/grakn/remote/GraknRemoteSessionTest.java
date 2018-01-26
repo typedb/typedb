@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.remote;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;

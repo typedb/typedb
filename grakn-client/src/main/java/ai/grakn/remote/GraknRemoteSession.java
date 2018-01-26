@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.remote;
 
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknSession;
@@ -41,7 +41,7 @@ public class GraknRemoteSession implements GraknSession {
         this.uri = uri;
     }
 
-    static GraknRemoteSession create(Keyspace keyspace, SimpleURI engineUri){
+    public static GraknRemoteSession create(Keyspace keyspace, SimpleURI engineUri){
         return new GraknRemoteSession(keyspace, engineUri);
     }
 

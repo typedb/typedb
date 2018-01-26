@@ -18,7 +18,9 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
+import ai.grakn.remote.GraknRemoteSession;
 import ai.grakn.util.SimpleURI;
 
 /**
@@ -28,7 +30,7 @@ public class GraknSessionImpl {
 
     // TODO: this is sneaky of me
     //This must remain public because it is accessed via reflection
-    public static GraknRemoteSession create(Keyspace keyspace, String engineUri){
+    public static GraknSession create(Keyspace keyspace, String engineUri){
         return GraknRemoteSession.create(keyspace, new SimpleURI(engineUri));
     }
 }
