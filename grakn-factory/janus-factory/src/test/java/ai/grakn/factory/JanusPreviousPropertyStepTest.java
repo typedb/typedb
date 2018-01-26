@@ -25,9 +25,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
@@ -42,6 +42,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Felix Chapman
  */
+@SuppressWarnings("unused") // We create some vertices and edges for the tests but don't reference them
 public class JanusPreviousPropertyStepTest extends JanusTestBase {
 
     private static final GraphTraversalSource tinker = TinkerGraph.open().traversal();
@@ -49,13 +50,9 @@ public class JanusPreviousPropertyStepTest extends JanusTestBase {
     private static final GraphTraversalSource janus = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph().traversal();
 
     private static final Vertex vertexWithFoo = janus.addV().property("v prop", "foo").next();
+    private static final Vertex vertexWithBar = janus.addV().property("v prop", "bar").next();
     private static final Vertex vertexWithoutProperty = janus.addV().next();
-
-    @Before
-    public void setUp() {
-        janus.addV().property("v prop", "bar").next();
-        janus.V(vertexWithoutProperty).as("x").addE("self").to("x").property("e prop", "foo").next();
-    }
+    private static final Edge edge = janus.V(vertexWithoutProperty).as("x").addE("self").to("x").property("e prop", "foo").next();
 
     @Test
     public void whenFilteringAPropertyToBeEqualToAPreviousProperty_UseJanusGraphStep() {
