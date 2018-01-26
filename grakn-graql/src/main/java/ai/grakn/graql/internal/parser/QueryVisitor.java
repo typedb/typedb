@@ -302,7 +302,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public ConnectedComponentQuery<?> visitCluster(GraqlParser.ClusterContext ctx) {
-        ConnectedComponentQuery<?> cluster = queryBuilder.compute().cluster();
+        ConnectedComponentQuery<?> cluster = queryBuilder.compute().connectedComponent();
 
         if (ctx.id() != null) {
             cluster = cluster.of(visitId(ctx.id()));

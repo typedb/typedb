@@ -42,7 +42,7 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      * Return the instances in each cluster after executing the query. By default, the size of each cluster is
      * returned after executing the query.
      *
-     * @return a ClusterQuery with members flag set
+     * @return a ConnectedComponentQuery with members flag set
      */
     ConnectedComponentQuery<Map<String, Set<String>>> members();
 
@@ -50,33 +50,33 @@ public interface ConnectedComponentQuery<T> extends ComputeQuery<T> {
      * Return only the cluster containing the given concept after executing the query.
      *
      * @param conceptId The id of the given concept. conceptId is ignored if it's null.
-     * @return a ClusterQuery
+     * @return a ConnectedComponentQuery
      */
     ConnectedComponentQuery<T> of(ConceptId conceptId);
 
     /**
      * @param clusterSize the size of the clusters returned
-     * @return a ClusterQuery with cluster set
+     * @return a ConnectedComponentQuery with cluster set
      */
     ConnectedComponentQuery<T> clusterSize(long clusterSize);
 
     /**
      * @param subTypeLabels an array of types to include in the sub graph
-     * @return a ClusterQuery with the subTypeLabels set
+     * @return a ConnectedComponentQuery with the subTypeLabels set
      */
     @Override
     ConnectedComponentQuery<T> in(String... subTypeLabels);
 
     /**
      * @param subLabels a collection of types to include in the sub graph
-     * @return a ClusterQuery with the subLabels set
+     * @return a ConnectedComponentQuery with the subLabels set
      */
     @Override
     ConnectedComponentQuery<T> in(Collection<Label> subLabels);
 
     /**
      * @param tx the transaction to execute the query on
-     * @return a ClusterQuery with the transaction set
+     * @return a ConnectedComponentQuery with the transaction set
      */
     @Override
     ConnectedComponentQuery<T> withTx(GraknTx tx);
