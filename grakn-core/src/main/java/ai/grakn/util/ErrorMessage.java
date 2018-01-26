@@ -155,7 +155,6 @@ public enum ErrorMessage {
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
 
     VARIABLE_NOT_IN_QUERY("the variable %s is not in the query"),
-    SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
     MULTIPLE_TX("a graph has been specified twice for this query"),
@@ -175,26 +174,14 @@ public enum ErrorMessage {
 
     UNEXPECTED_RESULT("the concept [%s] could not be found in results"),
 
-    NO_CONCEPT_IN_KEYSPACE("No concept with ID [%s] exists in keyspace [%s]"),
-
-    //Server Errors
-    ENGINE_ERROR("Exception on Grakn engine"),
     ENGINE_STARTUP_ERROR("Could not start Grakn engine: [%s]"),
-    UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
     UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
     MISSING_MANDATORY_BODY_REQUEST_PARAMETERS("Missing mandatory parameter in body [%s]"),
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
-    INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
-    EXPLAIN_ONLY_MATCH("Cannot get explanation for non-get query, given: [%s]"),
-    INVALID_QUERY_USAGE("Only %s queries are allowed."),
-    MISSING_TASK_ID("Could not retrieve id %s"),
-    TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),
-    ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s]"),
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
-    STATE_STORAGE_ERROR("Exception thrown while retrieving state of a task from storage."),
     PID_ALREADY_EXISTS("pid file already exists: '[%s]'."),
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
@@ -202,7 +189,6 @@ public enum ErrorMessage {
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
     ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
     ROLE_ID_IS_NOT_ROLE("Assignment of non-role id to a role variable in pattern [%s]."),
-    INVALID_UNIFIER_TYPE("Unifier type [%s] is invalid."),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]."),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
     NON_EXISTENT_UNIFIER("Could not proceed with unification as the unifier doesn't exist."),

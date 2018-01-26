@@ -104,13 +104,6 @@ public interface ReasonerQuery{
     boolean isTypeRoleCompatible(Var typedVar, Type parentType);
 
     /**
-     * @param parent query to unify wth
-     * @return multiunifier unifying this and parent query
-     */
-    @CheckReturnValue
-    MultiUnifier getMultiUnifier(ReasonerQuery parent);
-
-    /**
      * resolves the query
      * @param materialise materialisation flag
      * @return stream of answers

@@ -55,7 +55,6 @@ public class UnifierImpl implements Unifier {
     public UnifierImpl(Multimap<Var, Var> map){ this(map.entries());}
     public UnifierImpl(Map<Var, Var> map){ this(map.entrySet());}
     private UnifierImpl(Collection<Map.Entry<Var, Var>> mappings){ this.unifier = ImmutableSetMultimap.copyOf(mappings);}
-    private UnifierImpl(Unifier u){ this(u.mappings());}
 
     @Override
     public String toString(){

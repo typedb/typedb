@@ -34,8 +34,6 @@ import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,7 +60,6 @@ import java.util.stream.Stream;
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link Relationship}
  */
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type{
-    protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private final Cache<Boolean> cachedIsAbstract = Cache.createSessionCache(this, Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 

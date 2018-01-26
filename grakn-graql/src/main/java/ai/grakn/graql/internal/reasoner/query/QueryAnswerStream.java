@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 /**
@@ -96,11 +95,6 @@ public class QueryAnswerStream {
         }
         return isCompatible? m1.merge(m2) : new QueryAnswer();
     }
-
-    private static final BiFunction<Answer, Answer, Stream<Answer>> joinFunction = (a1, a2) -> {
-        Answer merged = joinOperator(a1, a2);
-        return merged.isEmpty()? Stream.empty(): Stream.of(merged);
-    };
 
     private static Set<Answer> findMatchingAnswers(Var var, Concept con, Map<Pair<Var, Concept>, Set<Answer>> inverseMap){
         Pair<Var, Concept> key = new Pair<>(var, con);

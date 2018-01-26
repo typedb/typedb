@@ -122,11 +122,6 @@ public abstract class PropertyExecutor {
             return this;
         }
 
-        public Builder produces(Iterable<Var> values) {
-            producedVarsBuilder().addAll(values);
-            return this;
-        }
-
         abstract PropertyExecutor build();
     }
 

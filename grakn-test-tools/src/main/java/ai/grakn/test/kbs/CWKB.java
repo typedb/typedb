@@ -143,7 +143,7 @@ public class CWKB extends TestKB {
     }
 
     @Override
-    protected void buildRelations(GraknTx tx) {
+    protected void buildRelations() {
         //Enemy(Nono, America)
         isEnemyOf.addRelationship()
                 .addRolePlayer(enemySource, Nono)

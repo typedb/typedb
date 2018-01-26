@@ -490,7 +490,7 @@ public class RelationshipAtom extends IsaAtom {
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
     private Set<Type> inferPossibleEntityTypes(Answer sub){
-        return inferPossibleRelationConfigurations(sub).asMap().entrySet().stream()
+        return inferPossibleRelationConfigurations().asMap().entrySet().stream()
                 .flatMap(e -> {
                     Set<Role> rs = e.getKey().relates().collect(toSet());
                     rs.removeAll(e.getValue());
@@ -499,10 +499,9 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     /**
-     * @param sub partial answer
      * @return a map of relationships and corresponding roles that could be played by this atom
      */
-    private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(Answer sub){
+    private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(){
         Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.getLabel())).collect(toSet());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).map(varTypeMap::get).collect(toSet());
@@ -543,7 +542,7 @@ public class RelationshipAtom extends IsaAtom {
     public ImmutableList<Type> inferPossibleTypes(Answer sub) {
         if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept().asRelationshipType());
         if (possibleRelations == null) {
-            Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations(sub);
+            Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations();
             Set<Var> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap().keySet());
             Set<RelationshipAtom> untypedNeighbours = getNeighbours(RelationshipAtom.class)
                     .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
@@ -587,19 +586,6 @@ public class RelationshipAtom extends IsaAtom {
             this.possibleRelations = builder.build();
         }
         return possibleRelations;
-    }
-
-    /**
-     * attempt to infer the relation type of this relationship
-     * @param sub extra instance information to aid entity type inference
-     * @return either this if relation type can't be inferred or a fresh relationship with inferred relationship type
-     */
-    private RelationshipAtom inferRelationshipType(Answer sub){
-        if (getTypePredicate() != null) return this;
-        if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
-        List<Type> relationshipTypes = inferPossibleTypes(sub);
-        if (relationshipTypes.size() == 1) return addType(Iterables.getOnlyElement(relationshipTypes));
-        return this;
     }
 
     @Override

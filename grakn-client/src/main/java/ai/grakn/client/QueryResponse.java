@@ -29,12 +29,8 @@ import java.util.List;
  * @author Domenico Corapi
  */
 public class QueryResponse {
-    private final Query<?> query;
-    private final Json jsonResponse;
 
     public QueryResponse(Query<?> query, Json jsonResponse) {
-        this.query = query;
-        this.jsonResponse = jsonResponse;
     }
 
     public static List<QueryResponse> from(List<Query<?>> queries, String response) {

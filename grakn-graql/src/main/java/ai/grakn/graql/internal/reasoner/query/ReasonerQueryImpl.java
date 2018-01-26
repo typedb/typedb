@@ -293,7 +293,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
-    @Override
     public MultiUnifier getMultiUnifier(ReasonerQuery parent) {
         return getMultiUnifier(parent, UnifierType.EXACT);
     }

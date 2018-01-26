@@ -94,12 +94,6 @@ public class SampleKBLoader {
         return tx;
     }
 
-    public void load(Consumer<GraknTx> preLoad){
-        this.preLoad = preLoad;
-        graphLoaded = false;
-        tx();
-    }
-
     public void rollback() {
         if (tx instanceof GraknTxTinker) {
             tx.admin().delete();

@@ -56,7 +56,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractSche
         return this;
     }
 
-    public final void configure(Abstract abstract_) {
+    public final void configure(@SuppressWarnings("unused") Abstract abstract_) {
         Preconditions.checkArgument(
                 !this.includeAbstract.isPresent() || this.includeAbstract.get(),
                 "Cannot specify parameter is both abstract and non-abstract"
@@ -64,7 +64,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractSche
         this.includeAbstract = Optional.of(true);
     }
 
-    public final void configure(NonAbstract nonAbstract) {
+    public final void configure(@SuppressWarnings("unused") NonAbstract nonAbstract) {
         Preconditions.checkArgument(
                 !this.includeAbstract.isPresent() || !this.includeAbstract.get(),
                 "Cannot specify parameter is both abstract and non-abstract"

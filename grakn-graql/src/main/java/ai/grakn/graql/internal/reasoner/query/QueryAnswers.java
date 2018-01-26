@@ -67,8 +67,6 @@ public class QueryAnswers implements Iterable<Answer>{
 
     public boolean contains(Answer a){ return set.contains(a);}
 
-    public int size(){ return set.size();}
-
     /**
      * unify the answers by applying unifier to variable set
      * @param unifier map of [key: from/value: to] unifiers
