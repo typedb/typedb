@@ -76,10 +76,8 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public String toString(){ return atomPattern.toString(); }
 
-    @Override
     public boolean containsVar(Var name){ return getVarNames().contains(name);}
 
-    @Override
     public boolean isUserDefined(){ return varName.isUserDefinedName();}
     
     @Override
@@ -101,7 +99,6 @@ public abstract class AtomicBase implements Atomic {
         return combinedPattern;
     }
 
-    @Override
     public ReasonerQuery getParentQuery(){ return parent;}
 
     @Override
@@ -110,7 +107,6 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }
 
-    @Override
     public Atomic inferTypes(Answer sub){ return this; }
 
     /**

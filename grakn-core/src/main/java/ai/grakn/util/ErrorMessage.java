@@ -46,7 +46,6 @@ public enum ErrorMessage {
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
     HAS_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
-    INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
     TX_CLOSED("The Transaction for keyspace [%s] is closed"),
@@ -70,8 +69,6 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
-    VALIDATION_RELATION_MORE_CASTING_THAN_ROLES("The relation [%s] has [%s] role players but its type [%s] " +
-            "only allows [%s] roles \n"),
     VALIDATION_RELATION_CASTING_LOOP_FAIL("The relation [%s] has a role player playing the role [%s] " +
             "which it's type [%s] is not connecting to via a relates connection \n"),
     VALIDATION_RELATIONSHIP_WITH_NO_ROLE_PLAYERS("Cannot commit relationship [%s] of type [%s] because it does not have any role players. \n"),
@@ -85,7 +82,6 @@ public enum ErrorMessage {
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relationship Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relationship Type [%s] \n"),
 
-    VALIDATION_RELATION_DUPLICATE("You have created one or more relationships with the following roles and role player [%s] \n"),
     VALIDATION_REQUIRED_RELATION("The role player [%s] of type [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 
     //--------------------------------------------- Rule validation Errors
@@ -130,7 +126,6 @@ public enum ErrorMessage {
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
     INVALID_COMPUTER("The graph computer [%s] is not supported"),
-    CONFIG_IGNORED("The config parameter [%s] with value [%s] is ignored for this implementation"),
     CANNOT_PRODUCE_TX("Cannot produce a Grakn Transaction using the backend [%s]"),
 
     //--------------------------------------------- Client Errors
@@ -151,7 +146,6 @@ public enum ErrorMessage {
     LABEL_NOT_FOUND("label '%s' not found"),
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
     NOT_A_RELATION_TYPE("'%s' is not a relation type. perhaps you forgot to separate your statements with a ';'?"),
-    INSTANCE_OF_ROLE_TYPE("cannot get instances of role type %s"),
     CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
     NON_POSITIVE_LIMIT("limit %s should be positive"),
     NEGATIVE_OFFSET("offset %s should be non-negative"),
@@ -181,10 +175,7 @@ public enum ErrorMessage {
 
     UNEXPECTED_RESULT("the concept [%s] could not be found in results"),
 
-    //--------------------------------------------- Engine Errors -----------------------------------------------
-    ILLEGAL_ARGUMENT_EXCEPTION("Illegal argument exception caused by [%s]"),
     NO_CONCEPT_IN_KEYSPACE("No concept with ID [%s] exists in keyspace [%s]"),
-    READ_ONLY_QUERY("Invalid query: [%s]. LoaderClient only accepts queries that mutate the graph."),
 
     //Server Errors
     ENGINE_ERROR("Exception on Grakn engine"),
@@ -203,13 +194,6 @@ public enum ErrorMessage {
     ENGINE_UNAVAILABLE("Cannot reach Grakn engine on [%s]"),
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
-    //Post processing Errors
-    TX_MUTATION_ERROR("Unexpected error during graph mutation due to [%s]"),
-    UNABLE_TO_MUTATE("Unable to mutate [%s] due to several repeating errors"),
-    BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
-
-    //Distributed loading Errors
-    ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
     STATE_STORAGE_ERROR("Exception thrown while retrieving state of a task from storage."),
     PID_ALREADY_EXISTS("pid file already exists: '[%s]'."),
 
@@ -231,8 +215,6 @@ public enum ErrorMessage {
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
-    ROLE_AND_RULE_DO_NOT_HAVE_INSTANCE("Role and rule do not have instances."),
-    NO_PATH_EXIST("There is no path between the two instances."),
     MAX_ITERATION_REACHED("Max iteration of [%s] reached.");
 
     private final String message;

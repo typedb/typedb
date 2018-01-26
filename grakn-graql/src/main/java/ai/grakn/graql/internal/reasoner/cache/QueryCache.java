@@ -22,7 +22,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -68,11 +67,6 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         //NB: stream collection!
         QueryAnswers newAnswers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
         return record(query, newAnswers).stream();
-    }
-
-    @Override
-    public LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers) {
-        return new LazyIterator<>(record(query, answers));
     }
 
     /**
@@ -124,7 +118,6 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         return getAnswerStreamWithUnifier(query).getKey();
     }
 
-    @Override
     public Pair<QueryAnswers, MultiUnifier> getAnswersWithUnifier(Q query) {
         Pair<Stream<Answer>, MultiUnifier> answerStreamWithUnifier = getAnswerStreamWithUnifier(query);
         return new Pair<>(
@@ -133,7 +126,6 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         );
     }
 
-    @Override
     public Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
         CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
         if (match != null) {
@@ -149,11 +141,6 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
                 structuralCache().get(query),
                 new MultiUnifierImpl()
         );
-    }
-
-    @Override
-    public LazyIterator<Answer> getAnswerIterator(Q query) {
-        return new LazyIterator<>(getAnswers(query).stream());
     }
 
     /**
@@ -190,10 +177,4 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
                 .forEach( q -> this.getEntry(q).cachedElement().removeAll(c2.getAnswers(q)));
     }
 
-    @Override
-    public long answerSize(Set<Q> queries) {
-        return entries().stream()
-                .filter(p -> queries.contains(p.query()))
-                .map(v -> v.cachedElement().size()).mapToInt(Integer::intValue).sum();
-    }
 }

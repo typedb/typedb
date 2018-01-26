@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -252,7 +251,4 @@ abstract class AbstractComputeQuery<T, V extends ComputeQuery<T>> implements Com
                 .collect(Collectors.toSet());
     }
 
-    static String getRandomJobId() {
-        return Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
-    }
 }

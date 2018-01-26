@@ -67,7 +67,6 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return recordRetrieveLazy(query, answers).stream();
     }
 
-    @Override
     public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<Answer> answers){
         CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match!= null) {
@@ -88,7 +87,6 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return getAnswersWithUnifier(query).getKey();
     }
 
-    @Override
     public Pair<LazyAnswerIterator, MultiUnifier> getAnswersWithUnifier(Q query) {
         CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
@@ -109,7 +107,6 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return getAnswerStreamWithUnifier(query).getKey();
     }
 
-    @Override
     public Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
         CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
@@ -126,12 +123,10 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return new Pair<>(answerStream, new MultiUnifierImpl());
     }
 
-    @Override
     public LazyAnswerIterator getAnswerIterator(Q query) {
         return getAnswers(query);
     }
 
-    @Override
     public long answerSize(Set<Q> queries){
         return this.entries().stream()
                 .filter(p -> queries.contains(p.query()))
@@ -164,7 +159,4 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         this.putAll(newCache);
     }
 
-    public void consume() {
-        this.entries().forEach(entry -> entry.cachedElement().stream().collect(Collectors.toSet()));
-    }
 }

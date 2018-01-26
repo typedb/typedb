@@ -20,7 +20,6 @@ package ai.grakn.client;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.engine.TaskId;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
@@ -42,7 +41,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -184,7 +182,4 @@ public class Client {
         return mappedUrl;
     }
 
-    protected String convert(String uri, TaskId id){
-        return uri.replace(ID_PARAMETER, id.value());
-    }
 }

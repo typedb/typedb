@@ -59,8 +59,6 @@ public class Migrator {
 
     private final static Logger LOG = LoggerFactory.getLogger(Migrator.class);
 
-    public static final int OBSERVABLE_TIMEOUT_MINUTES = 2;
-
     private final QueryParser queryParser = Graql.withoutGraph().infer(false).parser();
     private final SimpleURI uri;
     private final Keyspace keyspace;

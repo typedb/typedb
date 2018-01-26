@@ -120,12 +120,6 @@ public class IsaAtom extends TypeAtom {
     }
 
     @Override
-    public IsaAtom inferTypes(Answer sub) {
-        return this
-                .inferEntityType(sub);
-    }
-
-    @Override
     public List<Atom> atomOptions(Answer sub) {
         return this.inferPossibleEntityTypes(sub).stream()
                 .map(this::addType)

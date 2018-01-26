@@ -20,10 +20,9 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
-
 import com.google.common.collect.ImmutableMap;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -38,9 +37,6 @@ import java.util.stream.Stream;
  *
  */
 public interface ReasonerQuery{
-
-    @CheckReturnValue
-    ReasonerQuery copy();
 
     /**
      * @param q query to combine
@@ -62,12 +58,6 @@ public interface ReasonerQuery{
     void checkValid();
 
     /**
-     * @return conjunctive pattern corresponding to this reasoner query
-     */
-    @CheckReturnValue
-    Conjunction<PatternAdmin> getPattern();
-
-    /**
      * @return set of variable names present in this reasoner query
      */
     @CheckReturnValue
@@ -86,12 +76,6 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     <T extends Atomic> Stream<T> getAtoms(Class<T> type);
-
-    /**
-     * @return corresponding {@link GetQuery}
-     */
-    @CheckReturnValue
-    GetQuery getQuery();
 
     /**
      * @return (partial) substitution obtained from all id predicates (including internal) in the query
@@ -140,12 +124,4 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     ImmutableMap<Var, Type> getVarTypeMap();
-
-    /**
-     * Returns a var-type of this query with possible additions coming from supplied partial answer.
-     * @param sub partial answer
-     * @return map of variable name - corresponding type pairs
-     */
-    @CheckReturnValue
-    ImmutableMap<Var, Type> getVarTypeMap(Answer sub);
 }

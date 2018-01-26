@@ -45,7 +45,6 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -53,7 +52,9 @@ import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.plan.SimplePlanner;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
@@ -70,15 +71,14 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
 
-import java.util.Iterator;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -87,9 +87,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.compatibleRelationTypesWithRoles;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.supers;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.compatibleRoles;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.supers;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.top;
 import static java.util.stream.Collectors.toSet;
 
@@ -504,7 +504,7 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(Answer sub){
         Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.getLabel())).collect(toSet());
-        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).map(varTypeMap::get).collect(toSet());
 
         if (roles.isEmpty() && types.isEmpty()){
@@ -603,13 +603,6 @@ public class RelationshipAtom extends IsaAtom {
     }
 
     @Override
-    public RelationshipAtom inferTypes(Answer sub) {
-        return this
-                .inferRelationshipType(sub)
-                .inferRoles(sub);
-    }
-
-    @Override
     public List<Atom> atomOptions(Answer sub) {
         return this.inferPossibleTypes(sub).stream()
                 .map(this::addType)
@@ -676,7 +669,7 @@ public class RelationshipAtom extends IsaAtom {
     private RelationshipAtom inferRoles(Answer sub){
         //return if all roles known and non-meta
         List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
-        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         boolean allRolesMeta = explicitRoles.stream().allMatch(role ->
                 Schema.MetaSchema.isMetaLabel(role.getLabel())
         );

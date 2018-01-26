@@ -20,20 +20,17 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+
 import java.util.AbstractMap;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 /**
  *
@@ -107,11 +104,6 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public boolean containsValue(Var value) {
-        return unifier.containsValue(value);
-    }
-
-    @Override
     public boolean containsAll(Unifier u) { return mappings().containsAll(u.mappings());}
 
     @Override
@@ -124,28 +116,6 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Unifier combine(Unifier d) {
-        if (Collections.disjoint(this.values(), d.keySet())){
-            return new UnifierImpl(this).merge(d);
-        }
-        Multimap<Var, Var> mergedMappings = HashMultimap.create();
-        Unifier inverse = this.inverse();
-        this.mappings().stream().filter(m -> !d.containsKey(m.getValue())).forEach(m -> mergedMappings.put(m.getKey(), m.getValue()));
-        d.mappings().stream()
-                .flatMap(m -> {
-                    Var lVar = m.getKey();
-                    if (inverse.containsKey(lVar)){
-                        return inverse.get(lVar).stream()
-                                .map(v -> new Pair<>(v, m.getValue()));
-                    } else {
-                        return Stream.of(new Pair<>(m.getKey(), m.getValue()));
-                    }
-                })
-                .forEach(m -> mergedMappings.put(m.getKey(), m.getValue()));
-        return new UnifierImpl(mergedMappings);
-    }
-
-    @Override
     public Unifier inverse() {
         return new UnifierImpl(
                 unifier.entries().stream()
@@ -154,6 +124,4 @@ public class UnifierImpl implements Unifier {
         );
     }
 
-    @Override
-    public int size(){ return unifier.size();}
 }

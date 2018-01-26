@@ -227,11 +227,6 @@ public class BatchExecutorClient implements Closeable {
             return this;
         }
 
-        public Builder metricRegistry(int val) {
-            timeoutMs = val;
-            return this;
-        }
-
         public Builder maxQueries(int val) {
             maxQueries = val;
             return this;

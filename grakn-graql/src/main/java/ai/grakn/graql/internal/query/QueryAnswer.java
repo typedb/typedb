@@ -95,9 +95,6 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public Answer copy(){ return new QueryAnswer(this);}
-
-    @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || !(obj instanceof Answer)) return false;
@@ -192,7 +189,6 @@ public class QueryAnswer implements Answer {
         );
     }
 
-    @Override
     public AnswerExplanation mergeExplanation(Answer toMerge) {
         Set<Answer> partialAnswers = new HashSet<>();
         if (this.getExplanation().isJoinExplanation()) this.getExplanation().getAnswers().forEach(partialAnswers::add);

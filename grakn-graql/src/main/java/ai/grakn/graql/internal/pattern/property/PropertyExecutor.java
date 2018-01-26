@@ -55,7 +55,11 @@ import com.google.common.collect.ImmutableSet;
 public abstract class PropertyExecutor {
 
     public static PropertyExecutor.Builder builder(Method executeMethod) {
-        return new AutoValue_PropertyExecutor.Builder().executeMethod(executeMethod);
+        return builder().executeMethod(executeMethod);
+    }
+
+    private static PropertyExecutor.Builder builder() {
+        return new AutoValue_PropertyExecutor.Builder();
     }
 
     /**

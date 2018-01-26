@@ -37,14 +37,6 @@ public class QueryResponse {
         this.jsonResponse = jsonResponse;
     }
 
-    public Json getJsonResponse() {
-        return jsonResponse;
-    }
-
-    public Query<?> getQuery() {
-        return query;
-    }
-
     public static List<QueryResponse> from(List<Query<?>> queries, String response) {
         List<Json> json = Json.read(response).asJsonList();
         ArrayList<QueryResponse> result = new ArrayList<>();

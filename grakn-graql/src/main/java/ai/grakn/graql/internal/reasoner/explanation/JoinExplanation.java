@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
  */
 public class JoinExplanation extends Explanation {
 
-    public JoinExplanation(){ super();}
     public JoinExplanation(Set<Answer> answers){ super(answers);}
     public JoinExplanation(ReasonerQueryImpl q, Answer mergedAnswer){
         super(q, q.selectAtoms().stream()

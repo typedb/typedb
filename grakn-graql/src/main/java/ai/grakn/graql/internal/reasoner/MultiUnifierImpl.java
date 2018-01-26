@@ -98,7 +98,6 @@ public class MultiUnifierImpl implements MultiUnifier{
         return multiUnifier.isEmpty();
     }
 
-    @Override
     public boolean contains(Unifier u2) {
         return unifiers().stream().anyMatch(u -> u.containsAll(u2));
     }
@@ -107,15 +106,6 @@ public class MultiUnifierImpl implements MultiUnifier{
     public boolean containsAll(MultiUnifier mu) {
         return !mu.unifiers().stream()
                 .anyMatch(u -> !this.contains(u));
-    }
-
-    @Override
-    public MultiUnifier merge(Unifier u) {
-        return new MultiUnifierImpl(
-                multiUnifier.stream()
-                        .map(unifier -> unifier.merge(u))
-                        .collect(Collectors.toSet())
-        );
     }
 
     @Override

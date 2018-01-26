@@ -106,9 +106,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
-
-    @Override
     public ReasonerAtomicQuery withSubstitution(Answer sub){
         return new ReasonerAtomicQuery(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
     }

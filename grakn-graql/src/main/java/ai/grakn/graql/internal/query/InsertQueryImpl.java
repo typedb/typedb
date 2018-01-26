@@ -146,7 +146,6 @@ class InsertQueryImpl implements InsertQueryAdmin {
         return originalVars;
     }
 
-    @Override
     public Optional<GraknTx> getTx() {
         return match.map(MatchAdmin::tx).orElse(tx);
     }

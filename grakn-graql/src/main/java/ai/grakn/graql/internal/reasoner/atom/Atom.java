@@ -83,12 +83,10 @@ public abstract class Atom extends AtomicBase {
     @Override
     public boolean isAtom(){ return true;}
 
-    @Override
     public boolean isRuleResolvable() {
         return getApplicableRules().findFirst().isPresent();
     }
 
-    @Override
     public boolean isRecursive(){
         if (isResource() || getSchemaConcept() == null) return false;
         SchemaConcept schemaConcept = getSchemaConcept();

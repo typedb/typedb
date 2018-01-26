@@ -38,7 +38,6 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
-import ai.grakn.graql.internal.reasoner.plan.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
@@ -51,6 +50,7 @@ import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
+import ai.grakn.graql.internal.reasoner.plan.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
@@ -65,24 +65,23 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.LinkedList;
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -194,7 +193,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 "\n}\n";
     }
 
-    @Override
     public ReasonerQuery copy() {
         return new ReasonerQueryImpl(this);
     }
@@ -229,7 +227,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public void checkValid() { getAtoms().forEach(Atomic::checkValid);}
 
-    @Override
     public Conjunction<PatternAdmin> getPattern() {
         return Patterns.conjunction(
                 getAtoms().stream()
@@ -310,7 +307,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 
-    @Override
     public GetQuery getQuery() {
         return tx.graql().infer(false).match(getPattern()).get();
     }
@@ -363,17 +359,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             );
         }
         return varTypeMap;
-    }
-
-    @Override
-    public ImmutableMap<Var, Type> getVarTypeMap(Answer sub) {
-        return ImmutableMap.copyOf(getVarTypeMap(
-                Stream.concat(
-                        getAtoms(IsaAtom.class),
-                        inferEntityTypes()
-                )
-                )
-        );
     }
 
     /**

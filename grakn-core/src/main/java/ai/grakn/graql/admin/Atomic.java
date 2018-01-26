@@ -21,10 +21,10 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-
 import ai.grakn.graql.VarPattern;
-import java.util.HashSet;
+
 import javax.annotation.CheckReturnValue;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -51,12 +51,6 @@ public interface Atomic {
      * */
     @CheckReturnValue
     default boolean isAtom(){ return false;}
-
-    /**
-     * @return true if the atomic corresponds to a predicate
-     * */
-    @CheckReturnValue
-    default boolean isPredicate(){ return false;}
 
     /**
      * @return true if the atomic corresponds to a type atom
@@ -106,17 +100,6 @@ public interface Atomic {
     int structuralEquivalenceHashCode();
 
     /**
-     * @return true if the atomic is user defined (all its variables are user defined)
-     */
-    @CheckReturnValue
-    boolean isUserDefined();
-
-    /**
-     * @return true if the atomic can be resolved by a rule (atom exists in one of the rule's head)
-     */
-    @CheckReturnValue
-    default boolean isRuleResolvable(){ return false;}
-    /**
      * @return true if the atomic can form an atomic query
      */
     @CheckReturnValue
@@ -135,19 +118,6 @@ public interface Atomic {
     default Set<String> validateOntologically(){ return new HashSet<>();}
 
     /**
-     * @return true if atom is recursive
-     */
-    @CheckReturnValue
-    default boolean isRecursive(){ return false;}
-
-    /**
-     * @param name variable name
-     * @return true if atom contains an occurrence of the variable name
-     */
-    @CheckReturnValue
-    default boolean containsVar(Var name){ return false;}
-
-    /**
      * @return the corresponding base pattern
      * */
     @CheckReturnValue
@@ -158,12 +128,6 @@ public interface Atomic {
      */
     @CheckReturnValue
     Pattern getCombinedPattern();
-
-    /**
-     * @return the query the atomic is contained in
-     */
-    @CheckReturnValue
-    ReasonerQuery getParentQuery();
 
     /**
      * @param q query this atomic is supposed to belong to
@@ -189,6 +153,4 @@ public interface Atomic {
     @CheckReturnValue
     Atomic inferTypes();
 
-    @CheckReturnValue
-    Atomic inferTypes(Answer sub);
 }
