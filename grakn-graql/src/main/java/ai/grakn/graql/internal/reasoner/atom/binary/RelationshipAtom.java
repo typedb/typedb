@@ -588,6 +588,26 @@ public class RelationshipAtom extends IsaAtom {
         return possibleRelations;
     }
 
+    /**
+     * attempt to infer the relation type of this relationship
+     * @param sub extra instance information to aid entity type inference
+     * @return either this if relation type can't be inferred or a fresh relationship with inferred relationship type
+     */
+    private RelationshipAtom inferRelationshipType(Answer sub){
+        if (getTypePredicate() != null) return this;
+        if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
+        List<Type> relationshipTypes = inferPossibleTypes(sub);
+        if (relationshipTypes.size() == 1) return addType(Iterables.getOnlyElement(relationshipTypes));
+        return this;
+    }
+
+    @Override
+    public RelationshipAtom inferTypes(Answer sub) {
+        return this
+                .inferRelationshipType(sub)
+                .inferRoles(sub);
+    }
+
     @Override
     public List<Atom> atomOptions(Answer sub) {
         return this.inferPossibleTypes(sub).stream()

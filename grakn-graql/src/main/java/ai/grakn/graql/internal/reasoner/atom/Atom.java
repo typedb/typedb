@@ -30,6 +30,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -329,13 +330,16 @@ public abstract class Atom extends AtomicBase {
     public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
 
     @Override
-    public Atom inferTypes(){ return this; }
+    public Atom inferTypes(){ return inferTypes(new QueryAnswer()); }
+
+    @Override
+    public Atom inferTypes(Answer sub){ return this; }
 
     /**
      * @param sub partial substitution
      * @return list of possible atoms obtained by applying type inference
      */
-    public List<Atom> atomOptions(Answer sub){ return Lists.newArrayList(inferTypes());}
+    public List<Atom> atomOptions(Answer sub){ return Lists.newArrayList(inferTypes(sub));}
 
     /**
      * @param type to be added to this {@link Atom}

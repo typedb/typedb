@@ -153,4 +153,6 @@ public interface Atomic {
     @CheckReturnValue
     Atomic inferTypes();
 
+    @CheckReturnValue
+    Atomic inferTypes(Answer sub);
 }

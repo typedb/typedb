@@ -107,10 +107,22 @@ public class IsaAtom extends TypeAtom {
         return new IsaAtom(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue(), this.getParentQuery());
     }
 
+    private IsaAtom inferEntityType(Answer sub){
+        if (getTypePredicate() != null) return this;
+        if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
+        return this;
+    }
+
     private ImmutableList<Type> inferPossibleEntityTypes(Answer sub){
         if (getSchemaConcept() != null) return ImmutableList.of(this.getSchemaConcept().asType());
         if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
         return tx().admin().getMetaConcept().subs().collect(toImmutableList());
+    }
+
+    @Override
+    public IsaAtom inferTypes(Answer sub) {
+        return this
+                .inferEntityType(sub);
     }
 
     @Override
