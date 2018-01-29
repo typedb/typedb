@@ -32,6 +32,7 @@ import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -39,6 +40,9 @@ import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -55,49 +59,56 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final StreamObserver<TxResponse> responseObserver;
     private final EngineGraknTxFactory txFactory;
     private final AtomicBoolean terminated = new AtomicBoolean(false);
+    private final ExecutorService executor;
 
     private @Nullable GraknTx tx = null;
     private @Nullable Iterator<QueryResult> queryResults = null;
 
     private static final TxResponse DONE = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
 
-    private TxObserver(EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver) {
+    private TxObserver(
+            EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver, ExecutorService executor) {
         this.responseObserver = responseObserver;
         this.txFactory = txFactory;
+        this.executor = executor;
     }
 
     public static TxObserver create(EngineGraknTxFactory txFactory, StreamObserver<TxResponse> responseObserver) {
-        return new TxObserver(txFactory, responseObserver);
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("tx-observer-%s").build();
+        ExecutorService executor = Executors.newSingleThreadExecutor(threadFactory);
+        return new TxObserver(txFactory, responseObserver, executor);
     }
 
     @Override
     public void onNext(TxRequest request) {
-        try {
-            switch (request.getRequestCase()) {
-                case OPEN:
-                    open(request.getOpen());
-                    break;
-                case COMMIT:
-                    commit();
-                    break;
-                case EXECQUERY:
-                    execQuery(request.getExecQuery());
-                    break;
-                case NEXT:
-                    next();
-                    break;
-                case STOP:
-                    stop();
-                    break;
-                default:
-                case REQUEST_NOT_SET:
-                    throw error(Status.INVALID_ARGUMENT);
+        executor.submit(() -> {
+            try {
+                switch (request.getRequestCase()) {
+                    case OPEN:
+                        open(request.getOpen());
+                        break;
+                    case COMMIT:
+                        commit();
+                        break;
+                    case EXECQUERY:
+                        execQuery(request.getExecQuery());
+                        break;
+                    case NEXT:
+                        next();
+                        break;
+                    case STOP:
+                        stop();
+                        break;
+                    default:
+                    case REQUEST_NOT_SET:
+                        throw error(Status.INVALID_ARGUMENT);
+                }
+            } catch (GraknException e) {
+                Metadata trailers = new Metadata();
+                trailers.put(GrpcServer.MESSAGE, e.getMessage());
+                throw error(Status.UNKNOWN, trailers);
             }
-        } catch (GraknException e) {
-            Metadata trailers = new Metadata();
-            trailers.put(GrpcServer.MESSAGE, e.getMessage());
-            throw error(Status.UNKNOWN, trailers);
-        }
+        });
     }
 
     private void open(Open request) {
