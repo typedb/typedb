@@ -143,8 +143,9 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         try {
             executor.submit(runnable).get();
         } catch (ExecutionException e) {
-            // We know that no checked exceptions are thrown, because it's a `Runnable`
-            throw (RuntimeException) e.getCause();
+            Throwable cause = e.getCause();
+            assert cause instanceof RuntimeException : "No checked exceptions are thrown, because it's a `Runnable`";
+            throw (RuntimeException) cause;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
