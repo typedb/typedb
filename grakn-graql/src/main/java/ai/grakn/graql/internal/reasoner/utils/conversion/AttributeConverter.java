@@ -32,7 +32,6 @@ import ai.grakn.graql.VarPattern;
  */
 class AttributeConverter implements ConceptConverter<Attribute> {
 
-    @Override
     public Pattern pattern(Attribute concept) {
         Var owner = Graql.var().asUserDefined();
         VarPattern resourceVar = Graql.var().asUserDefined().val(concept.getValue());

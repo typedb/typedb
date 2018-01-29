@@ -69,11 +69,6 @@ public class MigratorBuilder {
         return this;
     }
 
-    public MigratorBuilder setMaxDelayMs(int maxDelayMs) {
-        this.maxDelayMs = maxDelayMs;
-        return this;
-    }
-
     public MigratorBuilder setLines(int lines) {
         this.lines = lines;
         return this;

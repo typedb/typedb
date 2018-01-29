@@ -66,7 +66,7 @@ public class Labels extends FromTxGenerator<Label> {
         }
     }
 
-    public void configure(Unused unused) {
+    public void configure(@SuppressWarnings("unused") Unused unused) {
         mustBeUnused();
     }
 

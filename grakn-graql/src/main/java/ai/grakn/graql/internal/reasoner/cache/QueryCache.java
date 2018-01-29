@@ -190,10 +190,4 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
                 .forEach( q -> this.getEntry(q).cachedElement().removeAll(c2.getAnswers(q)));
     }
 
-    @Override
-    public long answerSize(Set<Q> queries) {
-        return entries().stream()
-                .filter(p -> queries.contains(p.query()))
-                .map(v -> v.cachedElement().size()).mapToInt(Integer::intValue).sum();
-    }
 }

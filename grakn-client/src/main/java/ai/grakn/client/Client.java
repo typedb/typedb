@@ -20,30 +20,21 @@ package ai.grakn.client;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.engine.TaskId;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
-import mjson.Json;
-import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Properties;
-
-import static ai.grakn.util.REST.Request.ID_PARAMETER;
-import static java.util.stream.Collectors.joining;
 
 /**
  * Providing useful methods for the user of the GraknEngine client
@@ -65,20 +56,6 @@ public class Client {
             this.exitCode = exitCode;
         }
     }
-
-    final ResponseHandler<Json> asJsonHandler = response -> {
-        try(BufferedReader reader = new BufferedReader(
-                new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))){
-            return Json.read(reader.lines().collect(joining("\n")));
-        }
-    };
-
-    final ResponseHandler<String> asStringHandler = response -> {
-        try(BufferedReader reader = new BufferedReader(
-                new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))){
-            return reader.lines().collect(joining("\n"));
-        }
-    };
 
     public static void main(String[] args) {
         EngineStatus engineStatus;
@@ -184,7 +161,4 @@ public class Client {
         return mappedUrl;
     }
 
-    protected String convert(String uri, TaskId id){
-        return uri.replace(ID_PARAMETER, id.value());
-    }
 }

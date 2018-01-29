@@ -285,26 +285,6 @@ public final class Schema {
     }
 
     /**
-     * An enum representing analytics schema elements
-     */
-    public enum Analytics {
-
-        DEGREE("degree"),
-        CLUSTER("cluster");
-
-        private final String label;
-
-        Analytics(String label) {
-            this.label = label;
-        }
-
-        @CheckReturnValue
-        public Label getLabel() {
-            return Label.of(label);
-        }
-    }
-
-    /**
      *
      * @param label The {@link AttributeType} label
      * @param value The value of the {@link Attribute}

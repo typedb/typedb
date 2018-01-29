@@ -266,9 +266,6 @@ public class ResourceAtom extends Binary{
     public boolean isSelectable(){ return true;}
 
     @Override
-    public boolean isUserDefined(){ return relationVariable.isUserDefinedName();}
-
-    @Override
     public boolean requiresMaterialisation(){ return true;}
 
     @Override

@@ -80,17 +80,6 @@ public class ReasonerQueries {
     }
 
     /**
-     * create a reasoner query copy from the provided query with the types inferred
-     * @param q query to be copied
-     * @return copied reasoner query with inferred types
-     */
-    public static ReasonerQueryImpl create(ReasonerQueryImpl q) {
-        return q.isAtomic()?
-                new ReasonerAtomicQuery(q).inferTypes() :
-                new ReasonerQueryImpl(q).inferTypes();
-    }
-
-    /**
      * create a reasoner query by combining an existing query and a substitution
      * @param q base query for substitution to be attached
      * @param sub (partial) substitution

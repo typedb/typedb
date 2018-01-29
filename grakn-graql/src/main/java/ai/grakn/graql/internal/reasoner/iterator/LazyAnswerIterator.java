@@ -19,10 +19,8 @@
 package ai.grakn.graql.internal.reasoner.iterator;
 
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.Unifier;
-import com.google.common.collect.Iterators;
+
 import java.util.Iterator;
 import java.util.stream.Stream;
 
@@ -40,36 +38,12 @@ public class LazyAnswerIterator extends LazyIterator<Answer> {
     public LazyAnswerIterator(Stream<Answer> stream){ super(stream);}
     private LazyAnswerIterator(Iterator<Answer> iterator){ super(iterator);}
 
-    public LazyAnswerIterator unify(Unifier unifier){
-        if (unifier.isEmpty()) return this;
-        Iterator<Answer> transform = Iterators.transform(iterator(), input -> {
-            if (input == null) return null;
-            return input.unify(unifier);
-        });
-        return new LazyAnswerIterator(transform);
-    }
-
     public LazyAnswerIterator unify(MultiUnifier unifier){
         if (unifier.isEmpty()) return this;
         return new LazyAnswerIterator(stream().flatMap(a -> a.unify(unifier)).iterator());
     }
 
-    public LazyAnswerIterator explain(AnswerExplanation exp){
-        Iterator<Answer> transform = Iterators.transform(iterator(), input -> {
-            if (input == null) return null;
-            if (input.getExplanation() == null || input.getExplanation().isLookupExplanation()){
-                return input.explain(exp);
-            } else {
-                return input.explain(input.getExplanation().setQuery(exp.getQuery()));
-            }
-        });
-        return new LazyAnswerIterator(transform);
-    }
-
     public LazyAnswerIterator merge (Stream<Answer> stream){
         return new LazyAnswerIterator(Stream.concat(this.stream(), stream));
-    }
-    public LazyAnswerIterator merge (LazyAnswerIterator iter) {
-        return new LazyAnswerIterator(Stream.concat(this.stream(), iter.stream()));
     }
 }

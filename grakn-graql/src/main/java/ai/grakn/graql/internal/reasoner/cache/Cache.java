@@ -200,9 +200,4 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      */
     public abstract void remove(Cache<Q, T> c2, Set<Q> queries);
 
-    /**
-     * @param queries to be checked
-     * @return number of answers for the specified query set
-     */
-    public abstract long answerSize(Set<Q> queries);
 }

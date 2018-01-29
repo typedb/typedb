@@ -152,7 +152,6 @@ public class REST {
          */
         public static class Task {
             public static final String STACK_TRACE = "stackTrace";
-            public static final String ID = "id";
         }
     }
 

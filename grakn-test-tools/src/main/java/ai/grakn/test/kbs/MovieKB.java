@@ -248,7 +248,7 @@ public class MovieKB extends TestKB {
     }
 
     @Override
-    protected void buildRelations(GraknTx tx) {
+    protected void buildRelations() {
         directedBy.addRelationship()
                 .addRolePlayer(productionBeingDirected, chineseCoffee)
                 .addRolePlayer(director, alPacino);

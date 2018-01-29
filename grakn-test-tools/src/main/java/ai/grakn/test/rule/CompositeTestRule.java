@@ -61,23 +61,6 @@ public abstract class CompositeTestRule implements TestRule {
         return base;
     }
 
-    /**
-     * Execute the given {@link Runnable} within this context. This is useful in cases when you can't use a JUnit
-     * {@link org.junit.Rule} or {@link org.junit.ClassRule} annotation.
-     */
-    public final void execute(Runnable runnable) {
-        try {
-            apply(new Statement() {
-                @Override
-                public void evaluate() throws Throwable {
-                    runnable.run();
-                }
-            }, Description.EMPTY).evaluate();
-        } catch (Throwable throwable) {
-            throw new RuntimeException(throwable);
-        }
-    }
-
     protected void before() throws Throwable {
 
     }

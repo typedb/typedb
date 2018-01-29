@@ -131,7 +131,6 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         return getAnswers(query);
     }
 
-    @Override
     public long answerSize(Set<Q> queries){
         return this.entries().stream()
                 .filter(p -> queries.contains(p.query()))
@@ -164,7 +163,4 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, LazyAn
         this.putAll(newCache);
     }
 
-    public void consume() {
-        this.entries().forEach(entry -> entry.cachedElement().stream().collect(Collectors.toSet()));
-    }
 }

@@ -43,7 +43,6 @@ import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * A starting point for creating queries.
@@ -158,14 +157,6 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     /**
-     * @param patternString a string representing a pattern
-     * @return a pattern
-     */
-    public Pattern parsePattern(String patternString) {
-        return queryParser.parsePattern(patternString);
-    }
-
-    /**
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
@@ -174,7 +165,4 @@ public class QueryBuilderImpl implements QueryBuilder {
         return queryParser.parseQuery(queryString);
     }
 
-    public <T extends Query<?>> Stream<T> parseList(String queryString) {
-        return queryParser.parseList(queryString);
-    }
 }

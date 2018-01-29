@@ -227,10 +227,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(NEGATIVE_OFFSET.getMessage(offset));
     }
 
-    public static GraqlQueryException noSelectedVars() {
-        return new GraqlQueryException(ErrorMessage.SELECT_NONE_SELECTED.getMessage());
-    }
-
     public static GraqlQueryException invalidValueClass(Object value) {
         return new GraqlQueryException(INVALID_VALUE.getMessage(value.getClass()));
     }
@@ -294,10 +290,6 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException rolePatternAbsent(Atomic relation) {
         return new GraqlQueryException(ErrorMessage.ROLE_PATTERN_ABSENT.getMessage(relation));
-    }
-
-    public static GraqlQueryException invalidUnifierType(Object value) {
-        return new GraqlQueryException(ErrorMessage.INVALID_UNIFIER_TYPE.getMessage(value));
     }
 
     public static GraqlQueryException nonExistentUnifier() {

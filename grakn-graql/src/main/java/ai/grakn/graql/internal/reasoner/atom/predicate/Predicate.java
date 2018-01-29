@@ -97,12 +97,6 @@ public abstract class Predicate<T> extends AtomicBase {
         return alphaEquivalenceHashCode();
     }
 
-    @Override
-    public boolean isPredicate(){ return true;}
-
-    @Override
-    public boolean isRuleResolvable(){ return false;}
-
     public T getPredicate(){ return predicate;}
     public abstract String getPredicateValue();
     protected abstract T extractPredicate(VarPattern pattern);
