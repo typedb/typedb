@@ -117,7 +117,10 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         if (tx == null) {
             throw error(Status.FAILED_PRECONDITION);
         }
+
         tx.commit();
+
+        responseObserver.onNext(DONE);
     }
 
     private void execQuery(ExecQuery request) {
@@ -131,7 +134,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         queryResults = graql.parse(queryString).results(GrpcConverter.get()).iterator();
 
-        sendNextResult(queryResults);
+        sendNextResult();
     }
 
     private void next() {
@@ -139,7 +142,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             throw error(Status.FAILED_PRECONDITION);
         }
 
-        sendNextResult(queryResults);
+        sendNextResult();
     }
 
     private void stop() {
@@ -160,14 +163,17 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         }
     }
 
-    private void sendNextResult(Iterator<QueryResult> results) {
+    private void sendNextResult() {
+        assert queryResults != null : "Method is only called when queryResults is non-null";
+
         TxResponse response;
 
-        if (results.hasNext()) {
-            QueryResult queryResult = results.next();
+        if (queryResults.hasNext()) {
+            QueryResult queryResult = queryResults.next();
             response = TxResponse.newBuilder().setQueryResult(queryResult).build();
         } else {
             response = DONE;
+            queryResults = null;
         }
 
         responseObserver.onNext(response);

@@ -113,6 +113,8 @@ public class GrpcServerTest {
         when(txFactory.tx(Keyspace.of(MYKS), GraknTxType.WRITE)).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
+
+        when(query.results(any())).thenAnswer(params -> Stream.of(QueryResult.getDefaultInstance()));
     }
 
     @After
@@ -171,6 +173,8 @@ public class GrpcServerTest {
     public void whenCommittingATransactionRemotely_ReceiveADoneMessage() {
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
+            tx.receive();
+
             tx.send(commitRequest());
             TxResponse response = tx.receive().elem();
 

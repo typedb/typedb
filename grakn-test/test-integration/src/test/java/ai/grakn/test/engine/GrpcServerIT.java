@@ -85,8 +85,11 @@ public class GrpcServerIT {
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() {
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Write));
+            tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
+            queryResults(tx);
             tx.send(commitRequest());
+            tx.receive();
         }
 
         try (GraknTx tx = session.open(GraknTxType.READ)) {
@@ -98,7 +101,9 @@ public class GrpcServerIT {
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() {
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Write));
+            tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
+            queryResults(tx);
         }
 
         try (GraknTx tx = session.open(GraknTxType.READ)) {
@@ -112,6 +117,7 @@ public class GrpcServerIT {
 
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
+            tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
 
             results = queryResults(tx);
@@ -138,12 +144,11 @@ public class GrpcServerIT {
 
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
+            tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
             results1 = Sets.newHashSet(queryResults(tx));
-            tx.send(stopRequest());
             tx.send(execQueryRequest("match $x sub thing; get;"));
             results2 = Sets.newHashSet(queryResults(tx));
-            tx.send(stopRequest());
         }
 
         assertEquals(results1, results2);
@@ -153,7 +158,9 @@ public class GrpcServerIT {
     public void whenExecutingTwoParallelQueries_Throw() throws Throwable {
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
+            tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
+            tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
 
             exception.expect(GrpcUtil.hasStatus(Status.FAILED_PRECONDITION));
@@ -166,6 +173,7 @@ public class GrpcServerIT {
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(session.keyspace().getValue(), TxType.Read));
+            tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get $y;"));
 
             exception.expect(GrpcUtil.hasMessage(GraqlQueryException.varNotInQuery(var("y")).getMessage()));
@@ -205,7 +213,6 @@ public class GrpcServerIT {
         ImmutableList.Builder<QueryResult> results = ImmutableList.builder();
 
         while (true) {
-            tx.send(nextRequest());
             TxResponse response = tx.receive().elem();
             assert response != null;
 
@@ -219,6 +226,7 @@ public class GrpcServerIT {
                 case RESPONSE_NOT_SET:
                     throw CommonUtil.unreachableStatement("Unexpected response: " + response);
             }
+            tx.send(nextRequest());
         }
     }
 }

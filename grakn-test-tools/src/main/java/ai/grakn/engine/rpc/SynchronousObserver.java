@@ -165,11 +165,29 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
     @AutoValue
     public abstract static class QueueElem<T> {
 
-        public abstract @Nullable T elem();
-        public abstract @Nullable Throwable throwable();
+        abstract @Nullable T nullableElem();
+        abstract @Nullable Throwable nullableThrowable();
 
         public boolean isCompleted() {
-            return elem() == null && throwable() == null;
+            return nullableElem() == null && nullableThrowable() == null;
+        }
+
+        public T elem() {
+            T elem = nullableElem();
+            if (elem == null) {
+                throw new IllegalStateException("Expected elem not found: " + toString());
+            } else {
+                return elem;
+            }
+        }
+
+        public Throwable throwable() {
+            Throwable throwable = nullableThrowable();
+            if (throwable == null) {
+                throw new IllegalStateException("Expected throwable not found: " + toString());
+            } else {
+                return throwable;
+            }
         }
 
         private static <T> QueueElem<T> create(@Nullable T elem, @Nullable Throwable throwable) {
