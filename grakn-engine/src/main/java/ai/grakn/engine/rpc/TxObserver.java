@@ -111,6 +111,29 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         });
     }
 
+    @Override
+    public void onError(Throwable t) {
+        close();
+    }
+
+    @Override
+    public void onCompleted() {
+        close();
+    }
+
+    @Override
+    public void close() {
+        executor.submit(() -> {
+            if (tx != null) {
+                tx.close();
+            }
+
+            if (!terminated.getAndSet(true)) {
+                responseObserver.onCompleted();
+            }
+        });
+    }
+
     private void open(Open request) {
         if (tx != null) {
             throw error(Status.FAILED_PRECONDITION);
@@ -204,16 +227,6 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         }
     }
 
-    @Override
-    public void onError(Throwable t) {
-        close();
-    }
-
-    @Override
-    public void onCompleted() {
-        close();
-    }
-
     private StatusRuntimeException error(Status status) {
         return error(status, null);
     }
@@ -224,14 +237,5 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
             responseObserver.onError(exception);
         }
         return exception;
-    }
-
-    @Override
-    public void close() {
-        if (tx != null) tx.close();
-
-        if (!terminated.getAndSet(true)) {
-            responseObserver.onCompleted();
-        }
     }
 }
