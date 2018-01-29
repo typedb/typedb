@@ -40,6 +40,7 @@ import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -47,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link GrpcServer}.
- *
+ * <p>
  * <p>
  * Receives a stream of {@link TxRequest}s and returning a stream of {@link TxResponse}s.
  * </p>
@@ -61,8 +62,10 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final ExecutorService executor;
 
-    private @Nullable GraknTx tx = null;
-    private @Nullable Iterator<QueryResult> queryResults = null;
+    private @Nullable
+    GraknTx tx = null;
+    private @Nullable
+    Iterator<QueryResult> queryResults = null;
 
     private static final TxResponse DONE = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
 
@@ -81,7 +84,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     @Override
     public void onNext(TxRequest request) {
-        executor.submit(() -> {
+        submit(() -> {
             try {
                 switch (request.getRequestCase()) {
                     case OPEN:
@@ -123,7 +126,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
     @Override
     public void close() {
-        executor.submit(() -> {
+        submit(() -> {
             if (tx != null) {
                 tx.close();
             }
@@ -132,6 +135,19 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                 responseObserver.onCompleted();
             }
         });
+
+        executor.shutdown();
+    }
+
+    private void submit(Runnable runnable) {
+        try {
+            executor.submit(runnable).get();
+        } catch (ExecutionException e) {
+            // We know that no checked exceptions are thrown, because it's a `Runnable`
+            throw (RuntimeException) e.getCause();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void open(Open request) {
