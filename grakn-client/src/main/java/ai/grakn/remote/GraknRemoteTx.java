@@ -20,6 +20,7 @@ package ai.grakn.remote;
 
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -36,8 +37,13 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.kb.admin.GraknAdmin;
+import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
-import io.grpc.stub.StreamObserver;
+import ai.grakn.rpc.generated.GraknOuterClass.Open;
+import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
+import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
+import ai.grakn.rpc.generated.GraknOuterClass.TxType;
+import ai.grakn.util.CommonUtil;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -48,29 +54,25 @@ import java.util.Collection;
 public class GraknRemoteTx implements GraknTx {
 
     private final GraknSession session;
+    private final SynchronousObserver<TxRequest, TxResponse> observer;
 
-    public GraknRemoteTx(GraknSession session) {
+    private GraknRemoteTx(GraknSession session, SynchronousObserver<TxRequest, TxResponse> observer) {
         this.session = session;
+        this.observer = observer;
     }
 
-    static GraknRemoteTx create(GraknRemoteSession session) {
-        session.stub().tx(new StreamObserver<GraknOuterClass.TxResponse>() {
-            @Override
-            public void onNext(GraknOuterClass.TxResponse value) {
+    static GraknRemoteTx create(GraknRemoteSession session, GraknTxType txType) {
+        GraknGrpc.GraknStub stub = session.stub();
 
-            }
+        SynchronousObserver<TxRequest, TxResponse> observer = SynchronousObserver.create(stub::tx);
 
-            @Override
-            public void onError(Throwable t) {
+        observer.send(TxRequest.newBuilder().setOpen(Open.newBuilder().setKeyspace(GraknOuterClass.Keyspace.newBuilder().setValue(session.keyspace().getValue())).setTxType(getTxType(txType))).build());
+        Throwable error = observer.receive().throwable();
+        if (error != null) {
+            throw (RuntimeException) error;
+        }
 
-            }
-
-            @Override
-            public void onCompleted() {
-
-            }
-        });
-        return new GraknRemoteTx(session);
+        return new GraknRemoteTx(session, observer);
     }
 
     @Override
@@ -188,7 +190,7 @@ public class GraknRemoteTx implements GraknTx {
 
     @Override
     public GraknSession session() {
-        throw new UnsupportedOperationException();
+        return session;
     }
 
     @Override
@@ -208,6 +210,7 @@ public class GraknRemoteTx implements GraknTx {
 
     @Override
     public void close() {
+        observer.close();
     }
 
     @Override
@@ -218,5 +221,18 @@ public class GraknRemoteTx implements GraknTx {
     @Override
     public void commit() throws InvalidKBException {
         throw new UnsupportedOperationException();
+    }
+
+    private static TxType getTxType(GraknTxType txType) {
+        switch (txType) {
+            case READ:
+                return TxType.Read;
+            case WRITE:
+                return TxType.Write;
+            case BATCH:
+                return TxType.Batch;
+            default:
+                throw CommonUtil.unreachableStatement("Unrecognised tx type " + txType);
+        }
     }
 }
