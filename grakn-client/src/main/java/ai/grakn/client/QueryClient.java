@@ -47,7 +47,7 @@ import static org.apache.http.HttpStatus.SC_OK;
  * @author borislav
  *
  */
-public class QueryClient extends Client {
+public final class QueryClient {
     
     private final HttpClient httpClient = HttpClients.createDefault();
     private String scheme = DEFAULT_SCHEME_NAME;

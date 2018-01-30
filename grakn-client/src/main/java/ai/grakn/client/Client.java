@@ -35,7 +35,7 @@ import java.net.URL;
  *
  * @author alexandraorth
  */
-public class Client {
+public final class Client {
 
     /**
      * Check if Grakn Engine has been started
