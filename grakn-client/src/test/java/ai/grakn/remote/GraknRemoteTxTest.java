@@ -22,14 +22,19 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknException;
+import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Done;
+import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
 import org.junit.After;
@@ -40,7 +45,6 @@ import org.junit.rules.ExpectedException;
 
 import javax.annotation.Nullable;
 
-import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -136,11 +140,17 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenExecutingAQuery_SendAnExecQueryMessageToGrpc() {
+        Query<?> query = mock(Query.class);
+        String queryString = "match $x isa person; get $x;";
+        when(query.toString()).thenReturn(queryString);
+
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
-            tx.graql().match(var("x").isa("person")).get().execute();
+            verify(serverRequests).onNext(any()); // The open request
+
+            tx.graql().execute(query);
         }
 
-//        verify(serverRequests).onNext(TxRequest.newBuilder().)
+        verify(serverRequests).onNext(execQueryRequest(queryString));
     }
 
     @Test
@@ -153,21 +163,38 @@ public class GraknRemoteTxTest {
     @Test
     public void whenOpeningATxFails_Throw() {
         doAnswer(args -> {
-            serverResponses.onError(new RuntimeException("UHOH"));
+            serverResponses.onError(new StatusRuntimeException(Status.UNKNOWN.withDescription("OH NOES")));
             return null;
         }).when(serverRequests).onNext(openRequest(KEYSPACE.getValue(), TxType.Write));
 
         exception.expect(GraknException.class);
+        exception.expectMessage("OH NOES");
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
         }
     }
 
-    // TODO: we have copied this too many times
+    // TODO: we copied all this too many times
     private static TxRequest openRequest(String keyspaceString, TxType txType) {
         GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
         Open.Builder open = Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
         return TxRequest.newBuilder().setOpen(open).build();
+    }
+
+    private static TxRequest execQueryRequest(String queryString) {
+        return execQueryRequest(queryString, Infer.getDefaultInstance());
+    }
+
+    private static TxRequest execQueryRequest(String queryString, boolean infer) {
+        Infer inferMessage = Infer.newBuilder().setValue(infer).setIsSet(true).build();
+        return execQueryRequest(queryString, inferMessage);
+    }
+
+    private static TxRequest execQueryRequest(String queryString, Infer infer) {
+        GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
+        ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
+        execQueryRequest.setInfer(infer);
+        return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
     }
 
     private static TxResponse doneResponse() {

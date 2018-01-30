@@ -53,13 +53,14 @@ import java.util.function.Function;
  *
  * @param <Request> The type of requests being received
  * @param <Response> The type of responses being sent
+ * @param <Error> The type of errors that can be returned
  */
-public class SynchronousObserver<Request, Response> implements AutoCloseable {
+public class SynchronousObserver<Request, Response, Error extends Throwable> implements AutoCloseable {
 
     private final StreamObserver<Request> requests;
-    private final QueueingObserver<Response> responses;
+    private final QueueingObserver<Response, Error> responses;
 
-    private SynchronousObserver(StreamObserver<Request> requests, QueueingObserver<Response> responses) {
+    private SynchronousObserver(StreamObserver<Request> requests, QueueingObserver<Response, Error> responses) {
         this.requests = requests;
         this.responses = responses;
     }
@@ -84,10 +85,10 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
      *
      * {@code SynchronousObserver.create(stub::tx)}
      */
-    public static <Request, Response> SynchronousObserver<Request, Response> create(
+    public static <Request, Response, Error extends Throwable> SynchronousObserver<Request, Response, Error> create(
             Function<StreamObserver<Response>, StreamObserver<Request>> createRequestObserver
     ) {
-        QueueingObserver<Response> responseListener = new QueueingObserver<>();
+        QueueingObserver<Response, Error> responseListener = new QueueingObserver<>();
         StreamObserver<Request> requestSender = createRequestObserver.apply(responseListener);
         return new SynchronousObserver<>(requestSender, responseListener);
     }
@@ -104,7 +105,7 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
     /**
      * Block until a response is returned.
      */
-    public QueueElem<Response> receive() {
+    public QueueElem<Response, Error> receive() {
         return responses.poll();
     }
 
@@ -119,9 +120,9 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
      *
      * A response can be polled with the {@link #poll()} method.
      */
-    static class QueueingObserver<T> implements StreamObserver<T>, AutoCloseable {
+    static class QueueingObserver<T, Error extends Throwable> implements StreamObserver<T>, AutoCloseable {
 
-        private final BlockingQueue<QueueElem<T>> queue = new LinkedBlockingDeque<>();
+        private final BlockingQueue<QueueElem<T, Error>> queue = new LinkedBlockingDeque<>();
         private final AtomicBoolean terminated = new AtomicBoolean(false);
 
         @Override
@@ -132,7 +133,7 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
         @Override
         public void onError(Throwable throwable) {
             terminated.set(true);
-            queue.add(QueueElem.error(throwable));
+            queue.add(QueueElem.error((Error) throwable));
         }
 
         @Override
@@ -141,7 +142,7 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
             queue.add(QueueElem.completed());
         }
 
-        QueueElem<T> poll() {
+        QueueElem<T, Error> poll() {
             try {
                 return queue.poll(100, TimeUnit.DAYS);
             } catch (InterruptedException e) {
@@ -162,31 +163,32 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
      * A response, that may be an element, an error or a "completed" message.
      *
      * @param <T> The type of response elements
+     * @param <Error> The type of error elements
      */
     @AutoValue
-    public abstract static class QueueElem<T> {
+    public abstract static class QueueElem<T, Error extends Throwable> {
 
         public abstract @Nullable T elem();
-        public abstract @Nullable Throwable throwable();
+        public abstract @Nullable Error throwable();
 
         public boolean isCompleted() {
             return elem() == null && throwable() == null;
         }
 
-        private static <T> QueueElem<T> create(@Nullable T elem, @Nullable Throwable throwable) {
+        private static <T, Error extends Throwable> QueueElem<T, Error> create(@Nullable T elem, @Nullable Error throwable) {
             Preconditions.checkArgument(elem == null || throwable == null);
             return new AutoValue_SynchronousObserver_QueueElem<>(elem, throwable);
         }
 
-        static <T> QueueElem<T> completed() {
+        static <T, Error extends Throwable> QueueElem<T, Error> completed() {
             return create(null, null);
         }
 
-        static <T> QueueElem<T> error(Throwable throwable) {
+        static <T, Error extends Throwable> QueueElem<T, Error> error(Error throwable) {
             return create(null, throwable);
         }
 
-        static <T> QueueElem<T> elem(T elem) {
+        static <T, Error extends Throwable> QueueElem<T, Error> elem(T elem) {
             return create(elem, null);
         }
     }

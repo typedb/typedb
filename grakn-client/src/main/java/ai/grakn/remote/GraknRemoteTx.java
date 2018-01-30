@@ -33,9 +33,18 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknException;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.DefineQuery;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.QueryParser;
+import ai.grakn.graql.UndefineQuery;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
@@ -44,6 +53,8 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -54,9 +65,9 @@ import java.util.Collection;
 public class GraknRemoteTx implements GraknTx {
 
     private final GraknSession session;
-    private final SynchronousObserver<TxRequest, TxResponse> observer;
+    private final SynchronousObserver<TxRequest, TxResponse, StatusRuntimeException> observer;
 
-    private GraknRemoteTx(GraknSession session, SynchronousObserver<TxRequest, TxResponse> observer) {
+    private GraknRemoteTx(GraknSession session, SynchronousObserver<TxRequest, TxResponse, StatusRuntimeException> observer) {
         this.session = session;
         this.observer = observer;
     }
@@ -64,12 +75,12 @@ public class GraknRemoteTx implements GraknTx {
     static GraknRemoteTx create(GraknRemoteSession session, GraknTxType txType) {
         GraknGrpc.GraknStub stub = session.stub();
 
-        SynchronousObserver<TxRequest, TxResponse> observer = SynchronousObserver.create(stub::tx);
+        SynchronousObserver<TxRequest, TxResponse, StatusRuntimeException> observer = SynchronousObserver.create(stub::tx);
 
-        observer.send(TxRequest.newBuilder().setOpen(Open.newBuilder().setKeyspace(GraknOuterClass.Keyspace.newBuilder().setValue(session.keyspace().getValue())).setTxType(getTxType(txType))).build());
-        Throwable error = observer.receive().throwable();
+        observer.send(TxRequest.newBuilder().setOpen(Open.newBuilder().setKeyspace(GraknOuterClass.Keyspace.newBuilder().setValue(session.keyspace().getValue())).setTxType(convertTxType(txType))).build());
+        StatusRuntimeException error = observer.receive().throwable();
         if (error != null) {
-            throw (RuntimeException) error;
+            throw convertStatusRuntimeException(error);
         }
 
         return new GraknRemoteTx(session, observer);
@@ -205,7 +216,78 @@ public class GraknRemoteTx implements GraknTx {
 
     @Override
     public QueryBuilder graql() {
-        throw new UnsupportedOperationException();
+        return new QueryBuilder() {
+            @Override
+            public Match match(Pattern... patterns) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Match match(Collection<? extends Pattern> patterns) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public InsertQuery insert(VarPattern... vars) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public InsertQuery insert(Collection<? extends VarPattern> vars) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public DefineQuery define(VarPattern... varPatterns) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public UndefineQuery undefine(VarPattern... varPatterns) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public ComputeQueryBuilder compute() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public QueryParser parser() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <T extends Query<?>> T parse(String queryString) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public QueryBuilder infer(boolean infer) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public QueryBuilder materialise(boolean materialise) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <T> T execute(Query<T> query) {
+                observer.send(TxRequest.newBuilder().setExecQuery(GraknOuterClass.ExecQuery.newBuilder().setQuery(convertQuery(query))).build());
+                return null;
+            }
+        };
     }
 
     @Override
@@ -223,7 +305,7 @@ public class GraknRemoteTx implements GraknTx {
         throw new UnsupportedOperationException();
     }
 
-    private static TxType getTxType(GraknTxType txType) {
+    private static TxType convertTxType(GraknTxType txType) {
         switch (txType) {
             case READ:
                 return TxType.Read;
@@ -233,6 +315,27 @@ public class GraknRemoteTx implements GraknTx {
                 return TxType.Batch;
             default:
                 throw CommonUtil.unreachableStatement("Unrecognised tx type " + txType);
+        }
+    }
+
+    private static GraknOuterClass.Query convertQuery(Query<?> query) {
+        return GraknOuterClass.Query.newBuilder().setValue(query.toString()).build();
+    }
+
+    private static RuntimeException convertStatusRuntimeException(StatusRuntimeException error) {
+        Status status = error.getStatus();
+        if (status.getCode().equals(Status.Code.UNKNOWN)) {
+            String message = status.getDescription();
+            return new MyGraknException(message);
+        } else {
+            return error;
+        }
+    }
+
+    private static class MyGraknException extends GraknException {
+
+        protected MyGraknException(String error) {
+            super(error);
         }
     }
 }
