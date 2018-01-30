@@ -13,6 +13,9 @@ cache:
 addons:
   sonarcloud:
     organization: "grakn-labs"
+    branches:
+      - master
+      - stable
 
 env:
   # Split tests into grakn-test and everything else
