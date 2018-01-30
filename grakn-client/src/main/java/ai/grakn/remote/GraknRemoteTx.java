@@ -33,7 +33,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraknException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.DefineQuery;
@@ -47,14 +46,6 @@ import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
-import ai.grakn.rpc.generated.GraknOuterClass.TxType;
-import ai.grakn.util.CommonUtil;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -65,25 +56,18 @@ import java.util.Collection;
 public class GraknRemoteTx implements GraknTx {
 
     private final GraknSession session;
-    private final SynchronousObserver<TxRequest, TxResponse, StatusRuntimeException> observer;
+    private final GrpcClient client;
 
-    private GraknRemoteTx(GraknSession session, SynchronousObserver<TxRequest, TxResponse, StatusRuntimeException> observer) {
+    private GraknRemoteTx(GraknSession session, GrpcClient client) {
         this.session = session;
-        this.observer = observer;
+        this.client = client;
     }
 
     static GraknRemoteTx create(GraknRemoteSession session, GraknTxType txType) {
         GraknGrpc.GraknStub stub = session.stub();
-
-        SynchronousObserver<TxRequest, TxResponse, StatusRuntimeException> observer = SynchronousObserver.create(stub::tx);
-
-        observer.send(TxRequest.newBuilder().setOpen(Open.newBuilder().setKeyspace(GraknOuterClass.Keyspace.newBuilder().setValue(session.keyspace().getValue())).setTxType(convertTxType(txType))).build());
-        StatusRuntimeException error = observer.receive().throwable();
-        if (error != null) {
-            throw convertStatusRuntimeException(error);
-        }
-
-        return new GraknRemoteTx(session, observer);
+        GrpcClient client = GrpcClient.create(stub);
+        client.open(session.keyspace(), txType);
+        return new GraknRemoteTx(session, client);
     }
 
     @Override
@@ -284,7 +268,7 @@ public class GraknRemoteTx implements GraknTx {
 
             @Override
             public <T> T execute(Query<T> query) {
-                observer.send(TxRequest.newBuilder().setExecQuery(GraknOuterClass.ExecQuery.newBuilder().setQuery(convertQuery(query))).build());
+                client.execQuery(query);
                 return null;
             }
         };
@@ -292,7 +276,7 @@ public class GraknRemoteTx implements GraknTx {
 
     @Override
     public void close() {
-        observer.close();
+        client.close();
     }
 
     @Override
@@ -303,39 +287,5 @@ public class GraknRemoteTx implements GraknTx {
     @Override
     public void commit() throws InvalidKBException {
         throw new UnsupportedOperationException();
-    }
-
-    private static TxType convertTxType(GraknTxType txType) {
-        switch (txType) {
-            case READ:
-                return TxType.Read;
-            case WRITE:
-                return TxType.Write;
-            case BATCH:
-                return TxType.Batch;
-            default:
-                throw CommonUtil.unreachableStatement("Unrecognised tx type " + txType);
-        }
-    }
-
-    private static GraknOuterClass.Query convertQuery(Query<?> query) {
-        return GraknOuterClass.Query.newBuilder().setValue(query.toString()).build();
-    }
-
-    private static RuntimeException convertStatusRuntimeException(StatusRuntimeException error) {
-        Status status = error.getStatus();
-        if (status.getCode().equals(Status.Code.UNKNOWN)) {
-            String message = status.getDescription();
-            return new MyGraknException(message);
-        } else {
-            return error;
-        }
-    }
-
-    private static class MyGraknException extends GraknException {
-
-        protected MyGraknException(String error) {
-            super(error);
-        }
     }
 }
