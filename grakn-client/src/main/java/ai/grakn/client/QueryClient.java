@@ -27,8 +27,13 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 
 import javax.ws.rs.core.UriBuilder;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
+import static java.util.stream.Collectors.joining;
 import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
 import static org.apache.http.HttpStatus.SC_OK;
 
@@ -132,9 +137,9 @@ public class QueryClient extends Client {
             HttpResponse response = httpClient.execute(httpPost);
             if (response.getStatusLine().getStatusCode() != SC_OK) {
                 throw new Exception("Server returned status: " + response.getStatusLine().getStatusCode() + 
-                                ", entity=" + asStringHandler.handleResponse(response));
+                                ", entity=" + handleString(response));
             }
-            return asJsonHandler.handleResponse(response);
+            return handleJson(response);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -145,4 +150,18 @@ public class QueryClient extends Client {
         QueryClient client = new QueryClient("localhost", 4567).keyspace("snb");
         System.out.println(client.query("match $x isa person; offset 0; limit 30;"));
     }
+
+    private Json handleJson(HttpResponse response) throws IOException {
+        try(BufferedReader reader = new BufferedReader(
+                new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))){
+            return Json.read(reader.lines().collect(joining("\n")));
+        }
+    };
+
+    private String handleString(HttpResponse response) throws IOException {
+        try(BufferedReader reader = new BufferedReader(
+                new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))){
+            return reader.lines().collect(joining("\n"));
+        }
+    };
 }
