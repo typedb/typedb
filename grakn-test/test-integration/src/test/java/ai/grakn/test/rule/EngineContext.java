@@ -128,6 +128,18 @@ public class EngineContext extends CompositeTestRule {
         return config.uri();
     }
 
+    public String host() {
+        return config.uri().getHost();
+    }
+
+    public int port() {
+        return config.uri().getPort();
+    }
+
+    public int grpcPort() {
+        return config.getProperty(GraknConfigKey.GRPC_PORT);
+    }
+
     public GraknSession sessionWithNewKeyspace() {
         return Grakn.session(uri(), randomKeyspace());
     }
@@ -246,6 +258,7 @@ public class EngineContext extends CompositeTestRule {
 
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, GraknTestUtil.getEphemeralPort());
         config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + GraknTestUtil.getEphemeralPort()));
+        config.setConfigProperty(GraknConfigKey.GRPC_PORT, GraknTestUtil.getEphemeralPort());
 
         return config;
     }

@@ -27,6 +27,7 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
+import ai.grakn.engine.rpc.GrpcServer;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
@@ -57,14 +58,20 @@ public class HttpHandler {
     protected final MetricRegistry metricRegistry;
     protected final GraknEngineStatus graknEngineStatus;
     protected final PostProcessor postProcessor;
+    private final GrpcServer grpcServer;
 
-    public HttpHandler(GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry, GraknEngineStatus graknEngineStatus, PostProcessor postProcessor) {
+    public HttpHandler(
+            GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
+            GraknEngineStatus graknEngineStatus, PostProcessor postProcessor,
+            GrpcServer grpcServer
+    ) {
         this.prop = prop;
         this.spark = spark;
         this.factory = factory;
         this.metricRegistry = metricRegistry;
         this.graknEngineStatus = graknEngineStatus;
         this.postProcessor = postProcessor;
+        this.grpcServer = grpcServer;
     }
 
 
@@ -126,7 +133,9 @@ public class HttpHandler {
     }
 
 
-    public void stopHTTP() {
+    public void stopHTTP() throws InterruptedException {
+        grpcServer.close();
+
         spark.stop();
 
         // Block until server is truly stopped

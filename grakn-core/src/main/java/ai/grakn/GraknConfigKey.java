@@ -49,6 +49,7 @@ public abstract class GraknConfigKey<T> {
 
     public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
     public static final GraknConfigKey<Integer> SERVER_PORT = key("server.port", INT);
+    public static final GraknConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
 
     public static final GraknConfigKey<List<String>> REDIS_HOST =
