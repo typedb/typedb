@@ -88,7 +88,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
     private Set<LabelId> statisticsResourceLabelIds = new HashSet<>();
 
-    // Needed internally for OLAP tasks
+    @SuppressWarnings("unused")// Needed internally for OLAP tasks
     public MedianVertexProgram() {
     }
 

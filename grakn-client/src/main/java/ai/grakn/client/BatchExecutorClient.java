@@ -18,6 +18,7 @@
 
 package ai.grakn.client;
 
+import ai.grakn.API;
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
 import ai.grakn.util.SimpleURI;
@@ -178,7 +179,7 @@ public class BatchExecutorClient implements Closeable {
         return new Builder();
     }
 
-    //TODO: Remove this method used only by docs tests
+    @API
     public static Builder newBuilderforURI(SimpleURI simpleURI) {
         return new Builder().taskClient(GraknClient.of(simpleURI));
     }
