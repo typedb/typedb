@@ -503,7 +503,7 @@ public class RelationshipAtom extends IsaAtom {
      */
     private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(Answer sub){
         Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.getLabel())).collect(toSet());
-        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).map(varTypeMap::get).collect(toSet());
 
         if (roles.isEmpty() && types.isEmpty()){
@@ -675,7 +675,7 @@ public class RelationshipAtom extends IsaAtom {
     private RelationshipAtom inferRoles(Answer sub){
         //return if all roles known and non-meta
         List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
-        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
+        Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
         boolean allRolesMeta = explicitRoles.stream().allMatch(role ->
                 Schema.MetaSchema.isMetaLabel(role.getLabel())
         );
