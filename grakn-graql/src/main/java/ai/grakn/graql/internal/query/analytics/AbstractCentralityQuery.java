@@ -62,6 +62,8 @@ abstract class AbstractCentralityQuery<V extends ComputeQuery<Map<Long, Set<Stri
         includeAttribute = true;
     }
 
+    //TODO: @Jason. This is only ever used by a test. Is it part of the public api? Why do we need this method?
+    @SuppressWarnings("unused")
     public V of(String... ofTypeLabels) {
         return of(Arrays.stream(ofTypeLabels).map(Label::of).collect(Collectors.toSet()));
     }

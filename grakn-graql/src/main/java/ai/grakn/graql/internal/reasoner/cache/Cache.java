@@ -145,6 +145,9 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @param answers answer stream of the query
      * @return lazy iterator of updated answers
      */
+    //TODO: @Kasper Is this abstract method on `Cache` really needed?
+    //      It's only ever called through LazyQueryCache
+    @SuppressWarnings("unused")
     public abstract LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers);
 
     /**
@@ -153,9 +156,18 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @return unified cached answers
      */
     public abstract T getAnswers(Q query);
+    //TODO: @Kasper Is this abstract method on `Cache` really needed?
+    //      It's only ever called through LazyQueryCache
+    @SuppressWarnings("unused")
     public abstract Pair<T, MultiUnifier> getAnswersWithUnifier(Q query);
     public abstract Stream<Answer> getAnswerStream(Q query);
+    //TODO: @Kasper Is this abstract method on `Cache` really needed?
+    //      It's only ever called through LazyQueryCache
+    @SuppressWarnings("unused")
     public abstract Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
+    //TODO: @Kasper Is this abstract method on `Cache` really needed?
+    //      It's only ever called through LazyQueryCache
+    @SuppressWarnings("unused")
     public abstract LazyIterator<Answer> getAnswerIterator(Q query);
 
     /**

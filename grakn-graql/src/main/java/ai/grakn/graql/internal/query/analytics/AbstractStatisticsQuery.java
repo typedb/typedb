@@ -45,12 +45,16 @@ abstract class AbstractStatisticsQuery<T, V extends ComputeQuery<T>>
     Set<Label> statisticsResourceLabels = new HashSet<>();
     Set<Type> statisticsResourceTypes = new HashSet<>();
 
+    //TODO: @Jason. This is only ever used by a test. Is it part of the public api? Why do we need this method?
+    @SuppressWarnings("unused")
     public V of(String... statisticsResourceTypeLabels) {
         this.statisticsResourceLabels =
                 Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(Collectors.toSet());
         return (V) this;
     }
 
+    //TODO: @Jason. This is only ever used by a test. Is it part of the public api? Why do we need this method?
+    @SuppressWarnings("unused")
     public V of(Collection<Label> statisticsResourceLabels) {
         this.statisticsResourceLabels = Sets.newHashSet(statisticsResourceLabels);
         return (V) this;
