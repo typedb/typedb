@@ -56,6 +56,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractSche
         return this;
     }
 
+    @SuppressWarnings("unused") /**Used through annotation {@link Abstract}*/
     public final void configure(@SuppressWarnings("unused") Abstract abstract_) {
         Preconditions.checkArgument(
                 !this.includeAbstract.isPresent() || this.includeAbstract.get(),
@@ -64,6 +65,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractSche
         this.includeAbstract = Optional.of(true);
     }
 
+    @SuppressWarnings("NonAbstract") /**Used through annotation {@link Abstract}*/
     public final void configure(@SuppressWarnings("unused") NonAbstract nonAbstract) {
         Preconditions.checkArgument(
                 !this.includeAbstract.isPresent() || !this.includeAbstract.get(),

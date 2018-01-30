@@ -153,6 +153,9 @@ public interface Atomic {
     @CheckReturnValue
     Atomic inferTypes();
 
+    //TODO @Kapser: This is only used through it's implementation class. Making the method here unneeded
+    // Could we ge the implementation use case to use the interface or can we delete this from the interface?
+    @SuppressWarnings("unused")
     @CheckReturnValue
     Atomic inferTypes(Answer sub);
 }

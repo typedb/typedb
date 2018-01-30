@@ -95,9 +95,11 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
         return type.putAttribute(value);
     }
 
+    @SuppressWarnings("unused") /**Used through annotation {@link NonMeta}*/
     public final void configure(@SuppressWarnings("unused") NonMeta nonMeta) {
     }
 
+    @SuppressWarnings("unused") /**Used through annotation {@link WithResource}*/
     public final void configure(@SuppressWarnings("unused") WithResource withResource) {
         this.withResource = true;
     }
