@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
 import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.kb.internal.GraknTxAbstract;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -65,6 +66,7 @@ public class QueryBuilderImpl implements QueryBuilder {
         this.tx = Optional.empty();
     }
 
+    @SuppressWarnings("unused") /** used by {@link GraknTxAbstract#graql()}*/
     public QueryBuilderImpl(GraknTx tx) {
         this.tx = Optional.of(tx);
     }
