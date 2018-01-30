@@ -22,7 +22,6 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
-import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -33,11 +32,6 @@ import java.io.IOException;
  * @author Felix Chapman
  */
 public class GrpcServer implements AutoCloseable {
-
-    /**
-     * Metadata used for storing error messages.
-     */
-    static final Metadata.Key<String> MESSAGE = Metadata.Key.of("message", StringMarshaller.create());
 
     private final Server server;
 
@@ -73,27 +67,6 @@ public class GrpcServer implements AutoCloseable {
         @Override
         public StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver) {
             return TxObserver.create(txFactory, responseObserver);
-        }
-    }
-
-    /**
-     * This class describes how to serialise and deserialise strings in HTTP/2 Metadata. In this case we literally store
-     * the string in its original representation, so nothing needs to be done!
-     */
-    private static class StringMarshaller implements Metadata.AsciiMarshaller<String> {
-
-        public static StringMarshaller create() {
-            return new StringMarshaller();
-        }
-
-        @Override
-        public String toAsciiString(String value) {
-            return value;
-        }
-
-        @Override
-        public String parseAsciiString(String serialized) {
-            return serialized;
         }
     }
 }

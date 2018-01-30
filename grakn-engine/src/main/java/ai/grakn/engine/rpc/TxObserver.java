@@ -33,7 +33,6 @@ import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -62,10 +61,8 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final ExecutorService executor;
 
-    private @Nullable
-    GraknTx tx = null;
-    private @Nullable
-    Iterator<QueryResult> queryResults = null;
+    private @Nullable GraknTx tx = null;
+    private @Nullable Iterator<QueryResult> queryResults = null;
 
     private static final TxResponse DONE = TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
 
@@ -107,9 +104,7 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
                         throw error(Status.INVALID_ARGUMENT);
                 }
             } catch (GraknException e) {
-                Metadata trailers = new Metadata();
-                trailers.put(GrpcServer.MESSAGE, e.getMessage());
-                throw error(Status.UNKNOWN, trailers);
+                throw error(Status.UNKNOWN.withDescription(e.getMessage()));
             }
         });
     }
@@ -245,14 +240,11 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
     }
 
     private StatusRuntimeException error(Status status) {
-        return error(status, null);
-    }
-
-    private StatusRuntimeException error(Status status, @Nullable Metadata trailers) {
-        StatusRuntimeException exception = new StatusRuntimeException(status, trailers);
+        StatusRuntimeException exception = new StatusRuntimeException(status);
         if (!terminated.getAndSet(true)) {
             responseObserver.onError(exception);
         }
         return exception;
     }
+
 }

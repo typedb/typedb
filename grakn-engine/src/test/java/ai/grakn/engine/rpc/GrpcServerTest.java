@@ -63,7 +63,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.rpc.GrpcUtil.hasMessage;
 import static ai.grakn.engine.rpc.GrpcUtil.hasStatus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -207,7 +206,7 @@ public class GrpcServerTest {
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest("not!@akeyspace", TxType.Write));
 
-            exception.expect(hasMessage(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage()));
+            exception.expect(hasStatus(Status.UNKNOWN.withDescription(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage())));
 
             throw tx.receive().throwable();
         }
@@ -418,7 +417,7 @@ public class GrpcServerTest {
         try (SynchronousObserver<TxRequest, TxResponse> tx = startTx()) {
             tx.send(openRequest(MYKS, TxType.Write));
 
-            exception.expect(hasMessage(EXCEPTION_MESSAGE));
+            exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
             throw tx.receive().throwable();
         }
@@ -434,7 +433,7 @@ public class GrpcServerTest {
 
             tx.send(commitRequest());
 
-            exception.expect(hasMessage(EXCEPTION_MESSAGE));
+            exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
             throw tx.receive().throwable();
         }
@@ -450,7 +449,7 @@ public class GrpcServerTest {
 
             tx.send(execQueryRequest(QUERY));
 
-            exception.expect(hasMessage(EXCEPTION_MESSAGE));
+            exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
             throw tx.receive().throwable();
         }
@@ -466,7 +465,7 @@ public class GrpcServerTest {
 
             tx.send(execQueryRequest(QUERY));
 
-            exception.expect(hasMessage(EXCEPTION_MESSAGE));
+            exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
             throw tx.receive().throwable();
         }

@@ -18,12 +18,9 @@
 
 package ai.grakn.engine.rpc;
 
-import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasProperty;
@@ -35,47 +32,20 @@ import static org.hamcrest.Matchers.isA;
  */
 public class GrpcUtil {
 
-    // TODO: dup code
-    private static final Metadata.Key<String> MESSAGE = Metadata.Key.of("message", StringMarshaller.create());
-
-    private static class StringMarshaller implements Metadata.AsciiMarshaller<String> {
-
-        public static StringMarshaller create() {
-            return new StringMarshaller();
-        }
-
-        @Override
-        public String toAsciiString(String value) {
-            return value;
-        }
-
-        @Override
-        public String parseAsciiString(String serialized) {
-            return serialized;
-        }
-    }
-
     public static Matcher<StatusRuntimeException> hasStatus(Status status) {
-        return allOf(
-                isA(StatusRuntimeException.class),
-                hasProperty("status", is(status))
-        );
-    }
 
-    public static Matcher<StatusRuntimeException> hasMessage(String message) {
-        return allOf(
-                hasStatus(Status.UNKNOWN),
-                new TypeSafeMatcher<StatusRuntimeException>() {
-                    @Override
-                    public void describeTo(Description description) {
-                        description.appendText("has message " + message);
-                    }
+        Matcher<Status> hasCode = hasProperty("code", is(status.getCode()));
+        Matcher<Status> statusMatcher;
 
-                    @Override
-                    protected boolean matchesSafely(StatusRuntimeException item) {
-                        return message.equals(item.getTrailers().get(MESSAGE));
-                    }
-                }
-        );
+        String description = status.getDescription();
+
+        if (description == null) {
+            statusMatcher = hasCode;
+        } else {
+            Matcher<Status> hasDescription = hasProperty("description", is(description));
+            statusMatcher = allOf(hasCode, hasDescription);
+        }
+
+        return allOf(isA(StatusRuntimeException.class), hasProperty("status", statusMatcher));
     }
 }

@@ -176,7 +176,7 @@ public class GrpcServerIT {
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get $y;"));
 
-            exception.expect(GrpcUtil.hasMessage(GraqlQueryException.varNotInQuery(var("y")).getMessage()));
+            exception.expect(GrpcUtil.hasStatus(Status.UNKNOWN.withDescription(GraqlQueryException.varNotInQuery(var("y")).getMessage())));
 
             throw tx.receive().throwable();
         }
