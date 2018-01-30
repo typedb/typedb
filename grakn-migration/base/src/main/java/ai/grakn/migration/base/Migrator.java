@@ -22,7 +22,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
 import ai.grakn.client.GraknClientException;
-import ai.grakn.client.QueryResponse;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;
@@ -132,7 +131,7 @@ public class Migrator {
                         LOG.trace("Adding query {}", q);
                         totalMeter.mark();
                         // We add get a hot observable. It starts immediately
-                        Observable<QueryResponse> observable = loader.add(q, keyspace, failFast);
+                        Observable<Void> observable = loader.add(q, keyspace, failFast);
                         subscribeToReportOutcome(failFast, observable, queriesExecuted);
                     });
         }
@@ -141,7 +140,7 @@ public class Migrator {
     }
 
     private void subscribeToReportOutcome(
-            boolean failFast, Observable<QueryResponse> addObservable, AtomicInteger queriesExecuted
+            boolean failFast, Observable<Void> addObservable, AtomicInteger queriesExecuted
     ) {
         addObservable.subscribe(
                 taskResult -> {

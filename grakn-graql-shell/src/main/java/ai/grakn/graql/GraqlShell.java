@@ -21,7 +21,6 @@ package ai.grakn.graql;
 import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.QueryResponse;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
@@ -309,7 +308,7 @@ public class GraqlShell {
 
         try (Reader queryReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
             Graql.parser().parseList(queryReader).forEach(query -> {
-                Observable<QueryResponse> observable = batchExecutorClient.add(query, keyspace, false);
+                Observable<Void> observable = batchExecutorClient.add(query, keyspace, false);
 
                 observable.subscribe(
                     /* On success: */ queryResponse -> queriesExecuted.incrementAndGet(),

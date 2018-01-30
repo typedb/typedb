@@ -25,7 +25,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.client.BatchExecutorClient;
 import ai.grakn.client.GraknClient;
-import ai.grakn.client.QueryResponse;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
@@ -81,7 +80,7 @@ public class BatchExecutorClientIT {
 
     @Test
     public void whenSingleQueryLoadedAndServerDown_RequestIsRetried() throws InterruptedException {
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+        List<Observable<Void>> all = new ArrayList<>();
         // Create a BatchExecutorClient with a callback that will fail
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             // Engine goes down
@@ -97,7 +96,7 @@ public class BatchExecutorClientIT {
 
     @Test
     public void whenSingleQueryLoaded_TaskCompletionExecutesExactlyOnce() {
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+        List<Observable<Void>> all = new ArrayList<>();
         // Create a BatchExecutorClient with a callback that will fail
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             // Load some queries
@@ -113,7 +112,7 @@ public class BatchExecutorClientIT {
     @Test
     public void whenSending100InsertQueries_100EntitiesAreLoadedIntoGraph() {
         int n = 100;
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+        List<Observable<Void>> all = new ArrayList<>();
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             generate(this::query).limit(n).forEach(q ->
                     all.add(loader.add(q, keyspace, true))
@@ -129,7 +128,7 @@ public class BatchExecutorClientIT {
     @Ignore("This test interferes with other tests using the BEC (they probably use the same HystrixRequestLog)")
     @Test
     public void whenSending100Queries_TheyAreSentInBatch() {
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+        List<Observable<Void>> all = new ArrayList<>();
         // Increasing the max delay so eveyrthing goes in a single batch
         try (BatchExecutorClient loader = loader(MAX_DELAY * 100)) {
             int n = 100;
@@ -158,7 +157,7 @@ public class BatchExecutorClientIT {
     @Test
     public void whenEngineRESTFailsWhileLoadingWithRetryTrue_LoaderRetriesAndWaits()
             throws Exception {
-        List<Observable<QueryResponse>> all = new ArrayList<>();
+        List<Observable<Void>> all = new ArrayList<>();
         int n = 20;
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             for (int i = 0; i < n; i++) {

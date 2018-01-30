@@ -50,6 +50,7 @@ import rx.schedulers.Schedulers;
 import java.io.Closeable;
 import java.net.ConnectException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -121,19 +122,19 @@ public class BatchExecutorClient implements Closeable {
     /**
      * Will block until there is space for the query to be submitted
      */
-    public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace) {
+    public Observable<Void> add(Query<?> query, Keyspace keyspace) {
         return add(query, keyspace, true);
     }
 
     /**
      * Will block until there is space for the query to be submitted
      */
-    public Observable<QueryResponse> add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
+    public Observable<Void> add(Query<?> query, Keyspace keyspace, boolean keepErrors) {
         QueryRequest queryRequest = new QueryRequest(query);
         queryRequest.acquirePermit();
 
         Context context = addTimer.time();
-        Observable<QueryResponse> observable = new QueriesObservableCollapser(queryRequest, keyspace)
+        Observable<Void> observable = new QueriesObservableCollapser(queryRequest, keyspace)
                 .observe()
                 .doOnError((error) -> failureMeter.mark())
                 .doOnEach(a -> {
@@ -148,7 +149,7 @@ public class BatchExecutorClient implements Closeable {
         return keepErrors ? observable : ignoreErrors(observable);
     }
 
-    private Observable<QueryResponse> ignoreErrors(Observable<QueryResponse> observable) {
+    private Observable<Void> ignoreErrors(Observable<Void> observable) {
         observable = observable
                 .map(Optional::of)
                 .onErrorResumeNext(error -> {
@@ -334,7 +335,7 @@ public class BatchExecutorClient implements Closeable {
      *
      * @author Domenico Corapi
      */
-    private class CommandQueries extends HystrixCommand<List<QueryResponse>> {
+    private class CommandQueries extends HystrixCommand<List<Void>> {
 
         static final int QUEUE_MULTIPLIER = 1024;
 
@@ -342,7 +343,7 @@ public class BatchExecutorClient implements Closeable {
         private final Keyspace keyspace;
         private final Timer graqlExecuteTimer;
         private final Meter attemptMeter;
-        private final Retryer<List<QueryResponse>> retryer;
+        private final Retryer<List<Void>> retryer;
 
         CommandQueries(List<QueryRequest> queries, Keyspace keyspace) {
             super(Setter
@@ -364,7 +365,7 @@ public class BatchExecutorClient implements Closeable {
             this.keyspace = keyspace;
             this.graqlExecuteTimer = metricRegistry.timer(name(this.getClass(), "execute"));
             this.attemptMeter = metricRegistry.meter(name(this.getClass(), "attempt"));
-            this.retryer = RetryerBuilder.<List<QueryResponse>>newBuilder()
+            this.retryer = RetryerBuilder.<List<Void>>newBuilder()
                     .retryIfException((throwable) ->
                             throwable instanceof GraknClientException
                                     && ((GraknClientException) throwable).isRetriable())
@@ -381,13 +382,14 @@ public class BatchExecutorClient implements Closeable {
         }
 
         @Override
-        protected List<QueryResponse> run() throws GraknClientException {
+        protected List<Void> run() throws GraknClientException {
             List<Query<?>> queryList = queries.stream().map(QueryRequest::getQuery)
                     .collect(Collectors.toList());
             try {
                 return retryer.call(() -> {
                     try (Context c = graqlExecuteTimer.time()) {
-                        return graknClient.graqlExecute(queryList, keyspace);
+                        graknClient.graqlExecute(queryList, keyspace);
+                        return Collections.emptyList();
                     }
                 });
             } catch (RetryException | ExecutionException e) {
@@ -409,8 +411,7 @@ public class BatchExecutorClient implements Closeable {
      *
      * @author Domenico Corapi
      */
-    private class QueriesObservableCollapser extends
-            HystrixCollapser<List<QueryResponse>, QueryResponse, QueryRequest> {
+    private class QueriesObservableCollapser extends HystrixCollapser<List<Void>, Void, QueryRequest> {
 
         private final QueryRequest query;
         private Keyspace keyspace;
@@ -441,8 +442,8 @@ public class BatchExecutorClient implements Closeable {
          * @return returns a command that executed all the requests
          */
         @Override
-        protected HystrixCommand<List<QueryResponse>> createCommand(
-                Collection<CollapsedRequest<QueryResponse, QueryRequest>> collapsedRequests) {
+        protected HystrixCommand<List<Void>> createCommand(
+                Collection<CollapsedRequest<Void, QueryRequest>> collapsedRequests) {
 
             List<QueryRequest> requests =
                     collapsedRequests.stream().map(CollapsedRequest::getArgument).collect(Collectors.toList());
@@ -451,11 +452,11 @@ public class BatchExecutorClient implements Closeable {
         }
 
         @Override
-        protected void mapResponseToRequests(List<QueryResponse> batchResponse,
-                Collection<CollapsedRequest<QueryResponse, QueryRequest>> collapsedRequests) {
+        protected void mapResponseToRequests(List<Void> batchResponse,
+                Collection<CollapsedRequest<Void, QueryRequest>> collapsedRequests) {
             int count = 0;
-            for (CollapsedRequest<QueryResponse, QueryRequest> request : collapsedRequests) {
-                QueryResponse response = batchResponse.get(count++);
+            for (CollapsedRequest<Void, QueryRequest> request : collapsedRequests) {
+                Void response = batchResponse.get(count++);
                 request.setResponse(response);
             }
             metricRegistry.histogram(name(QueriesObservableCollapser.class, "batch", "size")).update(count);
