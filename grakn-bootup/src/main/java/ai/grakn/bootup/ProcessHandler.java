@@ -19,20 +19,29 @@
 package ai.grakn.bootup;
 
 /**
+ * The methods of this interface are used to define a common expectation of what processes should offer.
+ * The actual {@link ProcessHandler} interface is never directly accessed.
+ * Therefore the need for the suppressions below
  *
  * @author Michele Orsi
  */
 interface ProcessHandler {
 
+    @SuppressWarnings("unused")
     void start();
 
+    @SuppressWarnings("unused")
     void stop();
 
+    @SuppressWarnings("unused")
     void status();
 
+    @SuppressWarnings("unused")
     void statusVerbose();
 
+    @SuppressWarnings("unused")
     void clean();
 
+    @SuppressWarnings("unused")
     boolean isRunning();
 }

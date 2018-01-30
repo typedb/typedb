@@ -51,10 +51,6 @@ public class NodeId {
         this(nodeType, Collections.singleton(var));
     }
 
-    public NodeType getNodeType() {
-        return nodeType;
-    }
-
     public Set<Var> getVars() {
         return vars;
     }
