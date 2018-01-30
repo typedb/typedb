@@ -23,6 +23,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * <p>
+ *     We use this annotation to more clearly define our public api.
+ *     It is also useful finding dead code.
+ * </p>
+ *
+ * @author Filipe Peliz Pinto Teixeira
+ */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.METHOD)
 public @interface API {
