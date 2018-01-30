@@ -21,8 +21,6 @@ package ai.grakn.client;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
@@ -38,8 +36,6 @@ import java.net.URL;
  * @author alexandraorth
  */
 public class Client {
-
-    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
     /**
      * Check if Grakn Engine has been started
@@ -83,11 +79,7 @@ public class Client {
             return false;
         }
 
-        if (available == 0) {
-            LOG.error("input stream is not available");
-            return false;
-        }
-        return true;
+        return available != 0;
     }
 
     private static URL mapQuadZeroRouteToLocalhost(URL originalUrl) {
