@@ -163,7 +163,7 @@ public class GrpcServerIT {
 
             exception.expect(GrpcTestUtil.hasStatus(Status.FAILED_PRECONDITION));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -176,7 +176,7 @@ public class GrpcServerIT {
 
             exception.expect(GrpcTestUtil.hasStatus(Status.UNKNOWN.withDescription(GraqlQueryException.varNotInQuery(var("y")).getMessage())));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 

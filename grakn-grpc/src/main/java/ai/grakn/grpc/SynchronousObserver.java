@@ -23,6 +23,7 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
@@ -44,7 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *         tx.send(openMessage);
  *         TxResponse doneMessage = tx.receive().elem();
  *         tx.send(commitMessage);
- *         Throwable validationError = tx.receive.throwable();
+ *         Throwable validationError = tx.receive.error();
  *     }
  * }
  * </pre>
@@ -107,7 +108,7 @@ public class SynchronousObserver implements AutoCloseable {
         @Override
         public void onError(Throwable throwable) {
             terminated.set(true);
-            queue.add(QueueElem.error(throwable));
+            queue.add(QueueElem.error((StatusRuntimeException) throwable));
         }
 
         @Override
@@ -139,10 +140,10 @@ public class SynchronousObserver implements AutoCloseable {
     public abstract static class QueueElem {
 
         abstract @Nullable TxResponse nullableElem();
-        abstract @Nullable Throwable nullableThrowable();
+        abstract @Nullable StatusRuntimeException nullableError();
 
         public boolean isCompleted() {
-            return nullableElem() == null && nullableThrowable() == null;
+            return nullableElem() == null && nullableError() == null;
         }
 
         public TxResponse elem() {
@@ -154,26 +155,26 @@ public class SynchronousObserver implements AutoCloseable {
             }
         }
 
-        public Throwable throwable() {
-            Throwable throwable = nullableThrowable();
+        public StatusRuntimeException error() {
+            StatusRuntimeException throwable = nullableError();
             if (throwable == null) {
-                throw new IllegalStateException("Expected throwable not found: " + toString());
+                throw new IllegalStateException("Expected error not found: " + toString());
             } else {
                 return throwable;
             }
         }
 
-        private static QueueElem create(@Nullable TxResponse elem, @Nullable Throwable throwable) {
-            Preconditions.checkArgument(elem == null || throwable == null);
-            return new AutoValue_SynchronousObserver_QueueElem(elem, throwable);
+        private static QueueElem create(@Nullable TxResponse elem, @Nullable StatusRuntimeException error) {
+            Preconditions.checkArgument(elem == null || error == null);
+            return new AutoValue_SynchronousObserver_QueueElem(elem, error);
         }
 
         static QueueElem completed() {
             return create(null, null);
         }
 
-        static QueueElem error(Throwable throwable) {
-            return create(null, throwable);
+        static QueueElem error(StatusRuntimeException error) {
+            return create(null, error);
         }
 
         static QueueElem elem(TxResponse elem) {

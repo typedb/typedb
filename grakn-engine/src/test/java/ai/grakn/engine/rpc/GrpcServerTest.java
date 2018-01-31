@@ -212,7 +212,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(GraknTxOperationException.invalidKeyspace("not!@akeyspace").getMessage())));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -385,7 +385,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -396,7 +396,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -410,7 +410,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -423,7 +423,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -439,7 +439,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -455,7 +455,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -471,7 +471,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.UNKNOWN.withDescription(EXCEPTION_MESSAGE)));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -485,7 +485,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -499,7 +499,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -519,7 +519,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 
@@ -536,7 +536,7 @@ public class GrpcServerTest {
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
-            throw tx.receive().throwable();
+            throw tx.receive().error();
         }
     }
 }
