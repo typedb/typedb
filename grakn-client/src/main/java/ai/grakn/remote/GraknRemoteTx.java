@@ -201,6 +201,9 @@ public class GraknRemoteTx implements GraknTx {
     @Override
     public QueryBuilder graql() {
         return new QueryBuilder() {
+
+            private @Nullable Boolean infer = null;
+
             @Override
             public Match match(Pattern... patterns) {
                 throw new UnsupportedOperationException();
@@ -258,7 +261,8 @@ public class GraknRemoteTx implements GraknTx {
 
             @Override
             public QueryBuilder infer(boolean infer) {
-                throw new UnsupportedOperationException();
+                this.infer = infer;
+                return this;
             }
 
             @Override
@@ -268,7 +272,7 @@ public class GraknRemoteTx implements GraknTx {
 
             @Override
             public <T> T execute(Query<T> query) {
-                client.execQuery(query);
+                client.execQuery(query, infer);
                 return null;
             }
         };

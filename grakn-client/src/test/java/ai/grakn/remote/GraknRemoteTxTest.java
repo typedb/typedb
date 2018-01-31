@@ -23,6 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
 import ai.grakn.rpc.generated.GraknOuterClass;
@@ -151,6 +152,27 @@ public class GraknRemoteTxTest {
         }
 
         verify(serverRequests).onNext(execQueryRequest(queryString));
+    }
+
+    @Test
+    public void whenExecutingAQueryWithInferenceSet_SendAnExecQueryWithInferenceSetMessageToGrpc() {
+        Query<?> query = mock(Query.class);
+        String queryString = "match $x isa person; get $x;";
+        when(query.toString()).thenReturn(queryString);
+
+        try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
+            verify(serverRequests).onNext(any()); // The open request
+
+            QueryBuilder graql = tx.graql();
+
+            graql.infer(true);
+            graql.execute(query);
+            verify(serverRequests).onNext(execQueryRequest(queryString, true));
+
+            graql.infer(false);
+            graql.execute(query);
+            verify(serverRequests).onNext(execQueryRequest(queryString, false));
+        }
     }
 
     @Test

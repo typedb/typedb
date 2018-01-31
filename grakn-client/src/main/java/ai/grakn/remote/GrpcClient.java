@@ -25,6 +25,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
+import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
@@ -32,6 +33,8 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+
+import javax.annotation.Nullable;
 
 /**
  * Communicates with a Grakn gRPC server, translating requests and responses to and from their gRPC representations.
@@ -71,14 +74,24 @@ class GrpcClient implements AutoCloseable {
         }
     }
 
-    public void execQuery(Query<?> query) {
+    public void execQuery(Query<?> query, @Nullable Boolean infer) {
         GraknOuterClass.Query grpcQuery = convertQuery(query);
-        observer.send(TxRequest.newBuilder().setExecQuery(ExecQuery.newBuilder().setQuery(grpcQuery)).build());
+        ExecQuery execQuery = ExecQuery.newBuilder().setQuery(grpcQuery).setInfer(infer(infer)).build();
+        observer.send(TxRequest.newBuilder().setExecQuery(execQuery).build());
     }
 
     @Override
     public void close() {
         observer.close();
+    }
+
+    private static Infer infer(@Nullable Boolean infer) {
+        Infer.Builder grpcInfer = Infer.newBuilder();
+        if (infer != null) {
+            grpcInfer.setIsSet(true);
+            grpcInfer.setValue(infer);
+        }
+        return grpcInfer.build();
     }
 
     private static GraknOuterClass.Query convertQuery(Query<?> query) {
