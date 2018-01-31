@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.rpc;
+package ai.grakn.grpc;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
@@ -192,7 +192,7 @@ public class SynchronousObserver<Request, Response> implements AutoCloseable {
 
         private static <T> QueueElem<T> create(@Nullable T elem, @Nullable Throwable throwable) {
             Preconditions.checkArgument(elem == null || throwable == null);
-            return new ai.grakn.engine.rpc.AutoValue_SynchronousObserver_QueueElem<>(elem, throwable);
+            return new AutoValue_SynchronousObserver_QueueElem<>(elem, throwable);
         }
 
         static <T> QueueElem<T> completed() {

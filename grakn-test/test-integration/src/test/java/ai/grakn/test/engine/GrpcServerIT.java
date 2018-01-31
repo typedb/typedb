@@ -23,7 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.rpc.GrpcTestUtil;
-import ai.grakn.engine.rpc.SynchronousObserver;
+import ai.grakn.grpc.SynchronousObserver;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
