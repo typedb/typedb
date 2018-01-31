@@ -71,20 +71,23 @@ import static org.apache.http.HttpStatus.SC_OK;
  *
  * @author Filipe Peliz Pinto Teixeira
  */
-public class ConceptController {
+public class ConceptController implements HttpController {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private EngineGraknTxFactory factory;
     private Timer conceptIdGetTimer;
     private Timer labelGetTimer;
     private Timer instancesGetTimer;
 
-    public ConceptController(EngineGraknTxFactory factory, Service spark,
+    public ConceptController(EngineGraknTxFactory factory,
                              MetricRegistry metricRegistry){
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
         this.labelGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-label"));
         this.instancesGetTimer = metricRegistry.timer(name(ConceptController.class, "instances-of-type"));
+    }
 
+    @Override
+    public void start(Service spark) {
         spark.get(WebPath.CONCEPT_ID,  this::getConceptById);
         spark.get(WebPath.TYPE_LABEL,  this::getSchemaByLabel);
         spark.get(WebPath.RULE_LABEL,  this::getSchemaByLabel);
@@ -106,7 +109,6 @@ public class ConceptController {
         spark.get(WebPath.TYPE_SUBS, this::getSchemaConceptSubs);
         spark.get(WebPath.ROLE_SUBS, this::getSchemaConceptSubs);
         spark.get(WebPath.RULE_SUBS, this::getSchemaConceptSubs);
-
     }
 
     private String getTypeAttributes(Request request, Response response) throws JsonProcessingException {
