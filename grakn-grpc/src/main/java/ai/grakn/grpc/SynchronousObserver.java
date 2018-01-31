@@ -18,6 +18,7 @@
 
 package ai.grakn.grpc;
 
+import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import com.google.auto.value.AutoValue;
@@ -29,7 +30,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 /**
  * Wrapper for synchronous bidirectional streaming communication - i.e. when there is a stream of {@link TxRequest}s and
@@ -41,7 +41,7 @@ import java.util.function.Function;
  * <pre>
  * {@code
  *
- *     try (SynchronousObserver tx = SynchronousObserver.create(stub::tx) {
+ *     try (SynchronousObserver tx = SynchronousObserver.create(stub) {
  *         tx.send(openMessage);
  *         TxResponse doneMessage = tx.receive().elem();
  *         tx.send(commitMessage);
@@ -62,31 +62,9 @@ public class SynchronousObserver implements AutoCloseable {
         this.responses = responses;
     }
 
-    /**
-     * Create a {@link SynchronousObserver} using a method that accepts a {@link StreamObserver} and returns
-     * a {@link StreamObserver}.
-     *
-     * <p>
-     * This looks super-weird because it is super-weird. The reason is that the gRPC-generated methods on client-stubs
-     * for bidirectional streaming calls look like this:
-     * </p>
-     *
-     * <p>
-     *     {@code StreamObserver<TxRequest> tx(StreamObserver<TxResponse> responseObserver)}
-     * </p>
-     *
-     * <p>
-     *     So, we cannot get at the {@link TxRequest} observer until we provide a {@link TxResponse} observer.
-     *     Unfortunately the latter is created within this method below - so we must pass in a method reference:
-     * </p>
-     *
-     * {@code SynchronousObserver.create(stub::tx)}
-     */
-    public static SynchronousObserver create(
-            Function<StreamObserver<TxResponse>, StreamObserver<TxRequest>> createRequestObserver
-    ) {
+    public static SynchronousObserver create(GraknGrpc.GraknStub stub) {
         QueueingObserver responseListener = new QueueingObserver();
-        StreamObserver<TxRequest> requestSender = createRequestObserver.apply(responseListener);
+        StreamObserver<TxRequest> requestSender = stub.tx(responseListener);
         return new SynchronousObserver(requestSender, responseListener);
     }
 

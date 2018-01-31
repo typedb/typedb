@@ -81,7 +81,7 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() {
-        try (SynchronousObserver tx = startTx()) {
+        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Write));
             tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
@@ -97,7 +97,7 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() {
-        try (SynchronousObserver tx = startTx()) {
+        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Write));
             tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
@@ -113,7 +113,7 @@ public class GrpcServerIT {
     public void whenExecutingAQuery_ResultsAreReturned() {
         List<QueryResult> results;
 
-        try (SynchronousObserver tx = startTx()) {
+        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
@@ -140,7 +140,7 @@ public class GrpcServerIT {
         Set<QueryResult> results1;
         Set<QueryResult> results2;
 
-        try (SynchronousObserver tx = startTx()) {
+        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
@@ -154,7 +154,7 @@ public class GrpcServerIT {
 
     @Test // This behaviour is temporary - we should eventually support it correctly
     public void whenExecutingTwoParallelQueries_Throw() throws Throwable {
-        try (SynchronousObserver tx = startTx()) {
+        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
@@ -169,7 +169,7 @@ public class GrpcServerIT {
 
     @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
-        try (SynchronousObserver tx = startTx()) {
+        try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Read));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get $y;"));
@@ -178,10 +178,6 @@ public class GrpcServerIT {
 
             throw tx.receive().throwable();
         }
-    }
-
-    private SynchronousObserver startTx() {
-        return SynchronousObserver.create(stub::tx);
     }
 
     private static List<QueryResult> queryResults(SynchronousObserver tx) {
