@@ -37,8 +37,11 @@ public interface CentralityQueryBuilder {
      * @param tx the {@link GraknTx} to execute the compute query on
      * @return a compute query builder with the graph set
      */
-    @CheckReturnValue
-    CentralityQueryBuilder withTx(GraknTx tx);
+    //TODO: @Jason. What's the deal with this method?
+    // I remove it and it's implementation and everything still works
+    //@SuppressWarnings("unused")
+    //@CheckReturnValue
+    //CentralityQueryBuilder withTx(GraknTx tx);
 
     /**
      * Compute centrality using k-core.
