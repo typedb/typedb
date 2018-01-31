@@ -150,7 +150,7 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenOpeningATransactionRemotely_ReceiveADoneMessage() {
+    public void whenOpeningATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
         try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Read));
             TxResponse response = tx.receive().elem();
@@ -170,7 +170,7 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenCommittingATransactionRemotely_ReceiveADoneMessage() {
+    public void whenCommittingATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
         try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(MYKS, TxType.Write));
             tx.receive();
@@ -251,7 +251,7 @@ public class GrpcServerTest {
     }
 
     @Test
-    public void whenExecutingAQueryRemotely_AResultIsReturned() {
+    public void whenExecutingAQueryRemotely_AResultIsReturned() throws InterruptedException {
         Concept conceptX = mock(Concept.class, RETURNS_DEEP_STUBS);
         when(conceptX.getId()).thenReturn(ConceptId.of("V123"));
         when(conceptX.isThing()).thenReturn(true);

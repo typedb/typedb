@@ -80,7 +80,7 @@ public class GrpcServerIT {
     private final GraknStub stub = GraknGrpc.newStub(channel);
 
     @Test
-    public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() {
+    public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() throws InterruptedException {
         try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Write));
             tx.receive();
@@ -96,7 +96,7 @@ public class GrpcServerIT {
     }
 
     @Test
-    public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() {
+    public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() throws InterruptedException {
         try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
             tx.send(openRequest(session.keyspace(), TxType.Write));
             tx.receive();
@@ -110,7 +110,7 @@ public class GrpcServerIT {
     }
 
     @Test
-    public void whenExecutingAQuery_ResultsAreReturned() {
+    public void whenExecutingAQuery_ResultsAreReturned() throws InterruptedException {
         List<QueryResult> results;
 
         try (SynchronousObserver tx = SynchronousObserver.create(stub)) {
@@ -136,7 +136,7 @@ public class GrpcServerIT {
     }
 
     @Test
-    public void whenExecutingTwoSequentialQueries_ResultsAreTheSame() {
+    public void whenExecutingTwoSequentialQueries_ResultsAreTheSame() throws InterruptedException {
         Set<QueryResult> results1;
         Set<QueryResult> results2;
 
@@ -180,7 +180,7 @@ public class GrpcServerIT {
         }
     }
 
-    private static List<QueryResult> queryResults(SynchronousObserver tx) {
+    private static List<QueryResult> queryResults(SynchronousObserver tx) throws InterruptedException {
         ImmutableList.Builder<QueryResult> results = ImmutableList.builder();
 
         while (true) {

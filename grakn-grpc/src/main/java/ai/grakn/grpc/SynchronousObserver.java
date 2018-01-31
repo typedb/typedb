@@ -28,7 +28,6 @@ import io.grpc.stub.StreamObserver;
 import javax.annotation.Nullable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -80,7 +79,7 @@ public class SynchronousObserver implements AutoCloseable {
     /**
      * Block until a response is returned.
      */
-    public QueueElem receive() {
+    public QueueElem receive() throws InterruptedException {
         return responses.poll();
     }
 
@@ -117,19 +116,18 @@ public class SynchronousObserver implements AutoCloseable {
             queue.add(QueueElem.completed());
         }
 
-        QueueElem poll() {
-            try {
-                return queue.poll(100, TimeUnit.DAYS);
-            } catch (InterruptedException e) {
-                // TODO: If we move this out of test code, we should handle this correctly
-                throw new RuntimeException(e);
-            }
+        QueueElem poll() throws InterruptedException {
+            return queue.take();
         }
 
         @Override
         public void close() {
             while (!terminated.get()) {
-                poll();
+                try {
+                    poll();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }
