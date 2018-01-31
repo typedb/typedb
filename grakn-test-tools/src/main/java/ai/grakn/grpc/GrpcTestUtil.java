@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.rpc;
+package ai.grakn.grpc;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;

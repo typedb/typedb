@@ -58,7 +58,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.rpc.GrpcTestUtil.hasStatus;
+import static ai.grakn.grpc.GrpcTestUtil.hasStatus;
 import static ai.grakn.grpc.GrpcUtil.commitRequest;
 import static ai.grakn.grpc.GrpcUtil.doneResponse;
 import static ai.grakn.grpc.GrpcUtil.execQueryRequest;
