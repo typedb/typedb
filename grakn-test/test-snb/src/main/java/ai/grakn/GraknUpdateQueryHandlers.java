@@ -17,7 +17,6 @@
  */
 package ai.grakn;
 
-import static ai.grakn.SNB.FORUM;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import com.google.common.collect.ImmutableSet;
@@ -60,6 +59,7 @@ import static ai.grakn.SNB.EMAIL;
 import static ai.grakn.SNB.EMPLOYEE;
 import static ai.grakn.SNB.EMPLOYER;
 import static ai.grakn.SNB.FIRST_NAME;
+import static ai.grakn.SNB.FORUM;
 import static ai.grakn.SNB.FORUM_ID;
 import static ai.grakn.SNB.FRIEND;
 import static ai.grakn.SNB.GENDER;
@@ -121,6 +121,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 1
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate1AddPersonHandler implements OperationHandler<LdbcUpdate1AddPerson, GraknDbConnectionState> {
         @Override
         public void executeOperation(LdbcUpdate1AddPerson operation,
@@ -184,6 +185,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 2
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate2AddPostLikeHandler implements OperationHandler<LdbcUpdate2AddPostLike, GraknDbConnectionState> {
 
         @Override
@@ -212,6 +214,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 3
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate3AddCommentLikeHandler implements OperationHandler<LdbcUpdate3AddCommentLike, GraknDbConnectionState> {
 
         @Override
@@ -241,6 +244,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 4
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate4AddForumHandler implements OperationHandler<LdbcUpdate4AddForum, GraknDbConnectionState> {
 
         @Override
@@ -281,6 +285,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 5
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate5AddForumMembershipHandler implements OperationHandler<LdbcUpdate5AddForumMembership, GraknDbConnectionState> {
 
         @Override
@@ -309,6 +314,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 6
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate6AddPostHandler implements OperationHandler<LdbcUpdate6AddPost, GraknDbConnectionState> {
 
         @Override
@@ -365,6 +371,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 7
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate7AddCommentHandler implements OperationHandler<LdbcUpdate7AddComment, GraknDbConnectionState> {
 
         @Override
@@ -417,6 +424,7 @@ public class GraknUpdateQueryHandlers {
     /**
      * Update Query 8
      */
+    @SuppressWarnings("unused") //Called through SNB validation
     public static class LdbcUpdate8AddFriendshipHandler implements OperationHandler<LdbcUpdate8AddFriendship, GraknDbConnectionState> {
 
         @Override
