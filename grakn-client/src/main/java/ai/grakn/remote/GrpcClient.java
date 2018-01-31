@@ -22,15 +22,9 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Query;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.Commit;
-import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.Infer;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
-import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -61,24 +55,16 @@ class GrpcClient implements AutoCloseable {
     }
 
     public void open(Keyspace keyspace, GraknTxType txType) {
-        GraknOuterClass.Keyspace grpcKeyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspace.getValue()).build();
-        TxType grpcTxType = convertTxType(txType);
-        Open open = Open.newBuilder().setKeyspace(grpcKeyspace).setTxType(grpcTxType).build();
-
-        communicator.send(TxRequest.newBuilder().setOpen(open).build());
-
+        communicator.send(GrpcUtil.openRequest(keyspace, txType));
         waitForDone();
     }
 
     public void execQuery(Query<?> query, @Nullable Boolean infer) {
-        GraknOuterClass.Query grpcQuery = convertQuery(query);
-        ExecQuery execQuery = ExecQuery.newBuilder().setQuery(grpcQuery).setInfer(infer(infer)).build();
-        communicator.send(TxRequest.newBuilder().setExecQuery(execQuery).build());
+        communicator.send(GrpcUtil.execQueryRequest(query.toString(), infer));
     }
 
     public void commit() {
-        communicator.send(TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build());
-
+        communicator.send(GrpcUtil.commitRequest());
         waitForDone();
     }
 
@@ -104,32 +90,6 @@ class GrpcClient implements AutoCloseable {
                 throw convertStatusRuntimeException(response.error());
             default:
                 throw CommonUtil.unreachableStatement("Unexpected response " + response);
-        }
-    }
-
-    private static Infer infer(@Nullable Boolean infer) {
-        Infer.Builder grpcInfer = Infer.newBuilder();
-        if (infer != null) {
-            grpcInfer.setIsSet(true);
-            grpcInfer.setValue(infer);
-        }
-        return grpcInfer.build();
-    }
-
-    private static GraknOuterClass.Query convertQuery(Query<?> query) {
-        return GraknOuterClass.Query.newBuilder().setValue(query.toString()).build();
-    }
-
-    private static TxType convertTxType(GraknTxType txType) {
-        switch (txType) {
-            case READ:
-                return TxType.Read;
-            case WRITE:
-                return TxType.Write;
-            case BATCH:
-                return TxType.Batch;
-            default:
-                throw CommonUtil.unreachableStatement("Unrecognised tx type " + txType);
         }
     }
 

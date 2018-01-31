@@ -24,17 +24,11 @@ import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknGrpc.GraknImplBase;
-import ai.grakn.rpc.generated.GraknOuterClass;
-import ai.grakn.rpc.generated.GraknOuterClass.Commit;
-import ai.grakn.rpc.generated.GraknOuterClass.Done;
-import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.Infer;
-import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
-import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -87,7 +81,7 @@ public class GraknRemoteTxTest {
 
         doAnswer(args -> {
             assert serverResponses != null;
-            serverResponses.onNext(doneResponse());
+            serverResponses.onNext(GrpcUtil.doneResponse());
             return null;
         }).when(serverRequests).onNext(any());
 
@@ -124,14 +118,14 @@ public class GraknRemoteTxTest {
     @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
         try (GraknTx ignored = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
-            verify(serverRequests).onNext(openRequest(KEYSPACE.getValue(), TxType.Write));
+            verify(serverRequests).onNext(GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE));
         }
     }
 
     @Test
     public void whenCreatingABatchGraknRemoteTx_SendAnOpenMessageWithBatchSpecifiedToGrpc() {
         try (GraknTx ignored = GraknRemoteTx.create(session, GraknTxType.BATCH)) {
-            verify(serverRequests).onNext(openRequest(KEYSPACE.getValue(), TxType.Batch));
+            verify(serverRequests).onNext(GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.BATCH));
         }
     }
 
@@ -163,7 +157,7 @@ public class GraknRemoteTxTest {
             tx.graql().execute(query);
         }
 
-        verify(serverRequests).onNext(execQueryRequest(queryString));
+        verify(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString));
     }
 
     @Test
@@ -179,11 +173,11 @@ public class GraknRemoteTxTest {
 
             graql.infer(true);
             graql.execute(query);
-            verify(serverRequests).onNext(execQueryRequest(queryString, true));
+            verify(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString, true));
 
             graql.infer(false);
             graql.execute(query);
-            verify(serverRequests).onNext(execQueryRequest(queryString, false));
+            verify(serverRequests).onNext(GrpcUtil.execQueryRequest(queryString, false));
         }
     }
 
@@ -195,7 +189,7 @@ public class GraknRemoteTxTest {
             tx.commit();
         }
 
-        verify(serverRequests).onNext(commitRequest());
+        verify(serverRequests).onNext(GrpcUtil.commitRequest());
     }
 
     @Test
@@ -207,7 +201,7 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenOpeningATxFails_Throw() {
-        throwOn(openRequest(KEYSPACE.getValue(), TxType.Write));
+        throwOn(GrpcUtil.openRequest(Keyspace.of(KEYSPACE.getValue()), GraknTxType.WRITE));
 
         exception.expect(GraknException.class);
         exception.expectMessage(ERROR_DESC);
@@ -218,7 +212,7 @@ public class GraknRemoteTxTest {
 
     @Test
     public void whenCommittingATxFails_Throw() {
-        throwOn(commitRequest());
+        throwOn(GrpcUtil.commitRequest());
 
         try (GraknTx tx = GraknRemoteTx.create(session, GraknTxType.WRITE)) {
 
@@ -235,36 +229,5 @@ public class GraknRemoteTxTest {
             serverResponses.onError(ERROR);
             return null;
         }).when(serverRequests).onNext(request);
-    }
-
-    // TODO: we copied all this too many times
-    private static TxRequest openRequest(String keyspaceString, TxType txType) {
-        GraknOuterClass.Keyspace keyspace = GraknOuterClass.Keyspace.newBuilder().setValue(keyspaceString).build();
-        Open.Builder open = Open.newBuilder().setKeyspace(keyspace).setTxType(txType);
-        return TxRequest.newBuilder().setOpen(open).build();
-    }
-
-    private static TxRequest execQueryRequest(String queryString) {
-        return execQueryRequest(queryString, Infer.getDefaultInstance());
-    }
-
-    private static TxRequest execQueryRequest(String queryString, boolean infer) {
-        Infer inferMessage = Infer.newBuilder().setValue(infer).setIsSet(true).build();
-        return execQueryRequest(queryString, inferMessage);
-    }
-
-    private static TxRequest execQueryRequest(String queryString, Infer infer) {
-        GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
-        ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
-        execQueryRequest.setInfer(infer);
-        return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
-    }
-
-    private static TxRequest commitRequest() {
-        return TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build();
-    }
-
-    private static TxResponse doneResponse() {
-        return TxResponse.newBuilder().setDone(Done.getDefaultInstance()).build();
     }
 }
