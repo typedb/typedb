@@ -26,7 +26,6 @@ import ai.grakn.exception.GraknException;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.grpc.GrpcUtil;
 import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
-import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
@@ -174,7 +173,11 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
 
         String queryString = request.getQuery().getValue();
 
-        QueryBuilder graql = setInfer(tx.graql(), request.getInfer());
+        QueryBuilder graql = tx.graql();
+
+        if (request.hasInfer()) {
+            graql = graql.infer(request.getInfer().getValue());
+        }
 
         queryResults = graql.parse(queryString).results(GrpcConverter.get()).iterator();
 
@@ -197,14 +200,6 @@ class TxObserver implements StreamObserver<TxRequest>, AutoCloseable {
         queryResults = null;
 
         responseObserver.onNext(GrpcUtil.doneResponse());
-    }
-
-    private QueryBuilder setInfer(QueryBuilder queryBuilder, Infer infer) {
-        if (infer.getIsSet()) {
-            return queryBuilder.infer(infer.getValue());
-        } else {
-            return queryBuilder;
-        }
     }
 
     private void sendNextResult() {

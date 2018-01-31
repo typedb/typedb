@@ -32,6 +32,8 @@ import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 
+import javax.annotation.Nullable;
+
 /**
  * @author Felix Chapman
  */
@@ -47,18 +49,15 @@ public class GrpcUtil {
     }
 
     public static TxRequest execQueryRequest(String queryString) {
-        return execQueryRequest(queryString, Infer.getDefaultInstance());
+        return execQueryRequest(queryString, null);
     }
 
-    public static TxRequest execQueryRequest(String queryString, boolean infer) {
-        Infer inferMessage = Infer.newBuilder().setValue(infer).setIsSet(true).build();
-        return execQueryRequest(queryString, inferMessage);
-    }
-
-    private static TxRequest execQueryRequest(String queryString, Infer infer) {
+    public static TxRequest execQueryRequest(String queryString, @Nullable Boolean infer) {
         GraknOuterClass.Query query = GraknOuterClass.Query.newBuilder().setValue(queryString).build();
         ExecQuery.Builder execQueryRequest = ExecQuery.newBuilder().setQuery(query);
-        execQueryRequest.setInfer(infer);
+        if (infer != null) {
+            execQueryRequest.setInfer(Infer.newBuilder().setValue(infer));
+        }
         return TxRequest.newBuilder().setExecQuery(execQueryRequest).build();
     }
 
