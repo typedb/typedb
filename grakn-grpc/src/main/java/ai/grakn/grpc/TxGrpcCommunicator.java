@@ -190,7 +190,7 @@ public class TxGrpcCommunicator implements AutoCloseable {
 
         private static Response create(@Nullable TxResponse response, @Nullable StatusRuntimeException error) {
             Preconditions.checkArgument(response == null || error == null);
-            return new AutoValue_SynchronousObserver_Response(response, error);
+            return new AutoValue_TxGrpcCommunicator_Response(response, error);
         }
 
         static Response completed() {
