@@ -56,17 +56,6 @@ import java.util.stream.Stream;
 public class GraqlTraversalPlanner {
 
     /**
-     * @param query for which the plan should be constructed
-     * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
-     */
-    public static ImmutableList<Atom> plan(ReasonerQueryImpl query){
-        List<Atom> atoms = query.getAtoms(Atom.class)
-                .filter(Atomic::isSelectable)
-                .collect(Collectors.toList());
-        return planFromTraversal(atoms, query.getPattern(), query.tx());
-    }
-
-    /**
      *
      * Refined plan procedure:
      * - establish a list of starting atom candidates based on their substitutions

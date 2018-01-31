@@ -145,6 +145,7 @@ public class JsonSession {
     }
 
     @OnWebSocketClose
+    @SuppressWarnings("unused") //Used through socket connection.
     public void onClose(int statusCode, String reason) throws IOException, ExecutionException, InterruptedException {
         // 1000 = Normal close, 1001 = Going away
         if (statusCode != 1000 && statusCode != 1001) {
