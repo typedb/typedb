@@ -31,6 +31,7 @@ import ai.grakn.rpc.generated.GraknOuterClass.Stop;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
+import ai.grakn.util.CommonUtil;
 
 import javax.annotation.Nullable;
 
@@ -39,8 +40,8 @@ import javax.annotation.Nullable;
  */
 public class GrpcUtil {
 
-    public static TxRequest openRequest(Keyspace keyspace, TxType txType) {
-        Open.Builder open = Open.newBuilder().setKeyspace(convert(keyspace)).setTxType(txType);
+    public static TxRequest openRequest(Keyspace keyspace, GraknTxType txType) {
+        Open.Builder open = Open.newBuilder().setKeyspace(convert(keyspace)).setTxType(convert(txType));
         return TxRequest.newBuilder().setOpen(open).build();
     }
 
@@ -92,6 +93,19 @@ public class GrpcUtil {
             default:
             case UNRECOGNIZED:
                 throw new IllegalArgumentException("Unrecognised " + txType);
+        }
+    }
+
+    private static TxType convert(GraknTxType txType) {
+        switch (txType) {
+            case READ:
+                return TxType.Read;
+            case WRITE:
+                return TxType.Write;
+            case BATCH:
+                return TxType.Batch;
+            default:
+                throw CommonUtil.unreachableStatement("Unrecognised " + txType);
         }
     }
 

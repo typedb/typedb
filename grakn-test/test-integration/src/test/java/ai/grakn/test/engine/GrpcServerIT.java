@@ -30,7 +30,6 @@ import ai.grakn.rpc.generated.GraknGrpc.GraknStub;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.QueryResult;
 import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
-import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
@@ -82,7 +81,7 @@ public class GrpcServerIT {
     @Test
     public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), TxType.Write));
+            tx.send(openRequest(session.keyspace(), GraknTxType.WRITE));
             tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
             queryResults(tx);
@@ -98,7 +97,7 @@ public class GrpcServerIT {
     @Test
     public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() throws InterruptedException {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), TxType.Write));
+            tx.send(openRequest(session.keyspace(), GraknTxType.WRITE));
             tx.receive();
             tx.send(execQueryRequest("define person sub entity;"));
             queryResults(tx);
@@ -114,7 +113,7 @@ public class GrpcServerIT {
         List<QueryResult> results;
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), TxType.Read));
+            tx.send(openRequest(session.keyspace(), GraknTxType.READ));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
 
@@ -141,7 +140,7 @@ public class GrpcServerIT {
         Set<QueryResult> results2;
 
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), TxType.Read));
+            tx.send(openRequest(session.keyspace(), GraknTxType.READ));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
             results1 = Sets.newHashSet(queryResults(tx));
@@ -155,7 +154,7 @@ public class GrpcServerIT {
     @Test // This behaviour is temporary - we should eventually support it correctly
     public void whenExecutingTwoParallelQueries_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), TxType.Read));
+            tx.send(openRequest(session.keyspace(), GraknTxType.READ));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get;"));
             tx.receive();
@@ -170,7 +169,7 @@ public class GrpcServerIT {
     @Test
     public void whenExecutingAnInvalidQuery_Throw() throws Throwable {
         try (TxGrpcCommunicator tx = TxGrpcCommunicator.create(stub)) {
-            tx.send(openRequest(session.keyspace(), TxType.Read));
+            tx.send(openRequest(session.keyspace(), GraknTxType.READ));
             tx.receive();
             tx.send(execQueryRequest("match $x sub thing; get $y;"));
 
