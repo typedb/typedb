@@ -22,6 +22,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknException;
 import ai.grakn.graql.Query;
+import ai.grakn.grpc.TxGrpcCommunicator;
 import ai.grakn.rpc.generated.GraknGrpc;
 import ai.grakn.rpc.generated.GraknOuterClass;
 import ai.grakn.rpc.generated.GraknOuterClass.Commit;
@@ -29,7 +30,6 @@ import ai.grakn.rpc.generated.GraknOuterClass.ExecQuery;
 import ai.grakn.rpc.generated.GraknOuterClass.Infer;
 import ai.grakn.rpc.generated.GraknOuterClass.Open;
 import ai.grakn.rpc.generated.GraknOuterClass.TxRequest;
-import ai.grakn.rpc.generated.GraknOuterClass.TxResponse;
 import ai.grakn.rpc.generated.GraknOuterClass.TxType;
 import ai.grakn.util.CommonUtil;
 import io.grpc.Status;
@@ -49,16 +49,14 @@ import javax.annotation.Nullable;
  */
 class GrpcClient implements AutoCloseable {
 
-    private final SynchronousObserver<TxRequest, TxResponse, StatusRuntimeException> observer;
+    private final TxGrpcCommunicator communicator;
 
-    private GrpcClient(SynchronousObserver<TxRequest, TxResponse, StatusRuntimeException> observer) {
-        this.observer = observer;
+    private GrpcClient(TxGrpcCommunicator communicator) {
+        this.communicator = communicator;
     }
 
     public static GrpcClient create(GraknGrpc.GraknStub stub) {
-        SynchronousObserver<TxRequest, TxResponse, StatusRuntimeException> observer =
-                SynchronousObserver.create(stub::tx);
-
+        TxGrpcCommunicator observer = TxGrpcCommunicator.create(stub);
         return new GrpcClient(observer);
     }
 
@@ -67,32 +65,46 @@ class GrpcClient implements AutoCloseable {
         TxType grpcTxType = convertTxType(txType);
         Open open = Open.newBuilder().setKeyspace(grpcKeyspace).setTxType(grpcTxType).build();
 
-        observer.send(TxRequest.newBuilder().setOpen(open).build());
+        communicator.send(TxRequest.newBuilder().setOpen(open).build());
 
-        StatusRuntimeException error = observer.receive().throwable();
-        if (error != null) {
-            throw convertStatusRuntimeException(error);
-        }
+        waitForDone();
     }
 
     public void execQuery(Query<?> query, @Nullable Boolean infer) {
         GraknOuterClass.Query grpcQuery = convertQuery(query);
         ExecQuery execQuery = ExecQuery.newBuilder().setQuery(grpcQuery).setInfer(infer(infer)).build();
-        observer.send(TxRequest.newBuilder().setExecQuery(execQuery).build());
+        communicator.send(TxRequest.newBuilder().setExecQuery(execQuery).build());
     }
 
     public void commit() {
-        observer.send(TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build());
+        communicator.send(TxRequest.newBuilder().setCommit(Commit.getDefaultInstance()).build());
 
-        StatusRuntimeException error = observer.receive().throwable();
-        if (error != null) {
-            throw convertStatusRuntimeException(error);
-        }
+        waitForDone();
     }
 
     @Override
     public void close() {
-        observer.close();
+        communicator.close();
+    }
+
+    private void waitForDone() {
+        TxGrpcCommunicator.Response response;
+
+        try {
+            response = communicator.receive();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        }
+
+        switch (response.type()) {
+            case OK:
+                return;
+            case ERROR:
+                throw convertStatusRuntimeException(response.error());
+            default:
+                throw CommonUtil.unreachableStatement("Unexpected response " + response);
+        }
     }
 
     private static Infer infer(@Nullable Boolean infer) {
