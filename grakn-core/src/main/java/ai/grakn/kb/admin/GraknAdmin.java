@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.admin;
 
+import ai.grakn.API;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -206,6 +207,7 @@ public interface GraknAdmin {
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.
      */
+    @API
     void closeSession();
 
     /**

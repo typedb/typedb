@@ -699,7 +699,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
-    @Override
     public void closeSession() {
         try {
             txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
